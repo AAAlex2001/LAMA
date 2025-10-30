@@ -167,6 +167,17 @@ class SchedulerService:
             replace_existing=True,
         )
 
+    def schedule_bot_weekdays(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, hour: int, minute: int, timezone: str = "UTC") -> None:
+        """Расписание для будних дней (пн-пт)."""
+        # CronTrigger: 0=Mon, 1=Tue, ..., 4=Fri
+        self.scheduler.add_job(
+            self.execute_bot_message,
+            trigger=CronTrigger(day_of_week="0-4", hour=hour, minute=minute, timezone=timezone),
+            args=[bot_id, target_type, target_id, message],
+            id=job_id,
+            replace_existing=True,
+        )
+
     def schedule_bot_monthly(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, month_days: list[int], hour: int, minute: int, timezone: str = "UTC") -> None:
         dom = ",".join(str(d) for d in month_days)
         self.scheduler.add_job(

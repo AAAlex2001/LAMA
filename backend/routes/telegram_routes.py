@@ -104,3 +104,4 @@ async def get_channel_info(channel_id: str):
         raise HTTPException(status_code=404, detail=info["error"])
     return info
 
+

@@ -47,31 +47,18 @@ class BotResponse(BaseModel):
     description_suffix: Optional[str] = None
 
 
-class Shortcode(str):
-    """Шорткод, поддерживает значения {username}, {firstname}, {date} и т.п."""
-
-
 class InlineButton(BaseModel):
     text: str
     url: Optional[HttpUrl] = None
     callback_data: Optional[str] = None
 
     @model_validator(mode="after")
-    def _validate_mutual_exclusive(self) -> "InlineButton":
+    def validate_mutual_exclusive(self) -> "InlineButton":
         if self.url and self.callback_data:
             raise ValueError("InlineButton: specify either url or callback_data, not both")
         if not self.url and not self.callback_data:
-            # допустим текстовую кнопку без действия? Нет — потребуем одно
             raise ValueError("InlineButton: either url or callback_data is required")
         return self
-
-
-class DMTemplate(BaseModel):
-    """Шаблон личного сообщения: текст, медиа, inline-кнопки, шорткоды."""
-
-    text: Optional[str] = None
-    inline_buttons: Optional[List[List[InlineButton]]] = None
-    media_urls: Optional[List[HttpUrl]] = None  # legacy
 
 
 class MediaType(str, Enum):
@@ -94,11 +81,19 @@ class PollContent(BaseModel):
     correct_option_id: Optional[int] = None
 
 
+class AutoDeleteConfig(BaseModel):
+    hours: int = Field(..., description="Через сколько часов удалить сообщение")
+
+
 class DMTemplate(BaseModel):
+    """Шаблон личного/чат сообщения: текст, медиа, inline-кнопки, шорткоды, опросы."""
+
     text: Optional[str] = None
     inline_buttons: Optional[List[List[InlineButton]]] = None
     media: Optional[List[MediaItem]] = None
+    media_urls: Optional[List[HttpUrl]] = Field(None, description="Список URL медиафайлов (фото, видео, документы)")
     poll: Optional[PollContent] = None
+    auto_delete: Optional[AutoDeleteConfig] = None
 
 
 class AllowRules(BaseModel):
@@ -108,6 +103,18 @@ class AllowRules(BaseModel):
         default_factory=list, description="Список каналов/групп для обязательной подписки"
     )
     captcha_enabled: bool = False
+
+
+class CaptchaType(str, Enum):
+    SIMPLE_BUTTON = "simple_button"
+
+
+class CaptchaState(BaseModel):
+    """Состояние капчи для пользователя."""
+
+    kind: CaptchaType = CaptchaType.SIMPLE_BUTTON
+    challenge_sent_message_id: Optional[int] = None
+    passed: bool = False
 
 
 class WelcomeConfig(BaseModel):
@@ -160,6 +167,7 @@ class TriggerType(str, Enum):
     CAPTCHA_FAILED = "captcha_failed"
     USER_MESSAGE = "user_message"
     USER_COMMAND = "user_command"
+    BUTTON_CLICK = "button_click"
 
 
 class ScheduleType(str, Enum):
@@ -183,15 +191,16 @@ class ScheduleConfig(BaseModel):
     repeat_count: Optional[int] = None
     points: Optional[List[TimePoint]] = None
     timezone: str = Field(default="UTC", description="IANA timezone, e.g. Europe/Moscow")
-    # Расширение для daily/weekly/monthly/weekdays
     daily_time: Optional[time] = None
-    weekly_days: Optional[List[int]] = None  # 0=Mon ... 6=Sun
-    monthly_days: Optional[List[int]] = None  # 1..31
+    weekly_days: Optional[List[int]] = None
+    monthly_days: Optional[List[int]] = None
 
 
 class SeriesStep(BaseModel):
     offset: timedelta
     message: DMTemplate
+    branch_on_click_data: Optional[str] = None
+    next_series_id: Optional[str] = None
 
 
 class SeriesCreate(BaseModel):
@@ -221,6 +230,8 @@ class StatsResponse(BaseModel):
     clicks_by_callback: Dict[str, int] = Field(default_factory=dict)
     total_users: int = 0
     blocked_users: int = 0
+    deliveries_ok: int = 0
+    deliveries_fail: int = 0
 
 
 class PreviewRequest(BaseModel):
@@ -244,6 +255,53 @@ class CommandsResponse(BaseModel):
     commands: Dict[str, DMTemplate] = Field(default_factory=dict)
 
 
+class ModerationRequest(BaseModel):
+    bot_id: str
+    chat_id: int | str
+    user_id: int
+    minutes: Optional[int] = Field(None, description="Длительность (для mute/ban)")
+    reason: Optional[str] = None
+
+
+class ApproveDeclineRequest(BaseModel):
+    bot_id: str
+    chat_id: int | str
+    user_id: int
+
+
+class WorkingChatsRequest(BaseModel):
+    bot_id: str
+    chat_ids: Optional[List[int | str]] = Field(None, description="Если пусто — все чаты")
+
+
+class ProfileUpdateRequest(BaseModel):
+    bot_id: str
+    name: Optional[str] = None
+    description: Optional[str] = None
+    photo_url: Optional[HttpUrl] = None
+
+
+class TemplateItem(BaseModel):
+    template_id: str
+    message: DMTemplate
+
+
+class DelayedTriggerConfig(BaseModel):
+    """Конфигурация отложенного триггера."""
+    trigger_type: TriggerType
+    delay_minutes: Optional[int] = None
+    delay_hours: Optional[int] = None
+    delay_days: Optional[int] = None
+    message: DMTemplate
+
+    @model_validator(mode="after")
+    def validate_delay(self) -> "DelayedTriggerConfig":
+        delays = [self.delay_minutes, self.delay_hours, self.delay_days]
+        if not any(d and d > 0 for d in delays):
+            raise ValueError("At least one delay (minutes/hours/days) must be specified")
+        return self
+
+
 __all__ = [
     "BotCreate",
     "BotUpdate",
@@ -264,6 +322,12 @@ __all__ = [
     "StatsResponse",
     "CommandItem",
     "CommandsResponse",
+    "ModerationRequest",
+    "ApproveDeclineRequest",
+    "WorkingChatsRequest",
+    "ProfileUpdateRequest",
+    "TemplateItem",
+    "DelayedTriggerConfig",
 ]
 
 

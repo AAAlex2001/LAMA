@@ -123,3 +123,4 @@ async def send_notification(data: PublicationNotificationCreate) -> PublicationN
         error_details=data.error_details,
     )
 
+
