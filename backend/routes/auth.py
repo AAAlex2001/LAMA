@@ -79,3 +79,4 @@ async def login_telegram(payload: TelegramAuthModel) -> TelegramAuthResponse:
     return TelegramAuthResponse(success=True, user_id=payload.id, token=token)
 
 
+

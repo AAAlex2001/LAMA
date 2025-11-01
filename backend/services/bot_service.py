@@ -35,6 +35,8 @@ class BotRecord:
         self.bot = bot
         self.username = username
         self.name = name
+        self.description: Optional[str] = None
+        self.photo_url: Optional[str] = None
         self.created_at = datetime.utcnow()
         self.welcome_config: WelcomeConfig = WelcomeConfig()
         self.description_suffix: Optional[str] = None
@@ -85,12 +87,30 @@ class BotService:
         record = self.require(bot_id)
         return self.to_response(record)
 
-    def update(self, bot_id: str, data: BotUpdate) -> BotResponse:
+    async def update(self, bot_id: str, data: BotUpdate) -> BotResponse:
         record = self.require(bot_id)
         if data.name is not None:
             record.name = data.name
+            # Update name via Telegram API
+            try:
+                await record.bot.set_my_name(name=data.name)
+            except Exception as e:
+                print(f"Failed to update bot name: {e}")  # Debug logging
+        if data.description is not None:
+            record.description = data.description
+            # Update description via Telegram API
+            try:
+                await record.bot.set_my_short_description(short_description=data.description)
+            except Exception as e:
+                print(f"Failed to update bot description: {e}")  # Debug logging
+        if data.photo_url is not None:
+            record.photo_url = str(data.photo_url)
+            # Note: Telegram Bot API doesn't support setting profile photo via URL directly
+            # This field is stored for reference, but photo update requires manual handling
         if data.welcome_enabled is not None:
             record.welcome_config.enabled = data.welcome_enabled
+        if data.welcome_config is not None:
+            record.welcome_config = data.welcome_config
         if data.auto_approve_mode is not None:
             record.welcome_config.mode = data.auto_approve_mode
             record.auto_approve_mode = data.auto_approve_mode
@@ -521,6 +541,8 @@ class BotService:
             id=record.id,
             username=record.username,
             name=record.name,
+            description=record.description,
+            photo_url=record.photo_url,
             created_at=record.created_at,
             welcome_enabled=record.welcome_config.enabled,
             auto_approve_mode=record.welcome_config.mode,

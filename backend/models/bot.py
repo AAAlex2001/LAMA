@@ -22,8 +22,13 @@ class BotUpdate(BaseModel):
     """Обновление параметров бота."""
 
     name: Optional[str] = Field(None, description="Имя бота")
+    description: Optional[str] = Field(None, description="Описание бота")
+    photo_url: Optional[HttpUrl] = Field(None, description="URL фото профиля бота")
     welcome_enabled: Optional[bool] = Field(
         None, description="Включить приветственного бота"
+    )
+    welcome_config: Optional[WelcomeConfig] = Field(
+        None, description="Полная конфигурация приветственного бота"
     )
     auto_approve_mode: Optional[Literal["auto", "manual", "rules"]] = None
     description_suffix: Optional[str] = Field(
@@ -41,6 +46,8 @@ class BotResponse(BaseModel):
     id: str = Field(..., description="Внутренний ID бота")
     username: str = Field(..., description="@username бота")
     name: Optional[str] = Field(None, description="Имя бота")
+    description: Optional[str] = Field(None, description="Описание бота")
+    photo_url: Optional[HttpUrl] = Field(None, description="URL фото профиля бота")
     created_at: datetime
     welcome_enabled: bool = False
     auto_approve_mode: Literal["auto", "manual", "rules"] = "manual"
@@ -138,7 +145,7 @@ class SendDMRequest(BaseModel):
 class SetWebhookRequest(BaseModel):
     """Настройка вебхука Telegram для бота (bot_id в пути)."""
 
-    url: HttpUrl
+    url: str
     secret_token: Optional[str] = None
 
 

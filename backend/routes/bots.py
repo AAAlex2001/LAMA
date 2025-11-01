@@ -16,6 +16,7 @@ from backend.models.bot import (
     BotCreate,
     BotUpdate,
     BotResponse,
+    WelcomeConfig,
     SendDMRequest,
     SetWebhookRequest,
     SendMessageRequest,
@@ -81,7 +82,7 @@ async def get_bot(bot_id: str, deps=Depends(get_services)) -> BotResponse:
 async def update_bot(bot_id: str, data: BotUpdate, deps=Depends(get_services)) -> BotResponse:
     bot_service, scheduler, _ = deps
     try:
-        resp = bot_service.update(bot_id, data)
+        resp = await bot_service.update(bot_id, data)
         if resp.description_suffix:
             scheduler.schedule_description_suffix_enforcement(resp.id)
         return resp
