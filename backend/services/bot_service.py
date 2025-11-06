@@ -417,10 +417,10 @@ class BotService:
 
                 msg = update.message
                 if msg is not None and msg.text:
-                text = msg.text.strip()
-                user_id = msg.from_user.id
-                await self.inbox_log(session, record.id, user_id, direction="in", text=text)
                     from sqlalchemy import and_
+                    text = msg.text.strip()
+                    user_id = msg.from_user.id
+                    await self.inbox_log(session, record.id, user_id, direction="in", text=text)
                     res = await session.execute(
                         select(BotCommandORM).where(and_(BotCommandORM.bot_id == record.id, BotCommandORM.command == text))
                     )
