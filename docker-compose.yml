@@ -8,6 +8,16 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-lama}
       POSTGRES_USER: ${POSTGRES_USER:-lama}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lama}
+    command: 
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=1GB"
+      - "-c"
+      - "work_mem=16MB"
     ports:
       - "5432:5432"
     volumes:

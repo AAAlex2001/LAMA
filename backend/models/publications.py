@@ -74,8 +74,8 @@ class Publication(Base):
     ai_generated = Column(Boolean, default=False)
     ai_prompt = Column(Text, nullable=True)
     
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     channels = relationship('Channel', secondary=publication_channels, back_populates='publications')
     tags = relationship('Tag', secondary=publication_tags, back_populates='publications')

@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from sqlalchemy import select, and_, or_, func, delete, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 import pytz
 import asyncio
 from aiogram import Bot
@@ -406,7 +407,14 @@ class PublicationService:
         
         if new_tags:
             self.db.add_all(new_tags)
-            await self.db.flush()
+            try:
+                await self.db.flush()
+            except IntegrityError:
+                await self.db.rollback()
+                query = select(Tag).where(Tag.name.in_(tag_names))
+                result = await self.db.execute(query)
+                existing_tags = {tag.name: tag for tag in result.scalars().all()}
+                tags = [existing_tags[name] for name in tag_names]
         
         return tags
 
@@ -600,6 +608,13 @@ class PublicationService:
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
     async def create_channel(self, telegram_id: str, name: str, username: Optional[str] = None) -> Channel:
+        query = select(Channel).where(Channel.telegram_id == telegram_id)
+        result = await self.db.execute(query)
+        existing = result.scalar_one_or_none()
+        
+        if existing:
+            return existing
+        
         channel = Channel(telegram_id=telegram_id, name=name, username=username)
         self.db.add(channel)
         await self.db.commit()
