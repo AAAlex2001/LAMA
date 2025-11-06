@@ -10,10 +10,27 @@ services:
       - .env
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - "8000:8000"
     restart: unless-stopped
     command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: lama-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-lama}
+      - POSTGRES_USER=${POSTGRES_USER:-lama}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-lama}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
 
 
 

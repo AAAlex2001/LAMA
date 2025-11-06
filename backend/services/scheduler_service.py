@@ -11,6 +11,7 @@ from typing import Dict, Optional
 from backend.services.telegram_service import TelegramService
 from backend.services.publication_service import PublicationService
 from backend.services.bot_service import BotService
+from backend.services.channel_service import ChannelService
 
 
 class SchedulerService:
@@ -22,6 +23,7 @@ class SchedulerService:
         self.publication_service = PublicationService()
         self.bot_service = bot_service
         self.scheduled_jobs: Dict[str, str] = {}
+        self.channel_service: ChannelService | None = None
 
     def start(self):
         """Запуск планировщика."""
@@ -236,6 +238,30 @@ class SchedulerService:
             channel_ids=channel_ids,
             publication_data=publication_data,
         )
+
+    # ==== Автосинхронизация каналов ====
+    def schedule_channels_auto_sync(self, interval_minutes: int = 10) -> None:
+        """Периодическая автосинхронизация каналов с auto_sync=True."""
+        self.scheduler.add_job(
+            self.execute_channels_auto_sync,
+            trigger=CronTrigger(minute=f"*/{interval_minutes}"),
+            id="channels_auto_sync",
+            replace_existing=True,
+        )
+
+    async def execute_channels_auto_sync(self) -> None:
+        if not self.channel_service:
+            return
+        try:
+            channels = await self.channel_service.list()
+            for ch in channels:
+                if ch.auto_sync:
+                    try:
+                        await self.channel_service.sync_channel(ch.id)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
 
 
 __all__ = ["SchedulerService"]

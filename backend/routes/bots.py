@@ -36,6 +36,7 @@ from backend.models.bot import (
     DelayedTriggerConfig,
 )
 from backend.services.bot_service import BotService
+from backend.services.channel_service import ChannelService
 from backend.services.websocket_service import WebSocketManager
 from backend.services.scheduler_service import SchedulerService
 
@@ -49,6 +50,10 @@ def get_services(request: Request) -> Tuple[BotService, SchedulerService, WebSoc
         request.app.state.scheduler_service,
         request.app.state.ws_manager,
     )
+
+
+def get_channel_service(request: Request) -> ChannelService:
+    return request.app.state.channel_service
 
 
 @router.post("", response_model=BotResponse, status_code=201)
@@ -112,10 +117,22 @@ async def send_dm(body: SendDMRequest, deps=Depends(get_services)) -> dict:
 
 
 @router.post("/{bot_id}/webhook")
-async def telegram_webhook(bot_id: str, request: Request, deps=Depends(get_services)) -> dict:
+async def telegram_webhook(
+    bot_id: str,
+    request: Request,
+    deps=Depends(get_services),
+    channel_service: ChannelService = Depends(get_channel_service),
+) -> dict:
     bot_service, _, _ = deps
     payload = await request.json()
-    return await bot_service.handle_webhook_update(bot_id, payload)
+    # Обрабатываем бот-события
+    result = await bot_service.handle_webhook_update(bot_id, payload)
+    # Сохраняем посты в бекап для связанных каналов
+    try:
+        await channel_service.process_telegram_update(bot_id, payload)
+    except Exception:
+        pass
+    return result
 
 
 @router.post("/{bot_id}/set-webhook")
