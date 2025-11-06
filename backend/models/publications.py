@@ -1,5 +1,5 @@
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table
+from datetime import datetime, timezone
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func
 from sqlalchemy.ext.asyncio import AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase, relationship
 import enum
@@ -13,6 +13,7 @@ class PublicationStatus(enum.Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
     PUBLISHED = "published"
+    PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
     DELETED = "deleted"
 
@@ -73,8 +74,8 @@ class Publication(Base):
     ai_generated = Column(Boolean, default=False)
     ai_prompt = Column(Text, nullable=True)
     
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     channels = relationship('Channel', secondary=publication_channels, back_populates='publications')
     tags = relationship('Tag', secondary=publication_tags, back_populates='publications')
@@ -89,7 +90,7 @@ class PublicationSeries(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', back_populates='series')
 
@@ -102,7 +103,7 @@ class Channel(Base):
     name = Column(String(255), nullable=False)
     username = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', secondary=publication_channels, back_populates='channels')
 
@@ -112,7 +113,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', secondary=publication_tags, back_populates='tags')
 
@@ -124,7 +125,7 @@ class TelegramMessage(Base):
     publication_id = Column(Integer, ForeignKey('publications.id', ondelete='CASCADE'), nullable=False)
     channel_id = Column(Integer, ForeignKey('channels.id', ondelete='CASCADE'), nullable=False)
     telegram_message_id = Column(Integer, nullable=False)
-    published_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    published_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publication = relationship('Publication', back_populates='telegram_messages')
     channel = relationship('Channel')
@@ -138,7 +139,7 @@ class PublicationNotification(Base):
     status = Column(String(50), nullable=False)
     message = Column(Text, nullable=False)
     error_details = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publication = relationship('Publication', back_populates='notifications')
 

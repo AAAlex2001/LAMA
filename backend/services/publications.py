@@ -1,12 +1,14 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, and_, or_, func, delete
+from sqlalchemy import select, and_, or_, func, delete, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 import pytz
+import asyncio
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramRetryAfter, TelegramBadRequest
 import httpx
 import json
 
@@ -27,6 +29,11 @@ class PublicationService:
         self.db = db
         self.bot = bot
         self.openai_api_key = openai_api_key
+        self.http_client = httpx.AsyncClient(
+            timeout=30.0,
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
+        )
+        self.telegram_semaphore = asyncio.Semaphore(10)
 
     async def create_publication(self, data: PublicationCreate) -> Publication:
         publication = Publication(
@@ -67,7 +74,7 @@ class PublicationService:
             selectinload(Publication.channels),
             selectinload(Publication.tags),
             selectinload(Publication.series),
-            selectinload(Publication.telegram_messages)
+            selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel)
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -111,10 +118,12 @@ class PublicationService:
         if tag_names:
             query = query.join(Publication.tags).where(Tag.name.in_(tag_names))
 
-        count_query = select(func.count()).select_from(query.subquery())
+        query = query.order_by(Publication.created_at.desc())
+
+        count_query = select(func.count(distinct(Publication.id))).select_from(query.subquery())
         total = await self.db.scalar(count_query) or 0
 
-        query = query.offset(skip).limit(limit).order_by(Publication.created_at.desc())
+        query = query.offset(skip).limit(limit)
         result = await self.db.execute(query)
         publications = result.unique().scalars().all()
 
@@ -173,48 +182,88 @@ class PublicationService:
         if not publication.channels:
             return {"success": False, "error": "No channels selected"}
 
-        results = []
-        for channel in publication.channels:
-            try:
-                message_id = await self.send_to_telegram(publication, channel)
-                
-                telegram_message = TelegramMessage(
-                    publication_id=publication.id,
-                    channel_id=channel.id,
-                    telegram_message_id=message_id
-                )
-                self.db.add(telegram_message)
+        async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
+            async with self.telegram_semaphore:
+                for attempt in range(5):
+                    try:
+                        message_id = await self.send_to_telegram(publication, channel)
+                        
+                        telegram_message = TelegramMessage(
+                            publication_id=publication.id,
+                            channel_id=channel.id,
+                            telegram_message_id=message_id
+                        )
+                        self.db.add(telegram_message)
+                        await self.db.flush()
 
-                if publication.pin_message:
-                    await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+                        if publication.pin_message:
+                            try:
+                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+                            except Exception:
+                                pass
 
-                results.append({"channel": channel.name, "success": True, "message_id": message_id})
+                        await self.create_notification(
+                            publication.id,
+                            "success",
+                            f"Published to {channel.name}"
+                        )
 
-                await self.create_notification(
-                    publication.id,
-                    "success",
-                    f"Published to {channel.name}"
-                )
+                        return {"channel": channel.name, "success": True, "message_id": message_id}
 
-            except Exception as e:
-                results.append({"channel": channel.name, "success": False, "error": str(e)})
-                await self.create_notification(
-                    publication.id,
-                    "error",
-                    f"Failed to publish to {channel.name}",
-                    {"error": str(e)}
-                )
+                    except TelegramRetryAfter as e:
+                        if attempt < 4:
+                            await asyncio.sleep(e.retry_after)
+                        else:
+                            await self.create_notification(
+                                publication.id,
+                                "error",
+                                f"Failed to publish to {channel.name}: Rate limit",
+                                {"error": str(e)}
+                            )
+                            return {"channel": channel.name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
 
-        publication.status = DBPublicationStatus.PUBLISHED
-        publication.published_time = datetime.utcnow()
+                    except Exception as e:
+                        if attempt == 4:
+                            await self.create_notification(
+                                publication.id,
+                                "error",
+                                f"Failed to publish to {channel.name}",
+                                {"error": str(e)}
+                            )
+                            return {"channel": channel.name, "success": False, "error": str(e)}
+                        await asyncio.sleep(2 ** attempt)
+
+        results = await asyncio.gather(*[safe_send_to_channel(ch) for ch in publication.channels], return_exceptions=False)
+
+        success_count = sum(1 for r in results if r.get("success"))
+        total_count = len(results)
+
+        if success_count == 0:
+            publication.status = DBPublicationStatus.FAILED
+        elif success_count == total_count:
+            publication.status = DBPublicationStatus.PUBLISHED
+            publication.published_time = datetime.now(timezone.utc)
+        else:
+            publication.status = DBPublicationStatus.PARTIAL_SUCCESS
+            publication.published_time = datetime.now(timezone.utc)
+
         await self.db.commit()
 
-        return {"success": True, "results": results}
+        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": total_count}
 
     async def send_to_telegram(self, publication: Publication, channel: Channel) -> int:
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
+
+        if publication.content_type == DBContentType.IMAGE and (not publication.media_urls or not publication.media_urls[0]):
+            raise ValueError("media_urls is required for IMAGE content type")
+        if publication.content_type == DBContentType.VIDEO and (not publication.media_urls or not publication.media_urls[0]):
+            raise ValueError("media_urls is required for VIDEO content type")
+        if publication.content_type == DBContentType.AUDIO and (not publication.media_urls or not publication.media_urls[0]):
+            raise ValueError("media_urls is required for AUDIO content type")
+        if publication.content_type == DBContentType.DOCUMENT and (not publication.media_urls or not publication.media_urls[0]):
+            raise ValueError("media_urls is required for DOCUMENT content type")
 
         if publication.content_type == DBContentType.TEXT:
             message = await self.bot.send_message(
@@ -255,7 +304,7 @@ class PublicationService:
         elif publication.content_type == DBContentType.IMAGE:
             message = await self.bot.send_photo(
                 chat_id=channel.telegram_id,
-                photo=publication.media_urls[0] if publication.media_urls else "",
+                photo=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -266,7 +315,7 @@ class PublicationService:
         elif publication.content_type == DBContentType.VIDEO:
             message = await self.bot.send_video(
                 chat_id=channel.telegram_id,
-                video=publication.media_urls[0] if publication.media_urls else "",
+                video=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -277,7 +326,7 @@ class PublicationService:
         elif publication.content_type == DBContentType.AUDIO:
             message = await self.bot.send_audio(
                 chat_id=channel.telegram_id,
-                audio=publication.media_urls[0] if publication.media_urls else "",
+                audio=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
@@ -287,7 +336,7 @@ class PublicationService:
         elif publication.content_type == DBContentType.DOCUMENT:
             message = await self.bot.send_document(
                 chat_id=channel.telegram_id,
-                document=publication.media_urls[0] if publication.media_urls else "",
+                document=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
@@ -340,18 +389,24 @@ class PublicationService:
         return list(result.scalars().all())
 
     async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
+        query = select(Tag).where(Tag.name.in_(tag_names))
+        result = await self.db.execute(query)
+        existing_tags = {tag.name: tag for tag in result.scalars().all()}
+        
         tags = []
+        new_tags = []
+        
         for name in tag_names:
-            query = select(Tag).where(Tag.name == name)
-            result = await self.db.execute(query)
-            tag = result.scalar_one_or_none()
-            
-            if not tag:
-                tag = Tag(name=name)
-                self.db.add(tag)
-                await self.db.flush()
-            
-            tags.append(tag)
+            if name in existing_tags:
+                tags.append(existing_tags[name])
+            else:
+                new_tag = Tag(name=name)
+                new_tags.append(new_tag)
+                tags.append(new_tag)
+        
+        if new_tags:
+            self.db.add_all(new_tags)
+            await self.db.flush()
         
         return tags
 
@@ -420,30 +475,28 @@ class PublicationService:
         if not self.openai_api_key:
             raise ValueError("AI API key not configured")
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.openai_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek-chat",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": f"You are a professional content creator for Telegram channels. Create content in {request.tone} tone. Maximum length: {request.max_length} characters. Write in Russian language."
-                        },
-                        {
-                            "role": "user",
-                            "content": request.prompt
-                        }
-                    ],
-                    "max_tokens": request.max_length,
-                    "temperature": 0.7
-                },
-                timeout=30.0
-            )
+        response = await self.http_client.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.openai_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": f"You are a professional content creator for Telegram channels. Create content in {request.tone} tone. Maximum length: {request.max_length} characters. Write in Russian language."
+                    },
+                    {
+                        "role": "user",
+                        "content": request.prompt
+                    }
+                ],
+                "max_tokens": request.max_length,
+                "temperature": 0.7
+            }
+        )
 
         if response.status_code != 200:
             raise ValueError(f"DeepSeek API error: {response.text}")
@@ -459,29 +512,27 @@ class PublicationService:
         if not self.openai_api_key:
             raise ValueError("AI API key not configured")
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.deepseek.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {self.openai_api_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "model": "deepseek-chat",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "You are a professional content editor for Telegram channels. Edit the content according to the instruction. Write in Russian language."
-                        },
-                        {
-                            "role": "user",
-                            "content": f"Original text: {publication.text_content}\n\nInstruction: {request.instruction}\n\nProvide only the edited text."
-                        }
-                    ],
-                    "temperature": 0.7
-                },
-                timeout=30.0
-            )
+        response = await self.http_client.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.openai_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a professional content editor for Telegram channels. Edit the content according to the instruction. Write in Russian language."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Original text: {publication.text_content}\n\nInstruction: {request.instruction}\n\nProvide only the edited text."
+                    }
+                ],
+                "temperature": 0.7
+            }
+        )
 
         if response.status_code != 200:
             raise ValueError(f"DeepSeek API error: {response.text}")
@@ -498,7 +549,7 @@ class PublicationService:
 
     async def edit_published_message(self, publication_id: int, new_text: str) -> Dict[str, Any]:
         publication = await self.get_publication(publication_id)
-        if not publication or publication.status != DBPublicationStatus.PUBLISHED:
+        if not publication or publication.status not in [DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]:
             return {"success": False, "error": "Publication not found or not published"}
 
         results = []
@@ -514,10 +565,14 @@ class PublicationService:
             except Exception as e:
                 results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
 
-        publication.text_content = new_text
+        success_count = sum(1 for r in results if r.get("success"))
+        
+        if success_count > 0:
+            publication.text_content = new_text
+        
         await self.db.commit()
 
-        return {"success": True, "results": results}
+        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
     async def delete_telegram_messages(self, publication_id: int) -> Dict[str, Any]:
         publication = await self.get_publication(publication_id)
@@ -535,10 +590,14 @@ class PublicationService:
             except Exception as e:
                 results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
 
-        publication.status = DBPublicationStatus.DELETED
+        success_count = sum(1 for r in results if r.get("success"))
+        
+        if success_count == len(results):
+            publication.status = DBPublicationStatus.DELETED
+        
         await self.db.commit()
 
-        return {"success": True, "results": results}
+        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
     async def create_channel(self, telegram_id: str, name: str, username: Optional[str] = None) -> Channel:
         channel = Channel(telegram_id=telegram_id, name=name, username=username)

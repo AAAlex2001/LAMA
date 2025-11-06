@@ -8,6 +8,7 @@ class PublicationStatus(str, Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
     PUBLISHED = "published"
+    PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
     DELETED = "deleted"
 
