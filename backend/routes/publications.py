@@ -1,168 +1,283 @@
-from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from typing import List, Optional
-from uuid import UUID
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from typing import Optional, List
+from datetime import datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-
-from app.models.publications import get_session, Publication, Channel
-from app.schemas.publications import (
-    PublicationCreate, PublicationRead, PublicationUpdate, ChannelCreate, ChannelRead,
-    EditRequest, CalendarEvent
+from backend.schemas.publications import (
+    PublicationCreate, PublicationUpdate, PublicationResponse,
+    PublicationListResponse, PublicationStatus, ContentType,
+    AIGenerateRequest, AIEditRequest, ChannelCreate, ChannelResponse,
+    PublicationSeriesCreate, PublicationSeriesResponse, NotificationResponse,
+    TagResponse, CalendarEntry
 )
-from app.services.publications import PublicationService, TelegramClient
-
-import os
-
-router = APIRouter(prefix="/api", tags=["publications"])
-
-def get_service(session: AsyncSession = Depends(get_session)) -> PublicationService:
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-    if not token:
-        raise HTTPException(500, "TELEGRAM_BOT_TOKEN is not configured")
-    tg = TelegramClient(token)
-    return PublicationService(session, tg)
+from backend.services.publications import PublicationService
 
 
-# --- Health ---
-
-@router.get("/health")
-async def health():
-    return {"status": "ok"}
+router = APIRouter(prefix="/publications", tags=["publications"])
 
 
-# --- Channels ---
-
-@router.post("/channels", response_model=ChannelRead)
-async def create_channel(body: ChannelCreate, service: PublicationService = Depends(get_service)):
-    ch = await service.create_channel(body.tg_chat_id, body.title, body.timezone, body.is_active)
-    await service.session.commit()
-    return ChannelRead(id=ch.id, tg_chat_id=ch.tg_chat_id, title=ch.title, timezone=ch.timezone, is_active=ch.is_active)
-
-@router.get("/channels", response_model=List[ChannelRead])
-async def list_channels(service: PublicationService = Depends(get_service)):
-    items = await service.list_channels()
-    return [ChannelRead(id=i.id, tg_chat_id=i.tg_chat_id, title=i.title, timezone=i.timezone, is_active=i.is_active) for i in items]
+async def get_publication_service():
+    pass
 
 
-# --- Publications CRUD ---
+@router.post("/", response_model=PublicationResponse, status_code=201)
+async def create_publication(
+    data: PublicationCreate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Создать новую публикацию (черновик)"""
+    try:
+        publication = await service.create_publication(data)
+        publication = await service.get_publication(publication.id)
+        return publication
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/publications", response_model=PublicationRead)
-async def create_publication(body: PublicationCreate, service: PublicationService = Depends(get_service)):
-    pub = await service.create_publication(body.model_dump())
-    await service.session.commit()
-    return PublicationRead(
-        id=pub.id, title=pub.title, content=pub.content, parse_mode=pub.parse_mode,
-        auto_pin=pub.auto_pin, auto_delete_hours=pub.auto_delete_hours, preview_only=pub.preview_only,
-        tz=pub.tz, tags=[t.name for t in pub.tags], status=pub.status.value,
-        scheduled_at=pub.scheduled_at, created_at=pub.created_at, updated_at=pub.updated_at, series_id=pub.series_id
+
+@router.get("/", response_model=PublicationListResponse)
+async def get_publications(
+    status: Optional[PublicationStatus] = None,
+    content_type: Optional[ContentType] = None,
+    channel_id: Optional[int] = None,
+    tag_names: Optional[List[str]] = Query(None),
+    series_id: Optional[int] = None,
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить список публикаций с фильтрацией"""
+    skip = (page - 1) * page_size
+    publications, total = await service.get_publications(
+        status=status,
+        content_type=content_type,
+        channel_id=channel_id,
+        tag_names=tag_names,
+        series_id=series_id,
+        start_date=start_date,
+        end_date=end_date,
+        skip=skip,
+        limit=page_size
+    )
+    
+    pages = (total + page_size - 1) // page_size
+    
+    return PublicationListResponse(
+        items=publications,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
     )
 
-@router.get("/publications", response_model=List[PublicationRead])
-async def list_publications(q: Optional[str] = None, tag: Optional[str] = None, service: PublicationService = Depends(get_service)):
-    items = await service.list_publications(q, tag)
-    return [PublicationRead(
-        id=i.id, title=i.title, content=i.content, parse_mode=i.parse_mode,
-        auto_pin=i.auto_pin, auto_delete_hours=i.auto_delete_hours, preview_only=i.preview_only,
-        tz=i.tz, tags=[t.name for t in i.tags], status=i.status.value,
-        scheduled_at=i.scheduled_at, created_at=i.created_at, updated_at=i.updated_at, series_id=i.series_id
-    ) for i in items]
 
-@router.get("/publications/{pid}", response_model=PublicationRead)
-async def get_publication(pid: UUID, service: PublicationService = Depends(get_service)):
-    pub = await service.get_publication(pid)
-    return PublicationRead(
-        id=pub.id, title=pub.title, content=pub.content, parse_mode=pub.parse_mode,
-        auto_pin=pub.auto_pin, auto_delete_hours=pub.auto_delete_hours, preview_only=pub.preview_only,
-        tz=pub.tz, tags=[t.name for t in pub.tags], status=pub.status.value,
-        scheduled_at=pub.scheduled_at, created_at=pub.created_at, updated_at=pub.updated_at, series_id=pub.series_id
+@router.get("/{publication_id}", response_model=PublicationResponse)
+async def get_publication(
+    publication_id: int,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить публикацию по ID"""
+    publication = await service.get_publication(publication_id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return publication
+
+
+@router.put("/{publication_id}", response_model=PublicationResponse)
+async def update_publication(
+    publication_id: int,
+    data: PublicationUpdate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Обновить публикацию"""
+    publication = await service.update_publication(publication_id, data)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await service.get_publication(publication.id)
+    return publication
+
+
+@router.delete("/{publication_id}", status_code=204)
+async def delete_publication(
+    publication_id: int,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Удалить публикацию"""
+    success = await service.delete_publication(publication_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Publication not found")
+
+
+@router.post("/{publication_id}/publish")
+async def publish_now(
+    publication_id: int,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Опубликовать сейчас"""
+    result = await service.publish_now(publication_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Publication failed"))
+    return result
+
+
+@router.post("/{publication_id}/reschedule", response_model=PublicationResponse)
+async def reschedule_publication(
+    publication_id: int,
+    new_time: datetime,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Перенести публикацию на другое время"""
+    publication = await service.reschedule_publication(publication_id, new_time)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await service.get_publication(publication.id)
+    return publication
+
+
+@router.post("/{publication_id}/edit-published")
+async def edit_published_message(
+    publication_id: int,
+    new_text: str,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Редактировать уже опубликованное сообщение через Telegram API"""
+    result = await service.edit_published_message(publication_id, new_text)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Edit failed"))
+    return result
+
+
+@router.delete("/{publication_id}/telegram-messages")
+async def delete_telegram_messages(
+    publication_id: int,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Удалить опубликованные сообщения из Telegram"""
+    result = await service.delete_telegram_messages(publication_id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Delete failed"))
+    return result
+
+
+@router.get("/calendar/{year}/{month}")
+async def get_calendar(
+    year: int = Path(...),
+    month: int = Path(..., ge=1, le=12),
+    timezone: str = Query("UTC"),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить календарь публикаций за месяц"""
+    calendar_data = await service.get_calendar(year, month, timezone)
+    
+    entries = []
+    for date_str, publications in calendar_data.items():
+        entries.append(CalendarEntry(date=date_str, publications=publications))
+    
+    return {"calendar": entries}
+
+
+@router.post("/ai/generate")
+async def generate_content_with_ai(
+    request: AIGenerateRequest,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Сгенерировать контент с помощью AI"""
+    try:
+        content = await service.generate_with_ai(request)
+        return {"content": content}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/ai/edit", response_model=PublicationResponse)
+async def edit_content_with_ai(
+    request: AIEditRequest,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Редактировать контент с помощью AI"""
+    try:
+        publication = await service.edit_with_ai(request)
+        if not publication:
+            raise HTTPException(status_code=404, detail="Publication not found")
+        publication = await service.get_publication(publication.id)
+        return publication
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/channels", response_model=ChannelResponse, status_code=201)
+async def create_channel(
+    data: ChannelCreate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Создать канал для публикаций"""
+    channel = await service.create_channel(
+        telegram_id=data.telegram_id,
+        name=data.name,
+        username=data.username
+    )
+    return channel
+
+
+@router.post("/series", response_model=PublicationSeriesResponse, status_code=201)
+async def create_series(
+    data: PublicationSeriesCreate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Создать серию публикаций"""
+    series = await service.create_series(
+        name=data.name,
+        description=data.description
+    )
+    return series
+
+
+@router.get("/drafts", response_model=PublicationListResponse)
+async def get_drafts(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить все черновики"""
+    skip = (page - 1) * page_size
+    publications, total = await service.get_publications(
+        status=PublicationStatus.DRAFT,
+        skip=skip,
+        limit=page_size
+    )
+    
+    pages = (total + page_size - 1) // page_size
+    
+    return PublicationListResponse(
+        items=publications,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
     )
 
-@router.patch("/publications/{pid}", response_model=PublicationRead)
-async def update_publication(pid: UUID, body: PublicationUpdate, service: PublicationService = Depends(get_service)):
-    pub = await service.update_publication(pid, body.model_dump(exclude_unset=True))
-    await service.session.commit()
-    return PublicationRead(
-        id=pub.id, title=pub.title, content=pub.content, parse_mode=pub.parse_mode,
-        auto_pin=pub.auto_pin, auto_delete_hours=pub.auto_delete_hours, preview_only=pub.preview_only,
-        tz=pub.tz, tags=[t.name for t in pub.tags], status=pub.status.value,
-        scheduled_at=pub.scheduled_at, created_at=pub.created_at, updated_at=pub.updated_at, series_id=pub.series_id
+
+@router.get("/scheduled", response_model=PublicationListResponse)
+async def get_scheduled(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить все запланированные публикации"""
+    skip = (page - 1) * page_size
+    publications, total = await service.get_publications(
+        status=PublicationStatus.SCHEDULED,
+        skip=skip,
+        limit=page_size
+    )
+    
+    pages = (total + page_size - 1) // page_size
+    
+    return PublicationListResponse(
+        items=publications,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
     )
 
-@router.delete("/publications/{pid}")
-async def delete_publication(pid: UUID, service: PublicationService = Depends(get_service)):
-    await service.delete_publication(pid)
-    await service.session.commit()
-    return {"ok": True}
-
-
-# --- Preview, Publish now, Edit, Calendar, TZ, AI ---
-
-@router.post("/publications/{pid}/preview")
-async def preview_publication(pid: UUID, service: PublicationService = Depends(get_service)):
-    ids = await service.preview_publication(pid)
-    await service.session.commit()
-    return {"message_ids": ids}
-
-@router.post("/publications/{pid}/publish-now")
-async def publish_now(pid: UUID, service: PublicationService = Depends(get_service)):
-    pub = await service.get_publication(pid)
-    targets = pub.targets
-    sent = []
-    for t in targets:
-        ch = (await service.session.execute(select(Channel).where(Channel.id == t.channel_id))).scalar_one()
-        ids = await service.publish_target(t, ch, pub)
-        sent.append({"channel_id": str(ch.id), "message_ids": ids})
-    pub.status = "published"
-    await service.session.commit()
-    return {"results": sent}
-
-@router.post("/publications/{pid}/schedule-delete")
-async def schedule_delete(pid: UUID, hours: int = Query(24, ge=1), service: PublicationService = Depends(get_service)):
-    pub = await service.get_publication(pid)
-    for t in pub.targets:
-        if t.message_ids:
-            when = datetime.now(tz=timezone.utc) + timedelta(hours=hours)
-            for _ in t.message_ids:
-                service.session.add(
-                    ScheduledTask(action=TaskAction.delete, publication_id=pub.id, target_id=t.id, channel_id=t.channel_id, run_at=when)
-                )
-    await service.session.commit()
-    return {"ok": True}
-
-@router.post("/publications/{pid}/edit")
-async def edit_publication(pid: UUID, body: EditRequest, service: PublicationService = Depends(get_service)):
-    await service.edit_published(pid, body.channel_id, body.message_index, body.new_text, body.new_caption, body.parse_mode)
-    await service.session.commit()
-    return {"ok": True}
-
-@router.get("/calendar", response_model=List[CalendarEvent])
-async def get_calendar(service: PublicationService = Depends(get_service)):
-    events = await service.calendar_events()
-    return events
-
-@router.patch("/calendar/{pid}/reschedule")
-async def reschedule(pid: UUID, new_dt: datetime, service: PublicationService = Depends(get_service)):
-    pub = await service.get_publication(pid)
-    pub.scheduled_at = new_dt
-    await service.session.execute(
-        update(Publication).where(Publication.id == pid).values(scheduled_at=new_dt)
-    )
-    # refresh publish tasks
-    await service.session.execute(
-        delete(ScheduledTask).where(ScheduledTask.publication_id == pid, ScheduledTask.action == TaskAction.publish, ScheduledTask.status == TaskStatus.pending)
-    )
-    await service.schedule_publish_tasks(pub)
-    await service.session.commit()
-    return {"ok": True}
-
-@router.get("/tz/resolve")
-async def tz_resolve(lat: float, lon: float, service: PublicationService = Depends(get_service)):
-    tz_name = service.resolve_timezone_by_geo(lat, lon)
-    return {"timezone": tz_name}
-
-@router.post("/ai/suggest")
-async def ai_suggest(text: str, instruction: Optional[str] = None, service: PublicationService = Depends(get_service)):
-    improved = await service.ai_suggest(text, instruction)
-    return {"text": improved}

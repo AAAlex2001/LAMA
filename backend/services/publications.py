@@ -1,512 +1,556 @@
-from __future__ import annotations
-import os
-import json
-import asyncio
-from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Tuple
-from uuid import UUID
-
-import httpx
-from dateutil import tz
-from timezonefinder import TimezoneFinder
-
-from sqlalchemy import select, update, delete, and_, or_
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict, Any
+from sqlalchemy import select, and_, or_, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+import pytz
+from aiogram import Bot
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
+from aiogram.enums import ParseMode
+import httpx
+import json
 
-from app.models.publications import (
-    Publication, Channel, PublicationTarget, Tag, PublicationTag,
-    ScheduledTask, TaskAction, TaskStatus, PublicationStatus
+from backend.models.publications import (
+    Publication, Channel, Tag, PublicationSeries,
+    TelegramMessage, PublicationNotification,
+    PublicationStatus as DBPublicationStatus,
+    ContentType as DBContentType
+)
+from backend.schemas.publications import (
+    PublicationCreate, PublicationUpdate, PublicationStatus,
+    ContentType, InlineKeyboard, AIGenerateRequest, AIEditRequest
 )
 
-# -------------------------
-# Telegram HTTP API client
-# -------------------------
-
-class TelegramClient:
-    def __init__(self, token: str):
-        self.base = f"https://api.telegram.org/bot{token}"
-        self.client = httpx.AsyncClient(timeout=30)
-
-    async def send_message(self, chat_id: int, text: str, parse_mode: Optional[str], reply_markup: Optional[dict], disable_web_page_preview: bool = False) -> int:
-        payload = {"chat_id": chat_id, "text": text, "disable_web_page_preview": disable_web_page_preview}
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        r = await self.client.post(f"{self.base}/sendMessage", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def send_photo(self, chat_id: int, media: str, caption: Optional[str], parse_mode: Optional[str], has_spoiler: bool, reply_markup: Optional[dict]) -> int:
-        payload = {"chat_id": chat_id, "photo": media, "has_spoiler": has_spoiler}
-        if caption:
-            payload["caption"] = caption
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        r = await self.client.post(f"{self.base}/sendPhoto", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def send_video(self, chat_id: int, media: str, caption: Optional[str], parse_mode: Optional[str], has_spoiler: bool, reply_markup: Optional[dict], duration: Optional[int], width: Optional[int], height: Optional[int]) -> int:
-        payload = {"chat_id": chat_id, "video": media, "has_spoiler": has_spoiler}
-        if caption:
-            payload["caption"] = caption
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        if duration:
-            payload["duration"] = duration
-        if width:
-            payload["width"] = width
-        if height:
-            payload["height"] = height
-        r = await self.client.post(f"{self.base}/sendVideo", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def send_audio(self, chat_id: int, media: str, caption: Optional[str], parse_mode: Optional[str], reply_markup: Optional[dict], duration: Optional[int]) -> int:
-        payload = {"chat_id": chat_id, "audio": media}
-        if caption:
-            payload["caption"] = caption
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        if duration:
-            payload["duration"] = duration
-        r = await self.client.post(f"{self.base}/sendAudio", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def send_document(self, chat_id: int, media: str, caption: Optional[str], parse_mode: Optional[str], reply_markup: Optional[dict]) -> int:
-        payload = {"chat_id": chat_id, "document": media}
-        if caption:
-            payload["caption"] = caption
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        r = await self.client.post(f"{self.base}/sendDocument", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def send_poll(self, chat_id: int, question: str, options: List[str], is_anonymous: bool, allows_multiple_answers: bool, is_quiz: bool, correct_option_id: Optional[int], explanation: Optional[str], reply_markup: Optional[dict]) -> int:
-        payload = {
-            "chat_id": chat_id,
-            "question": question,
-            "options": options,
-            "is_anonymous": is_anonymous,
-            "allows_multiple_answers": allows_multiple_answers
-        }
-        if is_quiz:
-            payload["type"] = "quiz"
-        if correct_option_id is not None:
-            payload["correct_option_id"] = correct_option_id
-        if explanation:
-            payload["explanation"] = explanation
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        r = await self.client.post(f"{self.base}/sendPoll", json=payload)
-        r.raise_for_status()
-        return r.json()["result"]["message_id"]
-
-    async def pin(self, chat_id: int, message_id: int) -> None:
-        payload = {"chat_id": chat_id, "message_id": message_id, "disable_notification": True}
-        r = await self.client.post(f"{self.base}/pinChatMessage", json=payload)
-        r.raise_for_status()
-
-    async def edit_text(self, chat_id: int, message_id: int, new_text: str, parse_mode: Optional[str]) -> None:
-        payload = {"chat_id": chat_id, "message_id": message_id, "text": new_text}
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        r = await self.client.post(f"{self.base}/editMessageText", json=payload)
-        r.raise_for_status()
-
-    async def edit_caption(self, chat_id: int, message_id: int, new_caption: str, parse_mode: Optional[str]) -> None:
-        payload = {"chat_id": chat_id, "message_id": message_id, "caption": new_caption}
-        if parse_mode:
-            payload["parse_mode"] = parse_mode
-        r = await self.client.post(f"{self.base}/editMessageCaption", json=payload)
-        r.raise_for_status()
-
-    async def delete_message(self, chat_id: int, message_id: int) -> None:
-        r = await self.client.post(f"{self.base}/deleteMessage", json={"chat_id": chat_id, "message_id": message_id})
-        r.raise_for_status()
-
-    async def close(self) -> None:
-        await self.client.aclose()
-
-
-def build_reply_markup(buttons: Optional[dict]) -> Optional[dict]:
-    if not buttons:
-        return None
-    rows = []
-    for row in buttons.get("rows", []):
-        rows.append([b for b in ({"text": btn["text"], **({ "url": btn["url"] } if btn.get("url") else {}), **({"callback_data": btn["callback_data"]} if btn.get("callback_data") else {}), **({"switch_inline_query": btn["switch_inline_query"]} if btn.get("switch_inline_query") else {})} for btn in row)])
-    return {"inline_keyboard": rows} if rows else None
-
-
-# -------------------------
-# Utilities
-# -------------------------
-
-def to_aware(dt: datetime, tz_name: str) -> datetime:
-    if dt.tzinfo is None:
-        tzinfo = tz.gettz(tz_name)
-        return dt.replace(tzinfo=tzinfo)
-    return dt
-
-
-async def ensure_tags(session: AsyncSession, tag_names: List[str]) -> List[Tag]:
-    if not tag_names:
-        return []
-    existing = (await session.execute(select(Tag).where(Tag.name.in_(tag_names)))).scalars().all()
-    existing_names = {t.name for t in existing}
-    new_tags = [Tag(name=name) for name in tag_names if name not in existing_names]
-    session.add_all(new_tags)
-    await session.flush()
-    return list(existing) + new_tags
-
-
-# -------------------------
-# CRUD + Scheduling Service
-# -------------------------
 
 class PublicationService:
-    def __init__(self, session: AsyncSession, tg: TelegramClient):
-        self.session = session
-        self.tg = tg
-        self.admin_chat_id = int(os.getenv("ADMIN_CHAT_ID", "0")) or None
-        self.preview_chat_id = int(os.getenv("PREVIEW_CHAT_ID", "0")) or None
+    def __init__(self, db: AsyncSession, bot: Bot, openai_api_key: Optional[str] = None):
+        self.db = db
+        self.bot = bot
+        self.openai_api_key = openai_api_key
 
-    async def create_channel(self, tg_chat_id: int, title: str, timezone_str: str, is_active: bool) -> Channel:
-        channel = Channel(tg_chat_id=tg_chat_id, title=title, timezone=timezone_str, is_active=is_active)
-        self.session.add(channel)
-        await self.session.flush()
+    async def create_publication(self, data: PublicationCreate) -> Publication:
+        publication = Publication(
+            content_type=DBContentType[data.content_type.value.upper()],
+            status=DBPublicationStatus.DRAFT,
+            text_content=data.text_content,
+            formatted_content=data.formatted_content,
+            media_urls=data.media_urls,
+            media_blur=data.media_blur,
+            inline_keyboard=data.inline_keyboard.model_dump() if data.inline_keyboard else None,
+            poll_data=data.poll_data.model_dump() if data.poll_data else None,
+            pin_message=data.pin_message,
+            auto_delete_hours=data.auto_delete_hours,
+            scheduled_time=data.scheduled_time,
+            timezone=data.timezone,
+            series_id=data.series_id,
+            series_order=data.series_order,
+            ai_generated=bool(data.ai_prompt),
+            ai_prompt=data.ai_prompt
+        )
+
+        if data.channel_ids:
+            channels = await self.get_channels_by_ids(data.channel_ids)
+            publication.channels = channels
+
+        if data.tag_names:
+            tags = await self.get_or_create_tags(data.tag_names)
+            publication.tags = tags
+
+        self.db.add(publication)
+        await self.db.commit()
+        await self.db.refresh(publication)
+        
+        return publication
+
+    async def get_publication(self, publication_id: int) -> Optional[Publication]:
+        query = select(Publication).where(Publication.id == publication_id).options(
+            selectinload(Publication.channels),
+            selectinload(Publication.tags),
+            selectinload(Publication.series),
+            selectinload(Publication.telegram_messages)
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def get_publications(
+        self,
+        status: Optional[PublicationStatus] = None,
+        content_type: Optional[ContentType] = None,
+        channel_id: Optional[int] = None,
+        tag_names: Optional[List[str]] = None,
+        series_id: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> tuple[List[Publication], int]:
+        query = select(Publication).options(
+            selectinload(Publication.channels),
+            selectinload(Publication.tags),
+            selectinload(Publication.series)
+        )
+
+        filters = []
+        if status:
+            filters.append(Publication.status == DBPublicationStatus[status.value.upper()])
+        if content_type:
+            filters.append(Publication.content_type == DBContentType[content_type.value.upper()])
+        if series_id:
+            filters.append(Publication.series_id == series_id)
+        if start_date:
+            filters.append(Publication.scheduled_time >= start_date)
+        if end_date:
+            filters.append(Publication.scheduled_time <= end_date)
+
+        if filters:
+            query = query.where(and_(*filters))
+
+        if channel_id:
+            query = query.join(Publication.channels).where(Channel.id == channel_id)
+
+        if tag_names:
+            query = query.join(Publication.tags).where(Tag.name.in_(tag_names))
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total = await self.db.scalar(count_query) or 0
+
+        query = query.offset(skip).limit(limit).order_by(Publication.created_at.desc())
+        result = await self.db.execute(query)
+        publications = result.unique().scalars().all()
+
+        return list(publications), total
+
+    async def update_publication(self, publication_id: int, data: PublicationUpdate) -> Optional[Publication]:
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return None
+
+        update_data = data.model_dump(exclude_unset=True)
+        
+        if 'channel_ids' in update_data:
+            channels = await self.get_channels_by_ids(update_data.pop('channel_ids'))
+            publication.channels = channels
+
+        if 'tag_names' in update_data:
+            tags = await self.get_or_create_tags(update_data.pop('tag_names'))
+            publication.tags = tags
+
+        if 'inline_keyboard' in update_data and update_data['inline_keyboard']:
+            update_data['inline_keyboard'] = update_data['inline_keyboard'].model_dump() if hasattr(update_data['inline_keyboard'], 'model_dump') else update_data['inline_keyboard']
+
+        if 'poll_data' in update_data and update_data['poll_data']:
+            update_data['poll_data'] = update_data['poll_data'].model_dump() if hasattr(update_data['poll_data'], 'model_dump') else update_data['poll_data']
+
+        if 'content_type' in update_data:
+            update_data['content_type'] = DBContentType[update_data['content_type'].value.upper()]
+
+        if 'status' in update_data:
+            update_data['status'] = DBPublicationStatus[update_data['status'].value.upper()]
+
+        for key, value in update_data.items():
+            setattr(publication, key, value)
+
+        publication.updated_at = datetime.utcnow()
+        await self.db.commit()
+        await self.db.refresh(publication)
+
+        return publication
+
+    async def delete_publication(self, publication_id: int) -> bool:
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return False
+
+        await self.db.delete(publication)
+        await self.db.commit()
+        return True
+
+    async def publish_now(self, publication_id: int) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return {"success": False, "error": "Publication not found"}
+
+        if not publication.channels:
+            return {"success": False, "error": "No channels selected"}
+
+        results = []
+        for channel in publication.channels:
+            try:
+                message_id = await self.send_to_telegram(publication, channel)
+                
+                telegram_message = TelegramMessage(
+                    publication_id=publication.id,
+                    channel_id=channel.id,
+                    telegram_message_id=message_id
+                )
+                self.db.add(telegram_message)
+
+                if publication.pin_message:
+                    await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+
+                results.append({"channel": channel.name, "success": True, "message_id": message_id})
+
+                await self.create_notification(
+                    publication.id,
+                    "success",
+                    f"Published to {channel.name}"
+                )
+
+            except Exception as e:
+                results.append({"channel": channel.name, "success": False, "error": str(e)})
+                await self.create_notification(
+                    publication.id,
+                    "error",
+                    f"Failed to publish to {channel.name}",
+                    {"error": str(e)}
+                )
+
+        publication.status = DBPublicationStatus.PUBLISHED
+        publication.published_time = datetime.utcnow()
+        await self.db.commit()
+
+        return {"success": True, "results": results}
+
+    async def send_to_telegram(self, publication: Publication, channel: Channel) -> int:
+        keyboard = None
+        if publication.inline_keyboard:
+            keyboard = self.build_inline_keyboard(publication.inline_keyboard)
+
+        if publication.content_type == DBContentType.TEXT:
+            message = await self.bot.send_message(
+                chat_id=channel.telegram_id,
+                text=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
+            )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
+            if publication.media_urls and len(publication.media_urls) > 0:
+                spoiler = publication.media_blur
+                if len(publication.media_urls) == 1:
+                    message = await self.bot.send_photo(
+                        chat_id=channel.telegram_id,
+                        photo=publication.media_urls[0],
+                        caption=publication.text_content,
+                        reply_markup=keyboard,
+                        parse_mode=ParseMode.HTML,
+                        has_spoiler=spoiler
+                    )
+                else:
+                    media = [InputMediaPhoto(media=url, has_spoiler=spoiler) for url in publication.media_urls[:10]]
+                    if publication.text_content:
+                        media[0].caption = publication.text_content
+                    messages = await self.bot.send_media_group(chat_id=channel.telegram_id, media=media)
+                    message = messages[0]
+            else:
+                message = await self.bot.send_message(
+                    chat_id=channel.telegram_id,
+                    text=publication.text_content,
+                    reply_markup=keyboard,
+                    parse_mode=ParseMode.HTML
+                )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.IMAGE:
+            message = await self.bot.send_photo(
+                chat_id=channel.telegram_id,
+                photo=publication.media_urls[0] if publication.media_urls else "",
+                caption=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+                has_spoiler=publication.media_blur
+            )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.VIDEO:
+            message = await self.bot.send_video(
+                chat_id=channel.telegram_id,
+                video=publication.media_urls[0] if publication.media_urls else "",
+                caption=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+                has_spoiler=publication.media_blur
+            )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.AUDIO:
+            message = await self.bot.send_audio(
+                chat_id=channel.telegram_id,
+                audio=publication.media_urls[0] if publication.media_urls else "",
+                caption=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
+            )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.DOCUMENT:
+            message = await self.bot.send_document(
+                chat_id=channel.telegram_id,
+                document=publication.media_urls[0] if publication.media_urls else "",
+                caption=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
+            )
+            return message.message_id
+
+        elif publication.content_type == DBContentType.LINK:
+            message = await self.bot.send_message(
+                chat_id=channel.telegram_id,
+                text=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+                disable_web_page_preview=False
+            )
+            return message.message_id
+
+        elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
+            poll_data = publication.poll_data
+            message = await self.bot.send_poll(
+                chat_id=channel.telegram_id,
+                question=poll_data['question'],
+                options=poll_data['options'],
+                is_anonymous=poll_data.get('is_anonymous', True),
+                type='quiz' if publication.content_type == DBContentType.QUIZ else 'regular',
+                allows_multiple_answers=poll_data.get('allows_multiple_answers', False),
+                correct_option_id=poll_data.get('correct_option_id'),
+                explanation=poll_data.get('explanation'),
+                reply_markup=keyboard
+            )
+            return message.message_id
+
+        return 0
+
+    def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+        for row in keyboard_data.get('buttons', []):
+            button_row = []
+            for btn in row:
+                if btn.get('url'):
+                    button_row.append(InlineKeyboardButton(text=btn['text'], url=btn['url']))
+                elif btn.get('callback_data'):
+                    button_row.append(InlineKeyboardButton(text=btn['text'], callback_data=btn['callback_data']))
+            if button_row:
+                keyboard.inline_keyboard.append(button_row)
+        return keyboard
+
+    async def get_channels_by_ids(self, channel_ids: List[int]) -> List[Channel]:
+        query = select(Channel).where(Channel.id.in_(channel_ids))
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
+        tags = []
+        for name in tag_names:
+            query = select(Tag).where(Tag.name == name)
+            result = await self.db.execute(query)
+            tag = result.scalar_one_or_none()
+            
+            if not tag:
+                tag = Tag(name=name)
+                self.db.add(tag)
+                await self.db.flush()
+            
+            tags.append(tag)
+        
+        return tags
+
+    async def create_notification(
+        self,
+        publication_id: int,
+        status: str,
+        message: str,
+        error_details: Optional[Dict] = None
+    ):
+        notification = PublicationNotification(
+            publication_id=publication_id,
+            status=status,
+            message=message,
+            error_details=error_details
+        )
+        self.db.add(notification)
+        await self.db.flush()
+
+    async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
+        tz = pytz.timezone(timezone_str)
+        start_date = datetime(year, month, 1, tzinfo=pytz.UTC)
+        
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1, tzinfo=pytz.UTC)
+        else:
+            end_date = datetime(year, month + 1, 1, tzinfo=pytz.UTC)
+
+        query = select(Publication).where(
+            and_(
+                Publication.scheduled_time >= start_date,
+                Publication.scheduled_time < end_date,
+                Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED])
+            )
+        ).options(
+            selectinload(Publication.channels),
+            selectinload(Publication.tags)
+        ).order_by(Publication.scheduled_time)
+
+        result = await self.db.execute(query)
+        publications = result.scalars().all()
+
+        calendar_dict = {}
+        for pub in publications:
+            pub_time = pub.scheduled_time.astimezone(tz)
+            date_key = pub_time.strftime('%Y-%m-%d')
+            if date_key not in calendar_dict:
+                calendar_dict[date_key] = []
+            calendar_dict[date_key].append(pub)
+
+        return calendar_dict
+
+    async def reschedule_publication(self, publication_id: int, new_time: datetime) -> Optional[Publication]:
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return None
+
+        publication.scheduled_time = new_time
+        publication.status = DBPublicationStatus.SCHEDULED
+        await self.db.commit()
+        await self.db.refresh(publication)
+
+        return publication
+
+    async def generate_with_ai(self, request: AIGenerateRequest) -> str:
+        if not self.openai_api_key:
+            raise ValueError("AI API key not configured")
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.openai_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": f"You are a professional content creator for Telegram channels. Create content in {request.tone} tone. Maximum length: {request.max_length} characters. Write in Russian language."
+                        },
+                        {
+                            "role": "user",
+                            "content": request.prompt
+                        }
+                    ],
+                    "max_tokens": request.max_length,
+                    "temperature": 0.7
+                },
+                timeout=30.0
+            )
+
+        if response.status_code != 200:
+            raise ValueError(f"DeepSeek API error: {response.text}")
+
+        result = response.json()
+        return result['choices'][0]['message']['content']
+
+    async def edit_with_ai(self, request: AIEditRequest) -> Optional[Publication]:
+        publication = await self.get_publication(request.publication_id)
+        if not publication or not publication.text_content:
+            return None
+
+        if not self.openai_api_key:
+            raise ValueError("AI API key not configured")
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.openai_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": "You are a professional content editor for Telegram channels. Edit the content according to the instruction. Write in Russian language."
+                        },
+                        {
+                            "role": "user",
+                            "content": f"Original text: {publication.text_content}\n\nInstruction: {request.instruction}\n\nProvide only the edited text."
+                        }
+                    ],
+                    "temperature": 0.7
+                },
+                timeout=30.0
+            )
+
+        if response.status_code != 200:
+            raise ValueError(f"DeepSeek API error: {response.text}")
+
+        result = response.json()
+        edited_content = result['choices'][0]['message']['content']
+        
+        publication.text_content = edited_content
+        publication.ai_generated = True
+        await self.db.commit()
+        await self.db.refresh(publication)
+
+        return publication
+
+    async def edit_published_message(self, publication_id: int, new_text: str) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id)
+        if not publication or publication.status != DBPublicationStatus.PUBLISHED:
+            return {"success": False, "error": "Publication not found or not published"}
+
+        results = []
+        for tg_msg in publication.telegram_messages:
+            try:
+                await self.bot.edit_message_text(
+                    chat_id=tg_msg.channel.telegram_id,
+                    message_id=tg_msg.telegram_message_id,
+                    text=new_text,
+                    parse_mode=ParseMode.HTML
+                )
+                results.append({"channel": tg_msg.channel.name, "success": True})
+            except Exception as e:
+                results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
+
+        publication.text_content = new_text
+        await self.db.commit()
+
+        return {"success": True, "results": results}
+
+    async def delete_telegram_messages(self, publication_id: int) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return {"success": False, "error": "Publication not found"}
+
+        results = []
+        for tg_msg in publication.telegram_messages:
+            try:
+                await self.bot.delete_message(
+                    chat_id=tg_msg.channel.telegram_id,
+                    message_id=tg_msg.telegram_message_id
+                )
+                results.append({"channel": tg_msg.channel.name, "success": True})
+            except Exception as e:
+                results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
+
+        publication.status = DBPublicationStatus.DELETED
+        await self.db.commit()
+
+        return {"success": True, "results": results}
+
+    async def create_channel(self, telegram_id: str, name: str, username: Optional[str] = None) -> Channel:
+        channel = Channel(telegram_id=telegram_id, name=name, username=username)
+        self.db.add(channel)
+        await self.db.commit()
+        await self.db.refresh(channel)
         return channel
 
-    async def list_channels(self) -> List[Channel]:
-        return (await self.session.execute(select(Channel).order_by(Channel.created_at.desc()))).scalars().all()
+    async def create_series(self, name: str, description: Optional[str] = None) -> PublicationSeries:
+        series = PublicationSeries(name=name, description=description)
+        self.db.add(series)
+        await self.db.commit()
+        await self.db.refresh(series)
+        return series
 
-    async def create_publication(self, data: dict) -> Publication:
-        tags = await ensure_tags(self.session, data.get("tags", []))
-        publication = Publication(
-            title=data.get("title", ""),
-            content=[c for c in data.get("content", [])],
-            parse_mode=data.get("parse_mode", "HTML"),
-            auto_pin=bool(data.get("auto_pin", False)),
-            auto_delete_hours=data.get("auto_delete_hours"),
-            preview_only=bool(data.get("preview_only", False)),
-            tz=data.get("tz") or os.getenv("TZ_DEFAULT", "Europe/Riga"),
-            status=PublicationStatus.draft,
-        )
-        self.session.add(publication)
-        await self.session.flush()
-
-        publication.tags = tags
-
-        channel_ids = data.get("target_channel_ids") or []
-        if channel_ids:
-            channels = (await self.session.execute(select(Channel).where(Channel.id.in_(channel_ids)))).scalars().all()
-            for ch in channels:
-                self.session.add(PublicationTarget(publication_id=publication.id, channel_id=ch.id, status=PublicationStatus.scheduled))
-
-        scheduled_at = data.get("scheduled_at")
-        series_dates = data.get("series_dates")
-        # базовое планирование
-        if scheduled_at:
-            publication.scheduled_at = to_aware(scheduled_at, publication.tz)
-            publication.status = PublicationStatus.scheduled
-            await self.schedule_publish_tasks(publication)
-
-        # сериал публикаций
-        if series_dates:
-            for dtm in series_dates:
-                clone = Publication(
-                    title=publication.title,
-                    content=publication.content,
-                    parse_mode=publication.parse_mode,
-                    auto_pin=publication.auto_pin,
-                    auto_delete_hours=publication.auto_delete_hours,
-                    preview_only=publication.preview_only,
-                    tz=publication.tz,
-                    status=PublicationStatus.scheduled,
-                    series_id=publication.series_id
-                )
-                self.session.add(clone)
-                await self.session.flush()
-
-                # те же теги
-                for t in tags:
-                    self.session.add(PublicationTag(publication_id=clone.id, tag_id=t.id))
-                # те же каналы
-                targets = (await self.session.execute(select(Channel).where(Channel.id.in_(channel_ids)))).scalars().all()
-                for ch in targets:
-                    self.session.add(PublicationTarget(publication_id=clone.id, channel_id=ch.id, status=PublicationStatus.scheduled))
-
-                clone.scheduled_at = to_aware(dtm, clone.tz)
-                await self.schedule_publish_tasks(clone)
-
-        await self.session.flush()
-        return publication
-
-    async def schedule_publish_tasks(self, publication: Publication) -> None:
-        targets = (await self.session.execute(select(PublicationTarget).where(PublicationTarget.publication_id == publication.id))).scalars().all()
-        when = publication.scheduled_at
-        for t in targets:
-            t.scheduled_at = when
-            self.session.add(ScheduledTask(action=TaskAction.publish, publication_id=publication.id, target_id=t.id, channel_id=t.channel_id, run_at=when))
-
-    async def update_publication(self, pid: UUID, data: dict) -> Publication:
-        publication = await self.get_publication(pid)
-        if "title" in data and data["title"] is not None:
-            publication.title = data["title"]
-        if "content" in data and data["content"] is not None:
-            publication.content = data["content"]
-        if "parse_mode" in data and data["parse_mode"] is not None:
-            publication.parse_mode = data["parse_mode"]
-        if "auto_pin" in data and data["auto_pin"] is not None:
-            publication.auto_pin = data["auto_pin"]
-        if "auto_delete_hours" in data:
-            publication.auto_delete_hours = data["auto_delete_hours"]
-        if "preview_only" in data and data["preview_only"] is not None:
-            publication.preview_only = data["preview_only"]
-        if "tz" in data and data["tz"] is not None:
-            publication.tz = data["tz"]
-        if "tags" in data and data["tags"] is not None:
-            publication.tags = await ensure_tags(self.session, data["tags"])
-        if "scheduled_at" in data and data["scheduled_at"]:
-            publication.scheduled_at = to_aware(data["scheduled_at"], publication.tz)
-            publication.status = PublicationStatus.scheduled
-            # пересоздать задачи
-            await self.session.execute(delete(ScheduledTask).where(ScheduledTask.publication_id == pid, ScheduledTask.action == TaskAction.publish, ScheduledTask.status == TaskStatus.pending))
-            await self.schedule_publish_tasks(publication)
-        if "target_channel_ids" in data and data["target_channel_ids"] is not None:
-            # пересобрать таргеты
-            await self.session.execute(delete(PublicationTarget).where(PublicationTarget.publication_id == pid))
-            channels = (await self.session.execute(select(Channel).where(Channel.id.in_(data["target_channel_ids"])))).scalars().all()
-            for ch in channels:
-                self.session.add(PublicationTarget(publication_id=pid, channel_id=ch.id, status=PublicationStatus.scheduled))
-            if publication.scheduled_at:
-                await self.schedule_publish_tasks(publication)
-        await self.session.flush()
-        return publication
-
-    async def delete_publication(self, pid: UUID) -> None:
-        await self.session.execute(delete(ScheduledTask).where(ScheduledTask.publication_id == pid))
-        await self.session.execute(delete(PublicationTarget).where(PublicationTarget.publication_id == pid))
-        await self.session.execute(delete(Publication).where(Publication.id == pid))
-
-    async def get_publication(self, pid: UUID) -> Publication:
-        pub = (await self.session.execute(select(Publication).where(Publication.id == pid))).scalar_one()
-        return pub
-
-    async def list_publications(self, q: Optional[str], tag: Optional[str]) -> List[Publication]:
-        stmt = select(Publication).order_by(Publication.created_at.desc())
-        if q:
-            stmt = stmt.where(Publication.title.ilike(f"%{q}%"))
-        if tag:
-            stmt = stmt.join(PublicationTag, PublicationTag.publication_id == Publication.id).join(Tag, Tag.id == PublicationTag.tag_id).where(Tag.name == tag)
-        return (await self.session.execute(stmt)).scalars().all()
-
-    async def preview_publication(self, pid: UUID) -> List[int]:
-        publication = await self.get_publication(pid)
-        if not self.preview_chat_id:
-            raise ValueError("PREVIEW_CHAT_ID is not set")
-        buttons = build_reply_markup(publication.content_buttons if hasattr(publication, "content_buttons") else None)
-        msg_ids = await self.send_content_sequence(chat_id=self.preview_chat_id, parse_mode=publication.parse_mode, content=publication.content, buttons=None)
-        return msg_ids
-
-    async def publish_target(self, target: PublicationTarget, channel: Channel, publication: Publication) -> List[int]:
-        msg_ids = await self.send_content_sequence(chat_id=channel.tg_chat_id, parse_mode=publication.parse_mode, content=publication.content, buttons=None)
-        target.message_ids = msg_ids
-        target.status = PublicationStatus.published
-        target.sent_at = datetime.now(timezone.utc)
-        await self.session.flush()
-
-        if publication.auto_pin and msg_ids:
-            self.session.add(ScheduledTask(action=TaskAction.pin, publication_id=publication.id, target_id=target.id, channel_id=channel.id, run_at=datetime.now(timezone.utc)))
-        if publication.auto_delete_hours:
-            auto_delete_at = datetime.now(timezone.utc) + timedelta(hours=publication.auto_delete_hours)
-            target.auto_delete_at = auto_delete_at
-            for mid in msg_ids:
-                self.session.add(ScheduledTask(action=TaskAction.delete, publication_id=publication.id, target_id=target.id, channel_id=channel.id, run_at=auto_delete_at))
-        return msg_ids
-
-    async def send_content_sequence(self, chat_id: int, parse_mode: str, content: List[dict], buttons: Optional[dict]) -> List[int]:
-        msg_ids: List[int] = []
-        reply_markup = build_reply_markup(buttons) if buttons else None
-
-        for part in content:
-            kind = part.get("kind")
-            if kind == "text":
-                msg_id = await self.tg.send_message(chat_id, part["text"], parse_mode, reply_markup, part.get("disable_web_preview", False))
-                msg_ids.append(msg_id)
-            elif kind in ("image", "video", "audio", "document"):
-                media = part.get("file_id") or part.get("url")
-                caption = part.get("caption")
-                has_spoiler = bool(part.get("has_spoiler", False))
-                if kind == "image":
-                    msg_id = await self.tg.send_photo(chat_id, media, caption, parse_mode, has_spoiler, reply_markup)
-                elif kind == "video":
-                    msg_id = await self.tg.send_video(chat_id, media, caption, parse_mode, has_spoiler, reply_markup, part.get("duration"), part.get("width"), part.get("height"))
-                elif kind == "audio":
-                    msg_id = await self.tg.send_audio(chat_id, media, caption, parse_mode, reply_markup, part.get("duration"))
-                else:
-                    msg_id = await self.tg.send_document(chat_id, media, caption, parse_mode, reply_markup)
-                msg_ids.append(msg_id)
-            elif kind == "link":
-                text = f'<a href="{part["url"]}">{part.get("title") or part["url"]}</a>\n{part.get("caption") or ""}'
-                msg_id = await self.tg.send_message(chat_id, text, "HTML", reply_markup)
-                msg_ids.append(msg_id)
-            elif kind == "poll":
-                msg_id = await self.tg.send_poll(
-                    chat_id=chat_id,
-                    question=part["question"],
-                    options=part["options"],
-                    is_anonymous=part.get("is_anonymous", True),
-                    allows_multiple_answers=part.get("allows_multiple_answers", False),
-                    is_quiz=part.get("is_quiz", False),
-                    correct_option_id=part.get("correct_option_id"),
-                    explanation=part.get("explanation"),
-                    reply_markup=reply_markup
-                )
-                msg_ids.append(msg_id)
-            elif kind == "style":
-                header = part.get("header") or ""
-                footer = part.get("footer") or ""
-                emojis = " ".join(part.get("emojis", []))
-                if header or footer or emojis:
-                    composed = "\n".join([s for s in [header, emojis, footer] if s])
-                    msg_id = await self.tg.send_message(chat_id, composed, parse_mode, reply_markup)
-                    msg_ids.append(msg_id)
-        return msg_ids
-
-    async def run_due_tasks(self) -> int:
-        now = datetime.now(timezone.utc)
-        due = (await self.session.execute(
-            select(ScheduledTask).where(ScheduledTask.status == TaskStatus.pending, ScheduledTask.run_at <= now).order_by(ScheduledTask.run_at.asc())
-        )).scalars().all()
-
-        processed = 0
-        for task in due:
-            try:
-                if task.action == TaskAction.publish:
-                    target = (await self.session.execute(select(PublicationTarget).where(PublicationTarget.id == task.target_id))).scalar_one()
-                    publication = (await self.session.execute(select(Publication).where(Publication.id == task.publication_id))).scalar_one()
-                    channel = (await self.session.execute(select(Channel).where(Channel.id == task.channel_id))).scalar_one()
-                    await self.publish_target(target, channel, publication)
-                    publication.status = PublicationStatus.published
-                elif task.action == TaskAction.pin:
-                    target = (await self.session.execute(select(PublicationTarget).where(PublicationTarget.id == task.target_id))).scalar_one()
-                    channel = (await self.session.execute(select(Channel).where(Channel.id == task.channel_id))).scalar_one()
-                    if target.message_ids:
-                        await self.tg.pin(channel.tg_chat_id, target.message_ids[0])
-                        target.pin_applied = True
-                elif task.action == TaskAction.delete:
-                    target = (await self.session.execute(select(PublicationTarget).where(PublicationTarget.id == task.target_id))).scalar_one()
-                    channel = (await self.session.execute(select(Channel).where(Channel.id == task.channel_id))).scalar_one()
-                    if target.message_ids:
-                        # удаляем все сообщения поста
-                        for mid in target.message_ids:
-                            try:
-                                await self.tg.delete_message(channel.tg_chat_id, mid)
-                            except Exception:
-                                pass
-                        target.status = PublicationStatus.deleted
-                task.status = TaskStatus.done
-                processed += 1
-                if self.admin_chat_id and task.action == TaskAction.publish:
-                    await self.safe_notify(f"✅ Публикация {task.publication_id} отправлена в канал {channel.title}")
-            except Exception as e:
-                task.attempts += 1
-                task.last_error = str(e)
-                task.status = TaskStatus.failed if task.attempts >= 3 else TaskStatus.pending
-                if self.admin_chat_id:
-                    await self.safe_notify(f"❌ Ошибка задачи {task.action} для публикации {task.publication_id}: {e}")
-        await self.session.flush()
-        return processed
-
-    async def safe_notify(self, text: str) -> None:
-        try:
-            if self.admin_chat_id:
-                await self.tg.send_message(self.admin_chat_id, text, "HTML", None)
-        except Exception:
-            pass
-
-    async def edit_published(self, publication_id: UUID, channel_id: UUID, message_index: int, new_text: Optional[str], new_caption: Optional[str], parse_mode: Optional[str]) -> None:
-        target = (await self.session.execute(select(PublicationTarget).where(PublicationTarget.publication_id == publication_id, PublicationTarget.channel_id == channel_id))).scalar_one()
-        channel = (await self.session.execute(select(Channel).where(Channel.id == channel_id))).scalar_one()
-        if not target.message_ids or message_index >= len(target.message_ids):
-            raise ValueError("message_index out of range")
-        mid = target.message_ids[message_index]
-        if new_text:
-            await self.tg.edit_text(channel.tg_chat_id, mid, new_text, parse_mode)
-        if new_caption:
-            await self.tg.edit_caption(channel.tg_chat_id, mid, new_caption, parse_mode)
-
-    async def calendar_events(self) -> List[dict]:
-        pubs = (await self.session.execute(select(Publication))).scalars().all()
-        events = []
-        for p in pubs:
-            channel_ids = [t.channel_id for t in p.targets]
-            events.append({
-                "id": str(p.id),
-                "title": p.title or "Публикация",
-                "start": (p.scheduled_at or p.created_at).isoformat(),
-                "end": None,
-                "status": p.status.value,
-                "channel_ids": [str(cid) for cid in channel_ids],
-            })
-        return events
-
-    async def ai_suggest(self, text: str, instruction: Optional[str]) -> str:
-        # БАЗОВЫЕ функции: если есть OPENAI_API_KEY — используем; иначе делаем простое «улучшение»
-        key = os.getenv("OPENAI_API_KEY")
-        if key:
-            try:
-                # Лёгкий вызов REST без SDK, чтобы не тащить лишние зависимости
-                headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
-                payload = {
-                    "model": "gpt-4o-mini",
-                    "messages": [
-                        {"role": "system", "content": "You are an assistant helping to improve social media posts succinctly."},
-                        {"role": "user", "content": f"Instruction: {instruction or 'Improve clarity, fix grammar, keep emojis if present.'}\nText:\n{text}"}
-                    ],
-                    "temperature": 0.3
-                }
-                async with httpx.AsyncClient(timeout=30) as c:
-                    r = await c.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-                    r.raise_for_status()
-                    return r.json()["choices"][0]["message"]["content"].strip()
-            except Exception as e:
-                return f"{text}".strip()
-        # Фолбэк: минимальная правка — трим пробелы, нормализация переносов
-        cleaned = " ".join(text.split())
-        if instruction and "emoji" in instruction.lower():
-            cleaned += " ✨"
-        return cleaned
-
-    def resolve_timezone_by_geo(self, lat: float, lon: float) -> Optional[str]:
-        tf = TimezoneFinder()
-        return tf.timezone_at(lng=lon, lat=lat)
-
-
-# -------------------------
-# Background minimal scheduler loop
-# -------------------------
-
-async def scheduler_loop(session_factory, tg_client: TelegramClient, stop_event: asyncio.Event):
-    while not stop_event.is_set():
-        try:
-            async with session_factory() as session:
-                svc = PublicationService(session, tg_client)
-                processed = await svc.run_due_tasks()
-                await session.commit()
-        except Exception:
-            # глушим, чтобы не падал цикл
-            pass
-        await asyncio.sleep(5)

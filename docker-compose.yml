@@ -1,6 +1,24 @@
 version: "3.9"
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lama-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lama}
+      POSTGRES_USER: ${POSTGRES_USER:-lama}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lama}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lama} -d ${POSTGRES_DB:-lama}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   backend:
     build:
       context: .
@@ -9,25 +27,16 @@ services:
     env_file:
       - .env
     environment:
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - DATABASE_URL=${DATABASE_URL}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://lama:lama@postgres:5432/lama}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
-    command: ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: lama-postgres
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-lama}
-      - POSTGRES_USER=${POSTGRES_USER:-lama}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-lama}
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    restart: unless-stopped
+    command: ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 volumes:
   pgdata:
