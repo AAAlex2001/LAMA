@@ -53,9 +53,9 @@ class BotRecord:
         self.deliveries_fail: int = 0
         self.working_chats: Optional[set[int | str]] = None
         self.templates: Dict[str, DMTemplate] = {}
-        self.trigger_configs: Dict[str, Any] = {}  # trigger_type -> DelayedTriggerConfig
-        self.user_series_progress: Dict[int, Dict[str, int]] = {}  # user_id -> {series_id: current_step_idx}
-        self.series_data: Dict[str, Dict[str, Any]] = {}  # series_id -> series data
+        self.trigger_configs: Dict[str, Any] = {}
+        self.user_series_progress: Dict[int, Dict[str, int]] = {}
+        self.series_data: Dict[str, Dict[str, Any]] = {}
 
 
 class BotService:
@@ -91,22 +91,18 @@ class BotService:
         record = self.require(bot_id)
         if data.name is not None:
             record.name = data.name
-            # Update name via Telegram API
             try:
                 await record.bot.set_my_name(name=data.name)
             except Exception as e:
-                print(f"Failed to update bot name: {e}")  # Debug logging
+                print(f"Failed to update bot name: {e}")
         if data.description is not None:
             record.description = data.description
-            # Update description via Telegram API
             try:
                 await record.bot.set_my_short_description(short_description=data.description)
             except Exception as e:
-                print(f"Failed to update bot description: {e}")  # Debug logging
+                print(f"Failed to update bot description: {e}")
         if data.photo_url is not None:
             record.photo_url = str(data.photo_url)
-            # Note: Telegram Bot API doesn't support setting profile photo via URL directly
-            # This field is stored for reference, but photo update requires manual handling
         if data.welcome_enabled is not None:
             record.welcome_config.enabled = data.welcome_enabled
         if data.welcome_config is not None:
@@ -327,7 +323,6 @@ class BotService:
         try:
             update = Update.de_json(update_data, record.bot)
             if update.chat_join_request and record.welcome_config.enabled:
-                # respect working chats
                 if record.working_chats and update.chat_join_request.chat.id not in record.working_chats:
                     return {"success": True, "skipped": True}
                 await self.process_join_request(record, update)
@@ -342,13 +337,11 @@ class BotService:
                 user_id = update.message.from_user.id
                 self.inbox_log(record, user_id, direction="in", text=text)
                 
-                # Проверяем, является ли сообщение командой
                 is_command = text in record.commands
                 if is_command:
                     await self.send_dm(record.id, user_id, record.commands[text])
                     if self.ws_manager:
                         await self.ws_manager.broadcast(record.id, {"event": "user_command", "user_id": user_id, "command": text})
-                    # Триггерим USER_COMMAND событие
                     await self.trigger_event(record, "user_command", user_id, {"command": text})
                 else:
                     if self.ws_manager:
@@ -435,10 +428,8 @@ class BotService:
                     await self.ws_manager.broadcast(record.id, {"event": "captcha_passed", "user_id": user_id})
             return
         
-        # Проверяем, является ли callback_data ветвлением серии
         for series_id, series in record.series_data.items():
             if data == series.get("branch_click_data"):
-                # Находим текущий шаг серии
                 user_progress = record.user_series_progress.get(user_id, {})
                 current_step = user_progress.get(series_id, 0)
                 series_steps = series.get("steps", [])
@@ -446,16 +437,13 @@ class BotService:
                 if current_step < len(series_steps):
                     step = series_steps[current_step]
                     if step.get("branch_on_click_data") == data:
-                        # Отправляем сообщение ветвления
                         await self.send_dm(record.id, user_id, step["message"])
-                        # Обновляем прогресс
                         if series_id not in user_progress:
                             user_progress[series_id] = 0
                         user_progress[series_id] += 1
                         record.user_series_progress[user_id] = user_progress
                         return
         
-        # Стандартная обработка branch_map
         cfg = record.branch_map.get(data)
         if cfg:
             try:
@@ -688,7 +676,6 @@ class BotService:
         if not cfg:
             return
         
-        # Вычисляем задержку
         delay = timedelta()
         if cfg.get("delay_minutes"):
             delay += timedelta(minutes=cfg["delay_minutes"])
@@ -698,7 +685,6 @@ class BotService:
             delay += timedelta(days=cfg["delay_days"])
         
         if delay.total_seconds() > 0:
-            # Планируем отложенную отправку
             if self.scheduler and cfg.get("message"):
                 run_at = datetime.utcnow() + delay
                 job_id = f"trigger_{record.id}_{trigger_type}_{user_id}_{int(run_at.timestamp())}"
@@ -711,7 +697,6 @@ class BotService:
                     message=cfg["message"].model_dump() if hasattr(cfg["message"], "model_dump") else cfg["message"]
                 )
         else:
-            # Немедленная отправка
             if cfg.get("message"):
                 await self.send_dm(record.id, user_id, cfg["message"])
 

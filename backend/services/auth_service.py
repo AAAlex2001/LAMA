@@ -24,19 +24,28 @@ class AuthConfig:
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
+def verify_password(password: str, password_hash: str) -> bool:
+    return pwd_context.verify(password, password_hash)
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+async def persist_refresh_token(session: AsyncSession, user_id: uuid.UUID, token: str, expires_at: datetime, user_agent: Optional[str], ip: Optional[str]) -> RefreshToken:
+    rt = RefreshToken(user_id=user_id, token=token, expires_at=expires_at, revoked=False, user_agent=user_agent, ip=ip)
+    session.add(rt)
+    await session.flush()
+    return rt
+
+
 class AuthService:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession], config: Optional[AuthConfig] = None) -> None:
         self.session_factory = session_factory
         self.config = config or AuthConfig()
 
     # Password helpers
-    def hash_password(self, password: str) -> str:
-        return pwd_context.hash(password)
 
-    def verify_password(self, password: str, password_hash: str) -> bool:
-        return pwd_context.verify(password, password_hash)
-
-    # JWT helpers
     def create_access_token(self, user_id: uuid.UUID, email: str) -> str:
         now = datetime.now(timezone.utc)
         payload = {
@@ -62,41 +71,36 @@ class AuthService:
         token = jwt.encode(payload, self.config.jwt_secret, algorithm=self.config.jwt_algorithm)
         return token, exp
 
-    async def persist_refresh_token(self, session: AsyncSession, user_id: uuid.UUID, token: str, expires_at: datetime, user_agent: Optional[str], ip: Optional[str]) -> RefreshToken:
-        rt = RefreshToken(user_id=user_id, token=token, expires_at=expires_at, revoked=False, user_agent=user_agent, ip=ip)
-        session.add(rt)
-        await session.flush()
-        return rt
-
-    # Core flows
     async def register_user(self, email: str, password: str) -> User:
         async with self.session_factory() as session:
             exists = await session.execute(select(User).where(User.email == email))
             if exists.scalar_one_or_none():
                 raise ValueError("Пользователь с таким email уже существует")
-            user = User(email=email, password_hash=self.hash_password(password), is_active=True)
+            user = User(email=email, password_hash=hash_password(password), is_active=True)
             session.add(user)
             await session.commit()
             await session.refresh(user)
             return user
+        return None
 
     async def authenticate_user(self, email: str, password: str) -> User:
         async with self.session_factory() as session:
             res = await session.execute(select(User).where(User.email == email))
             user = res.scalar_one_or_none()
-            if not user or not user.password_hash or not self.verify_password(password, user.password_hash):
+            if not user or not user.password_hash or not verify_password(password, user.password_hash):
                 raise ValueError("Неверные учетные данные")
             await session.execute(
                 sa_update(User).where(User.id == user.id).values(last_login_at=datetime.now(timezone.utc))
             )
             await session.commit()
             return user
+        return None
 
     async def issue_tokens(self, user: User, user_agent: Optional[str] = None, ip: Optional[str] = None) -> Tuple[str, str]:
         access = self.create_access_token(user.id, user.email)
         refresh, exp = self.create_refresh_token_string(user.id)
         async with self.session_factory() as session:
-            await self.persist_refresh_token(session, user.id, refresh, exp, user_agent, ip)
+            await persist_refresh_token(session, user.id, refresh, exp, user_agent, ip)
             await session.commit()
         return access, refresh
 
@@ -108,24 +112,23 @@ class AuthService:
         except Exception as e:
             raise ValueError("Неверный или просроченный refresh токен") from e
 
-        user_id = uuid.UUID(data["sub"])  # may raise
+        user_id = uuid.UUID(data["sub"])
         async with self.session_factory() as session:
             res = await session.execute(select(RefreshToken).where(RefreshToken.token == refresh_token))
             rt = res.scalar_one_or_none()
             if not rt or rt.revoked or rt.expires_at <= datetime.now(timezone.utc):
                 raise ValueError("Refresh токен недействителен")
-            # rotate refresh: revoke old and issue new
             rt.revoked = True
-            # ensure user exists and active
             ures = await session.execute(select(User).where(User.id == user_id))
             user = ures.scalar_one_or_none()
             if not user or not user.is_active:
                 raise ValueError("Пользователь недоступен")
             new_access = self.create_access_token(user.id, user.email)
             new_refresh, exp = self.create_refresh_token_string(user.id)
-            await self.persist_refresh_token(session, user.id, new_refresh, exp, user_agent, ip)
+            await persist_refresh_token(session, user.id, new_refresh, exp, user_agent, ip)
             await session.commit()
             return new_access, new_refresh
+        return None
 
     async def revoke_refresh(self, refresh_token: str) -> None:
         async with self.session_factory() as session:
@@ -135,7 +138,6 @@ class AuthService:
                 rt.revoked = True
                 await session.commit()
 
-    # Access token validation
     def decode_access_token(self, access_token: str) -> dict:
         data = jwt.decode(access_token, self.config.jwt_secret, algorithms=[self.config.jwt_algorithm])
         if data.get("type") != "access":
@@ -146,17 +148,15 @@ class AuthService:
         async with self.session_factory() as session:
             res = await session.execute(select(User).where(User.id == user_id))
             return res.scalar_one_or_none()
+        return None
 
-    # Telegram login helper: find-or-create via telegram_id
     async def get_or_create_telegram_user(self, telegram_id: int, email_hint: Optional[str], first_name: Optional[str], last_name: Optional[str]) -> User:
         async with self.session_factory() as session:
             res = await session.execute(select(User).where(User.telegram_id == telegram_id))
             user = res.scalar_one_or_none()
             if user:
                 return user
-            # fallback email if not provided
             email = email_hint or f"tg-{telegram_id}@example.local"
-            # ensure unique email
             exists = await session.execute(select(User).where(User.email == email))
             if exists.scalar_one_or_none():
                 email = f"tg-{telegram_id}-{uuid.uuid4().hex[:8]}@example.local"
@@ -165,5 +165,5 @@ class AuthService:
             await session.commit()
             await session.refresh(user)
             return user
-
+        return None
 
