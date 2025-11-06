@@ -18,7 +18,7 @@ from backend.models.publications import (
 )
 from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate, PublicationStatus,
-    ContentType, InlineKeyboard, AIGenerateRequest, AIEditRequest
+    ContentType, AIGenerateRequest, AIEditRequest
 )
 
 

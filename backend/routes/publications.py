@@ -33,6 +33,56 @@ async def create_publication(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/drafts", response_model=PublicationListResponse)
+async def get_drafts(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить все черновики"""
+    skip = (page - 1) * page_size
+    publications, total = await service.get_publications(
+        status=PublicationStatus.DRAFT,
+        skip=skip,
+        limit=page_size
+    )
+    
+    pages = (total + page_size - 1) // page_size
+    
+    return PublicationListResponse(
+        items=publications,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
+    )
+
+
+@router.get("/scheduled", response_model=PublicationListResponse)
+async def get_scheduled(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить все запланированные публикации"""
+    skip = (page - 1) * page_size
+    publications, total = await service.get_publications(
+        status=PublicationStatus.SCHEDULED,
+        skip=skip,
+        limit=page_size
+    )
+    
+    pages = (total + page_size - 1) // page_size
+    
+    return PublicationListResponse(
+        items=publications,
+        total=total,
+        page=page,
+        page_size=page_size,
+        pages=pages
+    )
+
+
 @router.get("/", response_model=PublicationListResponse)
 async def get_publications(
     status: Optional[PublicationStatus] = None,
@@ -230,54 +280,4 @@ async def create_series(
         description=data.description
     )
     return series
-
-
-@router.get("/drafts", response_model=PublicationListResponse)
-async def get_drafts(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Получить все черновики"""
-    skip = (page - 1) * page_size
-    publications, total = await service.get_publications(
-        status=PublicationStatus.DRAFT,
-        skip=skip,
-        limit=page_size
-    )
-    
-    pages = (total + page_size - 1) // page_size
-    
-    return PublicationListResponse(
-        items=publications,
-        total=total,
-        page=page,
-        page_size=page_size,
-        pages=pages
-    )
-
-
-@router.get("/scheduled", response_model=PublicationListResponse)
-async def get_scheduled(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Получить все запланированные публикации"""
-    skip = (page - 1) * page_size
-    publications, total = await service.get_publications(
-        status=PublicationStatus.SCHEDULED,
-        skip=skip,
-        limit=page_size
-    )
-    
-    pages = (total + page_size - 1) // page_size
-    
-    return PublicationListResponse(
-        items=publications,
-        total=total,
-        page=page,
-        page_size=page_size,
-        pages=pages
-    )
 
