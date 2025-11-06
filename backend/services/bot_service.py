@@ -235,11 +235,11 @@ class BotService:
                 orm = await session.get(BotORM, bot_id)
                 if orm:
                     orm.deliveries_ok = (orm.deliveries_ok or 0) + 1
+                    session.add(BotInboxMessageORM(bot_id=bot_id, user_id=user_id, direction="out", text=message.text or ""))
                     await session.commit()
             result = {"success": True, "message_id": sent.message_id}
             if message.auto_delete and isinstance(message.auto_delete.hours, int) and message.auto_delete.hours > 0:
                 await self.schedule_dm_auto_delete(record, chat_id=user_id, message_id=sent.message_id, hours=message.auto_delete.hours)
-            self.inbox_log(record, user_id, direction="out", text=message.text or "")
             if self.ws_manager:
                 await self.ws_manager.broadcast(bot_id, {"event": "dm_sent", "user_id": user_id, "message_id": sent.message_id})
             return result
@@ -417,9 +417,9 @@ class BotService:
 
                 msg = update.message
                 if msg is not None and msg.text:
-                    text = msg.text.strip()
-                    user_id = msg.from_user.id
-                    self.inbox_log(record, user_id, direction="in", text=text)
+                text = msg.text.strip()
+                user_id = msg.from_user.id
+                await self.inbox_log(session, record.id, user_id, direction="in", text=text)
                     from sqlalchemy import and_
                     res = await session.execute(
                         select(BotCommandORM).where(and_(BotCommandORM.bot_id == record.id, BotCommandORM.command == text))
@@ -776,12 +776,8 @@ class BotService:
                 pass
         asyncio.create_task(delete_message())
 
-    def inbox_log(self, record: BotRecord, user_id: int, direction: str, text: str) -> None:
-        async def _write():
-            async with self.session_factory() as session:
-                session.add(BotInboxMessageORM(bot_id=record.id, user_id=user_id, direction=direction, text=text))
-                await session.commit()
-        asyncio.create_task(_write())
+    async def inbox_log(self, session: AsyncSession, bot_id: str, user_id: int, direction: str, text: str) -> None:
+        session.add(BotInboxMessageORM(bot_id=bot_id, user_id=user_id, direction=direction, text=text))
 
     async def ban_user(self, bot_id: str, chat_id: int | str, user_id: int, minutes: Optional[int], reason: Optional[str]) -> Dict[str, Any]:
         record = await self.require(bot_id)
