@@ -93,12 +93,125 @@ class RefreshToken(Base):
     user: Mapped[User] = relationship()
 
 
+# ==== Bots module ====
+
+class Bot(Base):
+    __tablename__ = "bots"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)  # Telegram bot ID as string
+    token: Mapped[str] = mapped_column(Text, nullable=False)
+    username: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    photo_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description_suffix: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    welcome_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    welcome_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="manual")
+    welcome_greet_message: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    welcome_rules_message: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    welcome_allow_rules: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    working_chats: Mapped[Optional[list]] = mapped_column(JSONB, nullable=True)
+    branch_map: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    total_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    blocked_users: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    deliveries_ok: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    deliveries_fail: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+class BotCommand(Base):
+    __tablename__ = "bot_commands"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    command: Mapped[str] = mapped_column(String(64), primary_key=True)
+    response: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
+class BotTemplate(Base):
+    __tablename__ = "bot_templates"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    template_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    message: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
+class BotTriggerConfig(Base):
+    __tablename__ = "bot_trigger_configs"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    trigger_type: Mapped[str] = mapped_column(String(64), primary_key=True)
+    config: Mapped[dict] = mapped_column(JSONB, nullable=False)
+
+
+class BotApplicant(Base):
+    __tablename__ = "bot_applicants"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    chat_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    declined_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BotCaptchaState(Base):
+    __tablename__ = "bot_captcha_states"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False, default="simple_button")
+    challenge_sent_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    passed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+
+class BotInboxMessage(Base):
+    __tablename__ = "bot_inbox"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), index=True)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
+    direction: Mapped[str] = mapped_column(String(8), nullable=False)  # in/out
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
+class BotCallbackClick(Base):
+    __tablename__ = "bot_callback_clicks"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    data: Mapped[str] = mapped_column(String(256), primary_key=True)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class BotUserSeriesProgress(Base):
+    __tablename__ = "bot_user_series_progress"
+
+    bot_id: Mapped[str] = mapped_column(String(64), ForeignKey("bots.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    series_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
 __all__ = [
     "Base",
     "Channel",
     "BackupPost",
     "User",
     "RefreshToken",
+    "Bot",
+    "BotCommand",
+    "BotTemplate",
+    "BotTriggerConfig",
+    "BotApplicant",
+    "BotCaptchaState",
+    "BotInboxMessage",
+    "BotCallbackClick",
+    "BotUserSeriesProgress",
 ]
-
 

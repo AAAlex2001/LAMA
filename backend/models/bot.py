@@ -335,6 +335,8 @@ __all__ = [
     "ProfileUpdateRequest",
     "TemplateItem",
     "DelayedTriggerConfig",
+    "MessageTargetType",
+    "CaptchaState",
 ]
 
 

@@ -21,7 +21,7 @@ load_dotenv()
 # Shared services singletons
 ws_manager = WebSocketManager()
 scheduler_service = SchedulerService(bot_service=None)  # Temporary
-bot_service = BotService(ws_manager=ws_manager, scheduler=scheduler_service)
+bot_service = BotService(ws_manager=ws_manager, scheduler=scheduler_service, session_factory=SessionLocal)
 scheduler_service.bot_service = bot_service  # Update reference
 channel_service = ChannelService(bot_service=bot_service, session_factory=SessionLocal)
 scheduler_service.channel_service = channel_service

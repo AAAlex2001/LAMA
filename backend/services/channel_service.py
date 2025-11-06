@@ -41,7 +41,7 @@ class ChannelService:
 
     async def create(self, data: ChannelCreate) -> ChannelResponse:
         """Создание нового канала/группы."""
-        bot_record = self.bot_service.require(data.bot_id)
+        bot_record = await self.bot_service.require(data.bot_id)
         bot = bot_record.bot
 
         try:
@@ -129,7 +129,7 @@ class ChannelService:
 
     async def sync_channel(self, channel_id: str) -> ChannelSyncResponse:
         orm = await self.require(channel_id)
-        bot_record = self.bot_service.require(orm.bot_id)
+        bot_record = await self.bot_service.require(orm.bot_id)
         bot = bot_record.bot
 
         try:
@@ -228,7 +228,7 @@ class ChannelService:
 
     async def forward_to_backup(self, record: ChannelORM, post_backup: BackupPostORM):
         """Пересылка поста в канал-ретранслятор (для режима instant)."""
-        bot_record = self.bot_service.require(record.bot_id)
+        bot_record = await self.bot_service.require(record.bot_id)
         bot = bot_record.bot
 
         try:
@@ -261,8 +261,8 @@ class ChannelService:
         source_record = await self.require(data.source_channel_id)
         target_record = await self.require(data.target_channel_id)
 
-        source_bot = self.bot_service.require(source_record.bot_id).bot
-        target_bot = self.bot_service.require(target_record.bot_id).bot
+        source_bot = (await self.bot_service.require(source_record.bot_id)).bot
+        target_bot = (await self.bot_service.require(target_record.bot_id)).bot
 
         async with self.session_factory() as session:
             q = select(BackupPostORM).where(BackupPostORM.channel_id == source_record.id).order_by(BackupPostORM.date.desc())
@@ -389,7 +389,7 @@ class ChannelService:
 
     async def process_telegram_update(self, bot_id: str, update_data: dict):
         """Обработка обновления от Telegram: автосохранение постов в бекап."""
-        record = self.bot_service.require(bot_id)
+        record = await self.bot_service.require(bot_id)
         update = Update.de_json(update_data, record.bot)
 
         message = update.channel_post or update.message
