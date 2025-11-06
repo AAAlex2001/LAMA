@@ -1,6 +1,6 @@
 """
-Сервис для работы с публикациями.
-Бизнес-логика CRUD операций, планирования, мультипостинга.
+Сервис для работы с публикациями на Postgres (без in-memory).
+Бизнес-логика CRUD, фильтры, календарь, серии, AI-помощник.
 """
 
 from typing import List, Optional, Dict
@@ -23,15 +23,16 @@ from backend.models.publication import (
     SeriesCreate,
     SeriesResponse,
 )
+from sqlalchemy import select, update as sa_update
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from backend.models.db_models import Publication as PublicationORM, PublicationSeries as PublicationSeriesORM
 
 
 class PublicationService:
-    """Сервис управления публикациями."""
-    
-    def __init__(self):
-        self.publications: Dict[str, dict] = {}
-        self.series: Dict[str, dict] = {}
-        
+    """Сервис управления публикациями (через БД)."""
+
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
+        self.session_factory = session_factory
         deepseek_api_key = os.getenv("DEEPSEEK_API_KEY")
         if deepseek_api_key:
             self.ai_client = OpenAI(
@@ -41,51 +42,52 @@ class PublicationService:
         else:
             self.ai_client = None
 
-    def create(self, data: PublicationCreate) -> PublicationResponse:
+    async def create(self, data: PublicationCreate) -> PublicationResponse:
         """Создание новой публикации."""
-        pub_id = str(uuid4())
         now = datetime.now(timezone.utc)
-
-        status = PublicationStatus.DRAFT if data.is_draft else (
-            PublicationStatus.SCHEDULED if data.scheduled_at else PublicationStatus.PUBLISHED
+        status = (
+            PublicationStatus.DRAFT
+            if data.is_draft
+            else (PublicationStatus.SCHEDULED if data.scheduled_at else PublicationStatus.PUBLISHED)
         )
-
-        # TODO: Конвертация scheduled_at из локального времени в UTC с учетом timezone
         scheduled_at_utc = data.scheduled_at
         if scheduled_at_utc and scheduled_at_utc.tzinfo is None:
             scheduled_at_utc = scheduled_at_utc.replace(tzinfo=timezone.utc)
+        async with self.session_factory() as session:
+            orm = PublicationORM(
+                content_type=data.content_type.value if hasattr(data.content_type, "value") else str(data.content_type),
+                text=data.text,
+                media=[m.model_dump() for m in (data.media or [])] if data.media else None,
+                poll=data.poll.model_dump() if data.poll else None,
+                inline_buttons=[[btn.model_dump() for btn in row] for row in (data.inline_buttons or [])] if data.inline_buttons else None,
+                link=data.link,
+                channel_ids=list(data.channel_ids) if data.channel_ids else None,
+                tags=list(data.tags) if data.tags else None,
+                status=status.value if hasattr(status, "value") else str(status),
+                scheduled_at=scheduled_at_utc,
+                published_at=now if status == PublicationStatus.PUBLISHED else None,
+                timezone=data.timezone,
+                auto_pin=bool(data.auto_pin),
+                auto_delete=(data.auto_delete.model_dump() if data.auto_delete else None),
+                series_id=data.series_id,
+            )
+            session.add(orm)
+            await session.commit()
+            await session.refresh(orm)
+            return self.to_response(orm)
 
-        publication = {
-            "id": pub_id,
-            "content_type": data.content_type,
-            "text": data.text,
-            "media": data.media,
-            "poll": data.poll,
-            "inline_buttons": data.inline_buttons,
-            "link": data.link,
-            "channel_ids": data.channel_ids,
-            "tags": data.tags or [],
-            "status": status,
-            "scheduled_at": scheduled_at_utc,
-            "published_at": now if status == PublicationStatus.PUBLISHED else None,
-            "timezone": data.timezone,
-            "auto_pin": data.auto_pin,
-            "auto_delete": data.auto_delete,
-            "series_id": data.series_id,
-            "created_at": now,
-            "updated_at": now,
-        }
-
-        self.publications[pub_id] = publication
-        # TODO: Реализовать планировщик для auto_pin и auto_delete (celery/APScheduler)
-        return PublicationResponse(**publication)
-
-    def get(self, publication_id: str) -> Optional[PublicationResponse]:
+    async def get(self, publication_id: str) -> Optional[PublicationResponse]:
         """Получение публикации по ID."""
-        pub = self.publications.get(publication_id)
-        return PublicationResponse(**pub) if pub else None
+        async with self.session_factory() as session:
+            from uuid import UUID
+            try:
+                pid = UUID(publication_id)
+            except Exception:
+                return None
+            orm = await session.get(PublicationORM, pid)
+            return self.to_response(orm) if orm else None
 
-    def list(
+    async def list(
             self,
             status: Optional[PublicationStatus] = None,
             tags: Optional[List[str]] = None,
@@ -93,44 +95,72 @@ class PublicationService:
             series_id: Optional[str] = None,
     ) -> List[PublicationResponse]:
         """Список публикаций с фильтрацией."""
-        results = []
+        async with self.session_factory() as session:
+            q = select(PublicationORM)
+            if status is not None:
+                q = q.where(PublicationORM.status == (status.value if hasattr(status, "value") else str(status)))
+            if series_id is not None:
+                q = q.where(PublicationORM.series_id == series_id)
+            if channel_id is not None:
+                q = q.where(PublicationORM.channel_ids.contains([channel_id]))
+            if tags:
+                # "хотя бы один" тег — простая фильтрация в Python после выборки
+                pass
+            res = await session.execute(q)
+            rows = res.scalars().all()
+            if tags:
+                rows = [r for r in rows if r.tags and any(t in r.tags for t in tags)]
+            rows.sort(key=lambda r: r.created_at, reverse=True)
+            return [self.to_response(r) for r in rows]
 
-        for pub in self.publications.values():
-            if status and pub["status"] != status:
-                continue
-            if tags and len(tags) > 0 and not any(tag in pub["tags"] for tag in tags):
-                continue
-            if channel_id and channel_id not in pub["channel_ids"]:
-                continue
-            if series_id and pub["series_id"] != series_id:
-                continue
-
-            results.append(PublicationResponse(**pub))
-
-        return sorted(results, key=lambda x: x.created_at, reverse=True)
-
-    def update(self, publication_id: str, data: PublicationUpdate) -> Optional[PublicationResponse]:
+    async def update(self, publication_id: str, data: PublicationUpdate) -> Optional[PublicationResponse]:
         """Обновление публикации."""
-        pub = self.publications.get(publication_id)
-        if not pub:
+        from uuid import UUID
+        try:
+            pid = UUID(publication_id)
+        except Exception:
             return None
+        async with self.session_factory() as session:
+            orm = await session.get(PublicationORM, pid)
+            if not orm:
+                return None
+            upd = data.model_dump(exclude_unset=True)
+            if "content_type" in upd and hasattr(upd["content_type"], "value"):
+                upd["content_type"] = upd["content_type"].value
+            if "media" in upd:
+                upd["media"] = [m.model_dump() for m in upd["media"]] if upd["media"] else None
+            if "poll" in upd and upd["poll"] is not None:
+                upd["poll"] = upd["poll"].model_dump()
+            if "inline_buttons" in upd and upd["inline_buttons"] is not None:
+                upd["inline_buttons"] = [[btn.model_dump() for btn in row] for row in upd["inline_buttons"]]
+            if "auto_delete" in upd and upd["auto_delete"] is not None:
+                upd["auto_delete"] = upd["auto_delete"].model_dump()
+            if "tags" in upd and upd["tags"] is not None:
+                upd["tags"] = list(upd["tags"]) or None
+            if "channel_ids" in upd and upd["channel_ids"] is not None:
+                upd["channel_ids"] = list(upd["channel_ids"]) or None
+            if upd.get("scheduled_at"):
+                upd["status"] = PublicationStatus.SCHEDULED.value
+            await session.execute(sa_update(PublicationORM).where(PublicationORM.id == pid).values(**upd))
+            await session.commit()
+            await session.refresh(orm)
+            return self.to_response(orm)
 
-        update_fields = data.model_dump(exclude_unset=True)
-        pub.update(update_fields)
-        pub["updated_at"] = datetime.now(timezone.utc)
-
-        if data.scheduled_at:
-            pub["status"] = PublicationStatus.SCHEDULED
-
-        return PublicationResponse(**pub)
-
-    def delete(self, publication_id: str) -> bool:
+    async def delete(self, publication_id: str) -> bool:
         """Удаление публикации."""
-        if publication_id in self.publications:
-            self.publications[publication_id]["status"] = PublicationStatus.DELETED
-            self.publications[publication_id]["updated_at"] = datetime.now(timezone.utc)
+        from uuid import UUID
+        try:
+            pid = UUID(publication_id)
+        except Exception:
+            return False
+        async with self.session_factory() as session:
+            orm = await session.get(PublicationORM, pid)
+            if not orm:
+                return False
+            orm.status = PublicationStatus.DELETED.value
+            orm.updated_at = datetime.now(timezone.utc)
+            await session.commit()
             return True
-        return False
 
     def preview(self, data: PublicationCreate) -> PublicationPreview:
         """Предпросмотр публикации."""
@@ -144,66 +174,103 @@ class PublicationService:
             formatted_html=formatted_html,
         )
 
-    def get_calendar(self, year: int, month: int) -> List[CalendarEvent]:
+    async def get_calendar(self, year: int, month: int) -> List[CalendarEvent]:
         """Получение календаря публикаций за месяц."""
-        events: Dict[str, List[PublicationResponse]] = {}
+        async with self.session_factory() as session:
+            from dateutil.relativedelta import relativedelta
+            start = datetime(year, month, 1, tzinfo=timezone.utc)
+            end = start + relativedelta(months=1)
+            res = await session.execute(
+                select(PublicationORM).where(
+                    PublicationORM.scheduled_at >= start, PublicationORM.scheduled_at < end
+                )
+            )
+            rows = res.scalars().all()
+            bucket: Dict[str, List[PublicationResponse]] = {}
+            for r in rows:
+                key = r.scheduled_at.strftime("%Y-%m-%d") if r.scheduled_at else None
+                if not key:
+                    continue
+                bucket.setdefault(key, []).append(self.to_response(r))
+            return [CalendarEvent(date=day, publications=pubs) for day, pubs in sorted(bucket.items())]
 
-        for pub in self.publications.values():
-            if pub["scheduled_at"]:
-                pub_date = pub["scheduled_at"]
-                if pub_date.year == year and pub_date.month == month:
-                    date_key = pub_date.strftime("%Y-%m-%d")
-                    if date_key not in events:
-                        events[date_key] = []
-                    events[date_key].append(PublicationResponse(**pub))
-
-        return [
-            CalendarEvent(date=date, publications=pubs)
-            for date, pubs in sorted(events.items())
-        ]
-
-    def reschedule(self, publication_id: str, new_datetime: datetime, tz: str = "UTC") -> Optional[PublicationResponse]:
+    async def reschedule(self, publication_id: str, new_datetime: datetime, tz: str = "UTC") -> Optional[PublicationResponse]:
         """Перенос публикации на другое время."""
-        pub = self.publications.get(publication_id)
-        if not pub:
+        from uuid import UUID
+        try:
+            pid = UUID(publication_id)
+        except Exception:
             return None
-
-        # Конвертация в UTC aware datetime
         if new_datetime.tzinfo is None:
             new_datetime = new_datetime.replace(tzinfo=timezone.utc)
+        async with self.session_factory() as session:
+            orm = await session.get(PublicationORM, pid)
+            if not orm:
+                return None
+            orm.scheduled_at = new_datetime
+            orm.timezone = tz
+            orm.status = PublicationStatus.SCHEDULED.value
+            orm.updated_at = datetime.now(timezone.utc)
+            await session.commit()
+            await session.refresh(orm)
+            return self.to_response(orm)
 
-        pub["scheduled_at"] = new_datetime
-        pub["timezone"] = tz
-        pub["status"] = PublicationStatus.SCHEDULED
-        pub["updated_at"] = datetime.now(timezone.utc)
-
-        return PublicationResponse(**pub)
-
-    def create_series(self, data: SeriesCreate) -> SeriesResponse:
+    async def create_series(self, data: SeriesCreate) -> SeriesResponse:
         """Создание сериала публикаций."""
-        series_id = str(uuid4())
-        publications = []
+        async with self.session_factory() as session:
+            sorm = PublicationSeriesORM(name=data.name)
+            session.add(sorm)
+            await session.flush()
+            pub_orms: List[PublicationORM] = []
+            now = datetime.now(timezone.utc)
+            for p in data.publications:
+                scheduled_at_utc = p.scheduled_at
+                if scheduled_at_utc and scheduled_at_utc.tzinfo is None:
+                    scheduled_at_utc = scheduled_at_utc.replace(tzinfo=timezone.utc)
+                status = (
+                    PublicationStatus.DRAFT
+                    if p.is_draft
+                    else (PublicationStatus.SCHEDULED if p.scheduled_at else PublicationStatus.PUBLISHED)
+                )
+                pub_orm = PublicationORM(
+                    content_type=p.content_type.value if hasattr(p.content_type, "value") else str(p.content_type),
+                    text=p.text,
+                    media=[m.model_dump() for m in (p.media or [])] if p.media else None,
+                    poll=p.poll.model_dump() if p.poll else None,
+                    inline_buttons=[[btn.model_dump() for btn in row] for row in (p.inline_buttons or [])] if p.inline_buttons else None,
+                    link=p.link,
+                    channel_ids=list(p.channel_ids) if p.channel_ids else None,
+                    tags=list(p.tags) if p.tags else None,
+                    status=status.value if hasattr(status, "value") else str(status),
+                    scheduled_at=scheduled_at_utc,
+                    published_at=now if status == PublicationStatus.PUBLISHED else None,
+                    timezone=p.timezone,
+                    auto_pin=bool(p.auto_pin),
+                    auto_delete=(p.auto_delete.model_dump() if p.auto_delete else None),
+                    series_id=str(sorm.id),
+                )
+                session.add(pub_orm)
+                pub_orms.append(pub_orm)
+            await session.commit()
+            for po in pub_orms:
+                await session.refresh(po)
+            pubs = [self.to_response(po) for po in pub_orms]
+            return SeriesResponse(id=str(sorm.id), name=data.name, publications=pubs, created_at=sorm.created_at)
 
-        for pub_data in data.publications:
-            # Безопасное копирование вместо мутации
-            pub_data_copy = pub_data.model_copy(update={"series_id": series_id})
-            pub = self.create(pub_data_copy)
-            publications.append(pub)
-
-        series = {
-            "id": series_id,
-            "name": data.name,
-            "publications": publications,
-            "created_at": datetime.now(timezone.utc),
-        }
-
-        self.series[series_id] = series
-        return SeriesResponse(**series)
-
-    def get_series(self, series_id: str) -> Optional[SeriesResponse]:
+    async def get_series(self, series_id: str) -> Optional[SeriesResponse]:
         """Получение сериала по ID."""
-        series = self.series.get(series_id)
-        return SeriesResponse(**series) if series else None
+        from uuid import UUID
+        try:
+            sid = UUID(series_id)
+        except Exception:
+            return None
+        async with self.session_factory() as session:
+            s = await session.get(PublicationSeriesORM, sid)
+            if not s:
+                return None
+            res = await session.execute(select(PublicationORM).where(PublicationORM.series_id == series_id))
+            pubs = [self.to_response(r) for r in res.scalars().all()]
+            return SeriesResponse(id=str(s.id), name=s.name, publications=pubs, created_at=s.created_at)
 
     def notify(self, publication_id: str, status: str, message: str, **kwargs) -> PublicationNotification:
         """Создание уведомления о публикации."""
@@ -282,6 +349,28 @@ class PublicationService:
                     html_parts.append(f'<button>{escaped_btn_text}</button>')
 
         return "".join(html_parts)
+
+    def to_response(self, orm: PublicationORM) -> PublicationResponse:
+        return PublicationResponse(
+            id=str(orm.id),
+            content_type=orm.content_type,
+            text=orm.text,
+            media=orm.media,
+            poll=orm.poll,
+            inline_buttons=orm.inline_buttons,
+            link=orm.link,
+            channel_ids=orm.channel_ids or [],
+            tags=orm.tags or [],
+            status=PublicationStatus(orm.status),
+            scheduled_at=orm.scheduled_at,
+            published_at=orm.published_at,
+            timezone=orm.timezone,
+            auto_pin=orm.auto_pin,
+            auto_delete=orm.auto_delete,
+            series_id=orm.series_id,
+            created_at=orm.created_at,
+            updated_at=orm.updated_at,
+        )
 
 
 __all__ = ["PublicationService"]

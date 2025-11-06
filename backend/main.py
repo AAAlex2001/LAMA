@@ -15,6 +15,7 @@ from backend.services.channel_service import ChannelService
 from backend.services.auth_service import AuthService, AuthConfig
 from backend.db import engine, SessionLocal
 from backend.models.db_models import Base
+from backend.services.publication_service import PublicationService
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ scheduler_service.bot_service = bot_service  # Update reference
 channel_service = ChannelService(bot_service=bot_service, session_factory=SessionLocal)
 scheduler_service.channel_service = channel_service
 auth_service = AuthService(session_factory=SessionLocal, config=AuthConfig())
+publication_service = PublicationService(session_factory=SessionLocal)
 
 
 @asynccontextmanager
@@ -62,6 +64,7 @@ app.state.bot_service = bot_service
 app.state.scheduler_service = scheduler_service
 app.state.channel_service = channel_service
 app.state.auth_service = auth_service
+app.state.publication_service = publication_service
 app.state.db_engine = engine
 app.state.db_sessionmaker = SessionLocal
 

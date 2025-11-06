@@ -13,7 +13,7 @@ from sqlalchemy import (
     DateTime,
     func,
 )
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from backend.models.channel import ChannelType, BackupMode
@@ -198,6 +198,37 @@ class BotUserSeriesProgress(Base):
     current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
 
+class Publication(Base):
+    __tablename__ = "publications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    content_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    media: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    poll: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    inline_buttons: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    link: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    channel_ids: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String(128)), nullable=True)
+    tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(String(64)), nullable=True)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
+    auto_pin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    auto_delete: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    series_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+
+
+class PublicationSeries(Base):
+    __tablename__ = "publication_series"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+
 __all__ = [
     "Base",
     "Channel",
@@ -213,5 +244,7 @@ __all__ = [
     "BotInboxMessage",
     "BotCallbackClick",
     "BotUserSeriesProgress",
+    "Publication",
+    "PublicationSeries",
 ]
 
