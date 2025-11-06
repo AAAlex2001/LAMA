@@ -32,7 +32,7 @@ from backend.models.publication import (
 from backend.models.db_models import Publication as PublicationORM, PublicationSeries as PublicationSeriesORM
 
 
-AI_SEM = asyncio.Semaphore(5)
+AI_SEM = asyncio.Semaphore(10)
 
 
 class PublicationService:
