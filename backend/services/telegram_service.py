@@ -1,342 +1,260 @@
-"""
-Сервис для работы с Telegram Bot API.
-Публикация контента в каналы, управление сообщениями.
-"""
+from __future__ import annotations
 
-import os
-from typing import Optional, List, Dict
-from datetime import datetime
 import asyncio
+import html
+from typing import Any, Dict, List, Optional, Callable, Awaitable, Tuple
+from uuid import UUID
 
-from telegram import Bot, InputMediaPhoto, InputMediaVideo, InputMediaAudio, InputMediaDocument
-from telegram.constants import ParseMode
-from telegram.error import TelegramError
-
-from backend.models.publication import (
-    PublicationCreate,
-    PublicationResponse,
-    ContentType,
-    MediaContent,
+from telegram import (
+    Bot,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    InputMediaPhoto,
+    InputMediaVideo,
+    InputMediaDocument,
+    InputMediaAudio,
 )
+from telegram.constants import ParseMode
+from telegram.error import TelegramError, RetryAfter, TimedOut
+
+from backend.services.bot_service import BotService
+from backend.services.channel_service import ChannelService
 
 
 class TelegramService:
-    """Сервис для публикации в Telegram каналы."""
+    tg_sem = asyncio.Semaphore(8)
 
-    def __init__(self):
-        self.bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-        if not self.bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
-        self.bot = Bot(token=self.bot_token)
-        self.message_ids: Dict[str, List[int]] = {}
-
-    async def publish_to_channel(
+    def __init__(
         self,
-        channel_id: str,
-        publication: PublicationCreate,
-        publication_id: str,
-    ) -> Dict[str, any]:
-        """Публикация контента в Telegram канал."""
+        bot_service: BotService,
+        channel_service: Optional[ChannelService] = None,
+        notifier: Optional[Callable[[str, bool, Dict[str, Any]], Awaitable[None]]] = None,
+    ):
+        self.bot_service = bot_service
+        self.channel_service = channel_service
+        self.notifier = notifier
+
+    async def publish_to_channel(self, channel_id: str, publication: Dict[str, Any], publication_id: str) -> Dict[str, Any]:
+        bot, tg_chat_id = await self.resolve_bot_and_chat(channel_id)
+
+        text = self.esc(publication.get("text"))
+        media = publication.get("media") or []
+        poll = publication.get("poll")
+        markup = self.build_markup(publication.get("inline_buttons"))
+        auto_pin = bool(publication.get("auto_pin"))
+
         try:
-            result = None
+            if poll:
+                msg_id = await self.send_poll(bot, tg_chat_id, poll, markup)
+                if auto_pin:
+                    await self.pin(bot, tg_chat_id, msg_id)
+                await self.notify(publication_id, True, {"message_id": msg_id})
+                return {"success": True, "message_id": msg_id}
 
-            if publication.content_type == ContentType.TEXT:
-                result = await self.send_text(channel_id, publication)
+            if media:
+                msg_id = await self.send_media(bot, tg_chat_id, media, text, markup)
+                if auto_pin:
+                    await self.pin(bot, tg_chat_id, msg_id)
+                await self.notify(publication_id, True, {"message_id": msg_id})
+                return {"success": True, "message_id": msg_id}
 
-            elif publication.content_type == ContentType.TEXT_WITH_MEDIA:
-                result = await self.send_text_with_media(channel_id, publication)
+            if text:
+                msg = await self.call(lambda: bot.send_message(tg_chat_id, text, parse_mode=ParseMode.HTML, reply_markup=markup))
+                if auto_pin:
+                    await self.pin(bot, tg_chat_id, msg.message_id)
+                await self.notify(publication_id, True, {"message_id": msg.message_id})
+                return {"success": True, "message_id": msg.message_id}
 
-            elif publication.content_type == ContentType.IMAGE:
-                result = await self.send_images(channel_id, publication)
+            await self.notify(publication_id, False, {"error": "empty_publication"})
+            return {"success": False, "error": "empty_publication"}
 
-            elif publication.content_type == ContentType.VIDEO:
-                result = await self.send_videos(channel_id, publication)
+        except Exception as e:
+            await self.notify(publication_id, False, {"error": str(e)})
+            return {"success": False, "error": str(e)}
 
-            elif publication.content_type == ContentType.AUDIO:
-                result = await self.send_audio(channel_id, publication)
+    async def delete_message(self, channel_id: str, message_id: int) -> None:
+        bot, tg_chat_id = await self.resolve_bot_and_chat(channel_id)
+        await self.call(lambda: bot.delete_message(chat_id=tg_chat_id, message_id=message_id))
 
-            elif publication.content_type == ContentType.DOCUMENT:
-                result = await self.send_documents(channel_id, publication)
+    async def edit_publication(self, channel_id: str, message_id: int, new_data: Dict[str, Any]) -> Dict[str, Any]:
+        bot, tg_chat_id = await self.resolve_bot_and_chat(channel_id)
+        text = self.esc(new_data.get("text"))
+        caption = self.esc(new_data.get("caption"))
+        media = new_data.get("media") or []
+        markup = self.build_markup(new_data.get("inline_buttons"))
 
-            elif publication.content_type == ContentType.LINK:
-                result = await self.send_link(channel_id, publication)
+        try:
+            if media and len(media) == 1:
+                im = self.to_input_media(media[0], caption)
+                await self.call(lambda: bot.edit_message_media(chat_id=tg_chat_id, message_id=message_id, media=im, reply_markup=markup))
+                return {"success": True, "edited": "media"}
 
-            elif publication.content_type == ContentType.POLL:
-                result = await self.send_poll(channel_id, publication)
+            if caption is not None:
+                await self.call(lambda: bot.edit_message_caption(chat_id=tg_chat_id, message_id=message_id, caption=caption, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return {"success": True, "edited": "caption"}
 
-            elif publication.content_type == ContentType.QUIZ:
-                result = await self.send_quiz(channel_id, publication)
+            if text is not None:
+                await self.call(lambda: bot.edit_message_text(chat_id=tg_chat_id, message_id=message_id, text=text, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return {"success": True, "edited": "text"}
 
-            if result and publication.auto_pin:
-                await self.pin_message(channel_id, result["message_id"])
+            return {"success": False, "error": "nothing_to_edit"}
+        except Exception as e:
+            return {"success": False, "error": str(e)}
 
-            return {
-                "success": True,
-                "message_id": result["message_id"] if result else None,
-                "channel_id": channel_id,
-            }
+    async def resolve_bot_and_chat(self, channel_id: str) -> Tuple[Bot, str]:
+        if self.channel_service:
+            try:
+                _ = UUID(channel_id)
+                ch = await self.channel_service.require(channel_id)
+                bot_rec = await self.bot_service.require(ch.bot_id)
+                return bot_rec.bot, ch.telegram_chat_id
+            except Exception:
+                pass
+        bot_rec = await self.bot_service.require_default()
+        return bot_rec.bot, str(channel_id)
 
-        except TelegramError as e:
-            return {
-                "success": False,
-                "error": str(e),
-                "channel_id": channel_id,
-            }
-
-    async def send_text(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка текстового сообщения."""
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        message = await self.bot.send_message(
-            chat_id=channel_id,
-            text=publication.text or "Пустое сообщение",
-            parse_mode=ParseMode.HTML,
-            reply_markup=reply_markup,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_text_with_media(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка текста с медиа (с блюром)."""
-        if not publication.media or len(publication.media) == 0:
-            return await self.send_text(channel_id, publication)
-
-        media = publication.media[0]
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        caption = publication.text or media.caption or ""
-
-        message = await self.bot.send_photo(
-            chat_id=channel_id,
-            photo=media.url,
-            caption=caption,
-            parse_mode=ParseMode.HTML,
-            has_spoiler=media.blur,
-            reply_markup=reply_markup,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_images(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка изображений (одно или альбом)."""
-        if not publication.media:
-            raise ValueError("No media provided for image publication")
-
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        if len(publication.media) == 1:
-            media = publication.media[0]
-            message = await self.bot.send_photo(
-                chat_id=channel_id,
-                photo=media.url,
-                caption=publication.text or media.caption,
-                parse_mode=ParseMode.HTML,
-                has_spoiler=media.blur,
-                reply_markup=reply_markup,
-            )
-            return {"message_id": message.message_id}
-        else:
-            media_group = [
-                InputMediaPhoto(
-                    media=m.url,
-                    caption=m.caption if i == 0 and not publication.text else publication.text if i == 0 else None,
-                    parse_mode=ParseMode.HTML,
-                    has_spoiler=m.blur,
-                )
-                for i, m in enumerate(publication.media[:10])
-            ]
-            messages = await self.bot.send_media_group(chat_id=channel_id, media=media_group)
-            return {"message_id": messages[0].message_id}
-
-    async def send_videos(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка видео."""
-        if not publication.media:
-            raise ValueError("No media provided for video publication")
-
-        media = publication.media[0]
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        message = await self.bot.send_video(
-            chat_id=channel_id,
-            video=media.url,
-            caption=publication.text or media.caption,
-            parse_mode=ParseMode.HTML,
-            has_spoiler=media.blur,
-            reply_markup=reply_markup,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_audio(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка аудио."""
-        if not publication.media:
-            raise ValueError("No media provided for audio publication")
-
-        media = publication.media[0]
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        message = await self.bot.send_audio(
-            chat_id=channel_id,
-            audio=media.url,
-            caption=publication.text or media.caption,
-            parse_mode=ParseMode.HTML,
-            reply_markup=reply_markup,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_documents(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка документов."""
-        if not publication.media:
-            raise ValueError("No media provided for document publication")
-
-        media = publication.media[0]
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        message = await self.bot.send_document(
-            chat_id=channel_id,
-            document=media.url,
-            caption=publication.text or media.caption,
-            parse_mode=ParseMode.HTML,
-            reply_markup=reply_markup,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_link(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка ссылки с текстом."""
-        text = f"{publication.text}\n\n{publication.link}" if publication.text else publication.link
-        reply_markup = self.build_inline_keyboard(publication.inline_buttons)
-
-        message = await self.bot.send_message(
-            chat_id=channel_id,
-            text=text,
-            parse_mode=ParseMode.HTML,
-            reply_markup=reply_markup,
-            disable_web_page_preview=False,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_poll(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка опроса."""
-        if not publication.poll:
-            raise ValueError("No poll data provided")
-
-        message = await self.bot.send_poll(
-            chat_id=channel_id,
-            question=publication.poll.question,
-            options=[opt.text for opt in publication.poll.options],
-            is_anonymous=publication.poll.is_anonymous,
-            allows_multiple_answers=publication.poll.allows_multiple_answers,
-        )
-
-        return {"message_id": message.message_id}
-
-    async def send_quiz(self, channel_id: str, publication: PublicationCreate) -> Dict:
-        """Отправка викторины."""
-        if not publication.poll:
-            raise ValueError("No quiz data provided")
-
-        message = await self.bot.send_poll(
-            chat_id=channel_id,
-            question=publication.poll.question,
-            options=[opt.text for opt in publication.poll.options],
-            type="quiz",
-            correct_option_id=publication.poll.correct_option_id,
-            is_anonymous=publication.poll.is_anonymous,
-        )
-
-        return {"message_id": message.message_id}
-
-    def build_inline_keyboard(self, buttons: Optional[List[List[any]]]):
-        """Построение inline клавиатуры."""
-        if not buttons:
+    def build_markup(self, inline_buttons: Optional[List[List[Dict[str, Any]]]]) -> Optional[InlineKeyboardMarkup]:
+        if not inline_buttons:
             return None
-
-        from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
-        keyboard = []
-        for row in buttons:
-            button_row = []
+        rows: List[List[InlineKeyboardButton]] = []
+        for row in inline_buttons:
+            out_row: List[InlineKeyboardButton] = []
             for btn in row:
-                button = InlineKeyboardButton(
-                    text=btn.text,
-                    url=btn.url if btn.url else None,
-                    callback_data=btn.callback_data if btn.callback_data else None,
-                )
-                button_row.append(button)
-            keyboard.append(button_row)
+                t = btn.get("text") or ""
+                url = btn.get("url")
+                cb = btn.get("callback_data")
+                if url:
+                    out_row.append(InlineKeyboardButton(text=t, url=url))
+                elif cb:
+                    out_row.append(InlineKeyboardButton(text=t, callback_data=cb))
+            if out_row:
+                rows.append(out_row)
+        return InlineKeyboardMarkup(rows) if rows else None
 
-        return InlineKeyboardMarkup(keyboard)
+    def esc(self, s: Optional[str]) -> Optional[str]:
+        return html.escape(s, quote=False) if s else s
 
-    async def pin_message(self, channel_id: str, message_id: int) -> bool:
-        """Закрепление сообщения в канале."""
+    async def pin(self, bot: Bot, chat_id: str, message_id: int) -> None:
+        await self.call(lambda: bot.pin_chat_message(chat_id=chat_id, message_id=message_id, disable_notification=True))
+
+    async def send_poll(self, bot: Bot, chat_id: str, poll: Dict[str, Any], markup: Optional[InlineKeyboardMarkup]) -> int:
+        q = poll.get("question") or ""
+        opts = [o.get("text", "") if isinstance(o, dict) else str(o) for o in (poll.get("options") or [])]
+        is_quiz = (poll.get("type") == "quiz") or (poll.get("quiz") is True)
+        correct_id = poll.get("correct_option_id") if is_quiz else None
+        allow_multi = bool(poll.get("allows_multiple_answers")) if not is_quiz else False
+        is_anonymous = bool(poll.get("is_anonymous", True))
+        exp = poll.get("explanation")
+
+        if is_quiz:
+            msg = await self.call(lambda: bot.send_poll(
+                chat_id=chat_id,
+                question=q[:300],
+                options=opts[:10],
+                is_anonymous=is_anonymous,
+                type="quiz",
+                correct_option_id=correct_id if isinstance(correct_id, int) else None,
+                explanation=(exp[:200] if isinstance(exp, str) else None),
+                reply_markup=markup,
+            ))
+        else:
+            msg = await self.call(lambda: bot.send_poll(
+                chat_id=chat_id,
+                question=q[:300],
+                options=opts[:10],
+                is_anonymous=is_anonymous,
+                allows_multiple_answers=allow_multi,
+                reply_markup=markup,
+            ))
+        return msg.message_id
+
+    async def send_media(self, bot: Bot, chat_id: str, media: List[Dict[str, Any]], caption: Optional[str], markup: Optional[InlineKeyboardMarkup]) -> int:
+        if len(media) == 1:
+            m = media[0]
+            t = (m.get("type") or "").lower()
+            src = m.get("url") or m.get("file_id")
+            cap = self.esc(caption) if caption else None
+
+            if t == "photo":
+                msg = await self.call(lambda: bot.send_photo(chat_id=chat_id, photo=src, caption=cap, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return msg.message_id
+            if t == "video":
+                msg = await self.call(lambda: bot.send_video(chat_id=chat_id, video=src, caption=cap, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return msg.message_id
+            if t == "document":
+                msg = await self.call(lambda: bot.send_document(chat_id=chat_id, document=src, caption=cap, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return msg.message_id
+            if t == "audio":
+                msg = await self.call(lambda: bot.send_audio(chat_id=chat_id, audio=src, caption=cap, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return msg.message_id
+
+            if cap:
+                msg = await self.call(lambda: bot.send_message(chat_id=chat_id, text=cap, parse_mode=ParseMode.HTML, reply_markup=markup))
+                return msg.message_id
+            raise TelegramError("unsupported_media_type")
+
+        types = set((m.get("type") or "").lower() for m in media)
+        if types <= {"photo"} or types <= {"video"}:
+            ims = []
+            cap_used = False
+            for i, m in enumerate(media):
+                t = (m.get("type") or "").lower()
+                src = m.get("url") or m.get("file_id")
+                cap = (self.esc(caption) if (i == 0 and caption and not cap_used) else None)
+                cap_used = cap_used or (cap is not None)
+                if t == "photo":
+                    ims.append(InputMediaPhoto(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None))
+                else:
+                    ims.append(InputMediaVideo(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None))
+            msgs = await self.call(lambda: bot.send_media_group(chat_id=chat_id, media=ims))
+            return msgs[0].message_id if msgs else 0
+
+        return await self.send_media(bot, chat_id, media[:1], caption, markup)
+
+    def to_input_media(self, m: Dict[str, Any], caption: Optional[str]):
+        t = (m.get("type") or "").lower()
+        src = m.get("url") or m.get("file_id")
+        cap = self.esc(caption) if caption else None
+        if t == "photo":
+            return InputMediaPhoto(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None)
+        if t == "video":
+            return InputMediaVideo(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None)
+        if t == "document":
+            return InputMediaDocument(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None)
+        if t == "audio":
+            return InputMediaAudio(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None)
+        return InputMediaDocument(media=src, caption=cap, parse_mode=ParseMode.HTML if cap else None)
+
+    async def call(self, coro_factory: Callable[[], Awaitable[Any]]) -> Any:
+        backoff = 0.5
+        for attempt in range(5):
+            try:
+                async with self.tg_sem:
+                    return await coro_factory()
+            except RetryAfter as e:
+                await asyncio.sleep(getattr(e, "retry_after", 1.5))
+            except TimedOut:
+                if attempt == 4:
+                    raise
+                await asyncio.sleep(backoff)
+                backoff *= 2
+            except TelegramError as e:
+                msg = str(e)
+                if "Too Many Requests" in msg or "429" in msg:
+                    await asyncio.sleep(1.25)
+                    continue
+                if msg.startswith("5") or "Bad Gateway" in msg or "Timeout" in msg:
+                    if attempt == 4:
+                        raise
+                    await asyncio.sleep(backoff)
+                    backoff *= 2
+                    continue
+                raise
+
+    async def notify(self, publication_id: str, ok: bool, payload: Dict[str, Any]) -> None:
+        if not self.notifier:
+            return
         try:
-            await self.bot.pin_chat_message(
-                chat_id=channel_id,
-                message_id=message_id,
-                disable_notification=True,
-            )
-            return True
-        except TelegramError:
-            return False
-
-    async def unpin_message(self, channel_id: str, message_id: int) -> bool:
-        """Открепление сообщения."""
-        try:
-            await self.bot.unpin_chat_message(
-                chat_id=channel_id,
-                message_id=message_id,
-            )
-            return True
-        except TelegramError:
-            return False
-
-    async def delete_message(self, channel_id: str, message_id: int) -> bool:
-        """Удаление сообщения из канала."""
-        try:
-            await self.bot.delete_message(chat_id=channel_id, message_id=message_id)
-            return True
-        except TelegramError:
-            return False
-
-    async def edit_message(
-        self,
-        channel_id: str,
-        message_id: int,
-        new_text: str,
-        inline_buttons: Optional[List[List[any]]] = None,
-    ) -> bool:
-        """Редактирование сообщения в канале."""
-        try:
-            reply_markup = self.build_inline_keyboard(inline_buttons)
-            await self.bot.edit_message_text(
-                chat_id=channel_id,
-                message_id=message_id,
-                text=new_text,
-                parse_mode=ParseMode.HTML,
-                reply_markup=reply_markup,
-            )
-            return True
-        except TelegramError:
-            return False
-
-    async def get_channel_info(self, channel_id: str) -> Dict:
-        """Получение информации о канале."""
-        try:
-            chat = await self.bot.get_chat(chat_id=channel_id)
-            return {
-                "id": chat.id,
-                "title": chat.title,
-                "username": chat.username,
-                "type": chat.type,
-                "description": chat.description,
-            }
-        except TelegramError as e:
-            return {"error": str(e)}
-
-
-__all__ = ["TelegramService"]
-
-
+            await self.notifier(publication_id, ok, payload)
+        except Exception:
+            pass

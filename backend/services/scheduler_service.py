@@ -1,12 +1,19 @@
-"""
-Сервис планировщика для отложенных публикаций и автоудаления.
-"""
+from __future__ import annotations
+
+import asyncio
+from datetime import datetime, timedelta, timezone
+from typing import Dict, Optional, List
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.cron import CronTrigger
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.events import (
+    EVENT_JOB_EXECUTED,
+    EVENT_JOB_ERROR,
+    EVENT_JOB_MISSED,
+    EVENT_JOB_REMOVED,
+)
 
 from backend.services.telegram_service import TelegramService
 from backend.services.publication_service import PublicationService
@@ -14,106 +21,92 @@ from backend.services.bot_service import BotService
 from backend.services.channel_service import ChannelService
 
 
-class SchedulerService:
-    """Планировщик задач для публикаций."""
+UTC_TZ = "UTC"
 
-    def __init__(self, bot_service: BotService):
-        self.scheduler = AsyncIOScheduler()
-        self.telegram_service = TelegramService()
-        self.publication_service = PublicationService()
+
+def ensure_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+class SchedulerService:
+    def __init__(
+        self,
+        bot_service: BotService,
+        telegram_service: TelegramService,
+        publication_service: PublicationService,
+        channel_service: Optional[ChannelService] = None,
+    ):
+        self.scheduler = AsyncIOScheduler(
+            timezone=UTC_TZ,
+            job_defaults={"coalesce": True, "misfire_grace_time": 60, "max_instances": 1},
+        )
         self.bot_service = bot_service
+        self.telegram_service = telegram_service
+        self.publication_service = publication_service
+        self.channel_service = channel_service
+
         self.scheduled_jobs: Dict[str, str] = {}
-        self.channel_service: ChannelService | None = None
+        self.sem_publish = asyncio.Semaphore(5)
+
+        self.scheduler.add_listener(self.on_job_event)
 
     def start(self):
-        """Запуск планировщика."""
         if not self.scheduler.running:
             self.scheduler.start()
 
     def stop(self):
-        """Остановка планировщика."""
         if self.scheduler.running:
             self.scheduler.shutdown()
 
-    def schedule_publication(
-        self,
-        publication_id: str,
-        scheduled_at: datetime,
-        channel_ids: list,
-        publication_data: dict,
-    ):
-        """Планирование отложенной публикации."""
+    def schedule_publication(self, publication_id: str, scheduled_at: datetime, channel_ids: List[str], publication_data: dict):
+        run_date = ensure_utc(scheduled_at)
         job = self.scheduler.add_job(
             self.execute_publication,
-            trigger=DateTrigger(run_date=scheduled_at),
+            trigger=DateTrigger(run_date=run_date, timezone=UTC_TZ),
             args=[publication_id, channel_ids, publication_data],
             id=f"pub_{publication_id}",
+            replace_existing=True,
         )
         self.scheduled_jobs[publication_id] = job.id
 
-    async def execute_publication(
-        self,
-        publication_id: str,
-        channel_ids: list,
-        publication_data: dict,
-    ):
-        """Выполнение отложенной публикации."""
-        for channel_id in channel_ids:
-            result = await self.telegram_service.publish_to_channel(
-                channel_id=channel_id,
-                publication=publication_data,
-                publication_id=publication_id,
-            )
+    async def execute_publication(self, publication_id: str, channel_ids: List[str], publication_data: dict):
+        async def publish_one(cid: str):
+            async with self.sem_publish:
+                res = await self.telegram_service.publish_to_channel(cid, publication_data, publication_id)
+                if not res or not res.get("success"):
+                    return res
+                hours = self.get_auto_delete_hours(publication_data.get("auto_delete"))
+                if isinstance(hours, int) and hours > 0:
+                    delete_at = ensure_utc(datetime.now(timezone.utc) + timedelta(hours=hours))
+                    self.schedule_auto_delete(channel_id=cid, message_id=res["message_id"], delete_at=delete_at)
+                return res
 
-            if result["success"]:
-                auto_delete = publication_data.get("auto_delete")
-                if auto_delete:
-                    hours = self.get_auto_delete_hours(auto_delete)
-                    if isinstance(hours, int) and hours > 0:
-                        delete_at = datetime.now() + timedelta(hours=hours)
-                        if delete_at <= datetime.now():
-                            continue
-                        self.schedule_auto_delete(
-                            channel_id=channel_id,
-                            message_id=result["message_id"],
-                            delete_at=delete_at,
-                        )
+        tasks = [asyncio.create_task(publish_one(cid)) for cid in channel_ids]
+        await asyncio.gather(*tasks, return_exceptions=True)
 
-    def schedule_auto_delete(
-        self,
-        channel_id: str,
-        message_id: int,
-        delete_at: datetime,
-    ):
-        """Планирование автоудаления сообщения."""
+    def schedule_auto_delete(self, channel_id: str, message_id: int, delete_at: datetime):
+        run_date = ensure_utc(delete_at)
         self.scheduler.add_job(
             self.telegram_service.delete_message,
-            trigger=DateTrigger(run_date=delete_at),
+            trigger=DateTrigger(run_date=run_date, timezone=UTC_TZ),
             args=[channel_id, message_id],
             id=f"delete_{channel_id}_{message_id}",
+            replace_existing=True,
         )
 
-    # ==== Бот-сообщения и серии ====
-
-    def schedule_bot_message_once(
-        self,
-        job_id: str,
-        run_at: datetime,
-        bot_id: str,
-        target_type: str,
-        target_id: str | int,
-        message: dict,
-    ) -> None:
+    def schedule_bot_message_once(self, job_id: str, run_at: datetime, bot_id: str, target_type: str, target_id: str | int, message: dict) -> None:
         self.scheduler.add_job(
             self.execute_bot_message,
-            trigger=DateTrigger(run_date=run_at),
+            trigger=DateTrigger(run_date=ensure_utc(run_at), timezone=UTC_TZ),
             args=[bot_id, target_type, target_id, message],
             id=job_id,
+            replace_existing=True,
         )
 
     async def execute_bot_message(self, bot_id: str, target_type: str, target_id: str | int, message: dict) -> None:
         from backend.models.bot import SendMessageRequest, MessageTargetType, DMTemplate
-
         req = SendMessageRequest(
             bot_id=bot_id,
             target_type=MessageTargetType(target_type),
@@ -123,79 +116,73 @@ class SchedulerService:
         await self.bot_service.send_message(req)
 
     def schedule_description_suffix_enforcement(self, bot_id: str) -> None:
-        """Проверка/добавление суффикса описания бота дважды в сутки."""
         self.scheduler.add_job(
             self.bot_service.enforce_description_suffix,
-            trigger=CronTrigger(hour="0,12"),
+            trigger=CronTrigger(hour="0,12", timezone=UTC_TZ),
             args=[bot_id],
             id=f"bot_suffix_{bot_id}",
             replace_existing=True,
         )
 
     def unschedule_description_suffix_enforcement(self, bot_id: str) -> None:
-        job_id = f"bot_suffix_{bot_id}"
         try:
-            self.scheduler.remove_job(job_id)
+            self.scheduler.remove_job(f"bot_suffix_{bot_id}")
         except Exception:
             pass
 
-    # ==== Отложенные триггеры ====
     def schedule_delayed_trigger(self, job_id: str, run_at: datetime, bot_id: str, target_type: str, target_id: str | int, message: dict) -> None:
         self.scheduler.add_job(
             self.execute_bot_message,
-            trigger=DateTrigger(run_date=run_at),
-            args=[bot_id, target_type, target_id, message],
-            id=job_id,
-        )
-
-    # ==== Расширенные расписания ====
-
-    def schedule_bot_daily(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, hour: int, minute: int, timezone: str = "UTC") -> None:
-        self.scheduler.add_job(
-            self.execute_bot_message,
-            trigger=CronTrigger(hour=hour, minute=minute, timezone=timezone),
+            trigger=DateTrigger(run_date=ensure_utc(run_at), timezone=UTC_TZ),
             args=[bot_id, target_type, target_id, message],
             id=job_id,
             replace_existing=True,
         )
 
-    def schedule_bot_weekly(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, days: list[int], hour: int, minute: int, timezone: str = "UTC") -> None:
-        dow = ",".join(str((d + 1) % 7) for d in days)  # CronTrigger: 0=Mon -> translate to 0..6
+    def schedule_bot_daily(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, hour: int, minute: int, timezone_str: str = UTC_TZ) -> None:
         self.scheduler.add_job(
             self.execute_bot_message,
-            trigger=CronTrigger(day_of_week=dow, hour=hour, minute=minute, timezone=timezone),
+            trigger=CronTrigger(hour=hour, minute=minute, timezone=timezone_str),
             args=[bot_id, target_type, target_id, message],
             id=job_id,
             replace_existing=True,
         )
 
-    def schedule_bot_weekdays(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, hour: int, minute: int, timezone: str = "UTC") -> None:
-        """Расписание для будних дней (пн-пт)."""
-        # CronTrigger: 0=Mon, 1=Tue, ..., 4=Fri
+    def schedule_bot_weekly(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, days: list[int], hour: int, minute: int, timezone_str: str = UTC_TZ) -> None:
+        dow = ",".join(str(d) for d in days)
         self.scheduler.add_job(
             self.execute_bot_message,
-            trigger=CronTrigger(day_of_week="0-4", hour=hour, minute=minute, timezone=timezone),
+            trigger=CronTrigger(day_of_week=dow, hour=hour, minute=minute, timezone=timezone_str),
             args=[bot_id, target_type, target_id, message],
             id=job_id,
             replace_existing=True,
         )
 
-    def schedule_bot_monthly(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, month_days: list[int], hour: int, minute: int, timezone: str = "UTC") -> None:
+    def schedule_bot_weekdays(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, hour: int, minute: int, timezone_str: str = UTC_TZ) -> None:
+        self.scheduler.add_job(
+            self.execute_bot_message,
+            trigger=CronTrigger(day_of_week="0-4", hour=hour, minute=minute, timezone=timezone_str),
+            args=[bot_id, target_type, target_id, message],
+            id=job_id,
+            replace_existing=True,
+        )
+
+    def schedule_bot_monthly(self, job_id: str, bot_id: str, target_type: str, target_id: str | int, message: dict, month_days: list[int], hour: int, minute: int, timezone_str: str = UTC_TZ) -> None:
         dom = ",".join(str(d) for d in month_days)
         self.scheduler.add_job(
             self.execute_bot_message,
-            trigger=CronTrigger(day=dom, hour=hour, minute=minute, timezone=timezone),
+            trigger=CronTrigger(day=dom, hour=hour, minute=minute, timezone=timezone_str),
             args=[bot_id, target_type, target_id, message],
             id=job_id,
             replace_existing=True,
         )
 
     def schedule_series(self, base_id: str, bot_id: str, target_type: str, target_id: str | int, steps: list[dict], start_at: datetime) -> None:
+        start = ensure_utc(start_at)
         for idx, step in enumerate(steps):
-            run_at = start_at + step["offset"]
-            job_id = f"series_{base_id}_{idx}"
+            run_at = start + step["offset"]
             self.schedule_bot_message_once(
-                job_id=job_id,
+                job_id=f"series_{base_id}_{idx}",
                 run_at=run_at,
                 bot_id=bot_id,
                 target_type=target_type,
@@ -204,47 +191,30 @@ class SchedulerService:
             )
 
     def get_auto_delete_hours(self, auto_delete) -> Optional[int]:
-        """Безопасное получение hours из auto_delete (dict или объект)."""
         if hasattr(auto_delete, "hours"):
             return auto_delete.hours
-        elif isinstance(auto_delete, dict):
+        if isinstance(auto_delete, dict):
             return auto_delete.get("hours")
         return None
 
     def cancel_scheduled_publication(self, publication_id: str) -> bool:
-        """Отмена запланированной публикации."""
-        job_id = self.scheduled_jobs.get(publication_id)
-        if job_id:
-            try:
-                self.scheduler.remove_job(job_id)
-                del self.scheduled_jobs[publication_id]
-                return True
-            except Exception:
-                return False
-        return False
+        job_id = self.scheduled_jobs.pop(publication_id, None)
+        if not job_id:
+            return False
+        try:
+            self.scheduler.remove_job(job_id)
+            return True
+        except Exception:
+            return False
 
-    def reschedule_publication(
-        self,
-        publication_id: str,
-        new_datetime: datetime,
-        channel_ids: list,
-        publication_data: dict,
-    ):
-        """Перенос публикации на другое время."""
+    def reschedule_publication(self, publication_id: str, new_datetime: datetime, channel_ids: list[str], publication_data: dict):
         self.cancel_scheduled_publication(publication_id)
-        self.schedule_publication(
-            publication_id=publication_id,
-            scheduled_at=new_datetime,
-            channel_ids=channel_ids,
-            publication_data=publication_data,
-        )
+        self.schedule_publication(publication_id, new_datetime, channel_ids, publication_data)
 
-    # ==== Автосинхронизация каналов ====
     def schedule_channels_auto_sync(self, interval_minutes: int = 10) -> None:
-        """Периодическая автосинхронизация каналов с auto_sync=True."""
         self.scheduler.add_job(
             self.execute_channels_auto_sync,
-            trigger=CronTrigger(minute=f"*/{interval_minutes}"),
+            trigger=IntervalTrigger(minutes=interval_minutes, timezone=UTC_TZ),
             id="channels_auto_sync",
             replace_existing=True,
         )
@@ -254,15 +224,25 @@ class SchedulerService:
             return
         try:
             channels = await self.channel_service.list()
-            for ch in channels:
-                if ch.auto_sync:
+            sem = asyncio.Semaphore(4)
+
+            async def sync(ch):
+                if not ch.auto_sync:
+                    return
+                async with sem:
                     try:
                         await self.channel_service.sync_channel(ch.id)
                     except Exception:
                         pass
+
+            await asyncio.gather(*(asyncio.create_task(sync(ch)) for ch in channels))
         except Exception:
             pass
 
-
-__all__ = ["SchedulerService"]
-
+    def on_job_event(self, event) -> None:
+        if not getattr(event, "job_id", None):
+            return
+        if event.code in (EVENT_JOB_EXECUTED, EVENT_JOB_REMOVED, EVENT_JOB_ERROR, EVENT_JOB_MISSED):
+            for pub_id, jid in list(self.scheduled_jobs.items()):
+                if jid == event.job_id:
+                    self.scheduled_jobs.pop(pub_id, None)
