@@ -36,7 +36,7 @@ from backend.services.bot_service import BotService
 class ChannelService:
     """Сервис управления каналами/группами, с хранением в Postgres."""
 
-    tg_sem = asyncio.Semaphore(10)
+    tg_sem = asyncio.Semaphore(5)
 
     def __init__(self, bot_service: BotService, session_factory: async_sessionmaker[AsyncSession]):
         self.bot_service = bot_service
