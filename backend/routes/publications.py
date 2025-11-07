@@ -19,6 +19,28 @@ async def get_publication_service():
     pass
 
 
+@router.post("/channels", response_model=ChannelResponse, status_code=201)
+async def create_channel(
+    data: ChannelCreate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Создать канал для публикаций"""
+    channel = await service.create_channel(
+        telegram_id=data.telegram_id,
+        name=data.name,
+        username=data.username
+    )
+    return channel
+
+
+@router.get("/channels", response_model=List[ChannelResponse])
+async def list_channels(
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить список каналов"""
+    return await service.list_channels()
+
+
 @router.post("/", response_model=PublicationResponse, status_code=201)
 async def create_publication(
     data: PublicationCreate,
@@ -269,28 +291,6 @@ async def edit_content_with_ai(
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/channels", response_model=ChannelResponse, status_code=201)
-async def create_channel(
-    data: ChannelCreate,
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Создать канал для публикаций"""
-    channel = await service.create_channel(
-        telegram_id=data.telegram_id,
-        name=data.name,
-        username=data.username
-    )
-    return channel
-
-
-@router.get("/channels", response_model=List[ChannelResponse])
-async def list_channels(
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Получить список каналов"""
-    return await service.list_channels()
 
 
 @router.post("/series", response_model=PublicationSeriesResponse, status_code=201)
