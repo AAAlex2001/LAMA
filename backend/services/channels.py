@@ -213,10 +213,15 @@ class ChannelService:
         await self.db.refresh(channel)
         return channel
 
-    async def save_post_backup(self, channel_id: int, message: Message) -> BackedUpPost:
+    async def save_post_backup(
+        self,
+        channel_id: int,
+        message: Message,
+        media_urls: Optional[List[str]] = None
+    ) -> BackedUpPost:
         """Сохранение поста в бекап"""
         content_type = "text"
-        media_urls = []
+        collected_media_urls: List[str] = media_urls.copy() if media_urls else []
         media_file_ids = []
         
         if message.photo:
@@ -245,7 +250,7 @@ class ChannelService:
             telegram_message_id=message.message_id,
             content_type=content_type,
             text_content=message.text or message.caption,
-            media_urls=media_urls if media_urls else None,
+            media_urls=collected_media_urls if collected_media_urls else None,
             media_file_ids=media_file_ids if media_file_ids else None,
             has_spoiler=message.has_media_spoiler if hasattr(message, "has_media_spoiler") else False,
             reply_markup=message.reply_markup.model_dump(mode="json") if message.reply_markup else None,
@@ -530,4 +535,5 @@ class ChannelService:
             "first_post_date": dates[0],
             "last_post_date": dates[1]
         }
+
 

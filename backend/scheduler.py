@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -17,7 +17,7 @@ scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 
 async def process_scheduled_publications():
     async with AsyncSessionLocal() as db:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         query = select(Publication).where(
             Publication.status == DBPublicationStatus.SCHEDULED,
@@ -27,6 +27,14 @@ async def process_scheduled_publications():
         publications = result.scalars().all()
         
         for publication in publications:
+            try:
+                await db.refresh(publication)
+            except Exception:
+                continue
+
+            if publication.status != DBPublicationStatus.SCHEDULED:
+                continue
+
             service = PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
             try:
                 await service.publish_now(publication.id)
@@ -41,7 +49,7 @@ async def process_scheduled_publications():
 
 async def process_auto_delete():
     async with AsyncSessionLocal() as db:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         query = select(Publication).where(
             Publication.status == DBPublicationStatus.PUBLISHED,

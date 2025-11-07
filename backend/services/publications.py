@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, and_, or_, func, delete, distinct
-from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
@@ -20,11 +19,12 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     ContentType as DBContentType
 )
-from backend.models.channels import ChannelGroup as Channel, BackedUpPost
+from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
 )
+from backend.services.channels import ChannelService
 
 
 class PublicationService:
@@ -37,6 +37,7 @@ class PublicationService:
             limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
+        self.channel_service = ChannelService(db, bot)
 
     async def create_publication(self, data: PublicationCreate) -> Publication:
         publication = Publication(
@@ -251,7 +252,11 @@ class PublicationService:
                         self.db.add(telegram_message)
                         await self.db.flush()
 
-                        await self.store_backup_entry(channel, message, publication)
+                        await self.channel_service.save_post_backup(
+                            channel.id,
+                            message,
+                            publication.media_urls
+                        )
 
                         if publication.pin_message:
                             try:
@@ -454,52 +459,6 @@ class PublicationService:
             return message
 
         return message
-
-    async def store_backup_entry(self, channel: Channel, message: Message, publication: Publication) -> None:
-        media_file_ids: Optional[List[str]] = None
-
-        if message.photo:
-            media_file_ids = [photo.file_id for photo in message.photo]
-        elif message.video:
-            media_file_ids = [message.video.file_id]
-        elif message.document:
-            media_file_ids = [message.document.file_id]
-        elif message.audio:
-            media_file_ids = [message.audio.file_id]
-        elif message.voice:
-            media_file_ids = [message.voice.file_id]
-        elif message.animation:
-            media_file_ids = [message.animation.file_id]
-
-        content_type = message.content_type.upper() if message.content_type else publication.content_type.value.upper()
-        text_content = message.text or message.caption
-        reply_markup_data = message.reply_markup.model_dump(mode="json") if message.reply_markup else None
-        has_spoiler = bool(getattr(message, "has_media_spoiler", False))
-        views_count = message.views if getattr(message, "views", None) else 0
-        forwards_count = message.forwards if getattr(message, "forwards", None) else 0
-        original_date = message.date
-        if original_date.tzinfo is None:
-            original_date = original_date.replace(tzinfo=timezone.utc)
-
-        media_urls = publication.media_urls if publication.media_urls else None
-
-        data = {
-            "channel_id": channel.id,
-            "telegram_message_id": message.message_id,
-            "content_type": content_type,
-            "text_content": text_content,
-            "media_urls": media_urls,
-            "media_file_ids": media_file_ids,
-            "has_spoiler": has_spoiler,
-            "reply_markup": reply_markup_data,
-            "views_count": views_count,
-            "forwards_count": forwards_count,
-            "original_date": original_date,
-            "raw_data": message.model_dump(mode="json")
-        }
-
-        stmt = insert(BackedUpPost).values(**data).on_conflict_do_nothing(index_elements=["channel_id", "telegram_message_id"])
-        await self.db.execute(stmt)
 
     async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
         tz = pytz.timezone(timezone_str)
