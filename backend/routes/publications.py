@@ -234,8 +234,7 @@ async def generate_content_with_ai(
     """Сгенерировать контент с помощью AI и создать публикацию"""
     try:
         content = await service.generate_with_ai(request)
-        
-        # Create publication with generated content
+
         publication_data = PublicationCreate(
             content_type=request.content_type,
             text_content=content,

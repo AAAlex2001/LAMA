@@ -15,7 +15,7 @@ from backend.models.channels import (
 )
 from backend.schemas.channels import (
     ChannelGroupCreate, ChannelGroupUpdate,
-    BackupJobCreate, RestoreBackupRequest
+    BackupJobCreate
 )
 
 

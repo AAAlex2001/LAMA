@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select, and_, or_, func, delete, distinct
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 import pytz
 import asyncio
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, Message
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramRetryAfter, TelegramBadRequest
 import httpx
@@ -19,7 +20,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     ContentType as DBContentType
 )
-from backend.models.channels import ChannelGroup as Channel
+from backend.models.channels import ChannelGroup as Channel, BackedUpPost
 from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
@@ -236,32 +237,35 @@ class PublicationService:
             return {"success": False, "error": "No channels selected"}
 
         async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
+            channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
             async with self.telegram_semaphore:
                 for attempt in range(5):
                     try:
-                        message_id = await self.send_to_telegram(publication, channel)
+                        message = await self.send_to_telegram(publication, channel)
                         
                         telegram_message = TelegramMessage(
                             publication_id=publication.id,
                             channel_id=channel.id,
-                            telegram_message_id=message_id
+                            telegram_message_id=message.message_id
                         )
                         self.db.add(telegram_message)
                         await self.db.flush()
 
+                        await self.store_backup_entry(channel, message, publication)
+
                         if publication.pin_message:
                             try:
-                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message.message_id)
                             except Exception:
                                 pass
 
                         await self.create_notification(
                             publication.id,
                             "success",
-                            f"Published to {channel.name}"
+                            f"Published to {channel_name}"
                         )
 
-                        return {"channel": channel.name, "success": True, "message_id": message_id}
+                        return {"channel": channel_name, "success": True, "message_id": message.message_id}
 
                     except TelegramRetryAfter as e:
                         if attempt < 4:
@@ -270,20 +274,20 @@ class PublicationService:
                             await self.create_notification(
                                 publication.id,
                                 "error",
-                                f"Failed to publish to {channel.name}: Rate limit",
+                                f"Failed to publish to {channel_name}: Rate limit",
                                 {"error": str(e)}
                             )
-                            return {"channel": channel.name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
+                            return {"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
 
                     except Exception as e:
                         if attempt == 4:
                             await self.create_notification(
                                 publication.id,
                                 "error",
-                                f"Failed to publish to {channel.name}",
+                                f"Failed to publish to {channel_name}",
                                 {"error": str(e)}
                             )
-                            return {"channel": channel.name, "success": False, "error": str(e)}
+                            return {"channel": channel_name, "success": False, "error": str(e)}
                         await asyncio.sleep(2 ** attempt)
             return None
 
@@ -319,7 +323,7 @@ class PublicationService:
                 keyboard.inline_keyboard.append(button_row)
         return keyboard
 
-    async def send_to_telegram(self, publication: Publication, channel: Channel) -> int:
+    async def send_to_telegram(self, publication: Publication, channel: Channel) -> Message:
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
@@ -340,7 +344,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
@@ -380,7 +384,7 @@ class PublicationService:
                     reply_markup=keyboard,
                     parse_mode=ParseMode.HTML
                 )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.IMAGE:
             message = await self.bot.send_photo(
@@ -391,7 +395,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.VIDEO:
             message = await self.bot.send_video(
@@ -402,7 +406,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.AUDIO:
             message = await self.bot.send_audio(
@@ -412,7 +416,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.DOCUMENT:
             message = await self.bot.send_document(
@@ -422,7 +426,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message.message_id
+            return message
 
         elif publication.content_type == DBContentType.LINK:
             message = await self.bot.send_message(
@@ -432,7 +436,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=False
             )
-            return message.message_id
+            return message
 
         elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             poll_data = publication.poll_data
@@ -447,9 +451,55 @@ class PublicationService:
                 explanation=poll_data.get('explanation'),
                 reply_markup=keyboard
             )
-            return message.message_id
+            return message
 
-        return 0
+        return message
+
+    async def store_backup_entry(self, channel: Channel, message: Message, publication: Publication) -> None:
+        media_file_ids: Optional[List[str]] = None
+
+        if message.photo:
+            media_file_ids = [photo.file_id for photo in message.photo]
+        elif message.video:
+            media_file_ids = [message.video.file_id]
+        elif message.document:
+            media_file_ids = [message.document.file_id]
+        elif message.audio:
+            media_file_ids = [message.audio.file_id]
+        elif message.voice:
+            media_file_ids = [message.voice.file_id]
+        elif message.animation:
+            media_file_ids = [message.animation.file_id]
+
+        content_type = message.content_type.upper() if message.content_type else publication.content_type.value.upper()
+        text_content = message.text or message.caption
+        reply_markup_data = message.reply_markup.model_dump(mode="json") if message.reply_markup else None
+        has_spoiler = bool(getattr(message, "has_media_spoiler", False))
+        views_count = message.views if getattr(message, "views", None) else 0
+        forwards_count = message.forwards if getattr(message, "forwards", None) else 0
+        original_date = message.date
+        if original_date.tzinfo is None:
+            original_date = original_date.replace(tzinfo=timezone.utc)
+
+        media_urls = publication.media_urls if publication.media_urls else None
+
+        data = {
+            "channel_id": channel.id,
+            "telegram_message_id": message.message_id,
+            "content_type": content_type,
+            "text_content": text_content,
+            "media_urls": media_urls,
+            "media_file_ids": media_file_ids,
+            "has_spoiler": has_spoiler,
+            "reply_markup": reply_markup_data,
+            "views_count": views_count,
+            "forwards_count": forwards_count,
+            "original_date": original_date,
+            "raw_data": message.model_dump(mode="json")
+        }
+
+        stmt = insert(BackedUpPost).values(**data).on_conflict_do_nothing(index_elements=["channel_id", "telegram_message_id"])
+        await self.db.execute(stmt)
 
     async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
         tz = pytz.timezone(timezone_str)
@@ -578,6 +628,7 @@ class PublicationService:
 
         results = []
         for tg_msg in publication.telegram_messages:
+            channel_label = getattr(tg_msg.channel, "title", getattr(tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
             try:
                 await self.bot.edit_message_text(
                     chat_id=tg_msg.channel.telegram_id,
@@ -585,9 +636,9 @@ class PublicationService:
                     text=new_text,
                     parse_mode=ParseMode.HTML
                 )
-                results.append({"channel": tg_msg.channel.name, "success": True})
+                results.append({"channel": channel_label, "success": True})
             except Exception as e:
-                results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
+                results.append({"channel": channel_label, "success": False, "error": str(e)})
 
         success_count = sum(1 for r in results if r.get("success"))
         
@@ -606,14 +657,15 @@ class PublicationService:
 
         results = []
         for tg_msg in publication.telegram_messages:
+            channel_label = getattr(tg_msg.channel, "title", getattr(tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
             try:
                 await self.bot.delete_message(
                     chat_id=tg_msg.channel.telegram_id,
                     message_id=tg_msg.telegram_message_id
                 )
-                results.append({"channel": tg_msg.channel.name, "success": True})
+                results.append({"channel": channel_label, "success": True})
             except Exception as e:
-                results.append({"channel": tg_msg.channel.name, "success": False, "error": str(e)})
+                results.append({"channel": channel_label, "success": False, "error": str(e)})
 
         success_count = sum(1 for r in results if r.get("success"))
         

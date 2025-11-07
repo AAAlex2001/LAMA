@@ -11,7 +11,6 @@ from backend.schemas.channels import (
     BackupJobListResponse, RestoreBackupRequest, RestoreBackupResponse, ChannelStatsResponse,
     ChannelType, BackupMode, BackupStatus
 )
-from backend.models.channels import ChannelGroup
 
 
 router = APIRouter(prefix="/channels", tags=["channels"])
