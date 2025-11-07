@@ -221,6 +221,10 @@ class AIEditRequest(BaseModel):
     instruction: str = Field(..., min_length=10, max_length=500)
 
 
+class EditPublishedRequest(BaseModel):
+    new_text: str = Field(..., min_length=1)
+
+
 class NotificationResponse(BaseModel):
     id: int
     publication_id: int

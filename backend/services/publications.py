@@ -353,10 +353,23 @@ class PublicationService:
                         parse_mode=ParseMode.HTML,
                         has_spoiler=spoiler
                     )
+
                 else:
-                    media = [InputMediaPhoto(media=url, has_spoiler=spoiler) for url in publication.media_urls[:10]]
-                    if publication.text_content:
-                        media[0].caption = publication.text_content
+                    media = []
+                    for i, url in enumerate(publication.media_urls[:10]):
+                        if i == 0 and publication.text_content:
+                            media.append(InputMediaPhoto(
+                                media=url,
+                                caption=publication.text_content,
+                                parse_mode=ParseMode.HTML,
+                                has_spoiler=spoiler
+                            ))
+
+                        else:
+                            media.append(InputMediaPhoto(
+                                media=url,
+                                has_spoiler=spoiler
+                            ))
                     messages = await self.bot.send_media_group(chat_id=channel.telegram_id, media=media)
                     message = messages[0]
             else:
@@ -623,6 +636,11 @@ class PublicationService:
         await self.db.commit()
         await self.db.refresh(channel)
         return channel
+
+    async def list_channels(self) -> List[Channel]:
+        query = select(Channel).order_by(Channel.created_at.desc())
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
 
     async def create_series(self, name: str, description: Optional[str] = None) -> PublicationSeries:
         series = PublicationSeries(name=name, description=description)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from typing import Optional, List
 from datetime import datetime
 
@@ -7,7 +7,7 @@ from backend.schemas.publications import (
     PublicationListResponse, PublicationStatus, ContentType,
     AIGenerateRequest, AIEditRequest, ChannelCreate, ChannelResponse,
     PublicationSeriesCreate, PublicationSeriesResponse, CalendarEntry,
-    RescheduleRequest
+    RescheduleRequest, EditPublishedRequest
 )
 from backend.services.publications import PublicationService
 
@@ -35,8 +35,8 @@ async def create_publication(
 
 @router.get("/drafts", response_model=PublicationListResponse)
 async def get_drafts(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page: int = 1,
+    page_size: int = 50,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Получить все черновики"""
@@ -60,8 +60,8 @@ async def get_drafts(
 
 @router.get("/scheduled", response_model=PublicationListResponse)
 async def get_scheduled(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page: int = 1,
+    page_size: int = 50,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Получить все запланированные публикации"""
@@ -88,12 +88,12 @@ async def get_publications(
     status: Optional[PublicationStatus] = None,
     content_type: Optional[ContentType] = None,
     channel_id: Optional[int] = None,
-    tag_names: Optional[List[str]] = Query(None),
+    tag_names: Optional[List[str]] = None,
     series_id: Optional[int] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
+    page: int = 1,
+    page_size: int = 50,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Получить список публикаций с фильтрацией"""
@@ -173,11 +173,11 @@ async def publish_now(
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)
 async def reschedule_publication(
     publication_id: int,
-    request: RescheduleRequest,
+    data: RescheduleRequest,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Перенести публикацию на другое время"""
-    publication = await service.reschedule_publication(publication_id, request.scheduled_time)
+    publication = await service.reschedule_publication(publication_id, data.scheduled_time)
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
     publication = await service.get_publication(publication.id)
@@ -187,11 +187,11 @@ async def reschedule_publication(
 @router.post("/{publication_id}/edit-published")
 async def edit_published_message(
     publication_id: int,
-    new_text: str,
+    data: EditPublishedRequest,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Редактировать уже опубликованное сообщение через Telegram API"""
-    result = await service.edit_published_message(publication_id, new_text)
+    result = await service.edit_published_message(publication_id, data.new_text)
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Edit failed"))
     return result
@@ -256,13 +256,13 @@ async def generate_content_with_ai(
 @router.post("/{publication_id}/ai/edit", response_model=PublicationResponse)
 async def edit_content_with_ai(
     publication_id: int,
-    instruction: str = Body(..., embed=True),
+    data: AIEditRequest,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Редактировать контент публикации с помощью AI"""
     try:
-        request = AIEditRequest(publication_id=publication_id, instruction=instruction)
-        publication = await service.edit_with_ai(request)
+        payload = data.model_copy(update={"publication_id": publication_id})
+        publication = await service.edit_with_ai(payload)
         if not publication:
             raise HTTPException(status_code=404, detail="Publication not found")
         publication = await service.get_publication(publication.id)
@@ -283,6 +283,14 @@ async def create_channel(
         username=data.username
     )
     return channel
+
+
+@router.get("/channels", response_model=List[ChannelResponse])
+async def list_channels(
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить список каналов"""
+    return await service.list_channels()
 
 
 @router.post("/series", response_model=PublicationSeriesResponse, status_code=201)
