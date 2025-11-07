@@ -59,6 +59,7 @@ class ChannelGroup(Base):
     backed_up_posts = relationship("BackedUpPost", back_populates="channel", cascade="all, delete-orphan")
     backup_jobs = relationship("BackupJob", back_populates="source_channel", foreign_keys="BackupJob.source_channel_id", cascade="all, delete-orphan")
     publications = relationship("Publication", secondary="publication_channels", back_populates="channels")
+    telegram_messages = relationship("TelegramMessage", back_populates="channel", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_channel_groups_backup_mode", "backup_mode"),

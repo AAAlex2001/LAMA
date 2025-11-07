@@ -73,7 +73,7 @@ class Publication(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
-    channels = relationship('Channel', secondary=publication_channels, back_populates='publications')
+    channels = relationship('ChannelGroup', secondary=publication_channels, back_populates='publications')
     tags = relationship('Tag', secondary=publication_tags, back_populates='publications')
     series = relationship('PublicationSeries', back_populates='publications')
     notifications = relationship('PublicationNotification', back_populates='publication', cascade='all, delete-orphan')
@@ -108,12 +108,12 @@ class TelegramMessage(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     publication_id = Column(Integer, ForeignKey('publications.id', ondelete='CASCADE'), nullable=False)
-    channel_id = Column(Integer, ForeignKey('channels.id', ondelete='CASCADE'), nullable=False)
+    channel_id = Column(Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'), nullable=False)
     telegram_message_id = Column(Integer, nullable=False)
     published_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publication = relationship('Publication', back_populates='telegram_messages')
-    channel = relationship('Channel')
+    channel = relationship('ChannelGroup', back_populates='telegram_messages')
 
 
 class PublicationNotification(Base):
