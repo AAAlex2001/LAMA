@@ -97,6 +97,10 @@ class PublicationSeriesResponse(PublicationSeriesBase):
         from_attributes = True
 
 
+class RescheduleRequest(BaseModel):
+    scheduled_time: datetime
+
+
 class PublicationBase(BaseModel):
     content_type: ContentType
     text_content: Optional[str] = None
@@ -131,10 +135,6 @@ class PublicationBase(BaseModel):
             if values['content_type'] == ContentType.QUIZ and v.correct_option_id is None:
                 raise ValueError('correct_option_id is required for quizzes')
         return v
-
-
-class PublicationCreate(PublicationBase):
-    pass
 
 
 class PublicationUpdate(BaseModel):

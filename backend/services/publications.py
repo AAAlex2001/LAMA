@@ -20,7 +20,7 @@ from backend.models.publications import (
     ContentType as DBContentType
 )
 from backend.schemas.publications import (
-    PublicationCreate, PublicationUpdate, PublicationStatus,
+    PublicationBase, PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest
 )
 
@@ -36,7 +36,7 @@ class PublicationService:
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
 
-    async def create_publication(self, data: PublicationCreate) -> Publication:
+    async def create_publication(self, data: PublicationBase) -> Publication:
         publication = Publication(
             content_type=DBContentType[data.content_type.value.upper()],
             status=DBPublicationStatus.DRAFT,
@@ -69,6 +69,57 @@ class PublicationService:
         await self.db.refresh(publication)
         
         return publication
+
+    async def get_channels_by_ids(self, channel_ids: List[int]) -> List[Channel]:
+        query = select(Channel).where(Channel.id.in_(channel_ids))
+        result = await self.db.execute(query)
+        return list(result.scalars().all())
+
+    async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
+        query = select(Tag).where(Tag.name.in_(tag_names))
+        result = await self.db.execute(query)
+        existing_tags = {tag.name: tag for tag in result.scalars().all()}
+
+        tags = []
+        new_tags = []
+
+        for name in tag_names:
+            if name in existing_tags:
+                tags.append(existing_tags[name])
+            else:
+                new_tag = Tag(name=name)
+                new_tags.append(new_tag)
+                tags.append(new_tag)
+
+        if new_tags:
+            self.db.add_all(new_tags)
+            try:
+                await self.db.flush()
+            except IntegrityError:
+                await self.db.rollback()
+                query = select(Tag).where(Tag.name.in_(tag_names))
+                result = await self.db.execute(query)
+                existing_tags = {tag.name: tag for tag in result.scalars().all()}
+                tags = [existing_tags[name] for name in tag_names]
+
+        return tags
+
+
+    async def create_notification(
+        self,
+        publication_id: int,
+        status: str,
+        message: str,
+        error_details: Optional[Dict] = None
+    ):
+        notification = PublicationNotification(
+            publication_id=publication_id,
+            status=status,
+            message=message,
+            error_details=error_details
+        )
+        self.db.add(notification)
+        await self.db.flush()
 
     async def get_publication(self, publication_id: int) -> Optional[Publication]:
         query = select(Publication).where(Publication.id == publication_id).options(
@@ -233,6 +284,7 @@ class PublicationService:
                             )
                             return {"channel": channel.name, "success": False, "error": str(e)}
                         await asyncio.sleep(2 ** attempt)
+            return None
 
         results = await asyncio.gather(*[safe_send_to_channel(ch) for ch in publication.channels], return_exceptions=False)
 
@@ -251,6 +303,20 @@ class PublicationService:
         await self.db.commit()
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": total_count}
+
+
+    def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
+        for row in keyboard_data.get('buttons', []):
+            button_row = []
+            for btn in row:
+                if btn.get('url'):
+                    button_row.append(InlineKeyboardButton(text=btn['text'], url=btn['url']))
+                elif btn.get('callback_data'):
+                    button_row.append(InlineKeyboardButton(text=btn['text'], callback_data=btn['callback_data']))
+            if button_row:
+                keyboard.inline_keyboard.append(button_row)
+        return keyboard
 
     async def send_to_telegram(self, publication: Publication, channel: Channel) -> int:
         keyboard = None
@@ -371,69 +437,6 @@ class PublicationService:
 
         return 0
 
-    def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-        for row in keyboard_data.get('buttons', []):
-            button_row = []
-            for btn in row:
-                if btn.get('url'):
-                    button_row.append(InlineKeyboardButton(text=btn['text'], url=btn['url']))
-                elif btn.get('callback_data'):
-                    button_row.append(InlineKeyboardButton(text=btn['text'], callback_data=btn['callback_data']))
-            if button_row:
-                keyboard.inline_keyboard.append(button_row)
-        return keyboard
-
-    async def get_channels_by_ids(self, channel_ids: List[int]) -> List[Channel]:
-        query = select(Channel).where(Channel.id.in_(channel_ids))
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
-
-    async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
-        query = select(Tag).where(Tag.name.in_(tag_names))
-        result = await self.db.execute(query)
-        existing_tags = {tag.name: tag for tag in result.scalars().all()}
-        
-        tags = []
-        new_tags = []
-        
-        for name in tag_names:
-            if name in existing_tags:
-                tags.append(existing_tags[name])
-            else:
-                new_tag = Tag(name=name)
-                new_tags.append(new_tag)
-                tags.append(new_tag)
-        
-        if new_tags:
-            self.db.add_all(new_tags)
-            try:
-                await self.db.flush()
-            except IntegrityError:
-                await self.db.rollback()
-                query = select(Tag).where(Tag.name.in_(tag_names))
-                result = await self.db.execute(query)
-                existing_tags = {tag.name: tag for tag in result.scalars().all()}
-                tags = [existing_tags[name] for name in tag_names]
-        
-        return tags
-
-    async def create_notification(
-        self,
-        publication_id: int,
-        status: str,
-        message: str,
-        error_details: Optional[Dict] = None
-    ):
-        notification = PublicationNotification(
-            publication_id=publication_id,
-            status=status,
-            message=message,
-            error_details=error_details
-        )
-        self.db.add(notification)
-        await self.db.flush()
-
     async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
         tz = pytz.timezone(timezone_str)
         start_date = datetime(year, month, 1, tzinfo=pytz.UTC)
@@ -551,7 +554,6 @@ class PublicationService:
         publication.text_content = edited_content
         publication.ai_generated = True
         await self.db.commit()
-        await self.db.refresh(publication)
 
         return publication
 
@@ -579,6 +581,7 @@ class PublicationService:
             publication.text_content = new_text
         
         await self.db.commit()
+        await self.db.refresh(publication)
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 

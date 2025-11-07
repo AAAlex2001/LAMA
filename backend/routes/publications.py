@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
 from typing import Optional, List
 from datetime import datetime
 
@@ -6,8 +6,8 @@ from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate, PublicationResponse,
     PublicationListResponse, PublicationStatus, ContentType,
     AIGenerateRequest, AIEditRequest, ChannelCreate, ChannelResponse,
-    PublicationSeriesCreate, PublicationSeriesResponse, NotificationResponse,
-    TagResponse, CalendarEntry
+    PublicationSeriesCreate, PublicationSeriesResponse, CalendarEntry,
+    RescheduleRequest
 )
 from backend.services.publications import PublicationService
 
@@ -173,11 +173,11 @@ async def publish_now(
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)
 async def reschedule_publication(
     publication_id: int,
-    new_time: datetime,
+    request: RescheduleRequest,
     service: PublicationService = Depends(get_publication_service)
 ):
     """Перенести публикацию на другое время"""
-    publication = await service.reschedule_publication(publication_id, new_time)
+    publication = await service.reschedule_publication(publication_id, request.scheduled_time)
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
     publication = await service.get_publication(publication.id)
@@ -226,26 +226,42 @@ async def get_calendar(
     return {"calendar": entries}
 
 
-@router.post("/ai/generate")
+@router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
 async def generate_content_with_ai(
     request: AIGenerateRequest,
     service: PublicationService = Depends(get_publication_service)
 ):
-    """Сгенерировать контент с помощью AI"""
+    """Сгенерировать контент с помощью AI и создать публикацию"""
     try:
         content = await service.generate_with_ai(request)
-        return {"content": content}
+        
+        # Create publication with generated content
+        publication_data = PublicationCreate(
+            content_type=request.content_type,
+            text_content=content,
+            status=PublicationStatus.DRAFT,
+            ai_generated=True,
+            ai_prompt=request.prompt,
+            channel_ids=[],
+            tag_names=[]
+        )
+        
+        publication = await service.create_publication(publication_data)
+        publication = await service.get_publication(publication.id)
+        return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/ai/edit", response_model=PublicationResponse)
+@router.post("/{publication_id}/ai/edit", response_model=PublicationResponse)
 async def edit_content_with_ai(
-    request: AIEditRequest,
+    publication_id: int,
+    instruction: str = Body(..., embed=True),
     service: PublicationService = Depends(get_publication_service)
 ):
-    """Редактировать контент с помощью AI"""
+    """Редактировать контент публикации с помощью AI"""
     try:
+        request = AIEditRequest(publication_id=publication_id, instruction=instruction)
         publication = await service.edit_with_ai(request)
         if not publication:
             raise HTTPException(status_code=404, detail="Publication not found")

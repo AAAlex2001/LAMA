@@ -26,8 +26,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="Publications API",
-    description="API для управления публикациями в Telegram каналах",
+    title="Lama API",
+    description="Сервис для управления контентов в Telegram",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -51,7 +51,7 @@ app.include_router(publications_router)
 @app.get("/")
 async def root():
     return {
-        "message": "Publications API",
+        "message": "Lama API",
         "version": "1.0.0",
         "status": "running"
     }
