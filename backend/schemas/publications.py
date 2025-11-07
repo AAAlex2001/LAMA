@@ -137,6 +137,10 @@ class PublicationBase(BaseModel):
         return v
 
 
+class PublicationCreate(PublicationBase):
+    status: PublicationStatus = PublicationStatus.DRAFT
+
+
 class PublicationUpdate(BaseModel):
     content_type: Optional[ContentType] = None
     text_content: Optional[str] = None

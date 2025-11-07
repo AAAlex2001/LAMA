@@ -20,8 +20,8 @@ from backend.models.publications import (
     ContentType as DBContentType
 )
 from backend.schemas.publications import (
-    PublicationBase, PublicationUpdate, PublicationStatus,
-    ContentType, AIGenerateRequest, AIEditRequest
+    PublicationUpdate, PublicationStatus,
+    ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
 )
 
 
@@ -36,7 +36,7 @@ class PublicationService:
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
 
-    async def create_publication(self, data: PublicationBase) -> Publication:
+    async def create_publication(self, data: PublicationCreate) -> Publication:
         publication = Publication(
             content_type=DBContentType[data.content_type.value.upper()],
             status=DBPublicationStatus.DRAFT,
