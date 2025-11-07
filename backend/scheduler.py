@@ -7,6 +7,7 @@ import pytz
 
 from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus
 from backend.services.publications import PublicationService
+from backend.tasks.channel_backup import process_instant_backups
 from backend.database import AsyncSessionLocal
 from backend.config import bot, OPENAI_API_KEY
 
@@ -84,9 +85,18 @@ def start_scheduler():
         replace_existing=True
     )
     
+    scheduler.add_job(
+        process_instant_backups,
+        trigger=IntervalTrigger(minutes=2),
+        id="process_instant_backups",
+        name="Process instant channel backups every 2 minutes",
+        replace_existing=True
+    )
+    
     scheduler.start()
 
 
 def stop_scheduler():
     scheduler.shutdown()
+
 

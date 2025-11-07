@@ -14,11 +14,12 @@ import httpx
 import json
 
 from backend.models.publications import (
-    Publication, Channel, Tag, PublicationSeries,
+    Publication, Tag, PublicationSeries,
     TelegramMessage, PublicationNotification,
     PublicationStatus as DBPublicationStatus,
     ContentType as DBContentType
 )
+from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
@@ -623,24 +624,6 @@ class PublicationService:
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
-    async def create_channel(self, telegram_id: str, name: str, username: Optional[str] = None) -> Channel:
-        query = select(Channel).where(Channel.telegram_id == telegram_id)
-        result = await self.db.execute(query)
-        existing = result.scalar_one_or_none()
-        
-        if existing:
-            return existing
-        
-        channel = Channel(telegram_id=telegram_id, name=name, username=username)
-        self.db.add(channel)
-        await self.db.commit()
-        await self.db.refresh(channel)
-        return channel
-
-    async def list_channels(self) -> List[Channel]:
-        query = select(Channel).order_by(Channel.created_at.desc())
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
 
     async def create_series(self, name: str, description: Optional[str] = None) -> PublicationSeries:
         series = PublicationSeries(name=name, description=description)

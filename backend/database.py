@@ -3,7 +3,9 @@ import os
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from backend.models.publications import Base
+from backend.models.base import Base
+from backend.models.publications import Publication, Tag, PublicationSeries, TelegramMessage, PublicationNotification
+from backend.models.channels import ChannelGroup, BackedUpPost, PostRetransmission, BackupJob
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/publications_db")

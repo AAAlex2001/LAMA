@@ -1,12 +1,8 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func
-from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase, relationship
+from sqlalchemy.orm import relationship
+from backend.models.base import Base
 import enum
-
-
-class Base(AsyncAttrs, DeclarativeBase):
-    pass
 
 
 class PublicationStatus(enum.Enum):
@@ -42,7 +38,7 @@ publication_channels = Table(
     'publication_channels',
     Base.metadata,
     Column('publication_id', Integer, ForeignKey('publications.id', ondelete='CASCADE')),
-    Column('channel_id', Integer, ForeignKey('channels.id', ondelete='CASCADE'))
+    Column('channel_id', Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'))
 )
 
 
@@ -95,17 +91,6 @@ class PublicationSeries(Base):
     publications = relationship('Publication', back_populates='series')
 
 
-class Channel(Base):
-    __tablename__ = 'channels'
-
-    id = Column(Integer, primary_key=True, index=True)
-    telegram_id = Column(String(255), unique=True, nullable=False, index=True)
-    name = Column(String(255), nullable=False)
-    username = Column(String(255), nullable=True)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    publications = relationship('Publication', secondary=publication_channels, back_populates='channels')
 
 
 class Tag(Base):

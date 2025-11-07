@@ -61,20 +61,13 @@ class TagResponse(TagBase):
         from_attributes = True
 
 
-class ChannelBase(BaseModel):
-    telegram_id: str
-    name: str
-    username: Optional[str] = None
-
-
-class ChannelCreate(ChannelBase):
-    pass
-
-
-class ChannelResponse(ChannelBase):
+class ChannelResponse(BaseModel):
+    """Минимальная схема канала для отображения в публикациях"""
     id: int
+    telegram_id: int
+    title: str
+    username: Optional[str] = None
     is_active: bool
-    created_at: datetime
 
     class Config:
         from_attributes = True
