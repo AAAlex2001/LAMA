@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 import pytz
 import asyncio
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, Message
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramRetryAfter, TelegramBadRequest
 import httpx
@@ -24,7 +24,6 @@ from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
 )
-from backend.services.channels import ChannelService
 
 
 class PublicationService:
@@ -37,7 +36,6 @@ class PublicationService:
             limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
-        self.channel_service = ChannelService(db, bot)
 
     async def create_publication(self, data: PublicationCreate) -> Publication:
         publication = Publication(
@@ -242,25 +240,19 @@ class PublicationService:
             async with self.telegram_semaphore:
                 for attempt in range(5):
                     try:
-                        message = await self.send_to_telegram(publication, channel)
+                        message_id = await self.send_to_telegram(publication, channel)
                         
                         telegram_message = TelegramMessage(
                             publication_id=publication.id,
                             channel_id=channel.id,
-                            telegram_message_id=message.message_id
+                            telegram_message_id=message_id
                         )
                         self.db.add(telegram_message)
                         await self.db.flush()
 
-                        await self.channel_service.save_post_backup(
-                            channel.id,
-                            message,
-                            publication.media_urls
-                        )
-
                         if publication.pin_message:
                             try:
-                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message.message_id)
+                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
                             except Exception:
                                 pass
 
@@ -270,7 +262,7 @@ class PublicationService:
                             f"Published to {channel_name}"
                         )
 
-                        return {"channel": channel_name, "success": True, "message_id": message.message_id}
+                        return {"channel": channel_name, "success": True, "message_id": message_id}
 
                     except TelegramRetryAfter as e:
                         if attempt < 4:
@@ -328,7 +320,7 @@ class PublicationService:
                 keyboard.inline_keyboard.append(button_row)
         return keyboard
 
-    async def send_to_telegram(self, publication: Publication, channel: Channel) -> Message:
+    async def send_to_telegram(self, publication: Publication, channel: Channel) -> int:
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
@@ -349,7 +341,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
@@ -389,7 +381,7 @@ class PublicationService:
                     reply_markup=keyboard,
                     parse_mode=ParseMode.HTML
                 )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.IMAGE:
             message = await self.bot.send_photo(
@@ -400,7 +392,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.VIDEO:
             message = await self.bot.send_video(
@@ -411,7 +403,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.AUDIO:
             message = await self.bot.send_audio(
@@ -421,7 +413,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.DOCUMENT:
             message = await self.bot.send_document(
@@ -431,7 +423,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return message.message_id
 
         elif publication.content_type == DBContentType.LINK:
             message = await self.bot.send_message(
@@ -441,7 +433,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=False
             )
-            return message
+            return message.message_id
 
         elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             poll_data = publication.poll_data
@@ -456,9 +448,9 @@ class PublicationService:
                 explanation=poll_data.get('explanation'),
                 reply_markup=keyboard
             )
-            return message
+            return message.message_id
 
-        return message
+        return 0
 
     async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
         tz = pytz.timezone(timezone_str)
