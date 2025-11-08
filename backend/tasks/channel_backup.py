@@ -1,10 +1,10 @@
 import asyncio
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import AsyncSessionLocal
 from backend.config import get_bot
-from backend.models.channels import ChannelGroup, BackedUpPost, BackupMode
+from backend.models.channels import ChannelGroup, BackedUpPost, BackupMode, PostRetransmission
 from backend.services.channels import ChannelService
 
 
@@ -36,18 +36,14 @@ async def process_instant_backups():
                 recent_posts = list(result.scalars().all())
                 
                 for post in recent_posts:
-                    existing_retransmission = await db.execute(
-                        select(BackedUpPost).join(
-                            BackedUpPost.retransmissions
-                        ).where(
-                            BackedUpPost.id == post.id,
-                            BackedUpPost.retransmissions.any(
-                                target_channel_id=channel.backup_target_id
-                            )
+                    retransmission_exists = await db.scalar(
+                        select(func.count()).select_from(PostRetransmission).where(
+                            PostRetransmission.original_post_id == post.id,
+                            PostRetransmission.target_channel_id == channel.backup_target_id
                         )
                     )
                     
-                    if existing_retransmission.scalar_one_or_none():
+                    if retransmission_exists and retransmission_exists > 0:
                         continue
                     
                     try:

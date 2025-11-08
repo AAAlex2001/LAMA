@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from datetime import datetime
 
@@ -10,13 +11,18 @@ from backend.schemas.publications import (
     RescheduleRequest, EditPublishedRequest
 )
 from backend.services.publications import PublicationService
+from backend.database import get_db
+from backend.config import get_bot, OPENAI_API_KEY
 
 
 router = APIRouter(prefix="/publications", tags=["publications"])
 
 
-async def get_publication_service():
-    pass
+async def get_publication_service(
+    db: AsyncSession = Depends(get_db)
+) -> PublicationService:
+    bot = get_bot()
+    return PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
 
 
 @router.post("/", response_model=PublicationResponse, status_code=201)
@@ -121,6 +127,62 @@ async def get_publications(
     )
 
 
+@router.get("/calendar/{year}/{month}")
+async def get_calendar(
+    year: int = Path(...),
+    month: int = Path(..., ge=1, le=12),
+    timezone: str = Query("UTC"),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить календарь публикаций за месяц"""
+    calendar_data = await service.get_calendar(year, month, timezone)
+    
+    entries = []
+    for date_str, publications in calendar_data.items():
+        entries.append(CalendarEntry(date=date_str, publications=publications))
+    
+    return {"calendar": entries}
+
+
+@router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
+async def generate_content_with_ai(
+    request: AIGenerateRequest,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Сгенерировать контент с помощью AI и создать публикацию"""
+    try:
+        content = await service.generate_with_ai(request)
+
+        publication_data = PublicationCreate(
+            content_type=request.content_type,
+            text_content=content,
+            status=PublicationStatus.DRAFT,
+            ai_generated=True,
+            ai_prompt=request.prompt,
+            channel_ids=[],
+            tag_names=[]
+        )
+        
+        publication = await service.create_publication(publication_data)
+        publication = await service.get_publication(publication.id)
+        return publication
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/series", response_model=PublicationSeriesResponse, status_code=201)
+async def create_series(
+    data: PublicationSeriesCreate,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Создать серию публикаций"""
+    series = await service.create_series(
+        name=data.name,
+        description=data.description
+    )
+    return series
+
+
 @router.get("/{publication_id}", response_model=PublicationResponse)
 async def get_publication(
     publication_id: int,
@@ -209,49 +271,6 @@ async def delete_telegram_messages(
     return result
 
 
-@router.get("/calendar/{year}/{month}")
-async def get_calendar(
-    year: int = Path(...),
-    month: int = Path(..., ge=1, le=12),
-    timezone: str = Query("UTC"),
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Получить календарь публикаций за месяц"""
-    calendar_data = await service.get_calendar(year, month, timezone)
-    
-    entries = []
-    for date_str, publications in calendar_data.items():
-        entries.append(CalendarEntry(date=date_str, publications=publications))
-    
-    return {"calendar": entries}
-
-
-@router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
-async def generate_content_with_ai(
-    request: AIGenerateRequest,
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Сгенерировать контент с помощью AI и создать публикацию"""
-    try:
-        content = await service.generate_with_ai(request)
-
-        publication_data = PublicationCreate(
-            content_type=request.content_type,
-            text_content=content,
-            status=PublicationStatus.DRAFT,
-            ai_generated=True,
-            ai_prompt=request.prompt,
-            channel_ids=[],
-            tag_names=[]
-        )
-        
-        publication = await service.create_publication(publication_data)
-        publication = await service.get_publication(publication.id)
-        return publication
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 @router.post("/{publication_id}/ai/edit", response_model=PublicationResponse)
 async def edit_content_with_ai(
     publication_id: int,
@@ -268,17 +287,4 @@ async def edit_content_with_ai(
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post("/series", response_model=PublicationSeriesResponse, status_code=201)
-async def create_series(
-    data: PublicationSeriesCreate,
-    service: PublicationService = Depends(get_publication_service)
-):
-    """Создать серию публикаций"""
-    series = await service.create_series(
-        name=data.name,
-        description=data.description
-    )
-    return series
 

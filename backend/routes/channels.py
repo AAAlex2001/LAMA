@@ -23,7 +23,7 @@ async def get_channel_service(db: AsyncSession = Depends(get_db)):
 
 # ============ CRUD Operations ============
 
-@router.post("", response_model=ChannelGroupResponse, status_code=201)
+@router.post("/", response_model=ChannelGroupResponse, status_code=201)
 async def create_channel(
     data: ChannelGroupCreate,
     service: ChannelService = Depends(get_channel_service)
@@ -33,7 +33,7 @@ async def create_channel(
     return channel
 
 
-@router.get("", response_model=ChannelGroupListResponse)
+@router.get("/", response_model=ChannelGroupListResponse)
 async def list_channels(
     page: int = 1,
     page_size: int = 50,
@@ -56,43 +56,6 @@ async def list_channels(
         page=page,
         page_size=page_size
     )
-
-
-@router.get("/{channel_id}", response_model=ChannelGroupResponse)
-async def get_channel(
-    channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
-):
-    """Получить информацию о канале"""
-    channel = await service.get_channel(channel_id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    return channel
-
-
-@router.put("/{channel_id}", response_model=ChannelGroupResponse)
-async def update_channel(
-    channel_id: int,
-    data: ChannelGroupUpdate,
-    service: ChannelService = Depends(get_channel_service)
-):
-    """Обновить информацию о канале"""
-    channel = await service.update_channel(channel_id, data)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    return channel
-
-
-@router.delete("/{channel_id}")
-async def delete_channel(
-    channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
-):
-    """Удалить канал"""
-    success = await service.delete_channel(channel_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    return {"success": True, "message": "Channel deleted successfully"}
 
 
 # ============ Telegram Sync ============
@@ -277,5 +240,44 @@ async def restore_backup(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============ Channel CRUD by ID ============
+
+@router.get("/{channel_id}", response_model=ChannelGroupResponse)
+async def get_channel(
+    channel_id: int,
+    service: ChannelService = Depends(get_channel_service)
+):
+    """Получить информацию о канале"""
+    channel = await service.get_channel(channel_id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return channel
+
+
+@router.put("/{channel_id}", response_model=ChannelGroupResponse)
+async def update_channel(
+    channel_id: int,
+    data: ChannelGroupUpdate,
+    service: ChannelService = Depends(get_channel_service)
+):
+    """Обновить информацию о канале"""
+    channel = await service.update_channel(channel_id, data)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return channel
+
+
+@router.delete("/{channel_id}")
+async def delete_channel(
+    channel_id: int,
+    service: ChannelService = Depends(get_channel_service)
+):
+    """Удалить канал"""
+    success = await service.delete_channel(channel_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return {"success": True, "message": "Channel deleted successfully"}
 
 
