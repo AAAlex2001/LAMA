@@ -7,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from aiogram import Bot
-from aiogram.types import Chat, Message
+from aiogram.enums import ParseMode
+from aiogram.types import Chat, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, InputMediaAnimation
 from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter, TelegramForbiddenError
 from backend.models.channels import (
     ChannelGroup, BackedUpPost, PostRetransmission, BackupJob,
@@ -15,7 +16,7 @@ from backend.models.channels import (
 )
 from backend.schemas.channels import (
     ChannelGroupCreate, ChannelGroupUpdate,
-    BackupJobCreate, RestoreBackupRequest
+    BackupJobCreate
 )
 
 
@@ -221,7 +222,7 @@ class ChannelService:
         
         if message.photo:
             content_type = "photo"
-            media_file_ids = [photo.file_id for photo in message.photo]
+            media_file_ids = [message.photo[-1].file_id]
         elif message.video:
             content_type = "video"
             media_file_ids = [message.video.file_id]
@@ -239,10 +240,61 @@ class ChannelService:
             media_file_ids = [message.animation.file_id]
         
         raw_data = message.model_dump(mode="json")
-        
+        media_group_id = getattr(message, "media_group_id", None)
+
+        existing_post = None
+        if media_group_id:
+            query = select(BackedUpPost).where(
+                BackedUpPost.channel_id == channel_id,
+                BackedUpPost.media_group_id == str(media_group_id)
+            )
+            result = await self.db.execute(query)
+            existing_post = result.scalar_one_or_none()
+
+        if existing_post:
+            existing_media_ids = list(existing_post.media_file_ids or [])
+            if media_file_ids:
+                for file_id in media_file_ids:
+                    if file_id not in existing_media_ids:
+                        existing_media_ids.append(file_id)
+            existing_post.media_file_ids = existing_media_ids or None
+
+            if message.caption and not existing_post.text_content:
+                existing_post.text_content = message.caption
+
+            existing_post.has_spoiler = existing_post.has_spoiler or (
+                hasattr(message, "has_media_spoiler") and message.has_media_spoiler
+            )
+
+            if message.reply_markup:
+                existing_post.reply_markup = message.reply_markup.model_dump(mode="json")
+
+            existing_post.views_count = (
+                message.views if hasattr(message, "views") and message.views else existing_post.views_count
+            )
+            existing_post.forwards_count = (
+                message.forwards if hasattr(message, "forwards") and message.forwards else existing_post.forwards_count
+            )
+            existing_post.original_date = min(existing_post.original_date, message.date)
+            existing_post.backed_up_at = datetime.now(timezone.utc)
+
+            if existing_post.raw_data is None:
+                existing_post.raw_data = [raw_data]
+            elif isinstance(existing_post.raw_data, list):
+                new_raw = list(existing_post.raw_data)
+                new_raw.append(raw_data)
+                existing_post.raw_data = new_raw
+            else:
+                existing_post.raw_data = [existing_post.raw_data, raw_data]
+
+            await self.db.commit()
+            await self.db.refresh(existing_post)
+            return existing_post
+
         backed_up_post = BackedUpPost(
             channel_id=channel_id,
             telegram_message_id=message.message_id,
+            media_group_id=str(media_group_id) if media_group_id else None,
             content_type=content_type,
             text_content=message.text or message.caption,
             media_urls=media_urls if media_urls else None,
@@ -314,6 +366,70 @@ class ChannelService:
         """Копирование сообщения в канал с обработкой ретраев"""
         for attempt in range(5):
             try:
+                if post.media_group_id and post.media_file_ids and len(post.media_file_ids) > 1:
+                    media_inputs = []
+                    raw_entries = post.raw_data if isinstance(post.raw_data, list) else [post.raw_data]
+                    for index, entry in enumerate(raw_entries):
+                        caption = post.text_content if index == 0 else None
+                        parse_mode = ParseMode.HTML if caption else None
+                        has_spoiler = entry.get("has_media_spoiler") if isinstance(entry, dict) else False
+
+                        if isinstance(entry, dict) and entry.get("photo"):
+                            file_id = entry["photo"][-1]["file_id"]
+                            media_inputs.append(
+                                InputMediaPhoto(
+                                    media=file_id,
+                                    caption=caption,
+                                    parse_mode=parse_mode,
+                                    has_spoiler=has_spoiler
+                                )
+                            )
+                        elif isinstance(entry, dict) and entry.get("video"):
+                            file_id = entry["video"]["file_id"]
+                            media_inputs.append(
+                                InputMediaVideo(
+                                    media=file_id,
+                                    caption=caption,
+                                    parse_mode=parse_mode,
+                                    has_spoiler=has_spoiler
+                                )
+                            )
+                        elif isinstance(entry, dict) and entry.get("document"):
+                            file_id = entry["document"]["file_id"]
+                            media_inputs.append(
+                                InputMediaDocument(
+                                    media=file_id,
+                                    caption=caption,
+                                    parse_mode=parse_mode
+                                )
+                            )
+                        elif isinstance(entry, dict) and entry.get("audio"):
+                            file_id = entry["audio"]["file_id"]
+                            media_inputs.append(
+                                InputMediaAudio(
+                                    media=file_id,
+                                    caption=caption,
+                                    parse_mode=parse_mode
+                                )
+                            )
+                        elif isinstance(entry, dict) and entry.get("animation"):
+                            file_id = entry["animation"]["file_id"]
+                            media_inputs.append(
+                                InputMediaAnimation(
+                                    media=file_id,
+                                    caption=caption,
+                                    parse_mode=parse_mode,
+                                    has_spoiler=has_spoiler
+                                )
+                            )
+
+                    if media_inputs:
+                        messages = await self.bot.send_media_group(
+                            chat_id=target_telegram_id,
+                            media=media_inputs
+                        )
+                        return messages[0]
+
                 if post.content_type == "text":
                     return await self.bot.send_message(
                         chat_id=target_telegram_id,

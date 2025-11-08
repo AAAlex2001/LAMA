@@ -73,6 +73,7 @@ class BackedUpPost(Base):
     id = Column(Integer, primary_key=True, index=True)
     channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
     telegram_message_id = Column(BigInteger, nullable=False)
+    media_group_id = Column(String(255), nullable=True)
     
     # Контент поста
     content_type = Column(String(50), nullable=False)
@@ -99,6 +100,7 @@ class BackedUpPost(Base):
 
     __table_args__ = (
         Index("ix_backed_up_posts_channel_message", "channel_id", "telegram_message_id", unique=True),
+        Index("ix_backed_up_posts_media_group", "channel_id", "media_group_id"),
         Index("ix_backed_up_posts_original_date", "original_date"),
     )
 

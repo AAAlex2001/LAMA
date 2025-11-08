@@ -1,56 +1,71 @@
-import asyncio
-from datetime import datetime, timezone
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Dict, List, Optional
+
+from aiogram.types import Message, Update
+from sqlalchemy import select
+
 from backend.database import AsyncSessionLocal
 from backend.config import get_bot
-from backend.models.channels import ChannelGroup, BackedUpPost, BackupMode, PostRetransmission
 from backend.services.channels import ChannelService
+from backend.models.channels import ChannelGroup, BackupMode
 
 
 async def process_instant_backups():
     """
-    Фоновая задача для обработки моментальных бекапов.
-    Проверяет каналы с режимом INSTANT и ретранслирует новые посты.
+    Обрабатывает новые сообщения из каналов с режимом INSTANT.
+    Теперь режим только накапливает архив, без моментальной ретрансляции.
     """
     async with AsyncSessionLocal() as db:
         bot = get_bot()
         service = ChannelService(db, bot)
-        
-        query = select(ChannelGroup).where(
-            ChannelGroup.backup_mode == BackupMode.INSTANT,
-            ChannelGroup.is_active == True,
-            ChannelGroup.backup_target_id.isnot(None)
-        )
-        
-        result = await db.execute(query)
-        channels = list(result.scalars().all())
-        
-        for channel in channels:
-            try:
-                query = select(BackedUpPost).where(
-                    BackedUpPost.channel_id == channel.id
-                ).order_by(BackedUpPost.original_date.desc()).limit(10)
-                
-                result = await db.execute(query)
-                recent_posts = list(result.scalars().all())
-                
-                for post in recent_posts:
-                    retransmission_exists = await db.scalar(
-                        select(func.count()).select_from(PostRetransmission).where(
-                            PostRetransmission.original_post_id == post.id,
-                            PostRetransmission.target_channel_id == channel.backup_target_id
-                        )
-                    )
-                    
-                    if retransmission_exists and retransmission_exists > 0:
-                        continue
-                    
-                    try:
-                        await service.retransmit_post(post, channel.backup_target_id)
-                    except Exception as e:
-                        print(f"Failed to retransmit post {post.id}: {e}")
-                        
-            except Exception as e:
-                print(f"Error processing channel {channel.id}: {e}")
 
+        channels_result = await db.execute(
+            select(ChannelGroup).where(
+                ChannelGroup.backup_mode == BackupMode.INSTANT,
+                ChannelGroup.is_active.is_(True)
+            )
+        )
+        channels: List[ChannelGroup] = list(channels_result.scalars().all())
+
+        if not channels:
+            return
+
+        try:
+            updates: List[Update] = await bot.get_updates(
+                timeout=0,
+                allowed_updates=["channel_post", "edited_channel_post"]
+            )
+        except Exception as exc:
+            print(f"Failed to fetch updates for instant backups: {exc}")
+            return
+
+        channel_map: Dict[int, ChannelGroup] = {
+            channel.telegram_id: channel for channel in channels
+        }
+
+        for update in updates:
+            message: Optional[Message] = getattr(update, "channel_post", None) or getattr(
+                update, "edited_channel_post", None
+            )
+            if not message:
+                continue
+
+            channel = channel_map.get(message.chat.id)
+            if not channel:
+                continue
+
+            try:
+                await service.save_post_backup(channel.id, message)
+            except Exception as exc:
+                print(
+                    f"Failed to store post {message.message_id} for channel {channel.id}: {exc}"
+                )
+
+        if updates:
+            try:
+                await bot.get_updates(
+                    offset=updates[-1].update_id + 1,
+                    timeout=0,
+                    allowed_updates=["channel_post", "edited_channel_post"]
+                )
+            except Exception:
+                pass

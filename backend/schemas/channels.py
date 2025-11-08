@@ -102,8 +102,11 @@ class BackedUpPostResponse(BaseModel):
     id: int
     channel_id: int
     telegram_message_id: int
+    media_group_id: Optional[str] = None
     content_type: str
     text_content: Optional[str]
+    media_urls: Optional[List[str]] = None
+    media_file_ids: Optional[List[str]] = None
     views_count: int
     forwards_count: int
     original_date: datetime

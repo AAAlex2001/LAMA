@@ -241,22 +241,27 @@ class PublicationService:
             async with self.telegram_semaphore:
                 for attempt in range(5):
                     try:
-                        sent_message = await self.send_to_telegram(publication, channel)
-                        message_id = sent_message.message_id
+                        sent_messages = await self.send_to_telegram(publication, channel)
+                        message_ids: List[int] = []
 
-                        telegram_message = TelegramMessage(
-                            publication_id=publication.id,
-                            channel_id=channel.id,
-                            telegram_message_id=message_id
-                        )
-                        self.db.add(telegram_message)
+                        for msg in sent_messages:
+                            message_ids.append(msg.message_id)
+                            telegram_message = TelegramMessage(
+                                publication_id=publication.id,
+                                channel_id=channel.id,
+                                telegram_message_id=msg.message_id
+                            )
+                            self.db.add(telegram_message)
+
                         await self.db.flush()
+                        await self.handle_instant_backup(channel, sent_messages, publication_id=publication.id)
 
-                        await self.handle_instant_backup(channel, sent_message, publication_id=publication.id)
-
-                        if publication.pin_message:
+                        if publication.pin_message and message_ids:
                             try:
-                                await self.bot.pin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+                                await self.bot.pin_chat_message(
+                                    chat_id=channel.telegram_id,
+                                    message_id=message_ids[0]
+                                )
                             except Exception:
                                 pass
 
@@ -266,7 +271,7 @@ class PublicationService:
                             f"Published to {channel_name}"
                         )
 
-                        return {"channel": channel_name, "success": True, "message_id": message_id}
+                        return {"channel": channel_name, "success": True, "message_ids": message_ids}
 
                     except TelegramRetryAfter as e:
                         if attempt < 4:
@@ -324,7 +329,7 @@ class PublicationService:
                 keyboard.inline_keyboard.append(button_row)
         return keyboard
 
-    async def send_to_telegram(self, publication: Publication, channel: Channel) -> Message:
+    async def send_to_telegram(self, publication: Publication, channel: Channel) -> List[Message]:
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
@@ -345,7 +350,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
@@ -359,25 +364,24 @@ class PublicationService:
                         parse_mode=ParseMode.HTML,
                         has_spoiler=spoiler
                     )
+                    return [message]
 
-                else:
-                    media = []
-                    for i, url in enumerate(publication.media_urls[:10]):
-                        if i == 0 and publication.text_content:
-                            media.append(InputMediaPhoto(
-                                media=url,
-                                caption=publication.text_content,
-                                parse_mode=ParseMode.HTML,
-                                has_spoiler=spoiler
-                            ))
-
-                        else:
-                            media.append(InputMediaPhoto(
-                                media=url,
-                                has_spoiler=spoiler
-                            ))
-                    messages = await self.bot.send_media_group(chat_id=channel.telegram_id, media=media)
-                    message = messages[0]
+                media = []
+                for i, url in enumerate(publication.media_urls[:10]):
+                    if i == 0 and publication.text_content:
+                        media.append(InputMediaPhoto(
+                            media=url,
+                            caption=publication.text_content,
+                            parse_mode=ParseMode.HTML,
+                            has_spoiler=spoiler
+                        ))
+                    else:
+                        media.append(InputMediaPhoto(
+                            media=url,
+                            has_spoiler=spoiler
+                        ))
+                messages = await self.bot.send_media_group(chat_id=channel.telegram_id, media=media)
+                return list(messages)
             else:
                 message = await self.bot.send_message(
                     chat_id=channel.telegram_id,
@@ -385,7 +389,7 @@ class PublicationService:
                     reply_markup=keyboard,
                     parse_mode=ParseMode.HTML
                 )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.IMAGE:
             message = await self.bot.send_photo(
@@ -396,7 +400,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.VIDEO:
             message = await self.bot.send_video(
@@ -407,7 +411,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur
             )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.AUDIO:
             message = await self.bot.send_audio(
@@ -417,7 +421,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.DOCUMENT:
             message = await self.bot.send_document(
@@ -427,7 +431,7 @@ class PublicationService:
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML
             )
-            return message
+            return [message]
 
         elif publication.content_type == DBContentType.LINK:
             message = await self.bot.send_message(
@@ -437,7 +441,7 @@ class PublicationService:
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=False
             )
-            return message
+            return [message]
 
         elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             poll_data = publication.poll_data
@@ -452,22 +456,23 @@ class PublicationService:
                 explanation=poll_data.get('explanation'),
                 reply_markup=keyboard
             )
-            return message
+            return [message]
+            return [message]
 
         raise ValueError("Unsupported content type")
 
     async def handle_instant_backup(
         self,
         channel: Channel,
-        message: Message,
+        messages: List[Message],
         publication_id: int
     ) -> None:
-        if channel.backup_mode != BackupMode.INSTANT or not channel.backup_target_id:
+        if channel.backup_mode != BackupMode.INSTANT:
             return
 
         try:
-            backed_post = await self.channel_service.save_post_backup(channel.id, message)
-            await self.retransmit_post(backed_post, channel.backup_target_id)
+            for message in messages:
+                await self.channel_service.save_post_backup(channel.id, message)
         except Exception as error:
             await self.create_notification(
                 publication_id,
