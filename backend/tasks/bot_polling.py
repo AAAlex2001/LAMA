@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
-from backend.models.bots import Bot as BotModel, BotStatus, MessageType, ApprovalMode
+from backend.models.bots import Bot as BotModel, BotStatus, MessageType
 from backend.services.bots import BotService
 
 
@@ -190,6 +190,35 @@ async def handle_join_request(
         join_request.from_user.id
     )
 
+    # Отправляем приветственное сообщение ДО одобрения (для MANUAL режима)
+    # Telegram разрешает боту написать пользователю при получении join_request
+    if bot_model.welcome_enabled and bot_model.welcome_message:
+        try:
+            message = await send_welcome_message(
+                telegram_bot,
+                join_request.from_user.id,  # Отправляем в личку пользователю
+                bot_model
+            )
+            print(f"Sent welcome message to {join_request.from_user.id}")
+            
+            # Сохраняем отправленное сообщение в БД
+            if message:
+                await service.save_message(
+                    bot_id=bot_model.id,
+                    telegram_message_id=message.message_id,
+                    chat_id=join_request.from_user.id,
+                    user_id=join_request.from_user.id,
+                    message_type=MessageType.TEXT,
+                    text_content=bot_model.welcome_message,
+                    media_file_id=None,
+                    media_url=bot_model.welcome_media_url,
+                    is_incoming=False,
+                    raw_data=message.model_dump()
+                )
+        except TelegramAPIError as welcome_error:
+            print(f"Failed to send welcome message: {str(welcome_error)}")
+
+    # Одобряем заявку только если режим AUTO или CRITERIA
     if should_approve:
         try:
             await telegram_bot.approve_chat_join_request(
@@ -261,10 +290,10 @@ async def send_command_response(telegram_bot: Bot, chat_id: int, command):
 
 async def send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotModel):
     """Отправить приветственное сообщение"""
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message
 
     if not bot_model.welcome_message:
-        return
+        return None
 
     # Формируем inline keyboard если есть
     reply_markup = None
@@ -283,32 +312,35 @@ async def send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotMo
             buttons.append(button_row)
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    # Отправляем приветствие
+    # Отправляем приветствие и возвращаем Message
+    message: Message
     if bot_model.welcome_media_url and bot_model.welcome_media_type:
         if bot_model.welcome_media_type == MessageType.PHOTO:
-            await telegram_bot.send_photo(
+            message = await telegram_bot.send_photo(
                 chat_id=chat_id,
                 photo=bot_model.welcome_media_url,
                 caption=bot_model.welcome_message,
                 reply_markup=reply_markup
             )
         elif bot_model.welcome_media_type == MessageType.VIDEO:
-            await telegram_bot.send_video(
+            message = await telegram_bot.send_video(
                 chat_id=chat_id,
                 video=bot_model.welcome_media_url,
                 caption=bot_model.welcome_message,
                 reply_markup=reply_markup
             )
         else:
-            await telegram_bot.send_message(
+            message = await telegram_bot.send_message(
                 chat_id=chat_id,
                 text=bot_model.welcome_message,
                 reply_markup=reply_markup
             )
     else:
-        await telegram_bot.send_message(
+        message = await telegram_bot.send_message(
             chat_id=chat_id,
             text=bot_model.welcome_message,
             reply_markup=reply_markup
         )
+    
+    return message
 
