@@ -149,7 +149,7 @@ async def handle_message(
         media_file_id=media_file_id,
         media_url=media_url,
         is_incoming=True,
-        raw_data=message.model_dump()
+        raw_data=message.model_dump(mode='json')  # mode='json' сериализует datetime в строки
     )
 
     # Проверяем, является ли это командой
@@ -162,17 +162,6 @@ async def handle_message(
             telegram_bot = Bot(token=bot_model.token)
             try:
                 await send_command_response(telegram_bot, message.chat.id, command)
-            finally:
-                await telegram_bot.session.close()
-
-    # Если включено приветствие и это первое сообщение от пользователя
-    if bot_model.welcome_enabled and message.from_user:
-        # Проверяем, было ли это первое сообщение (можно добавить логику проверки)
-        # Пока отправляем приветствие на /start
-        if text_content == "/start":
-            telegram_bot = Bot(token=bot_model.token)
-            try:
-                await send_welcome_message(telegram_bot, message.chat.id, bot_model)
             finally:
                 await telegram_bot.session.close()
 
@@ -213,7 +202,7 @@ async def handle_join_request(
                     media_file_id=None,
                     media_url=bot_model.welcome_media_url,
                     is_incoming=False,
-                    raw_data=message.model_dump()
+                    raw_data=message.model_dump(mode='json')  # mode='json' сериализует datetime в строки
                 )
         except TelegramAPIError as welcome_error:
             print(f"Failed to send welcome message: {str(welcome_error)}")
