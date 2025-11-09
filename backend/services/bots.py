@@ -330,7 +330,7 @@ class BotService:
                 media_file_id=getattr(message.photo[-1], "file_id", None) if message.photo else None,
                 media_url=data.media_url,
                 is_incoming=False,
-                raw_data=message.model_dump()
+                raw_data=message.model_dump(mode="json")
             )
 
             await telegram_bot.session.close()
