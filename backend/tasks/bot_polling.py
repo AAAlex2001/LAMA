@@ -190,9 +190,9 @@ async def handle_join_request(
         join_request.from_user.id
     )
 
-    # Отправляем приветственное сообщение ДО одобрения (для MANUAL режима)
+    # Отправляем приветственное сообщение ТОЛЬКО для MANUAL режима
     # Telegram разрешает боту написать пользователю при получении join_request
-    if bot_model.welcome_enabled and bot_model.welcome_message:
+    if not should_approve and bot_model.welcome_enabled and bot_model.welcome_message:
         try:
             message = await send_welcome_message(
                 telegram_bot,
