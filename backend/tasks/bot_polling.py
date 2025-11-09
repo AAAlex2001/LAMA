@@ -257,57 +257,6 @@ async def handle_join_request(
                 
             except TelegramAPIError as e:
                 print(f"Failed to send subscription requirements: {str(e)}")
-        
-        # Если нет требований к подпискам (или все подписки есть) - отправляем капчу
-        else:
-            try:
-                # Генерируем капчу
-                question, answer = service.generate_captcha()
-                
-                # Создаём запись в БД
-                pending = await service.create_pending_approval(
-                    bot_id=bot_model.id,
-                    user_id=join_request.from_user.id,
-                    chat_id=join_request.chat.id,
-                    captcha_question=question,
-                    captcha_answer=answer
-                )
-                
-                # Генерируем варианты ответов (правильный + 2 неправильных)
-                import random
-                correct_answer = int(answer)
-                wrong1 = correct_answer + random.randint(1, 3)
-                wrong2 = correct_answer - random.randint(1, 3)
-                
-                options = [
-                    (str(correct_answer), correct_answer),
-                    (str(wrong1), wrong1),
-                    (str(wrong2), wrong2)
-                ]
-                random.shuffle(options)
-                
-                # Создаём кнопки с ответами
-                buttons = []
-                for option_text, option_value in options:
-                    buttons.append([
-                        InlineKeyboardButton(
-                            text=option_text,
-                            callback_data=f"captcha_{pending.id}_{option_value}"
-                        )
-                    ])
-                
-                reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-                
-                # Отправляем капчу
-                await telegram_bot.send_message(
-                    chat_id=join_request.from_user.id,
-                    text=f"🔐 Для вступления в канал решите задачу:\n\n{question}\n\nВыберите правильный ответ:",
-                    reply_markup=reply_markup
-                )
-                print(f"Sent captcha to {join_request.from_user.id}")
-                
-            except TelegramAPIError as e:
-                print(f"Failed to send captcha: {str(e)}")
 
     # Одобряем заявку только если режим AUTO или CRITERIA с пройденными проверками
     if should_approve:
