@@ -238,6 +238,9 @@ class ChannelService:
         elif message.animation:
             content_type = "animation"
             media_file_ids = [message.animation.file_id]
+        elif message.sticker:
+            content_type = "sticker"
+            media_file_ids = [message.sticker.file_id]
         
         raw_data = message.model_dump(mode="json")
         media_group_id = getattr(message, "media_group_id", None)
@@ -464,6 +467,12 @@ class ChannelService:
                         chat_id=target_telegram_id,
                         audio=post.media_file_ids[0],
                         caption=post.text_content,
+                        reply_markup=post.reply_markup
+                    )
+                elif post.content_type == "sticker" and post.media_file_ids:
+                    return await self.bot.send_sticker(
+                        chat_id=target_telegram_id,
+                        sticker=post.media_file_ids[0],
                         reply_markup=post.reply_markup
                     )
                 else:
