@@ -134,3 +134,28 @@ class BotCommand(Base):
     # Relationships
     bot = relationship("Bot", back_populates="commands")
 
+
+class PendingApproval(Base):
+    """Модель для хранения ожидающих одобрения заявок с капчей"""
+    __tablename__ = "pending_approvals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    
+    # Данные пользователя
+    user_id = Column(BigInteger, nullable=False, index=True)
+    chat_id = Column(BigInteger, nullable=False)  # ID канала/группы
+    
+    # Капча
+    captcha_question = Column(String(255), nullable=True)  # Вопрос капчи
+    captcha_answer = Column(String(255), nullable=True)  # Правильный ответ
+    
+    # Статус
+    is_approved = Column(Boolean, default=False, nullable=False)
+    is_rejected = Column(Boolean, default=False, nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)  # Количество попыток
+    
+    # Метаданные
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # Срок действия капчи
+

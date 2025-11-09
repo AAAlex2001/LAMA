@@ -15,7 +15,8 @@ from backend.models.bots import (
     BotCommand,
     BotStatus,
     ApprovalMode,
-    MessageType
+    MessageType,
+    PendingApproval
 )
 from backend.schemas.bots import (
     BotCreate,
@@ -224,26 +225,60 @@ class BotService:
         self,
         bot: BotModel,
         user_id: int
-    ) -> bool:
-        """Проверить критерии одобрения для пользователя"""
+    ) -> tuple[bool, list[int]]:
+        """
+        Проверить критерии одобрения для пользователя
+        
+        Возвращает:
+            tuple[bool, list[int]]: (должен_одобрить, список_каналов_где_не_подписан)
+        """
+        # AUTO режим - одобряем всех сразу
         if bot.auto_approval_mode == ApprovalMode.AUTO:
-            return True
+            return True, []
 
+        # MANUAL режим - не одобряем автоматически
         if bot.auto_approval_mode == ApprovalMode.MANUAL:
-            return False
+            return False, []
 
         # Режим CRITERIA - проверяем критерии
         if not bot.approval_criteria:
-            return False
+            return False, []
 
-        # Пример: проверка подписки на другие каналы
+        # Проверка подписки на другие каналы
         required_channels = bot.approval_criteria.get("required_channels", [])
         if required_channels:
-            # Здесь можно добавить логику проверки подписок
-            # Пока возвращаем False для ручной обработки
-            return False
+            telegram_bot = Bot(token=bot.token)
+            missing_channels = []  # Список каналов, на которые не подписан
+            
+            try:
+                # Проходим по всем требуемым каналам
+                for channel_id in required_channels:
+                    try:
+                        # Получаем информацию о членстве пользователя в канале
+                        member = await telegram_bot.get_chat_member(channel_id, user_id)
+                        # Проверяем статус: member, administrator, creator - это подписан
+                        if member.status not in ["member", "administrator", "creator"]:
+                            # Пользователь не подписан на этот канал
+                            missing_channels.append(channel_id)
+                    except TelegramAPIError:
+                        # Если не удалось проверить - считаем что не подписан
+                        missing_channels.append(channel_id)
 
-        return True
+                await telegram_bot.session.close()
+                
+                # Если есть каналы, на которые не подписан - не одобряем
+                if missing_channels:
+                    return False, missing_channels
+                
+                # Все проверки пройдены - одобряем
+                return True, []
+                
+            except Exception:
+                await telegram_bot.session.close()
+                return False, required_channels  # Возвращаем все каналы как недоступные
+
+        # Если нет требований к подпискам, но режим CRITERIA - требуется капча
+        return False, []
 
     # ========================================================================
     # Работа с сообщениями
@@ -567,3 +602,95 @@ class BotService:
             "active_commands": active_commands,
             "last_message_at": last_message_at
         }
+
+    # ========================================================================
+    # Работа с капчей и pending approvals
+    # ========================================================================
+
+    async def create_pending_approval(
+            self,
+            bot_id: int,
+            user_id: int,
+            chat_id: int,
+            captcha_question: str,
+            captcha_answer: str
+    ) -> PendingApproval:
+        """Создать запись ожидающей одобрения заявки с капчей"""
+        from datetime import timedelta
+
+        pending = PendingApproval(
+            bot_id=bot_id,
+            user_id=user_id,
+            chat_id=chat_id,
+            captcha_question=captcha_question,
+            captcha_answer=captcha_answer,
+            expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
+        )
+
+        self.db.add(pending)
+        await self.db.commit()
+        await self.db.refresh(pending)
+
+        return pending
+
+    async def get_pending_approval(
+            self,
+            bot_id: int,
+            user_id: int
+    ) -> Optional[PendingApproval]:
+        """Получить ожидающую заявку пользователя"""
+        query = select(PendingApproval).where(
+            PendingApproval.bot_id == bot_id,
+            PendingApproval.user_id == user_id,
+            PendingApproval.is_approved == False,
+            PendingApproval.is_rejected == False
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def check_captcha_answer(
+            self,
+            pending_id: int,
+            user_answer: str
+    ) -> bool:
+        """Проверить ответ на капчу"""
+        query = select(PendingApproval).where(PendingApproval.id == pending_id)
+        result = await self.db.execute(query)
+        pending = result.scalar_one_or_none()
+
+        if not pending:
+            return False
+
+        # Проверяем срок действия
+        if pending.expires_at and datetime.now(timezone.utc) > pending.expires_at:
+            pending.is_rejected = True
+            await self.db.commit()
+            return False
+
+        # Увеличиваем счётчик попыток
+        pending.attempts += 1
+
+        # Проверяем ответ (регистронезависимо)
+        if pending.captcha_answer.lower().strip() == user_answer.lower().strip():
+            pending.is_approved = True
+            await self.db.commit()
+            return True
+        else:
+            # Если 3 неудачные попытки - отклоняем
+            if pending.attempts >= 3:
+                pending.is_rejected = True
+            await self.db.commit()
+            return False
+
+    def generate_captcha(self) -> tuple[str, str]:
+        """Генерировать простую математическую капчу"""
+        import random
+
+        # Генерируем простой пример: сложение двух чисел от 1 до 10
+        num1 = random.randint(1, 10)
+        num2 = random.randint(1, 10)
+        answer = num1 + num2
+
+        question = f"Сколько будет {num1} + {num2}?"
+
+        return question, str(answer)
