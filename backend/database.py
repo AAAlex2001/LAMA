@@ -4,10 +4,6 @@ import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from backend.models.base import Base
-from backend.models.auth import User, TelegramAccount, UserSession
-from backend.models.publications import Publication, Tag, PublicationSeries, TelegramMessage, PublicationNotification
-from backend.models.channels import ChannelGroup, BackedUpPost, PostRetransmission, BackupJob
-from backend.models.bots import Bot, BotMessage, BotCommand, PendingApproval
 
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/publications_db")
@@ -16,10 +12,10 @@ engine = create_async_engine(
     DATABASE_URL, 
     echo=True, 
     pool_pre_ping=True, 
-    pool_size=50,  # Base pool size
-    max_overflow=100,  # Additional connections under load
-    pool_timeout=30,  # Wait up to 30s for connection
-    pool_recycle=3600  # Recycle connections after 1 hour
+    pool_size=50,
+    max_overflow=100,
+    pool_timeout=30,
+    pool_recycle=3600
 )
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
