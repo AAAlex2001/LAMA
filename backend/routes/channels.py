@@ -4,6 +4,8 @@ from typing import Optional
 from backend.database import get_db
 from backend.config import get_bot
 from backend.services.channels import ChannelService
+from backend.routes.auth import get_current_user
+from backend.models.auth import User
 from backend.schemas.channels import (
     ChannelGroupCreate, ChannelGroupUpdate, ChannelGroupResponse, ChannelGroupListResponse,
     SyncChannelRequest, SyncChannelResponse,
@@ -26,10 +28,11 @@ async def get_channel_service(db: AsyncSession = Depends(get_db)):
 @router.post("/", response_model=ChannelGroupResponse, status_code=201)
 async def create_channel(
     data: ChannelGroupCreate,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Создать канал/группу вручную"""
-    channel = await service.create_channel(data)
+    channel = await service.create_channel(data, owner_id=current_user.id)
     return channel
 
 
@@ -40,10 +43,12 @@ async def list_channels(
     channel_type: Optional[ChannelType] = None,
     is_active: Optional[bool] = None,
     backup_mode: Optional[BackupMode] = None,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить список каналов с фильтрацией"""
     channels, total = await service.list_channels(
+        owner_id=current_user.id,
         page=page,
         page_size=page_size,
         channel_type=channel_type,
@@ -63,11 +68,15 @@ async def list_channels(
 @router.post("/sync", response_model=SyncChannelResponse)
 async def sync_channel(
     data: SyncChannelRequest,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Синхронизировать канал/группу через Telegram API"""
     try:
-        channel = await service.sync_channel_from_telegram(data.telegram_id)
+        channel = await service.sync_channel_from_telegram(
+            telegram_id=data.telegram_id,
+            owner_id=current_user.id
+        )
         return SyncChannelResponse(
             success=True,
             channel=channel,
@@ -82,15 +91,19 @@ async def sync_channel(
 @router.post("/{channel_id}/sync", response_model=ChannelGroupResponse)
 async def sync_existing_channel(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Обновить информацию существующего канала через Telegram API"""
-    channel = await service.get_channel(channel_id)
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     
     try:
-        updated_channel = await service.sync_channel_from_telegram(channel.telegram_id)
+        updated_channel = await service.sync_channel_from_telegram(
+            telegram_id=channel.telegram_id,
+            owner_id=current_user.id
+        )
         return updated_channel
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -104,14 +117,16 @@ async def sync_existing_channel(
 async def update_backup_mode(
     channel_id: int,
     data: BackupModeUpdateRequest,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Настроить режим бекапа для канала"""
     try:
         channel = await service.update_backup_mode(
             channel_id=channel_id,
             backup_mode=data.backup_mode,
-            backup_target_id=data.backup_target_id
+            backup_target_id=data.backup_target_id,
+            owner_id=current_user.id
         )
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
@@ -125,10 +140,11 @@ async def get_backed_up_posts(
     channel_id: int,
     page: int = 1,
     page_size: int = 50,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить список бекапнутых постов канала"""
-    channel = await service.get_channel(channel_id)
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     
@@ -149,10 +165,11 @@ async def get_backed_up_posts(
 @router.get("/{channel_id}/stats", response_model=ChannelStatsResponse)
 async def get_channel_stats(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить статистику по каналу"""
-    channel = await service.get_channel(channel_id)
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     
@@ -166,11 +183,12 @@ async def get_channel_stats(
 async def create_backup_job(
     data: BackupJobCreate,
     background_tasks: BackgroundTasks,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Создать задачу на полное копирование канала (постфактум)"""
     try:
-        job = await service.create_backup_job(data)
+        job = await service.create_backup_job(data, owner_id=current_user.id)
         background_tasks.add_task(service.process_backup_job, job.id)
         return job
     except ValueError as e:
@@ -182,10 +200,12 @@ async def list_backup_jobs(
     page: int = 1,
     page_size: int = 50,
     status: Optional[BackupStatus] = None,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить список задач бекапа"""
     jobs, total = await service.get_backup_jobs(
+        owner_id=current_user.id,
         page=page,
         page_size=page_size,
         status=status
@@ -202,13 +222,17 @@ async def list_backup_jobs(
 @router.get("/backup-jobs/{job_id}", response_model=BackupJobResponse)
 async def get_backup_job(
     job_id: int,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить информацию о задаче бекапа"""
     from sqlalchemy import select
     from backend.models.channels import BackupJob
     
-    query = select(BackupJob).where(BackupJob.id == job_id)
+    query = select(BackupJob).where(
+        BackupJob.id == job_id,
+        BackupJob.owner_id == current_user.id
+    )
     result = await service.db.execute(query)
     job = result.scalar_one_or_none()
     
@@ -222,7 +246,8 @@ async def get_backup_job(
 async def restore_backup(
     data: RestoreBackupRequest,
     background_tasks: BackgroundTasks,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Восстановить посты из бекапа в новый канал"""
     try:
@@ -230,7 +255,7 @@ async def restore_backup(
             source_channel_id=data.source_channel_id,
             target_channel_id=data.target_channel_id
         )
-        job = await service.create_backup_job(job_data)
+        job = await service.create_backup_job(job_data, owner_id=current_user.id)
         background_tasks.add_task(service.process_backup_job, job.id)
         
         return RestoreBackupResponse(
@@ -247,10 +272,11 @@ async def restore_backup(
 @router.get("/{channel_id}", response_model=ChannelGroupResponse)
 async def get_channel(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Получить информацию о канале"""
-    channel = await service.get_channel(channel_id)
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     return channel
@@ -260,10 +286,11 @@ async def get_channel(
 async def update_channel(
     channel_id: int,
     data: ChannelGroupUpdate,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Обновить информацию о канале"""
-    channel = await service.update_channel(channel_id, data)
+    channel = await service.update_channel(channel_id, data, owner_id=current_user.id)
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     return channel
@@ -272,12 +299,11 @@ async def update_channel(
 @router.delete("/{channel_id}")
 async def delete_channel(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service)
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
 ):
     """Удалить канал"""
-    success = await service.delete_channel(channel_id)
+    success = await service.delete_channel(channel_id, owner_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Channel not found")
     return {"success": True, "message": "Channel deleted successfully"}
-
-

@@ -26,9 +26,12 @@ class ChannelService:
         self.bot = bot
         self.telegram_semaphore = asyncio.Semaphore(10)
 
-    async def create_channel(self, data: ChannelGroupCreate) -> ChannelGroup:
+    async def create_channel(self, data: ChannelGroupCreate, owner_id: int) -> ChannelGroup:
         """Создание канала/группы с проверкой на дубликаты"""
-        query = select(ChannelGroup).where(ChannelGroup.telegram_id == data.telegram_id)
+        query = select(ChannelGroup).where(
+            ChannelGroup.telegram_id == data.telegram_id,
+            ChannelGroup.owner_id == owner_id
+        )
         result = await self.db.execute(query)
         existing = result.scalar_one_or_none()
         
@@ -36,6 +39,7 @@ class ChannelService:
             return existing
         
         channel = ChannelGroup(
+            owner_id=owner_id,
             telegram_id=data.telegram_id,
             channel_type=data.channel_type,
             title=data.title,
@@ -49,9 +53,12 @@ class ChannelService:
         await self.db.refresh(channel)
         return channel
 
-    async def get_channel(self, channel_id: int) -> Optional[ChannelGroup]:
-        """Получение канала по ID"""
-        query = select(ChannelGroup).where(ChannelGroup.id == channel_id)
+    async def get_channel(self, channel_id: int, owner_id: int) -> Optional[ChannelGroup]:
+        """Получение канала по ID с проверкой владельца"""
+        query = select(ChannelGroup).where(
+            ChannelGroup.id == channel_id,
+            ChannelGroup.owner_id == owner_id
+        )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -63,6 +70,7 @@ class ChannelService:
 
     async def list_channels(
         self,
+        owner_id: int,
         page: int = 1,
         page_size: int = 50,
         channel_type: Optional[ChannelType] = None,
@@ -70,8 +78,8 @@ class ChannelService:
         backup_mode: Optional[BackupMode] = None
     ) -> tuple[List[ChannelGroup], int]:
         """Список каналов с фильтрацией и пагинацией"""
-        query = select(ChannelGroup)
-        count_query = select(func.count(distinct(ChannelGroup.id)))
+        query = select(ChannelGroup).where(ChannelGroup.owner_id == owner_id)
+        count_query = select(func.count(distinct(ChannelGroup.id))).where(ChannelGroup.owner_id == owner_id)
         
         if channel_type:
             query = query.where(ChannelGroup.channel_type == channel_type)
@@ -96,9 +104,9 @@ class ChannelService:
         
         return channels, total
 
-    async def update_channel(self, channel_id: int, data: ChannelGroupUpdate) -> Optional[ChannelGroup]:
+    async def update_channel(self, channel_id: int, data: ChannelGroupUpdate, owner_id: int) -> Optional[ChannelGroup]:
         """Обновление информации о канале"""
-        channel = await self.get_channel(channel_id)
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             return None
         
@@ -111,9 +119,9 @@ class ChannelService:
         await self.db.refresh(channel)
         return channel
 
-    async def delete_channel(self, channel_id: int) -> bool:
+    async def delete_channel(self, channel_id: int, owner_id: int) -> bool:
         """Удаление канала"""
-        channel = await self.get_channel(channel_id)
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             return False
         
@@ -121,7 +129,7 @@ class ChannelService:
         await self.db.commit()
         return True
 
-    async def sync_channel_from_telegram(self, telegram_id: int) -> ChannelGroup:
+    async def sync_channel_from_telegram(self, telegram_id: int, owner_id: int) -> ChannelGroup:
         """Синхронизация информации о канале через Telegram API"""
         try:
             chat: Chat = await self.bot.get_chat(telegram_id)
@@ -156,6 +164,10 @@ class ChannelService:
             channel = await self.get_channel_by_telegram_id(telegram_id)
             
             if channel:
+                # Проверяем владельца
+                if channel.owner_id != owner_id:
+                    raise ValueError("Channel belongs to another user")
+                    
                 channel.title = chat.title or channel.title
                 channel.username = chat.username
                 channel.description = chat.description
@@ -167,6 +179,7 @@ class ChannelService:
                 channel.updated_at = datetime.now(timezone.utc)
             else:
                 channel = ChannelGroup(
+                    owner_id=owner_id,
                     telegram_id=telegram_id,
                     channel_type=channel_type,
                     title=chat.title or f"Channel {telegram_id}",
@@ -194,15 +207,16 @@ class ChannelService:
         self,
         channel_id: int,
         backup_mode: BackupMode,
-        backup_target_id: Optional[int] = None
+        backup_target_id: Optional[int] = None,
+        owner_id: int = None
     ) -> Optional[ChannelGroup]:
         """Обновление режима бекапа для канала"""
-        channel = await self.get_channel(channel_id)
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             return None
         
         if backup_mode == BackupMode.INSTANT and backup_target_id:
-            target = await self.get_channel(backup_target_id)
+            target = await self.get_channel(backup_target_id, owner_id=owner_id)
             if not target:
                 raise ValueError("Target channel not found")
         
@@ -522,10 +536,10 @@ class ChannelService:
         
         return posts, total
 
-    async def create_backup_job(self, data: BackupJobCreate) -> BackupJob:
+    async def create_backup_job(self, data: BackupJobCreate, owner_id: int) -> BackupJob:
         """Создание задачи на полное копирование канала"""
-        source = await self.get_channel(data.source_channel_id)
-        target = await self.get_channel(data.target_channel_id)
+        source = await self.get_channel(data.source_channel_id, owner_id=owner_id)
+        target = await self.get_channel(data.target_channel_id, owner_id=owner_id)
         
         if not source or not target:
             raise ValueError("Source or target channel not found")
@@ -537,6 +551,7 @@ class ChannelService:
         total_posts = result.scalar()
         
         job = BackupJob(
+            owner_id=owner_id,
             source_channel_id=data.source_channel_id,
             target_channel_id=data.target_channel_id,
             status=BackupStatus.IN_PROGRESS,
@@ -603,13 +618,14 @@ class ChannelService:
 
     async def get_backup_jobs(
         self,
+        owner_id: int,
         page: int = 1,
         page_size: int = 50,
         status: Optional[BackupStatus] = None
     ) -> tuple[List[BackupJob], int]:
         """Получение списка задач бекапа"""
-        query = select(BackupJob)
-        count_query = select(func.count(BackupJob.id))
+        query = select(BackupJob).where(BackupJob.owner_id == owner_id)
+        count_query = select(func.count(BackupJob.id)).where(BackupJob.owner_id == owner_id)
         
         if status:
             query = query.where(BackupJob.status == status)
