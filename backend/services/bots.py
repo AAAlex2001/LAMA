@@ -39,7 +39,7 @@ class BotService:
     # CRUD операции для ботов
     # ========================================================================
 
-    async def create_bot(self, data: BotCreate) -> BotModel:
+    async def create_bot(self, data: BotCreate, owner_id: int) -> BotModel:
         """Создать бота по токену"""
         # Создаём временный экземпляр Bot для проверки токена
         try:
@@ -50,15 +50,16 @@ class BotService:
             raise ValueError(f"Invalid bot token: {str(e)}")
 
         # Проверяем, не существует ли уже бот с таким telegram_id
-        query = select(BotModel).where(BotModel.telegram_id == bot_info.id)
-        result = await self.db.execute(query)
-        existing_bot = result.scalar_one_or_none()
+        existing_bot = await self.get_bot_by_telegram_id(bot_info.id)
 
         if existing_bot:
+            if existing_bot.owner_id != owner_id:
+                raise ValueError(f"Bot with telegram_id {bot_info.id} already registered by another user")
             raise ValueError(f"Bot with telegram_id {bot_info.id} already exists")
 
         # Создаём бота в БД
         bot = BotModel(
+            owner_id=owner_id,
             telegram_id=bot_info.id,
             username=bot_info.username,
             first_name=bot_info.first_name,
@@ -74,45 +75,52 @@ class BotService:
 
         return bot
 
-    async def get_bot(self, bot_id: int) -> Optional[BotModel]:
+    async def get_bot(self, bot_id: int, owner_id: Optional[int] = None) -> Optional[BotModel]:
         """Получить бота по ID"""
         query = select(BotModel).where(BotModel.id == bot_id)
+        if owner_id is not None:
+            query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_bot_by_telegram_id(self, telegram_id: int) -> Optional[BotModel]:
+    async def get_bot_by_telegram_id(self, telegram_id: int, owner_id: Optional[int] = None) -> Optional[BotModel]:
         """Получить бота по Telegram ID"""
         query = select(BotModel).where(BotModel.telegram_id == telegram_id)
+        if owner_id is not None:
+            query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_bots(
         self,
+        owner_id: Optional[int] = None,
         status: Optional[BotStatus] = None,
         skip: int = 0,
         limit: int = 50
     ) -> Tuple[List[BotModel], int]:
         """Получить список ботов с фильтрацией"""
-        query = select(BotModel)
+        base_query = select(BotModel)
+        if owner_id is not None:
+            base_query = base_query.where(BotModel.owner_id == owner_id)
 
         if status:
-            query = query.where(BotModel.status == status)
+            base_query = base_query.where(BotModel.status == status)
 
         # Подсчёт общего количества
-        count_query = select(func.count()).select_from(query.subquery())
+        count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await self.db.execute(count_query)
         total = total_result.scalar()
 
         # Получение данных с пагинацией
-        query = query.order_by(desc(BotModel.created_at)).offset(skip).limit(limit)
-        result = await self.db.execute(query)
+        data_query = base_query.order_by(desc(BotModel.created_at)).offset(skip).limit(limit)
+        result = await self.db.execute(data_query)
         bots = list(result.scalars().all())
 
         return bots, total
 
-    async def update_bot(self, bot_id: int, data: BotUpdate) -> Optional[BotModel]:
+    async def update_bot(self, bot_id: int, data: BotUpdate, owner_id: int) -> Optional[BotModel]:
         """Обновить бота"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             return None
 
@@ -126,9 +134,9 @@ class BotService:
 
         return bot
 
-    async def delete_bot(self, bot_id: int) -> bool:
+    async def delete_bot(self, bot_id: int, owner_id: int) -> bool:
         """Удалить бота"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             return False
 
@@ -136,7 +144,7 @@ class BotService:
         await self.db.commit()
         return True
 
-    async def sync_bot_from_telegram(self, token: str) -> BotModel:
+    async def sync_bot_from_telegram(self, token: str, owner_id: int) -> BotModel:
         """Синхронизировать информацию о боте через Telegram API"""
         try:
             temp_bot = Bot(token=token)
@@ -149,6 +157,8 @@ class BotService:
         bot = await self.get_bot_by_telegram_id(bot_info.id)
 
         if bot:
+            if bot.owner_id != owner_id:
+                raise ValueError("Bot already registered by another user")
             # Обновляем существующего
             bot.username = bot_info.username
             bot.first_name = bot_info.first_name
@@ -156,8 +166,11 @@ class BotService:
             bot.last_sync_at = datetime.now(timezone.utc)
             bot.updated_at = datetime.now(timezone.utc)
         else:
+            if owner_id is None:
+                raise ValueError("Owner id is required to register a new bot")
             # Создаём нового
             bot = BotModel(
+                owner_id=owner_id,
                 telegram_id=bot_info.id,
                 username=bot_info.username,
                 first_name=bot_info.first_name,
@@ -179,10 +192,11 @@ class BotService:
     async def update_welcome_settings(
         self,
         bot_id: int,
-        data: WelcomeSettingsUpdate
+        data: WelcomeSettingsUpdate,
+        owner_id: Optional[int] = None
     ) -> Optional[BotModel]:
         """Обновить настройки приветствия"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             return None
 
@@ -205,10 +219,11 @@ class BotService:
     async def update_auto_approval(
         self,
         bot_id: int,
-        data: AutoApprovalUpdate
+        data: AutoApprovalUpdate,
+        owner_id: Optional[int] = None
     ) -> Optional[BotModel]:
         """Обновить настройки автоодобрения"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             return None
 
@@ -287,10 +302,11 @@ class BotService:
     async def send_message(
         self,
         bot_id: int,
-        data: SendMessageRequest
+        data: SendMessageRequest,
+        owner_id: Optional[int] = None
     ) -> Message:
         """Отправить сообщение от имени бота"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             raise ValueError("Bot not found")
 
@@ -444,10 +460,11 @@ class BotService:
     async def create_command(
         self,
         bot_id: int,
-        data: BotCommandCreate
+        data: BotCommandCreate,
+        owner_id: Optional[int] = None
     ) -> BotCommand:
         """Создать команду"""
-        bot = await self.get_bot(bot_id)
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             raise ValueError("Bot not found")
 
@@ -479,31 +496,36 @@ class BotService:
 
         return command
 
-    async def get_command(self, command_id: int) -> Optional[BotCommand]:
+    async def get_command(self, command_id: int, owner_id: Optional[int] = None) -> Optional[BotCommand]:
         """Получить команду по ID"""
         query = select(BotCommand).where(BotCommand.id == command_id)
+        if owner_id is not None:
+            query = query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_commands(
         self,
         bot_id: int,
-        is_active: Optional[bool] = None
+        is_active: Optional[bool] = None,
+        owner_id: Optional[int] = None
     ) -> Tuple[List[BotCommand], int]:
         """Получить список команд бота"""
-        query = select(BotCommand).where(BotCommand.bot_id == bot_id)
+        base_query = select(BotCommand).where(BotCommand.bot_id == bot_id)
+        if owner_id is not None:
+            base_query = base_query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
 
         if is_active is not None:
-            query = query.where(BotCommand.is_active == is_active)
+            base_query = base_query.where(BotCommand.is_active == is_active)
 
         # Подсчёт
-        count_query = select(func.count()).select_from(query.subquery())
+        count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await self.db.execute(count_query)
         total = total_result.scalar()
 
         # Получение данных
-        query = query.order_by(BotCommand.command)
-        result = await self.db.execute(query)
+        data_query = base_query.order_by(BotCommand.command)
+        result = await self.db.execute(data_query)
         commands = list(result.scalars().all())
 
         return commands, total
@@ -511,10 +533,11 @@ class BotService:
     async def update_command(
         self,
         command_id: int,
-        data: BotCommandUpdate
+        data: BotCommandUpdate,
+        owner_id: Optional[int] = None
     ) -> Optional[BotCommand]:
         """Обновить команду"""
-        command = await self.get_command(command_id)
+        command = await self.get_command(command_id, owner_id=owner_id)
         if not command:
             return None
 
@@ -528,9 +551,9 @@ class BotService:
 
         return command
 
-    async def delete_command(self, command_id: int) -> bool:
+    async def delete_command(self, command_id: int, owner_id: Optional[int] = None) -> bool:
         """Удалить команду"""
-        command = await self.get_command(command_id)
+        command = await self.get_command(command_id, owner_id=owner_id)
         if not command:
             return False
 
@@ -556,8 +579,12 @@ class BotService:
     # Статистика
     # ========================================================================
 
-    async def get_bot_stats(self, bot_id: int) -> Dict[str, Any]:
+    async def get_bot_stats(self, bot_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
         """Получить статистику бота"""
+        bot = await self.get_bot(bot_id, owner_id=owner_id)
+        if not bot:
+            raise ValueError("Bot not found")
+
         # Общее количество сообщений
         total_messages_query = select(func.count()).where(BotMessage.bot_id == bot_id)
         total_messages_result = await self.db.execute(total_messages_query)

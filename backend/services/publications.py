@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, and_, or_, func, delete, distinct
+from sqlalchemy import select, and_, func, delete, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
@@ -38,8 +38,9 @@ class PublicationService:
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.channel_service = ChannelService(db=db, bot=bot)
 
-    async def create_publication(self, data: PublicationCreate) -> Publication:
+    async def create_publication(self, data: PublicationCreate, owner_id: int) -> Publication:
         publication = Publication(
+            owner_id=owner_id,
             content_type=DBContentType[data.content_type.value.upper()],
             status=DBPublicationStatus.DRAFT,
             text_content=data.text_content,
@@ -59,7 +60,9 @@ class PublicationService:
         )
 
         if data.channel_ids:
-            channels = await self.get_channels_by_ids(data.channel_ids)
+            channels = await self.get_channels_by_ids(data.channel_ids, owner_id=owner_id)
+            if len(channels) != len(set(data.channel_ids)):
+                raise ValueError("One or more channels not found or do not belong to the user")
             publication.channels = channels
 
         if data.tag_names:
@@ -72,8 +75,10 @@ class PublicationService:
         
         return publication
 
-    async def get_channels_by_ids(self, channel_ids: List[int]) -> List[Channel]:
+    async def get_channels_by_ids(self, channel_ids: List[int], owner_id: Optional[int] = None) -> List[Channel]:
         query = select(Channel).where(Channel.id.in_(channel_ids))
+        if owner_id is not None:
+            query = query.where(Channel.owner_id == owner_id)
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -123,18 +128,21 @@ class PublicationService:
         self.db.add(notification)
         await self.db.flush()
 
-    async def get_publication(self, publication_id: int) -> Optional[Publication]:
+    async def get_publication(self, publication_id: int, owner_id: Optional[int] = None) -> Optional[Publication]:
         query = select(Publication).where(Publication.id == publication_id).options(
             selectinload(Publication.channels),
             selectinload(Publication.tags),
             selectinload(Publication.series),
             selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel)
         )
+        if owner_id is not None:
+            query = query.where(Publication.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_publications(
         self,
+        owner_id: Optional[int] = None,
         status: Optional[PublicationStatus] = None,
         content_type: Optional[ContentType] = None,
         channel_id: Optional[int] = None,
@@ -145,11 +153,14 @@ class PublicationService:
         skip: int = 0,
         limit: int = 100
     ) -> tuple[List[Publication], int]:
-        query = select(Publication).options(
+        base_query = select(Publication).options(
             selectinload(Publication.channels),
             selectinload(Publication.tags),
             selectinload(Publication.series)
         )
+
+        if owner_id is not None:
+            base_query = base_query.where(Publication.owner_id == owner_id)
 
         filters = []
         if status:
@@ -164,34 +175,37 @@ class PublicationService:
             filters.append(Publication.scheduled_time <= end_date)
 
         if filters:
-            query = query.where(and_(*filters))
+            base_query = base_query.where(and_(*filters))
 
         if channel_id:
-            query = query.join(Publication.channels).where(Channel.id == channel_id)
+            base_query = base_query.join(Publication.channels).where(Channel.id == channel_id)
 
         if tag_names:
-            query = query.join(Publication.tags).where(Tag.name.in_(tag_names))
+            base_query = base_query.join(Publication.tags).where(Tag.name.in_(tag_names))
 
-        query = query.order_by(Publication.created_at.desc())
+        ordered_query = base_query.order_by(Publication.created_at.desc())
 
-        count_query = select(func.count(distinct(Publication.id))).select_from(query.subquery())
+        count_query = select(func.count(distinct(Publication.id))).select_from(base_query.subquery())
         total = await self.db.scalar(count_query) or 0
 
-        query = query.offset(skip).limit(limit)
-        result = await self.db.execute(query)
+        paginated_query = ordered_query.offset(skip).limit(limit)
+        result = await self.db.execute(paginated_query)
         publications = result.unique().scalars().all()
 
         return list(publications), total
 
-    async def update_publication(self, publication_id: int, data: PublicationUpdate) -> Optional[Publication]:
-        publication = await self.get_publication(publication_id)
+    async def update_publication(self, publication_id: int, data: PublicationUpdate, owner_id: Optional[int] = None) -> Optional[Publication]:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return None
 
         update_data = data.model_dump(exclude_unset=True)
         
         if 'channel_ids' in update_data:
-            channels = await self.get_channels_by_ids(update_data.pop('channel_ids'))
+            channel_ids = update_data.pop('channel_ids')
+            channels = await self.get_channels_by_ids(channel_ids, owner_id=owner_id)
+            if owner_id is not None and channel_ids and len(channels) != len(set(channel_ids)):
+                raise ValueError("One or more channels not found or do not belong to the user")
             publication.channels = channels
 
         if 'tag_names' in update_data:
@@ -219,8 +233,8 @@ class PublicationService:
 
         return publication
 
-    async def delete_publication(self, publication_id: int) -> bool:
-        publication = await self.get_publication(publication_id)
+    async def delete_publication(self, publication_id: int, owner_id: Optional[int] = None) -> bool:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return False
 
@@ -228,8 +242,8 @@ class PublicationService:
         await self.db.commit()
         return True
 
-    async def publish_now(self, publication_id: int) -> Dict[str, Any]:
-        publication = await self.get_publication(publication_id)
+    async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
 
@@ -481,7 +495,7 @@ class PublicationService:
                 {"error": str(error)}
             )
 
-    async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC") -> Dict[str, List[Publication]]:
+    async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC", owner_id: Optional[int] = None) -> Dict[str, List[Publication]]:
         tz = pytz.timezone(timezone_str)
         start_date = datetime(year, month, 1, tzinfo=pytz.UTC)
         
@@ -500,6 +514,8 @@ class PublicationService:
             selectinload(Publication.channels),
             selectinload(Publication.tags)
         ).order_by(Publication.scheduled_time)
+        if owner_id is not None:
+            query = query.where(Publication.owner_id == owner_id)
 
         result = await self.db.execute(query)
         publications = result.scalars().all()
@@ -514,8 +530,8 @@ class PublicationService:
 
         return calendar_dict
 
-    async def reschedule_publication(self, publication_id: int, new_time: datetime) -> Optional[Publication]:
-        publication = await self.get_publication(publication_id)
+    async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None) -> Optional[Publication]:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return None
 
@@ -559,8 +575,8 @@ class PublicationService:
         result = response.json()
         return result['choices'][0]['message']['content']
 
-    async def edit_with_ai(self, request: AIEditRequest) -> Optional[Publication]:
-        publication = await self.get_publication(request.publication_id)
+    async def edit_with_ai(self, request: AIEditRequest, owner_id: Optional[int] = None) -> Optional[Publication]:
+        publication = await self.get_publication(request.publication_id, owner_id=owner_id)
         if not publication or not publication.text_content:
             return None
 
@@ -601,8 +617,8 @@ class PublicationService:
 
         return publication
 
-    async def edit_published_message(self, publication_id: int, new_text: str) -> Dict[str, Any]:
-        publication = await self.get_publication(publication_id)
+    async def edit_published_message(self, publication_id: int, new_text: str, owner_id: Optional[int] = None) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication or publication.status not in [DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]:
             return {"success": False, "error": "Publication not found or not published"}
 
@@ -630,8 +646,8 @@ class PublicationService:
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
-    async def delete_telegram_messages(self, publication_id: int) -> Dict[str, Any]:
-        publication = await self.get_publication(publication_id)
+    async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+        publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
 
