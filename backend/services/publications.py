@@ -311,7 +311,11 @@ class PublicationService:
                         await asyncio.sleep(2 ** attempt)
             return None
 
-        results = await asyncio.gather(*[safe_send_to_channel(ch) for ch in publication.channels], return_exceptions=False)
+        results: List[Dict[str, Any]] = []
+        for channel in publication.channels:
+            result = await safe_send_to_channel(channel)
+            if result is not None:
+                results.append(result)
 
         success_count = sum(1 for r in results if r.get("success"))
         total_count = len(results)
