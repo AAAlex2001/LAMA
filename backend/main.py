@@ -10,6 +10,7 @@ from backend.scheduler import start_scheduler, stop_scheduler, scheduler
 from backend.routes.publications import router as publications_router, get_publication_service
 from backend.routes.channels import router as channels_router
 from backend.routes.bots import router as bots_router
+from backend.routes.auth import router as auth_router
 from backend.services.publications import PublicationService
 
 
@@ -47,6 +48,7 @@ app.add_middleware(
 app.dependency_overrides[get_publication_service] = get_service
 
 
+app.include_router(auth_router)
 app.include_router(publications_router)
 app.include_router(channels_router)
 app.include_router(bots_router)

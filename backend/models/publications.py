@@ -46,6 +46,7 @@ class Publication(Base):
     __tablename__ = 'publications'
 
     id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     content_type = Column(SQLEnum(ContentType), nullable=False)
     status = Column(SQLEnum(PublicationStatus), default=PublicationStatus.DRAFT, nullable=False, index=True)
     
@@ -73,6 +74,7 @@ class Publication(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
+    owner = relationship("User", back_populates="publications")
     channels = relationship('ChannelGroup', secondary=publication_channels, back_populates='publications')
     tags = relationship('Tag', secondary=publication_tags, back_populates='publications')
     series = relationship('PublicationSeries', back_populates='publications')

@@ -28,6 +28,7 @@ class ChannelGroup(Base):
     __tablename__ = "channel_groups"
 
     id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
     channel_type = Column(SQLEnum(ChannelType), nullable=False)
     
@@ -55,6 +56,7 @@ class ChannelGroup(Base):
     extra_data = Column(JSON, nullable=True)
     
     # Relationships
+    owner = relationship("User", back_populates="channel_groups")
     backup_target = relationship("ChannelGroup", remote_side=[id], foreign_keys=[backup_target_id])
     backed_up_posts = relationship("BackedUpPost", back_populates="channel", cascade="all, delete-orphan")
     backup_jobs = relationship("BackupJob", back_populates="source_channel", foreign_keys="BackupJob.source_channel_id", cascade="all, delete-orphan")

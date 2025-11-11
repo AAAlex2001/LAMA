@@ -40,6 +40,7 @@ class Bot(Base):
     __tablename__ = "bots"
 
     id = Column(Integer, primary_key=True, index=True)
+    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Telegram данные
     telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
@@ -74,6 +75,7 @@ class Bot(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
     # Relationships
+    owner = relationship("User", back_populates="bots")
     messages = relationship("BotMessage", back_populates="bot", cascade="all, delete-orphan")
     commands = relationship("BotCommand", back_populates="bot", cascade="all, delete-orphan")
 

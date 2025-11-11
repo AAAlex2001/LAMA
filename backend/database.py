@@ -4,6 +4,7 @@ import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from backend.models.base import Base
+from backend.models.auth import User, TelegramAccount, UserSession
 from backend.models.publications import Publication, Tag, PublicationSeries, TelegramMessage, PublicationNotification
 from backend.models.channels import ChannelGroup, BackedUpPost, PostRetransmission, BackupJob
 from backend.models.bots import Bot, BotMessage, BotCommand, PendingApproval
