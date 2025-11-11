@@ -89,8 +89,12 @@ class AuthService:
         if not self.verify_telegram_auth(auth_data):
             raise ValueError("Invalid Telegram authentication data")
 
-        # Ищем существующий Telegram-аккаунт
-        query = select(TelegramAccount).where(TelegramAccount.telegram_id == auth_data.id)
+        # Ищем существующий Telegram-аккаунт с eager loading user
+        from sqlalchemy.orm import selectinload
+        
+        query = select(TelegramAccount).options(
+            selectinload(TelegramAccount.user)
+        ).where(TelegramAccount.telegram_id == auth_data.id)
         result = await self.db.execute(query)
         telegram_account = result.scalar_one_or_none()
 
@@ -143,7 +147,15 @@ class AuthService:
         self.db.add(session)
 
         await self.db.commit()
-        await self.db.refresh(user)
+        
+        # Явно подгружаем telegram_account для избежания MissingGreenlet
+        from sqlalchemy.orm import selectinload
+        
+        query = select(User).options(
+            selectinload(User.telegram_account)
+        ).where(User.id == user.id)
+        result = await self.db.execute(query)
+        user = result.scalar_one()
 
         return user, access_token, refresh_token
 
@@ -431,4 +443,5 @@ class AuthService:
             "total_sessions": total_sessions,
             "active_sessions": active_sessions
         }
+
 

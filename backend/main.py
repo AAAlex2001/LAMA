@@ -48,10 +48,12 @@ app.add_middleware(
 app.dependency_overrides[get_publication_service] = get_service
 
 
-app.include_router(auth_router)
-app.include_router(publications_router)
-app.include_router(channels_router)
-app.include_router(bots_router)
+api_prefix = "/api"
+
+app.include_router(auth_router, prefix=api_prefix)
+app.include_router(publications_router, prefix=api_prefix)
+app.include_router(channels_router, prefix=api_prefix)
+app.include_router(bots_router, prefix=api_prefix)
 
 
 @app.get("/")

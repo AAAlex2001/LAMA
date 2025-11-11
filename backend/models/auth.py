@@ -79,3 +79,4 @@ class UserSession(Base):
     def __repr__(self):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
 
+

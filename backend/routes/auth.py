@@ -270,3 +270,4 @@ async def get_user_stats(
     stats = await service.get_user_stats(user_id)
     return UserStatsResponse(**stats)
 
+

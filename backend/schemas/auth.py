@@ -119,3 +119,4 @@ class UserStatsResponse(BaseModel):
     total_sessions: int
     active_sessions: int
 
+
