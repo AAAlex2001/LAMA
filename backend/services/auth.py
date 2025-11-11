@@ -130,8 +130,8 @@ class AuthService:
             self.db.add(telegram_account)
 
         # Генерируем токены
-        access_token = self._create_access_token(user.id)
-        refresh_token = self._create_refresh_token(user.id)
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
 
         # Создаём сессию
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
@@ -159,7 +159,7 @@ class AuthService:
 
         return user, access_token, refresh_token
 
-    def _create_access_token(self, user_id: int) -> str:
+    def create_access_token(self, user_id: int) -> str:
         """Создать access token"""
         expires = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         payload = {
@@ -171,7 +171,7 @@ class AuthService:
         }
         return jwt.encode(payload, self.jwt_secret, algorithm=self.jwt_algorithm)
 
-    def _create_refresh_token(self, user_id: int) -> str:
+    def create_refresh_token(self, user_id: int) -> str:
         """Создать refresh token"""
         expires = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
         payload = {
@@ -240,8 +240,8 @@ class AuthService:
                 raise ValueError("Invalid or expired refresh token")
 
             # Генерируем новые токены
-            new_access_token = self._create_access_token(user_id)
-            new_refresh_token = self._create_refresh_token(user_id)
+            new_access_token = self.create_access_token(user_id)
+            new_refresh_token = self.create_refresh_token(user_id)
 
             # Обновляем сессию
             session.access_token = new_access_token
