@@ -24,6 +24,14 @@ class BackupStatus(str, enum.Enum):
     IN_PROGRESS = "IN_PROGRESS"
 
 
+class ActionType(str, enum.Enum):
+    KICK = "KICK"
+    MUTE = "MUTE"
+    UNMUTE = "UNMUTE"
+    DELETE = "DELETE"
+
+
+
 class ChannelGroup(Base):
     __tablename__ = "channel_groups"
 
@@ -62,6 +70,7 @@ class ChannelGroup(Base):
     backup_jobs = relationship("BackupJob", back_populates="source_channel", foreign_keys="BackupJob.source_channel_id", cascade="all, delete-orphan")
     publications = relationship("Publication", secondary="publication_channels", back_populates="channels")
     telegram_messages = relationship("TelegramMessage", back_populates="channel", cascade="all, delete-orphan")
+    moderation_rules = relationship("ChannelModerationRule", back_populates="channel", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_channel_groups_backup_mode", "backup_mode"),
@@ -157,4 +166,22 @@ class BackupJob(Base):
         Index("ix_backup_jobs_status", "status"),
         Index("ix_backup_jobs_started_at", "started_at"),
     )
+
+class ChannelModerationRule(Base):
+    __tablename__ = "channel_moderation_rules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    phrase = Column(Text, nullable=False)
+
+    action = Column(SQLEnum(ActionType), nullable=False)
+
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    mute_duration_minutes = Column(Integer, nullable=True)
+
+    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
+
+    channel = relationship("ChannelGroup", back_populates="moderation_rules")
+
 

@@ -3,6 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
+from backend.models.channels import ActionType
+
 
 class ChannelType(str, Enum):
     CHANNEL = "CHANNEL"
@@ -170,3 +172,28 @@ class ChannelStatsResponse(BaseModel):
     last_post_date: Optional[datetime]
 
 
+
+# ============ Channel Moderation Schemas ============
+
+class ChannelModerationRuleCreate(BaseModel):
+    action: ActionType
+    phrase: str
+    mute_duration_minutes: Optional[int] = None
+
+
+class ChannelModerationRuleUpdate(BaseModel):
+    action: Optional[ActionType] = None
+    phrase: Optional[str] = None
+    mute_duration_minutes: Optional[int] = None
+
+
+class ChannelModerationRuleResponse(BaseModel):
+    id: int
+    channel_id: int
+    action: ActionType
+    phrase: str
+    mute_duration_minutes: Optional[int]
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
