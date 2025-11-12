@@ -498,7 +498,6 @@ class PublicationService:
                 reply_markup=keyboard
             )
             return [message]
-            return [message]
 
         raise ValueError("Unsupported content type")
 
