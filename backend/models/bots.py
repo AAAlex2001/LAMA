@@ -50,6 +50,7 @@ class Bot(Base):
     
     # Информация о боте
     description = Column(Text, nullable=True)
+    short_description = Column(String(256), nullable=True)
     photo_url = Column(String(512), nullable=True)
     
     # Статус

@@ -15,6 +15,7 @@ from backend.models.bots import BotStatus, ApprovalMode, MessageType
 class BotBase(BaseModel):
     """Базовая схема бота"""
     description: Optional[str] = None
+    short_description: Optional[str] = None
     photo_url: Optional[str] = None
     status: BotStatus = BotStatus.ACTIVE
     is_webhook_enabled: bool = False
@@ -29,7 +30,9 @@ class BotCreate(BaseModel):
 
 class BotUpdate(BaseModel):
     """Схема обновления бота"""
+    name: Optional[str] = Field(None, max_length=64, description="Отображаемое имя бота")
     description: Optional[str] = None
+    short_description: Optional[str] = Field(None, max_length=120, description="Короткое описание бота")
     photo_url: Optional[str] = None
     status: Optional[BotStatus] = None
     is_webhook_enabled: Optional[bool] = None
@@ -43,6 +46,7 @@ class BotResponse(BaseModel):
     username: str
     first_name: str
     description: Optional[str]
+    short_description: Optional[str]
     photo_url: Optional[str]
     status: BotStatus
     is_webhook_enabled: bool

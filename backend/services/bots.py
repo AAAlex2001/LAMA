@@ -45,9 +45,27 @@ class BotService:
         try:
             temp_bot = Bot(token=data.token)
             bot_info = await temp_bot.get_me()
-            await temp_bot.session.close()
+            bot_description_info = None
+            bot_short_description_info = None
+            try:
+                bot_description_info = await temp_bot.get_my_description()
+            except TelegramAPIError:
+                bot_description_info = None
+            try:
+                bot_short_description_info = await temp_bot.get_my_short_description()
+            except TelegramAPIError:
+                bot_short_description_info = None
         except TelegramAPIError as e:
             raise ValueError(f"Invalid bot token: {str(e)}")
+        finally:
+            await temp_bot.session.close()
+
+        description_value = bot_description_info.description if bot_description_info and bot_description_info.description else data.description
+        short_description_value = (
+            bot_short_description_info.short_description
+            if bot_short_description_info and bot_short_description_info.short_description
+            else None
+        )
 
         # Проверяем, не существует ли уже бот с таким telegram_id
         existing_bot = await self.get_bot_by_telegram_id(bot_info.id)
@@ -64,7 +82,8 @@ class BotService:
             username=bot_info.username,
             first_name=bot_info.first_name,
             token=data.token,
-            description=data.description,
+            description=description_value,
+            short_description=short_description_value,
             status=BotStatus.ACTIVE,
             last_sync_at=datetime.now(timezone.utc)
         )
@@ -123,16 +142,48 @@ class BotService:
         bot = await self.get_bot(bot_id, owner_id=owner_id)
         if not bot:
             return None
-
         update_data = data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(bot, field, value)
+        new_name = update_data.pop("name", None)
 
-        bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
-        await self.db.refresh(bot)
+        telegram_bot: Optional[Bot] = None
+        try:
+            if any(
+                field in update_data
+                for field in ("description", "short_description")
+            ) or new_name is not None:
+                telegram_bot = Bot(token=bot.token)
 
-        return bot
+                if new_name is not None:
+                    await telegram_bot.set_my_name(name=new_name)
+                    bot.first_name = new_name
+
+                if "description" in update_data:
+                    description_value = update_data["description"] or ""
+                    await telegram_bot.set_my_description(
+                        description=description_value
+                    )
+
+                if "short_description" in update_data:
+                    short_description_value = update_data["short_description"] or ""
+                    await telegram_bot.set_my_short_description(
+                        short_description=short_description_value
+                    )
+                    # Значение также сохранится ниже через setattr
+
+            for field, value in update_data.items():
+                setattr(bot, field, value)
+
+            bot.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(bot)
+            return bot
+
+        except TelegramAPIError as e:
+            await self.db.rollback()
+            raise ValueError(f"Failed to update bot in Telegram: {str(e)}")
+        finally:
+            if telegram_bot:
+                await telegram_bot.session.close()
 
     async def delete_bot(self, bot_id: int, owner_id: int) -> bool:
         """Удалить бота"""
@@ -149,9 +200,27 @@ class BotService:
         try:
             temp_bot = Bot(token=token)
             bot_info = await temp_bot.get_me()
-            await temp_bot.session.close()
+            bot_description_info = None
+            bot_short_description_info = None
+            try:
+                bot_description_info = await temp_bot.get_my_description()
+            except TelegramAPIError:
+                bot_description_info = None
+            try:
+                bot_short_description_info = await temp_bot.get_my_short_description()
+            except TelegramAPIError:
+                bot_short_description_info = None
         except TelegramAPIError as e:
             raise ValueError(f"Failed to sync bot: {str(e)}")
+        finally:
+            await temp_bot.session.close()
+
+        description_value = bot_description_info.description if bot_description_info and bot_description_info.description else None
+        short_description_value = (
+            bot_short_description_info.short_description
+            if bot_short_description_info and bot_short_description_info.short_description
+            else None
+        )
 
         # Ищем существующего бота
         bot = await self.get_bot_by_telegram_id(bot_info.id)
@@ -163,6 +232,10 @@ class BotService:
             bot.username = bot_info.username
             bot.first_name = bot_info.first_name
             bot.token = token
+            if description_value is not None:
+                bot.description = description_value
+            if short_description_value is not None:
+                bot.short_description = short_description_value
             bot.last_sync_at = datetime.now(timezone.utc)
             bot.updated_at = datetime.now(timezone.utc)
         else:
@@ -175,6 +248,8 @@ class BotService:
                 username=bot_info.username,
                 first_name=bot_info.first_name,
                 token=token,
+                description=description_value,
+                short_description=short_description_value,
                 status=BotStatus.ACTIVE,
                 last_sync_at=datetime.now(timezone.utc)
             )

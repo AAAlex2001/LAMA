@@ -136,7 +136,10 @@ async def update_bot(
         current_user: User = Depends(get_current_user)
 ):
     """Обновить бота"""
-    bot = await service.update_bot(bot_id, data, owner_id=current_user.id)
+    try:
+        bot = await service.update_bot(bot_id, data, owner_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
     return bot
