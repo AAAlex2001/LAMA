@@ -3,10 +3,10 @@
 """
 import asyncio
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from aiogram import Bot
-from aiogram.types import Update, Message, ChatJoinRequest
+from aiogram.types import Update, Message, ChatJoinRequest, ChatPermissions
 from aiogram.exceptions import TelegramAPIError, TelegramRetryAfter
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import AsyncSessionLocal
 from backend.models.bots import Bot as BotModel, BotStatus, MessageType, PendingApproval
 from backend.services.bots import BotService
+from backend.services.channel import ChannelModerationService
+from backend.models.channels import ActionType
 
 
 async def process_bot_updates():
@@ -118,6 +120,92 @@ async def handle_message(
     media_file_id = None
     media_url = None
     text_content = message.text or message.caption
+
+    # Модерация запрещённых слов для групп/супергрупп
+    if (
+        message.chat
+        and message.chat.type in {"group", "supergroup"}
+        and text_content
+        and not is_edit
+    ):
+        rule = None
+        try:
+            async with AsyncSessionLocal() as moderation_db:
+                moderation_service = ChannelModerationService(moderation_db)
+                rule = await moderation_service.check_message_by_telegram_id(
+                    message.chat.id,
+                    text_content,
+                )
+        except Exception as moderation_error:
+            print(f"Moderation check failed: {moderation_error}")
+            rule = None
+
+        if rule:
+            moderation_bot = Bot(token=bot_model.token)
+            try:
+                await moderation_bot.delete_message(
+                    chat_id=message.chat.id,
+                    message_id=message.message_id
+                )
+            except TelegramAPIError as delete_error:
+                print(f"Failed to delete message {message.message_id}: {delete_error}")
+
+            try:
+                if (
+                    rule.action in {ActionType.MUTE, ActionType.KICK, ActionType.UNMUTE}
+                    and message.from_user
+                ):
+                    if rule.action == ActionType.MUTE:
+                        until_date = None
+                        if rule.mute_duration_minutes:
+                            until_date = datetime.now(timezone.utc) + timedelta(
+                                minutes=rule.mute_duration_minutes
+                            )
+                        permissions = ChatPermissions(
+                            can_send_messages=False,
+                            can_send_media_messages=False,
+                            can_send_polls=False,
+                            can_send_other_messages=False,
+                            can_add_web_page_previews=False,
+                            can_pin_messages=False,
+                            can_change_info=False,
+                            can_invite_users=False,
+                        )
+                        await moderation_bot.restrict_chat_member(
+                            chat_id=message.chat.id,
+                            user_id=message.from_user.id,
+                            permissions=permissions,
+                            until_date=until_date,
+                        )
+                    elif rule.action == ActionType.KICK:
+                        await moderation_bot.ban_chat_member(
+                            chat_id=message.chat.id,
+                            user_id=message.from_user.id,
+                            revoke_messages=False,
+                        )
+                    elif rule.action == ActionType.UNMUTE:
+                        permissions = ChatPermissions(
+                            can_send_messages=True,
+                            can_send_media_messages=True,
+                            can_send_polls=True,
+                            can_send_other_messages=True,
+                            can_add_web_page_previews=True,
+                            can_pin_messages=False,
+                            can_change_info=False,
+                            can_invite_users=True,
+                        )
+                        await moderation_bot.restrict_chat_member(
+                            chat_id=message.chat.id,
+                            user_id=message.from_user.id,
+                            permissions=permissions,
+                        )
+            except TelegramAPIError as action_error:
+                print(f"Failed to apply moderation action: {action_error}")
+            finally:
+                await moderation_bot.session.close()
+
+            # Не сохраняем и не обрабатываем сообщение дальше
+            return
 
     if message.photo:
         message_type = MessageType.PHOTO

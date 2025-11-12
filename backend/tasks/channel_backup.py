@@ -5,7 +5,7 @@ from sqlalchemy import select
 
 from backend.database import AsyncSessionLocal
 from backend.config import get_bot
-from backend.services.channels import ChannelService
+from backend.services.channel import ChannelService
 from backend.models.channels import ChannelGroup, BackupMode
 
 

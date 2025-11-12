@@ -23,7 +23,7 @@ from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
 )
-from backend.services.channels import ChannelService
+from backend.services.channel import ChannelService
 
 
 class PublicationService:

@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
 from backend.config import get_bot
-from backend.services.channels import ChannelService
+from backend.services.channel import ChannelService, ChannelModerationService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
@@ -11,7 +11,9 @@ from backend.schemas.channels import (
     SyncChannelRequest, SyncChannelResponse,
     BackupModeUpdateRequest, BackedUpPostListResponse, BackupJobCreate, BackupJobResponse,
     BackupJobListResponse, RestoreBackupRequest, RestoreBackupResponse, ChannelStatsResponse,
-    ChannelType, BackupMode, BackupStatus
+    ChannelType, BackupMode, BackupStatus,
+    ChannelModerationRuleCreate, ChannelModerationRuleUpdate,
+    ChannelModerationRuleResponse, ChannelModerationRuleListResponse,
 )
 
 
@@ -21,6 +23,9 @@ router = APIRouter(prefix="/channels", tags=["channels"])
 async def get_channel_service(db: AsyncSession = Depends(get_db)):
     bot = get_bot()
     return ChannelService(db, bot)
+
+async def get_channel_moderation_service(db: AsyncSession = Depends(get_db)):
+    return ChannelModerationService(db)
 
 
 # ============ CRUD Operations ============
@@ -175,6 +180,98 @@ async def get_channel_stats(
     
     stats = await service.get_channel_stats(channel_id)
     return ChannelStatsResponse(**stats)
+
+
+# ============ Moderation Rules ============
+
+@router.post(
+    "/{channel_id}/moderation/rules",
+    response_model=ChannelModerationRuleResponse,
+    status_code=201,
+)
+async def create_moderation_rule(
+    channel_id: int,
+    data: ChannelModerationRuleCreate,
+    moderation_service: ChannelModerationService = Depends(get_channel_moderation_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Создать правило модерации (запрещённое слово)"""
+    try:
+        rule = await moderation_service.create_rule(
+            channel_id=channel_id,
+            data=data,
+            owner_id=current_user.id,
+        )
+        return rule
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get(
+    "/{channel_id}/moderation/rules",
+    response_model=ChannelModerationRuleListResponse,
+)
+async def list_moderation_rules(
+    channel_id: int,
+    moderation_service: ChannelModerationService = Depends(get_channel_moderation_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить список правил модерации"""
+    try:
+        rules = await moderation_service.list_rules(
+            channel_id=channel_id,
+            owner_id=current_user.id,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return ChannelModerationRuleListResponse(
+        items=rules,
+        total=len(rules),
+    )
+
+
+@router.put(
+    "/{channel_id}/moderation/rules/{rule_id}",
+    response_model=ChannelModerationRuleResponse,
+)
+async def update_moderation_rule(
+    channel_id: int,
+    rule_id: int,
+    data: ChannelModerationRuleUpdate,
+    moderation_service: ChannelModerationService = Depends(get_channel_moderation_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить правило модерации"""
+    rule = await moderation_service.update_rule(
+        channel_id=channel_id,
+        rule_id=rule_id,
+        data=data,
+        owner_id=current_user.id,
+    )
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return rule
+
+
+@router.delete(
+    "/{channel_id}/moderation/rules/{rule_id}",
+    status_code=204,
+)
+async def delete_moderation_rule(
+    channel_id: int,
+    rule_id: int,
+    moderation_service: ChannelModerationService = Depends(get_channel_moderation_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Удалить правило модерации"""
+    success = await moderation_service.delete_rule(
+        channel_id=channel_id,
+        rule_id=rule_id,
+        owner_id=current_user.id,
+    )
+    if not success:
+        raise HTTPException(status_code=404, detail="Rule not found")
 
 
 # ============ Backup Jobs (Post-Factum Restore) ============

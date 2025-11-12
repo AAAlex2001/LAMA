@@ -197,3 +197,8 @@ class ChannelModerationRuleResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class ChannelModerationRuleListResponse(BaseModel):
+    items: List[ChannelModerationRuleResponse]
+    total: int
