@@ -139,10 +139,12 @@ class PublicationService:
 
     async def get_publication(self, publication_id: int, owner_id: Optional[int] = None) -> Optional[Publication]:
         query = select(Publication).where(Publication.id == publication_id).options(
-            selectinload(Publication.channels),
+            selectinload(Publication.channels).selectinload(Channel.bot),
             selectinload(Publication.tags),
             selectinload(Publication.series),
-            selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel)
+            selectinload(Publication.telegram_messages)
+            .selectinload(TelegramMessage.channel)
+            .selectinload(Channel.bot)
         )
         if owner_id is not None:
             query = query.where(Publication.owner_id == owner_id)
@@ -163,7 +165,7 @@ class PublicationService:
         limit: int = 100
     ) -> tuple[List[Publication], int]:
         base_query = select(Publication).options(
-            selectinload(Publication.channels),
+            selectinload(Publication.channels).selectinload(Channel.bot),
             selectinload(Publication.tags),
             selectinload(Publication.series)
         )
