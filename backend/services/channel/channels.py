@@ -1,5 +1,6 @@
 import asyncio
 import json
+import aiohttp
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, func, and_, or_, distinct
@@ -190,18 +191,97 @@ class ChannelService:
                 pass
             
             photo_url = None
+            photo_small_file_id = None
+            photo_small_file_unique_id = None
+            photo_big_file_id = None
+            photo_big_file_unique_id = None
+            
             if chat.photo:
                 try:
                     photo_file = await bot.get_file(chat.photo.big_file_id)
-                    photo_url = f"https://api.telegram.org/file/bot{bot.token}/{photo_file.file_path}"
+                    photo_url = f"https://api.telegram.org/file/bot{bot_model.token}/{photo_file.file_path}"
+                    photo_small_file_id = chat.photo.small_file_id
+                    photo_small_file_unique_id = chat.photo.small_file_unique_id
+                    photo_big_file_id = chat.photo.big_file_id
+                    photo_big_file_unique_id = chat.photo.big_file_unique_id
                 except Exception:
                     pass
             
-            extra_data = {
-                "type": chat.type,
-                "bio": chat.bio if hasattr(chat, "bio") else None,
-                "linked_chat_id": chat.linked_chat_id if hasattr(chat, "linked_chat_id") else None,
-                "has_protected_content": chat.has_protected_content if hasattr(chat, "has_protected_content") else False,
+            # Parse all ChatFullInfo fields
+            chat_data = {
+                "channel_type": channel_type,
+                "title": chat.title or f"Channel {telegram_id}",
+                "username": getattr(chat, "username", None),
+                "first_name": getattr(chat, "first_name", None),
+                "last_name": getattr(chat, "last_name", None),
+                "description": getattr(chat, "description", None),
+                "invite_link": getattr(chat, "invite_link", None),
+                "bio": getattr(chat, "bio", None),
+                
+                # Chat appearance
+                "accent_color_id": getattr(chat, "accent_color_id", None),
+                "profile_accent_color_id": getattr(chat, "profile_accent_color_id", None),
+                "background_custom_emoji_id": getattr(chat, "background_custom_emoji_id", None),
+                "profile_background_custom_emoji_id": getattr(chat, "profile_background_custom_emoji_id", None),
+                "emoji_status_custom_emoji_id": getattr(chat, "emoji_status_custom_emoji_id", None),
+                "emoji_status_expiration_date": getattr(chat, "emoji_status_expiration_date", None),
+                
+                # Chat settings/features
+                "is_forum": getattr(chat, "is_forum", False),
+                "is_direct_messages": getattr(chat, "is_direct_messages", False),
+                "max_reaction_count": getattr(chat, "max_reaction_count", None),
+                "slow_mode_delay": getattr(chat, "slow_mode_delay", None),
+                "unrestrict_boost_count": getattr(chat, "unrestrict_boost_count", None),
+                "message_auto_delete_time": getattr(chat, "message_auto_delete_time", None),
+                
+                # Privacy & restrictions
+                "has_private_forwards": getattr(chat, "has_private_forwards", False),
+                "has_restricted_voice_and_video_messages": getattr(chat, "has_restricted_voice_and_video_messages", False),
+                "has_aggressive_anti_spam_enabled": getattr(chat, "has_aggressive_anti_spam_enabled", False),
+                "has_hidden_members": getattr(chat, "has_hidden_members", False),
+                "has_protected_content": getattr(chat, "has_protected_content", False),
+                "has_visible_history": getattr(chat, "has_visible_history", False),
+                "join_to_send_messages": getattr(chat, "join_to_send_messages", False),
+                "join_by_request": getattr(chat, "join_by_request", False),
+                "can_send_paid_media": getattr(chat, "can_send_paid_media", False),
+                
+                # Stickers
+                "sticker_set_name": getattr(chat, "sticker_set_name", None),
+                "can_set_sticker_set": getattr(chat, "can_set_sticker_set", False),
+                "custom_emoji_sticker_set_name": getattr(chat, "custom_emoji_sticker_set_name", None),
+                
+                # Linked chats & location
+                "linked_chat_id": getattr(chat, "linked_chat_id", None),
+                "parent_chat_id": getattr(getattr(chat, "parent_chat", None), "id", None) if hasattr(chat, "parent_chat") else None,
+                
+                # Statistics
+                "members_count": members_count,
+                
+                # Photo
+                "photo_url": photo_url,
+                "photo_small_file_id": photo_small_file_id,
+                "photo_small_file_unique_id": photo_small_file_unique_id,
+                "photo_big_file_id": photo_big_file_id,
+                "photo_big_file_unique_id": photo_big_file_unique_id,
+                
+                # JSON fields
+                "permissions": chat.permissions.model_dump(mode="json") if hasattr(chat, "permissions") and chat.permissions else None,
+                "available_reactions": [r.model_dump(mode="json") for r in chat.available_reactions] if hasattr(chat, "available_reactions") and chat.available_reactions else None,
+                "accepted_gift_types": chat.accepted_gift_types.model_dump(mode="json") if hasattr(chat, "accepted_gift_types") and chat.accepted_gift_types else None,
+                "active_usernames": getattr(chat, "active_usernames", None),
+                "pinned_message": chat.pinned_message.model_dump(mode="json") if hasattr(chat, "pinned_message") and chat.pinned_message else None,
+                
+                # Business account fields
+                "business_intro": chat.business_intro.model_dump(mode="json") if hasattr(chat, "business_intro") and chat.business_intro else None,
+                "business_location": chat.business_location.model_dump(mode="json") if hasattr(chat, "business_location") and chat.business_location else None,
+                "business_opening_hours": chat.business_opening_hours.model_dump(mode="json") if hasattr(chat, "business_opening_hours") and chat.business_opening_hours else None,
+                "birthdate": chat.birthdate.model_dump(mode="json") if hasattr(chat, "birthdate") and chat.birthdate else None,
+                "personal_chat": chat.personal_chat.model_dump(mode="json") if hasattr(chat, "personal_chat") and chat.personal_chat else None,
+                
+                # Location
+                "location_address": getattr(getattr(chat, "location", None), "address", None) if hasattr(chat, "location") and chat.location else None,
+                "location_latitude": str(getattr(getattr(chat, "location", None), "location", {}).latitude) if hasattr(chat, "location") and chat.location and hasattr(chat.location, "location") else None,
+                "location_longitude": str(getattr(getattr(chat, "location", None), "location", {}).longitude) if hasattr(chat, "location") and chat.location and hasattr(chat.location, "location") else None,
             }
             
             channel = await self.get_channel_by_telegram_id(telegram_id)
@@ -210,14 +290,11 @@ class ChannelService:
                 # Проверяем владельца
                 if channel.owner_id != owner_id:
                     raise ValueError("Channel belongs to another user")
-                    
-                channel.title = chat.title or channel.title
-                channel.username = chat.username
-                channel.description = chat.description
-                channel.invite_link = chat.invite_link
-                channel.members_count = members_count
-                channel.photo_url = photo_url
-                channel.extra_data = extra_data
+                
+                # Update all fields
+                for field, value in chat_data.items():
+                    setattr(channel, field, value)
+                
                 channel.bot_id = bot_id
                 channel.last_sync_at = datetime.now(timezone.utc)
                 channel.updated_at = datetime.now(timezone.utc)
@@ -226,14 +303,7 @@ class ChannelService:
                     owner_id=owner_id,
                     bot_id=bot_id,
                     telegram_id=telegram_id,
-                    channel_type=channel_type,
-                    title=chat.title or f"Channel {telegram_id}",
-                    username=chat.username,
-                    description=chat.description,
-                    invite_link=chat.invite_link,
-                    members_count=members_count,
-                    photo_url=photo_url,
-                    extra_data=extra_data,
+                    **chat_data,
                     last_sync_at=datetime.now(timezone.utc),
                     is_active=True
                 )
@@ -718,4 +788,219 @@ class ChannelService:
             "first_post_date": dates[0],
             "last_post_date": dates[1]
         }
+
+    async def update_channel_telegram_settings(
+        self,
+        channel_id: int,
+        owner_id: int,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        photo_file_path: Optional[str] = None
+    ) -> ChannelGroup:
+        """
+        Обновление настроек канала через Telegram API
+        
+        Поддерживаемые методы:
+        - setChatTitle: изменение названия
+        - setChatDescription: изменение описания
+        - setChatPhoto: изменение фото (требует файл)
+        """
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
+        if not channel:
+            raise ValueError("Channel not found")
+        
+        bot = await self.get_bot_for_channel(channel)
+        
+        try:
+            if title is not None:
+                await bot.set_chat_title(chat_id=channel.telegram_id, title=title)
+                channel.title = title
+            
+            if description is not None:
+                await bot.set_chat_description(chat_id=channel.telegram_id, description=description)
+                channel.description = description
+            
+            if photo_file_path is not None:
+                from aiogram.types import FSInputFile, BufferedInputFile
+                
+                if photo_file_path.startswith(("http://", "https://")):
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(photo_file_path) as resp:
+                            if resp.status == 200:
+                                file_data = await resp.read()
+                                photo = BufferedInputFile(file_data, filename="photo.jpg")
+                                await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
+                else:
+                    photo = FSInputFile(photo_file_path)
+                    await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
+                
+                chat = await bot.get_chat(channel.telegram_id)
+                if chat.photo:
+                    try:
+                        photo_file = await bot.get_file(chat.photo.big_file_id)
+                        channel.photo_url = f"https://api.telegram.org/file/bot{bot.token}/{photo_file.file_path}"
+                        channel.photo_small_file_id = chat.photo.small_file_id
+                        channel.photo_small_file_unique_id = chat.photo.small_file_unique_id
+                        channel.photo_big_file_id = chat.photo.big_file_id
+                        channel.photo_big_file_unique_id = chat.photo.big_file_unique_id
+                    except Exception:
+                        pass
+            
+            channel.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(channel)
+            
+            return channel
+            
+        except TelegramBadRequest as e:
+            raise ValueError(f"Failed to update channel settings: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Unexpected error: {str(e)}")
+    
+    async def delete_channel_photo(self, channel_id: int, owner_id: int) -> ChannelGroup:
+        """Удаление фото канала через Telegram API (deleteChatPhoto)"""
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
+        if not channel:
+            raise ValueError("Channel not found")
+        
+        bot = await self.get_bot_for_channel(channel)
+        
+        try:
+            await bot.delete_chat_photo(chat_id=channel.telegram_id)
+            
+            channel.photo_url = None
+            channel.photo_small_file_id = None
+            channel.photo_small_file_unique_id = None
+            channel.photo_big_file_id = None
+            channel.photo_big_file_unique_id = None
+            channel.updated_at = datetime.now(timezone.utc)
+            
+            await self.db.commit()
+            await self.db.refresh(channel)
+            
+            return channel
+            
+        except TelegramBadRequest as e:
+            raise ValueError(f"Failed to delete channel photo: {str(e)}")
+    
+    async def set_channel_permissions(
+        self,
+        channel_id: int,
+        owner_id: int,
+        permissions: Dict[str, bool]
+    ) -> ChannelGroup:
+        """
+        Установка разрешений для канала через setChatPermissions
+        
+        permissions должен содержать поля из ChatPermissions:
+        - can_send_messages
+        - can_send_audios
+        - can_send_documents
+        - can_send_photos
+        - can_send_videos
+        - can_send_video_notes
+        - can_send_voice_notes
+        - can_send_polls
+        - can_send_other_messages
+        - can_add_web_page_previews
+        - can_change_info
+        - can_invite_users
+        - can_pin_messages
+        - can_manage_topics
+        """
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
+        if not channel:
+            raise ValueError("Channel not found")
+        
+        bot = await self.get_bot_for_channel(channel)
+        
+        try:
+            from aiogram.types import ChatPermissions
+            
+            chat_permissions = ChatPermissions(**permissions)
+            await bot.set_chat_permissions(chat_id=channel.telegram_id, permissions=chat_permissions)
+            
+            channel.permissions = permissions
+            channel.updated_at = datetime.now(timezone.utc)
+            
+            await self.db.commit()
+            await self.db.refresh(channel)
+            
+            return channel
+            
+        except TelegramBadRequest as e:
+            raise ValueError(f"Failed to set channel permissions: {str(e)}")
+    
+    async def pin_channel_message(
+        self,
+        channel_id: int,
+        owner_id: int,
+        message_id: int,
+        disable_notification: bool = False
+    ) -> ChannelGroup:
+        """Закрепление сообщения в канале (pinChatMessage)"""
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
+        if not channel:
+            raise ValueError("Channel not found")
+        
+        bot = await self.get_bot_for_channel(channel)
+        
+        try:
+            await bot.pin_chat_message(
+                chat_id=channel.telegram_id,
+                message_id=message_id,
+                disable_notification=disable_notification
+            )
+            
+            chat = await bot.get_chat(channel.telegram_id)
+            if hasattr(chat, "pinned_message") and chat.pinned_message:
+                channel.pinned_message = chat.pinned_message.model_dump(mode="json")
+            
+            channel.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(channel)
+            
+            return channel
+            
+        except TelegramBadRequest as e:
+            raise ValueError(f"Failed to pin message: {str(e)}")
+    
+    async def unpin_channel_message(
+        self,
+        channel_id: int,
+        owner_id: int,
+        message_id: Optional[int] = None
+    ) -> ChannelGroup:
+        """
+        Открепление сообщения в канале (unpinChatMessage)
+        
+        Если message_id не указан, открепляет все сообщения
+        """
+        channel = await self.get_channel(channel_id, owner_id=owner_id)
+        if not channel:
+            raise ValueError("Channel not found")
+        
+        bot = await self.get_bot_for_channel(channel)
+        
+        try:
+            if message_id is None:
+                await bot.unpin_all_chat_messages(chat_id=channel.telegram_id)
+                channel.pinned_message = None
+            else:
+                await bot.unpin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
+                
+                chat = await bot.get_chat(channel.telegram_id)
+                if hasattr(chat, "pinned_message") and chat.pinned_message:
+                    channel.pinned_message = chat.pinned_message.model_dump(mode="json")
+                else:
+                    channel.pinned_message = None
+            
+            channel.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(channel)
+            
+            return channel
+            
+        except TelegramBadRequest as e:
+            raise ValueError(f"Failed to unpin message: {str(e)}")
 

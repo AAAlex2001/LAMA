@@ -41,15 +41,85 @@ class ChannelGroup(Base):
     telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
     channel_type = Column(SQLEnum(ChannelType), nullable=False)
     
-    # Основная информация
+    # Основная информация (ChatFullInfo)
     title = Column(String(255), nullable=False)
     username = Column(String(255), nullable=True, index=True)
+    first_name = Column(String(255), nullable=True)  # For private chats
+    last_name = Column(String(255), nullable=True)  # For private chats
     description = Column(Text, nullable=True)
     invite_link = Column(String(500), nullable=True)
+    bio = Column(Text, nullable=True)  # For private chats
+    
+    # Chat appearance
+    accent_color_id = Column(Integer, nullable=True)
+    profile_accent_color_id = Column(Integer, nullable=True)
+    background_custom_emoji_id = Column(String(255), nullable=True)
+    profile_background_custom_emoji_id = Column(String(255), nullable=True)
+    emoji_status_custom_emoji_id = Column(String(255), nullable=True)
+    emoji_status_expiration_date = Column(Integer, nullable=True)
+    
+    # Chat settings/features
+    is_forum = Column(Boolean, default=False)
+    is_direct_messages = Column(Boolean, default=False)
+    max_reaction_count = Column(Integer, nullable=True)
+    slow_mode_delay = Column(Integer, nullable=True)
+    unrestrict_boost_count = Column(Integer, nullable=True)
+    message_auto_delete_time = Column(Integer, nullable=True)
+    
+    # Privacy & restrictions
+    has_private_forwards = Column(Boolean, default=False)
+    has_restricted_voice_and_video_messages = Column(Boolean, default=False)
+    has_aggressive_anti_spam_enabled = Column(Boolean, default=False)
+    has_hidden_members = Column(Boolean, default=False)
+    has_protected_content = Column(Boolean, default=False)
+    has_visible_history = Column(Boolean, default=False)
+    join_to_send_messages = Column(Boolean, default=False)
+    join_by_request = Column(Boolean, default=False)
+    can_send_paid_media = Column(Boolean, default=False)
+    
+    # Stickers
+    sticker_set_name = Column(String(255), nullable=True)
+    can_set_sticker_set = Column(Boolean, default=False)
+    custom_emoji_sticker_set_name = Column(String(255), nullable=True)
+    
+    # Linked chats & location
+    linked_chat_id = Column(BigInteger, nullable=True)
+    parent_chat_id = Column(BigInteger, nullable=True)  # For direct messages chats
+    location_address = Column(String(500), nullable=True)
+    location_latitude = Column(String(50), nullable=True)
+    location_longitude = Column(String(50), nullable=True)
     
     # Статистика
     members_count = Column(Integer, default=0)
+    
+    # Photo
     photo_url = Column(String(500), nullable=True)
+    photo_small_file_id = Column(String(255), nullable=True)
+    photo_small_file_unique_id = Column(String(255), nullable=True)
+    photo_big_file_id = Column(String(255), nullable=True)
+    photo_big_file_unique_id = Column(String(255), nullable=True)
+    
+    # Chat permissions (JSON for flexibility)
+    permissions = Column(JSON, nullable=True)
+    
+    # Available reactions (JSON array)
+    available_reactions = Column(JSON, nullable=True)
+    
+    # Accepted gift types (JSON)
+    accepted_gift_types = Column(JSON, nullable=True)
+    
+    # Active usernames (JSON array)
+    active_usernames = Column(JSON, nullable=True)
+    
+    # Pinned message info (stored as JSON for simplicity)
+    pinned_message = Column(JSON, nullable=True)
+    
+    # Business account fields (JSON)
+    business_intro = Column(JSON, nullable=True)
+    business_location = Column(JSON, nullable=True)
+    business_opening_hours = Column(JSON, nullable=True)
+    birthdate = Column(JSON, nullable=True)
+    personal_chat = Column(JSON, nullable=True)
     
     # Настройки бекапа
     backup_mode = Column(SQLEnum(BackupMode), default=BackupMode.DISABLED, nullable=False)
@@ -61,7 +131,7 @@ class ChannelGroup(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
     
-    # Дополнительные данные из TG API
+    # Дополнительные данные из TG API (для полей, которые не вошли в структуру)
     extra_data = Column(JSON, nullable=True)
     
     # Relationships

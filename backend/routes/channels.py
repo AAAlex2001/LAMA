@@ -7,7 +7,7 @@ from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
     ChannelGroupCreate, ChannelGroupUpdate, ChannelGroupResponse, ChannelGroupListResponse,
-    SyncChannelRequest, SyncChannelResponse,
+    SyncChannelRequest, SyncChannelResponse, ChannelTelegramUpdate, ChannelPermissionsUpdate,
     BackupModeUpdateRequest, BackedUpPostListResponse, BackupJobCreate, BackupJobResponse,
     BackupJobListResponse, RestoreBackupRequest, RestoreBackupResponse, ChannelStatsResponse,
     ChannelType, BackupMode, BackupStatus,
@@ -365,6 +365,136 @@ async def restore_backup(
             job_id=job.id,
             message="Backup restore started in background"
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============ Telegram Settings Management ============
+
+@router.put("/{channel_id}/telegram-settings", response_model=ChannelGroupResponse)
+async def update_channel_telegram_settings(
+    channel_id: int,
+    data: ChannelTelegramUpdate,
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Обновить настройки канала через Telegram API
+    
+    Позволяет изменить:
+    - title: название канала (setChatTitle)
+    - description: описание канала (setChatDescription)
+    - photo_file_path: фото канала (setChatPhoto) - URL или локальный путь
+    """
+    try:
+        channel = await service.update_channel_telegram_settings(
+            channel_id=channel_id,
+            owner_id=current_user.id,
+            title=data.title,
+            description=data.description,
+            photo_file_path=data.photo_file_path
+        )
+        return channel
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
+
+
+@router.delete("/{channel_id}/telegram-photo", response_model=ChannelGroupResponse)
+async def delete_channel_telegram_photo(
+    channel_id: int,
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Удалить фото канала через Telegram API (deleteChatPhoto)"""
+    try:
+        channel = await service.delete_channel_photo(
+            channel_id=channel_id,
+            owner_id=current_user.id
+        )
+        return channel
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{channel_id}/permissions", response_model=ChannelGroupResponse)
+async def set_channel_telegram_permissions(
+    channel_id: int,
+    data: ChannelPermissionsUpdate,
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Установить разрешения для канала через Telegram API (setChatPermissions)
+    
+    Принимает объект с полями ChatPermissions:
+    - can_send_messages
+    - can_send_audios
+    - can_send_documents
+    - can_send_photos
+    - can_send_videos
+    - can_send_video_notes
+    - can_send_voice_notes
+    - can_send_polls
+    - can_send_other_messages
+    - can_add_web_page_previews
+    - can_change_info
+    - can_invite_users
+    - can_pin_messages
+    - can_manage_topics
+    """
+    try:
+        permissions = data.model_dump(exclude_none=True)
+        if not permissions:
+            raise ValueError("No permissions provided")
+
+        channel = await service.set_channel_permissions(
+            channel_id=channel_id,
+            owner_id=current_user.id,
+            permissions=permissions
+        )
+        return channel
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{channel_id}/pin-message", response_model=ChannelGroupResponse)
+async def pin_message_in_channel(
+    channel_id: int,
+    message_id: int = Query(..., description="ID сообщения для закрепления"),
+    disable_notification: bool = Query(False, description="Отправить уведомление без звука"),
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Закрепить сообщение в канале (pinChatMessage)"""
+    try:
+        channel = await service.pin_channel_message(
+            channel_id=channel_id,
+            owner_id=current_user.id,
+            message_id=message_id,
+            disable_notification=disable_notification
+        )
+        return channel
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{channel_id}/unpin-message", response_model=ChannelGroupResponse)
+async def unpin_message_in_channel(
+    channel_id: int,
+    message_id: Optional[int] = Query(None, description="ID сообщения для открепления. Если не указан - открепит все"),
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Открепить сообщение в канале (unpinChatMessage / unpinAllChatMessages)"""
+    try:
+        channel = await service.unpin_channel_message(
+            channel_id=channel_id,
+            owner_id=current_user.id,
+            message_id=message_id
+        )
+        return channel
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
