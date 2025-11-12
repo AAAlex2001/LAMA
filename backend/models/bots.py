@@ -69,7 +69,8 @@ class Bot(Base):
     approval_criteria = Column(JSON, nullable=True)  # Критерии для одобрения
     
     # Метаданные
-    last_update_id = Column(Integer, default=0, nullable=False)  # Для long polling
+    last_update_id = Column(Integer, default=0, nullable=False)  # Для long polling (bot updates)
+    last_channel_update_id = Column(Integer, default=0, nullable=False)  # Для long polling (channel posts)
     last_sync_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)

@@ -10,7 +10,7 @@ from backend.services.publications import PublicationService
 from backend.tasks.channel_backup import process_instant_backups
 from backend.tasks.bot_polling import process_bot_updates
 from backend.database import AsyncSessionLocal
-from backend.config import bot, OPENAI_API_KEY
+from backend.config import OPENAI_API_KEY
 
 
 scheduler = AsyncIOScheduler(timezone=pytz.UTC)
@@ -28,7 +28,7 @@ async def process_scheduled_publications():
         publications = result.scalars().all()
         
         for publication in publications:
-            service = PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
+            service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
             try:
                 await service.publish_now(publication.id)
             except Exception as e:
@@ -57,7 +57,7 @@ async def process_auto_delete():
                 delete_time = publication.published_time + timedelta(hours=publication.auto_delete_hours)
                 
                 if now >= delete_time:
-                    service = PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
+                    service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
                     try:
                         await service.delete_telegram_messages(publication.id)
                     except Exception as e:

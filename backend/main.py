@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db, init_db, close_db
-from backend.config import bot, OPENAI_API_KEY, close_bot
+from backend.config import OPENAI_API_KEY, close_bot
 from backend.scheduler import start_scheduler, stop_scheduler, scheduler
 from backend.routes.publications import router as publications_router, get_publication_service
 from backend.routes.channels import router as channels_router
@@ -15,7 +15,7 @@ from backend.services.publications import PublicationService
 
 
 async def get_service(db: AsyncSession = Depends(get_db)) -> PublicationService:
-    return PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
+    return PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
 
 
 @asynccontextmanager

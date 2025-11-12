@@ -66,6 +66,7 @@ class ChannelGroupResponse(BaseModel):
     photo_url: Optional[str]
     backup_mode: BackupMode
     backup_target_id: Optional[int]
+    bot_id: Optional[int]
     is_active: bool
     last_sync_at: Optional[datetime]
     created_at: datetime
@@ -83,6 +84,8 @@ class ChannelGroupListResponse(BaseModel):
 
 class SyncChannelRequest(BaseModel):
     telegram_id: int
+    bot_id: Optional[int] = None
+    token: Optional[str] = None
 
 
 class SyncChannelResponse(BaseModel):

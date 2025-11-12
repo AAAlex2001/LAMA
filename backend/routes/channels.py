@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
-from backend.config import get_bot
 from backend.services.channel import ChannelService, ChannelModerationService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -21,8 +20,7 @@ router = APIRouter(prefix="/channels", tags=["channels"])
 
 
 async def get_channel_service(db: AsyncSession = Depends(get_db)):
-    bot = get_bot()
-    return ChannelService(db, bot)
+    return ChannelService(db)
 
 async def get_channel_moderation_service(db: AsyncSession = Depends(get_db)):
     return ChannelModerationService(db)
@@ -80,7 +78,9 @@ async def sync_channel(
     try:
         channel = await service.sync_channel_from_telegram(
             telegram_id=data.telegram_id,
-            owner_id=current_user.id
+            owner_id=current_user.id,
+            bot_id=data.bot_id,
+            token=data.token
         )
         return SyncChannelResponse(
             success=True,
@@ -104,10 +104,15 @@ async def sync_existing_channel(
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     
+    # Используем бот из существующего канала
+    if not channel.bot_id:
+        raise HTTPException(status_code=400, detail="Channel does not have an associated bot. Please use POST /channels/sync with bot_id or token")
+    
     try:
         updated_channel = await service.sync_channel_from_telegram(
             telegram_id=channel.telegram_id,
-            owner_id=current_user.id
+            owner_id=current_user.id,
+            bot_id=channel.bot_id
         )
         return updated_channel
     except ValueError as e:

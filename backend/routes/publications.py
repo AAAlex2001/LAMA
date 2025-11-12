@@ -12,7 +12,7 @@ from backend.schemas.publications import (
 )
 from backend.services.publications import PublicationService
 from backend.database import get_db
-from backend.config import get_bot, OPENAI_API_KEY
+from backend.config import OPENAI_API_KEY
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
@@ -23,8 +23,7 @@ router = APIRouter(prefix="/publications", tags=["publications"])
 async def get_publication_service(
     db: AsyncSession = Depends(get_db)
 ) -> PublicationService:
-    bot = get_bot()
-    return PublicationService(db=db, bot=bot, openai_api_key=OPENAI_API_KEY)
+    return PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
 
 
 @router.post("/", response_model=PublicationResponse, status_code=201)

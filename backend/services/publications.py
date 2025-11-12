@@ -27,16 +27,25 @@ from backend.services.channel import ChannelService
 
 
 class PublicationService:
-    def __init__(self, db: AsyncSession, bot: Bot, openai_api_key: Optional[str] = None):
+    def __init__(self, db: AsyncSession, openai_api_key: Optional[str] = None):
         self.db = db
-        self.bot = bot
         self.openai_api_key = openai_api_key
         self.http_client = httpx.AsyncClient(
             timeout=30.0,
             limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
-        self.channel_service = ChannelService(db=db, bot=bot)
+        self.channel_service = ChannelService(db=db)
+    
+    def create_bot(self, token: str) -> Bot:
+        """Создать экземпляр Bot из токена"""
+        return Bot(token=token)
+    
+    async def get_bot_for_channel(self, channel: Channel) -> Bot:
+        """Получить бота для канала"""
+        if not channel.bot or not channel.bot.token:
+            raise ValueError(f"Channel {channel.id} does not have an associated bot")
+        return self.create_bot(channel.bot.token)
 
     async def create_publication(self, data: PublicationCreate, owner_id: int) -> Publication:
         publication = Publication(
@@ -76,7 +85,7 @@ class PublicationService:
         return publication
 
     async def get_channels_by_ids(self, channel_ids: List[int], owner_id: Optional[int] = None) -> List[Channel]:
-        query = select(Channel).where(Channel.id.in_(channel_ids))
+        query = select(Channel).options(selectinload(Channel.bot)).where(Channel.id.in_(channel_ids))
         if owner_id is not None:
             query = query.where(Channel.owner_id == owner_id)
         result = await self.db.execute(query)
@@ -252,10 +261,22 @@ class PublicationService:
 
         async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
+            
+            # Получаем бота для канала
+            try:
+                bot = await self.get_bot_for_channel(channel)
+            except ValueError as e:
+                await self.create_notification(
+                    publication.id,
+                    "error",
+                    f"Failed to publish to {channel_name}: {str(e)}"
+                )
+                return {"channel": channel_name, "success": False, "error": str(e)}
+            
             async with self.telegram_semaphore:
                 for attempt in range(5):
                     try:
-                        sent_messages = await self.send_to_telegram(publication, channel)
+                        sent_messages = await self.send_to_telegram(publication, channel, bot)
                         message_ids: List[int] = []
 
                         for msg in sent_messages:
@@ -272,7 +293,7 @@ class PublicationService:
 
                         if publication.pin_message and message_ids:
                             try:
-                                await self.bot.pin_chat_message(
+                                await bot.pin_chat_message(
                                     chat_id=channel.telegram_id,
                                     message_id=message_ids[0]
                                 )
@@ -347,7 +368,7 @@ class PublicationService:
                 keyboard.inline_keyboard.append(button_row)
         return keyboard
 
-    async def send_to_telegram(self, publication: Publication, channel: Channel) -> List[Message]:
+    async def send_to_telegram(self, publication: Publication, channel: Channel, bot: Bot) -> List[Message]:
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
@@ -362,7 +383,7 @@ class PublicationService:
             raise ValueError("media_urls is required for DOCUMENT content type")
 
         if publication.content_type == DBContentType.TEXT:
-            message = await self.bot.send_message(
+            message = await bot.send_message(
                 chat_id=channel.telegram_id,
                 text=publication.text_content,
                 reply_markup=keyboard,
@@ -374,7 +395,7 @@ class PublicationService:
             if publication.media_urls and len(publication.media_urls) > 0:
                 spoiler = publication.media_blur
                 if len(publication.media_urls) == 1:
-                    message = await self.bot.send_photo(
+                    message = await bot.send_photo(
                         chat_id=channel.telegram_id,
                         photo=publication.media_urls[0],
                         caption=publication.text_content,
@@ -398,10 +419,10 @@ class PublicationService:
                             media=url,
                             has_spoiler=spoiler
                         ))
-                messages = await self.bot.send_media_group(chat_id=channel.telegram_id, media=media)
+                messages = await bot.send_media_group(chat_id=channel.telegram_id, media=media)
                 return list(messages)
             else:
-                message = await self.bot.send_message(
+                message = await bot.send_message(
                     chat_id=channel.telegram_id,
                     text=publication.text_content,
                     reply_markup=keyboard,
@@ -410,7 +431,7 @@ class PublicationService:
             return [message]
 
         elif publication.content_type == DBContentType.IMAGE:
-            message = await self.bot.send_photo(
+            message = await bot.send_photo(
                 chat_id=channel.telegram_id,
                 photo=publication.media_urls[0],
                 caption=publication.text_content,
@@ -421,7 +442,7 @@ class PublicationService:
             return [message]
 
         elif publication.content_type == DBContentType.VIDEO:
-            message = await self.bot.send_video(
+            message = await bot.send_video(
                 chat_id=channel.telegram_id,
                 video=publication.media_urls[0],
                 caption=publication.text_content,
@@ -432,7 +453,7 @@ class PublicationService:
             return [message]
 
         elif publication.content_type == DBContentType.AUDIO:
-            message = await self.bot.send_audio(
+            message = await bot.send_audio(
                 chat_id=channel.telegram_id,
                 audio=publication.media_urls[0],
                 caption=publication.text_content,
@@ -442,7 +463,7 @@ class PublicationService:
             return [message]
 
         elif publication.content_type == DBContentType.DOCUMENT:
-            message = await self.bot.send_document(
+            message = await bot.send_document(
                 chat_id=channel.telegram_id,
                 document=publication.media_urls[0],
                 caption=publication.text_content,
@@ -452,7 +473,7 @@ class PublicationService:
             return [message]
 
         elif publication.content_type == DBContentType.LINK:
-            message = await self.bot.send_message(
+            message = await bot.send_message(
                 chat_id=channel.telegram_id,
                 text=publication.text_content,
                 reply_markup=keyboard,
@@ -463,7 +484,7 @@ class PublicationService:
 
         elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             poll_data = publication.poll_data
-            message = await self.bot.send_poll(
+            message = await bot.send_poll(
                 chat_id=channel.telegram_id,
                 question=poll_data['question'],
                 options=poll_data['options'],
@@ -630,7 +651,8 @@ class PublicationService:
         for tg_msg in publication.telegram_messages:
             channel_label = getattr(tg_msg.channel, "title", getattr(tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
             try:
-                await self.bot.edit_message_text(
+                bot = await self.get_bot_for_channel(tg_msg.channel)
+                await bot.edit_message_text(
                     chat_id=tg_msg.channel.telegram_id,
                     message_id=tg_msg.telegram_message_id,
                     text=new_text,
@@ -659,7 +681,8 @@ class PublicationService:
         for tg_msg in publication.telegram_messages:
             channel_label = getattr(tg_msg.channel, "title", getattr(tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
             try:
-                await self.bot.delete_message(
+                bot = await self.get_bot_for_channel(tg_msg.channel)
+                await bot.delete_message(
                     chat_id=tg_msg.channel.telegram_id,
                     message_id=tg_msg.telegram_message_id
                 )

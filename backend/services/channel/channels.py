@@ -21,10 +21,19 @@ from backend.schemas.channels import (
 
 
 class ChannelService:
-    def __init__(self, db: AsyncSession, bot: Bot):
+    def __init__(self, db: AsyncSession):
         self.db = db
-        self.bot = bot
         self.telegram_semaphore = asyncio.Semaphore(10)
+    
+    def create_bot(self, token: str) -> Bot:
+        """Создать экземпляр Bot из токена"""
+        return Bot(token=token)
+    
+    async def get_bot_for_channel(self, channel: ChannelGroup) -> Bot:
+        """Получить бота для канала"""
+        if not channel.bot or not channel.bot.token:
+            raise ValueError(f"Channel {channel.id} does not have an associated bot")
+        return self.create_bot(channel.bot.token)
 
     async def create_channel(self, data: ChannelGroupCreate, owner_id: int) -> ChannelGroup:
         """Создание канала/группы с проверкой на дубликаты"""
@@ -53,12 +62,13 @@ class ChannelService:
         await self.db.refresh(channel)
         return channel
 
-    async def get_channel(self, channel_id: int, owner_id: int) -> Optional[ChannelGroup]:
+    async def get_channel(self, channel_id: int, owner_id: Optional[int] = None) -> Optional[ChannelGroup]:
         """Получение канала по ID с проверкой владельца"""
-        query = select(ChannelGroup).where(
-            ChannelGroup.id == channel_id,
-            ChannelGroup.owner_id == owner_id
+        query = select(ChannelGroup).options(selectinload(ChannelGroup.bot)).where(
+            ChannelGroup.id == channel_id
         )
+        if owner_id is not None:
+            query = query.where(ChannelGroup.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -129,10 +139,43 @@ class ChannelService:
         await self.db.commit()
         return True
 
-    async def sync_channel_from_telegram(self, telegram_id: int, owner_id: int) -> ChannelGroup:
+    async def sync_channel_from_telegram(
+        self, 
+        telegram_id: int, 
+        owner_id: int,
+        bot_id: Optional[int] = None,
+        token: Optional[str] = None
+    ) -> ChannelGroup:
         """Синхронизация информации о канале через Telegram API"""
+        # Проверяем, что передан либо bot_id, либо token
+        if not bot_id and not token:
+            raise ValueError("Either bot_id or token must be provided")
+        
+        # Если передан token, создаём/находим бота
+        if token and not bot_id:
+            from backend.models.bots import Bot as BotModel
+            from backend.services.bots import BotService
+            bot_service = BotService(self.db)
+            bot_model = await bot_service.sync_bot_from_telegram(token, owner_id=owner_id)
+            bot_id = bot_model.id
+        
+        # Получаем бота из базы
+        from backend.models.bots import Bot as BotModel
+        bot_query = select(BotModel).where(
+            BotModel.id == bot_id,
+            BotModel.owner_id == owner_id
+        )
+        bot_result = await self.db.execute(bot_query)
+        bot_model = bot_result.scalar_one_or_none()
+        
+        if not bot_model:
+            raise ValueError("Bot not found or does not belong to user")
+        
+        # Создаём aiogram Bot для API-запросов
+        bot = self.create_bot(bot_model.token)
+        
         try:
-            chat: Chat = await self.bot.get_chat(telegram_id)
+            chat: Chat = await bot.get_chat(telegram_id)
             
             channel_type = ChannelType.CHANNEL
             if chat.type == "group":
@@ -142,15 +185,15 @@ class ChannelService:
             
             members_count = 0
             try:
-                members_count = await self.bot.get_chat_member_count(telegram_id)
+                members_count = await bot.get_chat_member_count(telegram_id)
             except Exception:
                 pass
             
             photo_url = None
             if chat.photo:
                 try:
-                    photo_file = await self.bot.get_file(chat.photo.big_file_id)
-                    photo_url = f"https://api.telegram.org/file/bot{self.bot.token}/{photo_file.file_path}"
+                    photo_file = await bot.get_file(chat.photo.big_file_id)
+                    photo_url = f"https://api.telegram.org/file/bot{bot.token}/{photo_file.file_path}"
                 except Exception:
                     pass
             
@@ -175,11 +218,13 @@ class ChannelService:
                 channel.members_count = members_count
                 channel.photo_url = photo_url
                 channel.extra_data = extra_data
+                channel.bot_id = bot_id
                 channel.last_sync_at = datetime.now(timezone.utc)
                 channel.updated_at = datetime.now(timezone.utc)
             else:
                 channel = ChannelGroup(
                     owner_id=owner_id,
+                    bot_id=bot_id,
                     telegram_id=telegram_id,
                     channel_type=channel_type,
                     title=chat.title or f"Channel {telegram_id}",
@@ -351,6 +396,8 @@ class ChannelService:
         if not target_channel:
             raise ValueError("Target channel not found")
         
+        bot = await self.get_bot_for_channel(target_channel)
+        
         success = True
         error_message = None
         target_message_id = 0
@@ -359,7 +406,8 @@ class ChannelService:
             async with self.telegram_semaphore:
                 sent_message = await self.copy_message_to_channel(
                     original_post,
-                    target_channel.telegram_id
+                    target_channel.telegram_id,
+                    bot
                 )
                 target_message_id = sent_message.message_id
         except Exception as e:
@@ -379,7 +427,7 @@ class ChannelService:
         await self.db.refresh(retransmission)
         return retransmission
 
-    async def copy_message_to_channel(self, post: BackedUpPost, target_telegram_id: int) -> Message:
+    async def copy_message_to_channel(self, post: BackedUpPost, target_telegram_id: int, bot: Bot) -> Message:
         """Копирование сообщения в канал с обработкой ретраев"""
         for attempt in range(5):
             try:
@@ -441,20 +489,20 @@ class ChannelService:
                             )
 
                     if media_inputs:
-                        messages = await self.bot.send_media_group(
+                        messages = await bot.send_media_group(
                             chat_id=target_telegram_id,
                             media=media_inputs
                         )
                         return messages[0]
 
                 if post.content_type == "text":
-                    return await self.bot.send_message(
+                    return await bot.send_message(
                         chat_id=target_telegram_id,
                         text=post.text_content or "Empty message",
                         reply_markup=post.reply_markup
                     )
                 elif post.content_type == "photo" and post.media_file_ids:
-                    return await self.bot.send_photo(
+                    return await bot.send_photo(
                         chat_id=target_telegram_id,
                         photo=post.media_file_ids[0],
                         caption=post.text_content,
@@ -462,7 +510,7 @@ class ChannelService:
                         has_spoiler=post.has_spoiler
                     )
                 elif post.content_type == "video" and post.media_file_ids:
-                    return await self.bot.send_video(
+                    return await bot.send_video(
                         chat_id=target_telegram_id,
                         video=post.media_file_ids[0],
                         caption=post.text_content,
@@ -470,27 +518,27 @@ class ChannelService:
                         has_spoiler=post.has_spoiler
                     )
                 elif post.content_type == "document" and post.media_file_ids:
-                    return await self.bot.send_document(
+                    return await bot.send_document(
                         chat_id=target_telegram_id,
                         document=post.media_file_ids[0],
                         caption=post.text_content,
                         reply_markup=post.reply_markup
                     )
                 elif post.content_type == "audio" and post.media_file_ids:
-                    return await self.bot.send_audio(
+                    return await bot.send_audio(
                         chat_id=target_telegram_id,
                         audio=post.media_file_ids[0],
                         caption=post.text_content,
                         reply_markup=post.reply_markup
                     )
                 elif post.content_type == "sticker" and post.media_file_ids:
-                    return await self.bot.send_sticker(
+                    return await bot.send_sticker(
                         chat_id=target_telegram_id,
                         sticker=post.media_file_ids[0],
                         reply_markup=post.reply_markup
                     )
                 else:
-                    return await self.bot.send_message(
+                    return await bot.send_message(
                         chat_id=target_telegram_id,
                         text=post.text_content or "Unsupported content type"
                     )
@@ -551,7 +599,6 @@ class ChannelService:
         total_posts = result.scalar()
         
         job = BackupJob(
-            owner_id=owner_id,
             source_channel_id=data.source_channel_id,
             target_channel_id=data.target_channel_id,
             status=BackupStatus.IN_PROGRESS,
