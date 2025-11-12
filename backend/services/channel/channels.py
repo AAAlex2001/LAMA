@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from aiogram import Bot
 from aiogram.enums import ParseMode
-from aiogram.types import Chat, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, InputMediaAnimation
+from aiogram.types import Chat, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, InputMediaAnimation, ChatPermissions
 from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter, TelegramForbiddenError
 from backend.models.channels import (
     ChannelGroup, BackedUpPost, PostRetransmission, BackupJob,
@@ -915,7 +915,6 @@ class ChannelService:
         bot = await self.get_bot_for_channel(channel)
         
         try:
-            from aiogram.types import ChatPermissions
             
             chat_permissions = ChatPermissions(**permissions)
             await bot.set_chat_permissions(chat_id=channel.telegram_id, permissions=chat_permissions)
