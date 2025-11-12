@@ -275,7 +275,7 @@ async def edit_published_message(
     """Редактировать уже опубликованное сообщение через Telegram API"""
     result = await service.edit_published_message(
         publication_id,
-        data.new_text,
+        data,
         owner_id=current_user.id
     )
     if not result.get("success"):

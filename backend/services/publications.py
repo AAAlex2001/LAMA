@@ -21,7 +21,7 @@ from backend.models.publications import (
 from backend.models.channels import ChannelGroup as Channel, BackedUpPost, PostRetransmission, BackupMode
 from backend.schemas.publications import (
     PublicationUpdate, PublicationStatus,
-    ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate
+    ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate, EditPublishedRequest
 )
 from backend.services.channel import ChannelService
 
@@ -223,11 +223,19 @@ class PublicationService:
             tags = await self.get_or_create_tags(update_data.pop('tag_names'))
             publication.tags = tags
 
-        if 'inline_keyboard' in update_data and update_data['inline_keyboard']:
-            update_data['inline_keyboard'] = update_data['inline_keyboard'].model_dump() if hasattr(update_data['inline_keyboard'], 'model_dump') else update_data['inline_keyboard']
+        if 'inline_keyboard' in update_data:
+            inline_keyboard_value = update_data['inline_keyboard']
+            if inline_keyboard_value:
+                update_data['inline_keyboard'] = inline_keyboard_value.model_dump() if hasattr(inline_keyboard_value, 'model_dump') else inline_keyboard_value
+            else:
+                update_data['inline_keyboard'] = None
 
-        if 'poll_data' in update_data and update_data['poll_data']:
-            update_data['poll_data'] = update_data['poll_data'].model_dump() if hasattr(update_data['poll_data'], 'model_dump') else update_data['poll_data']
+        if 'poll_data' in update_data:
+            poll_value = update_data['poll_data']
+            if poll_value:
+                update_data['poll_data'] = poll_value.model_dump() if hasattr(poll_value, 'model_dump') else poll_value
+            else:
+                update_data['poll_data'] = None
 
         if 'content_type' in update_data:
             update_data['content_type'] = DBContentType[update_data['content_type'].value.upper()]
@@ -643,33 +651,179 @@ class PublicationService:
 
         return publication
 
-    async def edit_published_message(self, publication_id: int, new_text: str, owner_id: Optional[int] = None) -> Dict[str, Any]:
+    async def edit_published_message(
+        self,
+        publication_id: int,
+        request: EditPublishedRequest,
+        owner_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         publication = await self.get_publication(publication_id, owner_id=owner_id)
-        if not publication or publication.status not in [DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]:
-            return {"success": False, "error": "Publication not found or not published"}
+        if not publication:
+            return {"success": False, "error": "Publication not found"}
+
+        if not publication.telegram_messages:
+            return {"success": False, "error": "No Telegram messages found for publication"}
+
+        if publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
+            return {
+                "success": False,
+                "error": "Editing poll or quiz messages via Telegram API is not supported. See https://core.telegram.org/bots/api#sendpoll"
+            }
+
+        if (
+            publication.content_type == DBContentType.TEXT_WITH_MEDIA
+            and publication.media_urls
+            and len(publication.media_urls) > 1
+        ):
+            return {
+                "success": False,
+                "error": "Editing media albums is not supported by the Telegram Bot API."
+            }
+
+        new_text = (
+            request.text_content
+            if request.text_content is not None
+            else publication.text_content
+        )
+
+        requested_media = request.media_urls if request.media_urls is not None else publication.media_urls
+
+        inline_keyboard_data: Optional[Dict[str, Any]]
+        if request.inline_keyboard is not None:
+            inline_keyboard_data = (
+                request.inline_keyboard.model_dump()
+                if hasattr(request.inline_keyboard, "model_dump")
+                else request.inline_keyboard
+            )
+        else:
+            inline_keyboard_data = publication.inline_keyboard
+
+        reply_markup = (
+            self.build_inline_keyboard(inline_keyboard_data)
+            if inline_keyboard_data
+            else None
+        )
 
         results = []
+
         for tg_msg in publication.telegram_messages:
+            bot = None
             channel_label = getattr(tg_msg.channel, "title", getattr(tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
             try:
                 bot = await self.get_bot_for_channel(tg_msg.channel)
-                await bot.edit_message_text(
-                    chat_id=tg_msg.channel.telegram_id,
-                    message_id=tg_msg.telegram_message_id,
-                    text=new_text,
-                    parse_mode=ParseMode.HTML
-                )
+
+                if publication.content_type in [DBContentType.TEXT, DBContentType.LINK]:
+                    if new_text is None:
+                        raise ValueError("text_content must be provided for text publications")
+                    await bot.edit_message_text(
+                        chat_id=tg_msg.channel.telegram_id,
+                        message_id=tg_msg.telegram_message_id,
+                        text=new_text,
+                        parse_mode=ParseMode.HTML,
+                        reply_markup=reply_markup
+                    )
+
+                elif publication.content_type in [
+                    DBContentType.IMAGE,
+                    DBContentType.VIDEO,
+                    DBContentType.AUDIO,
+                    DBContentType.DOCUMENT,
+                    DBContentType.TEXT_WITH_MEDIA
+                ]:
+                    if request.media_urls is not None and not request.media_urls:
+                        raise ValueError("media_urls cannot be empty when provided")
+
+                    # Determine single media url/file_id
+                    media_url = None
+                    if requested_media:
+                        if len(requested_media) > 1:
+                            raise ValueError("Only one media item can be edited at a time")
+                        media_url = requested_media[0]
+
+                    caption_value = new_text if new_text is not None else publication.text_content
+
+                    # If only caption/keyboard changed and media_url unchanged -> use edit_message_caption
+                    can_use_caption_edit = (
+                        media_url is None or (publication.media_urls and media_url == publication.media_urls[0])
+                    )
+
+                    if request.media_urls is None and can_use_caption_edit:
+                        await bot.edit_message_caption(
+                            chat_id=tg_msg.channel.telegram_id,
+                            message_id=tg_msg.telegram_message_id,
+                            caption=caption_value or "",
+                            parse_mode=ParseMode.HTML,
+                            reply_markup=reply_markup
+                        )
+                    else:
+                        if media_url is None:
+                            # fallback to existing media url if not provided
+                            if not publication.media_urls:
+                                raise ValueError("Original media is missing and no replacement provided")
+                            media_url = publication.media_urls[0]
+
+                        media_input = None
+                        if publication.content_type in [DBContentType.IMAGE, DBContentType.TEXT_WITH_MEDIA]:
+                            media_input = InputMediaPhoto(
+                                media=media_url,
+                                caption=caption_value or "",
+                                parse_mode=ParseMode.HTML,
+                                has_spoiler=publication.media_blur
+                            )
+                        elif publication.content_type == DBContentType.VIDEO:
+                            media_input = InputMediaVideo(
+                                media=media_url,
+                                caption=caption_value or "",
+                                parse_mode=ParseMode.HTML,
+                                has_spoiler=publication.media_blur
+                            )
+                        elif publication.content_type == DBContentType.AUDIO:
+                            media_input = InputMediaAudio(
+                                media=media_url,
+                                caption=caption_value or "",
+                                parse_mode=ParseMode.HTML
+                            )
+                        elif publication.content_type == DBContentType.DOCUMENT:
+                            media_input = InputMediaDocument(
+                                media=media_url,
+                                caption=caption_value or "",
+                                parse_mode=ParseMode.HTML
+                            )
+                        else:
+                            raise ValueError("Unsupported media type for editing")
+
+                        await bot.edit_message_media(
+                            chat_id=tg_msg.channel.telegram_id,
+                            message_id=tg_msg.telegram_message_id,
+                            media=media_input,
+                            reply_markup=reply_markup
+                        )
+
                 results.append({"channel": channel_label, "success": True})
             except Exception as e:
                 results.append({"channel": channel_label, "success": False, "error": str(e)})
+            finally:
+                if bot:
+                    await bot.session.close()
 
         success_count = sum(1 for r in results if r.get("success"))
-        
+
         if success_count > 0:
-            publication.text_content = new_text
-        
-        await self.db.commit()
-        await self.db.refresh(publication)
+            if request.text_content is not None:
+                publication.text_content = request.text_content
+            if request.inline_keyboard is not None:
+                publication.inline_keyboard = (
+                    request.inline_keyboard.model_dump()
+                    if request.inline_keyboard
+                    else None
+                )
+            if request.media_urls is not None:
+                publication.media_urls = request.media_urls
+            publication.updated_at = datetime.now(timezone.utc)
+            await self.db.commit()
+            await self.db.refresh(publication)
+        else:
+            await self.db.rollback()
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 

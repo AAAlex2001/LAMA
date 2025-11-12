@@ -215,7 +215,13 @@ class AIEditRequest(BaseModel):
 
 
 class EditPublishedRequest(BaseModel):
-    new_text: str = Field(..., min_length=1)
+    """Параметры изменения уже опубликованного сообщения в Telegram."""
+
+    text_content: Optional[str] = Field(None, min_length=1)
+    media_urls: Optional[List[str]] = Field(
+        default=None, description="Новые ссылки на медиа-файлы (для типов IMAGE/VIDEO/AUDIO/DOCUMENT и text_with_media с одним медиа)"
+    )
+    inline_keyboard: Optional[InlineKeyboard] = None
 
 
 class NotificationResponse(BaseModel):
