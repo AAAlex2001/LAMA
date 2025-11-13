@@ -4,6 +4,7 @@
 import asyncio
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
+import os
 
 from aiogram import Bot
 from aiogram.types import Update, Message, ChatJoinRequest, ChatPermissions
@@ -16,6 +17,14 @@ from backend.models.bots import Bot as BotModel, BotStatus, MessageType, Pending
 from backend.services.bot.bots import BotService
 from backend.services.channel import ChannelModerationService
 from backend.models.channels import ActionType
+
+
+def get_master_bot() -> Bot:
+    """Получить мастер-бота из env"""
+    master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    if not master_bot_token:
+        raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
+    return Bot(token=master_bot_token)
 
 
 async def process_bot_updates():
@@ -141,7 +150,7 @@ async def handle_message(
             rule = None
 
         if rule:
-            moderation_bot = Bot(token=bot_model.token)
+            moderation_bot = get_master_bot()
             try:
                 await moderation_bot.delete_message(
                     chat_id=message.chat.id,
@@ -349,10 +358,12 @@ async def handle_join_request(
     # Одобряем заявку только если режим AUTO или CRITERIA с пройденными проверками
     if should_approve:
         try:
-            await telegram_bot.approve_chat_join_request(
+            master_bot = get_master_bot()
+            await master_bot.approve_chat_join_request(
                 chat_id=join_request.chat.id,
                 user_id=join_request.from_user.id
             )
+            await master_bot.session.close()
             print(f"Auto-approved join request from {join_request.from_user.id}")
         except TelegramAPIError as e:
             print(f"Failed to approve join request: {str(e)}")
@@ -505,12 +516,14 @@ async def handle_callback_query(
                     pending_approval = result.scalar_one_or_none()
                     
                     if pending_approval:
-                        # Одобряем заявку в Telegram
+                        # Одобряем заявку в Telegram через мастер-бота
                         try:
-                            await telegram_bot.approve_chat_join_request(
+                            master_bot = get_master_bot()
+                            await master_bot.approve_chat_join_request(
                                 chat_id=pending_approval.chat_id,
                                 user_id=pending_approval.user_id
                             )
+                            await master_bot.session.close()
                             
                             # Отправляем сообщение об успехе
                             await telegram_bot.answer_callback_query(

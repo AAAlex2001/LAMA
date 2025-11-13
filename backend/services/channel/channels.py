@@ -1,6 +1,7 @@
 import asyncio
 import json
 import aiohttp
+import os
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, func, and_, or_, distinct
@@ -27,16 +28,21 @@ class ChannelService:
         self.db = db
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.crud = CRUDChannelService(db)
+        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
     def create_bot(self, token: str) -> Bot:
         """Создать экземпляр Bot из токена"""
         return Bot(token=token)
     
+    def get_master_bot(self) -> Bot:
+        """Получить мастер-бота из env для управления каналами"""
+        if not self.master_bot_token:
+            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
+        return Bot(token=self.master_bot_token)
+    
     async def get_bot_for_channel(self, channel: ChannelGroup) -> Bot:
-        """Получить бота для канала"""
-        if not channel.bot or not channel.bot.token:
-            raise ValueError(f"Channel {channel.id} does not have an associated bot")
-        return self.create_bot(channel.bot.token)
+        """Получить бота для канала (теперь всегда используется мастер-бот)"""
+        return self.get_master_bot()
 
     async def create_channel(self, data: ChannelGroupCreate, owner_id: int) -> ChannelGroup:
         """Создание канала/группы с проверкой на дубликаты"""
@@ -230,14 +236,22 @@ class ChannelService:
     async def retransmit_post(
         self,
         original_post: BackedUpPost,
-        target_channel_id: int
+        target_channel_id: int,
+        target_channel: Optional[ChannelGroup] = None,
+        bot: Optional[Bot] = None
     ) -> PostRetransmission:
         """Ретрансляция поста в другой канал"""
-        target_channel = await self.get_channel(target_channel_id)
-        if not target_channel:
-            raise ValueError("Target channel not found")
+        # Если канал не передан, запрашиваем из БД
+        if target_channel is None:
+            target_channel = await self.get_channel(target_channel_id)
+            if not target_channel:
+                raise ValueError("Target channel not found")
         
-        bot = await self.get_bot_for_channel(target_channel)
+        # Если бот не передан, создаём
+        bot_created = False
+        if bot is None:
+            bot = await self.get_bot_for_channel(target_channel)
+            bot_created = True
         
         success = True
         error_message = None
@@ -254,6 +268,10 @@ class ChannelService:
         except Exception as e:
             success = False
             error_message = str(e)
+        finally:
+            # Закрываем бота только если мы сами его создали
+            if bot_created:
+                await bot.session.close()
         
         retransmission = PostRetransmission(
             original_post_id=original_post.id,
@@ -475,22 +493,32 @@ class ChannelService:
         job.total_posts = len(posts)
         await self.db.commit()
         
-        for post in posts:
-            try:
-                await self.retransmit_post(post, job.target_channel_id)
-                job.processed_posts += 1
-            except Exception as e:
-                job.failed_posts += 1
-                if not job.error_details:
-                    job.error_details = []
-                job.error_details.append({
-                    "post_id": post.id,
-                    "error": str(e),
-                    "timestamp": datetime.now(timezone.utc).isoformat()
-                })
-            
-            if job.processed_posts % 10 == 0:
-                await self.db.commit()
+        # Получаем целевой канал и создаём бота один раз
+        target_channel = await self.get_channel(job.target_channel_id)
+        if not target_channel:
+            raise ValueError("Target channel not found")
+        
+        bot = await self.get_bot_for_channel(target_channel)
+        
+        try:
+            for post in posts:
+                try:
+                    await self.retransmit_post(post, job.target_channel_id, target_channel=target_channel, bot=bot)
+                    job.processed_posts += 1
+                except Exception as e:
+                    job.failed_posts += 1
+                    if not job.error_details:
+                        job.error_details = []
+                    job.error_details.append({
+                        "post_id": post.id,
+                        "error": str(e),
+                        "timestamp": datetime.now(timezone.utc).isoformat()
+                    })
+                
+                if job.processed_posts % 10 == 0:
+                    await self.db.commit()
+        finally:
+            await bot.session.close()
         
         if job.failed_posts == 0:
             job.status = BackupStatus.COMPLETED
@@ -580,7 +608,7 @@ class ChannelService:
         if not channel:
             raise ValueError("Channel not found")
         
-        bot = await self.get_bot_for_channel(channel)
+        bot = self.get_master_bot()
         
         try:
             if title is not None:
@@ -634,7 +662,7 @@ class ChannelService:
         if not channel:
             raise ValueError("Channel not found")
         
-        bot = await self.get_bot_for_channel(channel)
+        bot = self.get_master_bot()
         
         try:
             await bot.delete_chat_photo(chat_id=channel.telegram_id)
@@ -683,7 +711,7 @@ class ChannelService:
         if not channel:
             raise ValueError("Channel not found")
         
-        bot = await self.get_bot_for_channel(channel)
+        bot = self.get_master_bot()
         
         try:
             
@@ -713,7 +741,7 @@ class ChannelService:
         if not channel:
             raise ValueError("Channel not found")
         
-        bot = await self.get_bot_for_channel(channel)
+        bot = self.get_master_bot()
         
         try:
             await bot.pin_chat_message(
@@ -750,7 +778,7 @@ class ChannelService:
         if not channel:
             raise ValueError("Channel not found")
         
-        bot = await self.get_bot_for_channel(channel)
+        bot = self.get_master_bot()
         
         try:
             if message_id is None:

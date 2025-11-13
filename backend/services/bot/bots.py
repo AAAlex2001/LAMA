@@ -25,6 +25,7 @@ from backend.schemas.bots import (
     BotCommandUpdate
 )
 from backend.services.bot.CRUD_bots import CRUDBotService
+import os
 
 
 class BotService:
@@ -33,6 +34,13 @@ class BotService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.crud = CRUDBotService(db)
+        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    
+    def get_master_bot(self) -> Bot:
+        """Получить мастер-бота из env"""
+        if not self.master_bot_token:
+            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
+        return Bot(token=self.master_bot_token)
 
     # ========================================================================
     # CRUD операции для ботов
@@ -149,7 +157,7 @@ class BotService:
         # Проверка подписки на другие каналы
         required_channels = bot.approval_criteria.get("required_channels", [])
         if required_channels:
-            telegram_bot = Bot(token=bot.token)
+            telegram_bot = self.get_master_bot()
             missing_channels = []  # Список каналов, на которые не подписан
             
             try:
@@ -200,8 +208,8 @@ class BotService:
         if bot.status != BotStatus.ACTIVE:
             raise ValueError("Bot is not active")
 
-        # Создаём экземпляр Bot
-        telegram_bot = Bot(token=bot.token)
+        # Используем мастер-бота для отправки сообщений
+        telegram_bot = self.get_master_bot()
 
         try:
             # Формируем inline keyboard если есть

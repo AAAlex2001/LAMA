@@ -24,6 +24,7 @@ from backend.schemas.publications import (
     ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate, EditPublishedRequest
 )
 from backend.services.channel import ChannelService
+import os
 
 
 class PublicationService:
@@ -36,16 +37,17 @@ class PublicationService:
         )
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.channel_service = ChannelService(db=db)
+        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
-    def create_bot(self, token: str) -> Bot:
-        """Создать экземпляр Bot из токена"""
-        return Bot(token=token)
+    def get_master_bot(self) -> Bot:
+        """Получить мастер-бота из env для публикаций"""
+        if not self.master_bot_token:
+            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
+        return Bot(token=self.master_bot_token)
     
     async def get_bot_for_channel(self, channel: Channel) -> Bot:
-        """Получить бота для канала"""
-        if not channel.bot or not channel.bot.token:
-            raise ValueError(f"Channel {channel.id} does not have an associated bot")
-        return self.create_bot(channel.bot.token)
+        """Получить мастер-бота для публикаций в канал"""
+        return self.get_master_bot()
 
     async def create_publication(self, data: PublicationCreate, owner_id: int) -> Publication:
         publication = Publication(

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import List, Optional
+import os
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -17,16 +18,22 @@ from backend.schemas.channels import (
 )
 
 from backend.models.bots import Bot as BotModel
-from backend.services.bot.bots import BotService
 
 
 class CRUDChannelService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
     def create_bot(self, token: str) -> Bot:
         """Создать экземпляр Bot из токена"""
         return Bot(token=token)
+    
+    def get_master_bot(self) -> Bot:
+        """Получить мастер-бота из env для управления каналами"""
+        if not self.master_bot_token:
+            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
+        return Bot(token=self.master_bot_token)
 
     async def create_channel(self, data: ChannelGroupCreate, owner_id: int) -> ChannelGroup:
         """Создание канала/группы с проверкой на дубликаты"""
@@ -172,6 +179,7 @@ class CRUDChannelService:
 
         # Если передан token, создаём/находим бота
         if token and not bot_id:
+            from backend.services.bot.bots import BotService
             bot_service = BotService(self.db)
             bot_model = await bot_service.sync_bot_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
@@ -187,8 +195,8 @@ class CRUDChannelService:
         if not bot_model:
             raise ValueError("Bot not found or does not belong to user")
 
-        # Создаём aiogram Bot для API-запросов
-        bot = self.create_bot(bot_model.token)
+        # Используем мастер-бота для управления каналами
+        bot = self.get_master_bot()
 
         try:
             chat: Chat = await bot.get_chat(chat_identifier)
