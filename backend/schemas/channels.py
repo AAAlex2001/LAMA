@@ -100,27 +100,27 @@ class ChannelGroupResponse(BaseModel):
     emoji_status_expiration_date: Optional[int] = None
     
     # Chat settings/features
-    is_forum: bool = False
-    is_direct_messages: bool = False
+    is_forum: Optional[bool] = False
+    is_direct_messages: Optional[bool] = False
     max_reaction_count: Optional[int] = None
     slow_mode_delay: Optional[int] = None
     unrestrict_boost_count: Optional[int] = None
     message_auto_delete_time: Optional[int] = None
     
     # Privacy & restrictions
-    has_private_forwards: bool = False
-    has_restricted_voice_and_video_messages: bool = False
-    has_aggressive_anti_spam_enabled: bool = False
-    has_hidden_members: bool = False
-    has_protected_content: bool = False
-    has_visible_history: bool = False
-    join_to_send_messages: bool = False
-    join_by_request: bool = False
-    can_send_paid_media: bool = False
+    has_private_forwards: Optional[bool] = False
+    has_restricted_voice_and_video_messages: Optional[bool] = False
+    has_aggressive_anti_spam_enabled: Optional[bool] = False
+    has_hidden_members: Optional[bool] = False
+    has_protected_content: Optional[bool] = False
+    has_visible_history: Optional[bool] = False
+    join_to_send_messages: Optional[bool] = False
+    join_by_request: Optional[bool] = False
+    can_send_paid_media: Optional[bool] = False
     
     # Stickers
     sticker_set_name: Optional[str] = None
-    can_set_sticker_set: bool = False
+    can_set_sticker_set: Optional[bool] = False
     custom_emoji_sticker_set_name: Optional[str] = None
     
     # Linked chats & location
@@ -179,7 +179,9 @@ class ChannelGroupListResponse(BaseModel):
 # ============ Sync Schemas ============
 
 class SyncChannelRequest(BaseModel):
-    telegram_id: int
+    telegram_id: Optional[int] = None
+    username: Optional[str] = None
+    invite_link: Optional[str] = None
     bot_id: Optional[int] = None
     token: Optional[str] = None
 

@@ -74,10 +74,19 @@ async def sync_channel(
     service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user)
 ):
-    """Синхронизировать канал/группу через Telegram API"""
+    """
+    Синхронизировать канал/группу через Telegram API
+    
+    Можно передать один из идентификаторов:
+    - telegram_id: числовой ID (-100...)
+    - username: @username или просто username
+    - invite_link: https://t.me/username
+    """
     try:
         channel = await service.sync_channel_from_telegram(
             telegram_id=data.telegram_id,
+            username=data.username,
+            invite_link=data.invite_link,
             owner_id=current_user.id,
             bot_id=data.bot_id,
             token=data.token
@@ -104,13 +113,14 @@ async def sync_existing_channel(
     if not channel:
         raise HTTPException(status_code=404, detail="Channel not found")
     
-    # Используем бот из существующего канала
     if not channel.bot_id:
         raise HTTPException(status_code=400, detail="Channel does not have an associated bot. Please use POST /channels/sync with bot_id or token")
     
     try:
         updated_channel = await service.sync_channel_from_telegram(
             telegram_id=channel.telegram_id,
+            username=channel.username,
+            invite_link=channel.invite_link,
             owner_id=current_user.id,
             bot_id=channel.bot_id
         )

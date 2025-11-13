@@ -20,6 +20,9 @@ from backend.schemas.channels import (
     BackupJobCreate
 )
 
+from backend.models.bots import Bot as BotModel
+from backend.services.bots import BotService
+
 
 class ChannelService:
     def __init__(self, db: AsyncSession):
@@ -142,26 +145,48 @@ class ChannelService:
 
     async def sync_channel_from_telegram(
         self, 
-        telegram_id: int, 
-        owner_id: int,
+        telegram_id: Optional[int] = None,
+        username: Optional[str] = None,
+        invite_link: Optional[str] = None,
+        owner_id: int = None,
         bot_id: Optional[int] = None,
         token: Optional[str] = None
     ) -> ChannelGroup:
-        """Синхронизация информации о канале через Telegram API"""
-        # Проверяем, что передан либо bot_id, либо token
+        """
+        Синхронизация информации о канале через Telegram API
+        
+        Принимает один из идентификаторов:
+        - telegram_id: числовой ID (-100...)
+        - username: @username или просто username
+        - invite_link: https://t.me/username или https://t.me/+hash
+        """
         if not bot_id and not token:
             raise ValueError("Either bot_id or token must be provided")
         
+        if not telegram_id and not username and not invite_link:
+            raise ValueError("One of telegram_id, username, or invite_link must be provided")
+        
+        chat_identifier = telegram_id
+        
+        if username:
+            chat_identifier = username if username.startswith("@") else f"@{username}"
+        elif invite_link:
+            if "t.me/" in invite_link:
+                extracted = invite_link.split("t.me/")[-1]
+                if not extracted.startswith("+"):
+                    chat_identifier = f"@{extracted}"
+                else:
+                    raise ValueError("Private invite links (+hash) are not supported. Use telegram_id or public username instead.")
+            else:
+                raise ValueError("Invalid invite link format")
+        
         # Если передан token, создаём/находим бота
         if token and not bot_id:
-            from backend.models.bots import Bot as BotModel
-            from backend.services.bots import BotService
             bot_service = BotService(self.db)
             bot_model = await bot_service.sync_bot_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
         
         # Получаем бота из базы
-        from backend.models.bots import Bot as BotModel
         bot_query = select(BotModel).where(
             BotModel.id == bot_id,
             BotModel.owner_id == owner_id
@@ -176,7 +201,9 @@ class ChannelService:
         bot = self.create_bot(bot_model.token)
         
         try:
-            chat: Chat = await bot.get_chat(telegram_id)
+            chat: Chat = await bot.get_chat(chat_identifier)
+            
+            actual_telegram_id = chat.id
             
             channel_type = ChannelType.CHANNEL
             if chat.type == "group":
@@ -186,7 +213,7 @@ class ChannelService:
             
             members_count = 0
             try:
-                members_count = await bot.get_chat_member_count(telegram_id)
+                members_count = await bot.get_chat_member_count(actual_telegram_id)
             except Exception:
                 pass
             
@@ -210,7 +237,7 @@ class ChannelService:
             # Parse all ChatFullInfo fields
             chat_data = {
                 "channel_type": channel_type,
-                "title": chat.title or f"Channel {telegram_id}",
+                "title": chat.title or f"Channel {actual_telegram_id}",
                 "username": getattr(chat, "username", None),
                 "first_name": getattr(chat, "first_name", None),
                 "last_name": getattr(chat, "last_name", None),
@@ -265,18 +292,18 @@ class ChannelService:
                 "photo_big_file_unique_id": photo_big_file_unique_id,
                 
                 # JSON fields
-                "permissions": chat.permissions.model_dump(mode="json") if hasattr(chat, "permissions") and chat.permissions else None,
-                "available_reactions": [r.model_dump(mode="json") for r in chat.available_reactions] if hasattr(chat, "available_reactions") and chat.available_reactions else None,
-                "accepted_gift_types": chat.accepted_gift_types.model_dump(mode="json") if hasattr(chat, "accepted_gift_types") and chat.accepted_gift_types else None,
+                "permissions": chat.permissions.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "permissions") and chat.permissions else None,
+                "available_reactions": [r.model_dump(mode="json", exclude_defaults=True) for r in chat.available_reactions] if hasattr(chat, "available_reactions") and chat.available_reactions else None,
+                "accepted_gift_types": chat.accepted_gift_types.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "accepted_gift_types") and chat.accepted_gift_types else None,
                 "active_usernames": getattr(chat, "active_usernames", None),
-                "pinned_message": chat.pinned_message.model_dump(mode="json") if hasattr(chat, "pinned_message") and chat.pinned_message else None,
+                "pinned_message": chat.pinned_message.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "pinned_message") and chat.pinned_message else None,
                 
                 # Business account fields
-                "business_intro": chat.business_intro.model_dump(mode="json") if hasattr(chat, "business_intro") and chat.business_intro else None,
-                "business_location": chat.business_location.model_dump(mode="json") if hasattr(chat, "business_location") and chat.business_location else None,
-                "business_opening_hours": chat.business_opening_hours.model_dump(mode="json") if hasattr(chat, "business_opening_hours") and chat.business_opening_hours else None,
-                "birthdate": chat.birthdate.model_dump(mode="json") if hasattr(chat, "birthdate") and chat.birthdate else None,
-                "personal_chat": chat.personal_chat.model_dump(mode="json") if hasattr(chat, "personal_chat") and chat.personal_chat else None,
+                "business_intro": chat.business_intro.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "business_intro") and chat.business_intro else None,
+                "business_location": chat.business_location.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "business_location") and chat.business_location else None,
+                "business_opening_hours": chat.business_opening_hours.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "business_opening_hours") and chat.business_opening_hours else None,
+                "birthdate": chat.birthdate.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "birthdate") and chat.birthdate else None,
+                "personal_chat": chat.personal_chat.model_dump(mode="json", exclude_defaults=True) if hasattr(chat, "personal_chat") and chat.personal_chat else None,
                 
                 # Location
                 "location_address": getattr(getattr(chat, "location", None), "address", None) if hasattr(chat, "location") and chat.location else None,
@@ -284,14 +311,12 @@ class ChannelService:
                 "location_longitude": str(getattr(getattr(chat, "location", None), "location", {}).longitude) if hasattr(chat, "location") and chat.location and hasattr(chat.location, "location") else None,
             }
             
-            channel = await self.get_channel_by_telegram_id(telegram_id)
+            channel = await self.get_channel_by_telegram_id(actual_telegram_id)
             
             if channel:
-                # Проверяем владельца
                 if channel.owner_id != owner_id:
                     raise ValueError("Channel belongs to another user")
                 
-                # Update all fields
                 for field, value in chat_data.items():
                     setattr(channel, field, value)
                 
@@ -302,7 +327,7 @@ class ChannelService:
                 channel = ChannelGroup(
                     owner_id=owner_id,
                     bot_id=bot_id,
-                    telegram_id=telegram_id,
+                    telegram_id=actual_telegram_id,
                     **chat_data,
                     last_sync_at=datetime.now(timezone.utc),
                     is_active=True
@@ -317,6 +342,8 @@ class ChannelService:
             raise ValueError("Bot doesn't have access to this channel/group")
         except TelegramBadRequest as e:
             raise ValueError(f"Invalid channel/group: {str(e)}")
+        finally:
+            await bot.session.close()
 
     async def update_backup_mode(
         self,
