@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
 from backend.models.bots import Bot as BotModel, BotStatus, MessageType, PendingApproval
-from backend.services.bots import BotService
+from backend.services.bot.bots import BotService
 from backend.services.channel import ChannelModerationService
 from backend.models.channels import ActionType
 

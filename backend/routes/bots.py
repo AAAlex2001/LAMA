@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
-from backend.services.bots import BotService
+from backend.services.bot.bots import BotService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.bots import (
