@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, delete
 from typing import Optional
 
 from aiogram.types import Update, ChatPermissions
@@ -12,7 +13,7 @@ from backend.tasks.bot_polling import get_master_bot, send_command_response, han
 from backend.services.channel import ChannelModerationService
 from backend.services.bot.bots import BotService
 from backend.models.channels import ActionType
-from backend.models.bots import Bot as BotModel
+from backend.models.bots import Bot as BotModel, PendingJoinApproval
 
 
 router = APIRouter()
@@ -55,33 +56,48 @@ async def telegram_webhook(
     try:
         async with AsyncSessionLocal() as db:
             service = BotService(db)
-            # Находим мастер-бота по токену env (хранится в таблице bots)
             master_bot_model = await get_master_bot_model(db)
-            if master_bot_model:
-                # Обработка заявки на вступление (приветствие/критерии)
-                if update.chat_join_request:
-                    telegram_bot = get_master_bot()
-                    try:
-                        await handle_join_request(
-                            service=service,
-                            bot_model=master_bot_model,
-                            telegram_bot=telegram_bot,
-                            join_request=update.chat_join_request,
-                        )
-                    finally:
-                        await telegram_bot.session.close()
+            if not master_bot_model:
+                return {"ok": True}
 
-                # Обработка команд в личке и в группах (бот должен быть участником чата)
-                if update.message and update.message.chat and update.message.text:
-                    if update.message.text.startswith("/"):
-                        command_text = update.message.text.split()[0]
-                        command = await service.find_command_by_text(master_bot_model.id, command_text)
-                        if command:
-                            telegram_bot = get_master_bot()
-                            try:
-                                await send_command_response(telegram_bot, update.message.chat.id, command)
-                            finally:
-                                await telegram_bot.session.close()
+            # Обработка заявки на вступление (приветствие/критерии)
+            if update.chat_join_request:
+                telegram_bot = get_master_bot()
+                try:
+                    should_approve, missing = await service.check_approval_criteria(
+                        master_bot_model, update.chat_join_request.from_user.id
+                    )
+                    if not should_approve and missing:
+                        # Сохраняем ожидание
+                        pending = PendingJoinApproval(
+                            bot_id=master_bot_model.id,
+                            user_id=update.chat_join_request.from_user.id,
+                            chat_id=update.chat_join_request.chat.id,
+                            missing_channels=missing,
+                        )
+                        db.add(pending)
+                        await db.commit()
+                    await handle_join_request(service, master_bot_model, telegram_bot, update.chat_join_request)
+                finally:
+                    await telegram_bot.session.close()
+
+            # Обработка команд в личке и в группах
+            if update.message and update.message.chat and update.message.text:
+                if update.message.text.startswith("/"):
+                    command_text = update.message.text.split()[0]
+                    command = await service.find_command_by_text(master_bot_model.id, command_text)
+                    if command:
+                        telegram_bot = get_master_bot()
+                        try:
+                            await send_command_response(telegram_bot, update.message.chat.id, command)
+                        finally:
+                            await telegram_bot.session.close()
+
+            # Обработка chat_member (подписка на канал)
+            if update.chat_member and update.chat_member.new_chat_member:
+                new_status = update.chat_member.new_chat_member.status
+                if new_status in {"member", "administrator", "creator"}:
+                    await handle_subscription(db, service, master_bot_model, update.chat_member)
     except Exception:
         pass
 
@@ -163,7 +179,6 @@ async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
     Получить запись мастер-бота из БД:
     - используется для хранения настроек приветствия и команд мастер-бота
     """
-    from sqlalchemy import select
     import os
 
     master_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
@@ -173,5 +188,38 @@ async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
     query = select(BotModel).where(BotModel.token == master_token)
     result = await db.execute(query)
     return result.scalar_one_or_none()
+
+
+async def handle_subscription(db: AsyncSession, service: BotService, bot: BotModel, chat_member):
+    """Обработка подписки пользователя на канал: проверка ожиданий и автоодобрение"""
+    user_id = chat_member.from_user.id
+    channel_id = chat_member.chat.id
+
+    # Найти все ожидающие заявки для этого пользователя
+    query = select(PendingJoinApproval).where(PendingJoinApproval.user_id == user_id)
+    result = await db.execute(query)
+    pendings = result.scalars().all()
+    if not pendings:
+        return
+
+    for pending in pendings:
+        if channel_id not in pending.missing_channels:
+            continue
+        # Убираем канал из списка недостающих
+        pending.missing_channels.remove(channel_id)
+        if not pending.missing_channels:
+            # Все каналы подписаны — одобряем заявку
+            telegram_bot = get_master_bot()
+            try:
+                await telegram_bot.approve_chat_join_request(
+                    chat_id=pending.chat_id, user_id=pending.user_id
+                )
+            except TelegramAPIError:
+                pass
+            finally:
+                await telegram_bot.session.close()
+            # Удаляем ожидание
+            await db.delete(pending)
+        await db.commit()
 
 

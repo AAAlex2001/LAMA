@@ -163,3 +163,15 @@ class PendingApproval(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     expires_at = Column(DateTime(timezone=True), nullable=True)  # Срок действия капчи
 
+
+class PendingJoinApproval(Base):
+    """Ожидающие одобрения заявки (для автоодобрения при подписке)"""
+    __tablename__ = "pending_join_approvals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(BigInteger, nullable=False, index=True)
+    chat_id = Column(BigInteger, nullable=False)
+    missing_channels = Column(JSON, nullable=False)  # список telegram_id каналов
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
