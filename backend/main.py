@@ -11,6 +11,7 @@ from backend.routes.publications import router as publications_router, get_publi
 from backend.routes.channels import router as channels_router
 from backend.routes.bots import router as bots_router
 from backend.routes.auth import router as auth_router
+from backend.routes.webhook import router as webhook_router
 from backend.services.publications import PublicationService
 
 
@@ -54,6 +55,7 @@ app.include_router(auth_router, prefix=api_prefix)
 app.include_router(publications_router, prefix=api_prefix)
 app.include_router(channels_router, prefix=api_prefix)
 app.include_router(bots_router, prefix=api_prefix)
+app.include_router(webhook_router)  # /telegram/webhook
 
 
 @app.get("/")
