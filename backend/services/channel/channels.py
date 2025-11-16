@@ -21,6 +21,7 @@ from backend.schemas.channels import (
 )
 from backend.models.channels import ChannelType
 from backend.services.channel.CRUD_channels import CRUDChannelService
+from backend.config import get_bot
 
 
 class ChannelService:
@@ -28,21 +29,14 @@ class ChannelService:
         self.db = db
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.crud = CRUDChannelService(db)
-        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    
-    def create_bot(self, token: str) -> Bot:
-        """Создать экземпляр Bot из токена"""
-        return Bot(token=token)
     
     def get_master_bot(self) -> Bot:
-        """Получить мастер-бота из env для управления каналами"""
-        if not self.master_bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
-        return Bot(token=self.master_bot_token)
+        """Получить мастер-бота для управления каналами"""
+        return get_bot()
     
     async def get_bot_for_channel(self, channel: ChannelGroup) -> Bot:
         """Получить бота для канала (теперь всегда используется мастер-бот)"""
-        return self.get_master_bot()
+        return get_bot()
 
     async def create_channel(self, data: ChannelGroupCreate, owner_id: int) -> ChannelGroup:
         """Создание канала/группы с проверкой на дубликаты"""
@@ -268,10 +262,6 @@ class ChannelService:
         except Exception as e:
             success = False
             error_message = str(e)
-        finally:
-            # Закрываем бота только если мы сами его создали
-            if bot_created:
-                await bot.session.close()
         
         retransmission = PostRetransmission(
             original_post_id=original_post.id,
@@ -500,25 +490,22 @@ class ChannelService:
         
         bot = await self.get_bot_for_channel(target_channel)
         
-        try:
-            for post in posts:
-                try:
-                    await self.retransmit_post(post, job.target_channel_id, target_channel=target_channel, bot=bot)
-                    job.processed_posts += 1
-                except Exception as e:
-                    job.failed_posts += 1
-                    if not job.error_details:
-                        job.error_details = []
-                    job.error_details.append({
-                        "post_id": post.id,
-                        "error": str(e),
-                        "timestamp": datetime.now(timezone.utc).isoformat()
-                    })
-                
-                if job.processed_posts % 10 == 0:
-                    await self.db.commit()
-        finally:
-            await bot.session.close()
+        for post in posts:
+            try:
+                await self.retransmit_post(post, job.target_channel_id, target_channel=target_channel, bot=bot)
+                job.processed_posts += 1
+            except Exception as e:
+                job.failed_posts += 1
+                if not job.error_details:
+                    job.error_details = []
+                job.error_details.append({
+                    "post_id": post.id,
+                    "error": str(e),
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+            
+            if job.processed_posts % 10 == 0:
+                await self.db.commit()
         
         if job.failed_posts == 0:
             job.status = BackupStatus.COMPLETED

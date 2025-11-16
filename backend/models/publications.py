@@ -88,6 +88,7 @@ class PublicationSeries(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
+    reply_to_previous = Column(Boolean, default=True, nullable=False)  # Включить/выключить режим ответов
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', back_populates='series')

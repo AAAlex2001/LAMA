@@ -7,7 +7,7 @@ from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate, PublicationResponse,
     PublicationListResponse, PublicationStatus, ContentType,
     AIGenerateRequest, AIEditRequest,
-    PublicationSeriesCreate, PublicationSeriesResponse, CalendarEntry,
+    PublicationSeriesCreate, PublicationSeriesUpdate, PublicationSeriesResponse, CalendarEntry,
     RescheduleRequest, EditPublishedRequest
 )
 from backend.services.publications import PublicationService
@@ -188,8 +188,35 @@ async def create_series(
     """Создать серию публикаций"""
     series = await service.create_series(
         name=data.name,
-        description=data.description
+        description=data.description,
+        reply_to_previous=data.reply_to_previous
     )
+    return series
+
+
+@router.patch("/series/{series_id}", response_model=PublicationSeriesResponse)
+async def update_series(
+    series_id: int,
+    data: PublicationSeriesUpdate,
+    db: AsyncSession = Depends(get_db),
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Обновить серию (в том числе включить/выключить reply_to_previous)"""
+    from backend.models.publications import PublicationSeries
+    from sqlalchemy import select
+
+    # простое обновление серии без отдельного сервиса, чтобы не раздувать код
+    result = await db.execute(select(PublicationSeries).where(PublicationSeries.id == series_id))
+    series = result.scalar_one_or_none()
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(series, field, value)
+
+    await db.commit()
+    await db.refresh(series)
     return series
 
 
@@ -241,8 +268,7 @@ async def publish_now(
 ):
     """Опубликовать сейчас"""
     result = await service.publish_now(publication_id, owner_id=current_user.id)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error", "Publication failed"))
+    # Возвращаем подробный результат по каналам даже при частичных сбоях
     return result
 
 

@@ -76,10 +76,17 @@ class ChannelResponse(BaseModel):
 class PublicationSeriesBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
+    reply_to_previous: bool = Field(default=True, description="Отвечать на предыдущие посты в серии")
 
 
 class PublicationSeriesCreate(PublicationSeriesBase):
     pass
+
+
+class PublicationSeriesUpdate(BaseModel):
+    name: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
+    reply_to_previous: Optional[bool] = None
 
 
 class PublicationSeriesResponse(PublicationSeriesBase):

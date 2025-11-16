@@ -20,6 +20,7 @@ from backend.schemas.publications import AIGenerateRequest, AIEditRequest, EditP
 from backend.services.channel import ChannelService
 from backend.services.publications.CRUD_publications import CRUDPublicationService
 from backend.services.publications.ai_service import AIService
+from backend.config import get_bot
 
 
 class PublicationService:
@@ -31,17 +32,14 @@ class PublicationService:
         self.ai_service = AIService(api_key=openai_api_key)
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.channel_service = ChannelService(db=db)
-        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
     def get_master_bot(self) -> Bot:
-        """Получить мастер-бота из env для публикаций"""
-        if not self.master_bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
-        return Bot(token=self.master_bot_token)
+        """Получить мастер-бота для публикаций"""
+        return get_bot()
 
     async def get_bot_for_channel(self, channel: Channel) -> Bot:
         """Получить мастер-бота для публикаций в канал"""
-        return self.get_master_bot()
+        return get_bot()
 
     # ========================================================================
     # Проксирование CRUD методов
@@ -62,8 +60,8 @@ class PublicationService:
     async def delete_publication(self, publication_id: int, owner_id: Optional[int] = None):
         return await self.crud.delete_publication(publication_id, owner_id)
 
-    async def create_series(self, name: str, description: Optional[str] = None):
-        return await self.crud.create_series(name, description)
+    async def create_series(self, name: str, description: Optional[str] = None, reply_to_previous: bool = True):
+        return await self.crud.create_series(name, description, reply_to_previous)
 
     async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None):
         return await self.crud.reschedule_publication(publication_id, new_time, owner_id)
@@ -121,6 +119,14 @@ class PublicationService:
 
         if not publication.channels:
             return {"success": False, "error": "No channels selected"}
+
+        # Если публикация в серии с включённым reply_to_previous — используем SeriesService
+        if publication.series_id and publication.series:
+            if publication.series.reply_to_previous:
+                from backend.services.publications.series_service import SeriesService
+                series_service = SeriesService(self.db)
+                bot = self.get_master_bot()
+                return await series_service.publish_series_post(publication, bot)
 
         async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
@@ -570,9 +576,6 @@ class PublicationService:
                 results.append({"channel": channel_label, "success": True})
             except Exception as e:
                 results.append({"channel": channel_label, "success": False, "error": str(e)})
-            finally:
-                if bot:
-                    await bot.session.close()
 
         success_count = sum(1 for r in results if r.get("success"))
 

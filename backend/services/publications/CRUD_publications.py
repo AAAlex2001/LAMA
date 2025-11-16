@@ -263,9 +263,18 @@ class CRUDPublicationService:
         self.db.add(notification)
         await self.db.flush()
 
-    async def create_series(self, name: str, description: Optional[str] = None) -> PublicationSeries:
+    async def create_series(
+        self,
+        name: str,
+        description: Optional[str] = None,
+        reply_to_previous: bool = True
+    ) -> PublicationSeries:
         """Создать серию публикаций"""
-        series = PublicationSeries(name=name, description=description)
+        series = PublicationSeries(
+            name=name,
+            description=description,
+            reply_to_previous=reply_to_previous
+        )
         self.db.add(series)
         await self.db.commit()
         await self.db.refresh(series)

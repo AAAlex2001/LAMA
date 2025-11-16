@@ -25,7 +25,7 @@ from backend.schemas.bots import (
     BotCommandUpdate
 )
 from backend.services.bot.CRUD_bots import CRUDBotService
-import os
+from backend.config import get_bot
 
 
 class BotService:
@@ -34,13 +34,10 @@ class BotService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.crud = CRUDBotService(db)
-        self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     
     def get_master_bot(self) -> Bot:
         """Получить мастер-бота из env"""
-        if not self.master_bot_token:
-            raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
-        return Bot(token=self.master_bot_token)
+        return get_bot()
 
     # ========================================================================
     # CRUD операции для ботов
@@ -173,8 +170,6 @@ class BotService:
                     except TelegramAPIError:
                         # Если не удалось проверить - считаем что не подписан
                         missing_channels.append(channel_id)
-
-                await telegram_bot.session.close()
                 
                 # Если есть каналы, на которые не подписан - не одобряем
                 if missing_channels:
@@ -184,7 +179,6 @@ class BotService:
                 return True, []
                 
             except Exception:
-                await telegram_bot.session.close()
                 return False, required_channels  # Возвращаем все каналы как недоступные
 
         # Если нет требований к подпискам, но режим CRITERIA - требуется капча
@@ -279,11 +273,9 @@ class BotService:
                 raw_data=message.model_dump(mode="json")
             )
 
-            await telegram_bot.session.close()
             return message
 
         except TelegramAPIError as e:
-            await telegram_bot.session.close()
             raise ValueError(f"Failed to send message: {str(e)}")
 
     async def save_message(
