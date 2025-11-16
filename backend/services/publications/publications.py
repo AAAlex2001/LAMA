@@ -1,269 +1,120 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
-from sqlalchemy import select, and_, func, delete, distinct
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
-from sqlalchemy.exc import IntegrityError
 import pytz
 import asyncio
+import os
+
+from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, Message
 from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramRetryAfter, TelegramBadRequest
-import httpx
-import json
+from aiogram.exceptions import TelegramRetryAfter
+
 from backend.models.publications import (
-    Publication, Tag, PublicationSeries,
-    TelegramMessage, PublicationNotification,
+    Publication, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
     ContentType as DBContentType
 )
-from backend.models.channels import ChannelGroup as Channel, BackedUpPost, PostRetransmission, BackupMode
-from backend.schemas.publications import (
-    PublicationUpdate, PublicationStatus,
-    ContentType, AIGenerateRequest, AIEditRequest, PublicationCreate, EditPublishedRequest
-)
+from backend.models.channels import ChannelGroup as Channel, BackupMode
+from backend.schemas.publications import AIGenerateRequest, AIEditRequest, EditPublishedRequest
 from backend.services.channel import ChannelService
-import os
+from backend.services.publications.CRUD_publications import CRUDPublicationService
+from backend.services.publications.ai_service import AIService
 
 
 class PublicationService:
+    """Сервис публикаций: Telegram API + AI + оркестрация"""
+
     def __init__(self, db: AsyncSession, openai_api_key: Optional[str] = None):
         self.db = db
-        self.openai_api_key = openai_api_key
-        self.http_client = httpx.AsyncClient(
-            timeout=30.0,
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
-        )
+        self.crud = CRUDPublicationService(db)
+        self.ai_service = AIService(api_key=openai_api_key)
         self.telegram_semaphore = asyncio.Semaphore(10)
         self.channel_service = ChannelService(db=db)
         self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    
+
     def get_master_bot(self) -> Bot:
         """Получить мастер-бота из env для публикаций"""
         if not self.master_bot_token:
             raise ValueError("TELEGRAM_BOT_TOKEN not set in environment")
         return Bot(token=self.master_bot_token)
-    
+
     async def get_bot_for_channel(self, channel: Channel) -> Bot:
         """Получить мастер-бота для публикаций в канал"""
         return self.get_master_bot()
 
-    async def create_publication(self, data: PublicationCreate, owner_id: int) -> Publication:
-        publication = Publication(
-            owner_id=owner_id,
-            content_type=DBContentType[data.content_type.value.upper()],
-            status=DBPublicationStatus.DRAFT,
-            text_content=data.text_content,
-            formatted_content=data.formatted_content,
-            media_urls=data.media_urls,
-            media_blur=data.media_blur,
-            inline_keyboard=data.inline_keyboard.model_dump() if data.inline_keyboard else None,
-            poll_data=data.poll_data.model_dump() if data.poll_data else None,
-            pin_message=data.pin_message,
-            auto_delete_hours=data.auto_delete_hours,
-            scheduled_time=data.scheduled_time,
-            timezone=data.timezone,
-            series_id=data.series_id,
-            series_order=data.series_order,
-            ai_generated=bool(data.ai_prompt),
-            ai_prompt=data.ai_prompt
-        )
+    # ========================================================================
+    # Проксирование CRUD методов
+    # ========================================================================
 
-        if data.channel_ids:
-            channels = await self.get_channels_by_ids(data.channel_ids, owner_id=owner_id)
-            if len(channels) != len(set(data.channel_ids)):
-                raise ValueError("One or more channels not found or do not belong to the user")
-            publication.channels = channels
+    async def create_publication(self, data, owner_id: int):
+        return await self.crud.create_publication(data, owner_id)
 
-        if data.tag_names:
-            tags = await self.get_or_create_tags(data.tag_names)
-            publication.tags = tags
+    async def get_publication(self, publication_id: int, owner_id: Optional[int] = None):
+        return await self.crud.get_publication(publication_id, owner_id)
 
-        self.db.add(publication)
-        await self.db.commit()
-        await self.db.refresh(publication)
-        
-        return publication
+    async def get_publications(self, **kwargs):
+        return await self.crud.get_publications(**kwargs)
 
-    async def get_channels_by_ids(self, channel_ids: List[int], owner_id: Optional[int] = None) -> List[Channel]:
-        query = select(Channel).options(selectinload(Channel.bot)).where(Channel.id.in_(channel_ids))
-        if owner_id is not None:
-            query = query.where(Channel.owner_id == owner_id)
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
+    async def update_publication(self, publication_id: int, data, owner_id: Optional[int] = None):
+        return await self.crud.update_publication(publication_id, data, owner_id)
 
-    async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
-        query = select(Tag).where(Tag.name.in_(tag_names))
-        result = await self.db.execute(query)
-        existing_tags = {tag.name: tag for tag in result.scalars().all()}
+    async def delete_publication(self, publication_id: int, owner_id: Optional[int] = None):
+        return await self.crud.delete_publication(publication_id, owner_id)
 
-        tags = []
-        new_tags = []
+    async def create_series(self, name: str, description: Optional[str] = None):
+        return await self.crud.create_series(name, description)
 
-        for name in tag_names:
-            if name in existing_tags:
-                tags.append(existing_tags[name])
-            else:
-                new_tag = Tag(name=name)
-                new_tags.append(new_tag)
-                tags.append(new_tag)
+    async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None):
+        return await self.crud.reschedule_publication(publication_id, new_time, owner_id)
 
-        if new_tags:
-            self.db.add_all(new_tags)
-            try:
-                await self.db.flush()
-            except IntegrityError:
-                await self.db.rollback()
-                query = select(Tag).where(Tag.name.in_(tag_names))
-                result = await self.db.execute(query)
-                existing_tags = {tag.name: tag for tag in result.scalars().all()}
-                tags = [existing_tags[name] for name in tag_names]
+    async def create_notification(self, publication_id: int, status: str, message: str, error_details: Optional[Dict] = None):
+        return await self.crud.create_notification(publication_id, status, message, error_details)
 
-        return tags
+    async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC", owner_id: Optional[int] = None) -> Dict[str, List[Publication]]:
+        """Получить календарь публикаций за месяц"""
+        publications = await self.crud.get_calendar(year, month, owner_id)
+        tz = pytz.timezone(timezone_str)
+        calendar_dict = {}
+        for pub in publications:
+            pub_time = pub.scheduled_time.astimezone(tz)
+            date_key = pub_time.strftime('%Y-%m-%d')
+            if date_key not in calendar_dict:
+                calendar_dict[date_key] = []
+            calendar_dict[date_key].append(pub)
+        return calendar_dict
 
+    # ========================================================================
+    # AI методы
+    # ========================================================================
 
-    async def create_notification(
-        self,
-        publication_id: int,
-        status: str,
-        message: str,
-        error_details: Optional[Dict] = None
-    ):
-        notification = PublicationNotification(
-            publication_id=publication_id,
-            status=status,
-            message=message,
-            error_details=error_details
-        )
-        self.db.add(notification)
-        await self.db.flush()
+    async def generate_with_ai(self, request: AIGenerateRequest) -> str:
+        """Сгенерировать контент с помощью AI"""
+        return await self.ai_service.generate_content(request)
 
-    async def get_publication(self, publication_id: int, owner_id: Optional[int] = None) -> Optional[Publication]:
-        query = select(Publication).where(Publication.id == publication_id).options(
-            selectinload(Publication.channels).selectinload(Channel.bot),
-            selectinload(Publication.tags),
-            selectinload(Publication.series),
-            selectinload(Publication.telegram_messages)
-            .selectinload(TelegramMessage.channel)
-            .selectinload(Channel.bot)
-        )
-        if owner_id is not None:
-            query = query.where(Publication.owner_id == owner_id)
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
-
-    async def get_publications(
-        self,
-        owner_id: Optional[int] = None,
-        status: Optional[PublicationStatus] = None,
-        content_type: Optional[ContentType] = None,
-        channel_id: Optional[int] = None,
-        tag_names: Optional[List[str]] = None,
-        series_id: Optional[int] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        skip: int = 0,
-        limit: int = 100
-    ) -> tuple[List[Publication], int]:
-        base_query = select(Publication).options(
-            selectinload(Publication.channels).selectinload(Channel.bot),
-            selectinload(Publication.tags),
-            selectinload(Publication.series)
-        )
-
-        if owner_id is not None:
-            base_query = base_query.where(Publication.owner_id == owner_id)
-
-        filters = []
-        if status:
-            filters.append(Publication.status == DBPublicationStatus[status.value.upper()])
-        if content_type:
-            filters.append(Publication.content_type == DBContentType[content_type.value.upper()])
-        if series_id:
-            filters.append(Publication.series_id == series_id)
-        if start_date:
-            filters.append(Publication.scheduled_time >= start_date)
-        if end_date:
-            filters.append(Publication.scheduled_time <= end_date)
-
-        if filters:
-            base_query = base_query.where(and_(*filters))
-
-        if channel_id:
-            base_query = base_query.join(Publication.channels).where(Channel.id == channel_id)
-
-        if tag_names:
-            base_query = base_query.join(Publication.tags).where(Tag.name.in_(tag_names))
-
-        ordered_query = base_query.order_by(Publication.created_at.desc())
-
-        count_query = select(func.count(distinct(Publication.id))).select_from(base_query.subquery())
-        total = await self.db.scalar(count_query) or 0
-
-        paginated_query = ordered_query.offset(skip).limit(limit)
-        result = await self.db.execute(paginated_query)
-        publications = result.unique().scalars().all()
-
-        return list(publications), total
-
-    async def update_publication(self, publication_id: int, data: PublicationUpdate, owner_id: Optional[int] = None) -> Optional[Publication]:
-        publication = await self.get_publication(publication_id, owner_id=owner_id)
-        if not publication:
+    async def edit_with_ai(self, request: AIEditRequest, owner_id: Optional[int] = None) -> Optional[Publication]:
+        """Редактировать контент публикации с помощью AI"""
+        publication = await self.get_publication(request.publication_id, owner_id=owner_id)
+        if not publication or not publication.text_content:
             return None
 
-        update_data = data.model_dump(exclude_unset=True)
-        
-        if 'channel_ids' in update_data:
-            channel_ids = update_data.pop('channel_ids')
-            channels = await self.get_channels_by_ids(channel_ids, owner_id=owner_id)
-            if owner_id is not None and channel_ids and len(channels) != len(set(channel_ids)):
-                raise ValueError("One or more channels not found or do not belong to the user")
-            publication.channels = channels
+        edited_content = await self.ai_service.edit_content(
+            original_text=publication.text_content,
+            instruction=request.instruction
+        )
 
-        if 'tag_names' in update_data:
-            tags = await self.get_or_create_tags(update_data.pop('tag_names'))
-            publication.tags = tags
-
-        if 'inline_keyboard' in update_data:
-            inline_keyboard_value = update_data['inline_keyboard']
-            if inline_keyboard_value:
-                update_data['inline_keyboard'] = inline_keyboard_value.model_dump() if hasattr(inline_keyboard_value, 'model_dump') else inline_keyboard_value
-            else:
-                update_data['inline_keyboard'] = None
-
-        if 'poll_data' in update_data:
-            poll_value = update_data['poll_data']
-            if poll_value:
-                update_data['poll_data'] = poll_value.model_dump() if hasattr(poll_value, 'model_dump') else poll_value
-            else:
-                update_data['poll_data'] = None
-
-        if 'content_type' in update_data:
-            update_data['content_type'] = DBContentType[update_data['content_type'].value.upper()]
-
-        if 'status' in update_data:
-            update_data['status'] = DBPublicationStatus[update_data['status'].value.upper()]
-
-        for key, value in update_data.items():
-            setattr(publication, key, value)
-
-        publication.updated_at = datetime.utcnow()
+        publication.text_content = edited_content
+        publication.ai_generated = True
         await self.db.commit()
-        await self.db.refresh(publication)
 
         return publication
 
-    async def delete_publication(self, publication_id: int, owner_id: Optional[int] = None) -> bool:
-        publication = await self.get_publication(publication_id, owner_id=owner_id)
-        if not publication:
-            return False
-
-        await self.db.delete(publication)
-        await self.db.commit()
-        return True
+    # ========================================================================
+    # Публикация в Telegram
+    # ========================================================================
 
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+        """Опубликовать сейчас"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
@@ -273,8 +124,7 @@ class PublicationService:
 
         async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
-            
-            # Получаем бота для канала
+
             try:
                 bot = await self.get_bot_for_channel(channel)
             except ValueError as e:
@@ -284,7 +134,7 @@ class PublicationService:
                     f"Failed to publish to {channel_name}: {str(e)}"
                 )
                 return {"channel": channel_name, "success": False, "error": str(e)}
-            
+
             async with self.telegram_semaphore:
                 for attempt in range(5):
                     try:
@@ -366,8 +216,8 @@ class PublicationService:
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": total_count}
 
-
     def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
+        """Построить inline клавиатуру"""
         keyboard = InlineKeyboardMarkup(inline_keyboard=[])
         for row in keyboard_data.get('buttons', []):
             button_row = []
@@ -381,6 +231,7 @@ class PublicationService:
         return keyboard
 
     async def send_to_telegram(self, publication: Publication, channel: Channel, bot: Bot) -> List[Message]:
+        """Отправить публикацию в Telegram"""
         keyboard = None
         if publication.inline_keyboard:
             keyboard = self.build_inline_keyboard(publication.inline_keyboard)
@@ -406,31 +257,65 @@ class PublicationService:
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
                 spoiler = publication.media_blur
-                if len(publication.media_urls) == 1:
-                    message = await bot.send_photo(
-                        chat_id=channel.telegram_id,
-                        photo=publication.media_urls[0],
-                        caption=publication.text_content,
-                        reply_markup=keyboard,
-                        parse_mode=ParseMode.HTML,
-                        has_spoiler=spoiler
-                    )
-                    return [message]
 
-                media = []
-                for i, url in enumerate(publication.media_urls[:10]):
-                    if i == 0 and publication.text_content:
-                        media.append(InputMediaPhoto(
-                            media=url,
+                if len(publication.media_urls) == 1:
+                    single_url = publication.media_urls[0]
+                    is_video = single_url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
+                    if is_video:
+                        message = await bot.send_video(
+                            chat_id=channel.telegram_id,
+                            video=single_url,
                             caption=publication.text_content,
+                            reply_markup=keyboard,
                             parse_mode=ParseMode.HTML,
                             has_spoiler=spoiler
-                        ))
+                        )
+                        return [message]
                     else:
-                        media.append(InputMediaPhoto(
-                            media=url,
+                        message = await bot.send_photo(
+                            chat_id=channel.telegram_id,
+                            photo=single_url,
+                            caption=publication.text_content,
+                            reply_markup=keyboard,
+                            parse_mode=ParseMode.HTML,
                             has_spoiler=spoiler
-                        ))
+                        )
+                        return [message]
+
+                # Медиальбом (фото+видео)
+                media = []
+
+                def is_video_url(u: str) -> bool:
+                    return u.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
+
+                urls = publication.media_urls[:10]
+                for i, url in enumerate(urls):
+                    if i == 0 and publication.text_content:
+                        if is_video_url(url):
+                            media.append(InputMediaVideo(
+                                media=url,
+                                caption=publication.text_content,
+                                parse_mode=ParseMode.HTML,
+                                has_spoiler=spoiler
+                            ))
+                        else:
+                            media.append(InputMediaPhoto(
+                                media=url,
+                                caption=publication.text_content,
+                                parse_mode=ParseMode.HTML,
+                                has_spoiler=spoiler
+                            ))
+                    else:
+                        if is_video_url(url):
+                            media.append(InputMediaVideo(
+                                media=url,
+                                has_spoiler=spoiler
+                            ))
+                        else:
+                            media.append(InputMediaPhoto(
+                                media=url,
+                                has_spoiler=spoiler
+                            ))
                 messages = await bot.send_media_group(chat_id=channel.telegram_id, media=media)
                 return list(messages)
             else:
@@ -517,6 +402,7 @@ class PublicationService:
         messages: List[Message],
         publication_id: int
     ) -> None:
+        """Обработать мгновенный бекап"""
         if channel.backup_mode != BackupMode.INSTANT:
             return
 
@@ -531,127 +417,9 @@ class PublicationService:
                 {"error": str(error)}
             )
 
-    async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC", owner_id: Optional[int] = None) -> Dict[str, List[Publication]]:
-        tz = pytz.timezone(timezone_str)
-        start_date = datetime(year, month, 1, tzinfo=pytz.UTC)
-        
-        if month == 12:
-            end_date = datetime(year + 1, 1, 1, tzinfo=pytz.UTC)
-        else:
-            end_date = datetime(year, month + 1, 1, tzinfo=pytz.UTC)
-
-        query = select(Publication).where(
-            and_(
-                Publication.scheduled_time >= start_date,
-                Publication.scheduled_time < end_date,
-                Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED])
-            )
-        ).options(
-            selectinload(Publication.channels),
-            selectinload(Publication.tags)
-        ).order_by(Publication.scheduled_time)
-        if owner_id is not None:
-            query = query.where(Publication.owner_id == owner_id)
-
-        result = await self.db.execute(query)
-        publications = result.scalars().all()
-
-        calendar_dict = {}
-        for pub in publications:
-            pub_time = pub.scheduled_time.astimezone(tz)
-            date_key = pub_time.strftime('%Y-%m-%d')
-            if date_key not in calendar_dict:
-                calendar_dict[date_key] = []
-            calendar_dict[date_key].append(pub)
-
-        return calendar_dict
-
-    async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None) -> Optional[Publication]:
-        publication = await self.get_publication(publication_id, owner_id=owner_id)
-        if not publication:
-            return None
-
-        publication.scheduled_time = new_time
-        publication.status = DBPublicationStatus.SCHEDULED
-        await self.db.commit()
-        await self.db.refresh(publication)
-
-        return publication
-
-    async def generate_with_ai(self, request: AIGenerateRequest) -> str:
-        if not self.openai_api_key:
-            raise ValueError("AI API key not configured")
-
-        response = await self.http_client.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.openai_api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "deepseek-chat",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": f"You are a professional content creator for Telegram channels. Create content in {request.tone} tone. Maximum length: {request.max_length} characters. Write in Russian language."
-                    },
-                    {
-                        "role": "user",
-                        "content": request.prompt
-                    }
-                ],
-                "max_tokens": request.max_length,
-                "temperature": 0.7
-            }
-        )
-
-        if response.status_code != 200:
-            raise ValueError(f"DeepSeek API error: {response.text}")
-
-        result = response.json()
-        return result['choices'][0]['message']['content']
-
-    async def edit_with_ai(self, request: AIEditRequest, owner_id: Optional[int] = None) -> Optional[Publication]:
-        publication = await self.get_publication(request.publication_id, owner_id=owner_id)
-        if not publication or not publication.text_content:
-            return None
-
-        if not self.openai_api_key:
-            raise ValueError("AI API key not configured")
-
-        response = await self.http_client.post(
-            "https://api.deepseek.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {self.openai_api_key}",
-                "Content-Type": "application/json"
-            },
-            json={
-                "model": "deepseek-chat",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": "You are a professional content editor for Telegram channels. Edit the content according to the instruction. Write in Russian language."
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Original text: {publication.text_content}\n\nInstruction: {request.instruction}\n\nProvide only the edited text."
-                    }
-                ],
-                "temperature": 0.7
-            }
-        )
-
-        if response.status_code != 200:
-            raise ValueError(f"DeepSeek API error: {response.text}")
-
-        result = response.json()
-        edited_content = result['choices'][0]['message']['content']
-        
-        publication.text_content = edited_content
-        publication.ai_generated = True
-        await self.db.commit()
-
-        return publication
+    # ========================================================================
+    # Редактирование опубликованного
+    # ========================================================================
 
     async def edit_published_message(
         self,
@@ -659,6 +427,7 @@ class PublicationService:
         request: EditPublishedRequest,
         owner_id: Optional[int] = None
     ) -> Dict[str, Any]:
+        """Редактировать уже опубликованное сообщение"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
@@ -669,7 +438,7 @@ class PublicationService:
         if publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             return {
                 "success": False,
-                "error": "Editing poll or quiz messages via Telegram API is not supported. See https://core.telegram.org/bots/api#sendpoll"
+                "error": "Editing poll or quiz messages via Telegram API is not supported"
             }
 
         if (
@@ -679,7 +448,7 @@ class PublicationService:
         ):
             return {
                 "success": False,
-                "error": "Editing media albums is not supported by the Telegram Bot API."
+                "error": "Editing media albums is not supported by the Telegram Bot API"
             }
 
         new_text = (
@@ -735,7 +504,6 @@ class PublicationService:
                     if request.media_urls is not None and not request.media_urls:
                         raise ValueError("media_urls cannot be empty when provided")
 
-                    # Determine single media url/file_id
                     media_url = None
                     if requested_media:
                         if len(requested_media) > 1:
@@ -744,7 +512,6 @@ class PublicationService:
 
                     caption_value = new_text if new_text is not None else publication.text_content
 
-                    # If only caption/keyboard changed and media_url unchanged -> use edit_message_caption
                     can_use_caption_edit = (
                         media_url is None or (publication.media_urls and media_url == publication.media_urls[0])
                     )
@@ -759,7 +526,6 @@ class PublicationService:
                         )
                     else:
                         if media_url is None:
-                            # fallback to existing media url if not provided
                             if not publication.media_urls:
                                 raise ValueError("Original media is missing and no replacement provided")
                             media_url = publication.media_urls[0]
@@ -830,6 +596,7 @@ class PublicationService:
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
     async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+        """Удалить опубликованные сообщения из Telegram"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
@@ -848,29 +615,17 @@ class PublicationService:
                 results.append({"channel": channel_label, "success": False, "error": str(e)})
 
         success_count = sum(1 for r in results if r.get("success"))
-        
+
         if success_count == len(results):
             publication.status = DBPublicationStatus.DELETED
-        
+
         await self.db.commit()
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
-
-    async def create_series(self, name: str, description: Optional[str] = None) -> PublicationSeries:
-        series = PublicationSeries(name=name, description=description)
-        self.db.add(series)
-        await self.db.commit()
-        await self.db.refresh(series)
-        return series
-
-    async def retransmit_post(
-        self,
-        original_post: BackedUpPost,
-        target_channel_id: int
-    ) -> PostRetransmission:
+    async def retransmit_post(self, original_post, target_channel_id: int):
+        """Ретранслировать пост"""
         return await self.channel_service.retransmit_post(
             original_post=original_post,
             target_channel_id=target_channel_id
         )
-
