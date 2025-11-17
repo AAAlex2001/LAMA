@@ -20,32 +20,17 @@ async def process_instant_backups():
     async with AsyncSessionLocal() as db:
         service = ChannelService(db)
 
-        # Получаем всех активных ботов
-        bots_result = await db.execute(
-            select(BotModel).where(
-                BotModel.status == "ACTIVE",
-                BotModel.is_webhook_enabled == False
-            )
-        )
-        bots: List[BotModel] = list(bots_result.scalars().all())
-
-        if not bots:
-            return
-
-        # Обрабатываем каждого бота отдельно
-        for bot_model in bots:
-            try:
-                await process_bot_channels(db, service, bot_model)
-            except Exception as exc:
-                print(f"Failed to process bot {bot_model.id}: {exc}")
+        # Используем мастер-бота для обработки всех каналов
+        await process_master_bot_channels(db, service)
 
 
-async def process_bot_channels(db, service: ChannelService, bot_model: BotModel):
-    """Обрабатывает каналы конкретного бота"""
-    # Получаем каналы с INSTANT режимом для этого бота
+async def process_master_bot_channels(db, service: ChannelService):
+    """Обрабатывает каналы, используя мастер-бота"""
+    master_bot = service.get_master_bot()
+
+    # Получаем все активные каналы, требующие бекапа
     channels_result = await db.execute(
         select(ChannelGroup).where(
-            ChannelGroup.bot_id == bot_model.id,
             ChannelGroup.backup_mode.in_([
                 BackupMode.ENABLED,
                 BackupMode.INSTANT,
@@ -59,29 +44,20 @@ async def process_bot_channels(db, service: ChannelService, bot_model: BotModel)
     if not channels:
         return
 
-    # Создаём aiogram Bot для этого токена
-    bot = Bot(token=bot_model.token)
-
-    try:
-        # Получаем обновления с учётом offset
-        updates: List[Update] = await bot.get_updates(
-            offset=bot_model.last_channel_update_id,
-            timeout=0,
-            allowed_updates=["channel_post", "edited_channel_post"]
-        )
-    except Exception as exc:
-        print(f"Failed to fetch channel updates for bot {bot_model.id}: {exc}")
-        return
+    # Получаем обновления мастер-бота
+    updates: List[Update] = await master_bot.get_updates(
+        offset=None,
+        timeout=0,
+        allowed_updates=["channel_post", "edited_channel_post"]
+    )
 
     if not updates:
         return
 
-    # Создаём карту каналов по telegram_id
     channel_map: Dict[int, ChannelGroup] = {
         channel.telegram_id: channel for channel in channels
     }
 
-    # Обрабатываем каждое обновление
     for update in updates:
         message: Optional[Message] = getattr(update, "channel_post", None) or getattr(
             update, "edited_channel_post", None
@@ -109,9 +85,3 @@ async def process_bot_channels(db, service: ChannelService, bot_model: BotModel)
             print(
                 f"Failed to store post {message.message_id} for channel {channel.id}: {exc}"
             )
-
-    # Обновляем offset бота
-    new_offset = updates[-1].update_id + 1
-    bot_model.last_channel_update_id = new_offset
-    bot_model.updated_at = datetime.now(timezone.utc)
-    await db.commit()
