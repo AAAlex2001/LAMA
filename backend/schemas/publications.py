@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator
 from enum import Enum
 
 
@@ -110,7 +110,16 @@ class PublicationBase(BaseModel):
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: bool = False
-    auto_delete_hours: Optional[int] = Field(None, ge=1, le=72)
+    auto_delete_hours: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Delay in hours after publication before auto-deletion (legacy field)"
+    )
+    auto_delete_delay_seconds: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Delay in seconds after publication before auto-deletion kicks in"
+    )
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"
     series_id: Optional[int] = None
@@ -119,13 +128,13 @@ class PublicationBase(BaseModel):
     channel_ids: List[int] = Field(default_factory=list)
     tag_names: List[str] = Field(default_factory=list)
 
-    @validator('auto_delete_hours')
-    def validate_auto_delete(cls, v):
-        if v is not None:
-            valid_hours = [1, 24, 36, 48, 60, 72]
-            if v not in valid_hours:
-                raise ValueError(f'auto_delete_hours must be one of {valid_hours}')
-        return v
+    @model_validator(mode="after")
+    def validate_auto_delete(cls, values):
+        hours = values.auto_delete_hours
+        seconds = values.auto_delete_delay_seconds
+        if hours is not None and seconds is not None:
+            raise ValueError('Provide either auto_delete_hours or auto_delete_delay_seconds, not both')
+        return values
 
     @validator('poll_data')
     def validate_poll_data(cls, v, values):
@@ -150,7 +159,16 @@ class PublicationUpdate(BaseModel):
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: Optional[bool] = None
-    auto_delete_hours: Optional[int] = Field(None, ge=1, le=72)
+    auto_delete_hours: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Delay in hours after publication before auto-deletion (legacy field)"
+    )
+    auto_delete_delay_seconds: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Delay in seconds after publication before auto-deletion kicks in"
+    )
     scheduled_time: Optional[datetime] = None
     timezone: Optional[str] = None
     series_id: Optional[int] = None
@@ -158,6 +176,14 @@ class PublicationUpdate(BaseModel):
     status: Optional[PublicationStatus] = None
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
+
+    @model_validator(mode="after")
+    def validate_auto_delete(cls, values):
+        hours = values.auto_delete_hours
+        seconds = values.auto_delete_delay_seconds
+        if hours is not None and seconds is not None:
+            raise ValueError('Provide either auto_delete_hours or auto_delete_delay_seconds, not both')
+        return values
 
 
 class PublicationResponse(BaseModel):
@@ -172,6 +198,7 @@ class PublicationResponse(BaseModel):
     poll_data: Optional[Dict[str, Any]] = None
     pin_message: bool = False
     auto_delete_hours: Optional[int] = None
+    auto_delete_delay_seconds: Optional[int] = None
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"
     series_id: Optional[int] = None

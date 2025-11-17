@@ -60,6 +60,7 @@ class Publication(Base):
     
     pin_message = Column(Boolean, default=False)
     auto_delete_hours = Column(Integer, nullable=True)
+    auto_delete_seconds = Column(Integer, nullable=True)
     
     scheduled_time = Column(DateTime(timezone=True), nullable=True, index=True)
     published_time = Column(DateTime(timezone=True), nullable=True)
@@ -80,6 +81,14 @@ class Publication(Base):
     series = relationship('PublicationSeries', back_populates='publications')
     notifications = relationship('PublicationNotification', back_populates='publication', cascade='all, delete-orphan')
     telegram_messages = relationship('TelegramMessage', back_populates='publication', cascade='all, delete-orphan')
+
+    @property
+    def auto_delete_delay_seconds(self):
+        return self.auto_delete_seconds
+
+    @auto_delete_delay_seconds.setter
+    def auto_delete_delay_seconds(self, value):
+        self.auto_delete_seconds = value
 
 
 class PublicationSeries(Base):

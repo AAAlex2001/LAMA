@@ -27,6 +27,10 @@ class CRUDPublicationService:
 
     async def create_publication(self, data: PublicationCreate, owner_id: int) -> Publication:
         """Создать публикацию"""
+        auto_delete_seconds = data.auto_delete_delay_seconds
+        if auto_delete_seconds is None and data.auto_delete_hours is not None:
+            auto_delete_seconds = data.auto_delete_hours * 3600
+
         publication = Publication(
             owner_id=owner_id,
             content_type=DBContentType[data.content_type.value.upper()],
@@ -39,6 +43,7 @@ class CRUDPublicationService:
             poll_data=data.poll_data.model_dump() if data.poll_data else None,
             pin_message=data.pin_message,
             auto_delete_hours=data.auto_delete_hours,
+            auto_delete_seconds=auto_delete_seconds,
             scheduled_time=data.scheduled_time,
             timezone=data.timezone,
             series_id=data.series_id,
@@ -178,6 +183,13 @@ class CRUDPublicationService:
                 )
             else:
                 update_data['poll_data'] = None
+
+        auto_delete_delay_seconds = update_data.pop('auto_delete_delay_seconds', None)
+        if auto_delete_delay_seconds is not None:
+            update_data['auto_delete_seconds'] = auto_delete_delay_seconds
+        elif 'auto_delete_hours' in update_data:
+            hours_value = update_data['auto_delete_hours']
+            update_data['auto_delete_seconds'] = hours_value * 3600 if hours_value is not None else None
 
         if 'content_type' in update_data:
             update_data['content_type'] = DBContentType[update_data['content_type'].value.upper()]

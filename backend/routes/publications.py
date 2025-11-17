@@ -248,6 +248,21 @@ async def update_publication(
     return publication
 
 
+@router.patch("/{publication_id}", response_model=PublicationResponse)
+async def patch_publication(
+    publication_id: int,
+    data: PublicationUpdate,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Частично обновить публикацию"""
+    publication = await service.update_publication(publication_id, data, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await service.get_publication(publication.id, owner_id=current_user.id)
+    return publication
+
+
 @router.delete("/{publication_id}", status_code=204)
 async def delete_publication(
     publication_id: int,
