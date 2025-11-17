@@ -46,7 +46,11 @@ async def process_bot_channels(db, service: ChannelService, bot_model: BotModel)
     channels_result = await db.execute(
         select(ChannelGroup).where(
             ChannelGroup.bot_id == bot_model.id,
-            ChannelGroup.backup_mode == BackupMode.INSTANT,
+            ChannelGroup.backup_mode.in_([
+                BackupMode.ENABLED,
+                BackupMode.INSTANT,
+                BackupMode.POST_FACTUM
+            ]),
             ChannelGroup.is_active.is_(True)
         )
     )
@@ -90,7 +94,17 @@ async def process_bot_channels(db, service: ChannelService, bot_model: BotModel)
             continue
 
         try:
-            await service.save_post_backup(channel.id, message)
+            backed_up_post = await service.save_post_backup(channel.id, message)
+
+            if (
+                channel.backup_mode == BackupMode.INSTANT
+                and channel.backup_target_id
+                and channel.backup_target_id != channel.id
+            ):
+                await service.retransmit_post(
+                    backed_up_post,
+                    channel.backup_target_id
+                )
         except Exception as exc:
             print(
                 f"Failed to store post {message.message_id} for channel {channel.id}: {exc}"

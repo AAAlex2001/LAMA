@@ -14,6 +14,7 @@ class ChannelType(str, Enum):
 
 class BackupMode(str, Enum):
     DISABLED = "DISABLED"
+    ENABLED = "ENABLED"
     INSTANT = "INSTANT"
     POST_FACTUM = "POST_FACTUM"
 

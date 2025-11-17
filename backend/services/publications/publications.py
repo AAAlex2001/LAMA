@@ -408,13 +408,23 @@ class PublicationService:
         messages: List[Message],
         publication_id: int
     ) -> None:
-        """Обработать мгновенный бекап"""
-        if channel.backup_mode != BackupMode.INSTANT:
+        """Обработать бекап и при необходимости мгновенную ретрансляцию"""
+        if channel.backup_mode == BackupMode.DISABLED:
             return
 
         try:
             for message in messages:
-                await self.channel_service.save_post_backup(channel.id, message)
+                backed_up_post = await self.channel_service.save_post_backup(channel.id, message)
+
+                if (
+                    channel.backup_mode == BackupMode.INSTANT
+                    and channel.backup_target_id
+                    and channel.backup_target_id != channel.id
+                ):
+                    await self.channel_service.retransmit_post(
+                        backed_up_post,
+                        channel.backup_target_id
+                    )
         except Exception as error:
             await self.create_notification(
                 publication_id,

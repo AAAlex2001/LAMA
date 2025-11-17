@@ -13,6 +13,7 @@ class ChannelType(str, enum.Enum):
 
 class BackupMode(str, enum.Enum):
     DISABLED = "DISABLED"
+    ENABLED = "ENABLED"
     INSTANT = "INSTANT"
     POST_FACTUM = "POST_FACTUM"
 
