@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
-from backend.services.channel import ChannelService, ChannelModerationService, AntispamService
+from backend.services.channel import ChannelService, ChannelModerationService, AntispamService, FloodService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
@@ -14,6 +14,7 @@ from backend.schemas.channels import (
     ChannelModerationRuleCreate, ChannelModerationRuleUpdate,
     ChannelModerationRuleResponse, ChannelModerationRuleListResponse,
     AntispamSettingsUpdate, AntispamSettingsResponse,
+    FloodSettingsUpdate, FloodSettingsResponse,
 )
 
 
@@ -28,6 +29,9 @@ async def get_channel_moderation_service(db: AsyncSession = Depends(get_db)):
 
 async def get_antispam_service(db: AsyncSession = Depends(get_db)):
     return AntispamService(db)
+
+async def get_flood_service(db: AsyncSession = Depends(get_db)):
+    return FloodService(db)
 
 
 # ============ CRUD Operations ============
@@ -324,6 +328,60 @@ async def update_antispam_settings(
         link_blacklist=channel.link_blacklist,
         link_filter_action=channel.link_filter_action,
         link_filter_mute_duration=channel.link_filter_mute_duration,
+    )
+
+
+# ============ Flood Settings ============
+
+@router.put(
+    "/{channel_id}/flood",
+    response_model=FloodSettingsResponse,
+)
+async def update_flood_settings(
+    channel_id: int,
+    data: FloodSettingsUpdate,
+    flood_service: FloodService = Depends(get_flood_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить настройки антифлуда для канала"""
+    channel = await flood_service.update_channel_flood(
+        channel_id=channel_id,
+        owner_id=current_user.id,
+        flood_message_limit=data.flood_message_limit,
+        flood_interval_seconds=data.flood_interval_seconds,
+        flood_action=data.flood_action,
+        flood_mute_duration_minutes=data.flood_mute_duration_minutes,
+    )
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    return FloodSettingsResponse(
+        flood_message_limit=channel.flood_message_limit,
+        flood_interval_seconds=channel.flood_interval_seconds,
+        flood_action=channel.flood_action,
+        flood_mute_duration_minutes=channel.flood_mute_duration_minutes,
+    )
+
+
+@router.get(
+    "/{channel_id}/flood",
+    response_model=FloodSettingsResponse,
+)
+async def get_flood_settings(
+    channel_id: int,
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить настройки антифлуда канала"""
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+
+    return FloodSettingsResponse(
+        flood_message_limit=channel.flood_message_limit,
+        flood_interval_seconds=channel.flood_interval_seconds,
+        flood_action=channel.flood_action,
+        flood_mute_duration_minutes=channel.flood_mute_duration_minutes,
     )
 
 

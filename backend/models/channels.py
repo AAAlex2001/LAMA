@@ -139,6 +139,12 @@ class ChannelGroup(Base):
     link_blacklist = Column(JSON, nullable=True)
     link_filter_action = Column(SQLEnum(ActionType), default=ActionType.DELETE, nullable=False)
     link_filter_mute_duration = Column(Integer, nullable=True)
+
+    # Настройки антифлуда
+    flood_message_limit = Column(Integer, nullable=True)  # N сообщений
+    flood_interval_seconds = Column(Integer, nullable=True)  # за M секунд
+    flood_action = Column(SQLEnum(ActionType), default=ActionType.MUTE, nullable=False)
+    flood_mute_duration_minutes = Column(Integer, nullable=True)
     
     # Метаданные
     is_active = Column(Boolean, default=True)
@@ -270,5 +276,23 @@ class ChannelModerationRule(Base):
     channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
 
     channel = relationship("ChannelGroup", back_populates="moderation_rules")
+
+
+class ChannelFloodState(Base):
+    __tablename__ = "channel_flood_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(BigInteger, nullable=False)
+
+    message_count = Column(Integer, default=0, nullable=False)
+    window_start = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    last_message_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    channel = relationship("ChannelGroup")
+
+    __table_args__ = (
+        Index("ix_channel_flood_states_channel_user", "channel_id", "user_id", unique=True),
+    )
 
 

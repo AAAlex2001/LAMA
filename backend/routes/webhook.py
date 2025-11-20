@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
-from backend.services.channel import ChannelModerationService, AntispamService
+from backend.services.channel import ChannelModerationService, AntispamService, FloodService
 from backend.services.bot.bots import BotService
 from backend.models.channels import ActionType
 from backend.models.bots import Bot as BotModel, PendingJoinApproval
@@ -112,6 +112,17 @@ async def telegram_webhook(
 async def apply_moderation_if_needed(db: AsyncSession, update: Update, message):
     text_content = message.text or message.caption
     
+    # Антифлуд (для групп/супергрупп, только если есть from_user)
+    if message.chat.type in {"group", "supergroup"} and message.from_user:
+        flood_service = FloodService(db)
+        is_flood, flood_action, flood_mute = await flood_service.check_flood_by_telegram_id(
+            telegram_id=message.chat.id,
+            user_id=message.from_user.id,
+        )
+        if is_flood and flood_action:
+            await apply_moderation_action(message, flood_action, flood_mute)
+            return
+
     # Проверка антиспама (ссылки)
     antispam_service = AntispamService(db)
     should_block, action, mute_duration, reason = await antispam_service.check_antispam_by_telegram_id(
