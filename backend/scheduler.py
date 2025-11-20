@@ -48,7 +48,7 @@ async def process_auto_delete():
             Publication.status == DBPublicationStatus.PUBLISHED,
             Publication.published_time.isnot(None),
             or_(
-                Publication.auto_delete_hours.isnot(None),
+            Publication.auto_delete_hours.isnot(None),
                 Publication.auto_delete_seconds.isnot(None)
             )
         )
@@ -69,18 +69,18 @@ async def process_auto_delete():
                 continue
 
             delete_time = publication.published_time + timedelta(seconds=delete_delay_seconds)
-            
-            if now >= delete_time:
-                service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-                try:
-                    await service.delete_telegram_messages(publication.id)
-                except Exception as e:
-                    await service.create_notification(
-                        publication.id,
-                        "error",
-                        f"Failed to auto-delete publication: {str(e)}",
-                        {"error": str(e)}
-                    )
+                
+                if now >= delete_time:
+                    service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+                    try:
+                        await service.delete_telegram_messages(publication.id)
+                    except Exception as e:
+                        await service.create_notification(
+                            publication.id,
+                            "error",
+                            f"Failed to auto-delete publication: {str(e)}",
+                            {"error": str(e)}
+                        )
 
 
 def start_scheduler():

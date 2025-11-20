@@ -3,7 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 from enum import Enum
 
-from backend.models.channels import ActionType
+from backend.models.channels import ActionType, LinkFilterMode
 
 
 class ChannelType(str, Enum):
@@ -304,3 +304,21 @@ class ChannelModerationRuleResponse(BaseModel):
 class ChannelModerationRuleListResponse(BaseModel):
     items: List[ChannelModerationRuleResponse]
     total: int
+
+
+# ============ Antispam Schemas ============
+
+class AntispamSettingsUpdate(BaseModel):
+    link_filter_mode: Optional[LinkFilterMode] = None
+    link_whitelist: Optional[List[str]] = None
+    link_blacklist: Optional[List[str]] = None
+    link_filter_action: Optional[ActionType] = None
+    link_filter_mute_duration: Optional[int] = None
+
+
+class AntispamSettingsResponse(BaseModel):
+    link_filter_mode: LinkFilterMode
+    link_whitelist: Optional[List[str]]
+    link_blacklist: Optional[List[str]]
+    link_filter_action: ActionType
+    link_filter_mute_duration: Optional[int]

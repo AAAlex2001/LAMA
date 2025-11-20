@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
-from backend.services.channel import ChannelModerationService
+from backend.services.channel import ChannelModerationService, AntispamService
 from backend.services.bot.bots import BotService
 from backend.models.channels import ActionType
 from backend.models.bots import Bot as BotModel, PendingJoinApproval
@@ -44,10 +44,15 @@ async def telegram_webhook(
 
     # Простая модерация сообщений (без привязки к конкретному user-боту)
     try:
-        if update.message and update.message.chat and update.message.text:
-            if update.message.chat.type in {"group", "supergroup"}:
-                async with AsyncSessionLocal() as db:
-                    await apply_moderation_if_needed(db, update)
+        # Обрабатываем обычные сообщения и сообщения из каналов
+        message = update.message or update.channel_post or update.edited_message or update.edited_channel_post
+        if message and message.chat:
+            text_content = message.text or message.caption
+            if text_content:
+                # Проверяем для групп, супергрупп и каналов
+                if message.chat.type in {"group", "supergroup", "channel"}:
+                    async with AsyncSessionLocal() as db:
+                        await apply_moderation_if_needed(db, update, message)
     except Exception:
         # Не ломаем webhook из-за ошибок фоновой обработки
         pass
@@ -104,33 +109,51 @@ async def telegram_webhook(
     return {"ok": True}
 
 
-async def apply_moderation_if_needed(db: AsyncSession, update: Update):
+async def apply_moderation_if_needed(db: AsyncSession, update: Update, message):
+    text_content = message.text or message.caption
+    
+    # Проверка антиспама (ссылки)
+    antispam_service = AntispamService(db)
+    should_block, action, mute_duration, reason = await antispam_service.check_antispam_by_telegram_id(
+        message.chat.id, text_content or ""
+    )
+    
+    if should_block:
+        await apply_moderation_action(message, action, mute_duration)
+        return
+    
+    # Проверка правил модерации (запрещённые слова)
     moderation_service = ChannelModerationService(db)
-    text_content = update.message.text or update.message.caption
     rule = await moderation_service.check_message_by_telegram_id(
-        update.message.chat.id, text_content or ""
+        message.chat.id, text_content or ""
     )
     if not rule:
         return
+    
+    await apply_moderation_action(message, rule.action, rule.mute_duration_minutes)
+
+
+async def apply_moderation_action(message, action: ActionType, mute_duration: Optional[int]):
+    """Применить действие модерации: удалить сообщение и выполнить действие"""
 
     moderation_bot = get_master_bot()
     try:
         # Удаляем сообщение
         try:
             await moderation_bot.delete_message(
-                chat_id=update.message.chat.id,
-                message_id=update.message.message_id,
+                chat_id=message.chat.id,
+                message_id=message.message_id,
             )
         except TelegramAPIError:
             pass
 
-        # Применяем действие к пользователю (если задано)
-        if update.message.from_user and rule.action in {ActionType.MUTE, ActionType.KICK, ActionType.UNMUTE}:
-            if rule.action == ActionType.MUTE:
+        # Применяем действие к пользователю (только если есть from_user)
+        if message.from_user and action in {ActionType.MUTE, ActionType.KICK, ActionType.UNMUTE}:
+            if action == ActionType.MUTE:
                 until_date = None
-                if rule.mute_duration_minutes:
+                if mute_duration:
                     until_date = datetime.now(timezone.utc) + timedelta(
-                        minutes=rule.mute_duration_minutes
+                        minutes=mute_duration
                     )
                 permissions = ChatPermissions(
                     can_send_messages=False,
@@ -143,18 +166,18 @@ async def apply_moderation_if_needed(db: AsyncSession, update: Update):
                     can_invite_users=False,
                 )
                 await moderation_bot.restrict_chat_member(
-                    chat_id=update.message.chat.id,
-                    user_id=update.message.from_user.id,
+                    chat_id=message.chat.id,
+                    user_id=message.from_user.id,
                     permissions=permissions,
                     until_date=until_date,
                 )
-            elif rule.action == ActionType.KICK:
+            elif action == ActionType.KICK:
                 await moderation_bot.ban_chat_member(
-                    chat_id=update.message.chat.id,
-                    user_id=update.message.from_user.id,
+                    chat_id=message.chat.id,
+                    user_id=message.from_user.id,
                     revoke_messages=False,
                 )
-            elif rule.action == ActionType.UNMUTE:
+            elif action == ActionType.UNMUTE:
                 permissions = ChatPermissions(
                     can_send_messages=True,
                     can_send_media_messages=True,
@@ -166,8 +189,8 @@ async def apply_moderation_if_needed(db: AsyncSession, update: Update):
                     can_invite_users=True,
                 )
                 await moderation_bot.restrict_chat_member(
-                    chat_id=update.message.chat.id,
-                    user_id=update.message.from_user.id,
+                    chat_id=message.chat.id,
+                    user_id=message.from_user.id,
                     permissions=permissions,
                 )
     finally:

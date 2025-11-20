@@ -32,6 +32,13 @@ class ActionType(str, enum.Enum):
     DELETE = "DELETE"
 
 
+class LinkFilterMode(str, enum.Enum):
+    DISABLED = "DISABLED"
+    BLOCK_ALL = "BLOCK_ALL"
+    ALLOW_TME_ONLY = "ALLOW_TME_ONLY"
+    WHITELIST = "WHITELIST"
+    BLACKLIST = "BLACKLIST"
+
 
 class ChannelGroup(Base):
     __tablename__ = "channel_groups"
@@ -125,6 +132,13 @@ class ChannelGroup(Base):
     # Настройки бекапа
     backup_mode = Column(SQLEnum(BackupMode), default=BackupMode.DISABLED, nullable=False)
     backup_target_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="SET NULL"), nullable=True)
+    
+    # Настройки антиспама
+    link_filter_mode = Column(SQLEnum(LinkFilterMode), default=LinkFilterMode.DISABLED, nullable=False)
+    link_whitelist = Column(JSON, nullable=True)
+    link_blacklist = Column(JSON, nullable=True)
+    link_filter_action = Column(SQLEnum(ActionType), default=ActionType.DELETE, nullable=False)
+    link_filter_mute_duration = Column(Integer, nullable=True)
     
     # Метаданные
     is_active = Column(Boolean, default=True)

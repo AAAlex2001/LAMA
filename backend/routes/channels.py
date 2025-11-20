@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
-from backend.services.channel import ChannelService, ChannelModerationService
+from backend.services.channel import ChannelService, ChannelModerationService, AntispamService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
@@ -13,6 +13,7 @@ from backend.schemas.channels import (
     ChannelType, BackupMode, BackupStatus,
     ChannelModerationRuleCreate, ChannelModerationRuleUpdate,
     ChannelModerationRuleResponse, ChannelModerationRuleListResponse,
+    AntispamSettingsUpdate, AntispamSettingsResponse,
 )
 
 
@@ -24,6 +25,9 @@ async def get_channel_service(db: AsyncSession = Depends(get_db)):
 
 async def get_channel_moderation_service(db: AsyncSession = Depends(get_db)):
     return ChannelModerationService(db)
+
+async def get_antispam_service(db: AsyncSession = Depends(get_db)):
+    return AntispamService(db)
 
 
 # ============ CRUD Operations ============
@@ -287,6 +291,63 @@ async def delete_moderation_rule(
     )
     if not success:
         raise HTTPException(status_code=404, detail="Rule not found")
+
+
+# ============ Antispam Settings ============
+
+@router.put(
+    "/{channel_id}/antispam",
+    response_model=AntispamSettingsResponse,
+)
+async def update_antispam_settings(
+    channel_id: int,
+    data: AntispamSettingsUpdate,
+    antispam_service: AntispamService = Depends(get_antispam_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить настройки антиспама для канала"""
+    channel = await antispam_service.update_channel_antispam(
+        channel_id=channel_id,
+        owner_id=current_user.id,
+        link_filter_mode=data.link_filter_mode,
+        link_whitelist=data.link_whitelist,
+        link_blacklist=data.link_blacklist,
+        link_filter_action=data.link_filter_action,
+        link_filter_mute_duration=data.link_filter_mute_duration,
+    )
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    return AntispamSettingsResponse(
+        link_filter_mode=channel.link_filter_mode,
+        link_whitelist=channel.link_whitelist,
+        link_blacklist=channel.link_blacklist,
+        link_filter_action=channel.link_filter_action,
+        link_filter_mute_duration=channel.link_filter_mute_duration,
+    )
+
+
+@router.get(
+    "/{channel_id}/antispam",
+    response_model=AntispamSettingsResponse,
+)
+async def get_antispam_settings(
+    channel_id: int,
+    service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить настройки антиспама канала"""
+    channel = await service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    return AntispamSettingsResponse(
+        link_filter_mode=channel.link_filter_mode,
+        link_whitelist=channel.link_whitelist,
+        link_blacklist=channel.link_blacklist,
+        link_filter_action=channel.link_filter_action,
+        link_filter_mute_duration=channel.link_filter_mute_duration,
+    )
 
 
 # ============ Backup Jobs (Post-Factum Restore) ============
