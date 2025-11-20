@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
 from backend.models.bots import Bot as BotModel, BotStatus, MessageType, PendingApproval
-from backend.services.bot.bots import BotService
+from backend.services.bot import BotService, CaptchaService
 from backend.services.channel import ChannelModerationService
 from backend.models.channels import ActionType
 
@@ -189,6 +189,7 @@ async def handle_join_request(
     """Обработка заявки на вступление"""
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
     from backend.models.bots import ApprovalMode
+    from backend.services.bot import CaptchaService
     
     # Проверяем режим одобрения
     should_approve, missing_channels = await service.check_approval_criteria(
@@ -196,8 +197,9 @@ async def handle_join_request(
         join_request.from_user.id
     )
 
-    # Если режим MANUAL - отправляем приветствие
+    # Если режим MANUAL - отправляем приветствие и/или капчу
     if bot_model.auto_approval_mode == ApprovalMode.MANUAL:
+        # Приветственное сообщение
         if bot_model.welcome_enabled and bot_model.welcome_message:
             try:
                 message = await send_welcome_message(
@@ -206,7 +208,7 @@ async def handle_join_request(
                     bot_model
                 )
                 print(f"Sent welcome message to {join_request.from_user.id}")
-                
+
                 if message:
                     await service.save_message(
                         bot_id=bot_model.id,
@@ -222,6 +224,51 @@ async def handle_join_request(
                     )
             except TelegramAPIError as welcome_error:
                 print(f"Failed to send welcome message: {str(welcome_error)}")
+
+        # Капча
+        if getattr(bot_model, "join_captcha_enabled", False):
+            try:
+                captcha_service = CaptchaService(service.db)
+                question, answer = captcha_service.generate_captcha()
+                pending = await captcha_service.create_pending_approval(
+                    bot_id=bot_model.id,
+                    user_id=join_request.from_user.id,
+                    chat_id=join_request.chat.id,
+                    captcha_question=question,
+                    captcha_answer=answer,
+                )
+
+                # Генерируем варианты ответов (правильный + 2 случайных)
+                import random
+
+                correct = int(answer)
+                options = {correct}
+                while len(options) < 3:
+                    delta = random.randint(1, 4)
+                    options.add(correct + delta)
+                options_list = list(options)
+                random.shuffle(options_list)
+
+                buttons = [
+                    [
+                        InlineKeyboardButton(
+                            text=str(opt),
+                            callback_data=f"captcha_{pending.id}_{opt}",
+                        )
+                    ]
+                    for opt in options_list
+                ]
+
+                reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+                await telegram_bot.send_message(
+                    chat_id=join_request.from_user.id,
+                    text=question,
+                    reply_markup=reply_markup,
+                )
+                print(f"Sent captcha to {join_request.from_user.id}")
+            except TelegramAPIError as captcha_error:
+                print(f"Failed to send captcha: {str(captcha_error)}")
     
     # Если режим CRITERIA и проверки не пройдены
     elif bot_model.auto_approval_mode == ApprovalMode.CRITERIA and not should_approve:
@@ -420,8 +467,9 @@ async def handle_callback_query(
                 pending_id = int(parts[1])
                 user_answer = parts[2]
                 
-                # Проверяем ответ через сервис
-                is_correct = await service.check_captcha_answer(pending_id, user_answer)
+                # Проверяем ответ через сервис капчи
+                captcha_service = CaptchaService(service.db)
+                is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
                 
                 if is_correct:
                     # Капча пройдена - одобряем заявку

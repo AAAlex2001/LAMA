@@ -64,6 +64,8 @@ class Bot(Base):
     welcome_media_url = Column(String(512), nullable=True)
     welcome_media_type = Column(SQLEnum(MessageType), nullable=True)
     welcome_buttons = Column(JSON, nullable=True)  # Inline keyboard
+    # Капча при заявке на вступление (для MANUAL-режима)
+    join_captcha_enabled = Column(Boolean, default=False, nullable=False)
     
     # Настройки автоодобрения
     auto_approval_mode = Column(SQLEnum(ApprovalMode), default=ApprovalMode.MANUAL, nullable=False)

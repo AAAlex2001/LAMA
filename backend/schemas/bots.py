@@ -92,6 +92,8 @@ class WelcomeSettingsUpdate(BaseModel):
     welcome_media_url: Optional[str] = None
     welcome_media_type: Optional[MessageType] = None
     welcome_buttons: Optional[Dict[str, Any]] = None
+    # Флаг: при заявке отправлять капчу (в MANUAL-режиме)
+    join_captcha_enabled: Optional[bool] = None
 
 
 class WelcomeSettingsResponse(BaseModel):
@@ -101,6 +103,7 @@ class WelcomeSettingsResponse(BaseModel):
     welcome_media_url: Optional[str]
     welcome_media_type: Optional[MessageType]
     welcome_buttons: Optional[Dict[str, Any]]
+    join_captcha_enabled: bool
 
     model_config = {"from_attributes": True}
 

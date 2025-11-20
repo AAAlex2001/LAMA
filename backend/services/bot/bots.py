@@ -97,6 +97,8 @@ class BotService:
         bot.welcome_media_url = data.welcome_media_url
         bot.welcome_media_type = data.welcome_media_type
         bot.welcome_buttons = data.welcome_buttons
+        if data.join_captcha_enabled is not None:
+            bot.join_captcha_enabled = data.join_captcha_enabled
         bot.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()
@@ -518,93 +520,5 @@ class BotService:
         }
 
     # ========================================================================
-    # Работа с капчей и pending approvals
+    # Работа с капчей и pending approvals теперь вынесена в CaptchaService
     # ========================================================================
-
-    async def create_pending_approval(
-            self,
-            bot_id: int,
-            user_id: int,
-            chat_id: int,
-            captcha_question: str,
-            captcha_answer: str
-    ) -> PendingApproval:
-        """Создать запись ожидающей одобрения заявки с капчей"""
-        from datetime import timedelta
-
-        pending = PendingApproval(
-            bot_id=bot_id,
-            user_id=user_id,
-            chat_id=chat_id,
-            captcha_question=captcha_question,
-            captcha_answer=captcha_answer,
-            expires_at=datetime.now(timezone.utc) + timedelta(minutes=5)
-        )
-
-        self.db.add(pending)
-        await self.db.commit()
-        await self.db.refresh(pending)
-
-        return pending
-
-    async def get_pending_approval(
-            self,
-            bot_id: int,
-            user_id: int
-    ) -> Optional[PendingApproval]:
-        """Получить ожидающую заявку пользователя"""
-        query = select(PendingApproval).where(
-            PendingApproval.bot_id == bot_id,
-            PendingApproval.user_id == user_id,
-            PendingApproval.is_approved == False,
-            PendingApproval.is_rejected == False
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
-
-    async def check_captcha_answer(
-            self,
-            pending_id: int,
-            user_answer: str
-    ) -> bool:
-        """Проверить ответ на капчу"""
-        query = select(PendingApproval).where(PendingApproval.id == pending_id)
-        result = await self.db.execute(query)
-        pending = result.scalar_one_or_none()
-
-        if not pending:
-            return False
-
-        # Проверяем срок действия
-        if pending.expires_at and datetime.now(timezone.utc) > pending.expires_at:
-            pending.is_rejected = True
-            await self.db.commit()
-            return False
-
-        # Увеличиваем счётчик попыток
-        pending.attempts += 1
-
-        # Проверяем ответ (регистронезависимо)
-        if pending.captcha_answer.lower().strip() == user_answer.lower().strip():
-            pending.is_approved = True
-            await self.db.commit()
-            return True
-        else:
-            # Если 3 неудачные попытки - отклоняем
-            if pending.attempts >= 3:
-                pending.is_rejected = True
-            await self.db.commit()
-            return False
-
-    def generate_captcha(self) -> tuple[str, str]:
-        """Генерировать простую математическую капчу"""
-        import random
-
-        # Генерируем простой пример: сложение двух чисел от 1 до 10
-        num1 = random.randint(1, 10)
-        num2 = random.randint(1, 10)
-        answer = num1 + num2
-
-        question = f"Сколько будет {num1} + {num2}?"
-
-        return question, str(answer)

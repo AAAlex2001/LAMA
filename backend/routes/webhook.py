@@ -11,9 +11,9 @@ from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
 from backend.services.channel import ChannelModerationService, AntispamService, FloodService
-from backend.services.bot.bots import BotService
+from backend.services.bot import BotService, CaptchaService
 from backend.models.channels import ActionType
-from backend.models.bots import Bot as BotModel, PendingJoinApproval
+from backend.models.bots import Bot as BotModel, PendingJoinApproval, PendingApproval
 
 
 router = APIRouter()
@@ -97,6 +97,64 @@ async def telegram_webhook(
                             await send_command_response(telegram_bot, update.message.chat.id, command)
                         finally:
                             await telegram_bot.session.close()
+
+            # Обработка callback_query (в том числе ответы на капчу)
+            if update.callback_query and update.callback_query.data:
+                callback = update.callback_query
+                callback_data = callback.data
+
+                # Ответ на капчу: формат captcha_{pending_id}_{answer}
+                if callback_data.startswith("captcha_"):
+                    parts = callback_data.split("_")
+                    if len(parts) >= 3:
+                        try:
+                            pending_id = int(parts[1])
+                            user_answer = parts[2]
+
+                            captcha_service = CaptchaService(db)
+                            is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
+
+                            telegram_bot = get_master_bot()
+                            try:
+                                if is_correct:
+                                    # Находим pending_approval, чтобы одобрить заявку
+                                    query = select(PendingApproval).where(PendingApproval.id == pending_id)
+                                    result = await db.execute(query)
+                                    pending_approval = result.scalar_one_or_none()
+
+                                    if pending_approval:
+                                        try:
+                                            await telegram_bot.approve_chat_join_request(
+                                                chat_id=pending_approval.chat_id,
+                                                user_id=pending_approval.user_id,
+                                            )
+                                        except TelegramAPIError:
+                                            pass
+
+                                    await telegram_bot.answer_callback_query(
+                                        callback.id,
+                                        text="✅ Правильно! Заявка одобрена.",
+                                        show_alert=True,
+                                    )
+                                else:
+                                    await telegram_bot.answer_callback_query(
+                                        callback.id,
+                                        text="❌ Неправильный ответ. Попробуйте ещё раз.",
+                                        show_alert=True,
+                                    )
+                            finally:
+                                await telegram_bot.session.close()
+                        except Exception:
+                            # В случае ошибки просто отвечаем callback, чтобы не висело
+                            telegram_bot = get_master_bot()
+                            try:
+                                await telegram_bot.answer_callback_query(
+                                    callback.id,
+                                    text="❌ Ошибка обработки ответа.",
+                                    show_alert=True,
+                                )
+                            finally:
+                                await telegram_bot.session.close()
 
             # Обработка chat_member (подписка на канал)
             if update.chat_member and update.chat_member.new_chat_member:
