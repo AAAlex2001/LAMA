@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.services.bot.bots import BotService
+from backend.services.bot.commands import BotCommandService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.bots import (
@@ -41,6 +42,11 @@ router = APIRouter(prefix="/bots", tags=["Bots"])
 async def get_bot_service(db: AsyncSession = Depends(get_db)):
     """Получить сервис ботов"""
     return BotService(db)
+
+
+async def get_command_service(db: AsyncSession = Depends(get_db)):
+    """Получить сервис команд"""
+    return BotCommandService(db)
 
 
 # ============================================================================
@@ -343,12 +349,18 @@ async def get_messages(
 async def create_command(
         bot_id: int,
         data: BotCommandCreate,
-        service: BotService = Depends(get_bot_service),
+        bot_service: BotService = Depends(get_bot_service),
+        command_service: BotCommandService = Depends(get_command_service),
         current_user: User = Depends(get_current_user)
 ):
     """Создать команду для бота"""
+    # Проверяем существование бота
+    bot = await bot_service.get_bot(bot_id, owner_id=current_user.id)
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    
     try:
-        command = await service.create_command(bot_id, data, owner_id=current_user.id)
+        command = await command_service.create_command(bot_id, data, owner_id=current_user.id)
         return command
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -360,15 +372,16 @@ async def create_command(
 async def get_commands(
         bot_id: int,
         is_active: Optional[bool] = None,
-        service: BotService = Depends(get_bot_service),
+        bot_service: BotService = Depends(get_bot_service),
+        command_service: BotCommandService = Depends(get_command_service),
         current_user: User = Depends(get_current_user)
 ):
     """Получить список команд бота"""
-    bot = await service.get_bot(bot_id, owner_id=current_user.id)
+    bot = await bot_service.get_bot(bot_id, owner_id=current_user.id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    commands, total = await service.get_commands(bot_id, is_active, owner_id=current_user.id)
+    commands, total = await command_service.get_commands(bot_id, is_active, owner_id=current_user.id)
 
     return BotCommandListResponse(
         items=commands,
@@ -380,11 +393,11 @@ async def get_commands(
 async def get_command(
         bot_id: int,
         command_id: int,
-        service: BotService = Depends(get_bot_service),
+        command_service: BotCommandService = Depends(get_command_service),
         current_user: User = Depends(get_current_user)
 ):
     """Получить команду по ID"""
-    command = await service.get_command(command_id, owner_id=current_user.id)
+    command = await command_service.get_command(command_id, owner_id=current_user.id)
     if not command or command.bot_id != bot_id:
         raise HTTPException(status_code=404, detail="Command not found")
     return command
@@ -395,15 +408,17 @@ async def update_command(
         bot_id: int,
         command_id: int,
         data: BotCommandUpdate,
-        service: BotService = Depends(get_bot_service),
+        command_service: BotCommandService = Depends(get_command_service),
         current_user: User = Depends(get_current_user)
 ):
     """Обновить команду"""
-    command = await service.get_command(command_id, owner_id=current_user.id)
+    command = await command_service.get_command(command_id, owner_id=current_user.id)
     if not command or command.bot_id != bot_id:
         raise HTTPException(status_code=404, detail="Command not found")
 
-    updated_command = await service.update_command(command_id, data, owner_id=current_user.id)
+    updated_command = await command_service.update_command(command_id, data, owner_id=current_user.id)
+    if not updated_command:
+        raise HTTPException(status_code=404, detail="Command not found")
     return updated_command
 
 
@@ -415,11 +430,11 @@ async def delete_command(
         current_user: User = Depends(get_current_user)
 ):
     """Удалить команду"""
-    command = await service.get_command(command_id, owner_id=current_user.id)
+    command = await command_service.get_command(command_id, owner_id=current_user.id)
     if not command or command.bot_id != bot_id:
         raise HTTPException(status_code=404, detail="Command not found")
 
-    success = await service.delete_command(command_id, owner_id=current_user.id)
+    success = await command_service.delete_command(command_id, owner_id=current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Command not found")
 

@@ -113,6 +113,13 @@ class BotMessage(Base):
     bot = relationship("Bot", back_populates="messages")
 
 
+class CommandScope(str, enum.Enum):
+    """Область работы команды"""
+    PRIVATE = "PRIVATE"  # Только в личных сообщениях
+    GROUPS = "GROUPS"    # Только в группах/супергруппах
+    ALL = "ALL"          # Везде (личные сообщения и группы)
+
+
 class BotCommand(Base):
     """Модель команды бота (автоответы)"""
     __tablename__ = "bot_commands"
@@ -131,6 +138,7 @@ class BotCommand(Base):
     response_buttons = Column(JSON, nullable=True)  # Inline keyboard
     
     # Настройки
+    scope = Column(SQLEnum(CommandScope), nullable=True)  # Область работы команды
     is_active = Column(Boolean, default=True, nullable=False)
     
     # Метаданные

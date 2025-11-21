@@ -9,20 +9,16 @@ from aiogram.exceptions import TelegramAPIError, TelegramBadRequest, TelegramFor
 from backend.models.bots import (
     Bot as BotModel,
     BotMessage,
-    BotCommand,
     BotStatus,
     ApprovalMode,
     MessageType,
-    PendingApproval
 )
 from backend.schemas.bots import (
     BotCreate,
     BotUpdate,
     WelcomeSettingsUpdate,
     AutoApprovalUpdate,
-    SendMessageRequest,
-    BotCommandCreate,
-    BotCommandUpdate
+    SendMessageRequest
 )
 from backend.services.bot.CRUD_bots import CRUDBotService
 from backend.config import get_bot
@@ -343,126 +339,8 @@ class BotService:
         return messages, total
 
     # ========================================================================
-    # CRUD для команд
+    # CRUD для команд теперь вынесен в BotCommandService
     # ========================================================================
-
-    async def create_command(
-        self,
-        bot_id: int,
-        data: BotCommandCreate,
-        owner_id: Optional[int] = None
-    ) -> BotCommand:
-        """Создать команду"""
-        bot = await self.get_bot(bot_id, owner_id=owner_id)
-        if not bot:
-            raise ValueError("Bot not found")
-
-        # Проверяем, не существует ли уже команда
-        query = select(BotCommand).where(
-            BotCommand.bot_id == bot_id,
-            BotCommand.command == data.command
-        )
-        result = await self.db.execute(query)
-        existing = result.scalar_one_or_none()
-
-        if existing:
-            raise ValueError(f"Command {data.command} already exists for this bot")
-
-        command = BotCommand(
-            bot_id=bot_id,
-            command=data.command,
-            description=data.description,
-            response_text=data.response_text,
-            response_media_url=data.response_media_url,
-            response_media_type=data.response_media_type,
-            response_buttons=data.response_buttons,
-            is_active=data.is_active
-        )
-
-        self.db.add(command)
-        await self.db.commit()
-        await self.db.refresh(command)
-
-        return command
-
-    async def get_command(self, command_id: int, owner_id: Optional[int] = None) -> Optional[BotCommand]:
-        """Получить команду по ID"""
-        query = select(BotCommand).where(BotCommand.id == command_id)
-        if owner_id is not None:
-            query = query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
-
-    async def get_commands(
-        self,
-        bot_id: int,
-        is_active: Optional[bool] = None,
-        owner_id: Optional[int] = None
-    ) -> Tuple[List[BotCommand], int]:
-        """Получить список команд бота"""
-        base_query = select(BotCommand).where(BotCommand.bot_id == bot_id)
-        if owner_id is not None:
-            base_query = base_query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
-
-        if is_active is not None:
-            base_query = base_query.where(BotCommand.is_active == is_active)
-
-        # Подсчёт
-        count_query = select(func.count()).select_from(base_query.subquery())
-        total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
-
-        # Получение данных
-        data_query = base_query.order_by(BotCommand.command)
-        result = await self.db.execute(data_query)
-        commands = list(result.scalars().all())
-
-        return commands, total
-
-    async def update_command(
-        self,
-        command_id: int,
-        data: BotCommandUpdate,
-        owner_id: Optional[int] = None
-    ) -> Optional[BotCommand]:
-        """Обновить команду"""
-        command = await self.get_command(command_id, owner_id=owner_id)
-        if not command:
-            return None
-
-        update_data = data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(command, field, value)
-
-        command.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
-        await self.db.refresh(command)
-
-        return command
-
-    async def delete_command(self, command_id: int, owner_id: Optional[int] = None) -> bool:
-        """Удалить команду"""
-        command = await self.get_command(command_id, owner_id=owner_id)
-        if not command:
-            return False
-
-        await self.db.delete(command)
-        await self.db.commit()
-        return True
-
-    async def find_command_by_text(
-        self,
-        bot_id: int,
-        text: str
-    ) -> Optional[BotCommand]:
-        """Найти активную команду по тексту"""
-        query = select(BotCommand).where(
-            BotCommand.bot_id == bot_id,
-            BotCommand.command == text,
-            BotCommand.is_active == True
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
 
     # ========================================================================
     # Статистика
@@ -490,18 +368,6 @@ class BotService:
         # Исходящие сообщения
         outgoing_messages = total_messages - incoming_messages
 
-        # Команды
-        total_commands_query = select(func.count()).where(BotCommand.bot_id == bot_id)
-        total_commands_result = await self.db.execute(total_commands_query)
-        total_commands = total_commands_result.scalar()
-
-        active_commands_query = select(func.count()).where(
-            BotCommand.bot_id == bot_id,
-            BotCommand.is_active == True
-        )
-        active_commands_result = await self.db.execute(active_commands_query)
-        active_commands = active_commands_result.scalar()
-
         # Последнее сообщение
         last_message_query = select(BotMessage.created_at).where(
             BotMessage.bot_id == bot_id
@@ -514,8 +380,6 @@ class BotService:
             "total_messages": total_messages,
             "incoming_messages": incoming_messages,
             "outgoing_messages": outgoing_messages,
-            "total_commands": total_commands,
-            "active_commands": active_commands,
             "last_message_at": last_message_at
         }
 

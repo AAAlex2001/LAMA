@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from backend.models.bots import BotStatus, ApprovalMode, MessageType
+from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope
 
 
 # ============================================================================
@@ -186,6 +186,7 @@ class BotCommandCreate(BaseModel):
     response_media_url: Optional[str] = None
     response_media_type: Optional[MessageType] = None
     response_buttons: Optional[Dict[str, Any]] = None
+    scope: Optional[CommandScope] = None  # Область работы команды (PRIVATE, GROUPS, ALL)
     is_active: bool = True
 
 
@@ -196,6 +197,7 @@ class BotCommandUpdate(BaseModel):
     response_media_url: Optional[str] = None
     response_media_type: Optional[MessageType] = None
     response_buttons: Optional[Dict[str, Any]] = None
+    scope: Optional[CommandScope] = None  # Область работы команды (PRIVATE, GROUPS, ALL)
     is_active: Optional[bool] = None
 
 
@@ -209,6 +211,7 @@ class BotCommandResponse(BaseModel):
     response_media_url: Optional[str]
     response_media_type: Optional[MessageType]
     response_buttons: Optional[Dict[str, Any]]
+    scope: Optional[CommandScope]  # Область работы команды (PRIVATE, GROUPS, ALL)
     is_active: bool
     created_at: datetime
     updated_at: datetime

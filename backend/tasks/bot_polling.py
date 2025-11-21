@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
 from backend.models.bots import Bot as BotModel, BotStatus, MessageType, PendingApproval
-from backend.services.bot import BotService, CaptchaService
+from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.channel import ChannelModerationService
 from backend.models.channels import ActionType
 
@@ -169,7 +169,15 @@ async def handle_message(
     # Проверяем, является ли это командой
     if text_content and text_content.startswith("/"):
         command_text = text_content.split()[0]  # Берём только команду без параметров
-        command = await service.find_command_by_text(bot_model.id, command_text)
+        
+        # Используем BotCommandService для поиска команды
+        command_service = BotCommandService(service.db)
+        chat_type = message.chat.type if message.chat else None
+        command = await command_service.find_command_by_text(
+            bot_model.id, 
+            command_text,
+            chat_type=chat_type
+        )
 
         if command:
             # Отправляем автоответ
