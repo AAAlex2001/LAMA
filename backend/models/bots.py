@@ -149,6 +149,34 @@ class BotCommand(Base):
     bot = relationship("Bot", back_populates="commands")
 
 
+class AutoReply(Base):
+    """Модель автоответа на ключевые слова"""
+    __tablename__ = "bot_auto_replies"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    
+    # Триггеры
+    keywords = Column(JSON, nullable=False)  # Список ключевых слов
+    
+    # Ответ
+    response_text = Column(Text, nullable=False)
+    response_media_url = Column(String(512), nullable=True)
+    response_media_type = Column(SQLEnum(MessageType), nullable=True)
+    response_buttons = Column(JSON, nullable=True)  # Inline keyboard
+    
+    # Настройки
+    scope = Column(SQLEnum(CommandScope), nullable=True)  # Область работы (PRIVATE, GROUPS, ALL)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Метаданные
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    # Relationships
+    bot = relationship("Bot", foreign_keys=[bot_id])
+
+
 class PendingApproval(Base):
     """Модель для хранения ожидающих одобрения заявок с капчей"""
     __tablename__ = "pending_approvals"

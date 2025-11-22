@@ -15,6 +15,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import AsyncSessionLocal
 from backend.models.bots import Bot as BotModel, BotStatus, MessageType, PendingApproval
 from backend.services.bot import BotService, CaptchaService, BotCommandService
+from backend.services.bot.auto_reply import AutoReplyService
+from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.channel import ChannelModerationService
 from backend.models.channels import ActionType
 
@@ -166,26 +168,55 @@ async def handle_message(
         raw_data=message.model_dump(mode='json')  # mode='json' сериализует datetime в строки
     )
 
-    # Проверяем, является ли это командой
-    if text_content and text_content.startswith("/"):
-        command_text = text_content.split()[0]  # Берём только команду без параметров
-        
-        # Используем BotCommandService для поиска команды
-        command_service = BotCommandService(service.db)
-        chat_type = message.chat.type if message.chat else None
-        command = await command_service.find_command_by_text(
-            bot_model.id, 
-            command_text,
-            chat_type=chat_type
-        )
+    # Используем сервисы для обработки команд, автоответов и модерации
+    command_service = BotCommandService(service.db)
+    auto_reply_service = AutoReplyService(service.db)
+    moderation_trigger_service = ModerationTriggerService()
+    
+    chat_type = message.chat.type if message.chat else None
+    telegram_bot = Bot(token=bot_model.token)
+    
+    try:
+        # Проверяем, является ли это командой
+        if text_content and text_content.startswith("/"):
+            command_text = text_content.split()[0]  # Берём только команду без параметров
+            
+            # Сначала проверяем модерационные команды
+            moderation_commands = ["/admin", "/ban", "/unban", "/mute", "/unmute", "/delitetime"]
+            if command_text.lower() in moderation_commands:
+                handled = await moderation_trigger_service.handle_moderation_command(
+                    command_text,
+                    message,
+                    telegram_bot
+                )
+                if handled:
+                    return
+            
+            # Затем ищем пользовательские команды
+            command = await command_service.find_command_by_text(
+                bot_model.id, 
+                command_text,
+                chat_type=chat_type
+            )
 
-        if command:
-            # Отправляем автоответ
-            telegram_bot = Bot(token=bot_model.token)
-            try:
-                await send_command_response(telegram_bot, message.chat.id, command)
-            finally:
-                await telegram_bot.session.close()
+            if command:
+                # Отправляем ответ на команду с обработкой шорткодов
+                await send_command_response(telegram_bot, message, command, bot_model)
+                return
+        
+        # Если не команда, проверяем автоответы на ключевые слова
+        if text_content:
+            auto_reply = await auto_reply_service.find_auto_reply_by_text(
+                bot_model.id,
+                text_content,
+                chat_type=chat_type
+            )
+            
+            if auto_reply:
+                # Отправляем автоответ с обработкой шорткодов
+                await send_auto_reply_response(telegram_bot, message, auto_reply, bot_model)
+    finally:
+        await telegram_bot.session.close()
 
 
 async def handle_join_request(
@@ -338,9 +369,25 @@ async def handle_join_request(
             print(f"Failed to approve join request: {str(e)}")
 
 
-async def send_command_response(telegram_bot: Bot, chat_id: int, command):
-    """Отправить ответ на команду"""
+async def send_command_response(telegram_bot: Bot, message, command, bot_model):
+    """Отправить ответ на команду с обработкой шорткодов"""
     from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from backend.services.bot.shortcodes import ShortcodeProcessor
+
+    # Подготавливаем контекст для шорткодов
+    context = {
+        "user": {
+            "id": message.from_user.id if message.from_user else None,
+            "first_name": message.from_user.first_name if message.from_user else "",
+            "username": message.from_user.username if message.from_user else None
+        },
+        "bot": {
+            "first_name": bot_model.first_name
+        }
+    }
+    
+    # Обрабатываем шорткоды в тексте
+    response_text = ShortcodeProcessor.process(command.response_text, context)
 
     # Формируем inline keyboard если есть
     reply_markup = None
@@ -360,38 +407,114 @@ async def send_command_response(telegram_bot: Bot, chat_id: int, command):
         reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
 
     # Отправляем ответ
+    chat_id = message.chat.id
     if command.response_media_url and command.response_media_type:
         if command.response_media_type == MessageType.PHOTO:
             await telegram_bot.send_photo(
                 chat_id=chat_id,
                 photo=command.response_media_url,
-                caption=command.response_text,
+                caption=response_text,
                 reply_markup=reply_markup
             )
         elif command.response_media_type == MessageType.VIDEO:
             await telegram_bot.send_video(
                 chat_id=chat_id,
                 video=command.response_media_url,
-                caption=command.response_text,
+                caption=response_text,
                 reply_markup=reply_markup
             )
         elif command.response_media_type == MessageType.DOCUMENT:
             await telegram_bot.send_document(
                 chat_id=chat_id,
                 document=command.response_media_url,
-                caption=command.response_text,
+                caption=response_text,
                 reply_markup=reply_markup
             )
         else:
             await telegram_bot.send_message(
                 chat_id=chat_id,
-                text=command.response_text,
+                text=response_text,
                 reply_markup=reply_markup
             )
     else:
         await telegram_bot.send_message(
             chat_id=chat_id,
-            text=command.response_text,
+            text=response_text,
+            reply_markup=reply_markup
+        )
+
+
+async def send_auto_reply_response(telegram_bot: Bot, message, auto_reply, bot_model):
+    """Отправить автоответ с обработкой шорткодов"""
+    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+    from backend.services.bot.shortcodes import ShortcodeProcessor
+
+    # Подготавливаем контекст для шорткодов
+    context = {
+        "user": {
+            "id": message.from_user.id if message.from_user else None,
+            "first_name": message.from_user.first_name if message.from_user else "",
+            "username": message.from_user.username if message.from_user else None
+        },
+        "bot": {
+            "first_name": bot_model.first_name
+        }
+    }
+    
+    # Обрабатываем шорткоды в тексте
+    response_text = ShortcodeProcessor.process(auto_reply.response_text, context)
+
+    # Формируем inline keyboard если есть
+    reply_markup = None
+    if auto_reply.response_buttons:
+        buttons = []
+        for row in auto_reply.response_buttons.get("buttons", []):
+            button_row = []
+            for btn in row:
+                button_row.append(
+                    InlineKeyboardButton(
+                        text=btn["text"],
+                        url=btn.get("url"),
+                        callback_data=btn.get("callback_data")
+                    )
+                )
+            buttons.append(button_row)
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Отправляем ответ
+    chat_id = message.chat.id
+    if auto_reply.response_media_url and auto_reply.response_media_type:
+        if auto_reply.response_media_type == MessageType.PHOTO:
+            await telegram_bot.send_photo(
+                chat_id=chat_id,
+                photo=auto_reply.response_media_url,
+                caption=response_text,
+                reply_markup=reply_markup
+            )
+        elif auto_reply.response_media_type == MessageType.VIDEO:
+            await telegram_bot.send_video(
+                chat_id=chat_id,
+                video=auto_reply.response_media_url,
+                caption=response_text,
+                reply_markup=reply_markup
+            )
+        elif auto_reply.response_media_type == MessageType.DOCUMENT:
+            await telegram_bot.send_document(
+                chat_id=chat_id,
+                document=auto_reply.response_media_url,
+                caption=response_text,
+                reply_markup=reply_markup
+            )
+        else:
+            await telegram_bot.send_message(
+                chat_id=chat_id,
+                text=response_text,
+                reply_markup=reply_markup
+            )
+    else:
+        await telegram_bot.send_message(
+            chat_id=chat_id,
+            text=response_text,
             reply_markup=reply_markup
         )
 

@@ -11,7 +11,9 @@ from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
 from backend.services.channel import ChannelModerationService, AntispamService, FloodService
-from backend.services.bot import BotService, CaptchaService
+from backend.services.bot import BotService, CaptchaService, BotCommandService
+from backend.services.bot.auto_reply import AutoReplyService
+from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.models.channels import ActionType
 from backend.models.bots import Bot as BotModel, PendingJoinApproval, PendingApproval
 
@@ -86,17 +88,60 @@ async def telegram_webhook(
                 finally:
                     await telegram_bot.session.close()
 
-            # Обработка команд в личке и в группах
-            if update.message and update.message.chat and update.message.text:
-                if update.message.text.startswith("/"):
-                    command_text = update.message.text.split()[0]
-                    command = await service.find_command_by_text(master_bot_model.id, command_text)
-                    if command:
-                        telegram_bot = get_master_bot()
-                        try:
-                            await send_command_response(telegram_bot, update.message.chat.id, command)
-                        finally:
-                            await telegram_bot.session.close()
+            # Обработка команд и автоответов в личке и в группах
+            if update.message and update.message.chat:
+                message = update.message
+                text_content = message.text or message.caption
+                chat_type = message.chat.type if message.chat else None
+                
+                if text_content:
+                    # Инициализируем сервисы
+                    command_service = BotCommandService(db)
+                    auto_reply_service = AutoReplyService(db)
+                    moderation_trigger_service = ModerationTriggerService()
+                    
+                    telegram_bot = get_master_bot()
+                    try:
+                        # Проверяем, является ли это командой
+                        if text_content.startswith("/"):
+                            command_text = text_content.split()[0]
+                            
+                            # Сначала проверяем модерационные команды
+                            moderation_commands = ["/admin", "/ban", "/unban", "/mute", "/unmute", "/delitetime"]
+                            if command_text.lower() in moderation_commands:
+                                handled = await moderation_trigger_service.handle_moderation_command(
+                                    command_text,
+                                    message,
+                                    telegram_bot
+                                )
+                                if handled:
+                                    await telegram_bot.session.close()
+                                    return {"ok": True}
+                            
+                            # Затем ищем пользовательские команды
+                            command = await command_service.find_command_by_text(
+                                master_bot_model.id,
+                                command_text,
+                                chat_type=chat_type
+                            )
+                            
+                            if command:
+                                await send_command_response(telegram_bot, message, command, master_bot_model)
+                                await telegram_bot.session.close()
+                                return {"ok": True}
+                        
+                        # Если не команда, проверяем автоответы на ключевые слова
+                        auto_reply = await auto_reply_service.find_auto_reply_by_text(
+                            master_bot_model.id,
+                            text_content,
+                            chat_type=chat_type
+                        )
+                        
+                        if auto_reply:
+                            from backend.tasks.bot_polling import send_auto_reply_response
+                            await send_auto_reply_response(telegram_bot, message, auto_reply, master_bot_model)
+                    finally:
+                        await telegram_bot.session.close()
 
             # Обработка callback_query (в том числе ответы на капчу)
             if update.callback_query and update.callback_query.data:

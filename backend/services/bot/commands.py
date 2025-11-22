@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.bots import Bot as BotModel, BotCommand, MessageType
+from backend.models.bots import Bot as BotModel, BotCommand
 from backend.schemas.bots import BotCommandCreate, BotCommandUpdate
 
 
@@ -163,4 +163,8 @@ class BotCommandService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-
+    # ========================================================================
+    # Auto Replies и Moderation Triggers вынесены в отдельные сервисы:
+    # - AutoReplyService (backend/services/bot/auto_reply.py)
+    # - ModerationTriggerService (backend/services/bot/moderation_triggers.py)
+    # ========================================================================
