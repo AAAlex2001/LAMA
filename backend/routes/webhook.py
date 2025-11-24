@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request, Header, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from typing import Optional
+import traceback
 
 from aiogram.types import Update, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
@@ -31,6 +32,8 @@ async def telegram_webhook(
     - Валидирует секретный заголовок
     - Возвращает 200 OK сразу (Telegram ожидает быстрый ответ)
     - Параллельно выполняет базовую модерацию для сообщений в группах
+
+
     """
     if x_telegram_bot_api_secret_token != TELEGRAM_WEBHOOK_SECRET:
         raise HTTPException(status_code=401, detail="invalid secret")
@@ -93,53 +96,77 @@ async def telegram_webhook(
                 message = update.message
                 text_content = message.text or message.caption
                 chat_type = message.chat.type if message.chat else None
-                
+
+                print("📩 UPDATE MESSAGE:", message)
+                print("📄 TEXT CONTENT:", text_content)
+
                 if text_content:
                     # Инициализируем сервисы
                     command_service = BotCommandService(db)
                     auto_reply_service = AutoReplyService(db)
                     moderation_trigger_service = ModerationTriggerService()
-                    
+
                     telegram_bot = get_master_bot()
+
                     try:
                         # Проверяем, является ли это командой
                         if text_content.startswith("/"):
                             command_text = text_content.split()[0]
-                            
+
+                            print("🔍 DETECTED COMMAND:", command_text)
+
                             # Сначала проверяем модерационные команды
                             moderation_commands = ["/admin", "/ban", "/unban", "/mute", "/unmute", "/delitetime"]
                             if command_text.lower() in moderation_commands:
+
+                                print("⚡ RUN MODERATION COMMAND HANDLER:", command_text)
+
                                 handled = await moderation_trigger_service.handle_moderation_command(
-                                    command_text,
-                                    message,
-                                    telegram_bot
+                                    command=command_text,
+                                    message=message,
+                                    telegram_bot=telegram_bot
                                 )
+
+                                print("✅ MODERATION HANDLED:", handled)
+
                                 if handled:
                                     await telegram_bot.session.close()
                                     return {"ok": True}
-                            
+
                             # Затем ищем пользовательские команды
+                            print("🔎 LOOKING FOR CUSTOM COMMAND:", command_text)
+
                             command = await command_service.find_command_by_text(
                                 master_bot_model.id,
                                 command_text,
                                 chat_type=chat_type
                             )
-                            
+
+                            print("📌 CUSTOM COMMAND FOUND:", command)
+
                             if command:
                                 await send_command_response(telegram_bot, message, command, master_bot_model)
                                 await telegram_bot.session.close()
                                 return {"ok": True}
-                        
-                        # Если не команда, проверяем автоответы на ключевые слова
+
+                        # Если не команда, проверяем автоответы
                         auto_reply = await auto_reply_service.find_auto_reply_by_text(
                             master_bot_model.id,
                             text_content,
                             chat_type=chat_type
                         )
-                        
+
+                        print("💬 AUTO REPLY:", auto_reply)
+
                         if auto_reply:
                             from backend.tasks.bot_polling import send_auto_reply_response
                             await send_auto_reply_response(telegram_bot, message, auto_reply, master_bot_model)
+
+                    except Exception as e:
+                        print("❌ ERROR IN COMMAND BLOCK:", e)
+                        import traceback
+                        traceback.print_exc()
+
                     finally:
                         await telegram_bot.session.close()
 

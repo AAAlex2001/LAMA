@@ -43,7 +43,7 @@ class ModerationTriggerService:
             is_admin = False
         
         parts = message.text.split()
-        cmd = parts[0].lower()
+        cmd = command.lower()
         
         # /admin - доступно всем
         if cmd == "/admin":
