@@ -18,6 +18,7 @@ from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.channel import ChannelModerationService
+from backend.services.channel.auto_delete import ChannelAutoDeleteService
 from backend.models.channels import ActionType
 
 
@@ -172,11 +173,16 @@ async def handle_message(
     command_service = BotCommandService(service.db)
     auto_reply_service = AutoReplyService(service.db)
     moderation_trigger_service = ModerationTriggerService()
+    auto_delete_service = ChannelAutoDeleteService(service.db)
     
     chat_type = message.chat.type if message.chat else None
     telegram_bot = Bot(token=bot_model.token)
     
     try:
+        # Системные сообщения удаляем сразу при включённой настройке
+        if await auto_delete_service.delete_if_system_message(telegram_bot, message):
+            return
+
         # Проверяем, является ли это командой
         if text_content and text_content.startswith("/"):
             command_text = text_content.split()[0]  # Берём только команду без параметров
@@ -190,6 +196,7 @@ async def handle_message(
                     telegram_bot
                 )
                 if handled:
+                    await auto_delete_service.delete_if_command_message(telegram_bot, message)
                     return
             
             # Затем ищем пользовательские команды
@@ -202,7 +209,11 @@ async def handle_message(
             if command:
                 # Отправляем ответ на команду с обработкой шорткодов
                 await send_command_response(telegram_bot, message, command, bot_model)
+                await auto_delete_service.delete_if_command_message(telegram_bot, message)
                 return
+
+            # Даже если команда не найдена, всё равно удаляем командное сообщение при включённой настройке
+            await auto_delete_service.delete_if_command_message(telegram_bot, message)
         
         # Если не команда, проверяем автоответы на ключевые слова
         if text_content:

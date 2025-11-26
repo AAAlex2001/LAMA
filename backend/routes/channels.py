@@ -2,7 +2,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
-from backend.services.channel import ChannelService, ChannelModerationService, AntispamService, FloodService
+from backend.services.channel import (
+    ChannelService,
+    ChannelModerationService,
+    AntispamService,
+    FloodService,
+    ChannelAutoDeleteService,
+)
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
@@ -15,6 +21,8 @@ from backend.schemas.channels import (
     ChannelModerationRuleResponse, ChannelModerationRuleListResponse,
     AntispamSettingsUpdate, AntispamSettingsResponse,
     FloodSettingsUpdate, FloodSettingsResponse,
+    ChannelAutoDeleteSettingsResponse,
+    ChannelAutoDeleteSettingsUpdate,
 )
 
 
@@ -32,6 +40,9 @@ async def get_antispam_service(db: AsyncSession = Depends(get_db)):
 
 async def get_flood_service(db: AsyncSession = Depends(get_db)):
     return FloodService(db)
+
+async def get_auto_delete_service(db: AsyncSession = Depends(get_db)):
+    return ChannelAutoDeleteService(db)
 
 
 # ============ CRUD Operations ============
@@ -361,6 +372,42 @@ async def update_flood_settings(
         flood_action=channel.flood_action,
         flood_mute_duration_minutes=channel.flood_mute_duration_minutes,
     )
+
+
+# ============ Auto-delete Settings ============
+
+
+@router.get(
+    "/{channel_id}/auto-delete",
+    response_model=ChannelAutoDeleteSettingsResponse,
+)
+async def get_auto_delete_settings(
+    channel_id: int,
+    auto_delete_service: ChannelAutoDeleteService = Depends(get_auto_delete_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить настройки автоудаления сообщений"""
+    try:
+        return await auto_delete_service.get_settings(channel_id, owner_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.put(
+    "/{channel_id}/auto-delete",
+    response_model=ChannelAutoDeleteSettingsResponse,
+)
+async def update_auto_delete_settings(
+    channel_id: int,
+    data: ChannelAutoDeleteSettingsUpdate,
+    auto_delete_service: ChannelAutoDeleteService = Depends(get_auto_delete_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить настройки автоудаления сообщений"""
+    try:
+        return await auto_delete_service.update_settings(channel_id, data, owner_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get(

@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
-from backend.services.channel import ChannelModerationService, AntispamService, FloodService
+from backend.services.channel import ChannelModerationService, AntispamService, FloodService, ChannelAutoDeleteService
 from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
@@ -100,15 +100,20 @@ async def telegram_webhook(
                 print("📩 UPDATE MESSAGE:", message)
                 print("📄 TEXT CONTENT:", text_content)
 
-                if text_content:
-                    # Инициализируем сервисы
-                    command_service = BotCommandService(db)
-                    auto_reply_service = AutoReplyService(db)
-                    moderation_trigger_service = ModerationTriggerService()
+                auto_delete_service = ChannelAutoDeleteService(db)
+                telegram_bot = get_master_bot()
 
-                    telegram_bot = get_master_bot()
+                try:
+                    # Системные сообщения удаляем сразу при включённой настройке
+                    if await auto_delete_service.delete_if_system_message(telegram_bot, message):
+                        return {"ok": True}
 
-                    try:
+                    if text_content:
+                        # Инициализируем сервисы для обработки текстовых сообщений
+                        command_service = BotCommandService(db)
+                        auto_reply_service = AutoReplyService(db)
+                        moderation_trigger_service = ModerationTriggerService()
+
                         # Проверяем, является ли это командой
                         if text_content.startswith("/"):
                             command_text = text_content.split()[0]
@@ -130,7 +135,7 @@ async def telegram_webhook(
                                 print("✅ MODERATION HANDLED:", handled)
 
                                 if handled:
-                                    await telegram_bot.session.close()
+                                    await auto_delete_service.delete_if_command_message(telegram_bot, message)
                                     return {"ok": True}
 
                             # Затем ищем пользовательские команды
@@ -146,8 +151,11 @@ async def telegram_webhook(
 
                             if command:
                                 await send_command_response(telegram_bot, message, command, master_bot_model)
-                                await telegram_bot.session.close()
+                                await auto_delete_service.delete_if_command_message(telegram_bot, message)
                                 return {"ok": True}
+
+                            # Даже если команда не найдена, удаляем исходное сообщение при включённой настройке
+                            await auto_delete_service.delete_if_command_message(telegram_bot, message)
 
                         # Если не команда, проверяем автоответы
                         auto_reply = await auto_reply_service.find_auto_reply_by_text(
@@ -162,13 +170,13 @@ async def telegram_webhook(
                             from backend.tasks.bot_polling import send_auto_reply_response
                             await send_auto_reply_response(telegram_bot, message, auto_reply, master_bot_model)
 
-                    except Exception as e:
-                        print("❌ ERROR IN COMMAND BLOCK:", e)
-                        import traceback
-                        traceback.print_exc()
+                except Exception as e:
+                    print("❌ ERROR IN COMMAND BLOCK:", e)
+                    import traceback
+                    traceback.print_exc()
 
-                    finally:
-                        await telegram_bot.session.close()
+                finally:
+                    await telegram_bot.session.close()
 
             # Обработка callback_query (в том числе ответы на капчу)
             if update.callback_query and update.callback_query.data:

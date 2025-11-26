@@ -164,6 +164,12 @@ class ChannelGroup(Base):
     publications = relationship("Publication", secondary="publication_channels", back_populates="channels")
     telegram_messages = relationship("TelegramMessage", back_populates="channel", cascade="all, delete-orphan")
     moderation_rules = relationship("ChannelModerationRule", back_populates="channel", cascade="all, delete-orphan")
+    auto_delete_settings = relationship(
+        "ChannelAutoDeleteSettings",
+        back_populates="channel",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_channel_groups_backup_mode", "backup_mode"),
@@ -294,5 +300,23 @@ class ChannelFloodState(Base):
     __table_args__ = (
         Index("ix_channel_flood_states_channel_user", "channel_id", "user_id", unique=True),
     )
+
+
+class ChannelAutoDeleteSettings(Base):
+    __tablename__ = "channel_auto_delete_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel_id = Column(
+        Integer,
+        ForeignKey("channel_groups.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    delete_system_messages = Column(Boolean, default=False, nullable=False)
+    delete_command_messages = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    channel = relationship("ChannelGroup", back_populates="auto_delete_settings")
 
 

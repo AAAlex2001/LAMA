@@ -2,8 +2,15 @@ from .channels import ChannelService
 from .moderation import ChannelModerationService
 from .antispam import AntispamService
 from .flood import FloodService
+from .auto_delete import ChannelAutoDeleteService
 
-__all__ = ["ChannelService", "ChannelModerationService", "AntispamService", "FloodService"]
+__all__ = [
+    "ChannelService",
+    "ChannelModerationService",
+    "AntispamService",
+    "FloodService",
+    "ChannelAutoDeleteService",
+]
 
 
 
