@@ -119,10 +119,12 @@ async def telegram_webhook(
                         getattr(message, "animation", None),
                     ])
 
-                    if await night_mode_service.should_block_message(
+                    should_block, notice = await night_mode_service.should_block_message(
                         message.chat.id,
                         is_media=is_media_message,
-                    ):
+                    )
+
+                    if should_block:
                         try:
                             await telegram_bot.delete_message(
                                 chat_id=message.chat.id,
@@ -130,6 +132,14 @@ async def telegram_webhook(
                             )
                         except TelegramAPIError:
                             pass
+                        if notice:
+                            try:
+                                await telegram_bot.send_message(
+                                    chat_id=message.chat.id,
+                                    text=notice,
+                                )
+                            except TelegramAPIError:
+                                pass
                         return {"ok": True}
 
                     if text_content:

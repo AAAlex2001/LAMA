@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Tuple
 import os
 
 import pytz
@@ -20,25 +20,25 @@ class ChannelNightModeService:
         except Exception:
             self.timezone = pytz.timezone("Europe/Moscow")
 
-    async def should_block_message(self, telegram_chat_id: int, is_media: bool) -> bool:
+    async def should_block_message(self, telegram_chat_id: int, is_media: bool) -> Tuple[bool, Optional[str]]:
         channel = await self.get_channel(telegram_chat_id)
         if not channel or not channel.night_mode_enabled:
-            return False
+            return False, None
 
         start_minutes = self.time_to_minutes(channel.night_mode_start)
         end_minutes = self.time_to_minutes(channel.night_mode_end)
         if start_minutes is None or end_minutes is None:
-            return False
+            return False, None
 
         now_minutes = self.current_minutes()
         if not self.is_within_window(now_minutes, start_minutes, end_minutes):
-            return False
+            return False, None
 
         if is_media and channel.night_mode_block_media:
-            return True
-        if not is_media and channel.night_mode_block_text:
-            return True
-        return False
+            return True, self.build_notice(channel)
+        if (not is_media) and channel.night_mode_block_text:
+            return True, self.build_notice(channel)
+        return False, None
 
     async def get_channel(self, telegram_chat_id: int) -> Optional[ChannelGroup]:
         query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_chat_id)
@@ -70,4 +70,25 @@ class ChannelNightModeService:
         if start < end:
             return start <= current < end
         return current >= start or current < end
+
+    def build_notice(self, channel: ChannelGroup) -> str:
+        start = channel.night_mode_start or "--:--"
+        end = channel.night_mode_end or "--:--"
+        timezone_name = self.timezone.zone
+
+        blocked_items = []
+        if channel.night_mode_block_text:
+            blocked_items.append("текстовые сообщения")
+        if channel.night_mode_block_media:
+            blocked_items.append("медиа")
+
+        if blocked_items:
+            restrictions = " и ".join(blocked_items)
+        else:
+            restrictions = "сообщения"
+
+        return (
+            f"🌙 Ночной режим активен с {start} до {end} ({timezone_name}). "
+            f"В это время нельзя отправлять {restrictions}."
+        )
 
