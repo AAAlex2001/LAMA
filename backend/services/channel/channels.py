@@ -673,7 +673,8 @@ class ChannelService:
         self,
         channel_id: int,
         owner_id: int,
-        permissions: Dict[str, bool]
+        permissions: Dict[str, bool],
+        night_mode_settings: Optional[Dict[str, Any]] = None,
     ) -> ChannelGroup:
         """
         Установка разрешений для канала через setChatPermissions
@@ -701,11 +702,23 @@ class ChannelService:
         bot = self.get_master_bot()
         
         try:
-            
-            chat_permissions = ChatPermissions(**permissions)
-            await bot.set_chat_permissions(chat_id=channel.telegram_id, permissions=chat_permissions)
-            
-            channel.permissions = permissions
+            if permissions:
+                chat_permissions = ChatPermissions(**permissions)
+                await bot.set_chat_permissions(chat_id=channel.telegram_id, permissions=chat_permissions)
+                channel.permissions = permissions
+
+            if night_mode_settings:
+                if "night_mode_enabled" in night_mode_settings:
+                    channel.night_mode_enabled = bool(night_mode_settings["night_mode_enabled"])
+                if "night_mode_start" in night_mode_settings:
+                    channel.night_mode_start = night_mode_settings["night_mode_start"]
+                if "night_mode_end" in night_mode_settings:
+                    channel.night_mode_end = night_mode_settings["night_mode_end"]
+                if "night_mode_block_media" in night_mode_settings:
+                    channel.night_mode_block_media = bool(night_mode_settings["night_mode_block_media"])
+                if "night_mode_block_text" in night_mode_settings:
+                    channel.night_mode_block_text = bool(night_mode_settings["night_mode_block_text"])
+
             channel.updated_at = datetime.now(timezone.utc)
             
             await self.db.commit()

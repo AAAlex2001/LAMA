@@ -19,6 +19,7 @@ from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.channel import ChannelModerationService
 from backend.services.channel.auto_delete import ChannelAutoDeleteService
+from backend.services.channel.night_mode import ChannelNightModeService
 from backend.models.channels import ActionType
 
 
@@ -155,30 +156,45 @@ async def handle_message(
         message_type = MessageType.ANIMATION
         media_file_id = message.animation.file_id
 
-    # Сохраняем сообщение в БД
-    await service.save_message(
-        bot_id=bot_model.id,
-        telegram_message_id=message.message_id,
-        chat_id=message.chat.id,
-        user_id=message.from_user.id if message.from_user else None,
-        message_type=message_type,
-        text_content=text_content,
-        media_file_id=media_file_id,
-        media_url=media_url,
-        is_incoming=True,
-        raw_data=message.model_dump(mode='json')  # mode='json' сериализует datetime в строки
-    )
-
     # Используем сервисы для обработки команд, автоответов и модерации
     command_service = BotCommandService(service.db)
     auto_reply_service = AutoReplyService(service.db)
     moderation_trigger_service = ModerationTriggerService()
     auto_delete_service = ChannelAutoDeleteService(service.db)
+    night_mode_service = ChannelNightModeService(service.db)
     
     chat_type = message.chat.type if message.chat else None
     telegram_bot = Bot(token=bot_model.token)
     
     try:
+        is_media_message = message_type != MessageType.TEXT
+        if await night_mode_service.should_block_message(
+            message.chat.id,
+            is_media=is_media_message
+        ):
+            try:
+                await telegram_bot.delete_message(
+                    chat_id=message.chat.id,
+                    message_id=message.message_id
+                )
+            except TelegramAPIError:
+                pass
+            return
+
+        # Сохраняем сообщение в БД
+        await service.save_message(
+            bot_id=bot_model.id,
+            telegram_message_id=message.message_id,
+            chat_id=message.chat.id,
+            user_id=message.from_user.id if message.from_user else None,
+            message_type=message_type,
+            text_content=text_content,
+            media_file_id=media_file_id,
+            media_url=media_url,
+            is_incoming=True,
+            raw_data=message.model_dump(mode='json')  # mode='json' сериализует datetime в строки
+        )
+
         # Системные сообщения удаляем сразу при включённой настройке
         if await auto_delete_service.delete_if_system_message(telegram_bot, message):
             return

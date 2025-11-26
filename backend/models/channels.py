@@ -140,6 +140,13 @@ class ChannelGroup(Base):
     link_filter_action = Column(SQLEnum(ActionType), default=ActionType.DELETE, nullable=False)
     link_filter_mute_duration = Column(Integer, nullable=True)
 
+    # Night mode settings
+    night_mode_enabled = Column(Boolean, default=False, nullable=False)
+    night_mode_start = Column(String(5), nullable=True)
+    night_mode_end = Column(String(5), nullable=True)
+    night_mode_block_media = Column(Boolean, default=False, nullable=False)
+    night_mode_block_text = Column(Boolean, default=False, nullable=False)
+
     # Настройки антифлуда
     flood_message_limit = Column(Integer, nullable=True)  # N сообщений
     flood_interval_seconds = Column(Integer, nullable=True)  # за M секунд

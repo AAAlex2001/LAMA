@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
 from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request
-from backend.services.channel import ChannelModerationService, AntispamService, FloodService, ChannelAutoDeleteService
+from backend.services.channel import ChannelModerationService, AntispamService, FloodService, ChannelAutoDeleteService, ChannelNightModeService
 from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
@@ -106,6 +106,30 @@ async def telegram_webhook(
                 try:
                     # Системные сообщения удаляем сразу при включённой настройке
                     if await auto_delete_service.delete_if_system_message(telegram_bot, message):
+                        return {"ok": True}
+
+                    night_mode_service = ChannelNightModeService(db)
+                    is_media_message = any([
+                        getattr(message, "photo", None),
+                        getattr(message, "video", None),
+                        getattr(message, "document", None),
+                        getattr(message, "audio", None),
+                        getattr(message, "voice", None),
+                        getattr(message, "sticker", None),
+                        getattr(message, "animation", None),
+                    ])
+
+                    if await night_mode_service.should_block_message(
+                        message.chat.id,
+                        is_media=is_media_message,
+                    ):
+                        try:
+                            await telegram_bot.delete_message(
+                                chat_id=message.chat.id,
+                                message_id=message.message_id,
+                            )
+                        except TelegramAPIError:
+                            pass
                         return {"ok": True}
 
                     if text_content:

@@ -621,14 +621,28 @@ async def set_channel_telegram_permissions(
     - can_manage_topics
     """
     try:
-        permissions = data.model_dump(exclude_none=True)
-        if not permissions:
+        payload = data.model_dump(exclude_none=True)
+        night_mode_keys = [
+            "night_mode_enabled",
+            "night_mode_start",
+            "night_mode_end",
+            "night_mode_block_media",
+            "night_mode_block_text",
+        ]
+        night_mode_settings = {}
+        for key in night_mode_keys:
+            if key in payload:
+                night_mode_settings[key] = payload.pop(key)
+
+        permissions = payload
+        if not permissions and not night_mode_settings:
             raise ValueError("No permissions provided")
 
         channel = await service.set_channel_permissions(
             channel_id=channel_id,
             owner_id=current_user.id,
-            permissions=permissions
+            permissions=permissions,
+            night_mode_settings=night_mode_settings or None,
         )
         return channel
     except ValueError as e:

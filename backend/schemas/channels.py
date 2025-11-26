@@ -74,6 +74,15 @@ class ChannelPermissionsUpdate(BaseModel):
     can_invite_users: Optional[bool] = None
     can_pin_messages: Optional[bool] = None
     can_manage_topics: Optional[bool] = None
+    night_mode_enabled: Optional[bool] = None
+    night_mode_start: Optional[str] = Field(
+        None, pattern=r"^\d{2}:\d{2}$", description="Start time in HH:MM"
+    )
+    night_mode_end: Optional[str] = Field(
+        None, pattern=r"^\d{2}:\d{2}$", description="End time in HH:MM"
+    )
+    night_mode_block_media: Optional[bool] = None
+    night_mode_block_text: Optional[bool] = None
 
 
 class ChannelGroupResponse(BaseModel):
@@ -107,6 +116,11 @@ class ChannelGroupResponse(BaseModel):
     slow_mode_delay: Optional[int] = None
     unrestrict_boost_count: Optional[int] = None
     message_auto_delete_time: Optional[int] = None
+    night_mode_enabled: bool
+    night_mode_start: Optional[str] = None
+    night_mode_end: Optional[str] = None
+    night_mode_block_media: bool
+    night_mode_block_text: bool
     
     # Privacy & restrictions
     has_private_forwards: Optional[bool] = False
