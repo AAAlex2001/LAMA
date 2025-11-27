@@ -17,7 +17,7 @@ class AntispamService:
         if not text:
             return []
 
-        url_pattern = r'https?://[^\s]+|(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:/[^\s]*)?'
+        url_pattern = r'https?://[^\s]+|(?:www\.)?[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+(?:/[^\s]*)?'
         links = re.findall(url_pattern, text, re.IGNORECASE)
         return links
 
