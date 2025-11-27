@@ -448,6 +448,7 @@ class ChannelService:
         total_posts = result.scalar()
         
         job = BackupJob(
+            owner_id=owner_id,
             source_channel_id=data.source_channel_id,
             target_channel_id=data.target_channel_id,
             status=BackupStatus.IN_PROGRESS,
