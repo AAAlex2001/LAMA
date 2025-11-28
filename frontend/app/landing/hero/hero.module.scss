@@ -1,0 +1,131 @@
+.hero {
+  position: relative;
+  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  z-index: 10;
+  margin: 104px auto auto;
+  padding: 0 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  max-width: 500px;
+}
+
+.textContainer {
+  margin: 0 auto;
+  text-align: center;
+  color: white;
+}
+
+.headline {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 900;
+  margin-bottom: 40px;
+}
+
+.paragraph {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: #FFFFFF;
+}
+
+.paragraphSecondary {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 500;
+  margin-bottom: 40px;
+  color: #FFFFFF;
+}
+
+.highlight {
+  font-weight: 900;
+  font-style: italic;
+}
+
+.ctaButtonWrapper {
+  display: inline-block;
+  padding: 2px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  margin-bottom: 228px;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+  background-color: white;
+  padding: 12.5px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    
+    .ctaButtonText {
+      background-image: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      color: white;
+    }
+    
+    svg path {
+      stroke: white;
+    }
+  }
+}
+
+.ctaButtonText {
+  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  transition: color 0.2s;
+}
+
+.arrowIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.relativeElement1 {
+  position: absolute;
+  bottom: 0;
+}
+
+.relativeElement2 {
+  position: absolute;
+  bottom: 70px;
+  left: calc(10/360)*100%;
+}
+
+.relativeElement3 {
+  position: absolute;
+  bottom: 0;
+  right: calc(10/360)*100%;
+}
+
+.relativeElement4 {
+  position: absolute;
+  bottom: 110px;
+  right: calc(10/360)*100%;
+}
+
+.relativeElement5 {
+  position: absolute;
+  bottom: 10px;
+  left: calc(10/360)*100%;
+}
+

@@ -1,5 +1,9 @@
-import { redirect } from "next/navigation";
+import Hero from "./landing/hero/hero";
 
 export default function Home() {
-  redirect("/login");
+  return (
+    <main>
+      <Hero />
+    </main>
+  );
 }
