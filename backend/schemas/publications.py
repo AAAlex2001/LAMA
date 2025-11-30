@@ -218,10 +218,8 @@ class PublicationResponse(BaseModel):
 
 class PublicationListResponse(BaseModel):
     items: List[PublicationResponse]
-    total: int
     page: int
     page_size: int
-    pages: int
 
 
 class PublicationPreview(BaseModel):

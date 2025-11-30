@@ -50,21 +50,17 @@ async def get_drafts(
 ):
     """Получить все черновики"""
     skip = (page - 1) * page_size
-    publications, total = await service.get_publications(
+    publications = await service.get_publications(
         owner_id=current_user.id,
         status=PublicationStatus.DRAFT,
         skip=skip,
         limit=page_size
     )
     
-    pages = (total + page_size - 1) // page_size
-    
     return PublicationListResponse(
         items=publications,
-        total=total,
         page=page,
-        page_size=page_size,
-        pages=pages
+        page_size=page_size
     )
 
 
@@ -77,21 +73,17 @@ async def get_scheduled(
 ):
     """Получить все запланированные публикации"""
     skip = (page - 1) * page_size
-    publications, total = await service.get_publications(
+    publications = await service.get_publications(
         owner_id=current_user.id,
         status=PublicationStatus.SCHEDULED,
         skip=skip,
         limit=page_size
     )
     
-    pages = (total + page_size - 1) // page_size
-    
     return PublicationListResponse(
         items=publications,
-        total=total,
         page=page,
-        page_size=page_size,
-        pages=pages
+        page_size=page_size
     )
 
 
@@ -111,7 +103,7 @@ async def get_publications(
 ):
     """Получить список публикаций с фильтрацией"""
     skip = (page - 1) * page_size
-    publications, total = await service.get_publications(
+    publications = await service.get_publications(
         owner_id=current_user.id,
         status=status,
         content_type=content_type,
@@ -124,14 +116,10 @@ async def get_publications(
         limit=page_size
     )
     
-    pages = (total + page_size - 1) // page_size
-    
     return PublicationListResponse(
         items=publications,
-        total=total,
         page=page,
-        page_size=page_size,
-        pages=pages
+        page_size=page_size
     )
 
 

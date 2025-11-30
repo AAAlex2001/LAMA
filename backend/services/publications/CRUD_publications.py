@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple, Dict, Any
+from typing import List, Optional, Dict, Any
 
-from sqlalchemy import select, and_, func, distinct
+from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
@@ -95,7 +95,7 @@ class CRUDPublicationService:
         end_date: Optional[datetime] = None,
         skip: int = 0,
         limit: int = 100
-    ) -> Tuple[List[Publication], int]:
+    ) -> List[Publication]:
         """Получить список публикаций с фильтрацией"""
         base_query = select(Publication).options(
             selectinload(Publication.channels).selectinload(Channel.bot),
@@ -129,14 +129,11 @@ class CRUDPublicationService:
 
         ordered_query = base_query.order_by(Publication.created_at.desc())
 
-        count_query = select(func.count(distinct(Publication.id))).select_from(base_query.subquery())
-        total = await self.db.scalar(count_query) or 0
-
         paginated_query = ordered_query.offset(skip).limit(limit)
         result = await self.db.execute(paginated_query)
         publications = result.unique().scalars().all()
 
-        return list(publications), total
+        return list(publications)
 
     async def update_publication(
         self,
