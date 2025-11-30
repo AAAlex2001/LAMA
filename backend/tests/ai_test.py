@@ -10,8 +10,12 @@ from typing import List, Dict, Any
 import random
 
 
-BASE_URL = "http://193.42.125.13:8000"
-CONCURRENCY = 5  # Lower concurrency for AI API limits
+BASE_URL = "https://lamaplanner.com"
+API_PREFIX = "/api"
+CONCURRENCY = 100  # Lower concurrency for AI API limits
+
+# Токен аутентификации (получен через Telegram Login Widget)
+AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NDU0NjY0NywiaWF0IjoxNzY0NDYwMjQ3LCJqdGkiOiJqSm5LYl9OU3V4eHRnT21QVW1JMG53In0.JD3kmp8L8Z_ghuncZYBkhSMfK73f5voD4B1S9xN6WnM"
 
 # Test prompts for generation
 GENERATION_PROMPTS = [
@@ -40,15 +44,25 @@ EDIT_INSTRUCTIONS = [
 ]
 
 
-async def generate_post(client: httpx.AsyncClient, prompt: str) -> tuple[float, int]:
+async def generate_post(client: httpx.AsyncClient, prompt: str, token: str = None) -> tuple[float, int]:
     """Generate a post with AI and return (latency, publication_id)"""
     payload = {
         "prompt": prompt,
         "content_type": "text"
+
+
     }
     
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    
     start = time.perf_counter()
-    response = await client.post(f"{BASE_URL}/publications/ai/generate", json=payload)
+    response = await client.post(
+        f"{BASE_URL}{API_PREFIX}/publications/ai/generate",
+        json=payload,
+        headers=headers
+    )
     elapsed = time.perf_counter() - start
     
     if response.status_code != 201:
@@ -59,16 +73,23 @@ async def generate_post(client: httpx.AsyncClient, prompt: str) -> tuple[float, 
     return elapsed, data["id"]
 
 
-async def edit_post(client: httpx.AsyncClient, publication_id: int, instruction: str) -> float:
+async def edit_post(client: httpx.AsyncClient, publication_id: int, instruction: str, token: str = None) -> float:
     """Edit a post with AI and return latency"""
+    # Схема AIEditRequest требует publication_id в теле, даже если он уже в URL
     payload = {
+        "publication_id": publication_id,
         "instruction": instruction
     }
     
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    
     start = time.perf_counter()
     response = await client.post(
-        f"{BASE_URL}/publications/{publication_id}/ai/edit",
-        json=payload
+        f"{BASE_URL}{API_PREFIX}/publications/{publication_id}/ai/edit",
+        json=payload,
+        headers=headers
     )
     elapsed = time.perf_counter() - start
     
@@ -83,13 +104,14 @@ async def generation_worker(
     task_id: int,
     client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
-    results: List[Dict[str, Any]]
+    results: List[Dict[str, Any]],
+    token: str = None
 ):
     """Worker that generates a post"""
     async with semaphore:
         prompt = random.choice(GENERATION_PROMPTS)
         try:
-            latency, pub_id = await generate_post(client, prompt)
+            latency, pub_id = await generate_post(client, prompt, token)
             results.append({
                 "type": "generate",
                 "success": True,
@@ -111,13 +133,14 @@ async def edit_worker(
     client: httpx.AsyncClient,
     publication_id: int,
     semaphore: asyncio.Semaphore,
-    results: List[Dict[str, Any]]
+    results: List[Dict[str, Any]],
+    token: str = None
 ):
     """Worker that edits a post"""
     async with semaphore:
         instruction = random.choice(EDIT_INSTRUCTIONS)
         try:
-            latency = await edit_post(client, publication_id, instruction)
+            latency = await edit_post(client, publication_id, instruction, token)
             results.append({
                 "type": "edit",
                 "success": True,
@@ -135,15 +158,23 @@ async def edit_worker(
             print(f"❌ Edit failed for {publication_id}: {e}")
 
 
-async def get_random_publications(client: httpx.AsyncClient, count: int) -> List[int]:
+async def get_random_publications(client: httpx.AsyncClient, count: int, token: str = None) -> List[int]:
     """Get random publication IDs"""
-    response = await client.get(f"{BASE_URL}/publications/", params={"limit": count})
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    
+    response = await client.get(
+        f"{BASE_URL}{API_PREFIX}/publications/",
+        params={"limit": count},
+        headers=headers
+    )
     response.raise_for_status()
     data = response.json()
     return [pub["id"] for pub in data["items"]]
 
 
-async def test_generation(client: httpx.AsyncClient, count: int) -> Dict[str, Any]:
+async def test_generation(client: httpx.AsyncClient, count: int, token: str = None) -> Dict[str, Any]:
     """Test AI generation"""
     print(f"\n{'='*60}")
     print(f"🤖 AI GENERATION TEST: {count} posts with concurrency={CONCURRENCY}")
@@ -154,7 +185,7 @@ async def test_generation(client: httpx.AsyncClient, count: int) -> Dict[str, An
     
     start_ts = time.perf_counter()
     tasks = [
-        asyncio.create_task(generation_worker(i, client, semaphore, results))
+        asyncio.create_task(generation_worker(i, client, semaphore, results, token))
         for i in range(count)
     ]
     
@@ -181,7 +212,7 @@ async def test_generation(client: httpx.AsyncClient, count: int) -> Dict[str, An
     return stats
 
 
-async def test_editing(client: httpx.AsyncClient, count: int) -> Dict[str, Any]:
+async def test_editing(client: httpx.AsyncClient, count: int, token: str = None) -> Dict[str, Any]:
     """Test AI editing"""
     print(f"\n{'='*60}")
     print(f"✏️  AI EDITING TEST: {count} edits with concurrency={CONCURRENCY}")
@@ -190,7 +221,7 @@ async def test_editing(client: httpx.AsyncClient, count: int) -> Dict[str, Any]:
     # Get random publications to edit
     print("📋 Fetching publications to edit...")
     try:
-        publication_ids = await get_random_publications(client, count)
+        publication_ids = await get_random_publications(client, count, token)
     except Exception as e:
         print(f"⚠️  Cannot fetch publications: {e}")
         return {"error": str(e)}
@@ -204,7 +235,7 @@ async def test_editing(client: httpx.AsyncClient, count: int) -> Dict[str, Any]:
     
     start_ts = time.perf_counter()
     tasks = [
-        asyncio.create_task(edit_worker(i, client, publication_ids[i], semaphore, results))
+        asyncio.create_task(edit_worker(i, client, publication_ids[i], semaphore, results, token))
         for i in range(count)
     ]
     
@@ -258,6 +289,23 @@ def print_stats(title: str, stats: Dict[str, Any]):
     print(f"{'='*60}")
 
 
+async def get_auth_token(client: httpx.AsyncClient) -> str:
+    """Получить токен аутентификации (для тестирования)"""
+    # Если токен задан в переменной окружения или файле, используем его
+    import os
+    token = os.getenv("TEST_AUTH_TOKEN") or AUTH_TOKEN
+    
+    if token:
+        return token
+    
+    # Если токена нет, можно попробовать авторизоваться через Telegram
+    # Но для этого нужны тестовые данные Telegram
+    print("⚠️  No authentication token provided!")
+    print("   Set TEST_AUTH_TOKEN environment variable or update AUTH_TOKEN in the script")
+    print("   Token can be obtained from /api/auth/telegram endpoint")
+    return None
+
+
 async def main() -> None:
     print("🔬 AI Load Test Started\n")
     
@@ -266,15 +314,27 @@ async def main() -> None:
     EDIT_COUNT = 30      # Edit 30 existing posts
     
     async with httpx.AsyncClient(timeout=120.0) as client:
+        # Get authentication token
+        token = await get_auth_token(client)
+        if not token:
+            print("❌ Cannot proceed without authentication token!")
+            print("\nTo get a token:")
+            print("1. Use Telegram Login Widget to authenticate")
+            print("2. Get token from /api/auth/telegram response")
+            print("3. Set it as TEST_AUTH_TOKEN env var or update AUTH_TOKEN in script")
+            return
+        
+        print(f"✅ Using authentication token (length: {len(token)})\n")
+        
         # Test 1: AI Generation
-        gen_stats = await test_generation(client, GENERATE_COUNT)
+        gen_stats = await test_generation(client, GENERATE_COUNT, token)
         print_stats("GENERATION RESULTS", gen_stats)
         
         # Small delay between tests
         await asyncio.sleep(2)
         
         # Test 2: AI Editing
-        edit_stats = await test_editing(client, EDIT_COUNT)
+        edit_stats = await test_editing(client, EDIT_COUNT, token)
         print_stats("EDITING RESULTS", edit_stats)
         
         # Overall summary
