@@ -31,29 +31,43 @@ async def get_published_publications(client: httpx.AsyncClient, token: str = Non
     page_size = 100
     
     while True:
-        response = await client.get(
-            f"{BASE_URL}{API_PREFIX}/publications/",
-            params={
-                "status": "published",
-                "page": page,
-                "page_size": page_size
-            },
-            headers=headers
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        items = data.get("items", [])
-        if not items:
-            break
+        params = {
+            "status": "published",
+            "page": page,
+            "page_size": page_size
+        }
             
-        all_publication_ids.extend([pub["id"] for pub in items])
-        
-        # Если получили меньше запрошенного количества, значит это последняя страница
-        if len(items) < page_size:
-            break
+        try:
+            response = await client.get(
+                f"{BASE_URL}{API_PREFIX}/publications/",
+                params=params,
+                headers=headers
+            )
             
-        page += 1
+            if response.status_code != 200:
+                print(f"❌ HTTP {response.status_code}: {response.text[:500]}")
+                response.raise_for_status()
+            
+            data = response.json()
+            
+            items = data.get("items", [])
+            if not items:
+                break
+                
+            all_publication_ids.extend([pub["id"] for pub in items])
+            print(f"   📄 Page {page}: found {len(items)} publications (total: {len(all_publication_ids)})")
+            
+            # Если получили меньше запрошенного количества, значит это последняя страница
+            if len(items) < page_size:
+                break
+                
+            page += 1
+        except httpx.HTTPStatusError as e:
+            print(f"❌ HTTP Error {e.response.status_code}: {e.response.text[:500]}")
+            raise
+        except Exception as e:
+            print(f"❌ Error fetching publications: {e}")
+            raise
     
     return all_publication_ids
 
@@ -84,10 +98,20 @@ async def delete_telegram_messages(
                 data = response.json()
                 # Проверяем успешность удаления
                 if data.get("success"):
-                    return elapsed
+                    # Проверяем, были ли реально удалены сообщения
+                    success_count = data.get("success_count", 0)
+                    total_count = data.get("total_count", 0)
+                    if total_count == 0:
+                        # Нет сообщений для удаления - это нормально
+                        return elapsed
+                    elif success_count > 0:
+                        # Хотя бы одно сообщение удалено - успех
+                        return elapsed
+                    else:
+                        # Все попытки удаления провалились
+                        raise Exception(f"All delete attempts failed: {data.get('results', [])}")
                 else:
-                    # Если не успешно, но статус 200, все равно считаем успешным запрос
-                    return elapsed
+                    raise Exception(f"Delete failed: {data.get('error', 'Unknown error')}")
             
             # Если это ошибка, пробуем повторить
             if response.status_code in [400, 404, 429, 500, 502, 503, 504]:
@@ -97,7 +121,12 @@ async def delete_telegram_messages(
                     await asyncio.sleep(wait_time)
                     continue
             
-            last_error = f"HTTP {response.status_code}: {response.text[:200]}"
+            # Пытаемся получить детали ошибки
+            try:
+                error_detail = response.json()
+                last_error = f"HTTP {response.status_code}: {error_detail}"
+            except:
+                last_error = f"HTTP {response.status_code}: {response.text[:500]}"
             response.raise_for_status()
             
         except httpx.TimeoutException:
@@ -109,8 +138,20 @@ async def delete_telegram_messages(
                 continue
             raise
         except httpx.HTTPStatusError as e:
-            last_error = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
-            if attempt < retries and e.response.status_code in [400, 404, 429, 500, 502, 503, 504]:
+            # Детали ошибки
+            try:
+                error_detail = e.response.json()
+                last_error = f"HTTP {e.response.status_code}: {error_detail}"
+                error_msg = str(error_detail.get("detail", error_detail))
+            except:
+                error_msg = e.response.text[:500]
+                last_error = f"HTTP {e.response.status_code}: {error_msg}"
+            
+            # Для 400 ошибок не делаем retry - скорее всего это валидационная ошибка
+            if e.response.status_code == 400:
+                raise Exception(f"Bad Request: {error_msg}")
+            
+            if attempt < retries and e.response.status_code in [404, 429, 500, 502, 503, 504]:
                 wait_time = 0.5 * (attempt + 1)
                 print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
@@ -173,6 +214,9 @@ async def main() -> None:
             publication_ids = await get_published_publications(client, token)
         except Exception as exc:
             print(f"❌ Cannot continue: {exc}")
+            import traceback
+            print(f"\n📋 Detailed error:")
+            traceback.print_exc()
             return
         
         if not publication_ids:
