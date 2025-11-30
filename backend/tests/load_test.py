@@ -160,15 +160,19 @@ def generate_realistic_publication(channel_ids: list[int], idx: int) -> dict:
         ]
     }
     
-    # Случайное время публикации (в будущем, но не слишком далеко)
-    scheduled_time = datetime.now(timezone.utc) + timedelta(
-        days=random.randint(0, 7),
-        hours=random.randint(9, 18),
-        minutes=random.choice([0, 15, 30, 45])
-    )
+    # Создаем публикации на разные даты декабря 2025
+    # Случайный день декабря (1-31)
+    december_day = random.randint(1, 31)
+    scheduled_time = datetime(2025, 12, december_day, 
+                             hour=random.randint(9, 18),
+                             minute=random.choice([0, 15, 30, 45]),
+                             tzinfo=timezone.utc)
+    
+    # Режим: "draft" или "scheduled" (для календаря нужны scheduled)
+    status_mode = os.getenv("PUBLICATION_STATUS", "scheduled")  # По умолчанию scheduled для календаря
     
     return {
-        "status": "draft",
+        "status": status_mode,  # "draft" или "scheduled"
         "content_type": "text_with_media",  # С медиа
         "text_content": text_content,
         "formatted_content": formatted_content,
@@ -177,7 +181,7 @@ def generate_realistic_publication(channel_ids: list[int], idx: int) -> dict:
         "inline_keyboard": inline_keyboard,
         "pin_message": False,  # Без закрепления сообщений
         "auto_delete_hours": random.choice([None, 24, 48, 72]),
-        "scheduled_time": scheduled_time.isoformat(),
+        "scheduled_time": scheduled_time.isoformat(),  # Всегда есть scheduled_time
         "timezone": random.choice(["Europe/Moscow", "UTC", "America/New_York"]),
         "channel_ids": channel_ids,  # Список каналов для публикации
         "tag_names": tags
@@ -253,6 +257,12 @@ async def create_publication(client: httpx.AsyncClient, channel_ids: list[int], 
             elapsed = time.perf_counter() - start
             
             if response.status_code == 201:
+                # Проверяем, что статус правильно установлен
+                created_pub = response.json()
+                expected_status = payload.get("status", "draft")
+                actual_status = created_pub.get("status")
+                if expected_status != actual_status:
+                    print(f"   ⚠️  Warning: Expected status '{expected_status}', got '{actual_status}' for pub {created_pub.get('id')}")
                 return elapsed
             
             # Если это ошибка greenlet (400), пробуем повторить
@@ -292,12 +302,15 @@ async def worker(task_id: int, client: httpx.AsyncClient, channel_ids: list[int]
 
 async def main() -> None:
     TARGET_RPS = 500  # Целевая скорость: 500 запросов в секунду (для справки)
+    status_mode = os.getenv("PUBLICATION_STATUS", "scheduled")
     print(f"🔬 Load test started: {TOTAL_REQUESTS} requests with concurrency={CONCURRENCY}")
     print(f"📍 Target: {BASE_URL}{API_PREFIX}")
     print(f"📝 Creating {TOTAL_REQUESTS} publications for 3 channels:")
     print(f"   - Channel 1: '{CHANNEL_1_NAME}' (ID: {CHANNEL_1_ID})")
     print(f"   - Channel 2: '{CHANNEL_2_NAME}' (ID: {CHANNEL_2_ID})")
     print(f"   - Channel 3: '{CHANNEL_3_NAME}' (ID: {CHANNEL_3_ID})")
+    print(f"   - Status: {status_mode}")
+    print(f"   - Scheduled dates: December 2025 (random days 1-31)")
     print(f"⚡ Concurrency: {CONCURRENCY} parallel requests")
     
     # Get authentication token
