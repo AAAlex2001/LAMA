@@ -13,9 +13,20 @@ BASE_URL = os.getenv("BASE_URL", "https://lamaplanner.com")
 API_PREFIX = "/api"
 TOTAL_REQUESTS = int(os.getenv("TOTAL_REQUESTS", "300"))  # 300 публикаций
 CONCURRENCY = int(os.getenv("CONCURRENCY", "300"))  # 300 одновременных пользователей
-CHANNEL_TELEGRAM_ID = os.getenv("CHANNEL_TELEGRAM_ID", "-1002657482202")  # Канал "Тест ламы 3"
-CHANNEL_ID = int(os.getenv("CHANNEL_ID", "1"))  # ID канала в базе
-CHANNEL_NAME = os.getenv("CHANNEL_NAME", "Тест ламы 3")
+# Канал 1: "Тест ламы 3"
+CHANNEL_1_TELEGRAM_ID = os.getenv("CHANNEL_1_TELEGRAM_ID", "-1002657482202")
+CHANNEL_1_ID = int(os.getenv("CHANNEL_1_ID", "1"))
+CHANNEL_1_NAME = os.getenv("CHANNEL_1_NAME", "Тест ламы 3")
+
+# Канал 2: "Тест лама 1"
+CHANNEL_2_TELEGRAM_ID = os.getenv("CHANNEL_2_TELEGRAM_ID", "-1003336873409")
+CHANNEL_2_ID = int(os.getenv("CHANNEL_2_ID", "3"))
+CHANNEL_2_NAME = os.getenv("CHANNEL_2_NAME", "Тест лама 1")
+
+# Канал 3: "Тест лама 2"
+CHANNEL_3_TELEGRAM_ID = os.getenv("CHANNEL_3_TELEGRAM_ID", "-1003213582087")
+CHANNEL_3_ID = int(os.getenv("CHANNEL_3_ID", "4"))
+CHANNEL_3_NAME = os.getenv("CHANNEL_3_NAME", "Тест лама 2")
 
 # Токен аутентификации (можно установить через переменную окружения TEST_AUTH_TOKEN или указать здесь)
 # 
@@ -30,8 +41,8 @@ def random_text(prefix: str, length: int = 16) -> str:
     return f"{prefix}_{payload}"
 
 
-def generate_realistic_publication(channel_id: int, idx: int) -> dict:
-    """Генерирует реалистичную публикацию с медиа, кнопками и форматированием"""
+def generate_realistic_publication(channel_ids: list[int], idx: int) -> dict:
+    """Генерирует реалистичную публикацию с медиа, кнопками, форматированием и закреплением"""
     
     # Разнообразные заголовки
     headlines = [
@@ -43,6 +54,8 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
         "📢 Важное объявление",
         "🔥 Горячие новости",
         "💎 Эксклюзивный контент",
+        "⚡ Мощные обновления",
+        "🎯 Новые функции",
     ]
     
     # Разнообразные пункты списка
@@ -52,6 +65,8 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
         ["Быстрая обработка запросов", "Удобный интерфейс", "Мощная аналитика"],
         ["Автоматизация задач", "Интеграции с сервисами", "Умные уведомления"],
         ["Безопасность данных", "Резервное копирование", "Техническая поддержка"],
+        ["Улучшенная скорость", "Оптимизация работы", "Новые интеграции"],
+        ["Расширенная аналитика", "Детальные отчеты", "Гибкие настройки"],
     ]
     
     # Разнообразные призывы к действию
@@ -61,26 +76,8 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
         "Записывайтесь на бесплатную консультацию или смотрите демо прямо сейчас 💫",
         "Начните использовать уже сегодня или посмотрите обзор возможностей 🎯",
         "Получите доступ к новым функциям или задайте вопросы нашим специалистам 📞",
-    ]
-    
-    # Изображения для медиа
-    media_urls_list = [
-        [
-            "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&w=1200"
-        ],
-        [
-            "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&w=1200"
-        ],
-        [
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7?auto=format&w=1200"
-        ],
-        [
-            "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&w=1200"
-        ],
+        "Ознакомьтесь с новыми возможностями и улучшите свой рабочий процесс ⚡",
+        "Попробуйте новые функции бесплатно или закажите персональную демонстрацию 🎁",
     ]
     
     # Разнообразные теги
@@ -90,14 +87,34 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
         ["анонс", "события", "продукт"],
         ["новинки", "технологии", "инновации"],
         ["спецпредложение", "акция", "промо"],
+        ["обновления", "улучшения", "фичи"],
+        ["релиз", "версия", "обновление"],
+    ]
+    
+    # Медиа URL (используем Unsplash для тестовых изображений)
+    media_urls_variants = [
+        ["https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200"],
+        ["https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&w=1200"],
+        ["https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&w=1200"],
+        ["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&w=1200"],
+        ["https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&w=1200"],
+        [
+            "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200",
+            "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&w=1200"
+        ],
+        [
+            "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&w=1200",
+            "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&w=1200",
+            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&w=1200"
+        ],
     ]
     
     # Выбираем варианты случайно
     headline = random.choice(headlines)
     list_items = random.choice(list_items_variants)
     cta = random.choice(call_to_actions)
-    media_urls = random.choice(media_urls_list)
     tags = random.choice(tag_variants)
+    media_urls = random.choice(media_urls_variants)
     
     # Формируем текст
     text_content = f"{headline}\n\n— {'\n— '.join(list_items)}\n\n{cta}"
@@ -107,7 +124,7 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
         "blocks": [
             {
                 "type": "header",
-                "text": headline.replace("📣 ", "").replace("🚀 ", "").replace("💡 ", "").replace("✨ ", "").replace("🎉 ", "").replace("📢 ", "").replace("🔥 ", "").replace("💎 ", "")
+                "text": headline.replace("📣 ", "").replace("🚀 ", "").replace("💡 ", "").replace("✨ ", "").replace("🎉 ", "").replace("📢 ", "").replace("🔥 ", "").replace("💎 ", "").replace("⚡ ", "").replace("🎯 ", "")
             },
             {
                 "type": "list",
@@ -152,22 +169,28 @@ def generate_realistic_publication(channel_id: int, idx: int) -> dict:
     
     return {
         "status": "draft",
-        "content_type": "text_with_media",
+        "content_type": "text_with_media",  # С медиа
         "text_content": text_content,
         "formatted_content": formatted_content,
-        "media_urls": media_urls,
-        "media_blur": random.choice([True, False]),
+        "media_urls": media_urls,  # Добавляем медиа
+        "media_blur": False,
         "inline_keyboard": inline_keyboard,
-        "pin_message": random.choice([True, False]),
+        "pin_message": False,  # Без закрепления сообщений
         "auto_delete_hours": random.choice([None, 24, 48, 72]),
         "scheduled_time": scheduled_time.isoformat(),
         "timezone": random.choice(["Europe/Moscow", "UTC", "America/New_York"]),
-        "channel_ids": [channel_id],
+        "channel_ids": channel_ids,  # Список каналов для публикации
         "tag_names": tags
     }
 
 
-async def get_or_verify_channel(client: httpx.AsyncClient, token: str = None) -> int:
+async def get_or_verify_channel(
+    client: httpx.AsyncClient, 
+    channel_id: int, 
+    telegram_id: str, 
+    channel_name: str,
+    token: str = None
+) -> int:
     """Получить или проверить существование канала"""
     headers = {}
     if token:
@@ -178,22 +201,21 @@ async def get_or_verify_channel(client: httpx.AsyncClient, token: str = None) ->
     # Пытаемся получить канал по ID
     try:
         response = await client.get(
-            f"{BASE_URL}{API_PREFIX}/channels/{CHANNEL_ID}",
+            f"{BASE_URL}{API_PREFIX}/channels/{channel_id}",
             headers=headers
         )
         if response.status_code == 200:
             channel_data = response.json()
-            print(f"✅ Found existing channel: {channel_data.get('title', 'N/A')} (ID: {CHANNEL_ID})")
-            return CHANNEL_ID
+            print(f"✅ Found existing channel: {channel_data.get('title', 'N/A')} (ID: {channel_id})")
+            return channel_id
     except Exception:
         pass
     
     # Если не найден, пытаемся создать
-    telegram_id = CHANNEL_TELEGRAM_ID or f"-100{random.randint(10**8, 10**9 - 1)}"
     payload = {
         "telegram_id": int(telegram_id),
-        "title": CHANNEL_NAME,
-        "channel_type": "SUPERGROUP",
+        "title": channel_name,
+        "channel_type": "CHANNEL",
     }
     
     response = await client.post(
@@ -206,14 +228,14 @@ async def get_or_verify_channel(client: httpx.AsyncClient, token: str = None) ->
         raise ValueError(f"Authentication failed (401). Token may be expired. Response: {response.text[:200]}")
     
     response.raise_for_status()
-    channel_id = response.json()["id"]
-    print(f"✅ Created new channel: {CHANNEL_NAME} (ID: {channel_id})")
-    return channel_id
+    created_channel_id = response.json()["id"]
+    print(f"✅ Created new channel: {channel_name} (ID: {created_channel_id})")
+    return created_channel_id
 
 
-async def create_publication(client: httpx.AsyncClient, channel_id: int, idx: int, token: str = None, retries: int = 2) -> float:
+async def create_publication(client: httpx.AsyncClient, channel_ids: list[int], idx: int, token: str = None, retries: int = 2) -> float:
     # Генерируем реалистичную публикацию с медиа, кнопками и форматированием
-    payload = generate_realistic_publication(channel_id, idx)
+    payload = generate_realistic_publication(channel_ids, idx)
     
     headers = {}
     if token:
@@ -259,10 +281,10 @@ async def create_publication(client: httpx.AsyncClient, channel_id: int, idx: in
     raise Exception(f"Failed after {retries + 1} attempts: {last_error}")
 
 
-async def worker(task_id: int, client: httpx.AsyncClient, channel_id: int, semaphore: asyncio.Semaphore, latencies: list[float], errors: list[str], token: str = None):
+async def worker(task_id: int, client: httpx.AsyncClient, channel_ids: list[int], semaphore: asyncio.Semaphore, latencies: list[float], errors: list[str], token: str = None):
     async with semaphore:
         try:
-            latency = await create_publication(client, channel_id, task_id, token)
+            latency = await create_publication(client, channel_ids, task_id, token)
             latencies.append(latency)
         except Exception as e:
             errors.append(str(e))
@@ -272,7 +294,10 @@ async def main() -> None:
     TARGET_RPS = 500  # Целевая скорость: 500 запросов в секунду (для справки)
     print(f"🔬 Load test started: {TOTAL_REQUESTS} requests with concurrency={CONCURRENCY}")
     print(f"📍 Target: {BASE_URL}{API_PREFIX}")
-    print(f"📝 Creating {TOTAL_REQUESTS} publications in channel 'Тест ламы 3'")
+    print(f"📝 Creating {TOTAL_REQUESTS} publications for 3 channels:")
+    print(f"   - Channel 1: '{CHANNEL_1_NAME}' (ID: {CHANNEL_1_ID})")
+    print(f"   - Channel 2: '{CHANNEL_2_NAME}' (ID: {CHANNEL_2_ID})")
+    print(f"   - Channel 3: '{CHANNEL_3_NAME}' (ID: {CHANNEL_3_ID})")
     print(f"⚡ Concurrency: {CONCURRENCY} parallel requests")
     
     # Get authentication token
@@ -292,15 +317,18 @@ async def main() -> None:
     print(f"✅ Using authentication token (length: {len(token)})\n")
     
     async with httpx.AsyncClient(timeout=60.0) as client:
-        # Ensure channel exists and grab ID
+        # Ensure all channels exist and grab IDs
         try:
-            channel_id = await get_or_verify_channel(client, token)
-            print(f"✅ Using channel ID: {channel_id}\n")
+            channel_1_id = await get_or_verify_channel(client, CHANNEL_1_ID, CHANNEL_1_TELEGRAM_ID, CHANNEL_1_NAME, token)
+            channel_2_id = await get_or_verify_channel(client, CHANNEL_2_ID, CHANNEL_2_TELEGRAM_ID, CHANNEL_2_NAME, token)
+            channel_3_id = await get_or_verify_channel(client, CHANNEL_3_ID, CHANNEL_3_TELEGRAM_ID, CHANNEL_3_NAME, token)
+            channel_ids = [channel_1_id, channel_2_id, channel_3_id]
+            print(f"✅ Using channel IDs: {channel_ids}\n")
         except ValueError as exc:
             print(f"❌ {exc}")
             return
         except Exception as exc:
-            print(f"❌ Cannot continue without channel: {exc}")
+            print(f"❌ Cannot continue without channels: {exc}")
             if "401" in str(exc):
                 print("\n💡 Tip: Your token may be expired. Get a new one from https://lamaplanner.com")
             return
@@ -311,7 +339,7 @@ async def main() -> None:
 
         start_ts = time.perf_counter()
         tasks = [
-            asyncio.create_task(worker(i, client, channel_id, semaphore, latencies, errors, token))
+            asyncio.create_task(worker(i, client, channel_ids, semaphore, latencies, errors, token))
             for i in range(TOTAL_REQUESTS)
         ]
 

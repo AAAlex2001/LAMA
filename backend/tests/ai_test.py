@@ -12,7 +12,7 @@ import random
 
 BASE_URL = "https://lamaplanner.com"
 API_PREFIX = "/api"
-CONCURRENCY = 100  # Lower concurrency for AI API limits
+CONCURRENCY = 100  # 100 параллельных запросов (как будто 100 пользователей одновременно)
 
 # Токен аутентификации (получен через Telegram Login Widget)
 AUTH_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NDU0NjY0NywiaWF0IjoxNzY0NDYwMjQ3LCJqdGkiOiJqSm5LYl9OU3V4eHRnT21QVW1JMG53In0.JD3kmp8L8Z_ghuncZYBkhSMfK73f5voD4B1S9xN6WnM"
@@ -310,8 +310,8 @@ async def main() -> None:
     print("🔬 AI Load Test Started\n")
     
     # Configuration
-    GENERATE_COUNT = 20  # Generate 20 new posts
-    EDIT_COUNT = 30      # Edit 30 existing posts
+    GENERATE_COUNT = 100  # Generate 100 new posts
+    EDIT_COUNT = 100      # Edit 100 existing posts
     
     async with httpx.AsyncClient(timeout=120.0) as client:
         # Get authentication token
@@ -326,15 +326,15 @@ async def main() -> None:
         
         print(f"✅ Using authentication token (length: {len(token)})\n")
         
-        # Test 1: AI Generation
-        gen_stats = await test_generation(client, GENERATE_COUNT, token)
+        # Запускаем генерацию и редактирование параллельно (одновременно)
+        print("🚀 Starting generation and editing tests in parallel...\n")
+        gen_task = asyncio.create_task(test_generation(client, GENERATE_COUNT, token))
+        edit_task = asyncio.create_task(test_editing(client, EDIT_COUNT, token))
+        
+        # Ждем завершения обоих тестов
+        gen_stats, edit_stats = await asyncio.gather(gen_task, edit_task)
+        
         print_stats("GENERATION RESULTS", gen_stats)
-        
-        # Small delay between tests
-        await asyncio.sleep(2)
-        
-        # Test 2: AI Editing
-        edit_stats = await test_editing(client, EDIT_COUNT, token)
         print_stats("EDITING RESULTS", edit_stats)
         
         # Overall summary
@@ -346,10 +346,11 @@ async def main() -> None:
         
         total_success = gen_stats.get('success', 0) + edit_stats.get('success', 0)
         total_requests = gen_stats.get('total', 0) + edit_stats.get('total', 0)
-        total_time = gen_stats.get('total_time', 0) + edit_stats.get('total_time', 0)
+        # При параллельном выполнении общее время = максимальное из двух
+        total_time = max(gen_stats.get('total_time', 0), edit_stats.get('total_time', 0))
         
         print(f"Total: {total_success}/{total_requests} successful")
-        print(f"Overall throughput: {total_success / total_time:.2f} req/s")
+        print(f"Overall throughput: {total_success / total_time:.2f} req/s (parallel execution)")
         print(f"{'='*60}\n")
 
 

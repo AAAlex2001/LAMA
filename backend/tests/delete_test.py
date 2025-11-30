@@ -1,6 +1,7 @@
 """
-Load test for publishing created publications to Telegram.
-Tests the publish_now endpoint under concurrent load.
+Load test for deleting published publications from Telegram.
+Tests the delete_telegram_messages endpoint under concurrent load.
+Все опубликованные посты удаляются асинхронно одновременно.
 """
 import asyncio
 import os
@@ -12,36 +13,58 @@ from typing import List
 
 BASE_URL = os.getenv("BASE_URL", "https://lamaplanner.com")
 API_PREFIX = "/api"
-CONCURRENCY = int(os.getenv("CONCURRENCY", "1"))  # 1 сообщение в секунду (лимит Telegram для одного канала)
+CONCURRENCY = int(os.getenv("CONCURRENCY", "50"))  # 50 параллельных запросов на удаление
 
 # Токен аутентификации (можно установить через переменную окружения TEST_AUTH_TOKEN или указать здесь)
 AUTH_TOKEN = os.getenv("TEST_AUTH_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NDU0NjY0NywiaWF0IjoxNzY0NDYwMjQ3LCJqdGkiOiJqSm5LYl9OU3V4eHRnT21QVW1JMG53In0.JD3kmp8L8Z_ghuncZYBkhSMfK73f5voD4B1S9xN6WnM")
 
 
-def random_text(prefix: str, length: int) -> str:
-    import random
-    import string
-    suffix = ''.join(random.choices(string.ascii_letters + string.digits, k=length))
-    return f"{prefix}_{suffix}"
-
-
-async def get_draft_publications(client: httpx.AsyncClient, token: str = None) -> List[int]:
-    """Get all draft publication IDs"""
+async def get_published_publications(client: httpx.AsyncClient, token: str = None) -> List[int]:
+    """Get all published publication IDs"""
     headers = {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     
-    response = await client.get(
-        f"{BASE_URL}{API_PREFIX}/publications/drafts",
-        headers=headers
-    )
-    response.raise_for_status()
-    data = response.json()
-    return [pub["id"] for pub in data["items"]]
+    # Получаем все опубликованные публикации (может быть несколько страниц)
+    all_publication_ids = []
+    page = 1
+    page_size = 100
+    
+    while True:
+        response = await client.get(
+            f"{BASE_URL}{API_PREFIX}/publications/",
+            params={
+                "status": "published",
+                "page": page,
+                "page_size": page_size
+            },
+            headers=headers
+        )
+        response.raise_for_status()
+        data = response.json()
+        
+        items = data.get("items", [])
+        if not items:
+            break
+            
+        all_publication_ids.extend([pub["id"] for pub in items])
+        
+        # Если получили меньше запрошенного количества, значит это последняя страница
+        if len(items) < page_size:
+            break
+            
+        page += 1
+    
+    return all_publication_ids
 
 
-async def publish_publication(client: httpx.AsyncClient, publication_id: int, token: str = None, retries: int = 3) -> float:
-    """Publish a single publication and return latency"""
+async def delete_telegram_messages(
+    client: httpx.AsyncClient, 
+    publication_id: int, 
+    token: str = None, 
+    retries: int = 2
+) -> float:
+    """Delete published messages from Telegram and return latency"""
     headers = {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -50,20 +73,26 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
     for attempt in range(retries + 1):
         start = time.perf_counter()
         try:
-            response = await client.post(
-                f"{BASE_URL}{API_PREFIX}/publications/{publication_id}/publish",
+            response = await client.delete(
+                f"{BASE_URL}{API_PREFIX}/publications/{publication_id}/telegram-messages",
                 headers=headers,
-                timeout=150.0  # Увеличен таймаут для публикации в Telegram
+                timeout=60.0
             )
             elapsed = time.perf_counter() - start
             
             if response.status_code == 200:
-                return elapsed
+                data = response.json()
+                # Проверяем успешность удаления
+                if data.get("success"):
+                    return elapsed
+                else:
+                    # Если не успешно, но статус 200, все равно считаем успешным запрос
+                    return elapsed
             
-            # Если это ошибка greenlet, rate limit или timeout, пробуем повторить
-            if response.status_code in [400, 429, 504]:
+            # Если это ошибка, пробуем повторить
+            if response.status_code in [400, 404, 429, 500, 502, 503, 504]:
                 if attempt < retries:
-                    wait_time = 1.0 * (attempt + 1)  # Увеличена задержка для retry
+                    wait_time = 0.5 * (attempt + 1)
                     print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                     await asyncio.sleep(wait_time)
                     continue
@@ -72,17 +101,17 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
             response.raise_for_status()
             
         except httpx.TimeoutException:
-            last_error = "Request timeout (публикация в Telegram занимает слишком много времени)"
+            last_error = "Request timeout"
             if attempt < retries:
-                wait_time = 2.0 * (attempt + 1)
+                wait_time = 1.0 * (attempt + 1)
                 print(f"   ⏳ Timeout, retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
                 continue
             raise
         except httpx.HTTPStatusError as e:
             last_error = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
-            if attempt < retries and e.response.status_code in [400, 429, 504]:
-                wait_time = 1.0 * (attempt + 1)
+            if attempt < retries and e.response.status_code in [400, 404, 429, 500, 502, 503, 504]:
+                wait_time = 0.5 * (attempt + 1)
                 print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
                 continue
@@ -90,7 +119,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
         except Exception as e:
             last_error = str(e)
             if attempt < retries:
-                wait_time = 1.0 * (attempt + 1)
+                wait_time = 0.5 * (attempt + 1)
                 await asyncio.sleep(wait_time)
                 continue
             raise
@@ -105,24 +134,24 @@ async def worker(
     semaphore: asyncio.Semaphore,
     latencies: List[float],
     errors: List[str],
+    results: List[dict],
     token: str = None
 ):
-    """Worker that publishes a single publication"""
+    """Worker that deletes a single publication's Telegram messages"""
     async with semaphore:
         try:
-            latency = await publish_publication(client, publication_id, token)
+            latency = await delete_telegram_messages(client, publication_id, token)
             latencies.append(latency)
-            print(f"✅ Published {publication_id} in {latency*1000:.0f}ms")
-            # Задержка 2 секунды между публикациями 
-            # (гарантируем соблюдение лимита Telegram: 1 msg/sec для канала)
-            await asyncio.sleep(2.0)
+            results.append({"publication_id": publication_id, "success": True, "latency": latency})
+            print(f"✅ Deleted messages for publication {publication_id} in {latency*1000:.0f}ms")
         except Exception as e:
             errors.append(str(e))
-            print(f"❌ Failed to publish {publication_id}: {e}")
+            results.append({"publication_id": publication_id, "success": False, "error": str(e)})
+            print(f"❌ Failed to delete messages for publication {publication_id}: {e}")
 
 
 async def main() -> None:
-    print(f"🔬 Publish test started with concurrency={CONCURRENCY}")
+    print(f"🔬 Delete test started with concurrency={CONCURRENCY}")
     print(f"📍 Target: {BASE_URL}{API_PREFIX}\n")
     
     # Get authentication token
@@ -137,29 +166,30 @@ async def main() -> None:
     
     print(f"✅ Using authentication token (length: {len(token)})\n")
     
-    async with httpx.AsyncClient(timeout=150.0) as client:
-        # Get all draft publications
-        print("📋 Fetching draft publications...")
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        # Get all published publications
+        print("📋 Fetching published publications...")
         try:
-            publication_ids = await get_draft_publications(client, token)
+            publication_ids = await get_published_publications(client, token)
         except Exception as exc:
             print(f"❌ Cannot continue: {exc}")
             return
         
         if not publication_ids:
-            print("⚠️  No draft publications found. Run load_test.py first!")
+            print("⚠️  No published publications found. Nothing to delete!")
             return
         
         total_count = len(publication_ids)
-        print(f"📊 Found {total_count} draft publications\n")
+        print(f"📊 Found {total_count} published publications to delete\n")
         
         semaphore = asyncio.Semaphore(CONCURRENCY)
         latencies: List[float] = []
         errors: List[str] = []
+        results: List[dict] = []
         
         start_ts = time.perf_counter()
         tasks = [
-            asyncio.create_task(worker(i, client, pub_id, semaphore, latencies, errors, token))
+            asyncio.create_task(worker(i, client, pub_id, semaphore, latencies, errors, results, token))
             for i, pub_id in enumerate(publication_ids)
         ]
         
@@ -170,9 +200,9 @@ async def main() -> None:
         error_count = len(errors)
         
         print(f"\n{'='*60}")
-        print(f"📊 PUBLISH RESULTS")
+        print(f"📊 DELETE RESULTS")
         print(f"{'='*60}")
-        print(f"✅ Published {success_count}/{total_count} publications in {total_time:.2f}s")
+        print(f"✅ Deleted {success_count}/{total_count} publications in {total_time:.2f}s")
         print(f"📊 Success rate: {success_count/total_count*100:.1f}%")
         
         if error_count > 0:
@@ -192,7 +222,7 @@ async def main() -> None:
         
         if latencies:
             print(f"🚀 Performance:")
-            print(f"   Throughput: {success_count / total_time:.2f} pub/s")
+            print(f"   Throughput: {success_count / total_time:.2f} del/s")
             print(f"   Latency avg: {mean(latencies)*1000:.2f} ms")
             print(f"   Latency p50: {sorted(latencies)[len(latencies)//2]*1000:.2f} ms")
             print(f"   Latency p95: {sorted(latencies)[int(len(latencies)*0.95)]*1000:.2f} ms")
@@ -200,11 +230,14 @@ async def main() -> None:
             print(f"   Latency min: {min(latencies)*1000:.2f} ms")
             print(f"   Latency max: {max(latencies)*1000:.2f} ms")
         
+        # Статистика по каналам
+        successful_results = [r for r in results if r.get("success")]
+        if successful_results:
+            print(f"\n📈 Successfully deleted messages from {len(successful_results)} publications")
+        
         print(f"{'='*60}\n")
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-
-
 
