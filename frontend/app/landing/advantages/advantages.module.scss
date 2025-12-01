@@ -180,6 +180,10 @@
 
 @media (min-width: 1440px) {
 
+  .container {
+    max-width: 1200px;
+}
+
   .headline {
     font-size: 48px;
     line-height: 56px;
