@@ -108,6 +108,72 @@
   display: block;
 }
 
+.ctaCard {
+  background: linear-gradient(135deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  border-radius: 20px;
+  padding: 24px;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.ctaCardText {
+  color: white;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.ctaButtonWrapper {
+  display: block;
+  width: 100%;
+  padding: 2px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  align-self: center;
+}
+
+.ctaButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  width: 100%;
+  background-color: white;
+  padding: 12.5px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    
+    .ctaButtonText {
+      background-image: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      color: white;
+    }
+    
+    svg path {
+      stroke: white;
+    }
+  }
+}
+
+.ctaButtonText {
+  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  transition: color 0.2s;
+}
+
 .navigation {
   display: flex;
   justify-content: flex-end;
@@ -199,6 +265,11 @@
   .cardDescription {
     font-size: 16px;
     line-height: 24px;
+  }
+
+  .ctaCardText {
+  font-size: 24px;
+  line-height: 32px;
   }
 }
 
