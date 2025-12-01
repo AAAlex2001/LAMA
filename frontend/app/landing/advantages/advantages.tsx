@@ -1,6 +1,29 @@
+'use client';
+
+import { useRef } from 'react';
+import { Swiper, SwiperSlide } from 'swiper/react';
+import type { Swiper as SwiperType } from 'swiper';
+import 'swiper/css';
 import styles from "./advantages.module.scss";
 
 export default function Advantages() {
+  const swiperRef = useRef<SwiperType | null>(null);
+
+  const swiperCards = [
+    {
+      title: "Создавайте ботов",
+      description: "Подключай ботов по токену @BotFather и управляй ими. Приветственные боты и боты обратной связи легко и быстро настраиваются"
+    },
+    {
+      title: "Дополнительная функция 1",
+      description: "Описание дополнительной функции 1"
+    },
+    {
+      title: "Дополнительная функция 2",
+      description: "Описание дополнительной функции 2"
+    }
+  ];
+
   return (
     <section className={styles.advantages}>
       <div className={styles.container}>
@@ -28,16 +51,34 @@ export default function Advantages() {
             </p>
           </div>
 
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Создавайте ботов</h3>
-            <p className={styles.cardDescription}>
-              Подключай ботов по токену @BotFather и управляй ими. Приветственные боты и боты обратной связи легко и быстро настраиваются
-            </p>
+          <div className={styles.swiperContainer}>
+            <Swiper
+              onSwiper={(swiper) => {
+                swiperRef.current = swiper;
+              }}
+              spaceBetween={20}
+              slidesPerView={1}
+              loop={true}
+              className={styles.swiper}
+            >
+              {swiperCards.map((card, index) => (
+                <SwiperSlide key={index}>
+                  <div className={styles.card}>
+                    <h3 className={styles.cardTitle}>{card.title}</h3>
+                    <p className={styles.cardDescription}>{card.description}</p>
+                  </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
           </div>
         </div>
 
         <div className={styles.navigation}>
-          <button className={styles.navButton} aria-label="Предыдущий">
+          <button 
+            className={styles.navButton} 
+            aria-label="Предыдущий"
+            onClick={() => swiperRef.current?.slidePrev()}
+          >
             <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
               <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_left)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
@@ -52,7 +93,11 @@ export default function Advantages() {
               </defs>
             </svg>
           </button>
-          <button className={styles.navButton} aria-label="Следующий">
+          <button 
+            className={styles.navButton} 
+            aria-label="Следующий"
+            onClick={() => swiperRef.current?.slideNext()}
+          >
             <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_right)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
