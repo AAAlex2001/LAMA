@@ -50,6 +50,7 @@ export default function Advantages() {
             <p className={styles.cardDescription}>
               Создавайте публикации: текст, медиа, кнопки, опросы и AI-редактор — всё в одном окне. Планируйте серии, создавайте отложенные публикации, включайте автопостинг, автоудаление и мультипостинг в несколько каналов одновременно.
             </p>
+            <span className={styles.cardLink}>Узнать подробнее</span>
           </div>
 
           <div className={styles.card}>
@@ -57,6 +58,7 @@ export default function Advantages() {
             <p className={styles.cardDescription}>
               Создавайте рекламные посты, генерируйте ссылки-приглашения, заполняйте таблицы проданных и свободных мест, ведите отчёт о доходах и расходах и анализируйте прирост подписчиков после каждой рекламной кампании.
             </p>
+            <span className={styles.cardLink}>Узнать подробнее</span>
           </div>
 
           <div className={styles.swiperContainer}>
@@ -82,6 +84,7 @@ export default function Advantages() {
                   <div className={styles.card}>
                     <h3 className={styles.cardTitle}>{card.title}</h3>
                     <p className={styles.cardDescription}>{card.description}</p>
+                    <span className={styles.cardLink}>Узнать подробнее</span>
                   </div>
                 </SwiperSlide>
               ))}

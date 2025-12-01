@@ -66,7 +66,9 @@
   border-radius: 20px;
   padding: 24px;
   cursor: pointer;
-  transition: background 0.2s;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
 
   &:hover {
     background: linear-gradient(180deg, #F1F5FB 0%, rgba(241, 245, 251, 0.5) 50%, rgba(0, 82, 180, 0.4) 100%);
@@ -89,6 +91,21 @@
   line-height: 22px;
   color: #4b5563;
   font-weight: 400;
+}
+
+.cardLink {
+  display: none;
+  color: white;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  margin-top: auto;
+  padding-top: 16px;
+  align-self: flex-start;
+}
+
+.card:hover .cardLink {
+  display: block;
 }
 
 .navigation {
@@ -170,6 +187,7 @@
 
   .card {
     flex: 0 0 calc((100% - 20px)/2);
+    min-height: 300px;
   }
 
   .cardTitle {
