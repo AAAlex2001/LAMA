@@ -146,12 +146,15 @@
   }
 
   .cards {
-    gap: 32px;
-    margin-bottom: 48px;
-  }
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 20px;
+}
 
   .card {
     padding: 32px;
+    flex: 0 0 calc((100% - 20px)/2);
   }
 
   .cardTitle {

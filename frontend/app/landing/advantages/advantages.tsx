@@ -59,6 +59,11 @@ export default function Advantages() {
               spaceBetween={20}
               slidesPerView={1}
               loop={true}
+              breakpoints={{
+                768: {
+                  slidesPerView: 2,
+                },
+              }}
               className={styles.swiper}
             >
               {swiperCards.map((card, index) => (
