@@ -57,7 +57,17 @@ export default function Users() {
             <a href="/login" className={styles.ctaButton}>
               <span className={styles.ctaButtonText}>Начать бесплатно</span>
               <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_users_arrow)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <defs>
+                  <linearGradient id="paint0_linear_users_arrow" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#3B82F6"/>
+                    <stop offset="0.5" stopColor="#2F67C3"/>
+                    <stop offset="0.75" stopColor="#295AAA"/>
+                    <stop offset="0.875" stopColor="#26539D"/>
+                    <stop offset="0.9375" stopColor="#244F96"/>
+                    <stop offset="1" stopColor="#234C90"/>
+                  </linearGradient>
+                </defs>
               </svg>
             </a>
           </div>
