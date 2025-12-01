@@ -18,6 +18,14 @@ export default function Advantages() {
       title: "Дополнительная функция 1",
       description: "Описание дополнительной функции 1"
     },
+      {
+      title: "Дополнительная функция 1",
+      description: "Описание дополнительной функции 1"
+    },
+      {
+      title: "Дополнительная функция 1",
+      description: "Описание дополнительной функции 1"
+    },
     {
       title: "Дополнительная функция 2",
       description: "Описание дополнительной функции 2"
@@ -62,6 +70,9 @@ export default function Advantages() {
               breakpoints={{
                 768: {
                   slidesPerView: 2,
+                },
+                1440: {
+                  slidesPerView: 3,
                 },
               }}
               className={styles.swiper}

@@ -3,6 +3,7 @@
   margin-top: 120px;
   background-color: #ffffff;
   overflow: hidden;
+  margin-bottom: 80px;
 }
 
 .container {
@@ -64,6 +65,12 @@
   background-color: #f9fafb;
   border-radius: 20px;
   padding: 24px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: linear-gradient(180deg, #F1F5FB 0%, rgba(241, 245, 251, 0.5) 50%, rgba(0, 82, 180, 0.4) 100%);
+  }
 }
 
 .cardTitle {
@@ -141,7 +148,7 @@
 }
 
 @media (min-width: 768px) {
-
+  
   .headline {
     font-size: 36px;
     line-height: 44px;
@@ -162,7 +169,6 @@
 }
 
   .card {
-    padding: 32px;
     flex: 0 0 calc((100% - 20px)/2);
   }
 
@@ -185,35 +191,42 @@
 }
 
   .headline {
-    font-size: 48px;
-    line-height: 56px;
-    margin-bottom: 24px;
+    font-size: 32px;
+    line-height: 42px;
+    margin-bottom: 8px;
   }
 
   .subtitle {
-    font-size: 20px;
-    line-height: 32px;
-    margin-bottom: 80px;
+    font-size: 24px;
+    line-height: 28px;
+    margin-bottom: 64px;
   }
 
   .cards {
-    gap: 40px;
-    margin-bottom: 60px;
+    gap: 24px;
   }
 
   .card {
-    padding: 40px;
+    flex: 0 0 calc((100% - 24px)/2);
   }
 
   .cardTitle {
-    font-size: 28px;
-    line-height: 36px;
-    margin-bottom: 20px;
+    font-size: 20px;
+    line-height: 28px;
+    margin-bottom: 8px;
   }
 
   .cardDescription {
-    font-size: 18px;
-    line-height: 28px;
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .swiperContainer {
+    max-width: 1200px;
+  }
+
+  .swiper {
+    overflow: hidden;
   }
 }
 
