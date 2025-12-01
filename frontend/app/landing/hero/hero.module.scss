@@ -33,7 +33,7 @@
   font-size: 14px;
   line-height: 22px;
   font-weight: 500;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   color: #FFFFFF;
 }
 
@@ -127,5 +127,167 @@
   position: absolute;
   bottom: 10px;
   left: calc(10/360)*100%;
+}
+
+@media (min-width: 768px) {
+
+    .content {
+    margin: 80px auto auto;
+    max-width: 900px;
+  }
+    .headline {
+    font-size: 26px;
+    line-height: 32px;
+    margin-bottom: 30px;
+  }
+
+  .paragraph {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+  .paragraphSecondary {
+  font-size: 16px;
+  line-height: 24px;
+  margin-bottom: 30px;
+}
+
+  .relativeElement1 {
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(2.2);
+    }
+  }
+
+  .relativeElement2 {
+    bottom: 100px;
+    
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(1.5);
+    }
+  }
+
+  .relativeElement3 {
+    bottom: 30px;
+    
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(1.5);
+    }
+  }
+
+  .relativeElement4 {
+    bottom: 180px;
+    right: calc(50/768)*100%;
+    
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(1.5);
+    }
+  }
+
+  .relativeElement5 {
+    left: calc(50/768)*100%;
+    
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(1.5);
+    }
+  }
+
+  .ctaButtonWrapper {
+  margin-bottom: 275px;
+}
+
+}
+
+@media (min-width: 1440px) {
+
+    .content {
+    margin: 135px auto auto;
+    max-width: 1200px;
+  }
+    .headline {
+    font-size: 48px;
+    line-height: 52px;
+    margin-bottom: 50px;
+  }
+
+  .paragraph {
+  font-size: 20px;
+  line-height: 32px;
+}
+
+  .paragraphSecondary {
+  font-size: 20px;
+  line-height: 32px;
+  margin-bottom: 60px;
+}
+
+  .ctaButtonText {
+  font-size: 18px;
+  line-height: 28px;
+}
+
+  .relativeElement1 {
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(4.2);
+    }
+  }
+
+  .relativeElement2 {
+    bottom: 200px;
+
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(2);
+    }
+  }
+
+  .relativeElement3 {
+    bottom: 75px;
+
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(3);
+    }
+  }
+
+  .relativeElement4 {
+    bottom: 300px;
+    right: calc(10/1440)*100%;
+
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(2.5);
+    }
+  }
+
+  .relativeElement5 {
+    left: calc(10/1440)*100%;
+    bottom: 50px;
+
+    img {
+      width: 120%;
+      height: auto;
+      transform: scale(2);
+    }
+  }
+
+  .ctaButtonWrapper {
+  margin-bottom: 435px;
+}
+
 }
 
