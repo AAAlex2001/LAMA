@@ -50,54 +50,8 @@
   font-style: italic;
 }
 
-.ctaButtonWrapper {
-  display: inline-block;
-  padding: 2px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+.buttonContainer {
   margin-bottom: 228px;
-}
-
-.ctaButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 15px;
-  background-color: white;
-  padding: 12.5px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.2s;
-  
-  &:hover {
-    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    
-    .ctaButtonText {
-      background-image: none;
-      -webkit-background-clip: unset;
-      background-clip: unset;
-      color: white;
-    }
-    
-    svg path {
-      stroke: white;
-    }
-  }
-}
-
-.ctaButtonText {
-  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
-  transition: color 0.2s;
-}
-
-.arrowIcon {
-  width: 20px;
-  height: 20px;
 }
 
 .relativeElement1 {
@@ -201,9 +155,9 @@
     }
   }
 
-  .ctaButtonWrapper {
-  margin-bottom: 275px;
-}
+  .buttonContainer {
+    margin-bottom: 275px;
+  }
 
 }
 
@@ -230,10 +184,6 @@
   margin-bottom: 60px;
 }
 
-  .ctaButtonText {
-  font-size: 18px;
-  line-height: 28px;
-}
 
   .relativeElement1 {
     img {
@@ -285,9 +235,9 @@
     }
   }
 
-  .ctaButtonWrapper {
-  margin-bottom: 435px;
-}
+  .buttonContainer {
+    margin-bottom: 435px;
+  }
 
 }
 

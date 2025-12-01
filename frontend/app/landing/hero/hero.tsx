@@ -1,4 +1,5 @@
 import styles from "./hero.module.scss";
+import Button from "@/components/button/button";
 
 export default function Hero() {
   return (
@@ -16,23 +17,8 @@ export default function Hero() {
             Вы здесь не случайно: нужный сервис
             перед вами
           </p>
-          <div className={styles.ctaButtonWrapper}>
-            <a href="/login" className={styles.ctaButton}>
-              <span className={styles.ctaButtonText}>Начать бесплатно</span>
-              <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_1235_3114)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            <defs>
-            <linearGradient id="paint0_linear_1235_3114" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#3B82F6"/>
-            <stop offset="0.5" stopColor="#2F67C3"/>
-            <stop offset="0.75" stopColor="#295AAA"/>
-            <stop offset="0.875" stopColor="#26539D"/>
-            <stop offset="0.9375" stopColor="#244F96"/>
-            <stop offset="1" stopColor="#234C90"/>
-            </linearGradient>
-            </defs>
-            </svg>
-            </a>
+          <div className={styles.buttonContainer}>
+            <Button text="Начать бесплатно" href="/login" />
           </div>
         </div>
           <div className={styles.relativeElement1}>

@@ -97,46 +97,6 @@
   color: transparent;
 }
 
-.ctaButtonWrapper {
-  display: inline-block;
-  padding: 2px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-}
-
-.ctaButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 15px;
-  background-color: white;
-  padding: 12.5px 20px;
-  border-radius: 8px;
-  text-decoration: none;
-  transition: background 0.2s;
-  
-  &:hover {
-    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    
-    .ctaButtonText {
-      color: white;
-    }
-    
-    svg path {
-      stroke: white;
-    }
-  }
-}
-
-.ctaButtonText {
-  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
-  transition: color 0.2s;
-}
 
 @media (min-width: 768px) {
 
@@ -150,25 +110,31 @@
     height: 717px;
   }
 
+  .backgroundRing {
+  top: 75%;
+  left: 50%;
+  }
+
   .number {
     font-size: 96px;
-    line-height: 104px;
-    margin-bottom: 16px;
+    line-height: 120px;
   }
 
   .textLine {
-    font-size: 20px;
-    line-height: 28px;
+    font-size: 38px;
+    line-height: 52px;
   }
 
   .brandName {
-    font-size: 32px;
-    line-height: 40px;
-    margin: 12px 0;
+    font-size: 38px;
+    line-height: 52px;
   }
 
-  .ctaButtonWrapper {
-    margin-top: 40px;
+  .textLine_1 {
+  font-size: 18px;
+  line-height: 28px;
+  margin-bottom: 40px;
+  max-width: none;
   }
 }
 
@@ -182,27 +148,6 @@
     display: block;
     width: 1440px;
     height: 760px;
-  }
-
-  .number {
-    font-size: 120px;
-    line-height: 128px;
-    margin-bottom: 20px;
-  }
-
-  .textLine {
-    font-size: 24px;
-    line-height: 32px;
-  }
-
-  .brandName {
-    font-size: 40px;
-    line-height: 48px;
-    margin: 16px 0;
-  }
-
-  .ctaButtonWrapper {
-    margin-top: 48px;
   }
 }
 
