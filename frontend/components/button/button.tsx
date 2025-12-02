@@ -12,6 +12,7 @@ interface ButtonProps {
   showArrow?: boolean;
   className?: string;
   fullWidth?: boolean;
+  active?: boolean;
 }
 
 export default function Button({ 
@@ -20,6 +21,7 @@ export default function Button({
   onClick, 
   showArrow = true,
   className,
+  active = false,
   fullWidth = false,
 }: ButtonProps) {
   const gradientId = useId();
@@ -57,6 +59,7 @@ export default function Button({
       styles.button,
       {
         [styles.fullWidthButton]: fullWidth,
+        [styles.active]: active,
       }
   );
 

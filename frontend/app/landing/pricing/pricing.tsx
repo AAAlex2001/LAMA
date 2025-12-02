@@ -49,14 +49,14 @@ export default function Pricing() {
             От личного блога до крупного проекта — управляйте контентом эффективно и выгодно
           </p>
           <div className={styles.planeIcon}>
-            <img src="/hero_4.svg" alt="Hero illustration" />
-          </div>
-            <div className={styles.planeIcon_2}>
-            <img src="/hero_4.svg" alt="Hero illustration" />
+            <img src="/hero_4.svg" alt="Pricing illustration" />
           </div>
         </div>
 
         <div className={styles.cards}>
+          <div className={styles.planeIcon_2}>
+            <img src="/hero_4.svg" alt="Pricing illustration" />
+          </div>
           {plans.map((plan, index) => (
             <div 
               key={index} 
@@ -85,7 +85,7 @@ export default function Pricing() {
                 ))}
               </ul>
               <div className={styles.cardButton}>
-                <Button text="Выбрать план" href="/login" fullWidth={true}/>
+                <Button text="Выбрать план" href="/login" fullWidth active={index === 1}/>
               </div>
             </div>
           ))}

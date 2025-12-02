@@ -54,7 +54,7 @@ export default function Users() {
             <span className={styles.brandPlanner}>planner</span>
           </div>
           <p className={styles.textLine_1}>Планируйте будущее вашего бренда вместе с нами</p>
-          <Button text="Начать бесплатно" href="/login" />
+          <Button text="Начать бесплатно" href="/login" active={true} />
         </div>
       </div>
     </section>
