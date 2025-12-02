@@ -1,0 +1,234 @@
+.pricing {
+  padding: 0 20px;
+  margin-top: 80px;
+  margin-bottom: 80px;
+  background-color: #F1F5FB;
+  position: relative;
+  overflow: hidden;
+}
+
+.container {
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.headline {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: #475569;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.subtitle {
+  font-size: 18px;
+  line-height: 28px;
+  margin-bottom: 20px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.highlight {
+  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.description {
+  font-size: 16px;
+  line-height: 24px;
+  color: #475569;
+  font-weight: 400;
+  text-align: left;
+}
+
+.planeIcon {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  border: 2px solid #5E7CAC80;
+}
+
+.card.highlighted {
+  border-color: transparent;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 20px;
+    padding: 2px;
+    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.cardTitle {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #383F45;
+  margin: 0;
+}
+
+.cardPrice {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #383F45;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  line-height: 22px;
+  color: #4b5563;
+}
+
+.feature svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cardButton {
+  margin-top: auto;
+}
+
+@media (min-width: 768px) {
+  .pricing {
+    margin-top: 120px;
+    margin-bottom: 120px;
+  }
+
+  .headline {
+    font-size: 36px;
+    line-height: 44px;
+    margin-bottom: 20px;
+  }
+
+  .subtitle {
+    font-size: 18px;
+    line-height: 28px;
+    margin-bottom: 16px;
+  }
+
+  .description {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .cards {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+
+  .card {
+    flex: 0 0 calc((100% - 24px) / 2);
+    padding: 32px;
+    min-height: 400px;
+  }
+
+  .cardTitle {
+    font-size: 24px;
+    line-height: 32px;
+  }
+
+  .cardPrice {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .feature {
+    font-size: 16px;
+    line-height: 24px;
+  }
+
+  .planeIcon {
+    top: -40px;
+    right: -40px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1200px;
+  }
+
+  .headline {
+    font-size: 32px;
+    line-height: 42px;
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 24px;
+    line-height: 28px;
+    margin-bottom: 12px;
+  }
+
+  .description {
+    font-size: 18px;
+    line-height: 28px;
+  }
+
+  .cards {
+    gap: 32px;
+  }
+
+  .card {
+    flex: 0 0 calc((100% - 64px) / 3);
+    padding: 40px;
+  }
+}
+
