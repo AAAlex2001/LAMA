@@ -1,6 +1,7 @@
 import Hero from "./landing/hero/hero";
 import Advantages from "./landing/advantages/advantages";
 import Users from "./landing/users/users";
+import KeyAdvantages from "./landing/key-advantages/key-advantages";
 
 export default function Home() {
   return (
@@ -8,6 +9,7 @@ export default function Home() {
       <Hero />
       <Advantages />
       <Users />
+      <KeyAdvantages />
     </main>
   );
 }

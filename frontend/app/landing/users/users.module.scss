@@ -3,6 +3,7 @@
   background-color: #ffffff;
   position: relative;
   overflow: visible;
+  margin-bottom: 227px;
 }
 
 .container {
@@ -100,6 +101,10 @@
 
 @media (min-width: 768px) {
 
+  .users {
+  margin-bottom: 390px;
+}
+
   .ringMobile {
     display: none;
   }
@@ -139,6 +144,10 @@
 }
 
 @media (min-width: 1440px) {
+
+  .users {
+  margin-bottom: 510px;
+}
 
   .ringTablet {
     display: none;

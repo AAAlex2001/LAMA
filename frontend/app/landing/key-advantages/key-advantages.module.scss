@@ -1,0 +1,141 @@
+.keyAdvantages {
+  padding: 0 20px;
+  margin-bottom: 80px;
+  background-color: #ffffff;
+}
+
+.container {
+  margin: 0 auto;
+}
+
+.headline {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 40px;
+  color: #383F45;
+}
+
+.highlight {
+  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 600;
+}
+
+.lama {
+  font-style: italic;
+}
+
+.cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 9px 20px 4px #6080C366;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+}
+
+.icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, rgba(181, 205, 255, 0.4) 0%, #F7F9FE 60%);
+  border-radius: 10px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 600;
+  color: #383F45;
+  margin: 0;
+  width: 100%;
+}
+
+.cardDescription {
+  font-size: 14px;
+  line-height: 22px;
+  color: #4b5563;
+  font-weight: 400;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .keyAdvantages {
+    margin-bottom: 120px;
+  }
+
+  .headline {
+    font-size: 36px;
+    line-height: 44px;
+    margin-bottom: 60px;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+  }
+
+  .card {
+    padding: 32px;
+    gap: 20px;
+  }
+
+  .cardTitle {
+    font-size: 20px;
+    line-height: 28px;
+  }
+
+  .cardDescription {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
+@media (min-width: 1440px) {
+
+  .keyAdvantages {
+    margin-bottom: 120px;
+  }
+
+  .container {
+    max-width: 1200px;
+  }
+
+  .headline {
+    font-size: 32px;
+    line-height: 42px;
+    margin-bottom: 64px;
+  }
+
+  .cards {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .card {
+    padding: 40px;
+  }
+}
+
