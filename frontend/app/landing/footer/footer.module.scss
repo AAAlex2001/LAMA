@@ -1,0 +1,167 @@
+.footer {
+  background-color: #ffffff;
+  border-top: 1px solid #E5E7EB;
+  padding: 40px 20px 20px;
+}
+
+.container {
+  margin: 0 auto;
+  max-width: 1200px;
+}
+
+.top {
+  margin-bottom: 40px;
+}
+
+.brand {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.brandName {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #383F45;
+  margin: 0;
+}
+
+.social {
+  display: flex;
+  gap: 16px;
+}
+
+.socialLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: all 0.2s;
+  width: 35px;
+  height: 35px;
+  
+  svg {
+    width: 100%;
+    height: 100%;
+    transition: all 0.2s;
+  }
+  
+  &:hover {
+    svg path {
+      fill: #3B82F6;
+    }
+  }
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  margin-bottom: 40px;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnTitle {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: #383F45;
+  margin: 0 0 16px;
+}
+
+.links {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #5E7CAC;
+  text-decoration: none;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+.bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.logos {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  
+  svg {
+    height: auto;
+    width: auto;
+  }
+}
+
+.copyright {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  color: #5E7CAC;
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .footer {
+    padding: 60px 20px 30px;
+  }
+
+  .content {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+  }
+
+  .bottom {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (min-width: 1440px) {
+  .footer {
+    padding: 80px 20px 40px;
+  }
+
+  .content {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 60px;
+  }
+
+  .brand {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+

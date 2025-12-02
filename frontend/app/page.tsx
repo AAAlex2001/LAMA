@@ -7,6 +7,7 @@ import FAQ from "./landing/faq/faq";
 import FAQDecoration from "./landing/faq-decoration/faq-decoration";
 import Lama from "./landing/lama/lama";
 import MarqueeComponent from "./landing/marquee/marquee";
+import Footer from "./landing/footer/footer";
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
       <FAQDecoration />
       <Lama />
       <MarqueeComponent />
+      <Footer />
     </main>
   );
 }
