@@ -1,9 +1,8 @@
 .users {
-  padding: 60px 20px;
+  padding: 160px 20px;
   background-color: #ffffff;
   position: relative;
   overflow: hidden;
-  margin-bottom: 227px;
 }
 
 .container {
@@ -129,8 +128,7 @@
 @media (min-width: 768px) {
 
   .users {
-  padding: 80px 20px;
-  margin-bottom: 390px;
+  padding: 200px 20px;
   overflow: hidden;
 }
 
@@ -202,8 +200,7 @@
 @media (min-width: 1440px) {
 
   .users {
-  padding: 120px 20px;
-  margin-bottom: 510px;
+  padding: 260px 20px;
   overflow: hidden;
 }
 
@@ -215,6 +212,10 @@
     display: block;
     width: 1440px;
     height: 760px;
+  }
+
+  .backgroundRing {
+    top: 550px;
   }
 
   .planeIcon_1 {
