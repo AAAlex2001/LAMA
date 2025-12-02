@@ -114,6 +114,10 @@
 
   .actions {
     flex-direction: row;
+    max-width: 600px;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 16px;
   }
 
   .headline {
