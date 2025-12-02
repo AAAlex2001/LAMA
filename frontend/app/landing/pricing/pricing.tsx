@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
 
@@ -37,8 +38,61 @@ const plans = [
 ];
 
 export default function Pricing() {
+  const gradientId768 = useId();
+  const gradientId1440 = useId();
+
   return (
     <section className={styles.pricing}>
+      <svg 
+        className={styles.decorationLine768}
+        width="768" 
+        height="298" 
+        viewBox="0 0 768 298" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path 
+          d="M0 1.7793C17.6262 48.0684 -10.7714 330.532 329.359 187.187C386.014 163.31 174.751 376.621 768 255.077" 
+          stroke={`url(#${gradientId768})`} 
+          strokeOpacity="0.1" 
+          strokeWidth="10"
+        />
+        <defs>
+          <linearGradient id={gradientId768} x1="-75.3438" y1="-524.826" x2="784.371" y2="-524.826" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#3B82F6"/>
+            <stop offset="0.5" stopColor="#2F67C3"/>
+            <stop offset="0.75" stopColor="#295AAA"/>
+            <stop offset="0.875" stopColor="#26539D"/>
+            <stop offset="0.9375" stopColor="#244F96"/>
+            <stop offset="1" stopColor="#234C90"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <svg 
+        className={styles.decorationLine1440}
+        width="1440" 
+        height="592" 
+        viewBox="0 0 1440 592" 
+        fill="none" 
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path 
+          d="M-21 3.55566C14 95.5557 -42.3886 656.955 633 372.056C745.499 324.6 326 748.556 1504 506.987" 
+          stroke={`url(#${gradientId1440})`} 
+          strokeOpacity="0.1" 
+          strokeWidth="20"
+        />
+        <defs>
+          <linearGradient id={gradientId1440} x1="-170.608" y1="-1043.08" x2="1536.51" y2="-1043.08" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#3B82F6"/>
+            <stop offset="0.5" stopColor="#2F67C3"/>
+            <stop offset="0.75" stopColor="#295AAA"/>
+            <stop offset="0.875" stopColor="#26539D"/>
+            <stop offset="0.9375" stopColor="#244F96"/>
+            <stop offset="1" stopColor="#234C90"/>
+          </linearGradient>
+        </defs>
+      </svg>
       <div className={styles.container}>
         <div className={styles.header}>
           <h1 className={styles.headline}>Выберите свой план</h1>

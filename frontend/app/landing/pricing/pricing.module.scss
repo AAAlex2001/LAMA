@@ -87,6 +87,14 @@
   display: none;
 }
 
+.decorationLine768 {
+  display: none;
+}
+
+.decorationLine1440 {
+  display: none;
+}
+
 .cards {
   display: flex;
   flex-direction: column;
@@ -258,6 +266,16 @@
       transform: scaleX(-1);
     }
   }
+
+  .decorationLine768 {
+    display: block;
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-10deg);
+    z-index: 0;
+    pointer-events: none;
+  }
 }
 
 @media (min-width: 1440px) {
@@ -321,6 +339,20 @@
       height: 200px !important;
       transform: scaleX(-1) !important;
     }
+  }
+
+  .decorationLine768 {
+    display: none;
+  }
+
+  .decorationLine1440 {
+    display: block;
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-10deg);
+    z-index: 0;
+    pointer-events: none;
   }
 }
 
