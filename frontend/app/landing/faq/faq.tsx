@@ -69,9 +69,15 @@ export default function FAQ() {
             </linearGradient>
           </defs>
         </svg>
-        <h2 className={styles.headline}>Часто задаваемые вопросы</h2>
-        
-        <div className={styles.items}>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <h2 className={styles.headline}>Часто задаваемые вопросы</h2>
+          
+          <div className={styles.items}>
           {faqItems.map((item, index) => (
             <div 
               key={index} 
@@ -124,11 +130,12 @@ export default function FAQ() {
           <Button text="Telegram канал" href="/telegram-channel"  fullWidth={true} showArrow={false}/>
         </div>
 
-        <div className={styles.help}>
-          <p className={styles.helpText}>
-            Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
-          </p>
-        </div>
+          <div className={styles.help}>
+            <p className={styles.helpText}>
+              Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

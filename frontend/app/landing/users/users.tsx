@@ -1,7 +1,8 @@
 'use client';
 
 import { useId } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion';
+import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
 import Button from "@/components/button/button";
 
@@ -9,6 +10,22 @@ export default function Users() {
   const gradientIdMobile = useId();
   const gradientIdTablet = useId();
   const gradientIdDesktop = useId();
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (latest) => Math.round(latest));
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.3 });
+
+  useEffect(() => {
+    if (isInView) {
+      const controls = animate(count, 500, {
+        duration: 4,
+        ease: "easeOut",
+      });
+
+      return controls.stop;
+    }
+  }, [isInView, count]);
+
   return (
     <section className={styles.users}>
       <div className={styles.backgroundRing}>
@@ -80,14 +97,35 @@ export default function Users() {
         </svg>
       </div>
       <div className={styles.container}>
-        <div className={styles.planeIcon_1}>
+        <motion.div 
+          className={styles.planeIcon_1}
+          initial={{ opacity: 0, x: -200 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
           <img src="/hero_4.svg" alt="Decoration" />
-        </div>
-        <div className={styles.planeIcon_2}>
+        </motion.div>
+        <motion.div 
+          className={styles.planeIcon_2}
+          initial={{ opacity: 0, x: 200 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
           <img src="/hero_4.svg" alt="Decoration" />
-        </div>
-        <div className={styles.content}>
-          <div className={styles.number}>500+</div>
+        </motion.div>
+        <motion.div 
+          className={styles.content} 
+          ref={ref}
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <div className={styles.number}>
+            <motion.span>{rounded}</motion.span>+
+          </div>
           <p className={styles.textLine}>пользователей доверяют</p>
           <div className={styles.brandName}>
             <span className={styles.brandLama}>LAMA</span>
@@ -95,7 +133,7 @@ export default function Users() {
           </div>
           <p className={styles.textLine_1}>Планируйте будущее вашего бренда вместе с нами</p>
           <Button text="Начать бесплатно" href="/login" active={true} />
-        </div>
+        </motion.div>
       </div>
     </section>
   );

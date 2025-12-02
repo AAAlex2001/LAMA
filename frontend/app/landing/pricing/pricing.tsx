@@ -103,7 +103,13 @@ export default function Pricing() {
         </defs>
       </svg>
       <div className={styles.container}>
-        <div className={styles.header}>
+        <motion.div 
+          className={styles.header}
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
           <h1 className={styles.headline}>Выберите свой план</h1>
           <h2 className={styles.subtitle}>
             <span className={styles.highlight}>Решение для любого масштаба проектов</span>
@@ -111,19 +117,35 @@ export default function Pricing() {
           <p className={styles.description}>
             От личного блога до крупного проекта — управляйте контентом эффективно и выгодно
           </p>
-          <div className={styles.planeIcon}>
+          <motion.div 
+            className={styles.planeIcon}
+            initial={{ opacity: 0, x: 200 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
             <img src="/hero_4.svg" alt="Pricing illustration" />
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         <div className={styles.cards}>
-          <div className={styles.planeIcon_2}>
+          <motion.div 
+            className={styles.planeIcon_2}
+            initial={{ opacity: 0, x: -200 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
             <img src="/hero_4.svg" alt="Pricing illustration" />
-          </div>
+          </motion.div>
           {plans.map((plan, index) => (
-            <div 
+            <motion.div 
               key={index} 
               className={`${styles.card} ${plan.isHighlighted ? styles.highlighted : ''}`}
+              initial={{ opacity: 0, x: index % 2 === 0 ? -200 : 200 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
+              viewport={{ once: true, amount: 0.3 }}
             >
               <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>{plan.title}</h3>
@@ -150,7 +172,7 @@ export default function Pricing() {
               <div className={styles.cardButton}>
                 <Button text="Выбрать план" href="/login" fullWidth active={index === 1}/>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </div>

@@ -103,16 +103,22 @@ export default function Advantages() {
             </linearGradient>
           </defs>
         </svg>
-        <h2 className={styles.headline}>
-          Всё для <span className={styles.highlight}>продуктивной</span>{" "}
-          <span className={styles.highlight}>и</span>{" "}
-          <span className={styles.highlight}>лёгкой</span> работы с контентом
-        </h2>
-        <p className={styles.subtitle}>
-          Профессиональный инструмент для тех, кто ценит порядок и эффективность
-        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <h2 className={styles.headline}>
+            Всё для <span className={styles.highlight}>продуктивной</span>{" "}
+            <span className={styles.highlight}>и</span>{" "}
+            <span className={styles.highlight}>лёгкой</span> работы с контентом
+          </h2>
+          <p className={styles.subtitle}>
+            Профессиональный инструмент для тех, кто ценит порядок и эффективность
+          </p>
 
-        <div className={styles.cards}>
+          <div className={styles.cards}>
           <div className={styles.card}>
             <h3 className={styles.cardTitle}>Постинг и планирование</h3>
             <p className={styles.cardDescription}>
@@ -169,46 +175,47 @@ export default function Advantages() {
           </div>
         </div>
 
-        <div className={styles.navigation}>
-          <button 
-            className={styles.navButton} 
-            aria-label="Предыдущий"
-            onClick={() => swiperRef.current?.slidePrev()}
-          >
-            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
-              <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_left)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="paint0_linear_left" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#3B82F6"/>
-                  <stop offset="0.5" stopColor="#2F67C3"/>
-                  <stop offset="0.75" stopColor="#295AAA"/>
-                  <stop offset="0.875" stopColor="#26539D"/>
-                  <stop offset="0.9375" stopColor="#244F96"/>
-                  <stop offset="1" stopColor="#234C90"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </button>
-          <button 
-            className={styles.navButton} 
-            aria-label="Следующий"
-            onClick={() => swiperRef.current?.slideNext()}
-          >
-            <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_right)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="paint0_linear_right" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#3B82F6"/>
-                  <stop offset="0.5" stopColor="#2F67C3"/>
-                  <stop offset="0.75" stopColor="#295AAA"/>
-                  <stop offset="0.875" stopColor="#26539D"/>
-                  <stop offset="0.9375" stopColor="#244F96"/>
-                  <stop offset="1" stopColor="#234C90"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </button>
-        </div>
+          <div className={styles.navigation}>
+            <button 
+              className={styles.navButton} 
+              aria-label="Предыдущий"
+              onClick={() => swiperRef.current?.slidePrev()}
+            >
+              <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ transform: 'rotate(180deg)' }}>
+                <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_left)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <defs>
+                  <linearGradient id="paint0_linear_left" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#3B82F6"/>
+                    <stop offset="0.5" stopColor="#2F67C3"/>
+                    <stop offset="0.75" stopColor="#295AAA"/>
+                    <stop offset="0.875" stopColor="#26539D"/>
+                    <stop offset="0.9375" stopColor="#244F96"/>
+                    <stop offset="1" stopColor="#234C90"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </button>
+            <button 
+              className={styles.navButton} 
+              aria-label="Следующий"
+              onClick={() => swiperRef.current?.slideNext()}
+            >
+              <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="url(#paint0_linear_right)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <defs>
+                  <linearGradient id="paint0_linear_right" x1="8" y1="1" x2="8" y2="13" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="#3B82F6"/>
+                    <stop offset="0.5" stopColor="#2F67C3"/>
+                    <stop offset="0.75" stopColor="#295AAA"/>
+                    <stop offset="0.875" stopColor="#26539D"/>
+                    <stop offset="0.9375" stopColor="#244F96"/>
+                    <stop offset="1" stopColor="#234C90"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </button>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

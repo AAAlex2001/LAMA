@@ -1,5 +1,6 @@
 'use client';
 
+import { motion } from 'framer-motion';
 import styles from "./key-advantages.module.scss";
 
 const advantages = [
@@ -174,11 +175,17 @@ export default function KeyAdvantages() {
   return (
     <section className={styles.keyAdvantages}>
       <div className={styles.container}>
-        <h1 className={styles.headline}>
-          Почему выбирают <span className={styles.highlight}><span className={styles.lama}>LAMA</span>planner</span>
-        </h1>
-        
-        <div className={styles.cards}>
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
+          <h1 className={styles.headline}>
+            Почему выбирают <span className={styles.highlight}><span className={styles.lama}>LAMA</span>planner</span>
+          </h1>
+          
+          <div className={styles.cards}>
           {advantages.map((advantage, index) => (
             <div key={index} className={styles.card}>
               <div className={styles.cardHeader}>
@@ -188,7 +195,8 @@ export default function KeyAdvantages() {
               <p className={styles.cardDescription}>{advantage.description}</p>
             </div>
           ))}
-        </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );
