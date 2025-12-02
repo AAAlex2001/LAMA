@@ -78,13 +78,23 @@
 
 .planeIcon {
   position: absolute;
-  top: calc(400/360)*100%;
-  right: -10px;
+  top: calc(300/360)*100%;
+  right: -30px;
   z-index: 1;
 }
 
 .planeIcon_2 {
-  display: none;
+  display: inline-block;
+  position: absolute;
+  top: -55px;
+  left: -30px;
+  z-index: 1;
+
+  img {
+    width: 100px;
+    height: 100px;
+    transform: scaleX(-1);
+  }
 }
 
 .decorationLine768 {
@@ -250,7 +260,7 @@
 
   .planeIcon {
     right: -30px;
-    top: 1010px;
+    top: 810px;
   }
 
   .planeIcon_2 {
@@ -324,8 +334,8 @@
   }
 
   .planeIcon {
-    right: -700px;
-    top: 470px;
+    right: -40px;
+    top: 790px;
   }
 
   .planeIcon_2 {

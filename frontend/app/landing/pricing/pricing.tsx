@@ -117,23 +117,24 @@ export default function Pricing() {
           <p className={styles.description}>
             От личного блога до крупного проекта — управляйте контентом эффективно и выгодно
           </p>
-          <motion.div 
-            className={styles.planeIcon}
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            viewport={{ once: true, amount: 0.3 }}
-          >
-            <img src="/hero_4.svg" alt="Pricing illustration" />
-          </motion.div>
         </motion.div>
 
         <div className={styles.cards}>
-          <motion.div 
+          <motion.div
             className={styles.planeIcon_2}
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <img src="/hero_4.svg" alt="Pricing illustration" />
+          </motion.div>
+
+            <motion.div
+            className={styles.planeIcon}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true, amount: 0.3 }}
           >
             <img src="/hero_4.svg" alt="Pricing illustration" />
@@ -144,7 +145,7 @@ export default function Pricing() {
               className={`${styles.card} ${plan.isHighlighted ? styles.highlighted : ''}`}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
-              transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
+              transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.3 }}
               viewport={{ once: true, amount: 0.3 }}
             >
               <div className={styles.cardHeader}>

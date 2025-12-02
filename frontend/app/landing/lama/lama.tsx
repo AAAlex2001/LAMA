@@ -1,3 +1,6 @@
+'use client';
+
+import { motion } from 'framer-motion';
 import styles from "./lama.module.scss";
 import Button from "@/components/button/button";
 
@@ -17,9 +20,15 @@ export default function Lama() {
             </div>
           </div>
         </div>
-        <div className={styles.imageWrapper}>
+        <motion.div 
+          className={styles.imageWrapper}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.3 }}
+        >
           <img src="/lama.png" alt="Lama" className={styles.image} />
-        </div>
+        </motion.div>
       </div>
     </section>
   );
