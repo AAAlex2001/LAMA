@@ -83,6 +83,12 @@ export default function Users() {
         </svg>
       </div>
       <div className={styles.container}>
+        <div className={styles.planeIcon_1}>
+          <img src="/hero_4.svg" alt="Decoration" />
+        </div>
+        <div className={styles.planeIcon_2}>
+          <img src="/hero_4.svg" alt="Decoration" />
+        </div>
         <div className={styles.content}>
           <div className={styles.number}>500+</div>
           <p className={styles.textLine}>пользователей доверяют</p>
