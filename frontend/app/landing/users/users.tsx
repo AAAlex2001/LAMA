@@ -20,7 +20,7 @@ export default function Users() {
             strokeWidth="10"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, amount: 0.3 }}
           />
@@ -43,7 +43,7 @@ export default function Users() {
             strokeWidth="10"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, amount: 0.3 }}
           />
@@ -66,7 +66,7 @@ export default function Users() {
             strokeWidth="20"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, amount: 0.3 }}
           />

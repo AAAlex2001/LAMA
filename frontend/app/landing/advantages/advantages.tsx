@@ -60,7 +60,7 @@ export default function Advantages() {
             strokeWidth="20"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 3, ease: "easeInOut", delay: 0 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, amount: 0.3 }}
           />
@@ -90,7 +90,7 @@ export default function Advantages() {
             strokeWidth="20"
             initial={{ pathLength: 0 }}
             animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut" }}
+            transition={{ duration: 3, ease: "easeInOut", delay: 1.5 }}
             whileInView={{ pathLength: 1 }}
             viewport={{ once: true, amount: 0.3 }}
           />
