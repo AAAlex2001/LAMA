@@ -1,3 +1,4 @@
+import Header from "./landing/header/header";
 import Hero from "./landing/hero/hero";
 import Advantages from "./landing/advantages/advantages";
 import Users from "./landing/users/users";
@@ -12,6 +13,7 @@ import Footer from "./landing/footer/footer";
 export default function Home() {
   return (
     <main>
+      <Header />
       <Hero />
       <Advantages />
       <Users />

@@ -13,6 +13,7 @@ interface ButtonProps {
   className?: string;
   fullWidth?: boolean;
   active?: boolean;
+  size?: 'default' | 'small' | 'medium';
 }
 
 export default function Button({ 
@@ -23,6 +24,7 @@ export default function Button({
   className,
   active = false,
   fullWidth = false,
+  size = 'default',
 }: ButtonProps) {
   const gradientId = useId();
   
@@ -52,6 +54,8 @@ export default function Button({
       className,
       {
         [styles.fullWidthWrapper]: fullWidth,
+        [styles.smallWrapper]: size === 'small',
+        [styles.mediumWrapper]: size === 'medium',
       }
   );
 
@@ -60,6 +64,8 @@ export default function Button({
       {
         [styles.fullWidthButton]: fullWidth,
         [styles.active]: active,
+        [styles.smallButton]: size === 'small',
+        [styles.mediumButton]: size === 'medium',
       }
   );
 

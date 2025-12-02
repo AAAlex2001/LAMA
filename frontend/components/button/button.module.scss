@@ -73,3 +73,41 @@
   justify-content: center;
 }
 
+.smallWrapper {
+  padding: 1px;
+  border-radius: 8px;
+  width: 72px;
+}
+
+.smallButton {
+  width: 100%;
+  padding: 6px 0;
+  border-radius: 6px;
+  gap: 8px;
+  justify-content: center;
+  
+  .buttonText {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+.mediumWrapper {
+  padding: 2px;
+  border-radius: 10px;
+  width: 110px;
+}
+
+.mediumButton {
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  gap: 10px;
+  justify-content: center;
+  
+  .buttonText {
+    font-size: 16px;
+    line-height: 24px;
+  }
+}
+
