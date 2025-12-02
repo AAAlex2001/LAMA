@@ -15,9 +15,9 @@
 .planeIcon_1 {
   display: block;
   position: absolute;
-  top: 20px;
+  top: -50px;
   z-index: 11;
-  left: 20px;
+  left: -25px;
 
   img {
     width: 100px;
@@ -31,7 +31,7 @@
   position: absolute;
   bottom: 20px;
   z-index: 11;
-  right: 20px;
+  right: -30px;
 
   img {
     width: 100px;
@@ -143,14 +143,14 @@
   }
 
   .backgroundRing {
-  top: 75%;
+  top: 450px;
   left: 50%;
   }
 
   .planeIcon_1 {
     display: block;
     position: absolute;
-    top: 20px;
+    top: -50px;
     z-index: 11;
     left: 20px;
 

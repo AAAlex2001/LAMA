@@ -119,8 +119,8 @@ export default function Pricing() {
           </p>
           <motion.div 
             className={styles.planeIcon}
-            initial={{ opacity: 0, x: 200 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -131,8 +131,8 @@ export default function Pricing() {
         <div className={styles.cards}>
           <motion.div 
             className={styles.planeIcon_2}
-            initial={{ opacity: 0, x: -200 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -142,8 +142,8 @@ export default function Pricing() {
             <motion.div 
               key={index} 
               className={`${styles.card} ${plan.isHighlighted ? styles.highlighted : ''}`}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -200 : 200 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.1 }}
               viewport={{ once: true, amount: 0.3 }}
             >
