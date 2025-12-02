@@ -1,13 +1,37 @@
 .pricing {
-  padding: 0 20px;
-  margin-top: 80px;
-  margin-bottom: 80px;
+  padding: 120px 20px 150px;
   background-color: #F1F5FB;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 200px;
+    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
 }
 
 .container {
+  display: flex;
+  flex-direction: column;
   margin: 0 auto;
   position: relative;
   z-index: 1;
@@ -53,10 +77,13 @@
 
 .planeIcon {
   position: absolute;
-  top: -20px;
-  right: -20px;
-  opacity: 0.3;
-  z-index: 0;
+  top: 130px;
+  right: -10px;
+  z-index: 1;
+}
+
+.planeIcon_2 {
+  display: none;
 }
 
 .cards {
@@ -65,14 +92,19 @@
   gap: 20px;
 }
 
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
 .card {
   background-color: #ffffff;
   border-radius: 20px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  box-shadow: 0 4px 20px 0 #6080C366;
   display: flex;
   flex-direction: column;
-  gap: 20px;
   position: relative;
   border: 2px solid #5E7CAC80;
 }
@@ -101,92 +133,104 @@
 }
 
 .cardTitle {
-  font-size: 20px;
-  line-height: 28px;
+  font-size: 18px;
+  line-height: 34px;
   font-weight: 600;
   color: #383F45;
-  margin: 0;
 }
 
 .cardPrice {
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 700;
+  font-size: 20px;
+  line-height: 24px;
+  font-weight: 400;
   color: #383F45;
+}
+
+.pricePeriod {
+  font-size: 14px;
+  line-height: 14px;
+  font-weight: 400;
+  color: #5E7CAC80;
 }
 
 .features {
   list-style: none;
-  padding: 0;
-  margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  flex: 1;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .feature {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  font-size: 14px;
-  line-height: 22px;
-  color: #4b5563;
+  gap: 10px;
+  font-size: 16px;
+  line-height: 26px;
+  color: #5E7CACB2;
 }
 
 .feature svg {
   flex-shrink: 0;
-  margin-top: 2px;
+  margin-top: 5px;
 }
 
-.cardButton {
-  margin-top: auto;
-}
 
 @media (min-width: 768px) {
-  .pricing {
-    margin-top: 120px;
-    margin-bottom: 120px;
+
+  .container {
+    max-width: 600px;
+  }
+
+  .header {
+  margin-bottom: 60px;
   }
 
   .headline {
-    font-size: 36px;
-    line-height: 44px;
-    margin-bottom: 20px;
+    font-size: 18px;
+    line-height: 28px;
+    margin-bottom: 8px;
   }
 
   .subtitle {
-    font-size: 18px;
-    line-height: 28px;
-    margin-bottom: 16px;
+    font-size: 24px;
+    line-height: 36px;
+    margin-bottom: 8px;
   }
 
   .description {
-    font-size: 16px;
-    line-height: 24px;
+    font-size: 18px;
+    line-height: 28px;
   }
 
   .cards {
     display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 24px;
   }
 
+  .cardHeader {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 8px;
+    justify-content: space-between;
+  }
+
   .card {
-    flex: 0 0 calc((100% - 24px) / 2);
     padding: 32px;
-    min-height: 400px;
   }
 
   .cardTitle {
     font-size: 24px;
-    line-height: 32px;
+    line-height: 38px;
   }
 
   .cardPrice {
-    font-size: 28px;
-    line-height: 36px;
+    font-size: 24px;
+    line-height: 38px;
+  }
+  .features {
+    gap: 6px;
   }
 
   .feature {
@@ -195,14 +239,42 @@
   }
 
   .planeIcon {
-    top: -40px;
-    right: -40px;
+    right: -30px;
+    top: 1040px;
+  }
+
+  .planeIcon_2 {
+    display: inline-block;
+    position: absolute;
+    top: 100px;
+    z-index: 1;
+    left: -100px;
+
+    img {
+      width: 180px;
+      height: 180px;
+      transform: scaleX(-1);
+    }
   }
 }
 
 @media (min-width: 1440px) {
+
   .container {
     max-width: 1200px;
+    flex-direction: row;
+    align-items: center;
+    gap: 60px;
+  }
+  
+  .header {
+    flex: 0 0 auto;
+    max-width: 550px;
+  }
+  
+  .cards {
+    flex: 1;
+    min-width: 0;
   }
 
   .headline {
@@ -228,7 +300,17 @@
 
   .card {
     flex: 0 0 calc((100% - 64px) / 3);
-    padding: 40px;
+    padding: 24px;
+  }
+
+  .planeIcon {
+    right: -30px;
+    top: 1040px;
+  }
+
+  .planeIcon_2 {
+    top: 100px;
+    left: 300px;
   }
 }
 

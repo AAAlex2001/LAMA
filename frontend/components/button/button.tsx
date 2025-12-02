@@ -3,6 +3,8 @@
 import { useId } from 'react';
 import styles from "./button.module.scss";
 
+import classNames from "classnames";
+
 interface ButtonProps {
   text: string;
   href?: string;
@@ -43,16 +45,20 @@ export default function Button({
     </>
   );
 
-  const wrapperClasses = [
-    styles.buttonWrapper,
-    fullWidth ? styles.fullWidthWrapper : "",
-    className || ""
-  ].filter(Boolean).join(" ");
+  const wrapperClasses = classNames(
+      styles.buttonWrapper,
+      className,
+      {
+        [styles.fullWidthWrapper]: fullWidth,
+      }
+  );
 
-  const buttonClasses = [
-    styles.button,
-    fullWidth ? styles.fullWidthButton : ""
-  ].filter(Boolean).join(" ");
+  const buttonClasses = classNames(
+      styles.button,
+      {
+        [styles.fullWidthButton]: fullWidth,
+      }
+  );
 
   if (href) {
     return (
@@ -72,4 +78,3 @@ export default function Button({
     </div>
   );
 }
-

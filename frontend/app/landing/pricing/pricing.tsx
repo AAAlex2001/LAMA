@@ -51,6 +51,9 @@ export default function Pricing() {
           <div className={styles.planeIcon}>
             <img src="/hero_4.svg" alt="Hero illustration" />
           </div>
+            <div className={styles.planeIcon_2}>
+            <img src="/hero_4.svg" alt="Hero illustration" />
+          </div>
         </div>
 
         <div className={styles.cards}>
@@ -59,8 +62,18 @@ export default function Pricing() {
               key={index} 
               className={`${styles.card} ${plan.isHighlighted ? styles.highlighted : ''}`}
             >
+              <div className={styles.cardHeader}>
               <h3 className={styles.cardTitle}>{plan.title}</h3>
-              <div className={styles.cardPrice}>{plan.price}</div>
+              <div className={styles.cardPrice}>
+                {plan.price.split('/').map((part, i) => (
+                  i === 0 ? (
+                    <span key={i}>{part}</span>
+                  ) : (
+                    <span key={i} className={styles.pricePeriod}>/{part}</span>
+                  )
+                ))}
+              </div>
+              </div>
               <ul className={styles.features}>
                 {plan.features.map((feature, featureIndex) => (
                   <li key={featureIndex} className={styles.feature}>
