@@ -1,7 +1,9 @@
 .lama {
-  padding: 0 20px;
+  padding: 70px 20px 0;
   margin-bottom: 130px;
   background-color: #ffffff;
+  position: relative;
+  overflow: hidden;
 }
 
 .container {
@@ -68,8 +70,8 @@
 
 .imageWrapper {
   position: absolute;
-  bottom: 250px;
-  right: 0;
+  bottom: calc(255/360)*100%;
+  right: -60px;
   z-index: 2;
 }
 
@@ -131,7 +133,7 @@
 
   .imageWrapper {
     position: absolute;
-    right: 0;
+    right: 20px;
     top: 50%;
     transform: translateY(-50%);
     bottom: auto;
@@ -167,6 +169,11 @@
   .description {
     font-size: 18px;
     line-height: 28px;
+  }
+
+  .imageWrapper {
+    right: 0;
+    left: auto;
   }
 
   .image {
