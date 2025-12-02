@@ -16,9 +16,9 @@ export default function Lama() {
               <Button text="Подписаться" href="/telegram-channel" active showArrow={false} fullWidth={true} />
             </div>
           </div>
-          <div className={styles.imageWrapper}>
-            <img src="/lama.png" alt="Lama" className={styles.image} />
-          </div>
+        </div>
+        <div className={styles.imageWrapper}>
+          <img src="/lama.png" alt="Lama" className={styles.image} />
         </div>
       </div>
     </section>
