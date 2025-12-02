@@ -11,6 +11,10 @@
   display: none;
 }
 
+.decorationSvgBottom {
+  display: none;
+}
+
 .container {
   margin: 0 auto;
   position: relative;
@@ -252,6 +256,16 @@
     position: absolute;
     left: -130px;
     top: -125px;
+    z-index: 1;
+  }
+
+  .decorationSvgBottom {
+    display: block;
+    position: absolute;
+    right: -150px;
+    bottom: -10px;
+    transform: scaleX(-1);
+    rotate: (40deg);
     z-index: 1;
   }
 

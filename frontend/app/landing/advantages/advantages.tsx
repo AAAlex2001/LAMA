@@ -12,6 +12,7 @@ import Button from "@/components/button/button";
 export default function Advantages() {
   const swiperRef = useRef<SwiperType | null>(null);
   const gradientId = useId();
+  const gradientIdBottom = useId();
 
   const swiperCards = [
     {
@@ -65,6 +66,36 @@ export default function Advantages() {
           />
           <defs>
             <linearGradient id={gradientId} x1="-4.48242" y1="198.193" x2="140.938" y2="198.193" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#3B82F6"/>
+              <stop offset="0.5" stopColor="#2F67C3"/>
+              <stop offset="0.75" stopColor="#295AAA"/>
+              <stop offset="0.875" stopColor="#26539D"/>
+              <stop offset="0.9375" stopColor="#244F96"/>
+              <stop offset="1" stopColor="#234C90"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <svg 
+          className={styles.decorationSvgBottom}
+          width="154" 
+          height="381" 
+          viewBox="0 0 154 381" 
+          fill="none" 
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <motion.path 
+            d="M36.3548 232.943C158.518 295.943 160.518 175.943 117.855 157.443C86.3551 140.943 20.8545 152.943 36.3548 232.943ZM36.3548 232.943C-35.9831 168.443 55.5215 65.9431 131.355 7.94312M36.3548 232.943C39.1882 276.11 75.7176 350.643 138.518 371.443" 
+            stroke={`url(#${gradientIdBottom})`}
+            strokeOpacity="0.1"
+            strokeWidth="20"
+            initial={{ pathLength: 0 }}
+            animate={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
+            whileInView={{ pathLength: 1 }}
+            viewport={{ once: true, amount: 0.3 }}
+          />
+          <defs>
+            <linearGradient id={gradientIdBottom} x1="-4.48242" y1="198.193" x2="140.938" y2="198.193" gradientUnits="userSpaceOnUse">
               <stop stopColor="#3B82F6"/>
               <stop offset="0.5" stopColor="#2F67C3"/>
               <stop offset="0.75" stopColor="#295AAA"/>
