@@ -1,0 +1,155 @@
+.lama {
+  padding: 0 20px;
+  margin-bottom: 80px;
+  background-color: #ffffff;
+}
+
+.container {
+  margin: 0 auto;
+  position: relative;
+}
+
+.content {
+  background: linear-gradient(180deg, #E8F2FF 0%, #D4E7FF 100%);
+  border-radius: 20px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.headline {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #383F45;
+  margin-bottom: 16px;
+}
+
+.channel {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 700;
+  color: #3B82F6;
+  margin-bottom: 16px;
+}
+
+.description {
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  color: #383F45;
+  margin-bottom: 24px;
+}
+
+.highlight {
+  color: #3B82F6;
+  font-weight: 600;
+}
+
+.buttonWrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.imageWrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  position: relative;
+}
+
+.image {
+  position: absolute;
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  bottom: 290px;
+  right: -50px;
+  rotate: (-55deg);
+}
+
+@media (min-width: 768px) {
+  .lama {
+    margin-bottom: 120px;
+  }
+
+  .container {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    position: relative;
+  }
+
+  .content {
+    flex: 1;
+    padding: 40px;
+    text-align: left;
+    position: relative;
+    z-index: 1;
+  }
+
+  .headline {
+    font-size: 24px;
+    line-height: 32px;
+    margin-bottom: 20px;
+  }
+
+  .channel {
+    font-size: 32px;
+    line-height: 40px;
+    margin-bottom: 20px;
+  }
+
+  .description {
+    font-size: 16px;
+    line-height: 24px;
+    margin-bottom: 32px;
+  }
+
+  .buttonWrapper {
+    justify-content: flex-start;
+  }
+
+  .imageWrapper {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-top: 0;
+    z-index: 2;
+  }
+
+  .image {
+    width: 250px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1200px;
+    gap: 60px;
+  }
+
+  .content {
+    padding: 60px;
+  }
+
+  .headline {
+    font-size: 28px;
+    line-height: 36px;
+  }
+
+  .channel {
+    font-size: 36px;
+    line-height: 44px;
+  }
+
+  .description {
+    font-size: 18px;
+    line-height: 28px;
+  }
+
+  .image {
+    width: 300px;
+  }
+}
+

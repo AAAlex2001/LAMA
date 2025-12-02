@@ -5,6 +5,7 @@ import KeyAdvantages from "./landing/key-advantages/key-advantages";
 import Pricing from "./landing/pricing/pricing";
 import FAQ from "./landing/faq/faq";
 import FAQDecoration from "./landing/faq-decoration/faq-decoration";
+import Lama from "./landing/lama/lama";
 
 export default function Home() {
   return (
@@ -16,6 +17,7 @@ export default function Home() {
       <Pricing />
       <FAQ />
       <FAQDecoration />
+      <Lama />
     </main>
   );
 }
