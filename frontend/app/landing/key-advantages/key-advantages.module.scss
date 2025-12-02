@@ -22,7 +22,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .lama {
@@ -132,9 +132,10 @@
     margin-bottom: 64px;
   }
 
+
   .card {
     padding: 40px;
-    flex: 0 0 calc((100% - 24px)/3);
+    flex: 0 0 calc((100% - 48px) / 3);
   }
 }
 
