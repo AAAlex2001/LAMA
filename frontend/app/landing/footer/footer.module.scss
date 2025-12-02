@@ -8,6 +8,10 @@
   max-width: 1200px;
 }
 
+.main {
+  margin-bottom: 40px;
+}
+
 .top {
   margin-bottom: 40px;
 }
@@ -26,9 +30,15 @@
   margin: 0;
 }
 
+.lama {
+  font-weight: 800;
+  font-style: italic;
+}
+
 .social {
   display: flex;
   gap: 10px;
+  align-items: center;
 }
 
 .socialLink {
@@ -124,6 +134,11 @@
   font-weight: 400;
   color: #383F45;
   text-align: center;
+  order: 2;
+}
+
+.logos {
+  order: 1;
 }
 
 @media (min-width: 768px) {
@@ -132,8 +147,13 @@
     padding: 60px 20px 30px;
   }
 
+  .brandName {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
   .content {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 40px;
   }
 
@@ -148,6 +168,14 @@
     justify-content: space-between;
     align-items: center;
   }
+
+  .copyright {
+    order: 1;
+  }
+
+  .logos {
+    order: 2;
+  }
 }
 
 @media (min-width: 1440px) {
@@ -155,15 +183,34 @@
     padding: 80px 20px 40px;
   }
 
+  .container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main {
+    display: flex;
+    gap: 60px;
+    align-items: flex-start;
+    margin-bottom: 60px;
+  }
+
+  .top {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
   .content {
     grid-template-columns: repeat(4, 1fr);
     gap: 60px;
+    margin-bottom: 0;
+    flex: 1;
   }
 
   .brand {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
   }
 }
 
