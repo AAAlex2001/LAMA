@@ -19,9 +19,8 @@ export default function Users() {
             strokeOpacity="0.1"
             strokeWidth="10"
             initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>
@@ -42,9 +41,8 @@ export default function Users() {
             strokeOpacity="0.1"
             strokeWidth="10"
             initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>
@@ -65,9 +63,8 @@ export default function Users() {
             strokeOpacity="0.1"
             strokeWidth="20"
             initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut", delay: 2.5 }}
             whileInView={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>

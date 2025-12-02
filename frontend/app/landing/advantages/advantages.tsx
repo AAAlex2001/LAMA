@@ -59,9 +59,8 @@ export default function Advantages() {
             strokeOpacity="0.1"
             strokeWidth="20"
             initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut", delay: 0 }}
             whileInView={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>
@@ -89,9 +88,8 @@ export default function Advantages() {
             strokeOpacity="0.1"
             strokeWidth="20"
             initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 3, ease: "easeInOut", delay: 1.5 }}
             whileInView={{ pathLength: 1 }}
+            transition={{ duration: 3, ease: "easeInOut" }}
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>

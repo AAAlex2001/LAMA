@@ -1,6 +1,7 @@
 'use client';
 
 import { useId } from 'react';
+import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
 
@@ -51,11 +52,15 @@ export default function Pricing() {
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path 
+        <motion.path 
           d="M0 1.7793C17.6262 48.0684 -10.7714 330.532 329.359 187.187C386.014 163.31 174.751 376.621 768 255.077" 
           stroke={`url(#${gradientId768})`} 
           strokeOpacity="0.1" 
           strokeWidth="10"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          transition={{ duration: 3, ease: "easeInOut" }}
+          viewport={{ once: true, amount: 0.3 }}
         />
         <defs>
           <linearGradient id={gradientId768} x1="-75.3438" y1="-524.826" x2="784.371" y2="-524.826" gradientUnits="userSpaceOnUse">
@@ -76,11 +81,15 @@ export default function Pricing() {
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        <path 
+        <motion.path 
           d="M-21 3.55566C14 95.5557 -42.3886 656.955 633 372.056C745.499 324.6 326 748.556 1504 506.987" 
           stroke={`url(#${gradientId1440})`} 
           strokeOpacity="0.1" 
           strokeWidth="20"
+          initial={{ pathLength: 0 }}
+          whileInView={{ pathLength: 1 }}
+          transition={{ duration: 3, ease: "easeInOut" }}
+          viewport={{ once: true, amount: 0.3 }}
         />
         <defs>
           <linearGradient id={gradientId1440} x1="-170.608" y1="-1043.08" x2="1536.51" y2="-1043.08" gradientUnits="userSpaceOnUse">
