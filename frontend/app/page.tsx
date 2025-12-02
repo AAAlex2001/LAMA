@@ -6,6 +6,7 @@ import Pricing from "./landing/pricing/pricing";
 import FAQ from "./landing/faq/faq";
 import FAQDecoration from "./landing/faq-decoration/faq-decoration";
 import Lama from "./landing/lama/lama";
+import MarqueeComponent from "./landing/marquee/marquee";
 
 export default function Home() {
   return (
@@ -18,6 +19,7 @@ export default function Home() {
       <FAQ />
       <FAQDecoration />
       <Lama />
+      <MarqueeComponent />
     </main>
   );
 }

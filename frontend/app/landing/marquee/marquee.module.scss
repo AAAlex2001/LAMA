@@ -1,0 +1,52 @@
+.marquee {
+  width: 100%;
+  background: linear-gradient(180deg, #3B82F6 0%, #2F67C3 25%, #295AAA 50%, #26539D 75%, #244F96 87.5%, #234C90 100%);
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
+  display: flex;
+  align-items: center;
+  margin-bottom: 110px;
+}
+
+.marqueeContainer {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.text {
+  font-size: 64px;
+  line-height: 100%;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  white-space: nowrap;
+  margin: 0;
+  font-style: italic;
+}
+
+@media (min-width: 768px) {
+  .marquee {
+    margin-bottom: 180px;
+  }
+
+  .text {
+    font-size: 82px;
+    line-height: 100%;
+    margin: 0;
+  }
+}
+
+@media (min-width: 1440px) {
+  .marquee {
+    margin-bottom: 160px;
+  }
+
+  .text {
+    font-size: 76px;
+    line-height: 100%;
+    margin: 0;
+  }
+}
+
