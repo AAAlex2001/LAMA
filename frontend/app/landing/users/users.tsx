@@ -99,8 +99,8 @@ export default function Users() {
       <div className={styles.container}>
         <motion.div 
           className={styles.planeIcon_1}
-          initial={{ opacity: 0, x: -200 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
@@ -108,8 +108,8 @@ export default function Users() {
         </motion.div>
         <motion.div 
           className={styles.planeIcon_2}
-          initial={{ opacity: 0, x: 200 }}
-          whileInView={{ opacity: 1, x: 0 }}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
           viewport={{ once: true, amount: 0.3 }}
         >

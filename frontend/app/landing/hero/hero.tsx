@@ -32,8 +32,8 @@ export default function Hero() {
         </motion.div>
           <motion.div 
             className={styles.relativeElement1}
-            initial={{ opacity: 0, y: 100 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -41,8 +41,8 @@ export default function Hero() {
             </motion.div>
           <motion.div 
             className={styles.relativeElement2}
-            initial={{ opacity: 0, y: 100 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -50,8 +50,8 @@ export default function Hero() {
             </motion.div>
           <motion.div 
             className={styles.relativeElement3}
-            initial={{ opacity: 0, y: 100 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -59,8 +59,8 @@ export default function Hero() {
             </motion.div>
           <motion.div 
             className={styles.relativeElement4}
-            initial={{ opacity: 0, x: 200 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
             viewport={{ once: true, amount: 0.3 }}
           >
@@ -68,8 +68,8 @@ export default function Hero() {
             </motion.div>
           <motion.div 
             className={styles.relativeElement5}
-            initial={{ opacity: 0, x: -200 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
             viewport={{ once: true, amount: 0.3 }}
           >

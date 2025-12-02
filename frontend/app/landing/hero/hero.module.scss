@@ -20,6 +20,7 @@
   margin: 0 auto;
   text-align: center;
   color: white;
+  padding-bottom: 228px;
 }
 
 .headline {
@@ -51,7 +52,7 @@
 }
 
 .buttonContainer {
-  margin-bottom: 228px;
+  margin-bottom: 0;
 }
 
 .relativeElement1 {
@@ -106,6 +107,10 @@
   margin-bottom: 30px;
 }
 
+  .textContainer {
+    padding-bottom: 275px;
+  }
+
   .relativeElement1 {
     img {
       width: 120%;
@@ -156,7 +161,7 @@
   }
 
   .buttonContainer {
-    margin-bottom: 275px;
+    margin-bottom: 0;
   }
 
 }
@@ -183,6 +188,10 @@
   line-height: 32px;
   margin-bottom: 60px;
 }
+
+  .textContainer {
+    padding-bottom: 435px;
+  }
 
 
   .relativeElement1 {
@@ -236,7 +245,7 @@
   }
 
   .buttonContainer {
-    margin-bottom: 435px;
+    margin-bottom: 0;
   }
 
 }

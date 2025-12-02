@@ -1,8 +1,7 @@
 .advantages {
-  padding: 0 20px;
-  margin-top: 120px;
+  padding: 120px 20px 0;
   background-color: #ffffff;
-  overflow: visible;
+  overflow: hidden;
   margin-bottom: 217px;
   position: relative;
 }
@@ -60,7 +59,7 @@
 
 .swiper {
   width: 100%;
-  overflow: visible;
+  overflow: hidden;
 
   :global(.swiper-slide) {
     height: auto;
@@ -249,6 +248,7 @@
 
   .advantages {
   margin-bottom: 290px;
+  overflow: hidden;
 }
 
   .decorationSvg {

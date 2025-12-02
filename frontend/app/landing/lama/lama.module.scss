@@ -70,8 +70,8 @@
 
 .imageWrapper {
   position: absolute;
-  bottom: 270px;
-  right: -60px;
+  bottom: calc(250/360)*100%;
+  right: -70px;
   z-index: 2;
 }
 

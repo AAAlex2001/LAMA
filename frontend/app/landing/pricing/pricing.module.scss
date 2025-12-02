@@ -2,7 +2,7 @@
   padding: 120px 20px 150px;
   background-color: #F1F5FB;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   
   &::before {
     content: '';
@@ -41,7 +41,7 @@
   text-align: center;
   margin-bottom: 40px;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .headline {
