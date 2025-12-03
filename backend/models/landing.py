@@ -14,10 +14,6 @@ class ContentType(str, enum.Enum):
     TEXT = "text"
     IMAGE = "image"
     LINK = "link"
-    BUTTON = "button"
-    FAQ_ITEM = "faq_item"
-    PRICING_PLAN = "pricing_plan"
-    ADVANTAGE_CARD = "advantage_card"
 
 
 class SectionType(str, enum.Enum):
@@ -57,7 +53,7 @@ class LandingContent(Base):
     content_type = Column(SQLEnum(ContentType), nullable=False, index=True)
     
     # Основные поля
-    key = Column(String(255), nullable=False, index=True)  # Уникальный ключ для идентификации (например, "hero_headline", "faq_item_1")
+    key = Column(String(255), nullable=False, index=True)
     title = Column(String(500), nullable=True)
     text = Column(Text, nullable=True)
     subtitle = Column(Text, nullable=True)
@@ -70,9 +66,6 @@ class LandingContent(Base):
     link_url = Column(String(512), nullable=True)
     link_text = Column(String(255), nullable=True)
     
-    # Дополнительные данные (JSON для гибкости)
-    extra_data = Column(JSON, nullable=True)  # Для хранения дополнительных настроек
-    
     # Настройки отображения
     is_active = Column(Boolean, default=True, nullable=False)
     order = Column(Integer, default=0, nullable=False)
@@ -83,8 +76,4 @@ class LandingContent(Base):
 
     # Relationships
     section = relationship("LandingSection", back_populates="contents")
-
-    __table_args__ = (
-        {"comment": "Контент для лендинга"}
-    )
 
