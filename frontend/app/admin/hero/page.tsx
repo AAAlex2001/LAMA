@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect} from 'react';
 import styles from './hero-admin.module.scss';
 
 interface HeroImage {
@@ -23,11 +23,11 @@ export default function HeroAdminPage() {
     paragraphSecondary: '',
     buttonText: '',
     images: [
-      { url: '/hero_1.svg', alt: 'Hero 1' },
-      { url: '/hero_2.svg', alt: 'Hero 2' },
-      { url: '/hero_3.svg', alt: 'Hero 3' },
-      { url: '/hero_4.svg', alt: 'Hero 4' },
-      { url: '/hero_5.svg', alt: 'Hero 5' }
+      { url: '', alt: '' },
+      { url: '', alt: '' },
+      { url: '', alt: '' },
+      { url: '', alt: '' },
+      { url: '', alt: '' }
     ]
   });
   const [saving, setSaving] = useState(false);
@@ -67,41 +67,41 @@ export default function HeroAdminPage() {
   };
 
   // Drag & drop для картинок
-  const handleDrop = useCallback(async (index: number, e: React.DragEvent) => {
-    e.preventDefault();
-    const file = e.dataTransfer.files[0];
-    if (!file) return;
+  const handleDrop = async (index: number, e: React.DragEvent) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
 
-    // Проверяем формат
-    const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      setMessage('❌ Неподдерживаемый формат. Используйте PNG, JPG, SVG, WebP или GIF');
-      return;
-    }
+      // Проверяем формат
+      const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        setMessage('❌ Неподдерживаемый формат. Используйте PNG, JPG, SVG, WebP или GIF');
+        return;
+      }
 
-    // Загружаем файл
-    const formData = new FormData();
-    formData.append('file', file);
+      // Загружаем файл
+      const formData = new FormData();
+      formData.append('file', file);
 
-    try {
-      const res = await fetch('/api/upload-image', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (res.ok) {
-        const data = await res.json();
-        const newImages = [...content.images];
-        newImages[index] = { url: data.url, alt: `Hero ${index + 1}` };
-        setContent({ ...content, images: newImages });
-        setMessage('✅ Картинка загружена');
-      } else {
+      try {
+        const res = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const newImages = [...content.images];
+          newImages[index] = { url: data.url, alt: `Hero ${index + 1}` };
+          setContent({ ...content, images: newImages });
+          setMessage('✅ Картинка загружена');
+        } else {
+          setMessage('❌ Ошибка загрузки');
+        }
+      } catch {
         setMessage('❌ Ошибка загрузки');
       }
-    } catch {
-      setMessage('❌ Ошибка загрузки');
-    }
-  }, [content]);
+    };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -120,7 +120,7 @@ export default function HeroAdminPage() {
         method: 'POST',
         body: formData
       });
-      
+
       if (res.ok) {
         const data = await res.json();
         const newImages = [...content.images];
@@ -138,6 +138,7 @@ export default function HeroAdminPage() {
   }
 
   return (
+    <div className={styles.page}>
     <div className={styles.container}>
       <h1 className={styles.title}>Редактирование Hero секции</h1>
       
@@ -192,35 +193,39 @@ export default function HeroAdminPage() {
           <h2>Картинки (перетащите или кликните)</h2>
           
           <div className={styles.imagesGrid}>
-            {content.images.map((image, index) => (
-              <div
-                key={index}
-                className={styles.imageCard}
-                onDrop={e => handleDrop(index, e)}
-                onDragOver={handleDragOver}
-              >
-                <div className={styles.imagePreview}>
-                  {image.url ? (
-                    <img src={image.url} alt={image.alt} />
-                  ) : (
-                    <div className={styles.placeholder}>
-                      <span>📷</span>
-                      <span>Картинка {index + 1}</span>
-                    </div>
-                  )}
+              {content.images.map((image, index) => (
+                <div
+                  key={index}
+                  className={styles.imageCard}
+                >
+                  <div
+                    className={styles.imagePreview}
+                    onDrop={e => handleDrop(index, e)}      // ← ПЕРЕНОСИМ СЮДА!
+                    onDragOver={handleDragOver}             // ← ПЕРЕНОСИМ СЮДА!
+                  >
+                    {image.url ? (
+                      <img src={image.url} alt={image.alt} />
+                    ) : (
+                      <div className={styles.placeholder}>
+                        <span>📷</span>
+                        <span>Картинка {index + 1}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => handleFileSelect(index, e)}
+                    className={styles.fileInput}
+                  />
+
+                  <div className={styles.dropHint}>
+                    Перетащите или кликните
+                  </div>
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => handleFileSelect(index, e)}
-                  className={styles.fileInput}
-                />
-                <div className={styles.dropHint}>
-                  Перетащите или кликните
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
         </div>
       </div>
 
@@ -237,6 +242,7 @@ export default function HeroAdminPage() {
         </a>
       </div>
     </div>
+        </div>
   );
 }
 
