@@ -8,6 +8,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
 import Button from "@/components/button/button";
+import { API_BASE_URL } from "@/config";
 
 interface AdvantagesCard {
   title: string;
@@ -26,7 +27,7 @@ export default function Advantages() {
   const [swiperCards, setSwiperCards] = useState<AdvantagesCard[]>([]);
 
   useEffect(() => {
-    fetch('/api/advantages')
+    fetch(`${API_BASE_URL}/advantages`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
 import styles from './advantages-admin.module.scss';
+import { API_BASE_URL } from "@/config";
 
 interface AdvantagesCard {
   title: string;
@@ -28,7 +29,7 @@ export default function AdvantagesAdminPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/advantages')
+    fetch(`${API_BASE_URL}/advantages`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
@@ -41,7 +42,7 @@ export default function AdvantagesAdminPage() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch('/api/advantages', {
+      const res = await fetch(`${API_BASE_URL}/advantages`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)

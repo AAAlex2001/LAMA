@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
 import styles from './key-advantages-admin.module.scss';
+import { API_BASE_URL } from "@/config";
 
 interface KeyAdvantage {
   icon: string | null;
@@ -25,7 +26,7 @@ export default function KeyAdvantagesAdminPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch('/api/key-advantages')
+    fetch(`${API_BASE_URL}/key-advantages`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
@@ -38,7 +39,7 @@ export default function KeyAdvantagesAdminPage() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch('/api/key-advantages', {
+      const res = await fetch(`${API_BASE_URL}/key-advantages`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
@@ -80,7 +81,7 @@ export default function KeyAdvantagesAdminPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/upload-image', {
+      const res = await fetch(`${API_BASE_URL}/upload-image`, {
         method: 'POST',
         body: formData
       });

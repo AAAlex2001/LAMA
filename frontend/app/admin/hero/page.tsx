@@ -3,6 +3,7 @@
 import { useState, useEffect} from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
 import styles from './hero-admin.module.scss';
+import { API_BASE_URL } from "@/config";
 
 interface HeroImage {
   url: string;
@@ -37,7 +38,7 @@ export default function HeroAdminPage() {
 
   // Загружаем текущий контент
   useEffect(() => {
-    fetch('/api/hero')
+    fetch(`${API_BASE_URL}/hero`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
@@ -51,7 +52,7 @@ export default function HeroAdminPage() {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch('/api/hero', {
+      const res = await fetch(`${API_BASE_URL}/hero`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
@@ -85,7 +86,7 @@ export default function HeroAdminPage() {
       formData.append('file', file);
 
       try {
-        const res = await fetch('/api/upload-image', {
+        const res = await fetch(`${API_BASE_URL}/upload-image`, {
           method: 'POST',
           body: formData
         });
@@ -117,7 +118,7 @@ export default function HeroAdminPage() {
     formData.append('file', file);
 
     try {
-      const res = await fetch('/api/upload-image', {
+      const res = await fetch(`${API_BASE_URL}/upload-image`, {
         method: 'POST',
         body: formData
       });

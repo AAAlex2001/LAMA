@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./hero.module.scss";
 import Button from "@/components/button/button";
+import { API_BASE_URL } from "@/config";
 
 interface HeroImage {
   url: string;
@@ -28,7 +29,7 @@ export default function Hero() {
   });
 
   useEffect(() => {
-    fetch('/api/hero')
+    fetch(`${API_BASE_URL}/hero`)
       .then(res => res.json())
       .then(data => setContent(data))
       .catch(() => {});

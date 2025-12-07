@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./key-advantages.module.scss";
+import { API_BASE_URL } from "@/config";
 
 interface KeyAdvantage {
   icon?: string | null;
@@ -15,7 +16,7 @@ export default function KeyAdvantages() {
   const [advantages, setAdvantages] = useState<KeyAdvantage[]>([]);
 
   useEffect(() => {
-    fetch('/api/key-advantages')
+    fetch(`${API_BASE_URL}/key-advantages`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);
