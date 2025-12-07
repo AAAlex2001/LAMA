@@ -23,6 +23,7 @@ class SectionType(str, enum.Enum):
     KEY_ADVANTAGES = "key_advantages"
     FAQ = "faq"
     PRICING = "pricing"
+    USERS = "users"
     FOOTER = "footer"
     HEADER = "header"
     OTHER = "other"

@@ -73,6 +73,13 @@ class FAQContentRequest(BaseModel):
     faqItems: List[FAQItem]
 
 
+class UsersContentRequest(BaseModel):
+    number: int
+    textLine: str
+    textLine_1: str
+    buttonText: str
+
+
 @router.get("/hero")
 async def get_hero_content(db: AsyncSession = Depends(get_db)):
     """Получить контент для секции Hero"""
@@ -195,5 +202,24 @@ async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(g
     return await service.save_faq_content(
         headline=data.headline,
         faq_items=faq_items
+    )
+
+
+@router.get("/users")
+async def get_users_content(db: AsyncSession = Depends(get_db)):
+    """Получить контент для секции Users"""
+    service = LandingService(db)
+    return await service.get_users_content()
+
+
+@router.put("/users")
+async def save_users_content(data: UsersContentRequest, db: AsyncSession = Depends(get_db)):
+    """Сохранить контент для секции Users"""
+    service = LandingService(db)
+    return await service.save_users_content(
+        number=data.number,
+        text_line=data.textLine,
+        text_line_1=data.textLine_1,
+        button_text=data.buttonText
     )
 

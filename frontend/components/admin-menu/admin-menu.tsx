@@ -16,6 +16,7 @@ export default function AdminMenu() {
     { href: '/admin/key-advantages', label: 'Key Advantages' },
     { href: '/admin/pricing', label: 'Pricing' },
     { href: '/admin/faq', label: 'FAQ' },
+    { href: '/admin/users', label: 'Users' },
   ];
 
   return (

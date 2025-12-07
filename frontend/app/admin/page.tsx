@@ -37,6 +37,11 @@ export default function AdminPage() {
             <h2>FAQ секция</h2>
             <p>Редактирование часто задаваемых вопросов</p>
           </Link>
+
+          <Link href="/admin/users" className={styles.sectionCard}>
+            <h2>Users секция</h2>
+            <p>Управление текстами секции пользователей</p>
+          </Link>
         </div>
       </div>
     </div>

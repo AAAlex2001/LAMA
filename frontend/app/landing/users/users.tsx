@@ -1,10 +1,11 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
 import Button from "@/components/button/button";
+import { API_BASE_URL } from "@/config";
 
 export default function Users() {
   const gradientIdMobile = useId();
@@ -14,17 +15,33 @@ export default function Users() {
   const rounded = useTransform(count, (latest) => Math.round(latest));
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
+  
+  const [content, setContent] = useState({
+    number: 0,
+    textLine: '',
+    textLine_1: '',
+    buttonText: ''
+  });
 
   useEffect(() => {
-    if (isInView) {
-      const controls = animate(count, 500, {
+    fetch(`${API_BASE_URL}/users`)
+      .then(res => res.json())
+      .then(data => {
+        setContent(data);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (isInView && content.number > 0) {
+      const controls = animate(count, content.number, {
         duration: 1,
         ease: "easeOut",
       });
 
       return controls.stop;
     }
-  }, [isInView, count]);
+  }, [isInView, count, content.number]);
 
   return (
     <section className={styles.users}>
@@ -126,13 +143,13 @@ export default function Users() {
           <div className={styles.number}>
             <motion.span>{rounded}</motion.span>+
           </div>
-          <p className={styles.textLine}>пользователей доверяют</p>
+          <p className={styles.textLine}>{content.textLine}</p>
           <div className={styles.brandName}>
             <span className={styles.brandLama}>LAMA</span>
             <span className={styles.brandPlanner}>planner</span>
           </div>
-          <p className={styles.textLine_1}>Планируйте будущее вашего бренда вместе с нами</p>
-          <Button text="Начать бесплатно" href="/login" active={true} />
+          <p className={styles.textLine_1}>{content.textLine_1}</p>
+          <Button text={content.buttonText} href="/login" active={true} />
         </motion.div>
       </div>
     </section>
