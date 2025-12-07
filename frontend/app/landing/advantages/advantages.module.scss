@@ -269,11 +269,11 @@
   .decorationSvgBottom {
     display: block;
     position: absolute;
-    right: -150px;
-    bottom: -10px;
-    transform: scaleX(-1);
-    rotate: (40deg);
+    right: -130px;
+    bottom: 20px;
     z-index: 0;
+    overflow: hidden;
+    clip-path: inset(0 0 20% 0);
   }
 
   .container {

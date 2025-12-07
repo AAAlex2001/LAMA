@@ -73,14 +73,14 @@ export default function Advantages() {
         </svg>
         <svg 
           className={styles.decorationSvgBottom}
-          width="154" 
-          height="381" 
-          viewBox="0 0 154 381" 
+          width="226" 
+          height="271" 
+          viewBox="0 0 226 271" 
           fill="none" 
           xmlns="http://www.w3.org/2000/svg"
         >
           <motion.path 
-            d="M36.3548 232.943C158.518 295.943 160.518 175.943 117.855 157.443C86.3551 140.943 20.8545 152.943 36.3548 232.943ZM36.3548 232.943C-35.9831 168.443 55.5215 65.9431 131.355 7.94312M36.3548 232.943C39.1882 276.11 75.7176 350.643 138.518 371.443" 
+            d="M193.902 124.941C180.449 224.182 107.992 175.226 114.78 142.032C118.096 116.335 152.632 82.2567 193.902 124.941ZM193.902 124.941C185.636 54.811 69.3312 -6.84163 3.0221 14.1801M193.902 124.941C218.482 144.672 244.353 221.505 230.522 267.68" 
             stroke={`url(#${gradientIdBottom})`}
             strokeOpacity="0.1"
             strokeWidth="20"
@@ -90,7 +90,7 @@ export default function Advantages() {
             viewport={{ once: true, amount: 0.3 }}
           />
           <defs>
-            <linearGradient id={gradientIdBottom} x1="-4.48242" y1="198.193" x2="140.938" y2="198.193" gradientUnits="userSpaceOnUse">
+            <linearGradient id={gradientIdBottom} x1="190.228" y1="86.0449" x2="129.454" y2="172.839" gradientUnits="userSpaceOnUse">
               <stop stopColor="#3B82F6"/>
               <stop offset="0.5" stopColor="#2F67C3"/>
               <stop offset="0.75" stopColor="#295AAA"/>
