@@ -14,8 +14,7 @@ from datetime import datetime, timezone, timedelta
 
 from backend.config import TELEGRAM_WEBHOOK_SECRET
 from backend.database import AsyncSessionLocal
-from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request, \
-    send_auto_reply_response
+from backend.tasks.bot_polling import get_master_bot, send_command_response, handle_join_request, send_auto_reply_response
 from backend.services.channel import (
     ChannelModerationService,
     AntispamService,
