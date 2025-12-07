@@ -1,46 +1,39 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
-
-const plans = [
-  {
-    title: "Пробный",
-    price: "0 ₽/сутки",
-    features: [
-      "Тестируйте все функции 24 часа",
-    ],
-    isHighlighted: false
-  },
-  {
-    title: "Базовый",
-    price: "890 ₽/месяц",
-    features: [
-      "Доступен полный функционал сервиса",
-      "Подключение до 5 каналов / чатов",
-      "Создание и управление 5 ботами",
-      "Подключение до 3 RSS-лент / репостеров"
-    ],
-    isHighlighted: true
-  },
-  {
-    title: "Профессиональный",
-    price: "1590 ₽/месяц",
-    features: [
-      "Доступен полный функционал сервиса",
-      "Подключение до 15 каналов / чатов",
-      "Создание и управление 15 ботами",
-      "Подключение до 7 RSS-лент / репостеров"
-    ],
-    isHighlighted: false
-  }
-];
+import { API_BASE_URL } from "@/config";
 
 export default function Pricing() {
   const gradientId768 = useId();
   const gradientId1440 = useId();
+
+  const [headline, setHeadline] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [plans, setPlans] = useState<Array<{
+    title: string;
+    price: string;
+    features: string[];
+    isHighlighted: boolean;
+  }>>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/pricing`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.headline) setHeadline(data.headline);
+        if (data.subtitle) setSubtitle(data.subtitle);
+        if (data.description) setDescription(data.description);
+        if (data.plans && data.plans.length > 0) {
+          setPlans(data.plans);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className={styles.pricing}>
@@ -110,12 +103,12 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h1 className={styles.headline}>Выберите свой план</h1>
+          <h1 className={styles.headline}>{headline}</h1>
           <h2 className={styles.subtitle}>
-            <span className={styles.highlight}>Решение для любого масштаба проектов</span>
+            <span className={styles.highlight}>{subtitle}</span>
           </h2>
           <p className={styles.description}>
-            От личного блога до крупного проекта — управляйте контентом эффективно и выгодно
+            {description}
           </p>
         </motion.div>
 

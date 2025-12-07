@@ -49,6 +49,30 @@ class KeyAdvantagesContentRequest(BaseModel):
     advantages: List[KeyAdvantageItem]
 
 
+class PricingPlan(BaseModel):
+    title: str
+    price: str
+    features: List[str]
+    isHighlighted: bool = False
+
+
+class PricingContentRequest(BaseModel):
+    headline: str
+    subtitle: str
+    description: str
+    plans: List[PricingPlan]
+
+
+class FAQItem(BaseModel):
+    question: str
+    answer: str
+
+
+class FAQContentRequest(BaseModel):
+    headline: str
+    faqItems: List[FAQItem]
+
+
 @router.get("/hero")
 async def get_hero_content(db: AsyncSession = Depends(get_db)):
     """Получить контент для секции Hero"""
@@ -119,5 +143,57 @@ async def save_key_advantages_content(data: KeyAdvantagesContentRequest, db: Asy
     return await service.save_key_advantages_content(
         headline=data.headline,
         advantages=advantages
+    )
+
+
+@router.get("/pricing")
+async def get_pricing_content(db: AsyncSession = Depends(get_db)):
+    """Получить контент для секции Pricing"""
+    service = LandingService(db)
+    return await service.get_pricing_content()
+
+
+@router.put("/pricing")
+async def save_pricing_content(data: PricingContentRequest, db: AsyncSession = Depends(get_db)):
+    """Сохранить контент для секции Pricing"""
+    service = LandingService(db)
+    plans = [
+        {
+            "title": plan.title,
+            "price": plan.price,
+            "features": plan.features,
+            "isHighlighted": plan.isHighlighted
+        }
+        for plan in data.plans
+    ]
+    return await service.save_pricing_content(
+        headline=data.headline,
+        subtitle=data.subtitle,
+        description=data.description,
+        plans=plans
+    )
+
+
+@router.get("/faq")
+async def get_faq_content(db: AsyncSession = Depends(get_db)):
+    """Получить контент для секции FAQ"""
+    service = LandingService(db)
+    return await service.get_faq_content()
+
+
+@router.put("/faq")
+async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(get_db)):
+    """Сохранить контент для секции FAQ"""
+    service = LandingService(db)
+    faq_items = [
+        {
+            "question": item.question,
+            "answer": item.answer
+        }
+        for item in data.faqItems
+    ]
+    return await service.save_faq_content(
+        headline=data.headline,
+        faq_items=faq_items
     )
 

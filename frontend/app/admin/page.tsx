@@ -27,6 +27,16 @@ export default function AdminPage() {
             <h2>Key Advantages секция</h2>
             <p>Редактирование ключевых преимуществ с иконками</p>
           </Link>
+
+          <Link href="/admin/pricing" className={styles.sectionCard}>
+            <h2>Pricing секция</h2>
+            <p>Управление тарифными планами и ценами</p>
+          </Link>
+
+          <Link href="/admin/faq" className={styles.sectionCard}>
+            <h2>FAQ секция</h2>
+            <p>Редактирование часто задаваемых вопросов</p>
+          </Link>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@ export default function Users() {
   useEffect(() => {
     if (isInView) {
       const controls = animate(count, 500, {
-        duration: 3,
+        duration: 1,
         ease: "easeOut",
       });
 

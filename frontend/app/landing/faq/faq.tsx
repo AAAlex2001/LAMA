@@ -1,37 +1,35 @@
 'use client';
 
-import { useState, useId } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./faq.module.scss";
 import Button from "@/components/button/button";
+import { API_BASE_URL } from "@/config";
 
-const faqItems = [
-  {
-    question: "Можно ли использовать Lama Planner бесплатно?",
-    answer: "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-  },
-  {
-    question: "Можно ли использовать Lama Planner бесплатно?",
-    answer: "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-  },
-  {
-    question: "Можно ли использовать Lama Planner бесплатно?",
-    answer: "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-  },
-  {
-    question: "Можно ли использовать Lama Planner бесплатно?",
-    answer: "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-  },
-  {
-    question: "Можно ли использовать Lama Planner бесплатно?",
-    answer: "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-  }
-];
+interface FAQItem {
+  question: string;
+  answer: string;
+}
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
   const decorationGradientId = useId();
+
+  const [headline, setHeadline] = useState('');
+  const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/faq`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.headline) setHeadline(data.headline);
+        if (data.faqItems && data.faqItems.length > 0) {
+          setFaqItems(data.faqItems);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -75,7 +73,7 @@ export default function FAQ() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h2 className={styles.headline}>Часто задаваемые вопросы</h2>
+          <h2 className={styles.headline}>{headline}</h2>
           
           <div className={styles.items}>
           {faqItems.map((item, index) => (
