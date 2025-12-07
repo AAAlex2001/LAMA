@@ -72,3 +72,29 @@ class UsersContentRequest(BaseModel):
     textLine_1: str
     buttonText: str
 
+
+class LamaContentRequest(BaseModel):
+    headline: str
+    channel: str
+    description: str
+    buttonText: str
+    buttonHref: str
+
+
+class FooterLink(BaseModel):
+    text: str
+    href: str
+
+
+class FooterColumn(BaseModel):
+    title: str
+    links: List[FooterLink]
+
+
+class FooterContentRequest(BaseModel):
+    brandName: str
+    copyright: str
+    telegramLink: str
+    instagramLink: str
+    columns: List[FooterColumn]
+

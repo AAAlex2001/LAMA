@@ -5,14 +5,16 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
-from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users
+from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer
 from backend.schemas.landing import (
     HeroContentRequest,
     AdvantagesContentRequest,
     KeyAdvantagesContentRequest,
     PricingContentRequest,
     FAQContentRequest,
-    UsersContentRequest
+    UsersContentRequest,
+    LamaContentRequest,
+    FooterContentRequest
 )
 
 router = APIRouter()
@@ -153,5 +155,50 @@ async def save_users_content(data: UsersContentRequest, db: AsyncSession = Depen
         text_line=data.textLine,
         text_line_1=data.textLine_1,
         button_text=data.buttonText
+    )
+
+
+@router.get("/lama")
+async def get_lama_content(db: AsyncSession = Depends(get_db)):
+    """Получить контент для секции Lama"""
+    return await lama.get_lama_content(db)
+
+
+@router.put("/lama")
+async def save_lama_content(data: LamaContentRequest, db: AsyncSession = Depends(get_db)):
+    """Сохранить контент для секции Lama"""
+    return await lama.save_lama_content(
+        db,
+        headline=data.headline,
+        channel=data.channel,
+        description=data.description,
+        button_text=data.buttonText,
+        button_href=data.buttonHref
+    )
+
+
+@router.get("/footer")
+async def get_footer_content(db: AsyncSession = Depends(get_db)):
+    """Получить контент для секции Footer"""
+    return await footer.get_footer_content(db)
+
+
+@router.put("/footer")
+async def save_footer_content(data: FooterContentRequest, db: AsyncSession = Depends(get_db)):
+    """Сохранить контент для секции Footer"""
+    columns = [
+        {
+            "title": column.title,
+            "links": [{"text": link.text, "href": link.href} for link in column.links]
+        }
+        for column in data.columns
+    ]
+    return await footer.save_footer_content(
+        db,
+        brand_name=data.brandName,
+        copyright=data.copyright,
+        telegram_link=data.telegramLink,
+        instagram_link=data.instagramLink,
+        columns=columns
     )
 

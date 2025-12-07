@@ -42,6 +42,16 @@ export default function AdminPage() {
             <h2>Users секция</h2>
             <p>Управление текстами секции пользователей</p>
           </Link>
+
+          <Link href="/admin/lama" className={styles.sectionCard}>
+            <h2>Lama секция</h2>
+            <p>Редактирование секции подписки на Telegram-канал</p>
+          </Link>
+
+          <Link href="/admin/footer" className={styles.sectionCard}>
+            <h2>Footer секция</h2>
+            <p>Управление футером сайта</p>
+          </Link>
         </div>
       </div>
     </div>

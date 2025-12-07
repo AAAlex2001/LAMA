@@ -1,6 +1,39 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import styles from "./footer.module.scss";
+import { API_BASE_URL } from "@/config";
+
+interface FooterLink {
+  text: string;
+  href: string;
+}
+
+interface FooterColumn {
+  title: string;
+  links: FooterLink[];
+}
 
 export default function Footer() {
+  const [brandName, setBrandName] = useState('');
+  const [copyright, setCopyright] = useState('');
+  const [telegramLink, setTelegramLink] = useState('');
+  const [instagramLink, setInstagramLink] = useState('');
+  const [columns, setColumns] = useState<FooterColumn[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/footer`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.brandName) setBrandName(data.brandName);
+        if (data.copyright) setCopyright(data.copyright);
+        if (data.telegramLink) setTelegramLink(data.telegramLink);
+        if (data.instagramLink) setInstagramLink(data.instagramLink);
+        if (data.columns) setColumns(data.columns);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
@@ -8,16 +41,25 @@ export default function Footer() {
           <div className={styles.top}>
             <div className={styles.brand}>
               <h2 className={styles.brandName}>
-                <span className={styles.lama}>LAMA</span>planner
+                {brandName.split('LAMA').map((part, index, array) => 
+                  index < array.length - 1 ? (
+                    <span key={index}>
+                      {part}
+                      <span className={styles.lama}>LAMA</span>
+                    </span>
+                  ) : (
+                    <span key={index}>{part}</span>
+                  )
+                )}
               </h2>
               <div className={styles.social}>
-                <a href="/telegram" className={styles.socialLink} aria-label="Telegram">
+                <a href={telegramLink} className={styles.socialLink} aria-label="Telegram">
                   <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.5385 35H17.4615C7.83332 35 0 27.1667 0 17.5385V17.4615C0 7.83332 7.83332 0 17.4615 0H17.5385C27.1667 0 35 7.83332 35 17.4615V17.5385C35 27.1667 27.1667 35 17.5385 35ZM17.4615 1.18471C8.48609 1.18471 1.18471 8.48609 1.18471 17.4615V17.5385C1.18471 26.5139 8.48609 33.8153 17.4615 33.8153H17.5385C26.5139 33.8153 33.8153 26.5139 33.8153 17.5385V17.4615C33.8153 8.48609 26.5139 1.18471 17.5385 1.18471H17.4615Z" fill="#383F45"/>
                     <path d="M6.99689 16.9223C7.04428 16.8987 7.09169 16.8761 7.13789 16.8548C7.94113 16.4828 8.75503 16.1345 9.56774 15.7862C9.61158 15.7862 9.68501 15.7352 9.72647 15.7187C9.78926 15.6914 9.85206 15.6654 9.91485 15.6381C10.0357 15.586 10.1565 15.535 10.2762 15.4829C10.5179 15.3798 10.7584 15.2768 11 15.1737C11.4822 14.9676 11.9644 14.7614 12.4466 14.5541C13.4109 14.1418 14.3765 13.7283 15.3408 13.3161C16.3052 12.9038 17.2707 12.4903 18.2351 12.078C19.1995 11.6658 20.165 11.2523 21.1293 10.84C22.0937 10.4277 23.0593 10.0143 24.0236 9.60199C24.2381 9.50959 24.4703 9.37216 24.7001 9.33187C24.8932 9.29752 25.0816 9.23118 25.2758 9.19446C25.6443 9.12456 26.0506 9.09612 26.4037 9.24895C26.5257 9.30226 26.6383 9.37688 26.7319 9.47048C27.1797 9.91356 27.1169 10.641 27.0221 11.2642C26.3622 15.6073 25.7023 19.9517 25.0413 24.2948C24.9512 24.8907 24.828 25.5447 24.3577 25.9214C23.9596 26.2401 23.3933 26.2756 22.9017 26.1406C22.41 26.0043 21.9764 25.7188 21.5511 25.4381C19.7871 24.2699 18.0219 23.1018 16.2578 21.9337C15.8384 21.6564 15.3717 21.2939 15.3764 20.7904C15.3788 20.4871 15.56 20.217 15.7448 19.9765C17.2778 17.9767 19.4897 16.6025 21.1353 14.6951C21.3675 14.4261 21.5499 13.9404 21.2312 13.7852C21.0417 13.6928 20.8237 13.8184 20.6507 13.938C18.4756 15.4485 16.3017 16.9602 14.1265 18.4707C13.4169 18.9636 12.6729 19.4706 11.8175 19.5915C11.0522 19.7005 10.2821 19.4872 9.54168 19.2692C8.92089 19.0868 8.30126 18.8996 7.68403 18.7065C7.35586 18.6046 7.01703 18.4944 6.7635 18.2634C6.50997 18.0324 6.36427 17.6438 6.5171 17.3358C6.61306 17.1427 6.79907 17.0207 6.99454 16.9212L6.99689 16.9223Z" fill="#383F45"/>
                   </svg>
                 </a>
-                <a href="/instagram" className={styles.socialLink} aria-label="Instagram">
+                <a href={instagramLink} className={styles.socialLink} aria-label="Instagram">
                   <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.5385 35H17.4615C7.83333 35 0 27.1667 0 17.5385V17.4615C0 7.83332 7.83333 0 17.4615 0H17.5385C27.1667 0 35 7.83332 35 17.4615V17.5385C35 27.1667 27.1667 35 17.5385 35ZM17.4615 1.18471C8.48611 1.18471 1.18471 8.48609 1.18471 17.4615V17.5385C1.18471 26.5139 8.48611 33.8153 17.4615 33.8153H17.5385C26.5139 33.8153 33.8153 26.5139 33.8153 17.5385V17.4615C33.8153 8.48609 26.5139 1.18471 17.5385 1.18471H17.4615Z" fill="#383F45"/>
                     <path d="M22.7323 7.47211H12.2689C9.3782 7.47211 7.02654 9.82377 7.02654 12.7145V22.2869C7.02654 25.1776 9.3782 27.5293 12.2689 27.5293H22.7323C25.623 27.5293 27.9746 25.1776 27.9746 22.2869V12.7145C27.9746 9.82377 25.623 7.47211 22.7323 7.47211ZM8.87588 12.7145C8.87588 10.8438 10.3982 9.32143 12.2689 9.32143H22.7323C24.603 9.32143 26.1253 10.8438 26.1253 12.7145V22.2869C26.1253 24.1576 24.603 25.68 22.7323 25.68H12.2689C10.3982 25.68 8.87588 24.1576 8.87588 22.2869V12.7145Z" fill="#383F45"/>
@@ -30,42 +72,19 @@ export default function Footer() {
           </div>
 
           <div className={styles.content}>
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Продукт</h3>
-            <ul className={styles.links}>
-              <li><a href="/features" className={styles.link}>Функции</a></li>
-              <li><a href="/pricing" className={styles.link}>Тарифы</a></li>
-              <li><a href="/updates" className={styles.link}>Обновления</a></li>
-            </ul>
+            {columns.map((column, index) => (
+              <div key={index} className={styles.column}>
+                <h3 className={styles.columnTitle}>{column.title}</h3>
+                <ul className={styles.links}>
+                  {column.links.map((link, linkIndex) => (
+                    <li key={linkIndex}>
+                      <a href={link.href} className={styles.link}>{link.text}</a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Поддержка</h3>
-            <ul className={styles.links}>
-              <li><a href="/faq" className={styles.link}>FAQ</a></li>
-              <li><a href="/knowledge-base" className={styles.link}>База знаний</a></li>
-              <li><a href="/contact" className={styles.link}>Связаться с нами</a></li>
-              <li><a href="/report-error" className={styles.link}>Сообщить об ошибке</a></li>
-            </ul>
-          </div>
-
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Юридическое</h3>
-            <ul className={styles.links}>
-              <li><a href="/terms" className={styles.link}>Пользовательское соглашение</a></li>
-              <li><a href="/privacy" className={styles.link}>Политика конфиденциальности</a></li>
-            </ul>
-          </div>
-
-          <div className={styles.column}>
-            <h3 className={styles.columnTitle}>Контакты</h3>
-            <ul className={styles.links}>
-              <li><a href="tel:+1234567890" className={styles.link}>Телефон</a></li>
-              <li><a href="mailto:info@lamaplanner.com" className={styles.link}>Электронная почта</a></li>
-              <li><a href="/telegram" className={styles.link}>Telegram</a></li>
-            </ul>
-          </div>
-        </div>
         </div>
 
         <div className={styles.bottom}>
@@ -143,7 +162,7 @@ export default function Footer() {
               </svg>
             </div>
           </div>
-          <p className={styles.copyright}>© 2025 LamaPlanner. Все права защищены.</p>
+          <p className={styles.copyright}>{copyright}</p>
         </div>
       </div>
     </footer>

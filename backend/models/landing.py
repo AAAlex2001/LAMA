@@ -24,6 +24,7 @@ class SectionType(str, enum.Enum):
     FAQ = "faq"
     PRICING = "pricing"
     USERS = "users"
+    LAMA = "lama"
     FOOTER = "footer"
     HEADER = "header"
     OTHER = "other"

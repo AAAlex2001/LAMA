@@ -1,22 +1,52 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./lama.module.scss";
 import Button from "@/components/button/button";
+import { API_BASE_URL } from "@/config";
 
 export default function Lama() {
+  const [headline, setHeadline] = useState('');
+  const [channel, setChannel] = useState('');
+  const [description, setDescription] = useState('');
+  const [buttonText, setButtonText] = useState('');
+  const [buttonHref, setButtonHref] = useState('');
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/lama`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.headline) setHeadline(data.headline);
+        if (data.channel) setChannel(data.channel);
+        if (data.description) setDescription(data.description);
+        if (data.buttonText) setButtonText(data.buttonText);
+        if (data.buttonHref) setButtonHref(data.buttonHref);
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <section className={styles.lama}>
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.textContent}>
-            <h1 className={styles.headline}>Подписаться на Telegram-канал</h1>
-            <p className={styles.channel}>@LamaPlanner</p>
+            <h1 className={styles.headline}>{headline}</h1>
+            <p className={styles.channel}>{channel}</p>
             <p className={styles.description}>
-              Присоединяйтесь к комьюнити SMM-специалистов и узнавайте о новых функциях <span className={styles.highlight}><span className={styles.lamaText}>LAMA</span>planner</span> раньше остальных
+              {description.split('LAMAplanner').map((part, index, array) => 
+                index < array.length - 1 ? (
+                  <span key={index}>
+                    {part}
+                    <span className={styles.highlight}><span className={styles.lamaText}>LAMA</span>planner</span>
+                  </span>
+                ) : (
+                  <span key={index}>{part}</span>
+                )
+              )}
             </p>
             <div className={styles.buttonWrapper}>
-              <Button text="Подписаться" href="/telegram-channel" active showArrow={false} fullWidth={true} />
+              <Button text={buttonText} href={buttonHref} active showArrow={false} fullWidth={true} />
             </div>
           </div>
         </div>

@@ -17,6 +17,8 @@ export default function AdminMenu() {
     { href: '/admin/pricing', label: 'Pricing' },
     { href: '/admin/faq', label: 'FAQ' },
     { href: '/admin/users', label: 'Users' },
+    { href: '/admin/lama', label: 'Lama' },
+    { href: '/admin/footer', label: 'Footer' },
   ];
 
   return (
