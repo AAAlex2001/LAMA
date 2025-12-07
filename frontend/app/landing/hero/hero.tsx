@@ -20,26 +20,18 @@ interface HeroContent {
 
 export default function Hero() {
   const [content, setContent] = useState<HeroContent>({
-    headline: "Управляйте сообществами и ботами Telegram в одном месте",
-    paragraph: "Экономьте время на рутине и увеличивайте охваты с помощью LAMAplanner",
-    paragraphSecondary: "Вы здесь не случайно: нужный сервис перед вами",
-    buttonText: "Начать бесплатно",
-    images: [
-      { url: "/hero_1.svg", alt: "Hero illustration" },
-      { url: "/hero_2.svg", alt: "Hero illustration" },
-      { url: "/hero_3.svg", alt: "Hero illustration" },
-      { url: "/hero_4.svg", alt: "Hero illustration" },
-      { url: "/hero_5.svg", alt: "Hero illustration" }
-    ]
+    headline: "",
+    paragraph: "",
+    paragraphSecondary: "",
+    buttonText: "",
+    images: []
   });
 
   useEffect(() => {
     fetch('/api/hero')
       .then(res => res.json())
       .then(data => setContent(data))
-      .catch(() => {
-        // Если ошибка, остаются дефолтные значения
-      });
+      .catch(() => {});
   }, []);
 
   return (

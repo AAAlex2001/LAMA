@@ -20,6 +20,7 @@ class SectionType(str, enum.Enum):
     """Тип секции лендинга"""
     HERO = "hero"
     ADVANTAGES = "advantages"
+    KEY_ADVANTAGES = "key_advantages"
     FAQ = "faq"
     PRICING = "pricing"
     FOOTER = "footer"
@@ -65,6 +66,9 @@ class LandingContent(Base):
     # Ссылки и кнопки
     link_url = Column(String(512), nullable=True)
     link_text = Column(String(255), nullable=True)
+    
+    # Дополнительные данные (JSON)
+    extra_data = Column(JSON, nullable=True, default=dict)
     
     # Настройки отображения
     is_active = Column(Boolean, default=True, nullable=False)

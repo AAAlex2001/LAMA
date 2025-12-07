@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useId } from 'react';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -9,38 +9,34 @@ import 'swiper/css';
 import styles from "./advantages.module.scss";
 import Button from "@/components/button/button";
 
+interface AdvantagesCard {
+  title: string;
+  description: string;
+  isCta: boolean;
+  linkText?: string | null;
+}
+
 export default function Advantages() {
   const swiperRef = useRef<SwiperType | null>(null);
   const gradientId = useId();
   const gradientIdBottom = useId();
 
-  const swiperCards = [
-    {
-      title: "Создавайте ботов",
-      description: "Подключай ботов по токену @BotFather и управляй ими. Приветственные боты и боты обратной связи легко и быстро настраиваются"
-    },
-    {
-      title: "Дополнительная функция 1",
-      description: "Описание дополнительной функции 1"
-    },
-    {
-      title: "cta",
-      description: "Сомнения позади: вы на пути к верному решению!",
-      isCta: true
-    },
-    {
-      title: "Дополнительная функция 1",
-      description: "Описание дополнительной функции 1"
-    },
-    {
-      title: "Дополнительная функция 1",
-      description: "Описание дополнительной функции 1"
-    },
-    {
-      title: "Дополнительная функция 2",
-      description: "Описание дополнительной функции 2"
-    }
-  ];
+  const [headline, setHeadline] = useState('');
+  const [subtitle, setSubtitle] = useState('');
+  const [swiperCards, setSwiperCards] = useState<AdvantagesCard[]>([]);
+
+  useEffect(() => {
+    fetch('/api/advantages')
+      .then(res => res.json())
+      .then(data => {
+        if (data.headline) setHeadline(data.headline);
+        if (data.subtitle) setSubtitle(data.subtitle);
+        if (data.cards && data.cards.length > 0) {
+          setSwiperCards(data.cards);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section className={styles.advantages}>
@@ -110,70 +106,75 @@ export default function Advantages() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h2 className={styles.headline}>
-            Всё для <span className={styles.highlight}>продуктивной</span>{" "}
-            <span className={styles.highlight}>и</span>{" "}
-            <span className={styles.highlight}>лёгкой</span> работы с контентом
+            {headline}
           </h2>
           <p className={styles.subtitle}>
-            Профессиональный инструмент для тех, кто ценит порядок и эффективность
+            {subtitle}
           </p>
 
           <div className={styles.cards}>
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Постинг и планирование</h3>
-            <p className={styles.cardDescription}>
-              Создавайте публикации: текст, медиа, кнопки, опросы и AI-редактор — всё в одном окне. Планируйте серии, создавайте отложенные публикации, включайте автопостинг, автоудаление и мультипостинг в несколько каналов одновременно.
-            </p>
-            <span className={styles.cardLink}>Узнать подробнее</span>
-          </div>
-
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Рекламный кабинет</h3>
-            <p className={styles.cardDescription}>
-              Создавайте рекламные посты, генерируйте ссылки-приглашения, заполняйте таблицы проданных и свободных мест, ведите отчёт о доходах и расходах и анализируйте прирост подписчиков после каждой рекламной кампании.
-            </p>
-            <span className={styles.cardLink}>Узнать подробнее</span>
-          </div>
-
-          <div className={styles.swiperContainer}>
-            <Swiper
-              onSwiper={(swiper) => {
-                swiperRef.current = swiper;
-              }}
-              spaceBetween={20}
-              slidesPerView={1}
-              loop={true}
-              breakpoints={{
-                768: {
-                  slidesPerView: 2,
-                },
-                1440: {
-                  slidesPerView: 3,
-                },
-              }}
-              className={styles.swiper}
-            >
-              {swiperCards.map((card, index) => (
-                <SwiperSlide key={index}>
-                  {card.isCta ? (
-                    <div className={styles.ctaCard}>
-                      <p className={styles.ctaCardText}>{card.description}</p>
-                      <div className={styles.ctaButton}>
-                        <Button text="Начать бесплатно" href="/login" fullWidth />
-                      </div>
+            {/* Первые 2 статичные карточки */}
+            {swiperCards.slice(0, 2).map((card, index) => (
+              <div key={index} className={styles.card}>
+                {card.isCta ? (
+                  <div className={styles.ctaCard}>
+                    <p className={styles.ctaCardText}>{card.description}</p>
+                    <div className={styles.ctaButton}>
+                      <Button text="Начать бесплатно" href="/login" fullWidth />
                     </div>
-                  ) : (
-                    <div className={styles.card}>
-                      <h3 className={styles.cardTitle}>{card.title}</h3>
-                      <p className={styles.cardDescription}>{card.description}</p>
-                      <span className={styles.cardLink}>Узнать подробнее</span>
-                    </div>
-                  )}
-                </SwiperSlide>
-              ))}
-            </Swiper>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className={styles.cardTitle}>{card.title}</h3>
+                    <p className={styles.cardDescription}>{card.description}</p>
+                    {card.linkText && <span className={styles.cardLink}>{card.linkText}</span>}
+                  </>
+                )}
+              </div>
+            ))}
+
+            {/* Остальные карточки в свайпере */}
+            {swiperCards.length > 2 && (
+              <div className={styles.swiperContainer}>
+                <Swiper
+                  onSwiper={(swiper) => {
+                    swiperRef.current = swiper;
+                  }}
+                  spaceBetween={20}
+                  slidesPerView={1}
+                  loop={true}
+                  breakpoints={{
+                    768: {
+                      slidesPerView: 2,
+                    },
+                    1440: {
+                      slidesPerView: 3,
+                    },
+                  }}
+                  className={styles.swiper}
+                >
+                  {swiperCards.slice(2).map((card, index) => (
+                    <SwiperSlide key={index + 2}>
+                      {card.isCta ? (
+                        <div className={styles.ctaCard}>
+                          <p className={styles.ctaCardText}>{card.description}</p>
+                          <div className={styles.ctaButton}>
+                            <Button text="Начать бесплатно" href="/login" fullWidth />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={styles.card}>
+                          <h3 className={styles.cardTitle}>{card.title}</h3>
+                          <p className={styles.cardDescription}>{card.description}</p>
+                          {card.linkText && <span className={styles.cardLink}>{card.linkText}</span>}
+                        </div>
+                      )}
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            )}
           </div>
-        </div>
 
           <div className={styles.navigation}>
             <button 

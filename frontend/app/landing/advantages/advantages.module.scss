@@ -54,6 +54,7 @@
 
 .swiperContainer {
   width: 100%;
+  flex: 1 1 100%;
 }
 
 .swiper {
@@ -214,15 +215,20 @@
   }
 
   .cards {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 20px;
-}
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px;
+  }
 
   .card {
     flex: 0 0 calc((100% - 20px)/2);
     min-height: 300px;
+  }
+
+  .swiperContainer {
+    flex: 0 0 100%;
+    width: 100%;
   }
 
   .cardTitle {

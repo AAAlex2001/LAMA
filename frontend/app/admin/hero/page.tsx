@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect} from 'react';
+import AdminMenu from '@/components/admin-menu/admin-menu';
 import styles from './hero-admin.module.scss';
 
 interface HeroImage {
@@ -139,7 +140,8 @@ export default function HeroAdminPage() {
 
   return (
     <div className={styles.page}>
-    <div className={styles.container}>
+      <AdminMenu />
+      <div className={styles.container}>
       <h1 className={styles.title}>Редактирование Hero секции</h1>
       
       {message && <div className={styles.message}>{message}</div>}
