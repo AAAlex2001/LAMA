@@ -37,7 +37,15 @@ export default function KeyAdvantages() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h1 className={styles.headline}>
-            {headline}
+            {headline.split(/(LAMAplanner)/i).map((part, index) => 
+              part.toLowerCase() === 'lamaplanner' ? (
+                <span key={index} className={styles.highlight}>
+                  <span className={styles.lama}>LAMA</span>planner
+                </span>
+              ) : (
+                <span key={index}>{part}</span>
+              )
+            )}
           </h1>
           
           <div className={styles.cards}>
