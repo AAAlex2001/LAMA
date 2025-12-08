@@ -39,6 +39,19 @@ export default function Advantages() {
       .catch(() => {});
   }, []);
 
+  const renderWithBold = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/);
+    return parts.map((part, index) => {
+      const isBold = part.startsWith('**') && part.endsWith('**');
+      const content = isBold ? part.slice(2, -2) : part;
+      return isBold ? (
+        <strong key={index} className={styles.bold}>{content}</strong>
+      ) : (
+        <span key={index}>{content}</span>
+      );
+    });
+  };
+
   return (
     <section className={styles.advantages}>
       <div className={styles.container}>
@@ -107,7 +120,17 @@ export default function Advantages() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h2 className={styles.headline}>
-            {headline}
+            {headline.split(' ').map((word, index) => {
+              const isHighlighted = index >= 2 && index <= 4;
+              return (
+                <span 
+                  key={`${word}-${index}`} 
+                  className={isHighlighted ? styles.highlight : undefined}
+                >
+                  {word}{index < headline.split(' ').length - 1 ? ' ' : ''}
+                </span>
+              );
+            })}
           </h2>
           <p className={styles.subtitle}>
             {subtitle}
@@ -119,16 +142,16 @@ export default function Advantages() {
               <div key={index} className={styles.card}>
                 {card.isCta ? (
                   <div className={styles.ctaCard}>
-                    <p className={styles.ctaCardText}>{card.description}</p>
+                    <p className={styles.ctaCardText}>{renderWithBold(card.description)}</p>
                     <div className={styles.ctaButton}>
                       <Button text="Начать бесплатно" href="/login" fullWidth />
                     </div>
                   </div>
                 ) : (
                   <>
-                    <h3 className={styles.cardTitle}>{card.title}</h3>
-                    <p className={styles.cardDescription}>{card.description}</p>
-                    {card.linkText && <span className={styles.cardLink}>{card.linkText}</span>}
+                    <h3 className={styles.cardTitle}>{renderWithBold(card.title)}</h3>
+                    <p className={styles.cardDescription}>{renderWithBold(card.description)}</p>
+                    {card.linkText && <span className={styles.cardLink}>{renderWithBold(card.linkText)}</span>}
                   </>
                 )}
               </div>
@@ -158,16 +181,16 @@ export default function Advantages() {
                     <SwiperSlide key={index + 2}>
                       {card.isCta ? (
                         <div className={styles.ctaCard}>
-                          <p className={styles.ctaCardText}>{card.description}</p>
+                          <p className={styles.ctaCardText}>{renderWithBold(card.description)}</p>
                           <div className={styles.ctaButton}>
                             <Button text="Начать бесплатно" href="/login" fullWidth />
                           </div>
                         </div>
                       ) : (
                         <div className={styles.card}>
-                          <h3 className={styles.cardTitle}>{card.title}</h3>
-                          <p className={styles.cardDescription}>{card.description}</p>
-                          {card.linkText && <span className={styles.cardLink}>{card.linkText}</span>}
+                          <h3 className={styles.cardTitle}>{renderWithBold(card.title)}</h3>
+                          <p className={styles.cardDescription}>{renderWithBold(card.description)}</p>
+                          {card.linkText && <span className={styles.cardLink}>{renderWithBold(card.linkText)}</span>}
                         </div>
                       )}
                     </SwiperSlide>
