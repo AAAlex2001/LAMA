@@ -135,7 +135,7 @@ export default function Pricing() {
           {plans.map((plan, index) => (
             <motion.div 
               key={index} 
-              className={`${styles.card} ${plan.isHighlighted ? styles.highlighted : ''}`}
+              className={styles.card}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.3 }}

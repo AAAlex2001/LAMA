@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type MouseEvent } from 'react';
 import styles from './sidebar-menu.module.scss';
 
 export default function SidebarMenu() {
@@ -65,11 +65,13 @@ export default function SidebarMenu() {
     { id: 'qa', href: '#faq', sectionId: 'faq' },
   ];
 
-  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleClick = (e: MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     const element = document.querySelector(href);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const rect = element.getBoundingClientRect();
+      const targetY = window.scrollY + rect.top - (window.innerHeight / 2) + (rect.height / 2);
+      window.scrollTo({ top: targetY, behavior: 'smooth' });
     }
   };
 

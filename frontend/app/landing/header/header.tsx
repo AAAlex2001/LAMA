@@ -1,16 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
 import Button from "@/components/button/button";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    lastScrollY.current = window.scrollY;
+
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+
+      if (currentY < 10) {
+        setIsVisible(true);
+      } else if (delta > 3) {
+        setIsVisible(false);
+      } else if (delta < -3) {
+        setIsVisible(true);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${!isVisible ? styles.hidden : ''}`}>
         <div className={styles.container}>
           <div className={styles.brand}>
             <h1 className={styles.brandName}>
