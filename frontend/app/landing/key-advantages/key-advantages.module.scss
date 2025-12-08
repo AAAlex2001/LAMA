@@ -65,12 +65,7 @@
   gap: 10px;
   width: 100%;
   position: relative;
-  cursor: pointer;
   box-shadow: 0px 1px 1px 0px #0000001F, 0px 7px 18.4px 0px #676E7614;
-  
-  &:hover {
-    box-shadow: 0px 9px 20px 4px #6080C366;
-  }
 }
 
 .cardHeader {
