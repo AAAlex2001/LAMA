@@ -64,6 +64,11 @@ class FAQItem(BaseModel):
 class FAQContentRequest(BaseModel):
     headline: str
     faqItems: List[FAQItem]
+    primaryButtonText: Optional[str] = None
+    primaryButtonLink: Optional[str] = None
+    secondaryButtonText: Optional[str] = None
+    secondaryButtonLink: Optional[str] = None
+    helpText: Optional[str] = None
 
 
 class UsersContentRequest(BaseModel):

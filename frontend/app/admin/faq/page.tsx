@@ -13,12 +13,22 @@ interface FAQItem {
 interface FAQContent {
   headline: string;
   faqItems: FAQItem[];
+  primaryButtonText?: string;
+  primaryButtonLink?: string;
+  secondaryButtonText?: string;
+  secondaryButtonLink?: string;
+  helpText?: string;
 }
 
 export default function FAQAdminPage() {
   const [content, setContent] = useState<FAQContent>({
     headline: '',
-    faqItems: []
+    faqItems: [],
+    primaryButtonText: 'База знаний',
+    primaryButtonLink: '/knowledge-base',
+    secondaryButtonText: 'Telegram канал',
+    secondaryButtonLink: '/telegram-channel',
+    helpText: 'Не нашли ответ? Напишите нам в @LamaPlannerBot'
   });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -140,6 +150,68 @@ export default function FAQAdminPage() {
                 </label>
               </div>
             ))}
+          </div>
+
+          <div className={styles.section}>
+            <h2>Кнопки</h2>
+            
+            <div className={styles.buttonGroup}>
+              <label className={styles.field}>
+                <span>Текст первой кнопки</span>
+                <input
+                  type="text"
+                  value={content.primaryButtonText || ''}
+                  onChange={e => setContent({ ...content, primaryButtonText: e.target.value })}
+                  placeholder="База знаний"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Ссылка первой кнопки</span>
+                <input
+                  type="text"
+                  value={content.primaryButtonLink || ''}
+                  onChange={e => setContent({ ...content, primaryButtonLink: e.target.value })}
+                  placeholder="/knowledge-base"
+                />
+              </label>
+            </div>
+
+            <div className={styles.buttonGroup}>
+              <label className={styles.field}>
+                <span>Текст второй кнопки</span>
+                <input
+                  type="text"
+                  value={content.secondaryButtonText || ''}
+                  onChange={e => setContent({ ...content, secondaryButtonText: e.target.value })}
+                  placeholder="Telegram канал"
+                />
+              </label>
+
+              <label className={styles.field}>
+                <span>Ссылка второй кнопки</span>
+                <input
+                  type="text"
+                  value={content.secondaryButtonLink || ''}
+                  onChange={e => setContent({ ...content, secondaryButtonLink: e.target.value })}
+                  placeholder="/telegram-channel"
+                />
+              </label>
+            </div>
+          </div>
+
+          <div className={styles.section}>
+            <h2>Подпись</h2>
+            
+            <label className={styles.field}>
+              <span>Текст подписи (используйте **текст** для жирного)</span>
+              <textarea
+                value={content.helpText || ''}
+                onChange={e => setContent({ ...content, helpText: e.target.value })}
+                placeholder="Не нашли ответ? Напишите нам в @LamaPlannerBot"
+                rows={3}
+              />
+            </label>
           </div>
         </div>
 

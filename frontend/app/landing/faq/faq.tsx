@@ -11,6 +11,14 @@ interface FAQItem {
   answer: string;
 }
 
+interface FAQActions {
+  primaryText?: string;
+  primaryLink?: string;
+  secondaryText?: string;
+  secondaryLink?: string;
+  helpText?: string;
+}
+
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
@@ -18,6 +26,7 @@ export default function FAQ() {
 
   const [headline, setHeadline] = useState('');
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
+  const [actions, setActions] = useState<FAQActions>({});
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/faq`)
@@ -27,9 +36,29 @@ export default function FAQ() {
         if (data.faqItems && data.faqItems.length > 0) {
           setFaqItems(data.faqItems);
         }
+        setActions({
+          primaryText: data.primaryText,
+          primaryLink: data.primaryLink,
+          secondaryText: data.secondaryText,
+          secondaryLink: data.secondaryLink,
+          helpText: data.helpText,
+        });
       })
       .catch(() => {});
   }, []);
+
+  const renderWithBold = (text: string) => {
+    const parts = text.split(/(\*\*.*?\*\*)/);
+    return parts.map((part, index) => {
+      const isBold = part.startsWith('**') && part.endsWith('**');
+      const content = isBold ? part.slice(2, -2) : part;
+      return isBold ? (
+        <strong key={index} className={styles.bold}>{content}</strong>
+      ) : (
+        <span key={index}>{content}</span>
+      );
+    });
+  };
 
   const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -124,13 +153,28 @@ export default function FAQ() {
         </div>
 
         <div className={styles.actions}>
-          <Button text="База знаний" href="/knowledge-base" active={true} fullWidth={true} showArrow={false}/>
-          <Button text="Telegram канал" href="/telegram-channel"  fullWidth={true} showArrow={false}/>
+          <Button 
+            text={actions.primaryText || "База знаний"} 
+            href={actions.primaryLink || "/knowledge-base"} 
+            active={true} 
+            fullWidth={true} 
+            showArrow={false}
+          />
+          <Button 
+            text={actions.secondaryText || "Telegram канал"} 
+            href={actions.secondaryLink || "/telegram-channel"}  
+            fullWidth={true} 
+            showArrow={false}
+          />
         </div>
 
           <div className={styles.help}>
             <p className={styles.helpText}>
-              Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
+              {actions.helpText ? renderWithBold(actions.helpText) : (
+                <>
+                  Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
+                </>
+              )}
             </p>
           </div>
         </motion.div>

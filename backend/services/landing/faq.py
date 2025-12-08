@@ -25,7 +25,12 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
                     "question": "Можно ли использовать Lama Planner бесплатно?",
                     "answer": "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
                 }
-            ]
+            ],
+            "primaryButtonText": "База знаний",
+            "primaryButtonLink": "/knowledge-base",
+            "secondaryButtonText": "Telegram канал",
+            "secondaryButtonLink": "/telegram-channel",
+            "helpText": "Не нашли ответ? Напишите нам в @LamaPlannerBot"
         }
     
     result = await db.execute(
@@ -51,17 +56,35 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
                 faq_items[item_index]["question"] = content.title
             if content.text:
                 faq_items[item_index]["answer"] = content.text
+        elif content.key == "faq_primary_button":
+            response["primaryButtonText"] = content.link_text or ""
+            response["primaryButtonLink"] = content.link_url or ""
+        elif content.key == "faq_secondary_button":
+            response["secondaryButtonText"] = content.link_text or ""
+            response["secondaryButtonLink"] = content.link_url or ""
+        elif content.key == "faq_help_text":
+            response["helpText"] = content.text or ""
     
     return {
         "headline": response.get("headline", "Часто задаваемые вопросы"),
-        "faqItems": faq_items if faq_items else []
+        "faqItems": faq_items if faq_items else [],
+        "primaryButtonText": response.get("primaryButtonText", "База знаний"),
+        "primaryButtonLink": response.get("primaryButtonLink", "/knowledge-base"),
+        "secondaryButtonText": response.get("secondaryButtonText", "Telegram канал"),
+        "secondaryButtonLink": response.get("secondaryButtonLink", "/telegram-channel"),
+        "helpText": response.get("helpText", "Не нашли ответ? Напишите нам в @LamaPlannerBot")
     }
 
 
 async def save_faq_content(
     db: AsyncSession,
     headline: str,
-    faq_items: List[Dict[str, Any]]
+    faq_items: List[Dict[str, Any]],
+    primary_button_text: str = None,
+    primary_button_link: str = None,
+    secondary_button_text: str = None,
+    secondary_button_link: str = None,
+    help_text: str = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции FAQ"""
     result = await db.execute(
@@ -103,6 +126,39 @@ async def save_faq_content(
             text=item.get("answer", ""),
             is_active=True,
             order=10 + i
+        ))
+    
+    # Кнопки и подпись
+    if primary_button_text or primary_button_link:
+        contents.append(LandingContent(
+            section_id=section.id,
+            content_type=ContentType.LINK,
+            key="faq_primary_button",
+            link_text=primary_button_text or "",
+            link_url=primary_button_link or "",
+            is_active=True,
+            order=1000
+        ))
+    
+    if secondary_button_text or secondary_button_link:
+        contents.append(LandingContent(
+            section_id=section.id,
+            content_type=ContentType.LINK,
+            key="faq_secondary_button",
+            link_text=secondary_button_text or "",
+            link_url=secondary_button_link or "",
+            is_active=True,
+            order=1001
+        ))
+    
+    if help_text:
+        contents.append(LandingContent(
+            section_id=section.id,
+            content_type=ContentType.TEXT,
+            key="faq_help_text",
+            text=help_text,
+            is_active=True,
+            order=1002
         ))
     
     db.add_all(contents)

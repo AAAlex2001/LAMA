@@ -136,7 +136,12 @@ async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(g
     return await faq.save_faq_content(
         db,
         headline=data.headline,
-        faq_items=faq_items
+        faq_items=faq_items,
+        primary_button_text=data.primaryButtonText,
+        primary_button_link=data.primaryButtonLink,
+        secondary_button_text=data.secondaryButtonText,
+        secondary_button_link=data.secondaryButtonLink,
+        help_text=data.helpText
     )
 
 
