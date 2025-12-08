@@ -6,6 +6,17 @@
 
 .container {
   margin: 0 auto;
+  position: relative;
+}
+
+.decorationLeftTablet,
+.decorationRightTablet,
+.decorationLeftDesktop,
+.decorationRightDesktop {
+  display: none;
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .headline {
@@ -41,6 +52,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -101,6 +114,18 @@
     margin-top: 80px;
   }
 
+  .decorationLeftTablet {
+    display: block;
+    top: -20px;
+    left: -30px;
+  }
+
+  .decorationRightTablet {
+    display: block;
+    bottom: -110px;
+    right: -60px;
+  }
+
   .headline {
     font-size: 24px;
     line-height: 36px;
@@ -139,6 +164,23 @@
 
   .container {
     max-width: 1200px;
+  }
+
+  .decorationLeftTablet,
+  .decorationRightTablet {
+    display: none;
+  }
+
+  .decorationLeftDesktop {
+    display: block;
+    top: -60px;
+    left: -160px;
+  }
+
+  .decorationRightDesktop {
+    display: block;
+    bottom: -170px;
+    right: -150px;
   }
 
   .headline {
