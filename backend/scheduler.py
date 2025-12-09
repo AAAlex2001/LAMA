@@ -7,8 +7,9 @@ import pytz
 
 from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus
 from backend.services.publications import PublicationService
+from backend.services.bot.triggers import TriggerService
 from backend.tasks.channel_backup import process_instant_backups
-from backend.tasks.bot_polling import process_bot_updates
+from backend.tasks.bot_polling import process_bot_updates, get_master_bot
 from backend.database import AsyncSessionLocal
 from backend.config import OPENAI_API_KEY
 
@@ -43,7 +44,7 @@ async def process_scheduled_publications():
 async def process_auto_delete():
     async with AsyncSessionLocal() as db:
         now = datetime.now(timezone.utc)
-        
+
         query = select(Publication).where(
             Publication.status == DBPublicationStatus.PUBLISHED,
             Publication.published_time.isnot(None),
@@ -54,7 +55,7 @@ async def process_auto_delete():
         )
         result = await db.execute(query)
         publications = result.scalars().all()
-        
+
         for publication in publications:
             if not publication.published_time:
                 continue
@@ -69,18 +70,36 @@ async def process_auto_delete():
                 continue
 
             delete_time = publication.published_time + timedelta(seconds=delete_delay_seconds)
-                
-                if now >= delete_time:
-                    service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-                    try:
-                        await service.delete_telegram_messages(publication.id)
-                    except Exception as e:
-                        await service.create_notification(
-                            publication.id,
-                            "error",
-                            f"Failed to auto-delete publication: {str(e)}",
-                            {"error": str(e)}
-                        )
+
+            if now >= delete_time:
+                service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+                try:
+                    await service.delete_telegram_messages(publication.id)
+                except Exception as e:
+                    await service.create_notification(
+                        publication.id,
+                        "error",
+                        f"Failed to auto-delete publication: {str(e)}",
+                        {"error": str(e)}
+                    )
+
+
+async def process_scheduled_triggers():
+    """Обработка отложенных триггеров"""
+    async with AsyncSessionLocal() as db:
+        trigger_service = TriggerService(db)
+        telegram_bot = get_master_bot()
+
+        try:
+            tasks = await trigger_service.get_pending_tasks(limit=50)
+
+            for task in tasks:
+                try:
+                    await trigger_service.execute_scheduled_task(task, telegram_bot)
+                except Exception as e:
+                    print(f"Failed to execute scheduled trigger task {task.id}: {e}")
+        finally:
+            await telegram_bot.session.close()
 
 
 def start_scheduler():
@@ -115,7 +134,15 @@ def start_scheduler():
         name="Process bot updates every 3 seconds (real-time messaging)",
         replace_existing=True
     )
-    
+
+    scheduler.add_job(
+        process_scheduled_triggers,
+        trigger=IntervalTrigger(seconds=30),
+        id="process_scheduled_triggers",
+        name="Process scheduled trigger tasks every 30 seconds",
+        replace_existing=True
+    )
+
     scheduler.start()
 
 
