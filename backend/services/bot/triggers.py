@@ -19,6 +19,7 @@ from backend.models.bots import (
     TriggerActionType,
     MessageType,
 )
+from backend.services.bot.shortcodes import ShortcodeProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -271,7 +272,7 @@ class TriggerService:
         user_id: int,
         chat_id: int,
         telegram_bot: Bot,
-        context: Optional[Dict[str, Any]] = None,
+        context: Optional[dict] = None,
     ):
         """Выполнить действие триггера"""
         # Проверяем окно доставки
@@ -281,6 +282,8 @@ class TriggerService:
             return
 
         action_data = trigger.action_data or {}
+        # Добавляем контекст в action_data для шорткодов
+        action_data["context"] = context or {}
 
         if trigger.action_type == TriggerActionType.SEND_MESSAGE:
             await self.send_message(telegram_bot, chat_id, user_id, action_data)
@@ -340,15 +343,26 @@ class TriggerService:
         telegram_bot: Bot,
         chat_id: int,
         user_id: int,
-        action_data: Dict[str, Any],
+        action_data: dict,
     ):
         """Отправить текстовое сообщение"""
         text = action_data.get("text", "")
         if not text:
             return
 
-        # Подстановка переменных
-        text = text.replace("{user_id}", str(user_id))
+        # Обработка шорткодов
+        bot_info = await telegram_bot.get_me()
+        shortcode_context = {
+            "user": {
+                "id": user_id,
+                "first_name": action_data.get("context", {}).get("first_name", ""),
+                "username": action_data.get("context", {}).get("username", ""),
+            },
+            "bot": {
+                "first_name": bot_info.first_name if bot_info else "",
+            }
+        }
+        text = ShortcodeProcessor.process(text, shortcode_context)
 
         # Формируем кнопки
         reply_markup = self.build_keyboard(action_data.get("buttons"))
@@ -367,12 +381,28 @@ class TriggerService:
         telegram_bot: Bot,
         chat_id: int,
         user_id: int,
-        action_data: Dict[str, Any],
+        action_data: dict,
     ):
         """Отправить медиа"""
         media_url = action_data.get("media_url")
         media_type = action_data.get("media_type", "PHOTO")
         caption = action_data.get("text", "")
+        
+        # Обработка шорткодов в caption
+        if caption:
+            bot_info = await telegram_bot.get_me()
+            shortcode_context = {
+                "user": {
+                    "id": user_id,
+                    "first_name": action_data.get("context", {}).get("first_name", ""),
+                    "username": action_data.get("context", {}).get("username", ""),
+                },
+                "bot": {
+                    "first_name": bot_info.first_name if bot_info else "",
+                }
+            }
+            caption = ShortcodeProcessor.process(caption, shortcode_context)
+        
         reply_markup = self.build_keyboard(action_data.get("buttons"))
 
         if not media_url:
