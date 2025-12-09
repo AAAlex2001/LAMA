@@ -10,10 +10,10 @@ DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@loc
 
 engine = create_async_engine(
     DATABASE_URL, 
-    echo=True, 
+    echo=False,
     pool_pre_ping=True, 
-    pool_size=200,
-    max_overflow=200,
+    pool_size=100,
+    max_overflow=100,
     pool_timeout=30,
     pool_recycle=3600
 )
