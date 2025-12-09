@@ -3,9 +3,9 @@
 """
 import asyncio
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 
-from aiogram.types import Message
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramAPIError
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,9 +15,9 @@ from backend.services.bot import BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.bot.triggers import TriggerService
+from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.webhook.welcome import WelcomeHandler
-from backend.models.bots import Bot as BotModel, TriggerType
-from backend.tasks.bot_polling import send_command_response, send_auto_reply_response
+from backend.models.bots import Bot as BotModel, TriggerType, MessageType
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -180,7 +180,7 @@ class MessageHandler:
         )
 
         if auto_reply:
-            await send_auto_reply_response(telegram_bot, message, auto_reply, self.bot_model)
+            await self.send_auto_reply_response(telegram_bot, message, auto_reply)
 
     async def process_command(
         self,
@@ -226,10 +226,110 @@ class MessageHandler:
                 context={"command": command_text}
             )
 
-            await send_command_response(telegram_bot, message, command, self.bot_model)
+            await self.send_command_response(telegram_bot, message, command)
             await auto_delete_service.delete_if_command_message(telegram_bot, message)
             return
 
         # Команда не найдена, но удаляем исходное сообщение
         await auto_delete_service.delete_if_command_message(telegram_bot, message)
+
+    def build_shortcode_context(self, message: Message) -> Dict[str, Any]:
+        """Построить контекст для шорткодов"""
+        return {
+            "user": {
+                "id": message.from_user.id if message.from_user else None,
+                "first_name": message.from_user.first_name if message.from_user else "",
+                "username": message.from_user.username if message.from_user else None
+            },
+            "bot": {"first_name": self.bot_model.first_name}
+        }
+
+    def build_keyboard(self, buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKeyboardMarkup]:
+        """Построить inline keyboard"""
+        if not buttons_data:
+            return None
+
+        rows = buttons_data.get("buttons", [])
+        if not rows:
+            return None
+
+        keyboard = []
+        for row in rows:
+            keyboard.append([
+                InlineKeyboardButton(
+                    text=btn["text"],
+                    url=btn.get("url"),
+                    callback_data=btn.get("callback_data")
+                ) for btn in row
+            ])
+
+        return InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
+
+    async def send_response(
+        self,
+        telegram_bot: Bot,
+        chat_id: int,
+        text: str,
+        media_url: Optional[str] = None,
+        media_type: Optional[MessageType] = None,
+        buttons: Optional[Dict[str, Any]] = None,
+    ) -> Optional[Message]:
+        """Универсальная отправка ответа (текст/медиа + кнопки)"""
+        reply_markup = self.build_keyboard(buttons)
+
+        if media_url and media_type:
+            send_methods = {
+                MessageType.PHOTO: telegram_bot.send_photo,
+                MessageType.VIDEO: telegram_bot.send_video,
+                MessageType.DOCUMENT: telegram_bot.send_document,
+            }
+
+            method = send_methods.get(media_type)
+            if method:
+                media_param = {
+                    MessageType.PHOTO: "photo",
+                    MessageType.VIDEO: "video",
+                    MessageType.DOCUMENT: "document",
+                }[media_type]
+
+                return await method(
+                    chat_id=chat_id,
+                    **{media_param: media_url},
+                    caption=text,
+                    reply_markup=reply_markup
+                )
+
+        return await telegram_bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup
+        )
+
+    async def send_command_response(self, telegram_bot: Bot, message: Message, command) -> None:
+        """Отправить ответ на команду"""
+        context = self.build_shortcode_context(message)
+        text = ShortcodeProcessor.process(command.response_text, context)
+
+        await self.send_response(
+            telegram_bot,
+            chat_id=message.chat.id,
+            text=text,
+            media_url=command.response_media_url,
+            media_type=command.response_media_type,
+            buttons=command.response_buttons,
+        )
+
+    async def send_auto_reply_response(self, telegram_bot: Bot, message: Message, auto_reply) -> None:
+        """Отправить автоответ"""
+        context = self.build_shortcode_context(message)
+        text = ShortcodeProcessor.process(auto_reply.response_text, context)
+
+        await self.send_response(
+            telegram_bot,
+            chat_id=message.chat.id,
+            text=text,
+            media_url=auto_reply.response_media_url,
+            media_type=auto_reply.response_media_type,
+            buttons=auto_reply.response_buttons,
+        )
 
