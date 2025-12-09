@@ -15,6 +15,7 @@ from backend.services.bot import BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.bot.triggers import TriggerService
+from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import Bot as BotModel, TriggerType
 from backend.tasks.bot_polling import send_command_response, send_auto_reply_response
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
@@ -32,6 +33,7 @@ class MessageHandler:
         self.db = db
         self.bot_model = bot_model
         self.trigger_service = TriggerService(db)
+        self.welcome_handler = WelcomeHandler(db, bot_model)
 
     async def process(self, message: Message) -> None:
         """Обработка сообщения"""
@@ -109,6 +111,10 @@ class MessageHandler:
     async def handle_new_members(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка добавления новых участников - триггер MEMBER_JOINED"""
         for new_member in message.new_chat_members:
+            # Отправка приветствия в группу
+            await self.welcome_handler.handle_new_member(message, new_member)
+            
+            # Триггер MEMBER_JOINED для дополнительной логики
             await self.trigger_service.fire_event(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.MEMBER_JOINED,

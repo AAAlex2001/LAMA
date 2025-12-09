@@ -225,6 +225,7 @@ async def get_welcome_settings(
         welcome_media_url=bot.welcome_media_url,
         welcome_media_type=bot.welcome_media_type,
         welcome_buttons=bot.welcome_buttons,
+        welcome_message_thread_id=bot.welcome_message_thread_id,
         join_captcha_enabled=bot.join_captcha_enabled,
     )
 
@@ -247,6 +248,7 @@ async def update_welcome_settings(
         welcome_media_url=bot.welcome_media_url,
         welcome_media_type=bot.welcome_media_type,
         welcome_buttons=bot.welcome_buttons,
+        welcome_message_thread_id=bot.welcome_message_thread_id,
         join_captcha_enabled=bot.join_captcha_enabled,
     )
 

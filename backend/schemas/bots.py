@@ -81,31 +81,6 @@ class SyncBotResponse(BaseModel):
     message: str
 
 
-# ============================================================================
-# Welcome Settings Schemas
-# ============================================================================
-
-class WelcomeSettingsUpdate(BaseModel):
-    """Схема обновления настроек приветствия"""
-    welcome_enabled: bool = False
-    welcome_message: Optional[str] = None
-    welcome_media_url: Optional[str] = None
-    welcome_media_type: Optional[MessageType] = None
-    welcome_buttons: Optional[Dict[str, Any]] = None
-    # Флаг: при заявке отправлять капчу (в MANUAL-режиме)
-    join_captcha_enabled: Optional[bool] = None
-
-
-class WelcomeSettingsResponse(BaseModel):
-    """Схема ответа настроек приветствия"""
-    welcome_enabled: bool
-    welcome_message: Optional[str]
-    welcome_media_url: Optional[str]
-    welcome_media_type: Optional[MessageType]
-    welcome_buttons: Optional[Dict[str, Any]]
-    join_captcha_enabled: bool
-
-    model_config = {"from_attributes": True}
 
 
 # ============================================================================
@@ -131,6 +106,35 @@ class AutoApprovalResponse(BaseModel):
     """Схема ответа настроек автоодобрения"""
     auto_approval_mode: ApprovalMode
     approval_criteria: Optional[Dict[str, Any]]
+
+    model_config = {"from_attributes": True}
+
+
+# ============================================================================
+# Welcome Settings Schemas
+# ============================================================================
+
+class WelcomeSettingsUpdate(BaseModel):
+    """Схема обновления настроек приветствия"""
+    welcome_enabled: bool = False
+    welcome_message: Optional[str] = None
+    welcome_media_url: Optional[str] = None
+    welcome_media_type: Optional[MessageType] = None
+    welcome_buttons: Optional[Dict[str, Any]] = None
+    welcome_message_thread_id: Optional[int] = None  # ID топика для групповых приветствий
+    # Флаг: при заявке отправлять капчу (в MANUAL-режиме)
+    join_captcha_enabled: Optional[bool] = None
+
+
+class WelcomeSettingsResponse(BaseModel):
+    """Схема ответа настроек приветствия"""
+    welcome_enabled: bool
+    welcome_message: Optional[str]
+    welcome_media_url: Optional[str]
+    welcome_media_type: Optional[MessageType]
+    welcome_buttons: Optional[Dict[str, Any]]
+    welcome_message_thread_id: Optional[int]
+    join_captcha_enabled: bool
 
     model_config = {"from_attributes": True}
 

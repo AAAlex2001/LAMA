@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.bot import BotService
 from backend.services.bot.triggers import TriggerService
-from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType
+from backend.services.webhook.welcome import WelcomeHandler
+from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType, ApprovalMode
 from backend.tasks.bot_polling import handle_join_request
 from backend.services.webhook.base import get_bot_session
 
@@ -23,6 +24,7 @@ class JoinRequestHandler:
         self.bot_model = bot_model
         self.bot_service = BotService(db)
         self.trigger_service = TriggerService(db)
+        self.welcome_handler = WelcomeHandler(db, bot_model)
 
     async def process(self, join_request: ChatJoinRequest) -> None:
         """Обработка заявки на вступление"""
@@ -61,6 +63,10 @@ class JoinRequestHandler:
                     )
                     self.db.add(pending)
                     await self.db.commit()
+
+                # Отправка приветствия для MANUAL режима
+                if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
+                    await self.welcome_handler.handle_join_request(join_request)
 
                 # Обработка заявки (одобрение/отклонение)
                 approved = await handle_join_request(

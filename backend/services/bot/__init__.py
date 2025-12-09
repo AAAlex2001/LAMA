@@ -4,6 +4,7 @@ from backend.services.bot.commands import BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.bot.triggers import TriggerService
+from backend.services.bot.welcome import WelcomeService
 
 __all__ = [
     "BotService",
@@ -12,6 +13,7 @@ __all__ = [
     "AutoReplyService",
     "ModerationTriggerService",
     "TriggerService",
+    "WelcomeService",
 ]
 
 

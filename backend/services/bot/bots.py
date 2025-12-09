@@ -93,6 +93,7 @@ class BotService:
         bot.welcome_media_url = data.welcome_media_url
         bot.welcome_media_type = data.welcome_media_type
         bot.welcome_buttons = data.welcome_buttons
+        bot.welcome_message_thread_id = data.welcome_message_thread_id
         if data.join_captcha_enabled is not None:
             bot.join_captcha_enabled = data.join_captcha_enabled
         bot.updated_at = datetime.now(timezone.utc)

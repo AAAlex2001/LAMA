@@ -290,28 +290,6 @@ async def handle_manual_mode(
     join_request: ChatJoinRequest
 ):
     """Обработка MANUAL режима"""
-    user_id = join_request.from_user.id
-
-    # Приветствие
-    if bot_model.welcome_enabled and bot_model.welcome_message:
-        try:
-            msg = await send_welcome_message(telegram_bot, user_id, bot_model)
-            if msg:
-                await service.save_message(
-                    bot_id=bot_model.id,
-                    telegram_message_id=msg.message_id,
-                    chat_id=user_id,
-                    user_id=user_id,
-                    message_type=MessageType.TEXT,
-                    text_content=bot_model.welcome_message,
-                    media_file_id=None,
-                    media_url=bot_model.welcome_media_url,
-                    is_incoming=False,
-                    raw_data=msg.model_dump(mode='json')
-                )
-        except TelegramAPIError as e:
-            logger.warning(f"Welcome message failed: {e}")
-
     # Капча
     if getattr(bot_model, "join_captcha_enabled", False):
         await send_captcha(service, bot_model, telegram_bot, join_request)
@@ -483,10 +461,6 @@ async def process_correct_captcha(
             show_alert=True
         )
 
-        # Приветствие после капчи
-        if bot_model.welcome_enabled and bot_model.welcome_message:
-            await send_welcome_message(telegram_bot, callback_query.from_user.id, bot_model)
-
     except TelegramAPIError as e:
         logger.error(f"Approve after captcha failed: {e}")
         await telegram_bot.answer_callback_query(
@@ -497,7 +471,7 @@ async def process_correct_captcha(
 
 
 # ============================================================================
-# Отправка ответов (команды, автоответы, приветствия)
+# Отправка ответов (команды, автоответы)
 # ============================================================================
 
 async def send_command_response(telegram_bot: Bot, message: Message, command, bot_model: BotModel):
@@ -527,21 +501,6 @@ async def send_auto_reply_response(telegram_bot: Bot, message: Message, auto_rep
         media_url=auto_reply.response_media_url,
         media_type=auto_reply.response_media_type,
         buttons=auto_reply.response_buttons,
-    )
-
-
-async def send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotModel) -> Optional[Message]:
-    """Отправить приветственное сообщение"""
-    if not bot_model.welcome_message:
-        return None
-
-    return await send_response(
-        telegram_bot,
-        chat_id=chat_id,
-        text=bot_model.welcome_message,
-        media_url=bot_model.welcome_media_url,
-        media_type=bot_model.welcome_media_type,
-        buttons=bot_model.welcome_buttons,
     )
 
 
