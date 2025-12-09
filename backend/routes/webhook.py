@@ -25,8 +25,9 @@ from backend.services.channel import (
 from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
+from backend.services.bot.triggers import TriggerService
 from backend.models.channels import ActionType
-from backend.models.bots import Bot as BotModel, PendingJoinApproval, PendingApproval
+from backend.models.bots import Bot as BotModel, PendingJoinApproval, PendingApproval, TriggerType
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -379,6 +380,19 @@ async def process_message(
                         pass
                 return
 
+            # Обработка добавления новых участников
+            if message.new_chat_members:
+                trigger_service = TriggerService(db)
+                for new_member in message.new_chat_members:
+                    await trigger_service.fire_event(
+                        bot_id=master_bot_model.id,
+                        trigger_type=TriggerType.MEMBER_JOINED,
+                        user_id=new_member.id,
+                        chat_id=message.chat.id,
+                        telegram_bot=telegram_bot,
+                        context={"username": new_member.username, "first_name": new_member.first_name}
+                    )
+
             # Обработка текстового контента
             if text_content:
                 await process_text_message(
@@ -438,6 +452,18 @@ async def process_text_message(
         # Команда не найдена, но удаляем исходное сообщение
         await auto_delete_service.delete_if_command_message(telegram_bot, message)
         return
+
+    # Триггер USER_MESSAGE (для любых текстовых сообщений)
+    user_id = message.from_user.id if message.from_user else 0
+    trigger_service = TriggerService(db)
+    await trigger_service.fire_event(
+        bot_id=master_bot_model.id,
+        trigger_type=TriggerType.USER_MESSAGE,
+        user_id=user_id,
+        chat_id=message.chat.id,
+        telegram_bot=telegram_bot,
+        context={"text": text_content[:100]}  # Первые 100 символов
+    )
 
     # Проверка автоответов
     auto_reply_service = AutoReplyService(db)

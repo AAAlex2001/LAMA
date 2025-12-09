@@ -355,7 +355,7 @@ class TriggerService:
 
         try:
             await telegram_bot.send_message(
-                chat_id=user_id,  # Отправляем в личку пользователю
+                chat_id=chat_id,
                 text=text,
                 reply_markup=reply_markup,
             )
@@ -381,27 +381,27 @@ class TriggerService:
         try:
             if media_type == "PHOTO":
                 await telegram_bot.send_photo(
-                    chat_id=user_id,
+                    chat_id=chat_id,
                     photo=media_url,
                     caption=caption,
                     reply_markup=reply_markup,
                 )
             elif media_type == "VIDEO":
                 await telegram_bot.send_video(
-                    chat_id=user_id,
+                    chat_id=chat_id,
                     video=media_url,
                     caption=caption,
                     reply_markup=reply_markup,
                 )
             elif media_type == "DOCUMENT":
                 await telegram_bot.send_document(
-                    chat_id=user_id,
+                    chat_id=chat_id,
                     document=media_url,
                     caption=caption,
                     reply_markup=reply_markup,
                 )
         except TelegramAPIError as e:
-            logger.warning(f"Failed to send trigger media to {user_id}: {e}")
+            logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
 
     async def mute_user(
         self,
