@@ -1,51 +1,31 @@
+# 1) Base image
 FROM node:20-alpine AS base
-
 WORKDIR /app
 
-# ----------------------------
-# Install production dependencies
-# ----------------------------
+# 2) Dependencies
 FROM base AS deps
-
 RUN apk add --no-cache libc6-compat
-
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# ----------------------------
-# Build application
-# ----------------------------
+# 3) Build stage
 FROM base AS builder
-
-ENV NODE_ENV=production
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
 RUN npm run build
 
-# ----------------------------
-# Production image
-# ----------------------------
-FROM base AS runner
-
-ENV NODE_ENV=production \
-    HOST=0.0.0.0 \
-    PORT=3000
-
-RUN addgroup -g 1001 -S nodejs \
-    && adduser -S nextjs -u 1001
-
+# 4) Production runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules ./node_modules
+ENV NODE_ENV=production
+ENV PORT=3000
 
-USER nextjs
+# Copy only what is needed to run
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json ./
 
 EXPOSE 3000
-
-CMD ["npm", "run", "start"]
-
+CMD ["npm", "start"]

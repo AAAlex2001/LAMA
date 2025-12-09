@@ -51,6 +51,7 @@ services:
   frontend:
     build:
       context: ./frontend
+      target: runner
       dockerfile: Dockerfile
     container_name: lama-frontend
     environment:
