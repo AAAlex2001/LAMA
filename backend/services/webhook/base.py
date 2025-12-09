@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
 
-from backend.tasks.bot_polling import get_master_bot
+from backend.config import get_bot
 from backend.models.bots import Bot as BotModel
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ DB_QUERY_TIMEOUT = 3.0
 @asynccontextmanager
 async def get_bot_session():
     """Context manager для безопасной работы с Telegram Bot"""
-    bot = get_master_bot()
+    bot = get_bot()
     try:
         yield bot
     finally:

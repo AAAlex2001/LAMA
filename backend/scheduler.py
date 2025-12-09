@@ -9,9 +9,9 @@ from backend.models.publications import Publication, PublicationStatus as DBPubl
 from backend.services.publications import PublicationService
 from backend.services.bot.triggers import TriggerService
 from backend.tasks.channel_backup import process_instant_backups
-from backend.tasks.bot_polling import process_bot_updates, get_master_bot
+from backend.tasks.bot_polling import process_bot_updates
 from backend.database import AsyncSessionLocal
-from backend.config import OPENAI_API_KEY
+from backend.config import OPENAI_API_KEY, get_bot
 
 
 scheduler = AsyncIOScheduler(timezone=pytz.UTC)
@@ -88,7 +88,7 @@ async def process_scheduled_triggers():
     """Обработка отложенных триггеров"""
     async with AsyncSessionLocal() as db:
         trigger_service = TriggerService(db)
-        telegram_bot = get_master_bot()
+        telegram_bot = get_bot()
 
         try:
             tasks = await trigger_service.get_pending_tasks(limit=50)
