@@ -74,7 +74,7 @@ async def process_bot_updates():
 
             for bot_model in bots:
                 try:
-                    await _process_single_bot(db, bot_model)
+                    await process_single_bot(db, bot_model)
                 except TelegramRetryAfter as e:
                     logger.warning(f"Rate limit {bot_model.username}: {e.retry_after}s")
                     await asyncio.sleep(e.retry_after)
@@ -88,7 +88,7 @@ async def process_bot_updates():
             await db.rollback()
 
 
-async def _process_single_bot(db: AsyncSession, bot_model: BotModel):
+async def process_single_bot(db: AsyncSession, bot_model: BotModel):
     """Обработка обновлений одного бота"""
     async with bot_session(bot_model.token) as telegram_bot:
         updates: List[Update] = await telegram_bot.get_updates(
@@ -104,7 +104,7 @@ async def _process_single_bot(db: AsyncSession, bot_model: BotModel):
 
         for update in updates:
             try:
-                await _route_update(db, service, bot_model, telegram_bot, update)
+                await route_update(db, service, bot_model, telegram_bot, update)
                 bot_model.last_update_id = update.update_id
             except Exception as e:
                 logger.error(f"Update {update.update_id} error: {e}")
@@ -115,7 +115,7 @@ async def _process_single_bot(db: AsyncSession, bot_model: BotModel):
         await telegram_bot.get_updates(offset=bot_model.last_update_id + 1, timeout=0)
 
 
-async def _route_update(
+async def route_update(
     db: AsyncSession,
     service: BotService,
     bot_model: BotModel,
@@ -124,20 +124,20 @@ async def _route_update(
 ):
     """Маршрутизация обновления"""
     if update.message:
-        await _handle_message(db, service, bot_model, telegram_bot, update.message)
+        await handle_message(db, service, bot_model, telegram_bot, update.message)
     elif update.edited_message:
-        await _handle_message(db, service, bot_model, telegram_bot, update.edited_message)
+        await handle_message(db, service, bot_model, telegram_bot, update.edited_message)
     elif update.chat_join_request:
         await handle_join_request(service, bot_model, telegram_bot, update.chat_join_request)
     elif update.callback_query:
-        await _handle_callback_query(db, service, bot_model, telegram_bot, update.callback_query)
+        await handle_callback_query(db, service, bot_model, telegram_bot, update.callback_query)
 
 
 # ============================================================================
 # Обработка сообщений
 # ============================================================================
 
-async def _handle_message(
+async def handle_message(
     db: AsyncSession,
     service: BotService,
     bot_model: BotModel,
@@ -146,7 +146,7 @@ async def _handle_message(
 ):
     """Обработка входящего сообщения"""
     # Определяем тип
-    message_type, media_file_id = _extract_media_info(message)
+    message_type, media_file_id = extract_media_info(message)
     text_content = message.text or message.caption
     chat_type = message.chat.type if message.chat else None
 
@@ -161,9 +161,9 @@ async def _handle_message(
     )
 
     if should_block:
-        await _try_delete_message(telegram_bot, message)
+        await try_delete_message(telegram_bot, message)
         if notice:
-            await _try_send_message(telegram_bot, message.chat.id, notice)
+            await try_send_message(telegram_bot, message.chat.id, notice)
         return
 
     # Сохраняем сообщение
@@ -186,13 +186,13 @@ async def _handle_message(
 
     # Обработка команд и текста
     if text_content:
-        await _process_text_content(
+        await process_text_content(
             db, service, bot_model, telegram_bot, message,
             text_content, chat_type, auto_delete_service
         )
 
 
-def _extract_media_info(message: Message) -> tuple[MessageType, Optional[str]]:
+def extract_media_info(message: Message) -> tuple[MessageType, Optional[str]]:
     """Извлечь тип медиа и file_id из сообщения"""
     media_map = {
         "photo": (MessageType.PHOTO, lambda m: m.photo[-1].file_id if m.photo else None),
@@ -211,7 +211,7 @@ def _extract_media_info(message: Message) -> tuple[MessageType, Optional[str]]:
     return MessageType.TEXT, None
 
 
-async def _process_text_content(
+async def process_text_content(
     db: AsyncSession,
     service: BotService,
     bot_model: BotModel,
@@ -271,19 +271,19 @@ async def handle_join_request(
 
     # MANUAL режим
     if bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-        await _handle_manual_mode(service, bot_model, telegram_bot, join_request)
+        await handle_manual_mode(service, bot_model, telegram_bot, join_request)
 
     # CRITERIA режим (не прошёл проверку)
     elif bot_model.auto_approval_mode == ApprovalMode.CRITERIA and not should_approve:
         if missing_channels:
-            await _send_subscription_requirements(telegram_bot, user_id, missing_channels)
+            await send_subscription_requirements(telegram_bot, user_id, missing_channels)
 
     # Одобрение
     if should_approve:
-        await _approve_join_request(join_request.chat.id, user_id)
+        await approve_join_request(join_request.chat.id, user_id)
 
 
-async def _handle_manual_mode(
+async def handle_manual_mode(
     service: BotService,
     bot_model: BotModel,
     telegram_bot: Bot,
@@ -295,7 +295,7 @@ async def _handle_manual_mode(
     # Приветствие
     if bot_model.welcome_enabled and bot_model.welcome_message:
         try:
-            msg = await _send_welcome_message(telegram_bot, user_id, bot_model)
+            msg = await send_welcome_message(telegram_bot, user_id, bot_model)
             if msg:
                 await service.save_message(
                     bot_id=bot_model.id,
@@ -314,10 +314,10 @@ async def _handle_manual_mode(
 
     # Капча
     if getattr(bot_model, "join_captcha_enabled", False):
-        await _send_captcha(service, bot_model, telegram_bot, join_request)
+        await send_captcha(service, bot_model, telegram_bot, join_request)
 
 
-async def _send_captcha(
+async def send_captcha(
     service: BotService,
     bot_model: BotModel,
     telegram_bot: Bot,
@@ -362,7 +362,7 @@ async def _send_captcha(
         logger.warning(f"Captcha send failed: {e}")
 
 
-async def _send_subscription_requirements(
+async def send_subscription_requirements(
     telegram_bot: Bot,
     user_id: int,
     missing_channels: List[int]
@@ -399,7 +399,7 @@ async def _send_subscription_requirements(
         logger.warning(f"Subscription requirements send failed: {e}")
 
 
-async def _approve_join_request(chat_id: int, user_id: int):
+async def approve_join_request(chat_id: int, user_id: int):
     """Одобрить заявку на вступление"""
     try:
         async with bot_session(os.getenv("TELEGRAM_BOT_TOKEN", "")) as master_bot:
@@ -413,7 +413,7 @@ async def _approve_join_request(chat_id: int, user_id: int):
 # Callback Query (капча)
 # ============================================================================
 
-async def _handle_callback_query(
+async def handle_callback_query(
     db: AsyncSession,
     service: BotService,
     bot_model: BotModel,
@@ -439,7 +439,7 @@ async def _handle_callback_query(
         is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
 
         if is_correct:
-            await _process_correct_captcha(
+            await process_correct_captcha(
                 db, service, bot_model, telegram_bot, callback_query, pending_id
             )
         else:
@@ -458,7 +458,7 @@ async def _handle_callback_query(
         )
 
 
-async def _process_correct_captcha(
+async def process_correct_captcha(
     db: AsyncSession,
     service: BotService,
     bot_model: BotModel,
@@ -475,7 +475,7 @@ async def _process_correct_captcha(
         return
 
     try:
-        await _approve_join_request(pending.chat_id, pending.user_id)
+        await approve_join_request(pending.chat_id, pending.user_id)
 
         await telegram_bot.answer_callback_query(
             callback_query.id,
@@ -485,7 +485,7 @@ async def _process_correct_captcha(
 
         # Приветствие после капчи
         if bot_model.welcome_enabled and bot_model.welcome_message:
-            await _send_welcome_message(telegram_bot, callback_query.from_user.id, bot_model)
+            await send_welcome_message(telegram_bot, callback_query.from_user.id, bot_model)
 
     except TelegramAPIError as e:
         logger.error(f"Approve after captcha failed: {e}")
@@ -502,10 +502,10 @@ async def _process_correct_captcha(
 
 async def send_command_response(telegram_bot: Bot, message: Message, command, bot_model: BotModel):
     """Отправить ответ на команду"""
-    context = _build_shortcode_context(message, bot_model)
+    context = build_shortcode_context(message, bot_model)
     text = ShortcodeProcessor.process(command.response_text, context)
 
-    await _send_response(
+    await send_response(
         telegram_bot,
         chat_id=message.chat.id,
         text=text,
@@ -517,10 +517,10 @@ async def send_command_response(telegram_bot: Bot, message: Message, command, bo
 
 async def send_auto_reply_response(telegram_bot: Bot, message: Message, auto_reply, bot_model: BotModel):
     """Отправить автоответ"""
-    context = _build_shortcode_context(message, bot_model)
+    context = build_shortcode_context(message, bot_model)
     text = ShortcodeProcessor.process(auto_reply.response_text, context)
 
-    await _send_response(
+    await send_response(
         telegram_bot,
         chat_id=message.chat.id,
         text=text,
@@ -530,12 +530,12 @@ async def send_auto_reply_response(telegram_bot: Bot, message: Message, auto_rep
     )
 
 
-async def _send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotModel) -> Optional[Message]:
+async def send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotModel) -> Optional[Message]:
     """Отправить приветственное сообщение"""
     if not bot_model.welcome_message:
         return None
 
-    return await _send_response(
+    return await send_response(
         telegram_bot,
         chat_id=chat_id,
         text=bot_model.welcome_message,
@@ -545,7 +545,7 @@ async def _send_welcome_message(telegram_bot: Bot, chat_id: int, bot_model: BotM
     )
 
 
-async def _send_response(
+async def send_response(
     telegram_bot: Bot,
     chat_id: int,
     text: str,
@@ -554,7 +554,7 @@ async def _send_response(
     buttons: Optional[Dict[str, Any]] = None,
 ) -> Optional[Message]:
     """Универсальная отправка ответа (текст/медиа + кнопки)"""
-    reply_markup = _build_keyboard(buttons)
+    reply_markup = build_keyboard(buttons)
 
     if media_url and media_type:
         send_methods = {
@@ -585,7 +585,7 @@ async def _send_response(
     )
 
 
-def _build_shortcode_context(message: Message, bot_model: BotModel) -> Dict[str, Any]:
+def build_shortcode_context(message: Message, bot_model: BotModel) -> Dict[str, Any]:
     """Построить контекст для шорткодов"""
     return {
         "user": {
@@ -597,7 +597,7 @@ def _build_shortcode_context(message: Message, bot_model: BotModel) -> Dict[str,
     }
 
 
-def _build_keyboard(buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKeyboardMarkup]:
+def build_keyboard(buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKeyboardMarkup]:
     """Построить inline keyboard"""
     if not buttons_data:
         return None
@@ -623,7 +623,7 @@ def _build_keyboard(buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKe
 # Утилиты
 # ============================================================================
 
-async def _try_delete_message(telegram_bot: Bot, message: Message):
+async def try_delete_message(telegram_bot: Bot, message: Message):
     """Попытаться удалить сообщение"""
     try:
         await asyncio.wait_for(
@@ -634,7 +634,7 @@ async def _try_delete_message(telegram_bot: Bot, message: Message):
         pass
 
 
-async def _try_send_message(telegram_bot: Bot, chat_id: int, text: str):
+async def try_send_message(telegram_bot: Bot, chat_id: int, text: str):
     """Попытаться отправить сообщение"""
     try:
         await asyncio.wait_for(

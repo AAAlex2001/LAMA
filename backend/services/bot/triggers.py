@@ -185,25 +185,25 @@ class TriggerService:
 
         for trigger in triggers:
             # Проверяем фильтры
-            if not self._check_filters(trigger, user_id, chat_id):
+            if not self.check_filters(trigger, user_id, chat_id):
                 continue
 
             # Если есть задержка - планируем на потом
             if trigger.delay_minutes > 0:
-                await self._schedule_trigger(trigger, user_id, chat_id, context)
+                await self.schedule_trigger(trigger, user_id, chat_id, context)
                 executed += 1
                 continue
 
             # Выполняем сразу
             try:
-                await self._execute_trigger(trigger, user_id, chat_id, telegram_bot, context)
+                await self.execute_trigger(trigger, user_id, chat_id, telegram_bot, context)
                 executed += 1
             except Exception as e:
                 logger.error(f"Trigger {trigger.id} execution failed: {e}")
 
         return executed
 
-    def _check_filters(
+    def check_filters(
         self,
         trigger: Trigger,
         user_id: int,
@@ -225,7 +225,7 @@ class TriggerService:
 
         return True
 
-    def _check_delivery_window(self, trigger: Trigger) -> bool:
+    def check_delivery_window(self, trigger: Trigger) -> bool:
         """Проверить окно доставки"""
         if not trigger.delivery_window:
             return True
@@ -244,7 +244,7 @@ class TriggerService:
 
         return start_hour <= now.hour < end_hour
 
-    async def _schedule_trigger(
+    async def schedule_trigger(
         self,
         trigger: Trigger,
         user_id: int,
@@ -265,7 +265,7 @@ class TriggerService:
         self.db.add(task)
         await self.db.commit()
 
-    async def _execute_trigger(
+    async def execute_trigger(
         self,
         trigger: Trigger,
         user_id: int,
@@ -275,26 +275,26 @@ class TriggerService:
     ):
         """Выполнить действие триггера"""
         # Проверяем окно доставки
-        if not self._check_delivery_window(trigger):
+        if not self.check_delivery_window(trigger):
             # Если вне окна - планируем на следующее окно
-            await self._schedule_for_next_window(trigger, user_id, chat_id, context)
+            await self.schedule_for_next_window(trigger, user_id, chat_id, context)
             return
 
         action_data = trigger.action_data or {}
 
         if trigger.action_type == TriggerActionType.SEND_MESSAGE:
-            await self._send_message(telegram_bot, chat_id, user_id, action_data)
+            await self.send_message(telegram_bot, chat_id, user_id, action_data)
 
         elif trigger.action_type == TriggerActionType.SEND_MEDIA:
-            await self._send_media(telegram_bot, chat_id, user_id, action_data)
+            await self.send_media(telegram_bot, chat_id, user_id, action_data)
 
         elif trigger.action_type == TriggerActionType.MUTE_USER:
-            await self._mute_user(telegram_bot, chat_id, user_id, action_data)
+            await self.mute_user(telegram_bot, chat_id, user_id, action_data)
 
         elif trigger.action_type == TriggerActionType.BAN_USER:
-            await self._ban_user(telegram_bot, chat_id, user_id, action_data)
+            await self.ban_user(telegram_bot, chat_id, user_id, action_data)
 
-    async def _schedule_for_next_window(
+    async def schedule_for_next_window(
         self,
         trigger: Trigger,
         user_id: int,
@@ -335,7 +335,7 @@ class TriggerService:
         self.db.add(task)
         await self.db.commit()
 
-    async def _send_message(
+    async def send_message(
         self,
         telegram_bot: Bot,
         chat_id: int,
@@ -351,7 +351,7 @@ class TriggerService:
         text = text.replace("{user_id}", str(user_id))
 
         # Формируем кнопки
-        reply_markup = self._build_keyboard(action_data.get("buttons"))
+        reply_markup = self.build_keyboard(action_data.get("buttons"))
 
         try:
             await telegram_bot.send_message(
@@ -362,7 +362,7 @@ class TriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger message to {user_id}: {e}")
 
-    async def _send_media(
+    async def send_media(
         self,
         telegram_bot: Bot,
         chat_id: int,
@@ -373,7 +373,7 @@ class TriggerService:
         media_url = action_data.get("media_url")
         media_type = action_data.get("media_type", "PHOTO")
         caption = action_data.get("text", "")
-        reply_markup = self._build_keyboard(action_data.get("buttons"))
+        reply_markup = self.build_keyboard(action_data.get("buttons"))
 
         if not media_url:
             return
@@ -403,7 +403,7 @@ class TriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {user_id}: {e}")
 
-    async def _mute_user(
+    async def mute_user(
         self,
         telegram_bot: Bot,
         chat_id: int,
@@ -426,7 +426,7 @@ class TriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to mute user {user_id}: {e}")
 
-    async def _ban_user(
+    async def ban_user(
         self,
         telegram_bot: Bot,
         chat_id: int,
@@ -452,7 +452,7 @@ class TriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to ban user {user_id}: {e}")
 
-    def _build_keyboard(
+    def build_keyboard(
         self,
         buttons_data: Optional[List[List[Dict[str, str]]]],
     ) -> Optional[InlineKeyboardMarkup]:
