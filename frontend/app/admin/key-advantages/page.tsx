@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
 import styles from './key-advantages-admin.module.scss';
-import { API_BASE_URL } from "@/config";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface KeyAdvantage {
   icon: string | null;

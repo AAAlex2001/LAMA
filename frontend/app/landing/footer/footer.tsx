@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import styles from "./footer.module.scss";
-import { API_BASE_URL } from "@/config";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface FooterLink {
   text: string;

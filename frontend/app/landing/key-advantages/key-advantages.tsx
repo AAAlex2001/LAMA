@@ -3,7 +3,7 @@
 import { useState, useEffect, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./key-advantages.module.scss";
-import { API_BASE_URL } from "@/config";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface KeyAdvantage {
   icon?: string | null;

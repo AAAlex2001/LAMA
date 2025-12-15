@@ -8,7 +8,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
 import Button from "@/components/button/button";
-import { API_BASE_URL } from "@/config";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface AdvantagesCard {
   title: string;

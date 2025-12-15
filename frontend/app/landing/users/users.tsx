@@ -5,7 +5,7 @@ import { motion, useMotionValue, useTransform, animate, useInView } from 'framer
 import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
 import Button from "@/components/button/button";
-import { API_BASE_URL } from "@/config";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 export default function Users() {
   const gradientIdMobile = useId();
