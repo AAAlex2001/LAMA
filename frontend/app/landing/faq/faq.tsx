@@ -46,6 +46,28 @@ export default function FAQ() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: **жирный** и "градиент"
+    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на **жирный**
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const content = part.slice(2, -2);
+        return <strong key={index} className={styles.bold}>{content}</strong>;
+      }
+      
+      // Проверяем на "градиент"
+      if (part.startsWith('"') && part.endsWith('"')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.highlight}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   const renderWithBold = (text: string) => {
     const parts = text.split(/(\*\*.*?\*\*)/);
     return parts.map((part, index) => {
@@ -72,7 +94,7 @@ export default function FAQ() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h2 className={styles.headline}>{headline}</h2>
+          <h2 className={styles.headline}>{renderText(headline)}</h2>
           
           <div className={styles.items}>
           {faqItems.map((item, index) => (
@@ -85,7 +107,7 @@ export default function FAQ() {
                 onClick={() => toggleItem(index)}
                 aria-expanded={openIndex === index}
               >
-                <span className={styles.question}>{item.question}</span>
+                <span className={styles.question}>{renderText(item.question)}</span>
                 <svg 
                   className={styles.icon}
                   width="21" 
@@ -115,7 +137,7 @@ export default function FAQ() {
               </button>
               <div className={`${styles.answerWrapper} ${openIndex === index ? styles.open : ''}`}>
                 <div className={styles.answer}>
-                  {item.answer}
+                  {renderText(item.answer)}
                 </div>
               </div>
             </div>
@@ -140,7 +162,7 @@ export default function FAQ() {
 
           <div className={styles.help}>
             <p className={styles.helpText}>
-              {actions.helpText ? renderWithBold(actions.helpText) : (
+              {actions.helpText ? renderText(actions.helpText) : (
                 <>
                   Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
                 </>

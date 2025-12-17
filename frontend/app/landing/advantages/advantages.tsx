@@ -36,16 +36,47 @@ export default function Advantages() {
       .catch(() => {});
   }, []);
 
-  const renderWithBold = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/);
+  const renderHeadline = (text: string) => {
+    // Парсим текст: **жирный** и "градиент"
+    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
+    
     return parts.map((part, index) => {
-      const isBold = part.startsWith('**') && part.endsWith('**');
-      const content = isBold ? part.slice(2, -2) : part;
-      return isBold ? (
-        <strong key={index} className={styles.bold}>{content}</strong>
-      ) : (
-        <span key={index}>{content}</span>
-      );
+      // Проверяем на **жирный**
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const content = part.slice(2, -2);
+        return <strong key={index} className={styles.bold}>{content}</strong>;
+      }
+      
+      // Проверяем на "градиент"
+      if (part.startsWith('"') && part.endsWith('"')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.highlight}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
+  const renderWithBold = (text: string) => {
+    // Парсим текст: **жирный** и "градиент"
+    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на **жирный**
+      if (part.startsWith('**') && part.endsWith('**')) {
+        const content = part.slice(2, -2);
+        return <strong key={index} className={styles.bold}>{content}</strong>;
+      }
+      
+      // Проверяем на "градиент"
+      if (part.startsWith('"') && part.endsWith('"')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.highlight}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
     });
   };
 
@@ -59,17 +90,7 @@ export default function Advantages() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h2 className={styles.headline}>
-            {headline.split(' ').map((word, index) => {
-              const isHighlighted = index >= 2 && index <= 4;
-              return (
-                <span 
-                  key={`${word}-${index}`} 
-                  className={isHighlighted ? styles.highlight : undefined}
-                >
-                  {word}{index < headline.split(' ').length - 1 ? ' ' : ''}
-                </span>
-              );
-            })}
+            {renderHeadline(headline)}
           </h2>
           <p className={styles.subtitle}>
             {subtitle}
