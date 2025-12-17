@@ -1,5 +1,5 @@
 .pricing {
-  padding: 120px 20px 150px;
+  padding: 120px 20px 80px;
   background-color: #F1F5FB;
   position: relative;
   overflow: hidden;
@@ -12,18 +12,6 @@
     right: 0;
     height: 100px;
     background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 200px;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
     pointer-events: none;
     z-index: 0;
   }

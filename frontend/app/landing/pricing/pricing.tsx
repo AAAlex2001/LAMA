@@ -69,13 +69,13 @@ export default function Pricing() {
       <svg 
         className={styles.decorationLine1440}
         width="1440" 
-        height="592" 
-        viewBox="0 0 1440 592" 
+        height="1455" 
+        viewBox="0 0 1440 1455" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
         <motion.path 
-          d="M-21 3.55566C14 95.5557 -42.3886 656.955 633 372.056C745.499 324.6 326 748.556 1504 506.987" 
+          d="M-772 3.55566C-737 95.5557 -174 1593.56 633 1206.06C745.5 1158.6 440.5 1846.56 1866 1079.56" 
           stroke={`url(#${gradientId1440})`} 
           strokeOpacity="0.1" 
           strokeWidth="20"
@@ -85,7 +85,7 @@ export default function Pricing() {
           viewport={{ once: true, amount: 0.3 }}
         />
         <defs>
-          <linearGradient id={gradientId1440} x1="-170.608" y1="-1043.08" x2="1536.51" y2="-1043.08" gradientUnits="userSpaceOnUse">
+          <linearGradient id={gradientId1440} x1="-170.608" y1="-209.077" x2="1536.51" y2="-209.077" gradientUnits="userSpaceOnUse">
             <stop stopColor="#3B82F6"/>
             <stop offset="0.5" stopColor="#2F67C3"/>
             <stop offset="0.75" stopColor="#295AAA"/>
