@@ -70,8 +70,26 @@
 .header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 40px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+}
+
+.brandName {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.lama {
+  font-weight: 800;
+  font-style: italic;
 }
 
 .closeButton {

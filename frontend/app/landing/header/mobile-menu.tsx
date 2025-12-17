@@ -32,6 +32,11 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>
+          <div className={styles.brand}>
+            <h1 className={styles.brandName}>
+              <span className={styles.lama}>LAMA</span>planner
+            </h1>
+          </div>
           <button className={styles.closeButton} onClick={handleClose} aria-label="Close menu">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M18 6L6 18M6 6L18 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
