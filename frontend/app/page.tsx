@@ -7,7 +7,7 @@ import Pricing from "./landing/pricing/pricing";
 import FAQ from "./landing/faq/faq";
 import FAQDecoration from "./landing/faq-decoration/faq-decoration";
 import Lama from "./landing/lama/lama";
-import MarqueeComponent from "./landing/marquee/marquee";
+// import MarqueeComponent from "./landing/marquee/marquee";
 import Footer from "./landing/footer/footer";
 import SidebarMenu from "@/components/sidebar-menu/sidebar-menu";
 
@@ -33,7 +33,7 @@ export default function Home() {
       </div>
       <FAQDecoration />
       <Lama />
-      <MarqueeComponent />
+      {/* <MarqueeComponent /> */}
       <Footer />
       <SidebarMenu />
     </main>

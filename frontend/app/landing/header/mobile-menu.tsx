@@ -44,6 +44,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           <a href="/tools" className={styles.navLink} onClick={handleClose}>Инструменты</a>
           <a href="/pricing" className={styles.navLink} onClick={handleClose}>Тарифы</a>
           <a href="/knowledge-base" className={styles.navLink} onClick={handleClose}>База знаний</a>
+          <div className={styles.language}>RU</div>
         </nav>
 
         <div className={styles.actions}>
