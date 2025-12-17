@@ -43,6 +43,34 @@ export default function Users() {
     }
   }, [isInView, count, content.number]);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <section className={styles.users}>
       <div className={styles.backgroundRing}>
@@ -143,12 +171,12 @@ export default function Users() {
           <div className={styles.number}>
             <motion.span>{rounded}</motion.span>+
           </div>
-          <p className={styles.textLine}>{content.textLine}</p>
+          <p className={styles.textLine}>{renderText(content.textLine)}</p>
           <div className={styles.brandName}>
             <span className={styles.brandLama}>LAMA</span>
             <span className={styles.brandPlanner}>planner</span>
           </div>
-          <p className={styles.textLine_1}>{content.textLine_1}</p>
+          <p className={styles.textLine_1}>{renderText(content.textLine_1)}</p>
           <Button text={content.buttonText} href="/login" active={true} />
         </motion.div>
       </div>

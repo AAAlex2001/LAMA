@@ -47,18 +47,24 @@ export default function FAQ() {
   }, []);
 
   const renderText = (text: string) => {
-    // Парсим текст: **жирный** и "градиент"
-    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
     
     return parts.map((part, index) => {
-      // Проверяем на **жирный**
-      if (part.startsWith('**') && part.endsWith('**')) {
-        const content = part.slice(2, -2);
-        return <strong key={index} className={styles.bold}>{content}</strong>;
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
       }
       
-      // Проверяем на "градиент"
-      if (part.startsWith('"') && part.endsWith('"')) {
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
         const content = part.slice(1, -1);
         return <span key={index} className={styles.highlight}>{content}</span>;
       }
@@ -68,18 +74,6 @@ export default function FAQ() {
     });
   };
 
-  const renderWithBold = (text: string) => {
-    const parts = text.split(/(\*\*.*?\*\*)/);
-    return parts.map((part, index) => {
-      const isBold = part.startsWith('**') && part.endsWith('**');
-      const content = isBold ? part.slice(2, -2) : part;
-      return isBold ? (
-        <strong key={index} className={styles.bold}>{content}</strong>
-      ) : (
-        <span key={index}>{content}</span>
-      );
-    });
-  };
 
   const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);

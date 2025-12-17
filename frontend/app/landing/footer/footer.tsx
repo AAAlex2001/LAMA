@@ -34,6 +34,34 @@ export default function Footer() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <footer className={styles.footer}>
       <div className={styles.container}>
@@ -74,11 +102,11 @@ export default function Footer() {
           <div className={styles.content}>
             {columns.map((column, index) => (
               <div key={index} className={styles.column}>
-                <h3 className={styles.columnTitle}>{column.title}</h3>
+                <h3 className={styles.columnTitle}>{renderText(column.title)}</h3>
                 <ul className={styles.links}>
                   {column.links.map((link, linkIndex) => (
                     <li key={linkIndex}>
-                      <a href={link.href} className={styles.link}>{link.text}</a>
+                      <a href={link.href} className={styles.link}>{renderText(link.text)}</a>
                     </li>
                   ))}
                 </ul>
@@ -162,7 +190,7 @@ export default function Footer() {
               </svg>
             </div>
           </div>
-          <p className={styles.copyright}>{copyright}</p>
+          <p className={styles.copyright}>{renderText(copyright)}</p>
         </div>
       </div>
     </footer>

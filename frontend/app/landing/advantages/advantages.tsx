@@ -36,41 +36,25 @@ export default function Advantages() {
       .catch(() => {});
   }, []);
 
-  const renderHeadline = (text: string) => {
-    // Парсим текст: **жирный** и "градиент"
-    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
     
     return parts.map((part, index) => {
-      // Проверяем на **жирный**
-      if (part.startsWith('**') && part.endsWith('**')) {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
         const content = part.slice(2, -2);
-        return <strong key={index} className={styles.bold}>{content}</strong>;
+        return <span key={index} className={styles.bold}>{content}</span>;
       }
       
-      // Проверяем на "градиент"
-      if (part.startsWith('"') && part.endsWith('"')) {
-        const content = part.slice(1, -1);
-        return <span key={index} className={styles.highlight}>{content}</span>;
-      }
-      
-      // Обычный текст
-      return <span key={index}>{part}</span>;
-    });
-  };
-
-  const renderWithBold = (text: string) => {
-    // Парсим текст: **жирный** и "градиент"
-    const parts = text.split(/(\*\*.*?\*\*|".*?")/);
-    
-    return parts.map((part, index) => {
-      // Проверяем на **жирный**
-      if (part.startsWith('**') && part.endsWith('**')) {
-        const content = part.slice(2, -2);
-        return <strong key={index} className={styles.bold}>{content}</strong>;
-      }
-      
-      // Проверяем на "градиент"
-      if (part.startsWith('"') && part.endsWith('"')) {
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
         const content = part.slice(1, -1);
         return <span key={index} className={styles.highlight}>{content}</span>;
       }
@@ -90,10 +74,10 @@ export default function Advantages() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h2 className={styles.headline}>
-            {renderHeadline(headline)}
+            {renderText(headline)}
           </h2>
           <p className={styles.subtitle}>
-            {subtitle}
+            {renderText(subtitle)}
           </p>
 
           <div className={styles.cards}>
@@ -102,16 +86,16 @@ export default function Advantages() {
               <div key={index} className={styles.card}>
                 {card.isCta ? (
                   <div className={styles.ctaCard}>
-                    <p className={styles.ctaCardText}>{renderWithBold(card.description)}</p>
+                    <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                     <div className={styles.ctaButton}>
                       <Button text="Начать бесплатно" href="/login" fullWidth />
                     </div>
                   </div>
                 ) : (
                   <>
-                    <h3 className={styles.cardTitle}>{renderWithBold(card.title)}</h3>
-                    <p className={styles.cardDescription}>{renderWithBold(card.description)}</p>
-                    {card.linkText && <span className={styles.cardLink}>{renderWithBold(card.linkText)}</span>}
+                    <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
+                    <p className={styles.cardDescription}>{renderText(card.description)}</p>
+                    {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
                   </>
                 )}
               </div>
@@ -141,16 +125,16 @@ export default function Advantages() {
                     <SwiperSlide key={index + 2}>
                       {card.isCta ? (
                         <div className={styles.ctaCard}>
-                          <p className={styles.ctaCardText}>{renderWithBold(card.description)}</p>
+                          <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                           <div className={styles.ctaButton}>
                             <Button text="Начать бесплатно" href="/login" fullWidth />
                           </div>
                         </div>
                       ) : (
                         <div className={styles.card}>
-                          <h3 className={styles.cardTitle}>{renderWithBold(card.title)}</h3>
-                          <p className={styles.cardDescription}>{renderWithBold(card.description)}</p>
-                          {card.linkText && <span className={styles.cardLink}>{renderWithBold(card.linkText)}</span>}
+                          <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
+                          <p className={styles.cardDescription}>{renderText(card.description)}</p>
+                          {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
                         </div>
                       )}
                     </SwiperSlide>

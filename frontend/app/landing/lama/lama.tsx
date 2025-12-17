@@ -26,13 +26,41 @@ export default function Lama() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <section className={styles.lama}>
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.textContent}>
-            <h1 className={styles.headline}>{headline}</h1>
-            <p className={styles.channel}>{channel}</p>
+            <h1 className={styles.headline}>{renderText(headline)}</h1>
+            <p className={styles.channel}>{renderText(channel)}</p>
             <p className={styles.description}>
               {description.split('LAMAplanner').map((part, index, array) => 
                 index < array.length - 1 ? (

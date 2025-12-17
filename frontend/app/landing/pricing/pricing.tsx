@@ -35,6 +35,34 @@ export default function Pricing() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <section className={styles.pricing}>
       <svg 
@@ -103,12 +131,12 @@ export default function Pricing() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h1 className={styles.headline}>{headline}</h1>
+          <h1 className={styles.headline}>{renderText(headline)}</h1>
           <h2 className={styles.subtitle}>
-            <span className={styles.highlight}>{subtitle}</span>
+            {renderText(subtitle)}
           </h2>
           <p className={styles.description}>
-            {description}
+            {renderText(description)}
           </p>
         </motion.div>
 
@@ -142,7 +170,7 @@ export default function Pricing() {
               viewport={{ once: true, amount: 0.3 }}
             >
               <div className={styles.cardHeader}>
-              <h3 className={styles.cardTitle}>{plan.title}</h3>
+              <h3 className={styles.cardTitle}>{renderText(plan.title)}</h3>
               <div className={styles.cardPrice}>
                 {plan.price.split('/').map((part, i) => (
                   i === 0 ? (
@@ -159,7 +187,7 @@ export default function Pricing() {
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M16.6667 5L7.50004 14.1667L3.33337 10" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    <span>{feature}</span>
+                    <span>{renderText(feature)}</span>
                   </li>
                 ))}
               </ul>

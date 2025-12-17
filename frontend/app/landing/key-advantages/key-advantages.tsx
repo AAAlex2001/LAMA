@@ -27,6 +27,34 @@ export default function KeyAdvantages() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <section className={styles.keyAdvantages}>
       <div className={styles.container}>
@@ -65,9 +93,9 @@ export default function KeyAdvantages() {
                   )
                 ) : null}
               </div>
-              <h2 className={styles.cardTitle}>{advantage.title}</h2>
+              <h2 className={styles.cardTitle}>{renderText(advantage.title)}</h2>
               </div>
-              <p className={styles.cardDescription}>{advantage.description}</p>
+              <p className={styles.cardDescription}>{renderText(advantage.description)}</p>
             </div>
           ))}
           </div>

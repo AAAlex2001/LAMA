@@ -35,6 +35,34 @@ export default function Hero() {
       .catch(() => {});
   }, []);
 
+  const renderText = (text: string) => {
+    // Парсим текст: ```курсив```, ``жирный``, `градиент`
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    
+    return parts.map((part, index) => {
+      // Проверяем на ```курсив```
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const content = part.slice(3, -3);
+        return <span key={index} className={styles.italic}>{content}</span>;
+      }
+      
+      // Проверяем на ``жирный``
+      if (part.startsWith('``') && part.endsWith('``')) {
+        const content = part.slice(2, -2);
+        return <span key={index} className={styles.bold}>{content}</span>;
+      }
+      
+      // Проверяем на `градиент`
+      if (part.startsWith('`') && part.endsWith('`')) {
+        const content = part.slice(1, -1);
+        return <span key={index} className={styles.gradient}>{content}</span>;
+      }
+      
+      // Обычный текст
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
@@ -46,13 +74,13 @@ export default function Hero() {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h1 className={styles.headline}>
-            {content.headline}
+            {renderText(content.headline)}
           </h1>
           <p className={styles.paragraph}>
-            {content.paragraph}
+            {renderText(content.paragraph)}
           </p>
           <p className={styles.paragraphSecondary}>
-            {content.paragraphSecondary}
+            {renderText(content.paragraphSecondary)}
           </p>
           <div className={styles.buttonContainer}>
             <Button text={content.buttonText} href="/login" />
