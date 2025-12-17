@@ -86,6 +86,7 @@ class ModerationTriggerService:
     async def handle_admin_call(self, message: Message, telegram_bot: Bot) -> bool:
         """Обработать вызов администраторов"""
         try:
+            # Уведомление в группе
             admins = await telegram_bot.get_chat_administrators(message.chat.id)
             admin_mentions = []
             for admin in admins:
@@ -101,10 +102,67 @@ class ModerationTriggerService:
                 chat_id=message.chat.id,
                 text=notification_text
             )
+            
+            # НОВОЕ: Уведомление владельцу бота в ЛС
+            await self.notify_bot_owner(message, telegram_bot)
+            
             return True
         except TelegramAPIError as e:
             print(f"Failed to notify admins: {str(e)}")
             return False
+    
+    async def notify_bot_owner(self, message: Message, telegram_bot: Bot) -> None:
+        """Отправить уведомление владельцу бота в ЛС"""
+        try:
+            from sqlalchemy import select
+            from backend.database import AsyncSessionLocal
+            from backend.models.bots import Bot as BotModel
+            from backend.models.auth import User, TelegramAccount
+            import os
+            
+            # Получаем владельца бота
+            async with AsyncSessionLocal() as db:
+                master_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+                query = select(BotModel).where(BotModel.token == master_token)
+                result = await db.execute(query)
+                bot_model = result.scalar_one_or_none()
+                
+                if not bot_model:
+                    return
+                
+                # Получаем Telegram ID владельца
+                query = select(User).where(User.id == bot_model.owner_id)
+                result = await db.execute(query)
+                owner = result.scalar_one_or_none()
+                
+                if not owner or not owner.telegram_account:
+                    return
+                
+                owner_telegram_id = owner.telegram_account.telegram_id
+                
+                # Формируем сообщение для владельца
+                chat_title = message.chat.title or "Unknown Group"
+                user_info = f"{message.from_user.first_name}"
+                if message.from_user.username:
+                    user_info += f" (@{message.from_user.username})"
+                
+                owner_message = (
+                    f"🚨 ВЫЗОВ АДМИНИСТРАТОРА\n\n"
+                    f"👤 Пользователь: {user_info}\n"
+                    f"💬 Группа: {chat_title}\n"
+                    f"🆔 Chat ID: {message.chat.id}\n"
+                    f"📝 Текст: {message.text or 'N/A'}\n\n"
+                    f"⏰ Время: {message.date.strftime('%Y-%m-%d %H:%M:%S') if message.date else 'N/A'}"
+                )
+                
+                # Отправляем владельцу
+                await telegram_bot.send_message(
+                    chat_id=owner_telegram_id,
+                    text=owner_message
+                )
+                
+        except Exception as e:
+            print(f"Failed to notify bot owner: {str(e)}")
 
     async def handle_ban(
         self,

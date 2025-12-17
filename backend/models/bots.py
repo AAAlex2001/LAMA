@@ -46,6 +46,14 @@ class ApprovalMode(str, enum.Enum):
     CRITERIA = "CRITERIA"  # По критериям (подписка на другие каналы и т.д.)
 
 
+class CaptchaMode(str, enum.Enum):
+    """Режим капчи"""
+    DISABLED = "DISABLED"  # Капча отключена
+    JOIN_REQUEST = "JOIN_REQUEST"  # Капча при заявке на вступление (в ЛС)
+    AFTER_JOIN = "AFTER_JOIN"  # Капча после вступления (в группе)
+    BOTH = "BOTH"  # Оба режима
+
+
 class MessageType(str, enum.Enum):
     """Тип сообщения"""
     TEXT = "TEXT"
@@ -88,8 +96,11 @@ class Bot(Base):
     welcome_media_type = Column(SQLEnum(MessageType), nullable=True)
     welcome_buttons = Column(JSON, nullable=True)  # Inline keyboard
     welcome_message_thread_id = Column(BigInteger, nullable=True)  # ID топика для групповых приветствий
-    # Капча при заявке на вступление (для MANUAL-режима)
-    join_captcha_enabled = Column(Boolean, default=False, nullable=False)
+    
+    # Капча (два режима)
+    join_captcha_enabled = Column(Boolean, default=False, nullable=False)  # Старое поле для обратной совместимости
+    captcha_mode = Column(SQLEnum(CaptchaMode), default=CaptchaMode.DISABLED, nullable=False)  # Новое поле
+    captcha_timeout_seconds = Column(Integer, default=10, nullable=False)  # Таймаут для капчи в группе
     
     # Настройки автоодобрения
     auto_approval_mode = Column(SQLEnum(ApprovalMode), default=ApprovalMode.MANUAL, nullable=False)

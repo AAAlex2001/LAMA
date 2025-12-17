@@ -96,6 +96,13 @@ class BotService:
         bot.welcome_message_thread_id = data.welcome_message_thread_id
         if data.join_captcha_enabled is not None:
             bot.join_captcha_enabled = data.join_captcha_enabled
+        
+        # НОВЫЕ ПОЛЯ
+        if data.captcha_mode is not None:
+            bot.captcha_mode = data.captcha_mode
+        if data.captcha_timeout_seconds is not None:
+            bot.captcha_timeout_seconds = data.captcha_timeout_seconds
+        
         bot.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()

@@ -219,6 +219,7 @@ async def get_welcome_settings(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
+    from backend.models.bots import CaptchaMode
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
         welcome_message=bot.welcome_message,
@@ -227,6 +228,8 @@ async def get_welcome_settings(
         welcome_buttons=bot.welcome_buttons,
         welcome_message_thread_id=bot.welcome_message_thread_id,
         join_captcha_enabled=bot.join_captcha_enabled,
+        captcha_mode=getattr(bot, 'captcha_mode', CaptchaMode.DISABLED),
+        captcha_timeout_seconds=getattr(bot, 'captcha_timeout_seconds', 10),
     )
 
 
@@ -242,6 +245,7 @@ async def update_welcome_settings(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
+    from backend.models.bots import CaptchaMode
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
         welcome_message=bot.welcome_message,
@@ -250,6 +254,8 @@ async def update_welcome_settings(
         welcome_buttons=bot.welcome_buttons,
         welcome_message_thread_id=bot.welcome_message_thread_id,
         join_captcha_enabled=bot.join_captcha_enabled,
+        captcha_mode=getattr(bot, 'captcha_mode', CaptchaMode.DISABLED),
+        captcha_timeout_seconds=getattr(bot, 'captcha_timeout_seconds', 10),
     )
 
 

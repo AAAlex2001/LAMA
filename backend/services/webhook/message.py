@@ -11,13 +11,13 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
-from backend.services.bot import BotCommandService
+from backend.services.bot import BotCommandService, CaptchaService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.bot.triggers import TriggerService
 from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.webhook.welcome import WelcomeHandler
-from backend.models.bots import Bot as BotModel, TriggerType, MessageType
+from backend.models.bots import Bot as BotModel, TriggerType, MessageType, CaptchaMode
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -111,8 +111,15 @@ class MessageHandler:
     async def handle_new_members(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка добавления новых участников - триггер MEMBER_JOINED"""
         for new_member in message.new_chat_members:
-            # Отправка приветствия в группу
-            await self.welcome_handler.handle_new_member(message, new_member)
+            # Проверяем режим капчи
+            captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+            
+            # Если капча после вступления - отправляем капчу В ГРУППЕ
+            if captcha_mode in (CaptchaMode.AFTER_JOIN, CaptchaMode.BOTH):
+                await self.send_group_captcha(telegram_bot, message, new_member)
+            else:
+                # Иначе отправляем обычное приветствие
+                await self.welcome_handler.handle_new_member(message, new_member)
             
             # Триггер MEMBER_JOINED для дополнительной логики
             await self.trigger_service.fire_event(
@@ -127,6 +134,129 @@ class MessageHandler:
                     "last_name": new_member.last_name,
                 }
             )
+    
+    async def send_group_captcha(self, telegram_bot: Bot, message: Message, new_member) -> None:
+        """Отправить капчу в группе после вступления"""
+        import random
+        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+        
+        try:
+            # Генерируем капчу
+            captcha_service = CaptchaService(self.db)
+            question, answer = captcha_service.generate_captcha()
+            
+            # Сохраняем pending approval
+            pending = await captcha_service.create_pending_approval(
+                bot_id=self.bot_model.id,
+                user_id=new_member.id,
+                chat_id=message.chat.id,
+                captcha_question=question,
+                captcha_answer=answer,
+            )
+            
+            # Генерируем варианты ответов
+            correct = int(answer)
+            options = {correct}
+            while len(options) < 3:
+                options.add(correct + random.randint(-5, 5))
+                if len(options) >= 10:  # Защита от бесконечного цикла
+                    break
+            
+            options_list = list(options)[:3]
+            random.shuffle(options_list)
+            
+            # Кнопки для ответа
+            buttons = [[
+                InlineKeyboardButton(text=str(opt), callback_data=f"group_captcha_{pending.id}_{opt}")
+            ] for opt in options_list]
+            
+            # Получаем таймаут
+            timeout_seconds = getattr(self.bot_model, "captcha_timeout_seconds", 10)
+            
+            # Отправляем капчу в группу
+            captcha_text = (
+                f"⚠️ {new_member.first_name}, реши капчу за {timeout_seconds} секунд, иначе будешь удалён!\n\n"
+                f"{question}"
+            )
+            
+            captcha_message = await telegram_bot.send_message(
+                chat_id=message.chat.id,
+                text=captcha_text,
+                reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            )
+            
+            # Запускаем таймер на кик
+            asyncio.create_task(
+                self.captcha_timeout_kick(
+                    telegram_bot, 
+                    message.chat.id, 
+                    new_member.id, 
+                    captcha_message.message_id,
+                    pending.id,
+                    timeout_seconds
+                )
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to send group captcha: {e}", exc_info=True)
+    
+    async def captcha_timeout_kick(
+        self, 
+        telegram_bot: Bot, 
+        chat_id: int, 
+        user_id: int,
+        captcha_message_id: int,
+        pending_id: int,
+        timeout_seconds: int
+    ) -> None:
+        """Кикнуть пользователя, если не решил капчу вовремя"""
+        import asyncio
+        from sqlalchemy import select
+        from backend.models.bots import PendingApproval
+        
+        # Ждём таймаут
+        await asyncio.sleep(timeout_seconds)
+        
+        try:
+            # Проверяем, решена ли капча
+            query = select(PendingApproval).where(PendingApproval.id == pending_id)
+            result = await self.db.execute(query)
+            pending = result.scalar_one_or_none()
+            
+            if not pending or pending.is_approved:
+                # Капча решена, удаляем сообщение
+                try:
+                    await telegram_bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
+                except:
+                    pass
+                return
+            
+            # Капча не решена - кикаем пользователя
+            try:
+                await telegram_bot.ban_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id
+                )
+                # Сразу разбаниваем (это просто кик)
+                await telegram_bot.unban_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id
+                )
+                
+                # Удаляем сообщение с капчей
+                await telegram_bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
+                
+                # Отправляем уведомление
+                await telegram_bot.send_message(
+                    chat_id=chat_id,
+                    text=f"❌ Пользователь не решил капчу вовремя и был удалён."
+                )
+                
+            except TelegramAPIError as e:
+                logger.warning(f"Failed to kick user {user_id}: {e}")
+                
+        except Exception as e:
+            logger.error(f"Captcha timeout check failed: {e}", exc_info=True)
 
     async def handle_member_left(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка ухода участника - триггер MEMBER_LEFT"""

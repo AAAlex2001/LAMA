@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.bot import BotService, CaptchaService
 from backend.services.bot.triggers import TriggerService
 from backend.services.webhook.welcome import WelcomeHandler
-from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType, ApprovalMode
+from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType, ApprovalMode, CaptchaMode
 from backend.services.webhook.base import get_bot_session
 
 logger = logging.getLogger(__name__)
@@ -112,8 +112,14 @@ class JoinRequestHandler:
 
     async def handle_manual_mode(self, telegram_bot, join_request: ChatJoinRequest) -> None:
         """Обработка MANUAL режима - отправка капчи"""
-        if not getattr(self.bot_model, "join_captcha_enabled", False):
-            return
+        # Проверяем режим капчи
+        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+        
+        # Капча только если режим JOIN_REQUEST или BOTH
+        if captcha_mode not in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+            # Проверяем старое поле для обратной совместимости
+            if not getattr(self.bot_model, "join_captcha_enabled", False):
+                return
 
         try:
             captcha_service = CaptchaService(self.db)

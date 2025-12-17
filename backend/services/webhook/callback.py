@@ -31,6 +31,8 @@ class CallbackHandler:
 
         if callback_data.startswith("captcha_"):
             await self.process_captcha(callback_query)
+        elif callback_data.startswith("group_captcha_"):
+            await self.process_group_captcha(callback_query)
 
     async def process_captcha(self, callback_query: CallbackQuery) -> None:
         """Обработка капчи"""
@@ -115,4 +117,86 @@ class CallbackHandler:
                     )
             except Exception:
                 pass
+    
+    async def process_group_captcha(self, callback_query: CallbackQuery) -> None:
+        """Обработка капчи в группе"""
+        callback_data = callback_query.data
+        parts = callback_data.split("_")
+        
+        if len(parts) < 4:
+            return
+        
+        try:
+            pending_id = int(parts[2])
+            user_answer = parts[3]
+            
+            captcha_service = CaptchaService(self.db)
+            is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
+            
+            async with get_bot_session() as telegram_bot:
+                user_id = callback_query.from_user.id
+                chat_id = callback_query.message.chat.id if callback_query.message else 0
+                
+                if is_correct:
+                    # Удаляем сообщение с капчей
+                    if callback_query.message:
+                        try:
+                            await telegram_bot.delete_message(
+                                chat_id=chat_id,
+                                message_id=callback_query.message.message_id
+                            )
+                        except:
+                            pass
+                    
+                    await telegram_bot.answer_callback_query(
+                        callback_query.id,
+                        text="✅ Правильно! Добро пожаловать!",
+                        show_alert=False,
+                    )
+                    
+                    # Отправляем приветствие
+                    from backend.services.webhook.welcome import WelcomeHandler
+                    welcome_handler = WelcomeHandler(self.db, self.bot_model)
+                    
+                    # Создаём фейковое сообщение для приветствия
+                    from aiogram.types import Message, Chat, User as TgUser
+                    fake_message = Message(
+                        message_id=0,
+                        date=callback_query.message.date if callback_query.message else None,
+                        chat=callback_query.message.chat if callback_query.message else None,
+                    )
+                    fake_user = callback_query.from_user
+                    
+                    await welcome_handler.handle_new_member(fake_message, fake_user)
+                    
+                    # Триггер CAPTCHA_PASSED
+                    await self.trigger_service.fire_event(
+                        bot_id=self.bot_model.id,
+                        trigger_type=TriggerType.CAPTCHA_PASSED,
+                        user_id=user_id,
+                        chat_id=chat_id,
+                        telegram_bot=telegram_bot,
+                        context={"pending_id": pending_id, "group_captcha": True}
+                    )
+                else:
+                    await telegram_bot.answer_callback_query(
+                        callback_query.id,
+                        text="❌ Неправильный ответ. Попробуйте ещё раз.",
+                        show_alert=True,
+                    )
+                    
+                    # Триггер CAPTCHA_FAILED
+                    await self.trigger_service.fire_event(
+                        bot_id=self.bot_model.id,
+                        trigger_type=TriggerType.CAPTCHA_FAILED,
+                        user_id=user_id,
+                        chat_id=chat_id,
+                        telegram_bot=telegram_bot,
+                        context={"pending_id": pending_id, "answer": user_answer, "group_captcha": True}
+                    )
+                    
+        except ValueError:
+            logger.warning(f"Invalid group captcha callback data: {callback_data}")
+        except Exception as e:
+            logger.error(f"Group captcha callback error: {e}", exc_info=True)
 

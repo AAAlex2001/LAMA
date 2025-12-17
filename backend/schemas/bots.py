@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope, TriggerType, TriggerActionType
+from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope, TriggerType, TriggerActionType, CaptchaMode
 
 
 # ============================================================================
@@ -122,8 +122,11 @@ class WelcomeSettingsUpdate(BaseModel):
     welcome_media_type: Optional[MessageType] = None
     welcome_buttons: Optional[Dict[str, Any]] = None
     welcome_message_thread_id: Optional[int] = None  # ID топика для групповых приветствий
-    # Флаг: при заявке отправлять капчу (в MANUAL-режиме)
+    # Флаг: при заявке отправлять капчу (в MANUAL-режиме) - DEPRECATED
     join_captcha_enabled: Optional[bool] = None
+    # Новые поля для капчи
+    captcha_mode: Optional[CaptchaMode] = None
+    captcha_timeout_seconds: Optional[int] = Field(None, ge=5, le=300, description="Таймаут капчи в группе (5-300 секунд)")
 
 
 class WelcomeSettingsResponse(BaseModel):
@@ -134,7 +137,9 @@ class WelcomeSettingsResponse(BaseModel):
     welcome_media_type: Optional[MessageType]
     welcome_buttons: Optional[Dict[str, Any]]
     welcome_message_thread_id: Optional[int]
-    join_captcha_enabled: bool
+    join_captcha_enabled: bool  # DEPRECATED
+    captcha_mode: CaptchaMode
+    captcha_timeout_seconds: int
 
     model_config = {"from_attributes": True}
 
