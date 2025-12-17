@@ -1,19 +1,27 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import styles from './mobile-menu.module.scss';
 import Button from '@/components/button/button';
-import ToolsPopup from '@/components/tools-popup/tools-popup';
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+const toolsItems = [
+  { title: 'Новая публикация', href: '/publications/new' },
+  { title: 'Календарь', href: '/calendar' },
+  { title: 'Заметки', href: '/notes' },
+  { title: 'Каналы/группы', href: '/channels' },
+  { title: 'Боты', href: '/bots' },
+  { title: 'Inbox', href: '/inbox' },
+  { title: 'Парсер', href: '/parser' }
+];
+
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
-  const toolsRef = useRef<HTMLAnchorElement>(null);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -49,27 +57,41 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         <nav className={styles.nav}>
           <a href="/about" className={styles.navLink} onClick={handleClose}>О проекте</a>
-          <div className={styles.navLinkWrapper}>
-            <a 
-              ref={toolsRef}
-              href="#" 
-              className={styles.navLink}
-              onClick={(e) => {
-                e.preventDefault();
-                setIsToolsOpen(!isToolsOpen);
-              }}
+          
+          <div className={styles.toolsAccordion}>
+            <button 
+              className={`${styles.navLink} ${styles.toolsToggle} ${isToolsOpen ? styles.toolsToggleOpen : ''}`}
+              onClick={() => setIsToolsOpen(!isToolsOpen)}
             >
               Инструменты
-            </a>
-            <ToolsPopup 
-              isOpen={isToolsOpen} 
-              onClose={() => setIsToolsOpen(false)}
-              anchorElement={toolsRef.current}
-            />
+              <svg 
+                className={styles.chevron} 
+                width="16" 
+                height="16" 
+                viewBox="0 0 16 16" 
+                fill="none" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
+            <div className={`${styles.toolsList} ${isToolsOpen ? styles.toolsListOpen : ''}`}>
+              {toolsItems.map((item, index) => (
+                <a 
+                  key={index} 
+                  href={item.href} 
+                  className={styles.toolsItem}
+                  onClick={handleClose}
+                >
+                  {item.title}
+                </a>
+              ))}
+            </div>
           </div>
+          
           <a href="/pricing" className={styles.navLink} onClick={handleClose}>Тарифы</a>
           <a href="/knowledge-base" className={styles.navLink} onClick={handleClose}>База знаний</a>
-          <div className={styles.language}>RU</div>
         </nav>
 
         <div className={styles.actions}>

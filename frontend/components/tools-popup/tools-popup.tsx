@@ -7,6 +7,7 @@ interface ToolsPopupProps {
   isOpen: boolean;
   onClose: () => void;
   anchorElement?: HTMLElement | null;
+  variant?: 'header' | 'mobile';
 }
 
 const toolsItems = [
@@ -47,7 +48,7 @@ const toolsItems = [
   }
 ];
 
-export default function ToolsPopup({ isOpen, onClose, anchorElement }: ToolsPopupProps) {
+export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = 'header' }: ToolsPopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement }: ToolsPopu
   if (!isOpen) return null;
 
   return (
-    <div className={styles.popup} ref={popupRef}>
+    <div className={`${styles.popup} ${styles[variant]}`} ref={popupRef}>
       <div className={styles.content}>
         {toolsItems.map((item, index) => (
           <a 

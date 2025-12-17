@@ -111,11 +111,6 @@
   flex: 1;
 }
 
-.navLinkWrapper {
-  position: relative;
-  width: 100%;
-}
-
 .navLink {
   font-size: 16px;
   line-height: 24px;
@@ -128,6 +123,63 @@
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+  }
+}
+
+// Аккордеон инструментов
+.toolsAccordion {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.toolsToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+}
+
+.toolsToggleOpen .chevron {
+  transform: rotate(180deg);
+}
+
+.toolsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding-left: 16px;
+}
+
+.toolsListOpen {
+  max-height: 400px;
+  padding-top: 12px;
+  padding-bottom: 4px;
+}
+
+.toolsItem {
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  padding: 8px 0;
+  transition: color 0.2s ease;
+  
+  &:hover {
+    color: #ffffff;
   }
 }
 

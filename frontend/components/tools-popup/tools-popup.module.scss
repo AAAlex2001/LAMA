@@ -1,6 +1,6 @@
 .popup {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 20px);
   left: 0;
   right: 0;
   display: flex;
@@ -22,6 +22,44 @@
   }
 }
 
+// Вариант для мобильного меню
+.popup.mobile {
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 0;
+  gap: 0;
+  width: 100%;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  margin-top: 8px;
+  margin-bottom: 24px;
+
+  @media (min-width: 768px) {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    padding: 10px;
+    gap: 10px;
+    width: 100%;
+    background: linear-gradient(180deg, #3B82F6 0%, #2F67C3 25%, #295AAA 50%, #26539D 75%, #244F96 87.5%, #234C90 100%);
+    box-shadow: 0px 16px 32px -4px rgba(12, 12, 13, 0.1), 0px 4px 4px -4px rgba(12, 12, 13, 0.05);
+    border-radius: 10px;
+    margin-top: 8px;
+    margin-bottom: 0;
+    width: 340px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}
+
 .content {
   display: flex;
   flex-direction: column;
@@ -31,6 +69,16 @@
   width: 100%;
 
   @media (min-width: 768px) {
+    width: 320px;
+  }
+}
+
+.popup.mobile .content {
+  gap: 0;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    gap: 5px;
     width: 320px;
   }
 }
@@ -52,6 +100,32 @@
   }
 }
 
+.popup.mobile .item {
+  padding: 12px 0;
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+
+  @media (min-width: 768px) {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    border-bottom: none;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
 .title {
   width: 100%;
   font-family: 'Inter', sans-serif;
@@ -65,6 +139,13 @@
   background-clip: text;
 }
 
+.popup.mobile .title {
+  color: #ffffff;
+  background: transparent;
+  -webkit-text-fill-color: #ffffff;
+  font-weight: 500;
+}
+
 .description {
   width: 100%;
   font-family: 'Inter', sans-serif;
@@ -74,5 +155,12 @@
   line-height: 17px;
   color: #383F45;
   margin-top: 2px;
+}
+
+.popup.mobile .description {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  line-height: 16px;
+  margin-top: 4px;
 }
 
