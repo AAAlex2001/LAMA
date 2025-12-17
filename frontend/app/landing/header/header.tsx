@@ -4,11 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
 import Button from "@/components/button/button";
+import ToolsPopup from "@/components/tools-popup/tools-popup";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
+  const toolsRef = useRef<HTMLAnchorElement>(null);
 
   useEffect(() => {
     lastScrollY.current = window.scrollY;
@@ -44,7 +47,24 @@ export default function Header() {
 
           <nav className={styles.nav}>
             <a href="/about" className={styles.navLink}>О проекте</a>
-            <a href="/tools" className={styles.navLink}>Инструменты</a>
+            <div className={styles.navLinkWrapper}>
+              <a 
+                ref={toolsRef}
+                href="#" 
+                className={styles.navLink}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsToolsOpen(!isToolsOpen);
+                }}
+              >
+                Инструменты
+              </a>
+              <ToolsPopup 
+                isOpen={isToolsOpen} 
+                onClose={() => setIsToolsOpen(false)}
+                anchorElement={toolsRef.current}
+              />
+            </div>
             <a href="/pricing" className={styles.navLink}>Тарифы</a>
             <a href="/knowledge-base" className={styles.navLink}>База знаний</a>
           </nav>

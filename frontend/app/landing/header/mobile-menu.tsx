@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './mobile-menu.module.scss';
 import Button from '@/components/button/button';
+import ToolsPopup from '@/components/tools-popup/tools-popup';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -11,6 +12,8 @@ interface MobileMenuProps {
 
 export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const [isClosing, setIsClosing] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const toolsRef = useRef<HTMLAnchorElement>(null);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -46,7 +49,24 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
         <nav className={styles.nav}>
           <a href="/about" className={styles.navLink} onClick={handleClose}>О проекте</a>
-          <a href="/tools" className={styles.navLink} onClick={handleClose}>Инструменты</a>
+          <div className={styles.navLinkWrapper}>
+            <a 
+              ref={toolsRef}
+              href="#" 
+              className={styles.navLink}
+              onClick={(e) => {
+                e.preventDefault();
+                setIsToolsOpen(!isToolsOpen);
+              }}
+            >
+              Инструменты
+            </a>
+            <ToolsPopup 
+              isOpen={isToolsOpen} 
+              onClose={() => setIsToolsOpen(false)}
+              anchorElement={toolsRef.current}
+            />
+          </div>
           <a href="/pricing" className={styles.navLink} onClick={handleClose}>Тарифы</a>
           <a href="/knowledge-base" className={styles.navLink} onClick={handleClose}>База знаний</a>
           <div className={styles.language}>RU</div>
