@@ -326,7 +326,7 @@ class MessageHandler:
 
         # Модерационные команды
         if command_text.lower() in MODERATION_COMMANDS:
-            moderation_trigger_service = ModerationTriggerService()
+            moderation_trigger_service = ModerationTriggerService(self.db)
             handled = await moderation_trigger_service.handle_moderation_command(
                 command=command_text,
                 message=message,
