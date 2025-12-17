@@ -162,15 +162,15 @@ class WelcomeService:
         Построить контекст для шорткодов
         
         Доступные шорткоды:
-        - {user_id} - ID пользователя
-        - {user_name} или {firstname} - имя пользователя
-        - {user_username} или {username} - username пользователя
-        - {user_last_name} или {lastname} - фамилия пользователя
-        - {bot_name} - имя бота
-        - {chat_title} - название чата
-        - {date} - текущая дата
-        - {time} - текущее время
-        - {datetime} - дата и время
+        - {user.id} - ID пользователя
+        - {user.first_name} - имя пользователя
+        - {user.username} - username пользователя (@username)
+        - {user.last_name} - фамилия пользователя
+        - {bot.first_name} - имя бота
+        - {chat.title} - название чата
+        - {date} - текущая дата (DD.MM.YYYY)
+        - {time} - текущее время (HH:MM)
+        - {datetime} - дата и время (DD.MM.YYYY HH:MM)
         """
         return {
             "user": {

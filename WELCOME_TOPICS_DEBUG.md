@@ -61,7 +61,7 @@ else:
 PUT /bots/{bot_id}/welcome
 {
   "welcome_enabled": true,
-  "welcome_message": "Тест {firstname}",
+  "welcome_message": "Тест {user.first_name}",
   "welcome_media_url": null,
   "welcome_media_type": null,
   "welcome_buttons": null,
@@ -117,7 +117,7 @@ PUT /bots/{bot_id}/welcome
 PUT /bots/{bot_id}/welcome
 {
   "welcome_enabled": true,
-  "welcome_message": "Привет, {firstname}! Топик: {chat_title}",
+  "welcome_message": "Привет, {user.first_name}! Топик: {chat.title}",
   "welcome_message_thread_id": null
 }
 
@@ -182,7 +182,7 @@ GET https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "ТЕСТ {firstname}",
+  "welcome_message": "ТЕСТ {user.first_name}",
   "welcome_message_thread_id": null
 }
 ```

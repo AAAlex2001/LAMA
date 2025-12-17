@@ -65,9 +65,8 @@ class JoinRequestHandler:
                     self.db.add(pending)
                     await self.db.commit()
 
-                # MANUAL режим - приветствие и капча
+                # MANUAL режим - только капча (приветствие через триггеры)
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    await self.welcome_handler.handle_join_request(join_request)
                     await self.handle_manual_mode(telegram_bot, join_request)
 
                 # CRITERIA режим - отправка требований подписки

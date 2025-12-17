@@ -59,7 +59,7 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "Привет, {firstname}! 👋\nДобро пожаловать в {chat_title}!",
+  "welcome_message": "Привет, {user.first_name}! 👋\nДобро пожаловать в {chat.title}!",
   "welcome_media_url": null,
   "welcome_media_type": null,
   "welcome_buttons": null,
@@ -72,7 +72,7 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "Привет, {firstname}! 👋\nДобро пожаловать в {chat_title}!",
+  "welcome_message": "Привет, {user.first_name}! 👋\nДобро пожаловать в {chat.title}!",
   "welcome_media_url": null,
   "welcome_media_type": null,
   "welcome_buttons": null,
@@ -93,7 +93,7 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "Здравствуй, {firstname}! 🎉\n\nДобро пожаловать в нашу группу \"{chat_title}\"!\n\nТвой username: @{username}\nСегодня: {date}\nВремя: {time}\n\nТвой ID: {user_id}",
+  "welcome_message": "Здравствуй, {user.first_name}! 🎉\n\nДобро пожаловать в нашу группу \"{chat.title}\"!\n\nТвой username: {user.username}\nСегодня: {date}\nВремя: {time}\n\nТвой ID: {user.id}",
   "welcome_media_url": null,
   "welcome_media_type": null,
   "welcome_buttons": null,
@@ -248,7 +248,7 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "🎉 Добро пожаловать, {firstname}!",
+  "welcome_message": "🎉 Добро пожаловать, {user.first_name}!",
   "welcome_media_url": "https://media.giphy.com/media/example/giphy.gif",
   "welcome_media_type": "ANIMATION",
   "welcome_buttons": null,
@@ -269,7 +269,7 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 ```json
 {
   "welcome_enabled": true,
-  "welcome_message": "Привет, {firstname}! 🎬\nПосмотри наше приветственное видео!",
+  "welcome_message": "Привет, {user.first_name}! 🎬\nПосмотри наше приветственное видео!",
   "welcome_media_url": "https://example.com/welcome-video.mp4",
   "welcome_media_type": "VIDEO",
   "welcome_buttons": {
@@ -322,8 +322,8 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 1. Настроить приветствие (пример #3)
 2. Добавить участника с именем "Иван" и username "@ivan"
 3. Проверить, что шорткоды заменились:
-   - `{firstname}` → "Иван"
-   - `{username}` → "@ivan"
+   - `{user.first_name}` → "Иван"
+   - `{user.username}` → "@ivan"
    - `{date}` → текущая дата
    - `{time}` → текущее время
 
@@ -355,12 +355,12 @@ PUT https://193.42.125.13/api/bots/{bot_id}/welcome
 
 | Шорткод | Описание | Пример результата |
 |---------|----------|-------------------|
-| `{user_id}` | ID пользователя | `123456789` |
-| `{firstname}` или `{user_name}` | Имя | `Иван` |
-| `{username}` или `{user_username}` | Username | `@ivan` |
-| `{lastname}` или `{user_last_name}` | Фамилия | `Иванов` |
-| `{bot_name}` | Имя бота | `MyBot` |
-| `{chat_title}` | Название чата | `Моя группа` |
+| `{user.id}` | ID пользователя | `123456789` |
+| `{user.first_name}` | Имя | `Иван` |
+| `{user.username}` | Username | `@ivan` |
+| `{user.last_name}` | Фамилия | `Иванов` |
+| `{bot.first_name}` | Имя бота | `MyBot` |
+| `{chat.title}` | Название чата | `Моя группа` |
 | `{date}` | Дата | `09.12.2025` |
 | `{time}` | Время | `14:30` |
 | `{datetime}` | Дата и время | `09.12.2025 14:30` |

@@ -285,11 +285,21 @@ class TriggerService:
         # Добавляем контекст в action_data для шорткодов
         action_data["context"] = context or {}
 
+        # Определяем куда отправлять: в ЛС (user_id) или в группу (chat_id)
+        # Для триггеров заявок - всегда в ЛС пользователю
+        target_chat_id = chat_id
+        if trigger.trigger_type in (
+            TriggerType.JOIN_REQUEST_CREATED,
+            TriggerType.JOIN_REQUEST_APPROVED,
+            TriggerType.JOIN_REQUEST_REJECTED,
+        ):
+            target_chat_id = user_id
+
         if trigger.action_type == TriggerActionType.SEND_MESSAGE:
-            await self.send_message(telegram_bot, chat_id, user_id, action_data)
+            await self.send_message(telegram_bot, target_chat_id, user_id, action_data)
 
         elif trigger.action_type == TriggerActionType.SEND_MEDIA:
-            await self.send_media(telegram_bot, chat_id, user_id, action_data)
+            await self.send_media(telegram_bot, target_chat_id, user_id, action_data)
 
         elif trigger.action_type == TriggerActionType.MUTE_USER:
             await self.mute_user(telegram_bot, chat_id, user_id, action_data)
