@@ -1,6 +1,6 @@
 .pricing {
   padding: 120px 20px 80px;
-  background-color: #F1F5FB;
+  background-color: #F9FAFC;
   position: relative;
   overflow: hidden;
   
@@ -11,7 +11,7 @@
     left: 0;
     right: 0;
     height: 100px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 252, 0.8) 50%, rgba(249, 250, 252, 0) 100%);
     pointer-events: none;
     z-index: 0;
   }
@@ -349,7 +349,7 @@
   .decorationLine1440 {
     display: block;
     position: absolute;
-    bottom: 70px;
+    bottom: -200px;
     left: 50%;
     transform: translateX(-50%) rotate(-10deg);
     z-index: 0;

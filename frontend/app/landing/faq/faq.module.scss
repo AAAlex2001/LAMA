@@ -1,7 +1,7 @@
 .faq {
   padding: 80px 20px 150px;
   margin-bottom: 0;
-  background-color: #F1F5FB;
+  background-color: #F9FAFC;
   position: relative;
   overflow: hidden;
   
@@ -12,7 +12,7 @@
     left: 0;
     right: 0;
     height: 200px;
-    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(241, 245, 251, 0.8) 50%, rgba(241, 245, 251, 0) 100%);
+    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(249, 250, 252, 0.8) 50%, rgba(249, 250, 252, 0) 100%);
     pointer-events: none;
     z-index: 0;
   }
@@ -102,7 +102,7 @@
   line-height: 24px;
   color: #4D4D4D;
   font-weight: 400;
-  background-color: #F1F5FB;
+  background-color: #F9FAFC;
 }
 
 .actions {
