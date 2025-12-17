@@ -2,18 +2,22 @@
   position: relative;
   background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
   overflow: hidden;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
 }
 
 .content {
   position: relative;
   z-index: 10;
-  margin: 104px auto auto;
-  padding: 0 20px;
+  width: 100%;
+  padding: 80px 20px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   max-width: 500px;
+  margin: 0 auto;
 }
 
 .textContainer {
@@ -118,7 +122,7 @@
 @media (min-width: 768px) {
 
     .content {
-    margin: 80px auto auto;
+    padding: 100px 40px;
     max-width: 900px;
   }
     .headline {
@@ -203,7 +207,7 @@
 @media (min-width: 1440px) {
 
     .content {
-    margin: 135px auto auto;
+    padding: 120px 40px;
     max-width: 1200px;
   }
     .headline {
@@ -229,11 +233,11 @@
 
 
   .relativeElement1 {
-    bottom: -100px;
+    bottom: -220px;
     
     img {
-      width: 994px;
-      height: 528px;
+      width: 1500px;
+      height: 800px;
       object-fit: contain;
     }
   }
