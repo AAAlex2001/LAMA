@@ -67,24 +67,20 @@ export default function Pricing() {
     <section className={styles.pricing}>
       <svg 
         className={styles.decorationLine768}
-        width="768" 
-        height="298" 
-        viewBox="0 0 768 298" 
+        width="3710" 
+        height="1443" 
+        viewBox="0 0 3710 1443" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        <motion.path 
-          d="M0 1.7793C17.6262 48.0684 -10.7714 330.532 329.359 187.187C386.014 163.31 174.751 376.621 768 255.077" 
+        <path 
+          d="M9.34668 3.55566C44.3467 95.5557 607.347 1593.56 1414.35 1206.06C1526.85 1158.6 855.347 1964.06 3705.38 796.056" 
           stroke={`url(#${gradientId768})`} 
           strokeOpacity="0.1" 
-          strokeWidth="10"
-          initial={{ pathLength: 0 }}
-          whileInView={{ pathLength: 1 }}
-          transition={{ duration: 3, ease: "easeInOut" }}
-          viewport={{ once: true, amount: 0.3 }}
+          strokeWidth="20"
         />
         <defs>
-          <linearGradient id={gradientId768} x1="-75.3438" y1="-524.826" x2="784.371" y2="-524.826" gradientUnits="userSpaceOnUse">
+          <linearGradient id={gradientId768} x1="610.738" y1="-209.077" x2="2317.85" y2="-209.077" gradientUnits="userSpaceOnUse">
             <stop stopColor="#3B82F6"/>
             <stop offset="0.5" stopColor="#2F67C3"/>
             <stop offset="0.75" stopColor="#295AAA"/>
@@ -96,24 +92,20 @@ export default function Pricing() {
       </svg>
       <svg 
         className={styles.decorationLine1440}
-        width="1440" 
-        height="1455" 
-        viewBox="0 0 1440 1455" 
+        width="3710" 
+        height="1443" 
+        viewBox="0 0 3710 1443" 
         fill="none" 
         xmlns="http://www.w3.org/2000/svg"
       >
-        <motion.path 
-          d="M-772 3.55566C-737 95.5557 -174 1593.56 633 1206.06C745.5 1158.6 440.5 1846.56 1866 1079.56" 
+        <path 
+          d="M9.34668 3.55566C44.3467 95.5557 607.347 1593.56 1414.35 1206.06C1526.85 1158.6 855.347 1964.06 3705.38 796.056" 
           stroke={`url(#${gradientId1440})`} 
           strokeOpacity="0.1" 
           strokeWidth="20"
-          initial={{ pathLength: 0 }}
-          whileInView={{ pathLength: 1 }}
-          transition={{ duration: 3, ease: "easeInOut" }}
-          viewport={{ once: true, amount: 0.3 }}
         />
         <defs>
-          <linearGradient id={gradientId1440} x1="-170.608" y1="-209.077" x2="1536.51" y2="-209.077" gradientUnits="userSpaceOnUse">
+          <linearGradient id={gradientId1440} x1="610.738" y1="-209.077" x2="2317.85" y2="-209.077" gradientUnits="userSpaceOnUse">
             <stop stopColor="#3B82F6"/>
             <stop offset="0.5" stopColor="#2F67C3"/>
             <stop offset="0.75" stopColor="#295AAA"/>

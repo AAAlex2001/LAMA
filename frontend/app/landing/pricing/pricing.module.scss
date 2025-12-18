@@ -204,6 +204,13 @@
 
 @media (min-width: 768px) {
 
+
+  .pricing {
+    padding: 120px 20px 220px;
+  }
+
+
+
   .container {
     max-width: 600px;
   }
@@ -286,16 +293,15 @@
   .decorationLine768 {
     display: block;
     position: absolute;
-    bottom: 70px;
-    left: 50%;
-    transform: translateX(-50%) rotate(-10deg);
+    bottom: 60px;
+    left: 80%;
+    transform: translateX(-50%) rotate(-15deg);
     z-index: 0;
     pointer-events: none;
   }
 }
 
 @media (min-width: 1440px) {
-
   .container {
     max-width: 1200px;
     flex-direction: row;
@@ -364,9 +370,9 @@
   .decorationLine1440 {
     display: block;
     position: absolute;
-    bottom: -200px;
-    left: 50%;
-    transform: translateX(-50%) rotate(-10deg);
+    bottom: 70px;
+    left: 38%;
+    transform: translateX(-35%) rotate(5deg);
     z-index: 0;
     pointer-events: none;
   }
