@@ -18,6 +18,7 @@ interface FAQContent {
   secondaryButtonText?: string;
   secondaryButtonLink?: string;
   helpText?: string;
+  botLink?: string;
 }
 
 export default function FAQAdminPage() {
@@ -204,12 +205,22 @@ export default function FAQAdminPage() {
             <h2>Подпись</h2>
             
             <label className={styles.field}>
-              <span>Текст подписи (используйте **текст** для жирного)</span>
+              <span>Текст подписи</span>
               <textarea
                 value={content.helpText || ''}
                 onChange={e => setContent({ ...content, helpText: e.target.value })}
                 placeholder="Не нашли ответ? Напишите нам в @LamaPlannerBot"
                 rows={3}
+              />
+            </label>
+
+            <label className={styles.field}>
+              <span>Ссылка на бота</span>
+              <input
+                type="text"
+                value={content.botLink || ''}
+                onChange={e => setContent({ ...content, botLink: e.target.value })}
+                placeholder="https://t.me/LamaPlannerBot"
               />
             </label>
           </div>

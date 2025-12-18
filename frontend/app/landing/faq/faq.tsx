@@ -17,6 +17,7 @@ interface FAQActions {
   secondaryText?: string;
   secondaryLink?: string;
   helpText?: string;
+  botLink?: string;
 }
 
 export default function FAQ() {
@@ -41,35 +42,28 @@ export default function FAQ() {
           secondaryText: data.secondaryText,
           secondaryLink: data.secondaryLink,
           helpText: data.helpText,
+          botLink: data.botLink,
         });
       })
       .catch(() => {});
   }, []);
 
   const renderText = (text: string) => {
-    // Парсим текст: ```курсив```, ``жирный``, `градиент`
-    const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
+    const parts = text.split(/(```.*?```|``.*?``|`.*?`|@\w+)/);
     
     return parts.map((part, index) => {
-      // Проверяем на ```курсив```
       if (part.startsWith('```') && part.endsWith('```')) {
-        const content = part.slice(3, -3);
-        return <span key={index} className={styles.italic}>{content}</span>;
+        return <span key={index} className={styles.italic}>{part.slice(3, -3)}</span>;
       }
-      
-      // Проверяем на ``жирный``
       if (part.startsWith('``') && part.endsWith('``')) {
-        const content = part.slice(2, -2);
-        return <span key={index} className={styles.bold}>{content}</span>;
+        return <span key={index} className={styles.bold}>{part.slice(2, -2)}</span>;
       }
-      
-      // Проверяем на `градиент`
       if (part.startsWith('`') && part.endsWith('`')) {
-        const content = part.slice(1, -1);
-        return <span key={index} className={styles.highlight}>{content}</span>;
+        return <span key={index} className={styles.highlight}>{part.slice(1, -1)}</span>;
       }
-      
-      // Обычный текст
+      if (part.startsWith('@')) {
+        return <a key={index} href={actions.botLink || 'https://t.me/LamaPlannerBot'} className={styles.botLink}>{part}</a>;
+      }
       return <span key={index}>{part}</span>;
     });
   };
@@ -158,7 +152,7 @@ export default function FAQ() {
             <p className={styles.helpText}>
               {actions.helpText ? renderText(actions.helpText) : (
                 <>
-                  Не нашли ответ? Напишите нам в <span className={styles.botLink}>@LamaPlannerBot</span>
+                  Не нашли ответ? Напишите нам в <a href={actions.botLink || "https://t.me/LamaPlannerBot"} className={styles.botLink}>@LamaPlannerBot</a>
                 </>
               )}
             </p>

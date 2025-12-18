@@ -30,7 +30,8 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
             "primaryButtonLink": "/knowledge-base",
             "secondaryButtonText": "Telegram канал",
             "secondaryButtonLink": "/telegram-channel",
-            "helpText": "Не нашли ответ? Напишите нам в @LamaPlannerBot"
+            "helpText": "Не нашли ответ? Напишите нам в @LamaPlannerBot",
+            "botLink": "https://t.me/LamaPlannerBot"
         }
     
     result = await db.execute(
@@ -64,6 +65,8 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
             response["secondaryButtonLink"] = content.link_url or ""
         elif content.key == "faq_help_text":
             response["helpText"] = content.text or ""
+        elif content.key == "faq_bot_link":
+            response["botLink"] = content.link_url or ""
     
     return {
         "headline": response.get("headline", "Часто задаваемые вопросы"),
@@ -72,7 +75,8 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
         "primaryButtonLink": response.get("primaryButtonLink", "/knowledge-base"),
         "secondaryButtonText": response.get("secondaryButtonText", "Telegram канал"),
         "secondaryButtonLink": response.get("secondaryButtonLink", "/telegram-channel"),
-        "helpText": response.get("helpText", "Не нашли ответ? Напишите нам в @LamaPlannerBot")
+        "helpText": response.get("helpText", "Не нашли ответ? Напишите нам в @LamaPlannerBot"),
+        "botLink": response.get("botLink", "https://t.me/LamaPlannerBot")
     }
 
 
@@ -84,7 +88,8 @@ async def save_faq_content(
     primary_button_link: str = None,
     secondary_button_text: str = None,
     secondary_button_link: str = None,
-    help_text: str = None
+    help_text: str = None,
+    bot_link: str = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции FAQ"""
     result = await db.execute(
@@ -159,6 +164,16 @@ async def save_faq_content(
             text=help_text,
             is_active=True,
             order=1002
+        ))
+    
+    if bot_link:
+        contents.append(LandingContent(
+            section_id=section.id,
+            content_type=ContentType.LINK,
+            key="faq_bot_link",
+            link_url=bot_link,
+            is_active=True,
+            order=1003
         ))
     
     db.add_all(contents)

@@ -61,13 +61,9 @@ async def get_hero_content(db: AsyncSession) -> Dict[str, Any]:
             # Картинки с ключами hero_image_1, hero_image_2 и т.д.
             if content.image_url:
                 images.append({
-                    "key": content.key,
                     "url": content.image_url,
                     "alt": content.image_alt or "Hero illustration"
                 })
-    
-    # Сортируем картинки по ключу
-    images.sort(key=lambda x: x["key"])
     
     # Дефолтные значения если чего-то не хватает
     default_images = [
@@ -77,6 +73,13 @@ async def get_hero_content(db: AsyncSession) -> Dict[str, Any]:
         {"url": "/hero_4.svg", "alt": "Hero illustration"},
         {"url": "/hero_5.svg", "alt": "Hero illustration"}
     ]
+    
+    # Дополняем массив изображений до 5 элементов
+    while len(images) < 5:
+        images.append({"url": "", "alt": ""})
+    
+    # Берем только первые 5
+    images = images[:5]
     
     return {
         "headline": response.get("headline", "Управляйте сообществами и ботами Telegram в одном месте"),

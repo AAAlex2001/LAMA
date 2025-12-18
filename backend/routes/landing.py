@@ -141,7 +141,8 @@ async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(g
         primary_button_link=data.primaryButtonLink,
         secondary_button_text=data.secondaryButtonText,
         secondary_button_link=data.secondaryButtonLink,
-        help_text=data.helpText
+        help_text=data.helpText,
+        bot_link=data.botLink
     )
 
 

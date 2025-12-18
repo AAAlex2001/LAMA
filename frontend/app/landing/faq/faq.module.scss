@@ -131,9 +131,21 @@
   font-style: italic;
 }
 
+.highlight {
+  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .botLink {
   font-weight: 600;
   color: #383F45;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 @media (min-width: 768px) {
@@ -177,4 +189,3 @@
     pointer-events: none;
   }
 }
-

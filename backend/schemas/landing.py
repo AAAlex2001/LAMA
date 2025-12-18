@@ -69,6 +69,7 @@ class FAQContentRequest(BaseModel):
     secondaryButtonText: Optional[str] = None
     secondaryButtonLink: Optional[str] = None
     helpText: Optional[str] = None
+    botLink: Optional[str] = None
 
 
 class UsersContentRequest(BaseModel):
