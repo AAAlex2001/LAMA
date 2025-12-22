@@ -9,10 +9,10 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram import Bot
 
 from backend.config import get_bot
 from backend.models.bots import Bot as BotModel
+from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,11 @@ DB_QUERY_TIMEOUT = 3.0
 
 @asynccontextmanager
 async def get_bot_session():
-    """Context manager для безопасной работы с Telegram Bot"""
+    """Context manager для безопасной работы с Telegram Bot с автоматическим rate limiting"""
     bot = get_bot()
+    rate_limited_bot = RateLimitedBot(bot)
     try:
-        yield bot
+        yield rate_limited_bot
     finally:
         try:
             await asyncio.wait_for(bot.session.close(), timeout=1.0)
