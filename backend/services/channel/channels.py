@@ -24,10 +24,14 @@ from backend.services.channel.CRUD_channels import CRUDChannelService
 from backend.config import get_bot
 
 
+# Модульный семафор для ограничения параллельных запросов к Telegram (общий для всех ChannelService)
+TELEGRAM_SEMAPHORE = asyncio.BoundedSemaphore(int(os.getenv("TELEGRAM_PARALLEL", "10")))
+
+
 class ChannelService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        self.telegram_semaphore = asyncio.Semaphore(10)
+        # Используем модульный TELEGRAM_SEMAPHORE вместо локального инстанса
         self.crud = CRUDChannelService(db)
     
     def get_master_bot(self) -> Bot:
@@ -252,7 +256,7 @@ class ChannelService:
         target_message_id = 0
         
         try:
-            async with self.telegram_semaphore:
+            async with TELEGRAM_SEMAPHORE:
                 sent_message = await self.copy_message_to_channel(
                     original_post,
                     target_channel.telegram_id,
@@ -802,4 +806,3 @@ class ChannelService:
             
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to unpin message: {str(e)}")
-

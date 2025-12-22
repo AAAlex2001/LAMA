@@ -23,6 +23,10 @@ from backend.services.publications.ai_service import AIService
 from backend.config import get_bot
 
 
+# Модульный семафор для ограничения параллельных запросов к Telegram (общий для всех PublicationService)
+TELEGRAM_SEMAPHORE = asyncio.BoundedSemaphore(int(os.getenv("TELEGRAM_PARALLEL", "10")))
+
+
 class PublicationService:
     """Сервис публикаций: Telegram API + AI + оркестрация"""
 
@@ -30,7 +34,7 @@ class PublicationService:
         self.db = db
         self.crud = CRUDPublicationService(db)
         self.ai_service = AIService(api_key=openai_api_key)
-        self.telegram_semaphore = asyncio.Semaphore(10)
+        # Используем модульный TELEGRAM_SEMAPHORE вместо локального инстанса
         self.channel_service = ChannelService(db=db)
 
     def get_master_bot(self) -> Bot:
@@ -141,63 +145,66 @@ class PublicationService:
                 )
                 return {"channel": channel_name, "success": False, "error": str(e)}
 
-            async with self.telegram_semaphore:
-                for attempt in range(5):
-                    try:
+            for attempt in range(5):
+                try:
+                    # Ограничиваем только сетевые вызовы к Telegram общим семафором
+                    async with TELEGRAM_SEMAPHORE:
                         sent_messages = await self.send_to_telegram(publication, channel, bot)
-                        message_ids: List[int] = []
 
-                        for msg in sent_messages:
-                            message_ids.append(msg.message_id)
-                            telegram_message = TelegramMessage(
-                                publication_id=publication.id,
-                                channel_id=channel.id,
-                                telegram_message_id=msg.message_id
+                    message_ids: List[int] = []
+
+                    for msg in sent_messages:
+                        message_ids.append(msg.message_id)
+                        telegram_message = TelegramMessage(
+                            publication_id=publication.id,
+                            channel_id=channel.id,
+                            telegram_message_id=msg.message_id
+                        )
+                        self.db.add(telegram_message)
+
+                    await self.db.flush()
+                    await self.handle_instant_backup(channel, sent_messages, publication_id=publication.id)
+
+                    if publication.pin_message and message_ids:
+                        try:
+                            await bot.pin_chat_message(
+                                chat_id=channel.telegram_id,
+                                message_id=message_ids[0]
                             )
-                            self.db.add(telegram_message)
+                        except Exception:
+                            pass
 
-                        await self.db.flush()
-                        await self.handle_instant_backup(channel, sent_messages, publication_id=publication.id)
+                    await self.create_notification(
+                        publication.id,
+                        "success",
+                        f"Published to {channel_name}"
+                    )
 
-                        if publication.pin_message and message_ids:
-                            try:
-                                await bot.pin_chat_message(
-                                    chat_id=channel.telegram_id,
-                                    message_id=message_ids[0]
-                                )
-                            except Exception:
-                                pass
+                    return {"channel": channel_name, "success": True, "message_ids": message_ids}
 
+                except TelegramRetryAfter as e:
+                    if attempt < 4:
+                        await asyncio.sleep(e.retry_after)
+                    else:
                         await self.create_notification(
                             publication.id,
-                            "success",
-                            f"Published to {channel_name}"
+                            "error",
+                            f"Failed to publish to {channel_name}: Rate limit",
+                            {"error": str(e)}
                         )
+                        return {"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
 
-                        return {"channel": channel_name, "success": True, "message_ids": message_ids}
+                except Exception as e:
+                    if attempt == 4:
+                        await self.create_notification(
+                            publication.id,
+                            "error",
+                            f"Failed to publish to {channel_name}",
+                            {"error": str(e)}
+                        )
+                        return {"channel": channel_name, "success": False, "error": str(e)}
+                    await asyncio.sleep(2 ** attempt)
 
-                    except TelegramRetryAfter as e:
-                        if attempt < 4:
-                            await asyncio.sleep(e.retry_after)
-                        else:
-                            await self.create_notification(
-                                publication.id,
-                                "error",
-                                f"Failed to publish to {channel_name}: Rate limit",
-                                {"error": str(e)}
-                            )
-                            return {"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
-
-                    except Exception as e:
-                        if attempt == 4:
-                            await self.create_notification(
-                                publication.id,
-                                "error",
-                                f"Failed to publish to {channel_name}",
-                                {"error": str(e)}
-                            )
-                            return {"channel": channel_name, "success": False, "error": str(e)}
-                        await asyncio.sleep(2 ** attempt)
             return None
 
         results: List[Dict[str, Any]] = []
@@ -642,3 +649,4 @@ class PublicationService:
             original_post=original_post,
             target_channel_id=target_channel_id
         )
+
