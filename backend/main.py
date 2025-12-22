@@ -1,13 +1,12 @@
 from contextlib import asynccontextmanager
-import os
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-from backend.database import init_db, close_db
-from backend.config import close_bot
+from backend.database import init_db, close_db, AsyncSessionLocal
+from backend.config import close_bot, TELEGRAM_BOT_TOKEN
 from backend.scheduler import start_scheduler, stop_scheduler, scheduler
 from backend.routes.publications import router as publications_router
 from backend.routes.channels import router as channels_router
@@ -55,9 +54,9 @@ app.include_router(auth_router, prefix=api_prefix)
 app.include_router(publications_router, prefix=api_prefix)
 app.include_router(channels_router, prefix=api_prefix)
 app.include_router(bots_router, prefix=api_prefix)
-app.include_router(webhook_router)  # /telegram/webhook
-app.include_router(landing_router, prefix=api_prefix)  # /api/hero
-app.include_router(upload_router, prefix=api_prefix)  # /api/upload-image
+app.include_router(webhook_router)
+app.include_router(landing_router, prefix=api_prefix)
+app.include_router(upload_router, prefix=api_prefix)
 
 # Статические файлы (загруженные картинки)
 upload_dir = Path("uploads/landing")
@@ -76,11 +75,39 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {
-        "status": "healthy",
-        "database": "connected",
-        "scheduler": "running" if scheduler.running else "stopped"
+    """Health check endpoint with real database connection test"""
+    from sqlalchemy import text
+
+    db_status = "unknown"
+    db_error = None
+
+    # Проверка подключения к БД
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(text("SELECT 1"))
+            db_status = "connected"
+    except Exception as e:
+        db_status = "disconnected"
+        db_error = str(e)
+
+    # Проверка планировщика
+    scheduler_status = "running" if scheduler.running else "stopped"
+
+    # Проверка бота
+    bot_status = "configured" if TELEGRAM_BOT_TOKEN else "not_configured"
+
+    health_status = {
+        "status": "healthy" if db_status == "connected" and scheduler_status == "running" else "unhealthy",
+        "database": db_status,
+        "scheduler": scheduler_status,
+        "bot": bot_status,
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
+
+    if db_error:
+        health_status["database_error"] = db_error
+
+    return health_status
 
 
 if __name__ == "__main__":
@@ -92,4 +119,3 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
-

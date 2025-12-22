@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import logging
 
 from sqlalchemy import select, or_
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -14,6 +15,7 @@ from backend.database import AsyncSessionLocal
 from backend.config import OPENAI_API_KEY, get_bot
 
 
+logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler(timezone=pytz.UTC)
 
 
@@ -97,9 +99,9 @@ async def process_scheduled_triggers():
                 try:
                     await trigger_service.execute_scheduled_task(task, telegram_bot)
                 except Exception as e:
-                    print(f"Failed to execute scheduled trigger task {task.id}: {e}")
+                    logger.error(f"Failed to execute scheduled trigger task {task.id}: {e}")
         finally:
-            await telegram_bot.session.close()
+            logger.error(f"Failed to process scheduled triggers: {e}")
 
 
 def start_scheduler():
