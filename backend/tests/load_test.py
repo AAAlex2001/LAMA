@@ -14,14 +14,14 @@ API_PREFIX = "/api"
 TOTAL_REQUESTS = int(os.getenv("TOTAL_REQUESTS", "300"))  # 300 публикаций
 CONCURRENCY = int(os.getenv("CONCURRENCY", "300"))  # 300 одновременных пользователей
 # Канал 1: "Тест ламы 3"
-CHANNEL_1_TELEGRAM_ID = os.getenv("CHANNEL_1_TELEGRAM_ID", "-1002657482202")
-CHANNEL_1_ID = int(os.getenv("CHANNEL_1_ID", "1"))
-CHANNEL_1_NAME = os.getenv("CHANNEL_1_NAME", "Тест ламы 3")
+CHANNEL_1_TELEGRAM_ID = os.getenv("CHANNEL_1_TELEGRAM_ID", "-1003209009153")
+CHANNEL_1_ID = int(os.getenv("CHANNEL_1_ID", "2"))
+CHANNEL_1_NAME = os.getenv("CHANNEL_1_NAME", "бебебебебебебебеб")
 
 # Канал 2: "Тест лама 1"
-CHANNEL_2_TELEGRAM_ID = os.getenv("CHANNEL_2_TELEGRAM_ID", "-1003336873409")
-CHANNEL_2_ID = int(os.getenv("CHANNEL_2_ID", "3"))
-CHANNEL_2_NAME = os.getenv("CHANNEL_2_NAME", "Тест лама 1")
+CHANNEL_2_TELEGRAM_ID = os.getenv("CHANNEL_2_TELEGRAM_ID", "-1002657482202")
+CHANNEL_2_ID = int(os.getenv("CHANNEL_2_ID", "1"))
+CHANNEL_2_NAME = os.getenv("CHANNEL_2_NAME", "Тест лама 3")
 
 # Канал 3: "Тест лама 2"
 CHANNEL_3_TELEGRAM_ID = os.getenv("CHANNEL_3_TELEGRAM_ID", "-1003213582087")
@@ -33,7 +33,7 @@ CHANNEL_3_NAME = os.getenv("CHANNEL_3_NAME", "Тест лама 2")
 # Как получить токен:
 # 1. Через Telegram Login Widget на https://lamaplanner.com
 # 2. Или установить переменную окружения: export TEST_AUTH_TOKEN="ваш_токен"
-AUTH_TOKEN = os.getenv("TEST_AUTH_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NDU0NjY0NywiaWF0IjoxNzY0NDYwMjQ3LCJqdGkiOiJqSm5LYl9OU3V4eHRnT21QVW1JMG53In0.JD3kmp8L8Z_ghuncZYBkhSMfK73f5voD4B1S9xN6WnM")
+AUTH_TOKEN = os.getenv("TEST_AUTH_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NjYxMDE5MiwiaWF0IjoxNzY2NTIzNzkyLCJqdGkiOiJmNzJ2SVlXTHJnYzdtR1liVlBvUzRnIn0.CNucaatcjWwS0WhBHEFqB8KgRjpihmmi6zfwfTPfl2M")
 
 
 def random_text(prefix: str, length: int = 16) -> str:
@@ -268,7 +268,7 @@ async def create_publication(client: httpx.AsyncClient, channel_ids: list[int], 
             # Если это ошибка greenlet (400), пробуем повторить
             if response.status_code == 400 and "greenlet" in response.text.lower():
                 if attempt < retries:
-                    await asyncio.sleep(0.1 * (attempt + 1))  # Экспоненциальная задержка
+                    await asyncio.sleep(0)  # Экспоненциальная задержка
                     continue
             
             last_error = f"HTTP {response.status_code}: {response.text[:200]}"
@@ -277,13 +277,13 @@ async def create_publication(client: httpx.AsyncClient, channel_ids: list[int], 
         except httpx.HTTPStatusError as e:
             last_error = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
             if attempt < retries:
-                await asyncio.sleep(0.1 * (attempt + 1))
+                await asyncio.sleep(0)
                 continue
             raise
         except Exception as e:
             last_error = str(e)
             if attempt < retries:
-                await asyncio.sleep(0.1 * (attempt + 1))
+                await asyncio.sleep(0)
                 continue
             raise
     
@@ -291,13 +291,12 @@ async def create_publication(client: httpx.AsyncClient, channel_ids: list[int], 
     raise Exception(f"Failed after {retries + 1} attempts: {last_error}")
 
 
-async def worker(task_id: int, client: httpx.AsyncClient, channel_ids: list[int], semaphore: asyncio.Semaphore, latencies: list[float], errors: list[str], token: str = None):
-    async with semaphore:
-        try:
-            latency = await create_publication(client, channel_ids, task_id, token)
-            latencies.append(latency)
-        except Exception as e:
-            errors.append(str(e))
+async def worker(task_id: int, client: httpx.AsyncClient, channel_ids: list[int], latencies: list[float], errors: list[str], token: str = None):
+    try:
+        latency = await create_publication(client, channel_ids, task_id, token)
+        latencies.append(latency)
+    except Exception as e:
+        errors.append(str(e))
 
 
 async def main() -> None:
@@ -346,13 +345,12 @@ async def main() -> None:
                 print("\n💡 Tip: Your token may be expired. Get a new one from https://lamaplanner.com")
             return
 
-        semaphore = asyncio.Semaphore(CONCURRENCY)
         latencies: list[float] = []
         errors: list[str] = []
 
         start_ts = time.perf_counter()
         tasks = [
-            asyncio.create_task(worker(i, client, channel_ids, semaphore, latencies, errors, token))
+            asyncio.create_task(worker(i, client, channel_ids, latencies, errors, token))
             for i in range(TOTAL_REQUESTS)
         ]
 

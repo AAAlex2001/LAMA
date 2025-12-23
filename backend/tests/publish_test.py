@@ -15,7 +15,7 @@ API_PREFIX = "/api"
 CONCURRENCY = int(os.getenv("CONCURRENCY", "1"))  # 1 сообщение в секунду (лимит Telegram для одного канала)
 
 # Токен аутентификации (можно установить через переменную окружения TEST_AUTH_TOKEN или указать здесь)
-AUTH_TOKEN = os.getenv("TEST_AUTH_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NDU0NjY0NywiaWF0IjoxNzY0NDYwMjQ3LCJqdGkiOiJqSm5LYl9OU3V4eHRnT21QVW1JMG53In0.JD3kmp8L8Z_ghuncZYBkhSMfK73f5voD4B1S9xN6WnM")
+AUTH_TOKEN = os.getenv("TEST_AUTH_TOKEN", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2NjYxMDE5MiwiaWF0IjoxNzY2NTIzNzkyLCJqdGkiOiJmNzJ2SVlXTHJnYzdtR1liVlBvUzRnIn0.CNucaatcjWwS0WhBHEFqB8KgRjpihmmi6zfwfTPfl2M")
 
 
 def random_text(prefix: str, length: int) -> str:
@@ -63,7 +63,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
             # Если это ошибка greenlet, rate limit или timeout, пробуем повторить
             if response.status_code in [400, 429, 504]:
                 if attempt < retries:
-                    wait_time = 1.0 * (attempt + 1)  # Увеличена задержка для retry
+                    wait_time = 0  # Увеличена задержка для retry
                     print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                     await asyncio.sleep(wait_time)
                     continue
@@ -74,7 +74,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
         except httpx.TimeoutException:
             last_error = "Request timeout (публикация в Telegram занимает слишком много времени)"
             if attempt < retries:
-                wait_time = 2.0 * (attempt + 1)
+                wait_time = 0
                 print(f"   ⏳ Timeout, retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
                 continue
@@ -82,7 +82,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
         except httpx.HTTPStatusError as e:
             last_error = f"HTTP {e.response.status_code}: {e.response.text[:200]}"
             if attempt < retries and e.response.status_code in [400, 429, 504]:
-                wait_time = 1.0 * (attempt + 1)
+                wait_time = 0
                 print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
                 await asyncio.sleep(wait_time)
                 continue
@@ -90,7 +90,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
         except Exception as e:
             last_error = str(e)
             if attempt < retries:
-                wait_time = 1.0 * (attempt + 1)
+                wait_time = 0
                 await asyncio.sleep(wait_time)
                 continue
             raise
@@ -113,9 +113,6 @@ async def worker(
             latency = await publish_publication(client, publication_id, token)
             latencies.append(latency)
             print(f"✅ Published {publication_id} in {latency*1000:.0f}ms")
-            # Задержка 2 секунды между публикациями 
-            # (гарантируем соблюдение лимита Telegram: 1 msg/sec для канала)
-            await asyncio.sleep(2.0)
         except Exception as e:
             errors.append(str(e))
             print(f"❌ Failed to publish {publication_id}: {e}")
@@ -153,10 +150,11 @@ async def main() -> None:
         total_count = len(publication_ids)
         print(f"📊 Found {total_count} draft publications\n")
         
-        semaphore = asyncio.Semaphore(CONCURRENCY)
+        # Semaphore to limit concurrent requests (prevents DB pool exhaustion)
+        semaphore = asyncio.Semaphore(10)
         latencies: List[float] = []
         errors: List[str] = []
-        
+
         start_ts = time.perf_counter()
         tasks = [
             asyncio.create_task(worker(i, client, pub_id, semaphore, latencies, errors, token))
