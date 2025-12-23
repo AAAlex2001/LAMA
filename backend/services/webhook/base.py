@@ -25,12 +25,20 @@ DB_QUERY_TIMEOUT = 3.0
 async def get_bot_session():
     """Context manager для безопасной работы с Telegram Bot с автоматическим rate limiting"""
     bot = get_bot()
-    rate_limited_bot = RateLimitedBot(bot)
+
+    # Если get_bot() уже вернул RateLimitedBot — не оборачиваем его снова
+    if isinstance(bot, RateLimitedBot):
+        rate_limited_bot = bot
+        raw_bot = bot.bot
+    else:
+        rate_limited_bot = RateLimitedBot(bot)
+        raw_bot = bot
+
     try:
         yield rate_limited_bot
     finally:
         try:
-            await asyncio.wait_for(bot.session.close(), timeout=1.0)
+            await asyncio.wait_for(raw_bot.session.close(), timeout=1.0)
         except asyncio.TimeoutError:
             logger.warning("Bot session close timeout")
         except Exception as e:

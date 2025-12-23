@@ -100,7 +100,7 @@ async def process_scheduled_triggers():
                     await trigger_service.execute_scheduled_task(task, telegram_bot)
                 except Exception as e:
                     logger.error(f"Failed to execute scheduled trigger task {task.id}: {e}")
-        finally:
+        except Exception as e:
             logger.error(f"Failed to process scheduled triggers: {e}")
 
 

@@ -1,6 +1,8 @@
 import os
 from aiogram import Bot
 
+from backend.services.telegram_client import RateLimitedBot
+
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
@@ -10,13 +12,15 @@ TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
 if not TELEGRAM_BOT_TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN environment variable is required")
 
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
+# Создаём глобальный aiogram Bot и оборачиваем его в RateLimitedBot
+raw_bot = Bot(token=TELEGRAM_BOT_TOKEN)
+rate_limited_bot = RateLimitedBot(raw_bot)
 
 
-def get_bot() -> Bot:
-    """Получить экземпляр бота"""
-    return bot
+def get_bot() -> RateLimitedBot:
+    """Получить экземпляр бота (RateLimitedBot)"""
+    return rate_limited_bot
 
 
 async def close_bot():
-    await bot.session.close()
+    await raw_bot.session.close()
