@@ -23,10 +23,6 @@ from backend.services.publications.ai_service import AIService
 from backend.config import get_bot
 
 
-# Модульный семафор для ограничения параллельных запросов к Telegram (общий для всех PublicationService)
-TELEGRAM_SEMAPHORE = asyncio.BoundedSemaphore(int(os.getenv("TELEGRAM_PARALLEL", "10")))
-
-
 class PublicationService:
     """Сервис публикаций: Telegram API + AI + оркестрация"""
 
@@ -34,7 +30,6 @@ class PublicationService:
         self.db = db
         self.crud = CRUDPublicationService(db)
         self.ai_service = AIService(api_key=openai_api_key)
-        # Используем модульный TELEGRAM_SEMAPHORE вместо локального инстанса
         self.channel_service = ChannelService(db=db)
 
     def get_master_bot(self) -> Bot:
@@ -147,9 +142,8 @@ class PublicationService:
 
             for attempt in range(5):
                 try:
-                    # Ограничиваем только сетевые вызовы к Telegram общим семафором
-                    async with TELEGRAM_SEMAPHORE:
-                        sent_messages = await self.send_to_telegram(publication, channel, bot)
+                    # Rate limiting управляется через RateLimitedBot
+                    sent_messages = await self.send_to_telegram(publication, channel, bot)
 
                     message_ids: List[int] = []
 

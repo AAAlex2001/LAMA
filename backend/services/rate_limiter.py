@@ -40,32 +40,42 @@ class TelegramRateLimiter:
     async def acquire(self, chat_id: Optional[int] = None) -> None:
         """
         Получить разрешение на выполнение запроса к Telegram API
-
-        Args:
-            chat_id: ID чата (если запрос специфичен для чата)
         """
-        # 1. Проверяем глобальный лимит
         await self.wait_global_limit()
-
-        # 2. Если указан chat_id, проверяем лимит на чат
         if chat_id is not None:
-            await self.wait_chat_limit(chat_id)
+            if chat_id not in self.chat_locks:
+                self.chat_locks[chat_id] = asyncio.Lock()
 
-        # 3. Регистрируем запрос
-        await self.register_request(chat_id)
+            async with self.chat_locks[chat_id]:
+                now = time.time()
+                last_request_time = self.chat_last_request.get(chat_id, 0)
+
+                min_interval = 1.0 / self.per_chat_limit
+
+                if last_request_time > 0:
+                    time_since_last = now - last_request_time
+
+                    if time_since_last < min_interval:
+                        wait_time = min_interval - time_since_last
+                        logger.debug(f"Chat {chat_id} rate limit, waiting {wait_time:.3f}s")
+                        await asyncio.sleep(wait_time)
+                        now = time.time()
+
+                self.chat_last_request[chat_id] = now
+
+        now = time.time()
+        async with self.global_lock:
+            self.global_requests.append(now)
 
     async def wait_global_limit(self) -> None:
         """Ожидание если достигнут глобальный лимит"""
         async with self.global_lock:
             now = time.time()
 
-            # Удаляем старые запросы (старше 1 секунды)
             while self.global_requests and (now - self.global_requests[0]) >= 1.0:
                 self.global_requests.popleft()
 
-            # Если достигли лимита, ждём
             if len(self.global_requests) >= self.global_limit:
-                # Вычисляем сколько нужно ждать
                 oldest_request = self.global_requests[0]
                 wait_time = 1.0 - (now - oldest_request)
 
@@ -73,14 +83,12 @@ class TelegramRateLimiter:
                     logger.debug(f"Global rate limit reached, waiting {wait_time:.3f}s")
                     await asyncio.sleep(wait_time)
 
-                    # Повторно очищаем после ожидания
                     now = time.time()
                     while self.global_requests and (now - self.global_requests[0]) >= 1.0:
                         self.global_requests.popleft()
 
     async def wait_chat_limit(self, chat_id: int) -> None:
         """Ожидание если достигнут лимит для чата"""
-        # Получаем или создаём lock для этого чата
         if chat_id not in self.chat_locks:
             self.chat_locks[chat_id] = asyncio.Lock()
 
@@ -91,26 +99,16 @@ class TelegramRateLimiter:
             time_since_last = now - last_request_time
             min_interval = 1.0 / self.per_chat_limit
 
-            # Если прошло меньше минимального интервала, ждём
             if time_since_last < min_interval:
                 wait_time = min_interval - time_since_last
                 logger.debug(f"Chat {chat_id} rate limit, waiting {wait_time:.3f}s")
                 await asyncio.sleep(wait_time)
 
     async def register_request(self, chat_id: Optional[int]) -> None:
-        """Регистрация выполненного запроса"""
+        """Регистрация выполненного запроса (только глобальная очередь)"""
         now = time.time()
-
-        # Регистрируем в глобальной очереди
         async with self.global_lock:
             self.global_requests.append(now)
-
-        # Регистрируем для конкретного чата
-        if chat_id is not None:
-            if chat_id not in self.chat_locks:
-                self.chat_locks[chat_id] = asyncio.Lock()
-            async with self.chat_locks[chat_id]:
-                self.chat_last_request[chat_id] = now
 
     @asynccontextmanager
     async def limit(self, chat_id: Optional[int] = None):
@@ -164,7 +162,7 @@ def get_rate_limiter() -> TelegramRateLimiter:
     if global_rate_limiter is None:
         global_rate_limiter = TelegramRateLimiter(
             global_limit=30,
-            per_chat_limit=1.0,
+            per_chat_limit=0.2,
         )
     return global_rate_limiter
 
