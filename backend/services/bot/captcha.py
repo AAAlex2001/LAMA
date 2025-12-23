@@ -64,20 +64,27 @@ class CaptchaService:
         self,
         pending_id: int,
         user_answer: str,
-    ) -> bool:
-        """Проверить ответ на капчу"""
+        solver_user_id: Optional[int] = None,
+    ) -> tuple[bool, str]:
+        """Проверить ответ на капчу.
+
+        Возвращает кортеж `(is_correct, reason)` где `reason` в {'ok','not_allowed','expired','wrong','not_found'}.
+        """
         query = select(PendingApproval).where(PendingApproval.id == pending_id)
         result = await self.db.execute(query)
         pending = result.scalar_one_or_none()
 
         if not pending:
-            return False
+            return False, "not_found"
+
+        if solver_user_id is not None and pending.user_id != solver_user_id:
+            return False, "not_allowed"
 
         # Проверяем срок действия
         if pending.expires_at and datetime.now(timezone.utc) > pending.expires_at:
             pending.is_rejected = True
             await self.db.commit()
-            return False
+            return False, "expired"
 
         # Увеличиваем счётчик попыток
         pending.attempts += 1
@@ -86,12 +93,12 @@ class CaptchaService:
         if pending.captcha_answer and pending.captcha_answer.lower().strip() == user_answer.lower().strip():
             pending.is_approved = True
             await self.db.commit()
-            return True
+            return True, "ok"
 
         # Неправильный ответ
         if pending.attempts >= 3:
             pending.is_rejected = True
         await self.db.commit()
-        return False
+        return False, "wrong"
 
 

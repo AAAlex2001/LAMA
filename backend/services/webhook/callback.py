@@ -4,7 +4,7 @@
 import asyncio
 import logging
 
-from aiogram.types import CallbackQuery
+from aiogram.types import CallbackQuery, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -47,7 +47,9 @@ class CallbackHandler:
             user_answer = parts[2]
 
             captcha_service = CaptchaService(self.db)
-            is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
+            is_correct, reason = await captcha_service.check_captcha_answer(
+                pending_id, user_answer, solver_user_id=callback_query.from_user.id
+            )
 
             async with get_bot_session() as telegram_bot:
                 user_id = callback_query.from_user.id
@@ -87,11 +89,18 @@ class CallbackHandler:
                         context={"pending_id": pending_id}
                     )
                 else:
-                    await telegram_bot.answer_callback_query(
-                        callback_query.id,
-                        text="❌ Неправильный ответ. Попробуйте ещё раз.",
-                        show_alert=True,
-                    )
+                    if reason == "not_allowed":
+                        await telegram_bot.answer_callback_query(
+                            callback_query.id,
+                            text="⚠️ Эту капчу может решить только приглашённый пользователь.",
+                            show_alert=True,
+                        )
+                    else:
+                        await telegram_bot.answer_callback_query(
+                            callback_query.id,
+                            text="❌ Неправильный ответ. Попробуйте ещё раз.",
+                            show_alert=True,
+                        )
 
                     # Триггер CAPTCHA_FAILED
                     await self.trigger_service.fire_event(
@@ -131,7 +140,9 @@ class CallbackHandler:
             user_answer = parts[3]
             
             captcha_service = CaptchaService(self.db)
-            is_correct = await captcha_service.check_captcha_answer(pending_id, user_answer)
+            is_correct, reason = await captcha_service.check_captcha_answer(
+                pending_id, user_answer, solver_user_id=callback_query.from_user.id
+            )
             
             async with get_bot_session() as telegram_bot:
                 user_id = callback_query.from_user.id
@@ -148,6 +159,20 @@ class CallbackHandler:
                         except:
                             pass
                     
+                    try:
+                        await telegram_bot.restrict_chat_member(
+                            chat_id=chat_id,
+                            user_id=user_id,
+                            permissions=ChatPermissions(
+                                can_send_messages=True,
+                                can_send_media_messages=True,
+                                can_send_other_messages=True,
+                                can_add_web_page_previews=True,
+                            ),
+                        )
+                    except Exception:
+                        pass
+
                     await telegram_bot.answer_callback_query(
                         callback_query.id,
                         text="✅ Правильно! Добро пожаловать!",
@@ -179,11 +204,18 @@ class CallbackHandler:
                         context={"pending_id": pending_id, "group_captcha": True}
                     )
                 else:
-                    await telegram_bot.answer_callback_query(
-                        callback_query.id,
-                        text="❌ Неправильный ответ. Попробуйте ещё раз.",
-                        show_alert=True,
-                    )
+                    if reason == "not_allowed":
+                        await telegram_bot.answer_callback_query(
+                            callback_query.id,
+                            text="⚠️ Эту капчу может решить только приглашённый пользователь.",
+                            show_alert=True,
+                        )
+                    else:
+                        await telegram_bot.answer_callback_query(
+                            callback_query.id,
+                            text="❌ Неправильный ответ. Попробуйте ещё раз.",
+                            show_alert=True,
+                        )
                     
                     # Триггер CAPTCHA_FAILED
                     await self.trigger_service.fire_event(

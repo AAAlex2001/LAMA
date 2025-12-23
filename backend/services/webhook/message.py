@@ -5,7 +5,7 @@ import asyncio
 import logging
 from typing import Optional, Dict, Any
 
-from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -153,6 +153,20 @@ class MessageHandler:
                 captcha_question=question,
                 captcha_answer=answer,
             )
+
+            try:
+                await telegram_bot.restrict_chat_member(
+                    chat_id=message.chat.id,
+                    user_id=new_member.id,
+                    permissions=ChatPermissions(
+                        can_send_messages=False,
+                        can_send_media_messages=False,
+                        can_send_other_messages=False,
+                        can_add_web_page_previews=False,
+                    ),
+                )
+            except Exception:
+                pass
             
             # Генерируем варианты ответов
             correct = int(answer)
