@@ -139,6 +139,10 @@ class RateLimitedBot:
         """Получить информацию о чате (без rate limiting)"""
         return await self.bot.get_chat(chat_id=chat_id)
 
+    async def get_chat_member(self, chat_id: Union[int, str], user_id: int):
+        """Получить информацию об участнике чата (без rate limiting - это чтение)"""
+        return await self.bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+
     async def get_updates(self, **kwargs):
         """Получить обновления (без rate limiting)"""
         return await self.bot.get_updates(**kwargs)

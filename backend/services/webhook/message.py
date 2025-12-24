@@ -110,7 +110,19 @@ class MessageHandler:
 
     async def handle_new_members(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка добавления новых участников - триггер MEMBER_JOINED"""
+        # Получаем ID бота для проверки
+        try:
+            bot_info = await telegram_bot.get_me()
+            bot_id = bot_info.id
+        except Exception:
+            bot_id = None
+        
         for new_member in message.new_chat_members:
+            # Пропускаем, если новый участник - это сам бот
+            if bot_id and new_member.id == bot_id:
+                logger.info(f"Skipping captcha for bot itself (id={bot_id})")
+                continue
+            
             # Проверяем режим капчи
             captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
             

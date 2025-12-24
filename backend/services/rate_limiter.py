@@ -1,13 +1,11 @@
 """
 Rate Limiter для Telegram API запросов
-Ограничения:
-- 30 запросов в секунду глобально для всего бота
-- 1 запрос в секунду для конкретного чата
+Простой per-chat rate limiter: 1 запрос в секунду на чат.
+Разные чаты могут отправлять параллельно.
 """
 import asyncio
 import logging
 import time
-from collections import deque
 from typing import Optional, Dict, Any
 from contextlib import asynccontextmanager
 
@@ -16,114 +14,67 @@ logger = logging.getLogger(__name__)
 
 class TelegramRateLimiter:
     """
-    Rate Limiter для Telegram API с двумя уровнями ограничений:
-    1. Глобальный лимит: 30 запросов/секунду
-    2. Per-chat лимит: 1 запрос/секунду
+    Простой Rate Limiter: 1 запрос в секунду на каждый chat_id.
+    Разные чаты работают параллельно без глобальных ограничений.
     """
 
-    def __init__(
-        self,
-        global_limit: int = 30,
-        per_chat_limit: float = 1.0,
-    ):
-        self.global_limit = global_limit
-        self.per_chat_limit = per_chat_limit
-
-        # Глобальная очередь запросов (храним timestamp)
-        self.global_requests: deque = deque(maxlen=global_limit)
-        self.global_lock = asyncio.Lock()
-
+    def __init__(self, per_chat_delay: float = 1.0):
+        """
+        Args:
+            per_chat_delay: Задержка между запросами к одному чату (в секундах)
+        """
+        self.per_chat_delay = per_chat_delay
+        
         # Словарь для хранения последнего запроса к каждому чату
         self.chat_last_request: Dict[int, float] = {}
         self.chat_locks: Dict[int, asyncio.Lock] = {}
+        # Lock для безопасного создания chat_locks
+        self._locks_lock = asyncio.Lock()
 
-    async def acquire(self, chat_id: Optional[int] = None) -> None:
-        """
-        Получить разрешение на выполнение запроса к Telegram API
-        """
-        await self.wait_global_limit()
-        if chat_id is not None:
-            if chat_id not in self.chat_locks:
-                self.chat_locks[chat_id] = asyncio.Lock()
-
-            async with self.chat_locks[chat_id]:
-                now = time.time()
-                last_request_time = self.chat_last_request.get(chat_id, 0)
-
-                min_interval = 1.0 / self.per_chat_limit
-
-                if last_request_time > 0:
-                    time_since_last = now - last_request_time
-
-                    if time_since_last < min_interval:
-                        wait_time = min_interval - time_since_last
-                        logger.debug(f"Chat {chat_id} rate limit, waiting {wait_time:.3f}s")
-                        await asyncio.sleep(wait_time)
-                        now = time.time()
-
-                self.chat_last_request[chat_id] = now
-
-        now = time.time()
-        async with self.global_lock:
-            self.global_requests.append(now)
-
-    async def wait_global_limit(self) -> None:
-        """Ожидание если достигнут глобальный лимит"""
-        async with self.global_lock:
-            now = time.time()
-
-            while self.global_requests and (now - self.global_requests[0]) >= 1.0:
-                self.global_requests.popleft()
-
-            if len(self.global_requests) >= self.global_limit:
-                oldest_request = self.global_requests[0]
-                wait_time = 1.0 - (now - oldest_request)
-
-                if wait_time > 0:
-                    logger.debug(f"Global rate limit reached, waiting {wait_time:.3f}s")
-                    await asyncio.sleep(wait_time)
-
-                    now = time.time()
-                    while self.global_requests and (now - self.global_requests[0]) >= 1.0:
-                        self.global_requests.popleft()
-
-    async def wait_chat_limit(self, chat_id: int) -> None:
-        """Ожидание если достигнут лимит для чата"""
+    async def get_chat_lock(self, chat_id: int) -> asyncio.Lock:
+        """Получить или создать lock для чата (thread-safe)"""
         if chat_id not in self.chat_locks:
-            self.chat_locks[chat_id] = asyncio.Lock()
-
-        async with self.chat_locks[chat_id]:
-            last_request_time = self.chat_last_request.get(chat_id, 0)
-            now = time.time()
-
-            time_since_last = now - last_request_time
-            min_interval = 1.0 / self.per_chat_limit
-
-            if time_since_last < min_interval:
-                wait_time = min_interval - time_since_last
-                logger.debug(f"Chat {chat_id} rate limit, waiting {wait_time:.3f}s")
-                await asyncio.sleep(wait_time)
-
-    async def register_request(self, chat_id: Optional[int]) -> None:
-        """Регистрация выполненного запроса (только глобальная очередь)"""
-        now = time.time()
-        async with self.global_lock:
-            self.global_requests.append(now)
+            async with self._locks_lock:
+                # Double-check после получения lock
+                if chat_id not in self.chat_locks:
+                    self.chat_locks[chat_id] = asyncio.Lock()
+        return self.chat_locks[chat_id]
 
     @asynccontextmanager
     async def limit(self, chat_id: Optional[int] = None):
         """
-        Context manager для автоматического rate limiting
+        Context manager для автоматического rate limiting.
+        Lock удерживается на время ожидания + выполнения запроса.
 
         Usage:
             async with rate_limiter.limit(chat_id=123):
                 await bot.send_message(chat_id=123, text="Hello")
         """
-        await self.acquire(chat_id)
-        try:
+        if chat_id is None:
+            # Нет ограничений, если chat_id не указан
             yield
-        finally:
-            pass
+            return
+        
+        lock = await self.get_chat_lock(chat_id)
+        
+        async with lock:
+            # Проверяем, нужно ли ждать
+            if chat_id in self.chat_last_request:
+                elapsed = time.monotonic() - self.chat_last_request[chat_id]
+                wait_time = self.per_chat_delay - elapsed
+                
+                if wait_time > 0:
+                    logger.info(f"[RateLimit] chat {chat_id}: waiting {wait_time:.3f}s")
+                    await asyncio.sleep(wait_time)
+            
+            logger.info(f"[RateLimit] chat {chat_id}: executing request")
+            # Выполняем запрос (yield внутри lock!)
+            try:
+                yield
+            finally:
+                # Регистрируем время ПОСЛЕ выполнения
+                self.chat_last_request[chat_id] = time.monotonic()
+                logger.info(f"[RateLimit] chat {chat_id}: request completed")
 
     def cleanup_old_locks(self, max_locks: int = 1000) -> None:
         """
@@ -145,10 +96,8 @@ class TelegramRateLimiter:
     def get_stats(self) -> Dict[str, Any]:
         """Получить статистику использования"""
         return {
-            "global_requests_last_second": len(self.global_requests),
             "tracked_chats": len(self.chat_locks),
-            "global_limit": self.global_limit,
-            "per_chat_limit": self.per_chat_limit,
+            "per_chat_delay": self.per_chat_delay,
         }
 
 
@@ -161,8 +110,8 @@ def get_rate_limiter() -> TelegramRateLimiter:
     global global_rate_limiter
     if global_rate_limiter is None:
         global_rate_limiter = TelegramRateLimiter(
-            global_limit=30,
-            per_chat_limit=0.2,
+            per_chat_delay=3.0,
         )
     return global_rate_limiter
+
 
