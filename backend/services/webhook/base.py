@@ -40,12 +40,12 @@ async def get_bot_session():
 
 
 async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
-    """Получить мастер-бота из БД"""
+    """Получить мастер-бота из БД (первую запись, если несколько пользователей используют этот токен)"""
     master_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     if not master_token:
         return None
 
-    query = select(BotModel).where(BotModel.token == master_token)
+    query = select(BotModel).where(BotModel.token == master_token).limit(1)
     result = await db.execute(query)
     return result.scalar_one_or_none()
 

@@ -2,7 +2,7 @@
 Модели для работы с ботами
 """
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint
 from sqlalchemy.orm import relationship
 import enum
 
@@ -69,15 +69,18 @@ class MessageType(str, enum.Enum):
 class Bot(Base):
     """Модель бота"""
     __tablename__ = "bots"
+    __table_args__ = (
+        UniqueConstraint('owner_id', 'telegram_id', name='bots_owner_telegram_unique'),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Telegram данные
-    telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
-    username = Column(String(255), unique=True, nullable=False, index=True)
+    telegram_id = Column(BigInteger, nullable=False, index=True)
+    username = Column(String(255), nullable=False, index=True)
     first_name = Column(String(255), nullable=False)
-    token = Column(String(255), unique=True, nullable=False)  # Храним токен для работы
+    token = Column(String(255), nullable=False)  # Храним токен для работы
     
     # Информация о боте
     description = Column(Text, nullable=True)

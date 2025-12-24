@@ -98,40 +98,31 @@ class ModerationTriggerService:
             return False
     
     async def notify_bot_owner(self, message: Message, telegram_bot: Bot) -> None:
-        """Отправить уведомление владельцу бота в ЛС"""
+        """Отправить уведомление владельцу группы (создателю) в ЛС"""
         try:
-            from sqlalchemy import select
-            from sqlalchemy.orm import selectinload
-            from backend.models.bots import Bot as BotModel
-            from backend.models.auth import User, TelegramAccount
-            import os
+            # Получаем список администраторов группы
+            admins = await telegram_bot.get_chat_administrators(message.chat.id)
             
-            # Получаем владельца бота
-            master_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-            query = select(BotModel).where(BotModel.token == master_token)
-            result = await self.db.execute(query)
-            bot_model = result.scalar_one_or_none()
+            # Ищем создателя группы (creator)
+            group_owner = None
+            for admin in admins:
+                if admin.status == "creator":
+                    group_owner = admin.user
+                    break
             
-            if not bot_model:
+            if not group_owner:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"No group creator found for chat {message.chat.id}")
                 return
             
-            # Получаем Telegram ID владельца (с явной загрузкой telegram_account)
-            query = select(User).options(selectinload(User.telegram_account)).where(User.id == bot_model.owner_id)
-            result = await self.db.execute(query)
-            owner = result.scalar_one_or_none()
-            
-            if not owner or not owner.telegram_account:
-                return
-            
-            owner_telegram_id = owner.telegram_account.telegram_id
-            
-            # Формируем сообщение для владельца
+            # Формируем сообщение для владельца группы
             chat_title = message.chat.title or "Unknown Group"
             user_info = f"{message.from_user.first_name}"
             if message.from_user.username:
                 user_info += f" (@{message.from_user.username})"
             
-            # Формируем ссылку на группу
+            # Формируем ссылку на сообщение в группе
             chat_link = f"https://t.me/c/{str(message.chat.id)[4:]}/{message.message_id}"
             
             owner_message = (
@@ -144,16 +135,16 @@ class ModerationTriggerService:
                 f"⏰ Время: {message.date.strftime('%Y-%m-%d %H:%M:%S') if message.date else 'N/A'}"
             )
             
-            # Отправляем владельцу
+            # Отправляем владельцу группы
             await telegram_bot.send_message(
-                chat_id=owner_telegram_id,
+                chat_id=group_owner.id,
                 text=owner_message
             )
                 
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
-            logger.error(f"Failed to notify bot owner: {str(e)}")
+            logger.error(f"Failed to notify group owner: {str(e)}")
 
     async def handle_ban(
         self,

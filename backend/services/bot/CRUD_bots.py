@@ -42,13 +42,11 @@ class CRUDBotService:
             else None
         )
 
-        # Проверяем, не существует ли уже бот с таким telegram_id
-        existing_bot = await self.get_bot_by_telegram_id(bot_info.id)
+        # Проверяем, не существует ли уже бот с таким telegram_id у этого владельца
+        existing_bot = await self.get_bot_by_telegram_id(bot_info.id, owner_id=owner_id)
 
         if existing_bot:
-            if existing_bot.owner_id != owner_id:
-                raise ValueError(f"Bot with telegram_id {bot_info.id} already registered by another user")
-            raise ValueError(f"Bot with telegram_id {bot_info.id} already exists")
+            raise ValueError(f"You have already registered this bot")
 
         # Создаём бота в БД
         bot = BotModel(
@@ -197,12 +195,10 @@ class CRUDBotService:
             else None
         )
 
-        # Ищем существующего бота
-        bot = await self.get_bot_by_telegram_id(bot_info.id)
+        # Ищем существующего бота у этого владельца
+        bot = await self.get_bot_by_telegram_id(bot_info.id, owner_id=owner_id)
 
         if bot:
-            if bot.owner_id != owner_id:
-                raise ValueError("Bot already registered by another user")
             # Обновляем существующего
             bot.username = bot_info.username
             bot.first_name = bot_info.first_name
