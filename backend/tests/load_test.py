@@ -91,22 +91,10 @@ def generate_realistic_publication(channel_ids: list[int], idx: int) -> dict:
         ["релиз", "версия", "обновление"],
     ]
     
-    # Медиа URL (используем Unsplash для тестовых изображений)
+    # Медиа URL - одна фотка продублированная 2 раза для теста
+    single_photo = "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200"
     media_urls_variants = [
-        ["https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200"],
-        ["https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&w=1200"],
-        ["https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&w=1200"],
-        ["https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&w=1200"],
-        ["https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&w=1200"],
-        [
-            "https://images.unsplash.com/photo-1523475472560-d2df97ec485c?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&w=1200"
-        ],
-        [
-            "https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&w=1200",
-            "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&w=1200"
-        ],
+        [single_photo, single_photo],  # Одна и та же фотка 2 раза
     ]
     
     # Выбираем варианты случайно

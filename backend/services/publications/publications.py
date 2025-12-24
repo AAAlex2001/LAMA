@@ -20,6 +20,7 @@ from backend.schemas.publications import AIGenerateRequest, AIEditRequest, EditP
 from backend.services.channel import ChannelService
 from backend.services.publications.CRUD_publications import CRUDPublicationService
 from backend.services.publications.ai_service import AIService
+from backend.services.telegram_client import RateLimitedBot
 from backend.config import get_bot
 
 
@@ -32,12 +33,12 @@ class PublicationService:
         self.ai_service = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
 
-    def get_master_bot(self) -> Bot:
-        """Получить мастер-бота для публикаций"""
+    def get_master_bot(self) -> RateLimitedBot:
+        """Получить мастер-бота для публикаций (с rate limiting)"""
         return get_bot()
 
-    async def get_bot_for_channel(self, channel: Channel) -> Bot:
-        """Получить мастер-бота для публикаций в канал"""
+    async def get_bot_for_channel(self, channel: Channel) -> RateLimitedBot:
+        """Получить мастер-бота для публикаций в канал (с rate limiting)"""
         return get_bot()
 
     # ========================================================================
@@ -237,7 +238,7 @@ class PublicationService:
                 keyboard.inline_keyboard.append(button_row)
         return keyboard
 
-    async def send_to_telegram(self, publication: Publication, channel: Channel, bot: Bot) -> List[Message]:
+    async def send_to_telegram(self, publication: Publication, channel: Channel, bot: RateLimitedBot) -> List[Message]:
         """Отправить публикацию в Telegram"""
         keyboard = None
         if publication.inline_keyboard:

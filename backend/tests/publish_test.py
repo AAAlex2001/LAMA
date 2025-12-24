@@ -64,7 +64,7 @@ async def publish_publication(client: httpx.AsyncClient, publication_id: int, to
             if response.status_code in [400, 429, 504]:
                 if attempt < retries:
                     wait_time = 0  # Увеличена задержка для retry
-                    print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s...")
+                    print(f"   ⏳ Retry {attempt + 1}/{retries} for {publication_id} after {wait_time:.1f}s... (HTTP {response.status_code}: {response.text[:100]})")
                     await asyncio.sleep(wait_time)
                     continue
             
@@ -150,8 +150,8 @@ async def main() -> None:
         total_count = len(publication_ids)
         print(f"📊 Found {total_count} draft publications\n")
         
-        # Semaphore to limit concurrent requests (prevents DB pool exhaustion)
-        semaphore = asyncio.Semaphore(10)
+        # Semaphore to limit concurrent requests (3 = one per channel)
+        semaphore = asyncio.Semaphore(3)
         latencies: List[float] = []
         errors: List[str] = []
 
