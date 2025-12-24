@@ -1,6 +1,7 @@
 """
 Обёртка для Telegram Bot с автоматическим rate limiting
 """
+import inspect
 import logging
 from typing import Union, Optional, Any
 from aiogram import Bot
@@ -60,7 +61,8 @@ class RateLimitedBot:
 
     async def send_media_group(self, chat_id: Union[int, str], media: list, **kwargs) -> list:
         """Отправить медиагруппу (альбом) с rate limiting - это ОДНО действие!"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        weight = len(media) if media else 1
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), weight=weight):
             return await self.bot.send_media_group(chat_id=chat_id, media=media, **kwargs)
 
     async def delete_message(self, chat_id: Union[int, str], message_id: int, **kwargs) -> bool:
@@ -157,5 +159,57 @@ class RateLimitedBot:
         return self.bot.session
 
     def __getattr__(self, name: str) -> Any:
-        """Проксирование всех остальных методов к оригинальному боту"""
-        return getattr(self.bot, name)
+        """Проксирование всех остальных методов к оригинальному боту.
+
+        Важно: если метод не обёрнут явно (например, send_poll/send_sticker и т.п.),
+        он всё равно должен проходить через rate limiter — иначе легко получить 429.
+        """
+
+        attr = getattr(self.bot, name)
+
+        if not callable(attr) or not inspect.iscoroutinefunction(attr):
+            return attr
+
+        write_prefixes = (
+            "send_",
+            "edit_",
+            "delete_",
+            "pin_",
+            "unpin_",
+            "copy_",
+            "forward_",
+            "restrict_",
+            "ban_",
+            "unban_",
+            "approve_",
+            "decline_",
+        )
+
+        if not name.startswith(write_prefixes):
+            return attr
+
+        async def rate_limited(*args, **kwargs):
+            # Обычно chat_id — первый positional аргумент или keyword.
+            chat_id = kwargs.get("chat_id")
+            if chat_id is None and args:
+                chat_id = args[0]
+
+            # Для media_group учитываем, что Telegram создаёт N сообщений за 1 запрос.
+            weight = 1
+            if name == "send_media_group":
+                media = kwargs.get("media")
+                if media is None and len(args) >= 2:
+                    media = args[1]
+                try:
+                    weight = len(media) if media else 1
+                except Exception:
+                    weight = 1
+
+            extracted = self.extract_chat_id(chat_id)
+            if extracted is None:
+                return await attr(*args, **kwargs)
+
+            async with self.rate_limiter.limit(chat_id=extracted, weight=weight):
+                return await attr(*args, **kwargs)
+
+        return rate_limited

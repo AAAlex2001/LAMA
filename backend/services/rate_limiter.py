@@ -41,7 +41,7 @@ class TelegramRateLimiter:
         return self.chat_locks[chat_id]
 
     @asynccontextmanager
-    async def limit(self, chat_id: Optional[int] = None):
+    async def limit(self, chat_id: Optional[int] = None, weight: int = 1):
         """
         Context manager для автоматического rate limiting.
         Lock удерживается на время ожидания + выполнения запроса.
@@ -54,6 +54,9 @@ class TelegramRateLimiter:
             # Нет ограничений, если chat_id не указан
             yield
             return
+
+        if weight < 1:
+            weight = 1
         
         lock = await self.get_chat_lock(chat_id)
         
@@ -61,13 +64,16 @@ class TelegramRateLimiter:
             # Проверяем, нужно ли ждать
             if chat_id in self.chat_last_request:
                 elapsed = time.monotonic() - self.chat_last_request[chat_id]
-                wait_time = self.per_chat_delay - elapsed
+                # Важно: некоторые методы (например send_media_group) создают сразу
+                # несколько сообщений. Telegram лимиты часто считаются по сообщениям,
+                # а не по HTTP-запросам, поэтому используем weight.
+                wait_time = (self.per_chat_delay * weight) - elapsed
                 
                 if wait_time > 0:
                     logger.info(f"[RateLimit] chat {chat_id}: waiting {wait_time:.3f}s")
                     await asyncio.sleep(wait_time)
             
-            logger.info(f"[RateLimit] chat {chat_id}: executing request")
+            logger.info(f"[RateLimit] chat {chat_id}: executing request (weight={weight})")
             # Выполняем запрос (yield внутри lock!)
             try:
                 yield
@@ -110,7 +116,7 @@ def get_rate_limiter() -> TelegramRateLimiter:
     global global_rate_limiter
     if global_rate_limiter is None:
         global_rate_limiter = TelegramRateLimiter(
-            per_chat_delay=2.0,
+            per_chat_delay=3.0,
         )
     return global_rate_limiter
 
