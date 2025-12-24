@@ -1,17 +1,15 @@
 import asyncio
-import json
 import aiohttp
 import os
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
-from sqlalchemy import select, func, and_, or_, distinct
+from sqlalchemy import select, func, and_
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 from aiogram import Bot
 from aiogram.enums import ParseMode
-from aiogram.types import Chat, Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, InputMediaAnimation, ChatPermissions
-from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter, TelegramForbiddenError
+from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, InputMediaAnimation, ChatPermissions
+from aiogram.exceptions import TelegramBadRequest, TelegramRetryAfter
 from backend.models.channels import (
     ChannelGroup, BackedUpPost, PostRetransmission, BackupJob,
     BackupMode, BackupStatus
@@ -24,14 +22,13 @@ from backend.services.channel.CRUD_channels import CRUDChannelService
 from backend.config import get_bot
 
 
-# Модульный семафор для ограничения параллельных запросов к Telegram (общий для всех ChannelService)
-TELEGRAM_SEMAPHORE = asyncio.BoundedSemaphore(int(os.getenv("TELEGRAM_PARALLEL", "10")))
+# Раньше здесь использовался модульный семафор `TELEGRAM_SEMAPHORE`,
+# теперь отправки контролируются централизованным `RateLimitedBot`.
 
 
 class ChannelService:
     def __init__(self, db: AsyncSession):
         self.db = db
-        # Используем модульный TELEGRAM_SEMAPHORE вместо локального инстанса
         self.crud = CRUDChannelService(db)
     
     def get_master_bot(self) -> Bot:
@@ -239,13 +236,11 @@ class ChannelService:
         bot: Optional[Bot] = None
     ) -> PostRetransmission:
         """Ретрансляция поста в другой канал"""
-        # Если канал не передан, запрашиваем из БД
         if target_channel is None:
             target_channel = await self.get_channel(target_channel_id)
             if not target_channel:
                 raise ValueError("Target channel not found")
-        
-        # Если бот не передан, создаём
+
         bot_created = False
         if bot is None:
             bot = await self.get_bot_for_channel(target_channel)
@@ -256,13 +251,12 @@ class ChannelService:
         target_message_id = 0
         
         try:
-            async with TELEGRAM_SEMAPHORE:
-                sent_message = await self.copy_message_to_channel(
-                    original_post,
-                    target_channel.telegram_id,
-                    bot
-                )
-                target_message_id = sent_message.message_id
+            sent_message = await self.copy_message_to_channel(
+                original_post,
+                target_channel.telegram_id,
+                bot
+            )
+            target_message_id = sent_message.message_id
         except Exception as e:
             success = False
             error_message = str(e)
@@ -487,8 +481,7 @@ class ChannelService:
         
         job.total_posts = len(posts)
         await self.db.commit()
-        
-        # Получаем целевой канал и создаём бота один раз
+
         target_channel = await self.get_channel(job.target_channel_id)
         if not target_channel:
             raise ValueError("Target channel not found")
