@@ -110,7 +110,7 @@ def get_rate_limiter() -> TelegramRateLimiter:
     global global_rate_limiter
     if global_rate_limiter is None:
         global_rate_limiter = TelegramRateLimiter(
-            per_chat_delay=3.0,
+            per_chat_delay=2.0,
         )
     return global_rate_limiter
 

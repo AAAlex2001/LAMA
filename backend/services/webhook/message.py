@@ -271,12 +271,7 @@ class MessageHandler:
                 
                 # Удаляем сообщение с капчей
                 await telegram_bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
-                
-                # Отправляем уведомление
-                await telegram_bot.send_message(
-                    chat_id=chat_id,
-                    text=f"❌ Пользователь не решил капчу вовремя и был удалён."
-                )
+                # уведомление о неуспешной капче не отправляем по требованию
                 
             except TelegramAPIError as e:
                 logger.warning(f"Failed to kick user {user_id}: {e}")
