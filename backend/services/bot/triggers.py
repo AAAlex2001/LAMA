@@ -48,7 +48,6 @@ class TriggerService:
         owner_id: Optional[int] = None,
     ) -> Trigger:
         """Создать триггер"""
-        # Проверяем существование бота
         query = select(BotModel).where(BotModel.id == bot_id)
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
@@ -104,12 +103,10 @@ class TriggerService:
         if is_active is not None:
             query = query.where(Trigger.is_active == is_active)
 
-        # Подсчёт
         count_query = select(func.count()).select_from(query.subquery())
         total_result = await self.db.execute(count_query)
         total = total_result.scalar()
 
-        # Получение данных
         query = query.order_by(Trigger.created_at.desc())
         result = await self.db.execute(query)
         triggers = list(result.scalars().all())
@@ -185,17 +182,14 @@ class TriggerService:
         executed = 0
 
         for trigger in triggers:
-            # Проверяем фильтры
             if not self.check_filters(trigger, user_id, chat_id):
                 continue
 
-            # Если есть задержка - планируем на потом
             if trigger.delay_minutes > 0:
                 await self.schedule_trigger(trigger, user_id, chat_id, context)
                 executed += 1
                 continue
 
-            # Выполняем сразу
             try:
                 await self.execute_trigger(trigger, user_id, chat_id, telegram_bot, context)
                 executed += 1
@@ -211,15 +205,13 @@ class TriggerService:
         chat_id: int,
     ) -> bool:
         """Проверить фильтры триггера"""
-        if not trigger.filters:
+        if not trigger.filters or not isinstance(trigger.filters, dict):
             return True
 
-        # Фильтр по chat_id
         chat_ids = trigger.filters.get("chat_ids")
         if chat_ids and chat_id not in chat_ids:
             return False
 
-        # Фильтр по user_id
         user_ids = trigger.filters.get("user_ids")
         if user_ids and user_id not in user_ids:
             return False
@@ -228,7 +220,7 @@ class TriggerService:
 
     def check_delivery_window(self, trigger: Trigger) -> bool:
         """Проверить окно доставки"""
-        if not trigger.delivery_window:
+        if not trigger.delivery_window or not isinstance(trigger.delivery_window, dict):
             return True
 
         import pytz
@@ -275,18 +267,15 @@ class TriggerService:
         context: Optional[dict] = None,
     ):
         """Выполнить действие триггера"""
-        # Проверяем окно доставки
         if not self.check_delivery_window(trigger):
-            # Если вне окна - планируем на следующее окно
             await self.schedule_for_next_window(trigger, user_id, chat_id, context)
             return
 
-        action_data = trigger.action_data or {}
-        # Добавляем контекст в action_data для шорткодов
+        action_data = trigger.action_data
+        if not isinstance(action_data, dict):
+            action_data = {}
         action_data["context"] = context or {}
 
-        # Определяем куда отправлять: в ЛС (user_id) или в группу (chat_id)
-        # Для триггеров заявок - всегда в ЛС пользователю
         target_chat_id = chat_id
         if trigger.trigger_type in (
             TriggerType.JOIN_REQUEST_CREATED,
@@ -317,7 +306,7 @@ class TriggerService:
         """Запланировать на следующее окно доставки"""
         import pytz
 
-        if not trigger.delivery_window:
+        if not trigger.delivery_window or not isinstance(trigger.delivery_window, dict):
             return
 
         tz_name = trigger.delivery_window.get("timezone", "UTC")
@@ -329,7 +318,6 @@ class TriggerService:
         now = datetime.now(tz)
         start_hour = trigger.delivery_window.get("start_hour", 9)
 
-        # Следующее окно - начало следующего дня
         if now.hour >= start_hour:
             next_window = now.replace(hour=start_hour, minute=0, second=0) + timedelta(days=1)
         else:
@@ -356,17 +344,22 @@ class TriggerService:
         action_data: dict,
     ):
         """Отправить текстовое сообщение"""
+        if not isinstance(action_data, dict):
+            action_data = {}
+        
         text = action_data.get("text", "")
         if not text:
             return
 
-        # Обработка шорткодов
         bot_info = await telegram_bot.get_me()
+        ctx = action_data.get("context", {})
+        if not isinstance(ctx, dict):
+            ctx = {}
         shortcode_context = {
             "user": {
                 "id": user_id,
-                "first_name": action_data.get("context", {}).get("first_name", ""),
-                "username": action_data.get("context", {}).get("username", ""),
+                "first_name": ctx.get("first_name", ""),
+                "username": ctx.get("username", ""),
             },
             "bot": {
                 "first_name": bot_info.first_name if bot_info else "",
@@ -374,7 +367,6 @@ class TriggerService:
         }
         text = ShortcodeProcessor.process(text, shortcode_context)
 
-        # Формируем кнопки
         reply_markup = self.build_keyboard(action_data.get("buttons"))
 
         try:
@@ -394,18 +386,23 @@ class TriggerService:
         action_data: dict,
     ):
         """Отправить медиа"""
+        if not isinstance(action_data, dict):
+            action_data = {}
+        
         media_url = action_data.get("media_url")
         media_type = action_data.get("media_type", "PHOTO")
         caption = action_data.get("text", "")
         
-        # Обработка шорткодов в caption
         if caption:
             bot_info = await telegram_bot.get_me()
+            ctx = action_data.get("context", {})
+            if not isinstance(ctx, dict):
+                ctx = {}
             shortcode_context = {
                 "user": {
                     "id": user_id,
-                    "first_name": action_data.get("context", {}).get("first_name", ""),
-                    "username": action_data.get("context", {}).get("username", ""),
+                    "first_name": ctx.get("first_name", ""),
+                    "username": ctx.get("username", ""),
                 },
                 "bot": {
                     "first_name": bot_info.first_name if bot_info else "",
@@ -452,7 +449,10 @@ class TriggerService:
     ):
         """Заглушить пользователя"""
         from aiogram.types import ChatPermissions
-
+        
+        if not isinstance(action_data, dict):
+            action_data = {}
+        
         duration_minutes = action_data.get("duration_minutes", 60)
         until_date = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)
 
@@ -474,6 +474,9 @@ class TriggerService:
         action_data: Dict[str, Any],
     ):
         """Забанить пользователя"""
+        if not isinstance(action_data, dict):
+            action_data = {}
+        
         duration_minutes = action_data.get("duration_minutes", 0)
 
         try:
@@ -497,13 +500,17 @@ class TriggerService:
         buttons_data: Optional[List[List[Dict[str, str]]]],
     ) -> Optional[InlineKeyboardMarkup]:
         """Построить клавиатуру из данных"""
-        if not buttons_data:
+        if not buttons_data or not isinstance(buttons_data, list):
             return None
 
         keyboard = []
         for row in buttons_data:
+            if not isinstance(row, list):
+                continue
             button_row = []
             for btn in row:
+                if not isinstance(btn, dict):
+                    continue
                 button_row.append(
                     InlineKeyboardButton(
                         text=btn.get("text", ""),
@@ -511,7 +518,8 @@ class TriggerService:
                         callback_data=btn.get("callback_data"),
                     )
                 )
-            keyboard.append(button_row)
+            if button_row:
+                keyboard.append(button_row)
 
         return InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
 
@@ -536,7 +544,6 @@ class TriggerService:
         telegram_bot: Bot,
     ) -> bool:
         """Выполнить отложенную задачу"""
-        # Загружаем триггер
         query = select(Trigger).where(Trigger.id == task.trigger_id)
         result = await self.db.execute(query)
         trigger = result.scalar_one_or_none()
@@ -547,13 +554,17 @@ class TriggerService:
             await self.db.commit()
             return False
 
+        event_context = task.event_context
+        if not isinstance(event_context, dict):
+            event_context = {}
+
         try:
-            await self._execute_trigger(
+            await self.execute_trigger(
                 trigger,
                 task.user_id,
                 task.chat_id,
                 telegram_bot,
-                task.event_context,
+                event_context,
             )
             task.is_executed = True
             task.executed_at = datetime.now(timezone.utc)

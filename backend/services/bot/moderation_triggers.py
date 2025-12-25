@@ -4,7 +4,7 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from aiogram import Bot
-from aiogram.types import ChatPermissions, Message
+from aiogram.types import ChatPermissions, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -122,6 +122,23 @@ class ModerationTriggerService:
             if message.from_user.username:
                 user_info += f" (@{message.from_user.username})"
             
+            # Проверяем, есть ли ответ на сообщение
+            replied = message.reply_to_message
+            replied_user_info = None
+            replied_text_preview = None
+            replied_user_id = None
+            replied_message_id = replied.message_id if replied else None
+            
+            if replied:
+                replied_text_preview = (replied.text or replied.caption or "").strip()
+                if len(replied_text_preview) > 200:
+                    replied_text_preview = replied_text_preview[:200] + "…"
+                if replied.from_user:
+                    replied_user_id = replied.from_user.id
+                    replied_user_info = f"{replied.from_user.first_name}"
+                    if replied.from_user.username:
+                        replied_user_info += f" (@{replied.from_user.username})"
+            
             # Формируем ссылку на сообщение в группе
             chat_link = f"https://t.me/c/{str(message.chat.id)[4:]}/{message.message_id}"
             
@@ -132,13 +149,38 @@ class ModerationTriggerService:
                 f"🆔 Chat ID: `{message.chat.id}`\n"
                 f"🔗 Перейти: {chat_link}\n"
                 f"📝 Текст: {message.text or 'N/A'}\n\n"
-                f"⏰ Время: {message.date.strftime('%Y-%m-%d %H:%M:%S') if message.date else 'N/A'}"
+                + (
+                    f"↩️ Ответ на сообщение: {replied_user_info or 'N/A'}\n"
+                    f"🆔 User ID: `{replied_user_id}`\n"
+                    f"🧾 Сообщение: {replied_text_preview or 'N/A'}\n\n"
+                    if replied_message_id else ""
+                )
+                + f"⏰ Время: {message.date.strftime('%Y-%m-%d %H:%M:%S') if message.date else 'N/A'}"
             )
+            
+            # Кнопки показываем только если /admin отправлен ответом на сообщение
+            reply_markup = None
+            if replied_message_id:
+                reply_markup = InlineKeyboardMarkup(
+                    inline_keyboard=[
+                        [
+                            InlineKeyboardButton(
+                                text="🚫 Забанить",
+                                callback_data=f"admincall_ban_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
+                            ),
+                            InlineKeyboardButton(
+                                text="🗑 Удалить",
+                                callback_data=f"admincall_del_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
+                            ),
+                        ]
+                    ]
+                )
             
             # Отправляем владельцу группы
             await telegram_bot.send_message(
                 chat_id=group_owner.id,
-                text=owner_message
+                text=owner_message,
+                reply_markup=reply_markup,
             )
                 
         except Exception as e:

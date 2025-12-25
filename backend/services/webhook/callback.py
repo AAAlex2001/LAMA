@@ -33,6 +33,105 @@ class CallbackHandler:
             await self.process_captcha(callback_query)
         elif callback_data.startswith("group_captcha_"):
             await self.process_group_captcha(callback_query)
+        elif callback_data.startswith("admincall_"):
+            await self.process_admin_call_action(callback_query)
+
+    async def process_admin_call_action(self, callback_query: CallbackQuery) -> None:
+        """Обработка действий из вызова админа (ban/delete выбранного сообщения)."""
+        callback_data = callback_query.data or ""
+        parts = callback_data.split("_")
+
+        # admincall_{action}_{chat_id}_{user_id}_{message_id}
+        if len(parts) != 5:
+            return
+
+        _, action, chat_id_raw, user_id_raw, message_id_raw = parts
+
+        try:
+            chat_id = int(chat_id_raw)
+            target_user_id = int(user_id_raw)
+            target_message_id = int(message_id_raw)
+        except ValueError:
+            logger.warning(f"Invalid admincall callback data: {callback_data}")
+            return
+
+        actor_user_id = callback_query.from_user.id if callback_query.from_user else 0
+
+        async with get_bot_session() as telegram_bot:
+            # Проверяем права того, кто нажал кнопку: должен быть админом в целевой группе
+            try:
+                member = await asyncio.wait_for(
+                    telegram_bot.get_chat_member(chat_id, actor_user_id),
+                    timeout=TELEGRAM_API_TIMEOUT,
+                )
+                is_admin = member.status in ("administrator", "creator")
+            except (TelegramAPIError, asyncio.TimeoutError):
+                is_admin = False
+
+            if not is_admin:
+                try:
+                    await telegram_bot.answer_callback_query(
+                        callback_query.id,
+                        text="❌ Недостаточно прав для этого действия.",
+                        show_alert=True,
+                    )
+                except Exception:
+                    pass
+                return
+
+            try:
+                if action == "del":
+                    await asyncio.wait_for(
+                        telegram_bot.delete_message(chat_id=chat_id, message_id=target_message_id),
+                        timeout=TELEGRAM_API_TIMEOUT,
+                    )
+                    answer_text = "🗑 Сообщение удалено."
+                elif action == "ban":
+                    if target_user_id <= 0:
+                        await telegram_bot.answer_callback_query(
+                            callback_query.id,
+                            text="❌ Нельзя забанить: автор сообщения неизвестен.",
+                            show_alert=True,
+                        )
+                        return
+                    await asyncio.wait_for(
+                        telegram_bot.ban_chat_member(chat_id=chat_id, user_id=target_user_id),
+                        timeout=TELEGRAM_API_TIMEOUT,
+                    )
+                    answer_text = "🚫 Пользователь забанен."
+                else:
+                    return
+
+                # Убираем клавиатуру с сообщения в ЛС, чтобы не жали повторно
+                if callback_query.message:
+                    try:
+                        await asyncio.wait_for(
+                            telegram_bot.edit_message_reply_markup(
+                                chat_id=callback_query.message.chat.id,
+                                message_id=callback_query.message.message_id,
+                                reply_markup=None,
+                            ),
+                            timeout=TELEGRAM_API_TIMEOUT,
+                        )
+                    except (TelegramAPIError, asyncio.TimeoutError):
+                        pass
+
+                await telegram_bot.answer_callback_query(
+                    callback_query.id,
+                    text=answer_text,
+                    show_alert=False,
+                )
+
+            except (TelegramAPIError, asyncio.TimeoutError) as e:
+                logger.warning(f"Admincall action failed ({action}) in chat {chat_id}: {e}")
+                try:
+                    await telegram_bot.answer_callback_query(
+                        callback_query.id,
+                        text=f"❌ Не удалось выполнить действие: {str(e)}",
+                        show_alert=True,
+                    )
+                except Exception:
+                    pass
 
     async def process_captcha(self, callback_query: CallbackQuery) -> None:
         """Обработка капчи"""
