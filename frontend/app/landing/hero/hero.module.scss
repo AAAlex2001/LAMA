@@ -92,22 +92,21 @@
 
 .relativeElement2 {
   position: absolute;
-  bottom: 15%;
-  left: 0;
+  bottom: 0;
+  left: max(5px, calc(50% - 430px));
   z-index: 6;
   
   img {
     width: 90px;
     height: 80px;
     object-fit: contain;
-    transform: scaleX(-1); // Разворот по горизонтали
   }
 }
 
 .relativeElement3 {
   position: absolute;
-  bottom: 5%;
-  right: 0;
+  bottom: 0;
+  right: max(5px, calc(50% - 430px));
   z-index: 6;
   
   img {
@@ -119,8 +118,9 @@
 
 .relativeElement4 {
   position: absolute;
-  bottom: 23%;
-  right: 0;
+  top: auto;
+  bottom: 120px;
+  right: max(5px, calc(50% - 430px));
   z-index: 6;
   
   img {
@@ -132,8 +132,9 @@
 
 .relativeElement5 {
   position: absolute;
-  bottom: 3%;
-  left: 0;
+  top: auto;
+  bottom: 100px;
+  left: max(5px, calc(50% - 430px));
   z-index: 6;
   
   img {
@@ -183,7 +184,8 @@
   }
 
   .relativeElement2 {
-    bottom: 100px;
+    bottom: 0;
+    left: max(10px, calc(50% - 630px));
     
     img {
       width: 130px;
@@ -194,7 +196,8 @@
   }
 
   .relativeElement3 {
-    bottom: 30px;
+    bottom: 0;
+    right: max(10px, calc(50% - 630px));
     
     img {
       width: 130px;
@@ -204,8 +207,8 @@
   }
 
   .relativeElement4 {
-    bottom: 180px;
-    right: 0;
+    bottom: 220px;
+    right: max(10px, calc(50% - 630px));
     
     img {
       width: 120px;
@@ -215,7 +218,8 @@
   }
 
   .relativeElement5 {
-    left: 0;
+    bottom: 220px;
+    left: max(10px, calc(50% - 630px));
     
     img {
       width: 120px;
@@ -271,7 +275,8 @@
   }
 
   .relativeElement2 {
-    bottom: 200px;
+    bottom: 0;
+    left: max(20px, calc(50% - 640px));
 
     img {
       width: 240px;
@@ -282,7 +287,8 @@
   }
 
   .relativeElement3 {
-    bottom: 75px;
+    bottom: 0;
+    right: max(20px, calc(50% - 640px));
 
     img {
       width: 240px;
@@ -292,8 +298,8 @@
   }
 
   .relativeElement4 {
-    bottom: 300px;
-    right: 0;
+    bottom: 320px;
+    right: max(20px, calc(50% - 640px));
 
     img {
       width: 260px;
@@ -303,8 +309,8 @@
   }
 
   .relativeElement5 {
-    left: 0;
-    bottom: 50px;
+    bottom: 320px;
+    left: max(20px, calc(50% - 640px));
 
     img {
       width: 260px;
