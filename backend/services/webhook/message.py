@@ -345,8 +345,8 @@ class MessageHandler:
         command_text = text_content.split()[0]
         user_id = message.from_user.id if message.from_user else 0
 
-        # Команда /login для авторизации в веб-интерфейсе
-        if command_text.lower() == "/login":
+        # Команда /start для авторизации в веб-интерфейсе
+        if command_text.lower() == "/start":
             from backend.services.auth.auth_service import AuthService
             from backend.config import TELEGRAM_BOT_TOKEN
             import os
