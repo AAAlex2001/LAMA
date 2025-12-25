@@ -66,6 +66,13 @@ class MessageType(str, enum.Enum):
     ANIMATION = "ANIMATION"
 
 
+class TriggerChatType(str, enum.Enum):
+    """Тип чата для срабатывания триггера"""
+    PRIVATE = "PRIVATE"  # Только в ЛС с ботом
+    GROUP = "GROUP"  # Только в группах/супергруппах
+    BOTH = "BOTH"  # И в ЛС, и в группах
+
+
 class Bot(Base):
     """Модель бота"""
     __tablename__ = "bots"
@@ -282,6 +289,9 @@ class Trigger(Base):
     # Фильтры (опционально)
     # Пример: {"chat_ids": [123, 456], "user_ids": [789]}
     filters = Column(JSON, nullable=True)
+
+    # Тип чата для срабатывания
+    chat_type = Column(SQLEnum(TriggerChatType), default=TriggerChatType.BOTH, nullable=False)
 
     # Статус
     is_active = Column(Boolean, default=True, nullable=False)

@@ -609,6 +609,7 @@ async def create_trigger(
             delay_minutes=data.delay_minutes,
             delivery_window=data.delivery_window,
             filters=data.filters,
+            chat_type=data.chat_type,
             is_active=data.is_active,
             owner_id=current_user.id,
         )

@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope, TriggerType, TriggerActionType, CaptchaMode
+from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope, TriggerType, TriggerActionType, CaptchaMode, TriggerChatType
 
 
 # ============================================================================
@@ -320,6 +320,10 @@ class TriggerCreate(BaseModel):
         None,
         description="Фильтры: {chat_ids: [...], user_ids: [...]}"
     )
+    chat_type: TriggerChatType = Field(
+        TriggerChatType.BOTH,
+        description="Где срабатывает триггер: PRIVATE (ЛС), GROUP (группа), BOTH (оба)"
+    )
     is_active: bool = True
 
 
@@ -332,6 +336,7 @@ class TriggerUpdate(BaseModel):
     delay_minutes: Optional[int] = Field(None, ge=0)
     delivery_window: Optional[Dict[str, Any]] = None
     filters: Optional[Dict[str, Any]] = None
+    chat_type: Optional[TriggerChatType] = None
     is_active: Optional[bool] = None
 
 
@@ -346,6 +351,7 @@ class TriggerResponse(BaseModel):
     delay_minutes: int
     delivery_window: Optional[Dict[str, Any]]
     filters: Optional[Dict[str, Any]]
+    chat_type: TriggerChatType
     is_active: bool
     created_at: datetime
     updated_at: datetime

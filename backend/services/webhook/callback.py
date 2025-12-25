@@ -185,6 +185,7 @@ class CallbackHandler:
                         user_id=user_id,
                         chat_id=chat_id,
                         telegram_bot=telegram_bot,
+                        chat_type='private',
                         context={"pending_id": pending_id}
                     )
                 else:
@@ -208,6 +209,7 @@ class CallbackHandler:
                         user_id=user_id,
                         chat_id=chat_id,
                         telegram_bot=telegram_bot,
+                        chat_type='private',
                         context={"pending_id": pending_id, "answer": user_answer}
                     )
 
@@ -299,7 +301,7 @@ class CallbackHandler:
                         trigger_type=TriggerType.CAPTCHA_PASSED,
                         user_id=user_id,
                         chat_id=chat_id,
-                        telegram_bot=telegram_bot,
+                        telegram_bot=telegram_bot,                        chat_type='private',                        chat_type='group',
                         context={"pending_id": pending_id, "group_captcha": True}
                     )
                 else:
@@ -323,6 +325,7 @@ class CallbackHandler:
                         user_id=user_id,
                         chat_id=chat_id,
                         telegram_bot=telegram_bot,
+                        chat_type='group',
                         context={"pending_id": pending_id, "answer": user_answer, "group_captcha": True}
                     )
                     

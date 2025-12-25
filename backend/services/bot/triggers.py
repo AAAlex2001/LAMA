@@ -18,6 +18,7 @@ from backend.models.bots import (
     TriggerType,
     TriggerActionType,
     MessageType,
+    TriggerChatType,
 )
 from backend.services.bot.shortcodes import ShortcodeProcessor
 
@@ -44,10 +45,13 @@ class TriggerService:
         delay_minutes: int = 0,
         delivery_window: Optional[Dict[str, Any]] = None,
         filters: Optional[Dict[str, Any]] = None,
+        chat_type: Optional["TriggerChatType"] = None,
         is_active: bool = True,
         owner_id: Optional[int] = None,
     ) -> Trigger:
         """Создать триггер"""
+        from backend.models.bots import TriggerChatType as TCT
+        
         query = select(BotModel).where(BotModel.id == bot_id)
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
@@ -64,6 +68,7 @@ class TriggerService:
             delay_minutes=delay_minutes,
             delivery_window=delivery_window,
             filters=filters,
+            chat_type=chat_type or TCT.BOTH,
             is_active=is_active,
         )
 
@@ -173,15 +178,20 @@ class TriggerService:
         chat_id: int,
         telegram_bot: Bot,
         context: Optional[Dict[str, Any]] = None,
+        chat_type: Optional[str] = None,
     ) -> int:
         """
         Запустить обработку события.
         Возвращает количество сработавших триггеров.
+        chat_type: 'private', 'group', 'supergroup', 'channel'
         """
         triggers = await self.get_triggers_for_event(bot_id, trigger_type)
         executed = 0
 
         for trigger in triggers:
+            if not self.check_chat_type(trigger, chat_type):
+                continue
+
             if not self.check_filters(trigger, user_id, chat_id):
                 continue
 
@@ -197,6 +207,26 @@ class TriggerService:
                 logger.error(f"Trigger {trigger.id} execution failed: {e}")
 
         return executed
+
+    def check_chat_type(
+        self,
+        trigger: Trigger,
+        chat_type: Optional[str],
+    ) -> bool:
+        """Проверить тип чата для триггера"""
+        if not hasattr(trigger, 'chat_type') or trigger.chat_type == TriggerChatType.BOTH:
+            return True
+
+        if not chat_type:
+            return True
+
+        if trigger.chat_type == TriggerChatType.PRIVATE:
+            return chat_type == 'private'
+
+        if trigger.chat_type == TriggerChatType.GROUP:
+            return chat_type in ('group', 'supergroup')
+
+        return True
 
     def check_filters(
         self,

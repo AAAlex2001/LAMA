@@ -41,6 +41,7 @@ class JoinRequestHandler:
                     user_id=user_id,
                     chat_id=chat_id,
                     telegram_bot=telegram_bot,
+                    chat_type='private',
                     context={
                         "username": join_request.from_user.username,
                         "first_name": join_request.from_user.first_name,
@@ -87,6 +88,7 @@ class JoinRequestHandler:
                         user_id=user_id,
                         chat_id=chat_id,
                         telegram_bot=telegram_bot,
+                        chat_type='private',
                         context={
                             "username": join_request.from_user.username,
                             "first_name": join_request.from_user.first_name,
@@ -99,6 +101,7 @@ class JoinRequestHandler:
                         user_id=user_id,
                         chat_id=chat_id,
                         telegram_bot=telegram_bot,
+                        chat_type='private',
                         context={
                             "username": join_request.from_user.username,
                             "first_name": join_request.from_user.first_name,

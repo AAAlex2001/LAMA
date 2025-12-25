@@ -94,6 +94,7 @@ class SubscriptionHandler:
                                 user_id=pending.user_id,
                                 chat_id=pending.chat_id,
                                 telegram_bot=telegram_bot,
+                                chat_type='private',
                                 context={"auto_approved": True, "channel_id": channel_id}
                             )
 

@@ -140,6 +140,7 @@ class MessageHandler:
                 user_id=new_member.id,
                 chat_id=message.chat.id,
                 telegram_bot=telegram_bot,
+                chat_type=message.chat.type if message.chat else None,
                 context={
                     "username": new_member.username,
                     "first_name": new_member.first_name,
@@ -288,6 +289,7 @@ class MessageHandler:
             user_id=left_member.id,
             chat_id=message.chat.id,
             telegram_bot=telegram_bot,
+            chat_type=message.chat.type if message.chat else None,
             context={
                 "username": left_member.username,
                 "first_name": left_member.first_name,
@@ -319,6 +321,7 @@ class MessageHandler:
             user_id=user_id,
             chat_id=message.chat.id,
             telegram_bot=telegram_bot,
+            chat_type=message.chat.type if message.chat else None,
             context={"text": text_content[:100]}
         )
 
@@ -423,6 +426,7 @@ class MessageHandler:
                 user_id=user_id,
                 chat_id=message.chat.id,
                 telegram_bot=telegram_bot,
+                chat_type=message.chat.type if message.chat else None,
                 context={"command": command_text}
             )
 
