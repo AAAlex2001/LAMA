@@ -1,6 +1,6 @@
 .popup {
   position: absolute;
-  top: calc(100% + 20px);
+  top: 25px;
   left: 0;
   right: 0;
   display: flex;
@@ -13,6 +13,7 @@
   box-shadow: 0px 16px 32px -4px rgba(12, 12, 13, 0.1), 0px 4px 4px -4px rgba(12, 12, 13, 0.05);
   border-radius: 0px 0px 20px 20px;
   z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
 
   @media (min-width: 768px) {
     width: 340px;
@@ -22,7 +23,15 @@
   }
 }
 
-// Вариант для мобильного меню
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .popup.mobile {
   position: static;
   top: auto;
@@ -43,8 +52,6 @@
   @media (min-width: 768px) {
     position: absolute;
     top: 100%;
-    left: 0;
-    right: 0;
     padding: 10px;
     gap: 10px;
     width: 100%;
@@ -53,7 +60,6 @@
     border-radius: 10px;
     margin-top: 8px;
     margin-bottom: 0;
-    width: 340px;
     left: 50%;
     right: auto;
     transform: translateX(-50%);

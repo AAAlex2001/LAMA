@@ -53,7 +53,14 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (popupRef.current && !popupRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Don't close if clicking inside popup or on the anchor element
+      if (
+        popupRef.current && 
+        !popupRef.current.contains(target) &&
+        anchorElement &&
+        !anchorElement.contains(target)
+      ) {
         onClose();
       }
     };
@@ -65,7 +72,7 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, anchorElement]);
 
   if (!isOpen) return null;
 

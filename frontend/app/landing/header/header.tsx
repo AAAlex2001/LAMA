@@ -24,6 +24,7 @@ export default function Header() {
         setIsVisible(true);
       } else if (delta > 3) {
         setIsVisible(false);
+        setIsToolsOpen(false); // Close popup when header hides
       } else if (delta < -3) {
         setIsVisible(true);
       }
