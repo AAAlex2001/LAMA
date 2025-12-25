@@ -1,3 +1,6 @@
+'use client';
+
+import { LocaleProvider } from './locale-context';
 import Header from "./landing/header/header";
 import Hero from "./landing/hero/hero";
 import Advantages from "./landing/advantages/advantages";
@@ -13,7 +16,8 @@ import SidebarMenu from "@/components/sidebar-menu/sidebar-menu";
 
 export default function Home() {
   return (
-    <main>
+    <LocaleProvider>
+      <main>
       <Header />
       <Hero />
       <div id="advantages">
@@ -37,5 +41,6 @@ export default function Home() {
       <Footer />
       <SidebarMenu />
     </main>
+    </LocaleProvider>
   );
 }

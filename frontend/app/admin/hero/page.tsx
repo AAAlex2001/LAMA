@@ -19,6 +19,7 @@ interface HeroContent {
 }
 
 export default function HeroAdminPage() {
+  const [locale, setLocale] = useState('ru');
   const [content, setContent] = useState<HeroContent>({
     headline: '',
     paragraph: '',
@@ -38,21 +39,22 @@ export default function HeroAdminPage() {
 
   // Загружаем текущий контент
   useEffect(() => {
-    fetch(`${API_BASE_URL}/hero`)
+    setLoading(true);
+    fetch(`${API_BASE_URL}/hero?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   // Сохраняем контент
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(`${API_BASE_URL}/hero`, {
+      const res = await fetch(`${API_BASE_URL}/hero?locale=${locale}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
@@ -143,7 +145,18 @@ export default function HeroAdminPage() {
     <div className={styles.page}>
       <AdminMenu />
       <div className={styles.container}>
-      <h1 className={styles.title}>Редактирование Hero секции</h1>
+      <div className={styles.header}>
+        <h1 className={styles.title}>Редактирование Hero секции</h1>
+        <select 
+          className={styles.localeSelector}
+          value={locale} 
+          onChange={(e) => setLocale(e.target.value)}
+        >
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="sr">🇷🇸 Сербский</option>
+          <option value="en">🇬🇧 Английский</option>
+        </select>
+      </div>
       
       {message && <div className={styles.message}>{message}</div>}
 

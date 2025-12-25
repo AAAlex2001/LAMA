@@ -5,11 +5,26 @@ from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType
+from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType, Locale
 
 
-async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
+def coerce_locale(locale: str | Locale | None) -> Locale:
+    """Coerce locale to Locale enum"""
+    if locale is None:
+        return Locale.RU
+    if isinstance(locale, Locale):
+        return locale
+    if isinstance(locale, str):
+        try:
+            return Locale[locale.upper()]
+        except KeyError:
+            return Locale.RU
+    return Locale.RU
+
+
+async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции FAQ"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.FAQ)
@@ -37,6 +52,7 @@ async def get_faq_content(db: AsyncSession) -> Dict[str, Any]:
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
@@ -89,9 +105,11 @@ async def save_faq_content(
     secondary_button_text: str = None,
     secondary_button_link: str = None,
     help_text: str = None,
-    bot_link: str = None
+    bot_link: str = None,
+    locale: str | Locale | None = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции FAQ"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection).where(LandingSection.section_type == SectionType.FAQ)
     )
@@ -108,7 +126,9 @@ async def save_faq_content(
         await db.flush()
     
     await db.execute(
-        delete(LandingContent).where(LandingContent.section_id == section.id)
+        delete(LandingContent)
+        .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
     )
     
     contents = [
@@ -117,6 +137,7 @@ async def save_faq_content(
             content_type=ContentType.TEXT,
             key="faq_headline",
             title=headline,
+            locale=locale_enum,
             is_active=True,
             order=1
         )
@@ -129,6 +150,7 @@ async def save_faq_content(
             key=f"faq_item_{i}",
             title=item.get("question", ""),
             text=item.get("answer", ""),
+            locale=locale_enum,
             is_active=True,
             order=10 + i
         ))
@@ -141,6 +163,7 @@ async def save_faq_content(
             key="faq_primary_button",
             link_text=primary_button_text or "",
             link_url=primary_button_link or "",
+            locale=locale_enum,
             is_active=True,
             order=1000
         ))
@@ -152,6 +175,7 @@ async def save_faq_content(
             key="faq_secondary_button",
             link_text=secondary_button_text or "",
             link_url=secondary_button_link or "",
+            locale=locale_enum,
             is_active=True,
             order=1001
         ))
@@ -162,6 +186,7 @@ async def save_faq_content(
             content_type=ContentType.TEXT,
             key="faq_help_text",
             text=help_text,
+            locale=locale_enum,
             is_active=True,
             order=1002
         ))
@@ -172,6 +197,7 @@ async def save_faq_content(
             content_type=ContentType.LINK,
             key="faq_bot_link",
             link_url=bot_link,
+            locale=locale_enum,
             is_active=True,
             order=1003
         ))

@@ -5,11 +5,20 @@ from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType
+from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType, Locale
 
 
-async def get_hero_content(db: AsyncSession) -> Dict[str, Any]:
+def coerce_locale(locale: str | Locale | None) -> Locale:
+    if isinstance(locale, Locale):
+        return locale
+    if isinstance(locale, str) and locale in Locale.__members__:
+        return Locale[locale]
+    return Locale.RU
+
+
+async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Hero"""
+    locale_enum = coerce_locale(locale)
     # Получаем секцию Hero (только активную)
     result = await db.execute(
         select(LandingSection)
@@ -39,6 +48,7 @@ async def get_hero_content(db: AsyncSession) -> Dict[str, Any]:
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
@@ -96,9 +106,11 @@ async def save_hero_content(
     paragraph: str,
     paragraph_secondary: str,
     button_text: str,
-    images: List[Dict[str, str]]
+    images: List[Dict[str, str]],
+    locale: str | Locale | None = None,
 ) -> Dict[str, str]:
     """Сохранить контент для секции Hero"""
+    locale_enum = coerce_locale(locale)
     # Получаем или создаем секцию Hero
     result = await db.execute(
         select(LandingSection).where(LandingSection.section_type == SectionType.HERO)
@@ -115,9 +127,11 @@ async def save_hero_content(
         db.add(section)
         await db.flush()
     
-    # Удаляем старый контент
+    # Удаляем старый контент только для текущей локали
     await db.execute(
-        delete(LandingContent).where(LandingContent.section_id == section.id)
+        delete(LandingContent)
+        .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
     )
     
     # Создаем новый контент
@@ -125,6 +139,7 @@ async def save_hero_content(
         LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
+            locale=locale_enum,
             key="hero_headline",
             title=headline,
             is_active=True,
@@ -133,6 +148,7 @@ async def save_hero_content(
         LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
+            locale=locale_enum,
             key="hero_paragraph",
             text=paragraph,
             is_active=True,
@@ -141,6 +157,7 @@ async def save_hero_content(
         LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
+            locale=locale_enum,
             key="hero_paragraph_secondary",
             text=paragraph_secondary,
             is_active=True,
@@ -149,6 +166,7 @@ async def save_hero_content(
         LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
+            locale=locale_enum,
             key="hero_button",
             text=button_text,
             is_active=True,
@@ -161,6 +179,7 @@ async def save_hero_content(
         contents.append(LandingContent(
             section_id=section.id,
             content_type=ContentType.IMAGE,
+            locale=locale_enum,
             key=f"hero_image_{i + 1}",
             image_url=image.get("url", ""),
             image_alt=image.get("alt", "Hero illustration"),

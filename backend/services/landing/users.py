@@ -5,11 +5,26 @@ from typing import Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType
+from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType, Locale
 
 
-async def get_users_content(db: AsyncSession) -> Dict[str, Any]:
+def coerce_locale(locale: str | Locale | None) -> Locale:
+    """Coerce locale to Locale enum"""
+    if locale is None:
+        return Locale.RU
+    if isinstance(locale, Locale):
+        return locale
+    if isinstance(locale, str):
+        try:
+            return Locale[locale.upper()]
+        except KeyError:
+            return Locale.RU
+    return Locale.RU
+
+
+async def get_users_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Users"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.USERS)
@@ -28,6 +43,7 @@ async def get_users_content(db: AsyncSession) -> Dict[str, Any]:
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
@@ -61,9 +77,11 @@ async def save_users_content(
     number: int,
     text_line: str,
     text_line_1: str,
-    button_text: str
+    button_text: str,
+    locale: str | Locale | None = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции Users"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection).where(LandingSection.section_type == SectionType.USERS)
     )
@@ -80,7 +98,9 @@ async def save_users_content(
         await db.flush()
     
     await db.execute(
-        delete(LandingContent).where(LandingContent.section_id == section.id)
+        delete(LandingContent)
+        .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
     )
     
     contents = [
@@ -89,6 +109,7 @@ async def save_users_content(
             content_type=ContentType.TEXT,
             key="users_number",
             text=str(number),
+            locale=locale_enum,
             is_active=True,
             order=1
         ),
@@ -97,6 +118,7 @@ async def save_users_content(
             content_type=ContentType.TEXT,
             key="users_text_line",
             text=text_line,
+            locale=locale_enum,
             is_active=True,
             order=2
         ),
@@ -105,6 +127,7 @@ async def save_users_content(
             content_type=ContentType.TEXT,
             key="users_text_line_1",
             text=text_line_1,
+            locale=locale_enum,
             is_active=True,
             order=3
         ),
@@ -113,6 +136,7 @@ async def save_users_content(
             content_type=ContentType.TEXT,
             key="users_button_text",
             text=button_text,
+            locale=locale_enum,
             is_active=True,
             order=4
         )

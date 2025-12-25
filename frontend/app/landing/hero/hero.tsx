@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useLocale } from '@/app/locale-context';
 import styles from "./hero.module.scss";
 import Button from "@/components/button/button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
@@ -20,6 +21,7 @@ interface HeroContent {
 }
 
 export default function Hero() {
+  const { locale } = useLocale();
   const [content, setContent] = useState<HeroContent>({
     headline: "",
     paragraph: "",
@@ -29,11 +31,11 @@ export default function Hero() {
   });
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/hero`)
+    fetch(`${API_BASE_URL}/hero?locale=${locale}`)
       .then(res => res.json())
       .then(data => setContent(data))
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

@@ -13,6 +13,7 @@ interface UsersContent {
 }
 
 export default function UsersAdminPage() {
+  const [locale, setLocale] = useState('ru');
   const [content, setContent] = useState<UsersContent>({
     number: 500,
     textLine: '',
@@ -24,20 +25,21 @@ export default function UsersAdminPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/users`)
+    setLoading(true);
+    fetch(`${API_BASE_URL}/users?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(`${API_BASE_URL}/users`, {
+      const res = await fetch(`${API_BASE_URL}/users?locale=${locale}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
@@ -61,7 +63,18 @@ export default function UsersAdminPage() {
     <div className={styles.page}>
       <AdminMenu />
       <div className={styles.container}>
-        <h1 className={styles.title}>Редактирование Users секции</h1>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Редактирование Users секции</h1>
+          <select 
+            className={styles.localeSelector}
+            value={locale} 
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="sr">🇷🇸 Сербский</option>
+            <option value="en">🇬🇧 Английский</option>
+          </select>
+        </div>
         
         {message && <div className={styles.message}>{message}</div>}
 

@@ -5,11 +5,26 @@ from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType
+from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType, Locale
 
 
-async def get_footer_content(db: AsyncSession) -> Dict[str, Any]:
+def coerce_locale(locale: str | Locale | None) -> Locale:
+    """Coerce locale to Locale enum"""
+    if locale is None:
+        return Locale.RU
+    if isinstance(locale, Locale):
+        return locale
+    if isinstance(locale, str):
+        try:
+            return Locale[locale.upper()]
+        except KeyError:
+            return Locale.RU
+    return Locale.RU
+
+
+async def get_footer_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Footer"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.FOOTER)
@@ -62,6 +77,7 @@ async def get_footer_content(db: AsyncSession) -> Dict[str, Any]:
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
@@ -106,9 +122,11 @@ async def save_footer_content(
     copyright: str,
     telegram_link: str,
     instagram_link: str,
-    columns: List[Dict[str, Any]]
+    columns: List[Dict[str, Any]],
+    locale: str | Locale | None = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции Footer"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection).where(LandingSection.section_type == SectionType.FOOTER)
     )
@@ -125,7 +143,9 @@ async def save_footer_content(
         await db.flush()
     
     await db.execute(
-        delete(LandingContent).where(LandingContent.section_id == section.id)
+        delete(LandingContent)
+        .where(LandingContent.section_id == section.id)
+        .where(LandingContent.locale == locale_enum)
     )
     
     contents = [
@@ -134,6 +154,7 @@ async def save_footer_content(
             content_type=ContentType.TEXT,
             key="footer_brand_name",
             title=brand_name,
+            locale=locale_enum,
             is_active=True,
             order=1
         ),
@@ -142,6 +163,7 @@ async def save_footer_content(
             content_type=ContentType.TEXT,
             key="footer_copyright",
             text=copyright,
+            locale=locale_enum,
             is_active=True,
             order=2
         ),
@@ -150,6 +172,7 @@ async def save_footer_content(
             content_type=ContentType.LINK,
             key="footer_telegram_link",
             link_url=telegram_link,
+            locale=locale_enum,
             is_active=True,
             order=3
         ),
@@ -158,6 +181,7 @@ async def save_footer_content(
             content_type=ContentType.LINK,
             key="footer_instagram_link",
             link_url=instagram_link,
+            locale=locale_enum,
             is_active=True,
             order=4
         )
@@ -170,6 +194,7 @@ async def save_footer_content(
             key=f"footer_column_{i}",
             title=column.get("title", ""),
             extra_data={"links": column.get("links", [])},
+            locale=locale_enum,
             is_active=True,
             order=10 + i
         ))

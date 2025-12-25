@@ -1,17 +1,27 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useLocale } from '@/app/locale-context';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
 import Button from "@/components/button/button";
 import ToolsPopup from "@/components/tools-popup/tools-popup";
 
 export default function Header() {
+  const { locale, setLocale } = useLocale();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const toolsRef = useRef<HTMLAnchorElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  const localeLabels = {
+    ru: { flag: '🇷🇺', name: 'Русский' },
+    sr: { flag: '🇷🇸', name: 'Сербский' },
+    en: { flag: '🇬🇧', name: 'Английский' },
+  };
 
   useEffect(() => {
     lastScrollY.current = window.scrollY;
@@ -24,7 +34,8 @@ export default function Header() {
         setIsVisible(true);
       } else if (delta > 3) {
         setIsVisible(false);
-        setIsToolsOpen(false); // Close popup when header hides
+        setIsToolsOpen(false);
+        setIsLangOpen(false);
       } else if (delta < -3) {
         setIsVisible(true);
       }
@@ -71,7 +82,31 @@ export default function Header() {
           </nav>
 
           <div className={styles.right}>
-            <div className={styles.language}>RU</div>
+            <div className={styles.languageWrapper} ref={langRef}>
+              <button 
+                className={styles.language}
+                onClick={() => setIsLangOpen(!isLangOpen)}
+              >
+                {localeLabels[locale].flag}
+              </button>
+              {isLangOpen && (
+                <div className={styles.languageDropdown}>
+                  {Object.entries(localeLabels).map(([code, { flag, name }]) => (
+                    <button
+                      key={code}
+                      className={styles.languageOption}
+                      onClick={() => {
+                        setLocale(code as 'ru' | 'sr' | 'en');
+                        setIsLangOpen(false);
+                      }}
+                    >
+                      <span className={styles.languageFlag}>{flag}</span>
+                      <span className={styles.languageName}>{name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className={styles.loginButtonSmall}>
               <Button 
                 text="Войти" 

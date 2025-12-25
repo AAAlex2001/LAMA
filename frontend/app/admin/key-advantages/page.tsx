@@ -17,6 +17,7 @@ interface KeyAdvantagesContent {
 }
 
 export default function KeyAdvantagesAdminPage() {
+  const [locale, setLocale] = useState('ru');
   const [content, setContent] = useState<KeyAdvantagesContent>({
     headline: '',
     advantages: []
@@ -26,20 +27,21 @@ export default function KeyAdvantagesAdminPage() {
   const [message, setMessage] = useState('');
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/key-advantages`)
+    setLoading(true);
+    fetch(`${API_BASE_URL}/key-advantages?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const res = await fetch(`${API_BASE_URL}/key-advantages`, {
+      const res = await fetch(`${API_BASE_URL}/key-advantages?locale=${locale}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(content)
@@ -104,7 +106,18 @@ export default function KeyAdvantagesAdminPage() {
     <div className={styles.page}>
       <AdminMenu />
       <div className={styles.container}>
-        <h1 className={styles.title}>Редактирование Key Advantages секции</h1>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Редактирование Key Advantages секции</h1>
+          <select 
+            className={styles.localeSelector}
+            value={locale} 
+            onChange={(e) => setLocale(e.target.value)}
+          >
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="sr">🇷🇸 Сербский</option>
+            <option value="en">🇬🇧 Английский</option>
+          </select>
+        </div>
         
         {message && <div className={styles.message}>{message}</div>}
 

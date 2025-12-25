@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useLocale } from '@/app/locale-context';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
@@ -17,6 +18,7 @@ interface AdvantagesCard {
 }
 
 export default function Advantages() {
+  const { locale } = useLocale();
   const swiperRef = useRef<SwiperType | null>(null);
 
   const [headline, setHeadline] = useState('');
@@ -24,7 +26,7 @@ export default function Advantages() {
   const [swiperCards, setSwiperCards] = useState<AdvantagesCard[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/advantages`)
+    fetch(`${API_BASE_URL}/advantages?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);
@@ -34,7 +36,7 @@ export default function Advantages() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

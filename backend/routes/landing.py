@@ -98,13 +98,21 @@ async def save_advantages_content(
 
 
 @router.get("/key-advantages")
-async def get_key_advantages_content(db: AsyncSession = Depends(get_db)):
+async def get_key_advantages_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Key Advantages"""
-    return await key_advantages.get_key_advantages_content(db)
+    parsed_locale = parse_locale(locale)
+    return await key_advantages.get_key_advantages_content(db, locale=parsed_locale.value)
 
 
 @router.put("/key-advantages")
-async def save_key_advantages_content(data: KeyAdvantagesContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_key_advantages_content(
+    data: KeyAdvantagesContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Key Advantages"""
     advantages_list = [
         {
@@ -114,21 +122,31 @@ async def save_key_advantages_content(data: KeyAdvantagesContentRequest, db: Asy
         }
         for advantage in data.advantages
     ]
+    parsed_locale = parse_locale(locale)
     return await key_advantages.save_key_advantages_content(
         db,
         headline=data.headline,
-        advantages=advantages_list
+        advantages=advantages_list,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/pricing")
-async def get_pricing_content(db: AsyncSession = Depends(get_db)):
+async def get_pricing_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Pricing"""
-    return await pricing.get_pricing_content(db)
+    parsed_locale = parse_locale(locale)
+    return await pricing.get_pricing_content(db, locale=parsed_locale.value)
 
 
 @router.put("/pricing")
-async def save_pricing_content(data: PricingContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_pricing_content(
+    data: PricingContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Pricing"""
     plans = [
         {
@@ -139,23 +157,33 @@ async def save_pricing_content(data: PricingContentRequest, db: AsyncSession = D
         }
         for plan in data.plans
     ]
+    parsed_locale = parse_locale(locale)
     return await pricing.save_pricing_content(
         db,
         headline=data.headline,
         subtitle=data.subtitle,
         description=data.description,
-        plans=plans
+        plans=plans,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/faq")
-async def get_faq_content(db: AsyncSession = Depends(get_db)):
+async def get_faq_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции FAQ"""
-    return await faq.get_faq_content(db)
+    parsed_locale = parse_locale(locale)
+    return await faq.get_faq_content(db, locale=parsed_locale.value)
 
 
 @router.put("/faq")
-async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_faq_content(
+    data: FAQContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции FAQ"""
     faq_items = [
         {
@@ -164,6 +192,7 @@ async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(g
         }
         for item in data.faqItems
     ]
+    parsed_locale = parse_locale(locale)
     return await faq.save_faq_content(
         db,
         headline=data.headline,
@@ -173,55 +202,84 @@ async def save_faq_content(data: FAQContentRequest, db: AsyncSession = Depends(g
         secondary_button_text=data.secondaryButtonText,
         secondary_button_link=data.secondaryButtonLink,
         help_text=data.helpText,
-        bot_link=data.botLink
+        bot_link=data.botLink,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/users")
-async def get_users_content(db: AsyncSession = Depends(get_db)):
+async def get_users_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Users"""
-    return await users.get_users_content(db)
+    parsed_locale = parse_locale(locale)
+    return await users.get_users_content(db, locale=parsed_locale.value)
 
 
 @router.put("/users")
-async def save_users_content(data: UsersContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_users_content(
+    data: UsersContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Users"""
+    parsed_locale = parse_locale(locale)
     return await users.save_users_content(
         db,
         number=data.number,
         text_line=data.textLine,
         text_line_1=data.textLine_1,
-        button_text=data.buttonText
+        button_text=data.buttonText,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/lama")
-async def get_lama_content(db: AsyncSession = Depends(get_db)):
+async def get_lama_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Lama"""
-    return await lama.get_lama_content(db)
+    parsed_locale = parse_locale(locale)
+    return await lama.get_lama_content(db, locale=parsed_locale.value)
 
 
 @router.put("/lama")
-async def save_lama_content(data: LamaContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_lama_content(
+    data: LamaContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Lama"""
+    parsed_locale = parse_locale(locale)
     return await lama.save_lama_content(
         db,
         headline=data.headline,
         channel=data.channel,
         description=data.description,
         button_text=data.buttonText,
-        button_href=data.buttonHref
+        button_href=data.buttonHref,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/footer")
-async def get_footer_content(db: AsyncSession = Depends(get_db)):
+async def get_footer_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Footer"""
-    return await footer.get_footer_content(db)
+    parsed_locale = parse_locale(locale)
+    return await footer.get_footer_content(db, locale=parsed_locale.value)
 
 
 @router.put("/footer")
-async def save_footer_content(data: FooterContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_footer_content(
+    data: FooterContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Footer"""
     columns = [
         {
@@ -230,12 +288,14 @@ async def save_footer_content(data: FooterContentRequest, db: AsyncSession = Dep
         }
         for column in data.columns
     ]
+    parsed_locale = parse_locale(locale)
     return await footer.save_footer_content(
         db,
         brand_name=data.brandName,
         copyright=data.copyright,
         telegram_link=data.telegramLink,
         instagram_link=data.instagramLink,
-        columns=columns
+        columns=columns,
+        locale=parsed_locale.value
     )
 
