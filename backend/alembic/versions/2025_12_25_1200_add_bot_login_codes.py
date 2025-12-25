@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
-revision = '2025_12_25_1200'
-down_revision = '2025_12_24_1045'
+revision = '003_add_bot_login_codes'
+down_revision = '002_remove_token_unique'
 branch_labels = None
 depends_on = None
 
