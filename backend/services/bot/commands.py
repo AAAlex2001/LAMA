@@ -162,9 +162,3 @@ class BotCommandService:
         
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
-
-    # ========================================================================
-    # Auto Replies и Moderation Triggers вынесены в отдельные сервисы:
-    # - AutoReplyService (backend/services/bot/auto_reply.py)
-    # - ModerationTriggerService (backend/services/bot/moderation_triggers.py)
-    # ========================================================================

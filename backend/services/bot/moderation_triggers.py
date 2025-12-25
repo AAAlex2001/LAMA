@@ -48,32 +48,27 @@ class ModerationTriggerService:
         
         parts = message.text.split()
         cmd = command.lower()
-        
-        # /admin - доступно всем
+
         if cmd == "/admin":
             return await self.handle_admin_call(message, telegram_bot)
-        
-        # Остальные команды только для админов
+
         if not is_admin:
             await telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text="❌ Эта команда доступна только администраторам."
             )
             return True
-        
-        # Определяем целевого пользователя
+
         target_user_id = None
         target_username = None
-        
-        # Если это ответ на сообщение
+
         if message.reply_to_message and message.reply_to_message.from_user:
             target_user_id = message.reply_to_message.from_user.id
             target_username = message.reply_to_message.from_user.first_name
-        # Если указан @username
+
         elif len(parts) > 1 and parts[1].startswith("@"):
             target_username = parts[1]
-        
-        # Обрабатываем команды
+
         if cmd == "/ban":
             return await self.handle_ban(message, telegram_bot, target_user_id, target_username, parts)
         elif cmd == "/unban":
@@ -90,7 +85,6 @@ class ModerationTriggerService:
     async def handle_admin_call(self, message: Message, telegram_bot: Bot) -> bool:
         """Обработать вызов администраторов - только уведомление владельцу в ЛС"""
         try:
-            # Уведомление владельцу бота в ЛС (без уведомления в группе)
             await self.notify_bot_owner(message, telegram_bot)
             return True
         except TelegramAPIError as e:
@@ -100,10 +94,8 @@ class ModerationTriggerService:
     async def notify_bot_owner(self, message: Message, telegram_bot: Bot) -> None:
         """Отправить уведомление владельцу группы (создателю) в ЛС"""
         try:
-            # Получаем список администраторов группы
             admins = await telegram_bot.get_chat_administrators(message.chat.id)
-            
-            # Ищем создателя группы (creator)
+
             group_owner = None
             for admin in admins:
                 if admin.status == "creator":
@@ -115,14 +107,12 @@ class ModerationTriggerService:
                 logger = logging.getLogger(__name__)
                 logger.warning(f"No group creator found for chat {message.chat.id}")
                 return
-            
-            # Формируем сообщение для владельца группы
+
             chat_title = message.chat.title or "Unknown Group"
             user_info = f"{message.from_user.first_name}"
             if message.from_user.username:
                 user_info += f" (@{message.from_user.username})"
-            
-            # Проверяем, есть ли ответ на сообщение
+
             replied = message.reply_to_message
             replied_user_info = None
             replied_text_preview = None
@@ -138,8 +128,7 @@ class ModerationTriggerService:
                     replied_user_info = f"{replied.from_user.first_name}"
                     if replied.from_user.username:
                         replied_user_info += f" (@{replied.from_user.username})"
-            
-            # Формируем ссылку на сообщение в группе
+
             chat_link = f"https://t.me/c/{str(message.chat.id)[4:]}/{message.message_id}"
             
             owner_message = (
@@ -157,8 +146,7 @@ class ModerationTriggerService:
                 )
                 + f"⏰ Время: {message.date.strftime('%Y-%m-%d %H:%M:%S') if message.date else 'N/A'}"
             )
-            
-            # Кнопки показываем только если /admin отправлен ответом на сообщение
+
             reply_markup = None
             if replied_message_id:
                 reply_markup = InlineKeyboardMarkup(
@@ -175,8 +163,7 @@ class ModerationTriggerService:
                         ]
                     ]
                 )
-            
-            # Отправляем владельцу группы
+
             await telegram_bot.send_message(
                 chat_id=group_owner.id,
                 text=owner_message,
