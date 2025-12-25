@@ -24,6 +24,7 @@ from backend.services.bot import BotService, CaptchaService, BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.bot.moderation_triggers import ModerationTriggerService
+from backend.utils import build_keyboard as utils_build_keyboard
 from backend.services.channel.auto_delete import ChannelAutoDeleteService
 from backend.services.channel.night_mode import ChannelNightModeService
 
@@ -557,25 +558,8 @@ def build_shortcode_context(message: Message, bot_model: BotModel) -> Dict[str, 
 
 
 def build_keyboard(buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKeyboardMarkup]:
-    """Построить inline keyboard"""
-    if not buttons_data:
-        return None
-
-    rows = buttons_data.get("buttons", [])
-    if not rows:
-        return None
-
-    keyboard = []
-    for row in rows:
-        keyboard.append([
-            InlineKeyboardButton(
-                text=btn["text"],
-                url=btn.get("url"),
-                callback_data=btn.get("callback_data")
-            ) for btn in row
-        ])
-
-    return InlineKeyboardMarkup(inline_keyboard=keyboard)
+    """Построить inline keyboard (deprecated, use backend.utils.build_keyboard)"""
+    return utils_build_keyboard(buttons_data)
 
 
 # ============================================================================

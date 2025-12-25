@@ -6,40 +6,13 @@ from typing import Optional, List, Dict, Any
 import logging
 
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ChatPermissions
+from aiogram.types import ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 
 from backend.services.bot.shortcodes import ShortcodeProcessor
+from backend.utils import build_keyboard
 
 logger = logging.getLogger(__name__)
-
-
-def build_keyboard(
-    buttons_data: Optional[List[List[Dict[str, str]]]],
-) -> Optional[InlineKeyboardMarkup]:
-    """Построить клавиатуру из данных"""
-    if not buttons_data or not isinstance(buttons_data, list):
-        return None
-
-    keyboard = []
-    for row in buttons_data:
-        if not isinstance(row, list):
-            continue
-        button_row = []
-        for btn in row:
-            if not isinstance(btn, dict):
-                continue
-            button_row.append(
-                InlineKeyboardButton(
-                    text=btn.get("text", ""),
-                    url=btn.get("url"),
-                    callback_data=btn.get("callback_data"),
-                )
-            )
-        if button_row:
-            keyboard.append(button_row)
-
-    return InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
 
 
 def build_shortcode_context(user_id: int, action_data: dict, bot_info) -> dict:

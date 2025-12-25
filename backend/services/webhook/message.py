@@ -19,6 +19,7 @@ from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, CaptchaMode
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
+from backend.utils import build_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -408,26 +409,7 @@ class MessageHandler:
             "bot": {"first_name": self.bot_model.first_name}
         }
 
-    def build_keyboard(self, buttons_data: Optional[Dict[str, Any]]) -> Optional[InlineKeyboardMarkup]:
-        """Построить inline keyboard"""
-        if not buttons_data:
-            return None
 
-        rows = buttons_data.get("buttons", [])
-        if not rows:
-            return None
-
-        keyboard = []
-        for row in rows:
-            keyboard.append([
-                InlineKeyboardButton(
-                    text=btn["text"],
-                    url=btn.get("url"),
-                    callback_data=btn.get("callback_data")
-                ) for btn in row
-            ])
-
-        return InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
 
     async def send_response(
         self,
@@ -439,7 +421,7 @@ class MessageHandler:
         buttons: Optional[Dict[str, Any]] = None,
     ) -> Optional[Message]:
         """Универсальная отправка ответа (текст/медиа + кнопки)"""
-        reply_markup = self.build_keyboard(buttons)
+        reply_markup = build_keyboard(buttons)
 
         if media_url and media_type:
             send_methods = {

@@ -12,6 +12,7 @@ from aiogram.exceptions import TelegramAPIError
 
 from backend.models.bots import Bot as BotModel, MessageType
 from backend.services.bot.shortcodes import ShortcodeProcessor
+from backend.utils import build_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class WelcomeService:
             text = self.process_shortcodes(bot_model.welcome_message, context)
             
             # Формирование клавиатуры
-            reply_markup = self.build_keyboard(bot_model.welcome_buttons)
+            reply_markup = build_keyboard(bot_model.welcome_buttons)
             
             # Отправка сообщения
             message = await self.send_message(
@@ -81,33 +82,7 @@ class WelcomeService:
         
         return ShortcodeProcessor.process(text, context)
 
-    def build_keyboard(
-        self,
-        buttons_data: Optional[Dict[str, Any]]
-    ) -> Optional[InlineKeyboardMarkup]:
-        """Построить inline keyboard из данных"""
-        if not buttons_data:
-            return None
 
-        rows = buttons_data.get("buttons", [])
-        if not rows:
-            return None
-
-        keyboard = []
-        for row in rows:
-            button_row = []
-            for btn in row:
-                button_row.append(
-                    InlineKeyboardButton(
-                        text=btn.get("text", ""),
-                        url=btn.get("url"),
-                        callback_data=btn.get("callback_data"),
-                    )
-                )
-            if button_row:
-                keyboard.append(button_row)
-
-        return InlineKeyboardMarkup(inline_keyboard=keyboard) if keyboard else None
 
     async def send_message(
         self,

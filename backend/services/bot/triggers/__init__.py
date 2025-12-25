@@ -16,7 +16,6 @@ from backend.services.bot.triggers.filters import (
     check_delivery_window,
 )
 from backend.services.bot.triggers.executor import (
-    build_keyboard,
     send_message,
     send_media,
     mute_user,
@@ -44,7 +43,6 @@ __all__ = [
     "check_filters",
     "check_delivery_window",
     # Executor
-    "build_keyboard",
     "send_message",
     "send_media",
     "mute_user",
