@@ -15,7 +15,13 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("CREATE TYPE triggerchattype AS ENUM ('PRIVATE', 'GROUP', 'BOTH')")
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE triggerchattype AS ENUM ('PRIVATE', 'GROUP', 'BOTH');
+        EXCEPTION
+            WHEN duplicate_object THEN null;
+        END $$;
+    """)
     op.add_column('bot_triggers', sa.Column('chat_type', sa.Enum('PRIVATE', 'GROUP', 'BOTH', name='triggerchattype'), nullable=False, server_default='BOTH'))
 
 

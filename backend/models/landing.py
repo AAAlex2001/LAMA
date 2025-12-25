@@ -30,6 +30,13 @@ class SectionType(str, enum.Enum):
     OTHER = "other"
 
 
+class Locale(str, enum.Enum):
+    """Поддерживаемые локали"""
+    RU = "RU"
+    SR = "SR"
+    EN = "EN"
+
+
 class LandingSection(Base):
     """Секция лендинга"""
     __tablename__ = "landing_sections"
@@ -54,6 +61,7 @@ class LandingContent(Base):
     id = Column(Integer, primary_key=True, index=True)
     section_id = Column(Integer, ForeignKey("landing_sections.id", ondelete="CASCADE"), nullable=False, index=True)
     content_type = Column(SQLEnum(ContentType), nullable=False, index=True)
+    locale = Column(SQLEnum(Locale), nullable=False, default=Locale.RU, index=True)
     
     # Основные поля
     key = Column(String(255), nullable=False, index=True)

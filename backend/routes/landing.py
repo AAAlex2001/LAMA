@@ -1,10 +1,11 @@
 """
 Роуты для получения и сохранения контента лендинга
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
+from backend.models.landing import Locale
 from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer
 from backend.schemas.landing import (
     HeroContentRequest,
@@ -20,34 +21,62 @@ from backend.schemas.landing import (
 router = APIRouter()
 
 
+def parse_locale(locale: str) -> Locale:
+    normalized = (locale or "ru").strip().lower()
+    mapping = {
+        "ru": Locale.RU,
+        "sr": Locale.SR,
+        "en": Locale.EN,
+    }
+    return mapping.get(normalized, Locale.RU)
+
+
 @router.get("/hero")
-async def get_hero_content(db: AsyncSession = Depends(get_db)):
+async def get_hero_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Hero"""
-    return await hero.get_hero_content(db)
+    parsed_locale = parse_locale(locale)
+    return await hero.get_hero_content(db, locale=parsed_locale.value)
 
 
 @router.put("/hero")
-async def save_hero_content(data: HeroContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_hero_content(
+    data: HeroContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Hero"""
     images = [{"url": img.url, "alt": img.alt} for img in data.images]
+    parsed_locale = parse_locale(locale)
     return await hero.save_hero_content(
         db,
         headline=data.headline,
         paragraph=data.paragraph,
         paragraph_secondary=data.paragraphSecondary,
         button_text=data.buttonText,
-        images=images
+        images=images,
+        locale=parsed_locale.value
     )
 
 
 @router.get("/advantages")
-async def get_advantages_content(db: AsyncSession = Depends(get_db)):
+async def get_advantages_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Получить контент для секции Advantages"""
-    return await advantages.get_advantages_content(db)
+    parsed_locale = parse_locale(locale)
+    return await advantages.get_advantages_content(db, locale=parsed_locale.value)
 
 
 @router.put("/advantages")
-async def save_advantages_content(data: AdvantagesContentRequest, db: AsyncSession = Depends(get_db)):
+async def save_advantages_content(
+    data: AdvantagesContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
     """Сохранить контент для секции Advantages"""
     cards = [
         {
@@ -58,11 +87,13 @@ async def save_advantages_content(data: AdvantagesContentRequest, db: AsyncSessi
         }
         for card in data.cards
     ]
+    parsed_locale = parse_locale(locale)
     return await advantages.save_advantages_content(
         db,
         headline=data.headline,
         subtitle=data.subtitle,
-        cards=cards
+        cards=cards,
+        locale=parsed_locale.value
     )
 
 
