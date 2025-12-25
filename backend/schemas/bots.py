@@ -124,7 +124,6 @@ class WelcomeSettingsUpdate(BaseModel):
     welcome_message_thread_id: Optional[int] = None  # ID топика для групповых приветствий
     # Флаг: при заявке отправлять капчу (в MANUAL-режиме) - DEPRECATED
     join_captcha_enabled: Optional[bool] = None
-    # Новые поля для капчи
     captcha_mode: Optional[CaptchaMode] = None
     captcha_timeout_seconds: Optional[int] = Field(None, ge=5, le=300, description="Таймаут капчи в группе (5-300 секунд)")
 
