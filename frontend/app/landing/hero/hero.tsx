@@ -86,31 +86,31 @@ export default function Hero() {
             <Button text={content.buttonText} href="/login" />
           </div>
         </motion.div>
-          {content.images.map((image, index) => {
-            const delays = [0, 0.1, 0.2, 0, 0.2];
-            const durations = [0.6, 0.6, 0.6, 0.8, 0.8];
-            const classNames = [
-              styles.relativeElement1,
-              styles.relativeElement2,
-              styles.relativeElement3,
-              styles.relativeElement4,
-              styles.relativeElement5
-            ];
-            
-            return (
-              <motion.div 
-                key={index}
-                className={classNames[index]}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                transition={{ duration: durations[index], ease: "easeOut", delay: delays[index] }}
-                viewport={{ once: true, amount: 0.3 }}
-              >
-                <img src={image.url} alt={image.alt} />
-              </motion.div>
-            );
-          })}
       </div>
+      {content.images.map((image, index) => {
+        const delays = [0, 0.1, 0.2, 0, 0.2];
+        const durations = [0.6, 0.6, 0.6, 0.8, 0.8];
+        const classNames = [
+          styles.relativeElement1,
+          styles.relativeElement2,
+          styles.relativeElement3,
+          styles.relativeElement4,
+          styles.relativeElement5
+        ];
+        
+        return (
+          <motion.div 
+            key={index}
+            className={classNames[index]}
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: durations[index], ease: "easeOut", delay: delays[index] }}
+            viewport={{ once: true, amount: 0.3 }}
+          >
+            <img src={image.url} alt={image.alt} />
+          </motion.div>
+        );
+      })}
     </section>
   );
 }

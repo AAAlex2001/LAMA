@@ -24,7 +24,7 @@
   margin: 0 auto;
   text-align: center;
   color: white;
-  padding-bottom: 228px;
+  padding-bottom: 0;
 }
 
 .headline {
@@ -71,24 +71,30 @@
 }
 
 .buttonContainer {
-  margin-bottom: 0;
+  margin-bottom: 80px;
 }
 
 .relativeElement1 {
   position: absolute;
-  bottom: -20px;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
   
   img {
-    width: 320px;
-    height: 190px;
+    width: 100vw;
+    max-width: 860px;
+    height: auto;
+    max-height: calc(100vh - 360px - 80px);
     object-fit: contain;
   }
 }
 
 .relativeElement2 {
   position: absolute;
-  bottom: 70px;
+  bottom: 15%;
   left: 0;
+  z-index: 6;
   
   img {
     width: 90px;
@@ -100,8 +106,9 @@
 
 .relativeElement3 {
   position: absolute;
-  bottom: 0;
+  bottom: 5%;
   right: 0;
+  z-index: 6;
   
   img {
     width: 90px;
@@ -112,8 +119,9 @@
 
 .relativeElement4 {
   position: absolute;
-  bottom: 110px;
+  bottom: 23%;
   right: 0;
+  z-index: 6;
   
   img {
     width: 100px;
@@ -124,8 +132,9 @@
 
 .relativeElement5 {
   position: absolute;
-  bottom: 10px;
+  bottom: 3%;
   left: 0;
+  z-index: 6;
   
   img {
     width: 100px;
@@ -158,15 +167,17 @@
 }
 
   .textContainer {
-    padding-bottom: 275px;
+    padding-bottom: 0;
   }
 
   .relativeElement1 {
-    bottom: -40px;
+    bottom: 0;
     
     img {
-      width: 581px;
-      height: 345px;
+      width: 100vw;
+      max-width: 1260px;
+      height: auto;
+      max-height: calc(100vh - 500px - 100px);
       object-fit: contain;
     }
   }
@@ -178,7 +189,7 @@
       width: 130px;
       height: 113px;
       object-fit: contain;
-      transform: scaleX(-1); // Разворот по горизонтали
+      transform: scaleX(-1);
     }
   }
 
@@ -214,7 +225,7 @@
   }
 
   .buttonContainer {
-    margin-bottom: 0;
+    margin-bottom: 80px;
   }
 
 }
@@ -243,16 +254,18 @@
 }
 
   .textContainer {
-    padding-bottom: 435px;
+    padding-bottom: 0;
   }
 
 
   .relativeElement1 {
-    bottom: -220px;
+    bottom: 0;
     
     img {
-      width: 1500px;
-      height: 800px;
+      width: 100vw;
+      max-width: 1280px;
+      height: auto;
+      max-height: calc(100vh - 480px - 80px);
       object-fit: contain;
     }
   }
@@ -264,7 +277,7 @@
       width: 240px;
       height: 208px;
       object-fit: contain;
-      transform: scaleX(-1); // Разворот по горизонтали
+      transform: scaleX(-1);
     }
   }
 
@@ -301,7 +314,7 @@
   }
 
   .buttonContainer {
-    margin-bottom: 0;
+    margin-bottom: 80px;
   }
 
 }
