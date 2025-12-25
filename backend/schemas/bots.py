@@ -53,6 +53,8 @@ class BotResponse(BaseModel):
     webhook_url: Optional[str]
     welcome_enabled: bool
     auto_approval_mode: ApprovalMode
+    captcha_mode: CaptchaMode
+    captcha_timeout_seconds: int
     last_sync_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime

@@ -236,49 +236,33 @@ class MessageHandler:
         pending_id: int,
         timeout_seconds: int
     ) -> None:
-        """Кикнуть пользователя, если не решил капчу вовремя"""
-        import asyncio
         from sqlalchemy import select
         from backend.models.bots import PendingApproval
-        
-        # Ждём таймаут
-        await asyncio.sleep(timeout_seconds)
-        
+
+        await asyncio.sleep(timeout_seconds + 1)
+
         try:
-            # Проверяем, решена ли капча
+            await self.db.rollback()
             query = select(PendingApproval).where(PendingApproval.id == pending_id)
             result = await self.db.execute(query)
             pending = result.scalar_one_or_none()
-            
+
             if not pending or pending.is_approved:
-                # Капча решена, удаляем сообщение
                 try:
                     await telegram_bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
-                except:
+                except TelegramAPIError:
                     pass
                 return
-            
-            # Капча не решена - кикаем пользователя
+
             try:
-                await telegram_bot.ban_chat_member(
-                    chat_id=chat_id,
-                    user_id=user_id
-                )
-                # Сразу разбаниваем (это просто кик)
-                await telegram_bot.unban_chat_member(
-                    chat_id=chat_id,
-                    user_id=user_id
-                )
-                
-                # Удаляем сообщение с капчей
+                await telegram_bot.ban_chat_member(chat_id=chat_id, user_id=user_id)
+                await telegram_bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
                 await telegram_bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
-                # уведомление о неуспешной капче не отправляем по требованию
-                
             except TelegramAPIError as e:
                 logger.warning(f"Failed to kick user {user_id}: {e}")
-                
+
         except Exception as e:
-            logger.error(f"Captcha timeout check failed: {e}", exc_info=True)
+            logger.error(f"Captcha timeout check failed: {e}")
 
     async def handle_member_left(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка ухода участника - триггер MEMBER_LEFT"""

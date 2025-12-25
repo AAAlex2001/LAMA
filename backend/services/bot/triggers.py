@@ -192,7 +192,7 @@ class TriggerService:
             if not self.check_chat_type(trigger, chat_type):
                 continue
 
-            if not self.check_filters(trigger, user_id, chat_id):
+            if not self.check_filters(trigger, user_id, chat_id, context):
                 continue
 
             if trigger.delay_minutes > 0:
@@ -233,18 +233,29 @@ class TriggerService:
         trigger: Trigger,
         user_id: int,
         chat_id: int,
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
-        """Проверить фильтры триггера"""
-        if not trigger.filters or not isinstance(trigger.filters, dict):
+        if not trigger.filters:
             return True
 
-        chat_ids = trigger.filters.get("chat_ids")
-        if chat_ids and chat_id not in chat_ids:
+        filters = trigger.filters
+        ctx = context or {}
+
+        if "chat_ids" in filters and chat_id not in filters["chat_ids"]:
             return False
 
-        user_ids = trigger.filters.get("user_ids")
-        if user_ids and user_id not in user_ids:
+        if "user_ids" in filters and user_id not in filters["user_ids"]:
             return False
+
+        if "command" in filters:
+            cmd = ctx.get("command", "")
+            if cmd.lower() != filters["command"].lower():
+                return False
+
+        if "text_contains" in filters:
+            text = ctx.get("text", "")
+            if filters["text_contains"].lower() not in text.lower():
+                return False
 
         return True
 

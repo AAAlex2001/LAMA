@@ -69,59 +69,40 @@ class JoinRequestHandler:
                 # MANUAL режим - только капча (приветствие через триггеры)
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
                     await self.handle_manual_mode(telegram_bot, join_request)
+                    return
 
                 # CRITERIA режим - отправка требований подписки
                 elif self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA and not should_approve:
                     if missing:
                         await self.send_subscription_requirements(telegram_bot, user_id, missing)
+                    return
 
-                # Одобрение заявки
-                approved = False
+                # AUTO режим или CRITERIA с выполненными условиями - одобряем
                 if should_approve:
                     approved = await self.approve_join_request(chat_id, user_id)
-
-                # Триггер JOIN_REQUEST_APPROVED или JOIN_REQUEST_REJECTED
-                if approved:
-                    await self.trigger_service.fire_event(
-                        bot_id=self.bot_model.id,
-                        trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                        user_id=user_id,
-                        chat_id=chat_id,
-                        telegram_bot=telegram_bot,
-                        chat_type='private',
-                        context={
-                            "username": join_request.from_user.username,
-                            "first_name": join_request.from_user.first_name,
-                        }
-                    )
-                else:
-                    await self.trigger_service.fire_event(
-                        bot_id=self.bot_model.id,
-                        trigger_type=TriggerType.JOIN_REQUEST_REJECTED,
-                        user_id=user_id,
-                        chat_id=chat_id,
-                        telegram_bot=telegram_bot,
-                        chat_type='private',
-                        context={
-                            "username": join_request.from_user.username,
-                            "first_name": join_request.from_user.first_name,
-                            "missing_channels": missing,
-                        }
-                    )
+                    if approved:
+                        await self.trigger_service.fire_event(
+                            bot_id=self.bot_model.id,
+                            trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                            user_id=user_id,
+                            chat_id=chat_id,
+                            telegram_bot=telegram_bot,
+                            chat_type='private',
+                            context={
+                                "username": join_request.from_user.username,
+                                "first_name": join_request.from_user.first_name,
+                            }
+                        )
 
         except Exception as e:
             logger.error(f"Join request error: {e}", exc_info=True)
 
     async def handle_manual_mode(self, telegram_bot, join_request: ChatJoinRequest) -> None:
-        """Обработка MANUAL режима - отправка капчи"""
-        # Проверяем режим капчи
+        """Обработка MANUAL режима - отправка капчи в ЛС."""
         captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
         
-        # Капча только если режим JOIN_REQUEST или BOTH
         if captcha_mode not in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-            # Проверяем старое поле для обратной совместимости
-            if not getattr(self.bot_model, "join_captcha_enabled", False):
-                return
+            return
 
         try:
             captcha_service = CaptchaService(self.db)
