@@ -11,18 +11,18 @@ export default function SidebarMenu() {
 
   useEffect(() => {
     const advantagesSection = document.getElementById('advantages');
-    const lamaSection = document.querySelector('section[class*="lama"]') as HTMLElement;
+    const lamaSection = document.querySelector('section[class*="lama"]') as HTMLElement | null;
 
-    if (!advantagesSection || !lamaSection) return;
+    if (!advantagesSection) return;
 
     advantagesRef.current = advantagesSection;
-    lamaRef.current = lamaSection;
+    lamaRef.current = lamaSection ?? null;
 
     const handleScroll = () => {
-      if (!advantagesRef.current || !lamaRef.current) return;
+      if (!advantagesRef.current) return;
 
       const advantagesTop = advantagesRef.current.offsetTop;
-      const lamaTop = lamaRef.current.offsetTop;
+      const lamaTop = lamaRef.current ? lamaRef.current.offsetTop : Number.POSITIVE_INFINITY;
       const scrollY = window.scrollY;
       const windowHeight = window.innerHeight;
 
