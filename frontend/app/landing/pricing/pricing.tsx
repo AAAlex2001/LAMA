@@ -7,7 +7,9 @@ import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
-export default function Pricing() {
+type Props = { locale: string; };
+
+export default function Pricing({ locale }: Props) {
   const gradientId768 = useId();
   const gradientId1440 = useId();
 
@@ -22,7 +24,7 @@ export default function Pricing() {
   }>>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/pricing`)
+    fetch(`${API_BASE_URL}/pricing?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);
@@ -33,7 +35,7 @@ export default function Pricing() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

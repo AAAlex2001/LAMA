@@ -20,7 +20,9 @@ interface FAQActions {
   botLink?: string;
 }
 
-export default function FAQ() {
+type Props = { locale: string; };
+
+export default function FAQ({ locale }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
 
@@ -29,7 +31,7 @@ export default function FAQ() {
   const [actions, setActions] = useState<FAQActions>({});
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/faq`)
+    fetch(`${API_BASE_URL}/faq?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);
@@ -46,7 +48,7 @@ export default function FAQ() {
         });
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     const parts = text.split(/(```.*?```|``.*?``|`.*?`|@\w+)/);

@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useLocale } from '@/app/locale-context';
 import styles from "./hero.module.scss";
 import Button from "@/components/button/button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+
+type Props = {
+  locale: string;
+};
 
 interface HeroImage {
   url: string;
@@ -20,8 +23,7 @@ interface HeroContent {
   images: HeroImage[];
 }
 
-export default function Hero() {
-  const { locale } = useLocale();
+export default function Hero({ locale }: Props) {
   const [content, setContent] = useState<HeroContent>({
     headline: "",
     paragraph: "",

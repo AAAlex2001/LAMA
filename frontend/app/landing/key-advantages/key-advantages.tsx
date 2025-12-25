@@ -11,12 +11,14 @@ interface KeyAdvantage {
   description: string;
 }
 
-export default function KeyAdvantages() {
+type Props = { locale: string; };
+
+export default function KeyAdvantages({ locale }: Props) {
   const [headline, setHeadline] = useState('');
   const [advantages, setAdvantages] = useState<KeyAdvantage[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/key-advantages`)
+    fetch(`${API_BASE_URL}/key-advantages?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         if (data.headline) setHeadline(data.headline);
@@ -25,7 +27,7 @@ export default function KeyAdvantages() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

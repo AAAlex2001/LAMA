@@ -2,13 +2,16 @@
 
 import { useRef, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { useLocale } from '@/app/locale-context';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
 import Button from "@/components/button/button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+
+type Props = {
+  locale: string;
+};
 
 interface AdvantagesCard {
   title: string;
@@ -17,8 +20,7 @@ interface AdvantagesCard {
   linkText?: string | null;
 }
 
-export default function Advantages() {
-  const { locale } = useLocale();
+export default function Advantages({ locale }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
 
   const [headline, setHeadline] = useState('');

@@ -14,7 +14,9 @@ interface FooterColumn {
   links: FooterLink[];
 }
 
-export default function Footer() {
+type Props = { locale: string; };
+
+export default function Footer({ locale }: Props) {
   const [brandName, setBrandName] = useState('');
   const [copyright, setCopyright] = useState('');
   const [telegramLink, setTelegramLink] = useState('');
@@ -22,7 +24,7 @@ export default function Footer() {
   const [columns, setColumns] = useState<FooterColumn[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/footer`)
+    fetch(`${API_BASE_URL}/footer?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         if (data.brandName) setBrandName(data.brandName);
@@ -32,7 +34,7 @@ export default function Footer() {
         if (data.columns) setColumns(data.columns);
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

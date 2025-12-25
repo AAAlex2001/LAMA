@@ -7,7 +7,9 @@ import styles from "./users.module.scss";
 import Button from "@/components/button/button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
-export default function Users() {
+type Props = { locale: string; };
+
+export default function Users({ locale }: Props) {
   const gradientIdMobile = useId();
   const gradientIdTablet = useId();
   const gradientIdDesktop = useId();
@@ -24,13 +26,13 @@ export default function Users() {
   });
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/users`)
+    fetch(`${API_BASE_URL}/users?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
         setContent(data);
       })
       .catch(() => {});
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (isInView && content.number > 0) {

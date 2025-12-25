@@ -1,14 +1,22 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useLocale } from '@/app/locale-context';
+import { useRouter, usePathname } from 'next/navigation';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
 import Button from "@/components/button/button";
 import ToolsPopup from "@/components/tools-popup/tools-popup";
 
-export default function Header() {
-  const { locale, setLocale } = useLocale();
+type Locale = 'ru' | 'sr' | 'en';
+
+type Props = {
+  locale: string;
+};
+
+export default function Header({ locale: localeProp }: Props) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const locale = (localeProp as Locale) || 'ru';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
@@ -21,6 +29,11 @@ export default function Header() {
     ru: { flag: '🇷🇺', name: 'Русский' },
     sr: { flag: '🇷🇸', name: 'Сербский' },
     en: { flag: '🇬🇧', name: 'Английский' },
+  };
+
+  const handleLanguageChange = (newLocale: string) => {
+    router.push(`/${newLocale}`);
+    setIsLangOpen(false);
   };
 
   useEffect(() => {
@@ -95,10 +108,7 @@ export default function Header() {
                     <button
                       key={code}
                       className={styles.languageOption}
-                      onClick={() => {
-                        setLocale(code as 'ru' | 'sr' | 'en');
-                        setIsLangOpen(false);
-                      }}
+                      onClick={() => handleLanguageChange(code)}
                     >
                       <span className={styles.languageFlag}>{flag}</span>
                       <span className={styles.languageName}>{name}</span>
