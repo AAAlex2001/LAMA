@@ -80,3 +80,21 @@ class UserSession(Base):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
 
 
+class BotLoginCode(Base):
+    """Временный код для авторизации через бота"""
+    __tablename__ = "bot_login_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(32), unique=True, nullable=False, index=True)
+    telegram_id = Column(BigInteger, nullable=False, index=True)
+    username = Column(String(255), nullable=True)
+    first_name = Column(String(255), nullable=True)
+    last_name = Column(String(255), nullable=True)
+    photo_url = Column(String(512), nullable=True)
+    is_used = Column(Boolean, default=False, nullable=False, index=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used_at = Column(DateTime(timezone=True), nullable=True)
+
+    def __repr__(self):
+        return f"<BotLoginCode(code={self.code}, telegram_id={self.telegram_id}, is_used={self.is_used})>"

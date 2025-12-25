@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
-from backend.services.auth import AuthService
+from backend.services.auth.auth_service import AuthService
 from backend.models.auth import User, UserRole
 from backend.schemas.auth import (
     TelegramAuthPayload,
@@ -15,7 +15,8 @@ from backend.schemas.auth import (
     UserResponse,
     UserUpdateRequest,
     SessionListResponse,
-    UserStatsResponse
+    UserStatsResponse,
+    BotLoginRequest
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -100,6 +101,45 @@ async def login_with_telegram(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Authentication failed: {str(e)}")
+
+
+# ============================================================================
+# Аутентификация через бота
+# ============================================================================
+
+@router.post("/bot-login", response_model=AuthResponse)
+async def login_with_bot_code(
+    login_data: BotLoginRequest,
+    request: Request,
+    service: AuthService = Depends(get_auth_service)
+):
+    """
+    Войти по коду из бота
+    
+    Принимает временный код из команды /login в боте.
+    Возвращает JWT токены для работы с API.
+    """
+    try:
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+        
+        user, access_token, refresh_token = await service.verify_bot_login_code(
+            login_data.code,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        return AuthResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=service.access_token_expire_minutes * 60,
+            user=UserResponse.model_validate(user)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bot login failed: {str(e)}")
 
 
 @router.post("/refresh", response_model=AuthResponse)

@@ -40,6 +40,11 @@ class RefreshTokenRequest(BaseModel):
     refresh_token: str = Field(..., description="Refresh token")
 
 
+class BotLoginRequest(BaseModel):
+    """Запрос на авторизацию через код из бота"""
+    code: str = Field(..., description="Временный код из команды /login")
+
+
 # ============================================================================
 # User
 # ============================================================================

@@ -1,0 +1,194 @@
+"""
+Главный сервис аутентификации
+"""
+from typing import Optional, Tuple, List
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.models.auth import User, UserSession, UserRole, BotLoginCode
+from backend.schemas.auth import TelegramAuthPayload, UserUpdateRequest
+
+from .token_service import TokenService
+from .widget_auth import WidgetAuthService
+from .bot_auth import BotAuthService
+from .user_crud import UserCRUDService
+from .session_service import SessionService
+from .stats_service import StatsService
+
+
+class AuthService:
+    """Главный сервис аутентификации"""
+
+    def __init__(
+        self,
+        db: AsyncSession,
+        bot_token: str,
+        jwt_secret: str,
+        jwt_algorithm: str = "HS256",
+        access_token_expire_minutes: int = 60 * 24,
+        refresh_token_expire_days: int = 30
+    ):
+        self.db = db
+        self.bot_token = bot_token
+        self.jwt_secret = jwt_secret
+        self.jwt_algorithm = jwt_algorithm
+        self.access_token_expire_minutes = access_token_expire_minutes
+        self.refresh_token_expire_days = refresh_token_expire_days
+
+        self.token_service = TokenService(
+            db, jwt_secret, jwt_algorithm,
+            access_token_expire_minutes, refresh_token_expire_days
+        )
+        self.widget_auth = WidgetAuthService(
+            db, bot_token, access_token_expire_minutes
+        )
+        self.bot_auth = BotAuthService(
+            db, access_token_expire_minutes
+        )
+        self.user_crud = UserCRUDService(db)
+        self.session_service = SessionService(db)
+        self.stats_service = StatsService(db)
+
+    # ========================================================================
+    # Токены
+    # ========================================================================
+
+    def create_access_token(self, user_id: int) -> str:
+        """Создать access token"""
+        return self.token_service.create_access_token(user_id)
+
+    def create_refresh_token(self, user_id: int) -> str:
+        """Создать refresh token"""
+        return self.token_service.create_refresh_token(user_id)
+
+    async def verify_access_token(self, token: str) -> Optional[User]:
+        """Проверить access token"""
+        return await self.token_service.verify_access_token(token)
+
+    async def refresh_access_token(self, refresh_token: str) -> Tuple[str, str]:
+        """Обновить access token"""
+        return await self.token_service.refresh_access_token(refresh_token)
+
+    async def logout(self, token: str) -> bool:
+        """Завершить сессию"""
+        return await self.token_service.logout(token)
+
+    # ========================================================================
+    # Авторизация через Widget
+    # ========================================================================
+
+    def verify_telegram_auth(self, auth_data: TelegramAuthPayload) -> bool:
+        """Проверить подлинность данных от Telegram Widget"""
+        return self.widget_auth.verify_telegram_auth(auth_data)
+
+    async def authenticate_telegram_user(
+        self,
+        auth_data: TelegramAuthPayload,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> Tuple[User, str, str]:
+        """
+        Аутентифицировать пользователя через Telegram Widget
+        Возвращает: (User, access_token, refresh_token)
+        """
+        access_token = self.create_access_token(0)
+        refresh_token = self.create_refresh_token(0)
+        
+        user = await self.widget_auth.authenticate_telegram_user(
+            auth_data, access_token, refresh_token, user_agent, ip_address
+        )
+        
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+        
+        return user, access_token, refresh_token
+
+    # ========================================================================
+    # Авторизация через бота
+    # ========================================================================
+
+    async def create_bot_login_code(
+        self,
+        telegram_id: int,
+        username: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        photo_url: Optional[str] = None,
+        expires_minutes: int = 5
+    ) -> BotLoginCode:
+        """Создать временный код для авторизации через бота"""
+        return await self.bot_auth.create_bot_login_code(
+            telegram_id, username, first_name, last_name, photo_url, expires_minutes
+        )
+
+    async def verify_bot_login_code(
+        self,
+        code: str,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> Tuple[User, str, str]:
+        """
+        Проверить код авторизации через бота
+        Возвращает: (User, access_token, refresh_token)
+        """
+        access_token = self.create_access_token(0)
+        refresh_token = self.create_refresh_token(0)
+        
+        user = await self.bot_auth.verify_bot_login_code(
+            code, access_token, refresh_token, user_agent, ip_address
+        )
+        
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+        
+        return user, access_token, refresh_token
+
+    # ========================================================================
+    # CRUD пользователей
+    # ========================================================================
+
+    async def get_user(self, user_id: int) -> Optional[User]:
+        """Получить пользователя по ID"""
+        return await self.user_crud.get_user(user_id)
+
+    async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[User]:
+        """Получить пользователя по Telegram ID"""
+        return await self.user_crud.get_user_by_telegram_id(telegram_id)
+
+    async def get_users(
+        self,
+        role: Optional[UserRole] = None,
+        is_active: Optional[bool] = None,
+        skip: int = 0,
+        limit: int = 50
+    ) -> Tuple[List[User], int]:
+        """Получить список пользователей"""
+        return await self.user_crud.get_users(role, is_active, skip, limit)
+
+    async def update_user(self, user_id: int, data: UserUpdateRequest) -> Optional[User]:
+        """Обновить пользователя"""
+        return await self.user_crud.update_user(user_id, data)
+
+    async def delete_user(self, user_id: int) -> bool:
+        """Удалить пользователя"""
+        return await self.user_crud.delete_user(user_id)
+
+    # ========================================================================
+    # Сессии
+    # ========================================================================
+
+    async def get_user_sessions(self, user_id: int) -> Tuple[List[UserSession], int]:
+        """Получить список сессий пользователя"""
+        return await self.session_service.get_user_sessions(user_id)
+
+    async def revoke_session(self, session_id: int, user_id: int) -> bool:
+        """Отозвать сессию"""
+        return await self.session_service.revoke_session(session_id, user_id)
+
+    # ========================================================================
+    # Статистика
+    # ========================================================================
+
+    async def get_user_stats(self, user_id: int) -> dict:
+        """Получить статистику пользователя"""
+        return await self.stats_service.get_user_stats(user_id)
