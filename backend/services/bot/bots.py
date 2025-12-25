@@ -161,33 +161,24 @@ class BotService:
         required_channels = bot.approval_criteria.get("required_channels", [])
         if required_channels:
             telegram_bot = self.get_master_bot()
-            missing_channels = []  # Список каналов, на которые не подписан
+            missing_channels = []
             
             try:
-                # Проходим по всем требуемым каналам
                 for channel_id in required_channels:
                     try:
-                        # Получаем информацию о членстве пользователя в канале
                         member = await telegram_bot.get_chat_member(channel_id, user_id)
-                        # Проверяем статус: member, administrator, creator - это подписан
                         if member.status not in ["member", "administrator", "creator"]:
-                            # Пользователь не подписан на этот канал
                             missing_channels.append(channel_id)
                     except TelegramAPIError:
-                        # Если не удалось проверить - считаем что не подписан
                         missing_channels.append(channel_id)
-                
-                # Если есть каналы, на которые не подписан - не одобряем
+
                 if missing_channels:
                     return False, missing_channels
-                
-                # Все проверки пройдены - одобряем
+
                 return True, []
                 
             except Exception:
-                return False, required_channels  # Возвращаем все каналы как недоступные
-
-        # Если нет требований к подпискам, но режим CRITERIA - требуется капча
+                return False, required_channels
         return False, []
 
     # ========================================================================
@@ -207,12 +198,9 @@ class BotService:
 
         if bot.status != BotStatus.ACTIVE:
             raise ValueError("Bot is not active")
-
-        # Используем мастер-бота для отправки сообщений
         telegram_bot = self.get_master_bot()
 
         try:
-            # Формируем inline keyboard если есть
             reply_markup = None
             if data.buttons:
                 buttons = []
@@ -229,7 +217,6 @@ class BotService:
                     buttons.append(button_row)
                 reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
 
-            # Отправляем сообщение
             if data.media_url and data.media_type:
                 if data.media_type == MessageType.PHOTO:
                     message = await telegram_bot.send_photo(

@@ -34,7 +34,6 @@ class JoinRequestHandler:
                 user_id = join_request.from_user.id
                 chat_id = join_request.chat.id
 
-                # Триггер JOIN_REQUEST_CREATED
                 await self.trigger_service.fire_event(
                     bot_id=self.bot_model.id,
                     trigger_type=TriggerType.JOIN_REQUEST_CREATED,
@@ -49,14 +48,12 @@ class JoinRequestHandler:
                     }
                 )
 
-                # Проверка критериев одобрения
                 should_approve, missing = await self.bot_service.check_approval_criteria(
                     self.bot_model,
                     user_id
                 )
 
                 if not should_approve and missing:
-                    # Сохраняем ожидание
                     pending = PendingJoinApproval(
                         bot_id=self.bot_model.id,
                         user_id=user_id,
@@ -66,18 +63,15 @@ class JoinRequestHandler:
                     self.db.add(pending)
                     await self.db.commit()
 
-                # MANUAL режим - только капча (приветствие через триггеры)
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
                     await self.handle_manual_mode(telegram_bot, join_request)
                     return
 
-                # CRITERIA режим - отправка требований подписки
                 elif self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA and not should_approve:
                     if missing:
                         await self.send_subscription_requirements(telegram_bot, user_id, missing)
                     return
 
-                # AUTO режим или CRITERIA с выполненными условиями - одобряем
                 if should_approve:
                     approved = await self.approve_join_request(chat_id, user_id)
                     if approved:
@@ -101,7 +95,7 @@ class JoinRequestHandler:
         """Обработка MANUAL режима - отправка капчи в ЛС."""
         captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
         
-        if captcha_mode not in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+        if captcha_mode not in (CaptchaMode.AFTER_JOIN, CaptchaMode.BOTH):
             return
 
         try:
@@ -116,7 +110,6 @@ class JoinRequestHandler:
                 captcha_answer=answer,
             )
 
-            # Генерируем варианты
             correct = int(answer)
             options = {correct}
             while len(options) < 3:

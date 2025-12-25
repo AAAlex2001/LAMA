@@ -110,7 +110,6 @@ class MessageHandler:
 
     async def handle_new_members(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка добавления новых участников - триггер MEMBER_JOINED"""
-        # Получаем ID бота для проверки
         try:
             bot_info = await telegram_bot.get_me()
             bot_id = bot_info.id
@@ -118,22 +117,16 @@ class MessageHandler:
             bot_id = None
         
         for new_member in message.new_chat_members:
-            # Пропускаем, если новый участник - это сам бот
             if bot_id and new_member.id == bot_id:
                 logger.info(f"Skipping captcha for bot itself (id={bot_id})")
                 continue
-            
-            # Проверяем режим капчи
+
             captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-            
-            # Если капча после вступления - отправляем капчу В ГРУППЕ
             if captcha_mode in (CaptchaMode.AFTER_JOIN, CaptchaMode.BOTH):
                 await self.send_group_captcha(telegram_bot, message, new_member)
             else:
-                # Иначе отправляем обычное приветствие
                 await self.welcome_handler.handle_new_member(message, new_member)
-            
-            # Триггер MEMBER_JOINED для дополнительной логики
+
             await self.trigger_service.fire_event(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.MEMBER_JOINED,
@@ -151,14 +144,10 @@ class MessageHandler:
     async def send_group_captcha(self, telegram_bot: Bot, message: Message, new_member) -> None:
         """Отправить капчу в группе после вступления"""
         import random
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
         
         try:
-            # Генерируем капчу
             captcha_service = CaptchaService(self.db)
             question, answer = captcha_service.generate_captcha()
-            
-            # Сохраняем pending approval
             pending = await captcha_service.create_pending_approval(
                 bot_id=self.bot_model.id,
                 user_id=new_member.id,
@@ -180,27 +169,23 @@ class MessageHandler:
                 )
             except Exception:
                 pass
-            
-            # Генерируем варианты ответов
+
             correct = int(answer)
             options = {correct}
             while len(options) < 3:
                 options.add(correct + random.randint(-5, 5))
-                if len(options) >= 10:  # Защита от бесконечного цикла
+                if len(options) >= 10:
                     break
             
             options_list = list(options)[:3]
             random.shuffle(options_list)
-            
-            # Кнопки для ответа
+
             buttons = [[
                 InlineKeyboardButton(text=str(opt), callback_data=f"group_captcha_{pending.id}_{opt}")
             ] for opt in options_list]
-            
-            # Получаем таймаут
+
             timeout_seconds = getattr(self.bot_model, "captcha_timeout_seconds", 10)
-            
-            # Отправляем капчу в группу
+
             captcha_text = (
                 f"⚠️ {new_member.first_name}, реши капчу за {timeout_seconds} секунд, иначе будешь удалён!\n\n"
                 f"{question}"
@@ -211,8 +196,7 @@ class MessageHandler:
                 text=captcha_text,
                 reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
             )
-            
-            # Запускаем таймер на кик
+
             asyncio.create_task(
                 self.captcha_timeout_kick(
                     telegram_bot, 
@@ -290,14 +274,12 @@ class MessageHandler:
         auto_delete_service: ChannelAutoDeleteService
     ) -> None:
         """Обработка текстового сообщения"""
-        # Проверка на команду
         if text_content.startswith("/"):
             await self.process_command(
                 telegram_bot, message, text_content, chat_type, auto_delete_service
             )
             return
 
-        # Триггер USER_MESSAGE (для любых текстовых сообщений)
         user_id = message.from_user.id if message.from_user else 0
         await self.trigger_service.fire_event(
             bot_id=self.bot_model.id,
@@ -309,7 +291,6 @@ class MessageHandler:
             context={"text": text_content[:100]}
         )
 
-        # Проверка автоответов
         auto_reply_service = AutoReplyService(self.db)
         auto_reply = await auto_reply_service.find_auto_reply_by_text(
             self.bot_model.id,
@@ -331,8 +312,6 @@ class MessageHandler:
         """Обработка команды"""
         command_text = text_content.split()[0]
         user_id = message.from_user.id if message.from_user else 0
-
-        # Команда /start для авторизации в веб-интерфейсе
         if command_text.lower() == "/start":
             from backend.services.auth.auth_service import AuthService
             from backend.config import TELEGRAM_BOT_TOKEN
@@ -381,7 +360,6 @@ class MessageHandler:
             await auto_delete_service.delete_if_command_message(telegram_bot, message)
             return
 
-        # Модерационные команды
         if command_text.lower() in MODERATION_COMMANDS:
             moderation_trigger_service = ModerationTriggerService(self.db)
             handled = await moderation_trigger_service.handle_moderation_command(
@@ -394,7 +372,6 @@ class MessageHandler:
                 await auto_delete_service.delete_if_command_message(telegram_bot, message)
             return
 
-        # Пользовательские команды
         command_service = BotCommandService(self.db)
         command = await command_service.find_command_by_text(
             self.bot_model.id,
@@ -403,7 +380,6 @@ class MessageHandler:
         )
 
         if command:
-            # Триггер COMMAND_CALLED
             await self.trigger_service.fire_event(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.COMMAND_CALLED,

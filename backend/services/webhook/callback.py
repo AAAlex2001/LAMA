@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from aiogram.types import CallbackQuery, ChatPermissions
+from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,8 @@ from backend.services.bot import CaptchaService
 from backend.services.bot.triggers import TriggerService
 from backend.models.bots import Bot as BotModel, PendingApproval, TriggerType
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
+
+from backend.services.webhook.welcome import WelcomeHandler
 
 logger = logging.getLogger(__name__)
 
@@ -207,8 +209,6 @@ class CallbackHandler:
 
     async def send_welcome(self, callback_query: CallbackQuery) -> None:
         """Отправить приветственное сообщение после прохождения капчи."""
-        from backend.services.webhook.welcome import WelcomeHandler
-        from aiogram.types import Message
 
         welcome_handler = WelcomeHandler(self.db, self.bot_model)
         fake_message = Message(

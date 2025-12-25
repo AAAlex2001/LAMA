@@ -60,7 +60,6 @@ class WelcomeHandler:
                 # 2. Если не указан (None), то отправляем в тот топик, куда добавили участника
                 message_thread_id = self.bot_model.welcome_message_thread_id
                 if message_thread_id is None:
-                    # Автоопределение: берем топик из входящего сообщения
                     message_thread_id = getattr(message, "message_thread_id", None)
                 
                 sent_message = await self.welcome_service.handle_member_joined_welcome(
