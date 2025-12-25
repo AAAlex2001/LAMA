@@ -53,18 +53,8 @@ class BotAuthService:
 
         return login_code
 
-    async def verify_bot_login_code(
-        self,
-        code: str,
-        access_token: str,
-        refresh_token: str,
-        user_agent: Optional[str] = None,
-        ip_address: Optional[str] = None
-    ) -> User:
-        """
-        Проверить код авторизации и создать сессию
-        Возвращает: User
-        """
+    async def get_or_create_user_from_code(self, code: str) -> User:
+        """Получить или создать пользователя по коду авторизации"""
         query = select(BotLoginCode).where(
             BotLoginCode.code == code,
             BotLoginCode.is_used == False
@@ -111,6 +101,36 @@ class BotAuthService:
                 auth_date=datetime.now(timezone.utc)
             )
             self.db.add(telegram_account)
+            await self.db.flush()
+
+        # Загружаем User с telegram_account для Pydantic
+        query = select(User).options(
+            selectinload(User.telegram_account)
+        ).where(User.id == user.id)
+        result = await self.db.execute(query)
+        user = result.scalar_one()
+
+        return user
+
+    async def create_session_from_code(
+        self,
+        code: str,
+        user: User,
+        access_token: str,
+        refresh_token: str,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> None:
+        """Создать сессию и пометить код как использованный"""
+        query = select(BotLoginCode).where(
+            BotLoginCode.code == code,
+            BotLoginCode.is_used == False
+        )
+        result = await self.db.execute(query)
+        login_code = result.scalar_one_or_none()
+
+        if not login_code:
+            raise ValueError("Invalid or expired login code")
 
         expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
@@ -129,10 +149,3 @@ class BotAuthService:
 
         await self.db.commit()
 
-        query = select(User).options(
-            selectinload(User.telegram_account)
-        ).where(User.id == user.id)
-        result = await self.db.execute(query)
-        user = result.scalar_one()
-
-        return user

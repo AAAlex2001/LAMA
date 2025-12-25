@@ -131,15 +131,17 @@ class AuthService:
         Проверить код авторизации через бота
         Возвращает: (User, access_token, refresh_token)
         """
-        access_token = self.create_access_token(0)
-        refresh_token = self.create_refresh_token(0)
+        # Сначала получаем/создаём пользователя
+        user = await self.bot_auth.get_or_create_user_from_code(code)
         
-        user = await self.bot_auth.verify_bot_login_code(
-            code, access_token, refresh_token, user_agent, ip_address
-        )
-        
+        # Создаём токены с правильным user_id
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
+        
+        # Сохраняем сессию
+        await self.bot_auth.create_session_from_code(
+            code, user, access_token, refresh_token, user_agent, ip_address
+        )
         
         return user, access_token, refresh_token
 
