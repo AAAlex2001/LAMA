@@ -348,14 +348,15 @@ class MessageHandler:
         # Команда /login для авторизации в веб-интерфейсе
         if command_text.lower() == "/login":
             from backend.services.auth.auth_service import AuthService
-            from backend.config import get_settings
+            from backend.config import TELEGRAM_BOT_TOKEN
+            import os
             
-            settings = get_settings()
+            jwt_secret = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+            
             auth_service = AuthService(
                 self.db,
-                settings.telegram_bot_token,
-                settings.jwt_secret,
-                settings.jwt_algorithm
+                TELEGRAM_BOT_TOKEN,
+                jwt_secret
             )
             
             try:
