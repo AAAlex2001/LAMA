@@ -26,9 +26,9 @@ export default function Header({ locale: localeProp }: Props) {
   const langRef = useRef<HTMLDivElement>(null);
 
   const localeLabels = {
-    ru: { flag: '🇷🇺', name: 'Русский' },
-    sr: { flag: '🇷🇸', name: 'Сербский' },
-    en: { flag: '🇬🇧', name: 'Английский' },
+    ru: { code: 'RU', name: 'RU Русский' },
+    sr: { code: 'SR', name: 'SR Srpski' },
+    en: { code: 'EN', name: 'EN English' },
   };
 
   const handleLanguageChange = (newLocale: string) => {
@@ -100,17 +100,16 @@ export default function Header({ locale: localeProp }: Props) {
                 className={styles.language}
                 onClick={() => setIsLangOpen(!isLangOpen)}
               >
-                {localeLabels[locale].flag}
+                {localeLabels[locale].code}
               </button>
               {isLangOpen && (
                 <div className={styles.languageDropdown}>
-                  {Object.entries(localeLabels).map(([code, { flag, name }]) => (
+                  {Object.entries(localeLabels).map(([code, { name }]) => (
                     <button
                       key={code}
                       className={styles.languageOption}
                       onClick={() => handleLanguageChange(code)}
                     >
-                      <span className={styles.languageFlag}>{flag}</span>
                       <span className={styles.languageName}>{name}</span>
                     </button>
                   ))}
