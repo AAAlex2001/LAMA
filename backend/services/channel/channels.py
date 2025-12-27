@@ -1,6 +1,5 @@
 import asyncio
 import aiohttp
-import os
 from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any
 from sqlalchemy import select, func, and_
@@ -20,11 +19,6 @@ from backend.schemas.channels import (
 from backend.models.channels import ChannelType
 from backend.services.channel.CRUD_channels import CRUDChannelService
 from backend.config import get_bot
-
-
-# Раньше здесь использовался модульный семафор `TELEGRAM_SEMAPHORE`,
-# теперь отправки контролируются централизованным `RateLimitedBot`.
-
 
 class ChannelService:
     def __init__(self, db: AsyncSession):

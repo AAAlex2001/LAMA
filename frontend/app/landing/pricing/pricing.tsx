@@ -22,6 +22,7 @@ export default function Pricing({ locale }: Props) {
     features: string[];
     isHighlighted: boolean;
   }>>([]);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/pricing?locale=${locale}`)
@@ -154,10 +155,16 @@ export default function Pricing({ locale }: Props) {
           >
             <img src="/hero_4.svg" alt="Pricing illustration" />
           </motion.div>
-          {plans.map((plan, index) => (
+          {plans.map((plan, index) => {
+            const isBaseCard = index === 1;
+            const shouldShowHover = hoveredIndex === null ? isBaseCard : hoveredIndex === index;
+            
+            return (
             <motion.div 
               key={index} 
-              className={styles.card}
+              className={`${styles.card} ${shouldShowHover ? styles.cardHovered : ''}`}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               transition={{ duration: 0.6, ease: "easeOut", delay: index * 0.3 }}
@@ -189,7 +196,7 @@ export default function Pricing({ locale }: Props) {
                 <Button text="Выбрать план" href="/login" fullWidth active={index === 1}/>
               </div>
             </motion.div>
-          ))}
+          )})}
         </div>
       </div>
     </section>
