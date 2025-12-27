@@ -2,7 +2,7 @@
   padding: 160px 20px;
   background-color: #ffffff;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .container {
@@ -142,7 +142,6 @@
 
   .users {
   padding: 200px 20px;
-  overflow: hidden;
 }
 
   .ringMobile {
@@ -215,7 +214,6 @@
 
   .users {
   padding: 260px 20px;
-  overflow: hidden;
 }
 
   .ringTablet {
