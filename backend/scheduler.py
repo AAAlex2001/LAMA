@@ -9,6 +9,7 @@ import pytz
 from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus
 from backend.services.publications import PublicationService
 from backend.services.bot.triggers import TriggerService
+from backend.services.bot.recurring_messages import RecurringMessageService
 from backend.tasks.channel_backup import process_instant_backups
 from backend.tasks.bot_polling import process_bot_updates
 from backend.database import AsyncSessionLocal
@@ -104,6 +105,24 @@ async def process_scheduled_triggers():
             logger.error(f"Failed to process scheduled triggers: {e}")
 
 
+async def process_recurring_messages():
+    """Обработка повторяющихся сообщений"""
+    async with AsyncSessionLocal() as db:
+        service = RecurringMessageService(db)
+        telegram_bot = get_bot()
+        
+        try:
+            pending = await service.get_pending(limit=50)
+            
+            for msg in pending:
+                try:
+                    await service.send_message(msg, telegram_bot)
+                except Exception as e:
+                    logger.error(f"Failed to send recurring message {msg.id}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to process recurring messages: {e}")
+
+
 def start_scheduler():
     scheduler.add_job(
         process_scheduled_publications,
@@ -142,6 +161,14 @@ def start_scheduler():
         trigger=IntervalTrigger(seconds=30),
         id="process_scheduled_triggers",
         name="Process scheduled trigger tasks every 30 seconds",
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        process_recurring_messages,
+        trigger=IntervalTrigger(minutes=1),
+        id="process_recurring_messages",
+        name="Process recurring messages every 1 minute",
         replace_existing=True
     )
 

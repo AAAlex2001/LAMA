@@ -331,3 +331,65 @@ class ScheduledTriggerTask(Base):
     # Relationships
     trigger = relationship("Trigger", foreign_keys=[trigger_id])
 
+
+class RecurringMessageInterval(str, enum.Enum):
+    """Интервал повторения"""
+    HOURLY = "HOURLY"
+    DAILY = "DAILY"
+    WEEKLY = "WEEKLY"
+    MONTHLY = "MONTHLY"
+    CUSTOM = "CUSTOM"
+
+
+class RecurringMessage(Base):
+    """Повторяющиеся сообщения для ботов"""
+    __tablename__ = "recurring_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    bot_id = Column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    name = Column(String(255), nullable=False)
+    
+    text_content = Column(Text, nullable=True)
+    media_url = Column(String(512), nullable=True)
+    media_type = Column(SQLEnum(MessageType), nullable=True)
+    inline_buttons = Column(JSON, nullable=True)
+    
+    target_chats = Column(JSON, nullable=False)
+    
+    interval_type = Column(SQLEnum(RecurringMessageInterval), nullable=False)
+    interval_value = Column(Integer, nullable=True)
+    
+    time_points = Column(JSON, nullable=False)
+    timezone = Column(String(50), default='UTC', nullable=False)
+    
+    start_date = Column(DateTime(timezone=True), nullable=True)
+    end_date = Column(DateTime(timezone=True), nullable=True)
+    weekdays = Column(JSON, nullable=True)
+    
+    last_sent_at = Column(DateTime(timezone=True), nullable=True)
+    next_send_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    
+    bot = relationship("Bot", foreign_keys=[bot_id])
+
+
+class RecurringMessageLog(Base):
+    """Лог отправок повторяющихся сообщений"""
+    __tablename__ = "recurring_message_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    recurring_message_id = Column(Integer, ForeignKey("recurring_messages.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    chat_id = Column(BigInteger, nullable=False)
+    telegram_message_id = Column(Integer, nullable=True)
+    
+    success = Column(Boolean, nullable=False)
+    error_message = Column(Text, nullable=True)
+    
+    sent_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
