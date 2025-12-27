@@ -10,26 +10,27 @@
 .planeIcon {
     display: block;
     position: absolute;
-    width: 150px;
-    height: 150px;
+    width: 110px;
+    height: 110px;
     z-index: 1;
-    top: 20px;
-    left: calc(50% + 150px);
+    top: 50px;
+    left: calc(50% + 210px);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      transform: scaleX(-1);
+      transform: scaleX(-1) translateX(120px);
     }
   }
 
   .svg768 {
     display: block;
     width: 100%;
-    max-width: 665px;
+    min-width: 700px;
+    max-width: 700px;
     height: auto;
-    transform: translateX(-100px);
+    transform: scaleX(0.7) translateX(-140px);
   }
 
 .svg1440 {
