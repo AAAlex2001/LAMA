@@ -177,6 +177,11 @@ class ChannelGroup(Base):
         uselist=False,
         cascade="all, delete-orphan"
     )
+    invite_links = relationship(
+        "ChatInviteLink",
+        back_populates="channel",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_channel_groups_backup_mode", "backup_mode"),
@@ -325,5 +330,41 @@ class ChannelAutoDeleteSettings(Base):
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 
     channel = relationship("ChannelGroup", back_populates="auto_delete_settings")
+
+
+class ChatInviteLink(Base):
+    """Пригласительные ссылки для каналов/групп"""
+    __tablename__ = "chat_invite_links"
+
+    id = Column(Integer, primary_key=True, index=True)
+    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Данные ссылки из Telegram API
+    invite_link = Column(String(500), nullable=False, unique=True)
+    name = Column(String(255), nullable=True)
+    creator_id = Column(BigInteger, nullable=True)
+    
+    # Настройки ссылки
+    creates_join_request = Column(Boolean, default=False, nullable=False)
+    is_primary = Column(Boolean, default=False, nullable=False)
+    is_revoked = Column(Boolean, default=False, nullable=False)
+    
+    # Лимиты
+    expire_date = Column(DateTime(timezone=True), nullable=True)
+    member_limit = Column(Integer, nullable=True)
+    
+    # Метрики (обновляются при синхронизации)
+    pending_join_request_count = Column(Integer, default=0, nullable=False)
+    member_count = Column(Integer, default=0, nullable=False)
+    
+    # Для подписных ссылок
+    subscription_period = Column(Integer, nullable=True)
+    subscription_price = Column(Integer, nullable=True)
+    
+    # Метаданные
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    channel = relationship("ChannelGroup", back_populates="invite_links")
 
 

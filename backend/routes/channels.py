@@ -9,6 +9,7 @@ from backend.services.channel import (
     FloodService,
     ChannelAutoDeleteService,
 )
+from backend.services.channel.invite_links import InviteLinkService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.schemas.channels import (
@@ -23,6 +24,7 @@ from backend.schemas.channels import (
     FloodSettingsUpdate, FloodSettingsResponse,
     ChannelAutoDeleteSettingsResponse,
     ChannelAutoDeleteSettingsUpdate,
+    InviteLinkCreate, InviteLinkUpdate, InviteLinkResponse, InviteLinkListResponse,
 )
 
 
@@ -43,6 +45,10 @@ async def get_flood_service(db: AsyncSession = Depends(get_db)):
 
 async def get_auto_delete_service(db: AsyncSession = Depends(get_db)):
     return ChannelAutoDeleteService(db)
+
+
+async def get_invite_link_service(db: AsyncSession = Depends(get_db)):
+    return InviteLinkService(db)
 
 
 # ============ CRUD Operations ============
@@ -729,3 +735,133 @@ async def delete_channel(
     if not success:
         raise HTTPException(status_code=404, detail="Channel not found")
     return {"success": True, "message": "Channel deleted successfully"}
+
+
+# ============ Invite Links ============
+
+@router.get("/{channel_id}/invite-links", response_model=InviteLinkListResponse)
+async def list_invite_links(
+    channel_id: int,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить список invite-ссылок канала"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    links = await service.list_links(channel_id)
+    return InviteLinkListResponse(items=links, total=len(links))
+
+
+@router.post("/{channel_id}/invite-links", response_model=InviteLinkResponse, status_code=201)
+async def create_invite_link(
+    channel_id: int,
+    data: InviteLinkCreate,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Создать новую invite-ссылку"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    link = await service.create_link(channel, data, current_user.id)
+    if not link:
+        raise HTTPException(status_code=400, detail="Failed to create invite link")
+    return link
+
+
+@router.get("/{channel_id}/invite-links/{link_id}", response_model=InviteLinkResponse)
+async def get_invite_link(
+    channel_id: int,
+    link_id: int,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить информацию об invite-ссылке"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    link = await service.get_link(link_id, channel_id)
+    if not link:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    return link
+
+
+@router.patch("/{channel_id}/invite-links/{link_id}", response_model=InviteLinkResponse)
+async def update_invite_link(
+    channel_id: int,
+    link_id: int,
+    data: InviteLinkUpdate,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Обновить invite-ссылку"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    link = await service.update_link(channel, link_id, data)
+    if not link:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    return link
+
+
+@router.post("/{channel_id}/invite-links/{link_id}/revoke", response_model=InviteLinkResponse)
+async def revoke_invite_link(
+    channel_id: int,
+    link_id: int,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Отозвать invite-ссылку"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    link = await service.revoke_link(channel, link_id)
+    if not link:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    return link
+
+
+@router.delete("/{channel_id}/invite-links/{link_id}")
+async def delete_invite_link(
+    channel_id: int,
+    link_id: int,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Удалить invite-ссылку из базы (без отзыва в Telegram)"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    success = await service.delete_link(link_id, channel_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Invite link not found")
+    return {"success": True, "message": "Invite link deleted"}
+
+
+@router.post("/{channel_id}/invite-links/sync", response_model=InviteLinkListResponse)
+async def sync_invite_links(
+    channel_id: int,
+    service: InviteLinkService = Depends(get_invite_link_service),
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Синхронизировать invite-ссылки с Telegram"""
+    channel = await channel_service.get_channel(channel_id, owner_id=current_user.id)
+    if not channel:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    
+    links = await service.sync_links(channel)
+    return InviteLinkListResponse(items=links, total=len(links))
