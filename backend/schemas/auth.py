@@ -41,8 +41,12 @@ class RefreshTokenRequest(BaseModel):
 
 
 class BotLoginRequest(BaseModel):
-    """Запрос на авторизацию через код из бота"""
-    code: str = Field(..., description="Временный код из команды /login")
+    """Запрос на авторизацию через бота по telegram_id"""
+    telegram_id: int = Field(..., description="Telegram user ID")
+    username: Optional[str] = Field(None, description="Username пользователя")
+    first_name: Optional[str] = Field(None, description="Имя пользователя")
+    last_name: Optional[str] = Field(None, description="Фамилия пользователя")
+    photo_url: Optional[str] = Field(None, description="URL фото профиля")
 
 
 # ============================================================================

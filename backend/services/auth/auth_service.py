@@ -107,40 +107,32 @@ class AuthService:
     # Авторизация через бота
     # ========================================================================
 
-    async def create_bot_login_code(
+    async def authenticate_bot_user_direct(
         self,
         telegram_id: int,
         username: Optional[str] = None,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
         photo_url: Optional[str] = None,
-        expires_minutes: int = 5
-    ) -> BotLoginCode:
-        """Создать временный код для авторизации через бота"""
-        return await self.bot_auth.create_bot_login_code(
-            telegram_id, username, first_name, last_name, photo_url, expires_minutes
-        )
-
-    async def verify_bot_login_code(
-        self,
-        code: str,
         user_agent: Optional[str] = None,
         ip_address: Optional[str] = None
     ) -> Tuple[User, str, str]:
         """
-        Проверить код авторизации через бота
+        Авторизация через telegram_id
         Возвращает: (User, access_token, refresh_token)
         """
-        # Сначала получаем/создаём пользователя
-        user = await self.bot_auth.get_or_create_user_from_code(code)
+        # Получаем или создаём пользователя
+        user = await self.bot_auth.get_or_create_user_by_telegram_id(
+            telegram_id, username, first_name, last_name, photo_url
+        )
         
-        # Создаём токены с правильным user_id
+        # Создаём токены
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
         
         # Сохраняем сессию
-        await self.bot_auth.create_session_from_code(
-            code, user, access_token, refresh_token, user_agent, ip_address
+        await self.bot_auth.create_direct_session(
+            user, access_token, refresh_token, user_agent, ip_address
         )
         
         return user, access_token, refresh_token

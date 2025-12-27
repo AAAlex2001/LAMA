@@ -314,49 +314,40 @@ class MessageHandler:
         command_text = text_content.split()[0]
         user_id = message.from_user.id if message.from_user else 0
         if command_text.lower() == "/start":
-            from backend.services.auth.auth_service import AuthService
             from backend.config import TELEGRAM_BOT_TOKEN
+            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
             import os
             
-            jwt_secret = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+            # Получаем URL фронтенда
+            frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
             
-            auth_service = AuthService(
-                self.db,
-                TELEGRAM_BOT_TOKEN,
-                jwt_secret
+            # Создаём инлайн кнопку с параметрами пользователя
+            login_url = f"{frontend_url}/login?tg_id={user_id}"
+            
+            if message.from_user and message.from_user.username:
+                login_url += f"&username={message.from_user.username}"
+            if message.from_user and message.from_user.first_name:
+                login_url += f"&first_name={message.from_user.first_name}"
+            if message.from_user and message.from_user.last_name:
+                login_url += f"&last_name={message.from_user.last_name}"
+            
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🔐 Войти в Lama Planner", url=login_url)]
+            ])
+            
+            first_name = message.from_user.first_name if message.from_user else "пользователь"
+            response_text = (
+                f"👋 <b>Привет, {first_name}!</b>\n\n"
+                f"Для того, чтобы войти в аккаунт, нажмите на кнопку ниже:"
             )
             
-            try:
-                login_code = await auth_service.create_bot_login_code(
-                    telegram_id=user_id,
-                    username=message.from_user.username if message.from_user else None,
-                    first_name=message.from_user.first_name if message.from_user else None,
-                    last_name=message.from_user.last_name if message.from_user else None,
-                    photo_url=None,
-                    expires_minutes=5
-                )
-                
-                response_text = (
-                    f"🔐 <b>Код для входа на сайт:</b>\n\n"
-                    f"<code>{login_code.code}</code>\n\n"
-                    f"Введите этот код на странице авторизации.\n"
-                    f"⏱ Код действителен 5 минут."
-                )
-                
-                await telegram_bot.send_message(
-                    chat_id=message.chat.id,
-                    text=response_text,
-                    parse_mode="HTML",
-                    reply_to_message_id=message.message_id
-                )
-                
-            except Exception as e:
-                logger.error(f"Login code generation failed: {e}", exc_info=True)
-                await telegram_bot.send_message(
-                    chat_id=message.chat.id,
-                    text="❌ Ошибка при создании кода. Попробуйте позже.",
-                    reply_to_message_id=message.message_id
-                )
+            await telegram_bot.send_message(
+                chat_id=message.chat.id,
+                text=response_text,
+                parse_mode="HTML",
+                reply_markup=keyboard,
+                reply_to_message_id=message.message_id
+            )
             
             await auto_delete_service.delete_if_command_message(telegram_bot, message)
             return

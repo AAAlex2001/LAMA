@@ -23,6 +23,85 @@ class BotAuthService:
         self.db = db
         self.access_token_expire_minutes = access_token_expire_minutes
 
+    async def get_or_create_user_by_telegram_id(
+        self,
+        telegram_id: int,
+        username: Optional[str] = None,
+        first_name: Optional[str] = None,
+        last_name: Optional[str] = None,
+        photo_url: Optional[str] = None
+    ) -> User:
+        """Получить или создать пользователя по telegram_id"""
+        query = select(TelegramAccount).options(
+            selectinload(TelegramAccount.user)
+        ).where(TelegramAccount.telegram_id == telegram_id)
+        result = await self.db.execute(query)
+        telegram_account = result.scalar_one_or_none()
+
+        if telegram_account:
+            # Обновляем данные пользователя
+            telegram_account.username = username
+            telegram_account.first_name = first_name
+            telegram_account.last_name = last_name
+            telegram_account.photo_url = photo_url
+            telegram_account.auth_date = datetime.now(timezone.utc)
+            telegram_account.updated_at = datetime.now(timezone.utc)
+
+            user = telegram_account.user
+        else:
+            # Создаём нового пользователя
+            user = User(
+                role=UserRole.USER,
+                is_active=True
+            )
+            self.db.add(user)
+            await self.db.flush()
+
+            telegram_account = TelegramAccount(
+                user_id=user.id,
+                telegram_id=telegram_id,
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                photo_url=photo_url,
+                auth_date=datetime.now(timezone.utc)
+            )
+            self.db.add(telegram_account)
+            await self.db.flush()
+
+        # Загружаем User с telegram_account для Pydantic
+        query = select(User).options(
+            selectinload(User.telegram_account)
+        ).where(User.id == user.id)
+        result = await self.db.execute(query)
+        user = result.scalar_one()
+
+        await self.db.commit()
+
+        return user
+
+    async def create_direct_session(
+        self,
+        user: User,
+        access_token: str,
+        refresh_token: str,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> None:
+        """Создать сессию для прямой авторизации"""
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        session = UserSession(
+            user_id=user.id,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            expires_at=expires_at,
+            is_active=True,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        self.db.add(session)
+        await self.db.commit()
+
     async def create_bot_login_code(
         self,
         telegram_id: int,

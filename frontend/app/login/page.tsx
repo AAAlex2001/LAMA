@@ -25,15 +25,89 @@ export default function LoginPage() {
   const authEndpoint = `${API_BASE}/auth/telegram`;
   const botAuthEndpoint = `${API_BASE}/auth/bot-login`;
 
-  const [authMode, setAuthMode] = useState<"widget" | "bot">("widget");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
     "idle"
   );
   const [message, setMessage] = useState(
     "Нажмите кнопку ниже, чтобы авторизоваться через Telegram."
   );
-  const [botCode, setBotCode] = useState("");
   const [debugPayload, setDebugPayload] = useState<string | null>(null);
+
+  // Проверяем URL параметры при загрузке
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tgId = params.get("tg_id");
+    
+    if (tgId) {
+      handleBotAuthFromUrl({
+        telegram_id: parseInt(tgId),
+        username: params.get("username") || undefined,
+        first_name: params.get("first_name") || undefined,
+        last_name: params.get("last_name") || undefined,
+      });
+    }
+  }, []);
+
+  const handleBotAuthFromUrl = async (data: {
+    telegram_id: number;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+  }) => {
+    setStatus("loading");
+    setMessage("Авторизация через бота...");
+
+    try {
+      const response = await fetch(botAuthEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Не удалось авторизоваться";
+
+        try {
+          const errorJson = await response.json();
+          errorMessage = errorJson.detail ?? errorMessage;
+        } catch {
+          // ignore parsing errors
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const responseData = await response.json();
+
+      if (responseData?.access_token) {
+        localStorage.setItem("lamaplanner_access_token", responseData.access_token);
+      }
+
+      if (responseData?.refresh_token) {
+        localStorage.setItem("lamaplanner_refresh_token", responseData.refresh_token);
+      }
+
+      setStatus("success");
+
+      const displayName =
+        responseData?.user?.telegram_account?.first_name ||
+        responseData?.user?.telegram_account?.username ||
+        "пользователь";
+
+      setMessage(`Готово! Привет, ${displayName}. Можно переходить в сервис.`);
+      
+      // Очищаем URL от параметров
+      window.history.replaceState({}, document.title, "/login");
+    } catch (error) {
+      setStatus("error");
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "Произошла неизвестная ошибка авторизации."
+      );
+    }
+  };
 
   const handleTelegramAuth = useCallback(
     async (user: TelegramWidgetUser) => {
@@ -92,69 +166,6 @@ export default function LoginPage() {
     [authEndpoint]
   );
 
-  const handleBotAuth = useCallback(
-    async (code: string) => {
-      if (!code.trim()) {
-        setStatus("error");
-        setMessage("Введите код из бота");
-        return;
-      }
-
-      setStatus("loading");
-      setMessage("Проверяем код...");
-
-      try {
-        const response = await fetch(botAuthEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code: code.trim() }),
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          let errorMessage = "Не удалось авторизоваться";
-
-          try {
-            const errorJson = await response.json();
-            errorMessage = errorJson.detail ?? errorMessage;
-          } catch {
-            // ignore parsing errors
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        const data = await response.json();
-
-        if (data?.access_token) {
-          localStorage.setItem("lamaplanner_access_token", data.access_token);
-        }
-
-        if (data?.refresh_token) {
-          localStorage.setItem("lamaplanner_refresh_token", data.refresh_token);
-        }
-
-        setStatus("success");
-
-        const displayName =
-          data?.user?.telegram_account?.first_name ||
-          data?.user?.telegram_account?.username ||
-          "пользователь";
-
-        setMessage(`Готово! Привет, ${displayName}. Можно переходить в сервис.`);
-        setBotCode("");
-      } catch (error) {
-        setStatus("error");
-        setMessage(
-          error instanceof Error
-            ? error.message
-            : "Произошла неизвестная ошибка авторизации."
-        );
-      }
-    },
-    [botAuthEndpoint]
-  );
-
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -211,7 +222,7 @@ export default function LoginPage() {
           <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-6 py-8 text-center text-slate-200">
             <div ref={widgetContainerRef} className="flex justify-center" />
 
-            {authMode === "widget" && status === "loading" && (
+            {status === "loading" && (
               <p className="mt-4 text-sm text-slate-400">
                 Ожидание подтверждения…
               </p>
@@ -222,7 +233,7 @@ export default function LoginPage() {
             Авторизация с помощью бота Lama Planner
           </p>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-6 py-8 space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 px-6 py-8">
             <button
               onClick={() => window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`, "_blank")}
               className="w-full flex items-center justify-center gap-3 rounded-xl bg-blue-600 hover:bg-blue-700 px-6 py-3 text-white font-medium transition-colors"
@@ -234,30 +245,8 @@ export default function LoginPage() {
               >
                 <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18.717-.962 3.767-1.36 5.002-.169.524-.503.699-.826.716-.703.031-1.237-.465-1.918-.911-1.065-.7-1.668-1.135-2.702-1.817-1.195-.788-.42-1.221.261-1.929.179-.186 3.293-3.02 3.354-3.278.008-.032.015-.15-.056-.212-.07-.062-.174-.041-.248-.024-.106.024-1.793 1.139-5.062 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.892-.663 3.498-1.524 5.831-2.529 6.998-3.015 3.332-1.386 4.025-1.627 4.477-1.635.099-.001.321.023.465.141.121.099.154.232.17.326.015.094.034.308.019.475z"/>
               </svg>
-              Вход через Lama Planner Bot
+              Открыть бота для входа
             </button>
-
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={botCode}
-                onChange={(e) => setBotCode(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && botCode.trim()) {
-                    handleBotAuth(botCode);
-                  }
-                }}
-                placeholder="Введите код из бота"
-                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <button
-                onClick={() => handleBotAuth(botCode)}
-                disabled={!botCode.trim() || status === "loading"}
-                className="w-full rounded-lg bg-slate-700 hover:bg-slate-600 disabled:bg-slate-800 disabled:cursor-not-allowed px-4 py-3 text-white font-medium transition-colors"
-              >
-                {status === "loading" && authMode === "bot" ? "Проверка..." : "Войти"}
-              </button>
-            </div>
           </div>
 
           {status === "success" && (

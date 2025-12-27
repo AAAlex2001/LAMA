@@ -108,23 +108,27 @@ async def login_with_telegram(
 # ============================================================================
 
 @router.post("/bot-login", response_model=AuthResponse)
-async def login_with_bot_code(
+async def login_with_bot(
     login_data: BotLoginRequest,
     request: Request,
     service: AuthService = Depends(get_auth_service)
 ):
     """
-    Войти по коду из бота
+    Войти через бота по telegram_id
     
-    Принимает временный код из команды /login в боте.
+    Принимает telegram_id и данные пользователя из бота.
     Возвращает JWT токены для работы с API.
     """
     try:
         user_agent = request.headers.get("user-agent")
         ip_address = request.client.host if request.client else None
         
-        user, access_token, refresh_token = await service.verify_bot_login_code(
-            login_data.code,
+        user, access_token, refresh_token = await service.authenticate_bot_user_direct(
+            telegram_id=login_data.telegram_id,
+            username=login_data.username,
+            first_name=login_data.first_name,
+            last_name=login_data.last_name,
+            photo_url=login_data.photo_url,
             user_agent=user_agent,
             ip_address=ip_address
         )
