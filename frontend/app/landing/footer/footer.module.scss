@@ -77,8 +77,9 @@
 }
 
 .content {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 30px;
   margin-bottom: 60px;
 }
@@ -86,6 +87,7 @@
 .column {
   display: flex;
   flex-direction: column;
+  flex: 0 0 calc((100% - 30px)/2 );
 }
 
 .columnTitle {
@@ -168,6 +170,7 @@
   }
 
   .content {
+    display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 40px;
   }
