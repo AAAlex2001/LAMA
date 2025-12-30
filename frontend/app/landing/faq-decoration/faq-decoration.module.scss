@@ -5,7 +5,8 @@
   align-items: center;
   overflow: visible;
   position: relative;
-  padding-bottom: 50px;
+  padding-top: 30px;
+  padding-bottom: 150px;
 }
 
 .planeIcon {
@@ -14,33 +15,29 @@
     width: 60px;
     height: 60px;
     z-index: 1;
-    top: 50px;
-    left: calc(50% + 210px);
+    top: -20px;
+    left: calc(50% + 250px);
 
     img {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      transform: scaleX(-1) translateX(120px);
+      transform: scaleX(-1);
     }
   }
 
-  .svg768 {
-    display: block;
-    width: auto;
-    height: auto;
-    max-width: none;
-    transform: translateX(-140px);
-  }
 
 .svg1440 {
-  display: none;
-}
+    display: block;
+    position: absolute;
+    left: calc(53% - 70px);
+    transform: translateX(-80%);
+    width: auto;
+    height: auto;
+    max-width: 1000px;
+  }
 
 @media (min-width: 768px) {
-  .decoration {
-    margin-bottom: 120px;
-  }
   
   .planeIcon {
     display: block;
@@ -58,18 +55,6 @@
       transform: scaleX(-1);
     }
   }
-  
-  .svg768 {
-    display: block;
-    width: 100%;
-    max-width: 665px;
-    height: auto;
-    transform: translateX(-150px);
-  }
-  
-  .svg1440 {
-    display: none;
-  }
 }
 
 @media (min-width: 1440px) {
@@ -78,10 +63,6 @@
     justify-content: flex-start;
     padding: 100px;
   }
-  
-  .svg768 {
-    display: none;
-  }
 
   .planeIcon {
     width: 200px;
@@ -89,7 +70,7 @@
     top: 50px;
     left: calc(50% + 470px);
   }
-  
+
   .svg1440 {
     display: block;
     position: absolute;

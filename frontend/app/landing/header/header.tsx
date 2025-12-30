@@ -41,15 +41,16 @@ export default function Header({ locale: localeProp }: Props) {
 
     const handleScroll = () => {
       const currentY = window.scrollY;
-      const delta = currentY - lastScrollY.current;
 
       if (currentY < 10) {
         setIsVisible(true);
-      } else if (delta > 3) {
+      } else if (currentY > lastScrollY.current) {
+        // Скролл вниз - прячем хедер
         setIsVisible(false);
         setIsToolsOpen(false);
         setIsLangOpen(false);
-      } else if (delta < -3) {
+      } else if (currentY < lastScrollY.current) {
+        // Скролл вверх - показываем хедер
         setIsVisible(true);
       }
 

@@ -1,15 +1,18 @@
 .header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
   z-index: 1000;
   background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
   padding: 6px 20px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+  transition: transform 0.3s ease;
   will-change: transform;
 }
 
 .hidden {
-  transform: translateY(-120%);
+  transform: translateY(-100%);
 }
 
 .container {
