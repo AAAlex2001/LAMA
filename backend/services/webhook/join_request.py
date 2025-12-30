@@ -6,12 +6,14 @@ import random
 
 from aiogram.types import ChatJoinRequest, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.exceptions import TelegramAPIError
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.bot import BotService, CaptchaService
 from backend.services.bot.triggers import TriggerService
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType, ApprovalMode, CaptchaMode
+from backend.models.channels import ChatInviteLink
 from backend.services.webhook.base import get_bot_session
 
 logger = logging.getLogger(__name__)
@@ -33,6 +35,10 @@ class JoinRequestHandler:
             async with get_bot_session() as telegram_bot:
                 user_id = join_request.from_user.id
                 chat_id = join_request.chat.id
+
+                # Обновляем метрику invite link, если есть
+                if hasattr(join_request, 'invite_link') and join_request.invite_link:
+                    await self.update_invite_link_metrics(join_request.invite_link.invite_link)
 
                 await self.trigger_service.fire_event(
                     bot_id=self.bot_model.id,
@@ -166,6 +172,20 @@ class JoinRequestHandler:
 
         except TelegramAPIError as e:
             logger.warning(f"Subscription requirements send failed: {e}")
+
+    async def update_invite_link_metrics(self, invite_link_url: str) -> None:
+        """Обновить метрику pending_join_request_count для invite link"""
+        try:
+            stmt = (
+                update(ChatInviteLink)
+                .where(ChatInviteLink.invite_link == invite_link_url)
+                .values(pending_join_request_count=ChatInviteLink.pending_join_request_count + 1)
+            )
+            await self.db.execute(stmt)
+            await self.db.commit()
+            logger.info(f"Обновлена метрика для invite link: {invite_link_url}")
+        except Exception as e:
+            logger.warning(f"Не удалось обновить метрику invite link: {e}")
 
     async def approve_join_request(self, chat_id: int, user_id: int) -> bool:
         """Одобрить заявку на вступление"""
