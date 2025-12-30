@@ -13,7 +13,6 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/api') ||
     pathname.startsWith('/static') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/login') ||
     pathname.includes('.')
   ) {
     return NextResponse.next();
@@ -30,11 +29,15 @@ export function middleware(request: NextRequest) {
 
   // Редирект на дефолтный язык
   if (pathname === '/') {
-    return NextResponse.redirect(new URL(`/${defaultLocale}`, request.url));
+    const url = new URL(`/${defaultLocale}`, request.url);
+    url.search = request.nextUrl.search;
+    return NextResponse.redirect(url);
   }
 
   // Для остальных путей без языка добавляем дефолтный
-  return NextResponse.redirect(new URL(`/${defaultLocale}${pathname}`, request.url));
+  const url = new URL(`/${defaultLocale}${pathname}`, request.url);
+  url.search = request.nextUrl.search;
+  return NextResponse.redirect(url);
 }
 
 export const config = {

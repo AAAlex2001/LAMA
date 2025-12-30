@@ -46,6 +46,7 @@ export interface LoginState {
   status: "idle" | "loading" | "success" | "error";
   
   user: User | null;
+  showTelegramWidget: boolean;
   
   form: {
     email: string;
@@ -70,6 +71,7 @@ type LoginAction =
   | { type: "SET_FIELD_ERROR"; payload: { field: keyof LoginState["fieldErrors"]; message: string | null } }
   | { type: "CLEAR_FIELD_ERRORS" }
   | { type: "SET_USER"; payload: User | null }
+  | { type: "TOGGLE_TELEGRAM_WIDGET" }
   | { type: "RESET" };
 
 const initialState: LoginState = {
@@ -77,6 +79,7 @@ const initialState: LoginState = {
   error: null,
   status: "idle",
   user: null,
+  showTelegramWidget: false,
   
   form: {
     email: "",
@@ -127,6 +130,9 @@ function reducer(state: LoginState, action: LoginAction): LoginState {
     case "SET_USER":
       return { ...state, user: action.payload };
       
+    case "TOGGLE_TELEGRAM_WIDGET":
+      return { ...state, showTelegramWidget: !state.showTelegramWidget };
+      
     case "RESET":
       return initialState;
       
@@ -166,20 +172,6 @@ export function useLogin() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tgId = params.get("tg_id");
-    
-    if (tgId) {
-      handleBotAuthFromUrl({
-        telegram_id: parseInt(tgId),
-        username: params.get("username") || undefined,
-        first_name: params.get("first_name") || undefined,
-        last_name: params.get("last_name") || undefined,
-      });
-    }
-  }, []);
 
   const handleTelegramAuth = useCallback(
     async (user: TelegramWidgetUser) => {
@@ -255,60 +247,63 @@ export function useLogin() {
     widgetContainerRef.current.appendChild(script);
   }, []);
 
-  const handleBotAuthFromUrl = useCallback(
-    async (data: {
-      telegram_id: number;
-      username?: string;
-      first_name?: string;
-      last_name?: string;
-    }) => {
+  const openBotForLogin = useCallback(() => {
+    window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`, "_blank");
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tgId = params.get("tg_id");
+    
+    if (tgId) {
+      const authData = {
+        telegram_id: parseInt(tgId),
+        username: params.get("username") || undefined,
+        first_name: params.get("first_name") || undefined,
+        last_name: params.get("last_name") || undefined,
+      };
+      
       dispatch({ type: "SET_STATUS", payload: "loading" });
       dispatch({ type: "SET_LOADING", payload: true });
 
-      try {
-        const response = await fetch(ENDPOINTS.botLogin, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-          credentials: "include",
+      fetch(ENDPOINTS.botLogin, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(authData),
+        credentials: "include",
+      })
+        .then(async (response) => {
+          const responseData = await response.json().catch(() => ({}));
+
+          if (!response.ok) {
+            throw new Error(parseErrorMessage(responseData.detail));
+          }
+
+          if (responseData?.access_token) {
+            saveTokens(responseData.access_token, responseData.refresh_token);
+          }
+
+          dispatch({ type: "SET_USER", payload: responseData.user || null });
+          dispatch({ type: "SET_STATUS", payload: "success" });
+
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          setTimeout(() => {
+            router.push("/");
+          }, 1500);
+        })
+        .catch((error) => {
+          dispatch({ type: "SET_STATUS", payload: "error" });
+          dispatch({
+            type: "SET_ERROR",
+            payload: error instanceof Error ? error.message : "Ошибка авторизации через бота",
+          });
+        })
+        .finally(() => {
+          dispatch({ type: "SET_LOADING", payload: false });
         });
-
-        const responseData = await response.json().catch(() => ({}));
-
-        if (!response.ok) {
-          throw new Error(parseErrorMessage(responseData.detail));
-        }
-
-        if (responseData?.access_token) {
-          saveTokens(responseData.access_token, responseData.refresh_token);
-        }
-
-        dispatch({ type: "SET_USER", payload: responseData.user || null });
-        dispatch({ type: "SET_STATUS", payload: "success" });
-
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
-
-        return true;
-      } catch (error) {
-        dispatch({ type: "SET_STATUS", payload: "error" });
-        dispatch({
-          type: "SET_ERROR",
-          payload: error instanceof Error ? error.message : "Ошибка авторизации через бота",
-        });
-        return false;
-      } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
-      }
-    },
-    [router]
-  );
-
-  const openBotForLogin = useCallback(() => {
-    window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`, "_blank");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const logout = useCallback(async () => {
@@ -338,6 +333,7 @@ export function useLogin() {
       setEmail: (v: string) => dispatch({ type: "SET_EMAIL", payload: v }),
       setPassword: (v: string) => dispatch({ type: "SET_PASSWORD", payload: v }),
       toggleShowPassword: () => dispatch({ type: "TOGGLE_SHOW_PASSWORD" }),
+      toggleTelegramWidget: () => dispatch({ type: "TOGGLE_TELEGRAM_WIDGET" }),
       setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
       clearNotifications: () => dispatch({ type: "CLEAR_NOTIFICATIONS" }),
       reset: () => dispatch({ type: "RESET" }),

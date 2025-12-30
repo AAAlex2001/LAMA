@@ -132,3 +132,26 @@
   fill: #3B82F6;
 }
 
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.button.active .spinner {
+  border-top-color: white;
+}
+
+.button:not(.active) .spinner {
+  border-top-color: #3B82F6;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+

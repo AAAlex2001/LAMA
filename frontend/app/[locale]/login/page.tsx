@@ -16,11 +16,13 @@ export default function LoginPage() {
     openBotForLogin,
     setEmail,
     setPassword,
+    toggleTelegramWidget,
   } = useLogin();
 
   useEffect(() => {
     initTelegramWidget();
-  }, [initTelegramWidget]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const getStatusMessage = () => {
     switch (state.status) {
@@ -48,14 +50,22 @@ export default function LoginPage() {
 
         <Card title="Вход в аккаунт">
           <div className={styles.telegramButtons}>
-            <Button
-              text="Через Telegram"
-              icon={<TelegramIcon />}
-              showArrow={false}
-              onClick={() => {}}
-              active
-              fullWidth
+            <div 
+              ref={widgetContainerRef} 
+              className={styles.widgetContainer}
+              style={{ display: state.showTelegramWidget ? 'flex' : 'none' }}
             />
+            
+            {!state.showTelegramWidget && (
+              <Button
+                text="Через Telegram"
+                icon={<TelegramIcon />}
+                showArrow={false}
+                onClick={toggleTelegramWidget}
+                active
+                fullWidth
+              />
+            )}
             
             <Button
               text="Telegram бот"
@@ -110,8 +120,6 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-
-          <div ref={widgetContainerRef} className={styles.widgetContainer} />
 
           {getStatusMessage() && (
             <div className={`${styles.statusMessage} ${styles[state.status]}`}>

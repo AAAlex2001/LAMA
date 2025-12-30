@@ -128,7 +128,9 @@
 }
 
 .widgetContainer {
-  display: none;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .statusMessage {
