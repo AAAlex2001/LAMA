@@ -7,6 +7,7 @@ import Button from '@/components/button/button';
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
+  locale: string;
 }
 
 const toolsItems = [
@@ -19,7 +20,7 @@ const toolsItems = [
   { title: 'Парсер', href: '/parser' }
 ];
 
-export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
 
@@ -97,7 +98,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
         <div className={styles.actions}>
           <Button 
             text="Зарегистрироваться" 
-            href="/login" 
+            href={`/${locale}/login`}
             showArrow={false}
             className={styles.loginButton}
             fullWidth={true}

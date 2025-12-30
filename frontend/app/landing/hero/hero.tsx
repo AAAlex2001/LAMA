@@ -87,7 +87,7 @@ export default function Hero({ locale }: Props) {
             {renderText(content.paragraphSecondary)}
           </p>
           <div className={styles.buttonContainer}>
-            <Button text={content.buttonText} href="/login" />
+            <Button text={content.buttonText} href={`/${locale}/login`} />
           </div>
         </motion.div>
       </div>

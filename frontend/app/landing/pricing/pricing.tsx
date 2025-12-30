@@ -193,7 +193,7 @@ export default function Pricing({ locale }: Props) {
                 ))}
               </ul>
               <div className={styles.cardButton}>
-                <Button text="Выбрать план" href="/login" fullWidth active={index === 1}/>
+                <Button text="Выбрать план" href={`/${locale}/login`} fullWidth active={index === 1}/>
               </div>
             </motion.div>
           )})}

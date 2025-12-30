@@ -3,6 +3,7 @@
   padding: 2px;
   border-radius: 10px;
   background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  max-height: 40px;
 }
 
 .button {
@@ -17,6 +18,7 @@
   cursor: pointer;
   transition: background 0.2s;
   font-family: inherit;
+  max-height: 36px;
   
   &:hover {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
@@ -56,7 +58,7 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  font-weight: 500;
+  font-weight: 400;
   font-size: 16px;
   line-height: 19px;
   transition: color 0.2s;
@@ -109,5 +111,24 @@
     font-size: 16px;
     line-height: 24px;
   }
+}
+
+.buttonIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.button.active .buttonIcon svg path {
+  fill: white;
+}
+
+.button:not(.active) .buttonIcon svg path {
+  fill: #3B82F6;
 }
 

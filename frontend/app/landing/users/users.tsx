@@ -167,7 +167,7 @@ export default function Users({ locale }: Props) {
             <span className={styles.brandPlanner}>planner</span>
           </div>
           <p className={styles.textLine_1}>{renderText(content.textLine_1)}</p>
-          <Button text={content.buttonText} href="/login" active={true} />
+          <Button text={content.buttonText} href={`/${locale}/login`} active={true} />
         </motion.div>
       </div>
     </section>

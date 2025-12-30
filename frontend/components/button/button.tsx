@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, ReactNode } from 'react';
 import styles from "./button.module.scss";
 
 import classNames from "classnames";
@@ -14,6 +14,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
+  icon?: ReactNode;
 }
 
 export default function Button({ 
@@ -25,11 +26,13 @@ export default function Button({
   active = false,
   fullWidth = false,
   size = 'default',
+  icon,
 }: ButtonProps) {
   const gradientId = useId();
   
   const buttonContent = (
     <>
+      {icon && <span className={styles.buttonIcon}>{icon}</span>}
       <span className={styles.buttonText}>{text}</span>
       {showArrow && (
         <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">

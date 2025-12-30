@@ -54,7 +54,6 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      // Don't close if clicking inside popup or on the anchor element
       if (
         popupRef.current && 
         !popupRef.current.contains(target) &&

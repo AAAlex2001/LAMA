@@ -120,7 +120,7 @@ export default function Header({ locale: localeProp }: Props) {
             <div className={styles.loginButtonSmall}>
               <Button 
                 text="Войти" 
-                href="/login" 
+                href={`/${locale}/login`} 
                 showArrow={false}
                 size="small"
               />
@@ -128,7 +128,7 @@ export default function Header({ locale: localeProp }: Props) {
             <div className={styles.loginButtonMedium}>
               <Button 
                 text="Войти" 
-                href="/login" 
+                href={`/${locale}/login`} 
                 showArrow={false}
                 size="medium"
               />
@@ -145,7 +145,7 @@ export default function Header({ locale: localeProp }: Props) {
           </div>
         </div>
       </header>
-      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} />
+      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} locale={locale} />
     </>
   );
 }

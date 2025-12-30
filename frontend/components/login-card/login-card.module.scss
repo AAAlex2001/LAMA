@@ -1,0 +1,180 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 24px;
+  gap: 48px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 52px;
+  width: 100%;
+}
+
+.title {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+  text-align: center;
+  color: #3B82F6;
+  margin: 0;
+}
+
+.telegramButtons {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  
+  > div {
+    width: 100%;
+  }
+}
+
+.dividerSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+.divider {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  color: rgba(59, 130, 246, 0.3);
+}
+
+.formSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  width: 100%;
+}
+
+.formFields {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.passwordField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+}
+
+.forgotPassword {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 6px 0px;
+  width: 100%;
+  
+  a {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 15px;
+    text-align: right;
+    color: #3B82F6;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+
+.loginButton {
+  width: 100%;
+  
+  button, a {
+    width: 100%;
+    justify-content: center;
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+    border-radius: 8px;
+  }
+}
+
+.register {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  width: 100%;
+  
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 125%;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.7);
+  
+  a {
+    color: #3B82F6;
+    text-decoration: none;
+    margin-left: 4px;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.widgetContainer {
+  display: none;
+}
+
+.statusMessage {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  
+  &.loading {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+  }
+  
+  &.success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16A34A;
+  }
+  
+  &.error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #EF4444;
+  }
+}
