@@ -10,6 +10,7 @@ interface AdvantagesCard {
   description: string;
   isCta: boolean;
   linkText: string | null;
+  linkUrl: string | null;
 }
 
 interface AdvantagesContent {
@@ -63,7 +64,7 @@ export default function AdvantagesAdminPage() {
   const addCard = () => {
     setContent({
       ...content,
-      cards: [...content.cards, { title: '', description: '', isCta: false, linkText: null }]
+      cards: [...content.cards, { title: '', description: '', isCta: false, linkText: null, linkUrl: null }]
     });
   };
 
@@ -72,7 +73,7 @@ export default function AdvantagesAdminPage() {
     setContent({ ...content, cards: newCards });
   };
 
-  const updateCard = (index: number, field: keyof AdvantagesCard, value: string | boolean) => {
+  const updateCard = (index: number, field: keyof AdvantagesCard, value: string | boolean | null) => {
     const newCards = [...content.cards];
     newCards[index] = { ...newCards[index], [field]: value };
     setContent({ ...content, cards: newCards });
@@ -176,15 +177,26 @@ export default function AdvantagesAdminPage() {
                 </label>
 
                 {!card.isCta && (
-                  <label className={styles.field}>
-                    <span>Текст ссылки (опционально)</span>
-                    <input
-                      type="text"
-                      value={card.linkText || ''}
-                      onChange={e => updateCard(index, 'linkText', e.target.value)}
-                      placeholder="Узнать подробнее"
-                    />
-                  </label>
+                  <>
+                    <label className={styles.field}>
+                      <span>Текст ссылки (опционально)</span>
+                      <input
+                        type="text"
+                        value={card.linkText || ''}
+                        onChange={e => updateCard(index, 'linkText', e.target.value)}
+                        placeholder="Узнать подробнее"
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span>URL ссылки (опционально)</span>
+                      <input
+                        type="text"
+                        value={card.linkUrl || ''}
+                        onChange={e => updateCard(index, 'linkUrl', e.target.value)}
+                        placeholder="https://example.com или /ru/login"
+                      />
+                    </label>
+                  </>
                 )}
               </div>
             ))}

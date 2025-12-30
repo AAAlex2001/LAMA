@@ -18,6 +18,7 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 
 async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Pricing"""
+    locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.PRICING)

@@ -92,6 +92,13 @@
   width: 100%;
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+
+  & > * {
+    position: relative;
+    z-index: 1;
+  }
 
   &::before {
     content: '';
@@ -101,6 +108,7 @@
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
+    z-index: 0;
   }
 
   &:hover::before {
@@ -128,7 +136,7 @@
 
 .cardLink {
   display: none;
-  color: white;
+  color: #ffffff;
   font-size: 18px;
   line-height: 28px;
   font-weight: 600;

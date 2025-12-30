@@ -53,7 +53,7 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         elif content.key.startswith("advantages_card_"):
             card_index = int(content.key.split("_")[-1])
             while len(cards) <= card_index:
-                cards.append({"title": "", "description": "", "isCta": False, "linkText": None})
+                cards.append({"title": "", "description": "", "isCta": False, "linkText": None, "linkUrl": None})
             
             if content.title:
                 cards[card_index]["title"] = content.title
@@ -61,6 +61,8 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
                 cards[card_index]["description"] = content.text
             if content.link_text:
                 cards[card_index]["linkText"] = content.link_text
+            if content.link_url:
+                cards[card_index]["linkUrl"] = content.link_url
             # isCta храним в extra_data или как отдельное поле
             if content.extra_data and content.extra_data.get("isCta"):
                 cards[card_index]["isCta"] = True
@@ -132,6 +134,7 @@ async def save_advantages_content(
             title=card.get("title", ""),
             text=card.get("description", ""),
             link_text=card.get("linkText"),
+            link_url=card.get("linkUrl"),
             extra_data={"isCta": card.get("isCta", False)} if card.get("isCta", False) else {},
             is_active=True,
             order=10 + i

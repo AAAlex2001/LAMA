@@ -21,11 +21,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy only what is needed to run
+# Next.js standalone output: copy only the minimal runtime
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=deps /app/node_modules ./node_modules
-COPY package.json ./
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

@@ -18,6 +18,7 @@ interface AdvantagesCard {
   description: string;
   isCta: boolean;
   linkText?: string | null;
+  linkUrl?: string | null;
 }
 
 export default function Advantages({ locale }: Props) {
@@ -87,22 +88,28 @@ export default function Advantages({ locale }: Props) {
           <div className={styles.cards}>
             {/* Первые 2 статичные карточки */}
             {swiperCards.slice(0, 2).map((card, index) => (
-              <div key={index} className={styles.card}>
-                {card.isCta ? (
+              card.isCta ? (
+                <div key={index} className={styles.card}>
                   <div className={styles.ctaCard}>
                     <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                     <div className={styles.ctaButton}>
                       <Button text="Начать бесплатно" href={`/${locale}/login`} fullWidth />
                     </div>
                   </div>
-                ) : (
-                  <>
-                    <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
-                    <p className={styles.cardDescription}>{renderText(card.description)}</p>
-                    {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
-                  </>
-                )}
-              </div>
+                </div>
+              ) : card.linkUrl ? (
+                <a key={index} className={styles.card} href={card.linkUrl}>
+                  <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
+                  <p className={styles.cardDescription}>{renderText(card.description)}</p>
+                  {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
+                </a>
+              ) : (
+                <div key={index} className={styles.card}>
+                  <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
+                  <p className={styles.cardDescription}>{renderText(card.description)}</p>
+                  {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
+                </div>
+              )
             ))}
 
             {/* Остальные карточки в свайпере */}
@@ -134,6 +141,12 @@ export default function Advantages({ locale }: Props) {
                             <Button text="Начать бесплатно" href={`/${locale}/login`} fullWidth />
                           </div>
                         </div>
+                      ) : card.linkUrl ? (
+                        <a className={styles.card} href={card.linkUrl}>
+                          <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>
+                          <p className={styles.cardDescription}>{renderText(card.description)}</p>
+                          {card.linkText && <span className={styles.cardLink}>{renderText(card.linkText)}</span>}
+                        </a>
                       ) : (
                         <div className={styles.card}>
                           <h3 className={styles.cardTitle}>{renderText(card.title)}</h3>

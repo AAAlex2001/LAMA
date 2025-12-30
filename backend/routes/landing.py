@@ -83,7 +83,8 @@ async def save_advantages_content(
             "title": card.title,
             "description": card.description,
             "isCta": card.isCta,
-            "linkText": card.linkText
+            "linkText": card.linkText,
+            "linkUrl": card.linkUrl,
         }
         for card in data.cards
     ]

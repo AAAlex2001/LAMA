@@ -23,6 +23,7 @@ class AdvantagesCard(BaseModel):
     description: str
     isCta: bool = False
     linkText: Optional[str] = None
+    linkUrl: Optional[str] = None
 
 
 class AdvantagesContentRequest(BaseModel):
