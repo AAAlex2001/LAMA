@@ -5,13 +5,14 @@
   align-items: center;
   overflow: visible;
   position: relative;
+  padding-bottom: 50px;
 }
 
 .planeIcon {
     display: block;
     position: absolute;
-    width: 110px;
-    height: 110px;
+    width: 60px;
+    height: 60px;
     z-index: 1;
     top: 50px;
     left: calc(50% + 210px);
@@ -26,11 +27,10 @@
 
   .svg768 {
     display: block;
-    width: 100%;
-    min-width: 700px;
-    max-width: 700px;
+    width: auto;
     height: auto;
-    transform: scaleX(0.7) translateX(-140px);
+    max-width: none;
+    transform: translateX(-140px);
   }
 
 .svg1440 {
@@ -64,7 +64,7 @@
     width: 100%;
     max-width: 665px;
     height: auto;
-    transform: scaleX(1.5) translateX(-150px);
+    transform: translateX(-150px);
   }
   
   .svg1440 {
@@ -75,6 +75,8 @@
 @media (min-width: 1440px) {
   .decoration {
     margin-bottom: 220px;
+    justify-content: flex-start;
+    padding: 100px;
   }
   
   .svg768 {
@@ -84,16 +86,18 @@
   .planeIcon {
     width: 200px;
     height: 200px;
-    top: 100px;
-    left: calc(50% + 500px);
+    top: 50px;
+    left: calc(50% + 470px);
   }
   
   .svg1440 {
     display: block;
-    width: 100%;
-    max-width: 1275px;
+    position: absolute;
+    left: calc(50% - 70px);
+    transform: translateX(-80%);
+    width: auto;
     height: auto;
-    transform: scaleX(1.5) translateX(-230px);
+    max-width: none;
   }
 }
 
