@@ -2,9 +2,10 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import styles from './register.module.scss';
-import { useRegister } from './store';
+import { useRegister } from './store/useRegister';
 import Button from '@/components/button/button';
 import Card from '@/components/card';
 import Input from '@/components/input';
@@ -15,6 +16,7 @@ import { SuccessNotification } from '@/components/notifications/SuccessNotificat
 
 export default function RegisterPage() {
   const { locale } = useParams();
+  const searchParams = useSearchParams();
   const {
     state,
     widgetContainerRef,
@@ -26,14 +28,21 @@ export default function RegisterPage() {
     setPassword,
     setAgreePersonalData,
     setAgreeTerms,
-    registerWithEmail,
+    addEmailToAccount,
     setError,
   } = useRegister();
 
   useEffect(() => {
     initTelegramWidget();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [state.showTelegramWidget]);
+
+  useEffect(() => {
+    const step = searchParams.get('step');
+    if (step === '2') {
+      goToStep(2);
+    }
+  }, [searchParams, goToStep]);
 
   const getSuccessMessage = () => {
     const displayName = state.user?.telegram_account?.first_name 
@@ -145,9 +154,9 @@ export default function RegisterPage() {
         </div>
 
         <Button
-          text="Зарегистрироваться"
+          text="Завершить регистрацию"
           showArrow={false}
-          onClick={registerWithEmail}
+          onClick={addEmailToAccount}
           active
           fullWidth
           loading={state.loading}

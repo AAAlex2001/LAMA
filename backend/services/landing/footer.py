@@ -34,44 +34,11 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
     
     if not section:
         return {
-            "brandName": "LAMAplanner",
-            "copyright": "© 2025 LamaPlanner. Все права защищены.",
-            "telegramLink": "/telegram",
-            "instagramLink": "/instagram",
-            "columns": [
-                {
-                    "title": "Продукт",
-                    "links": [
-                        {"text": "Функции", "href": "/features"},
-                        {"text": "Тарифы", "href": "/pricing"},
-                        {"text": "Обновления", "href": "/updates"}
-                    ]
-                },
-                {
-                    "title": "Поддержка",
-                    "links": [
-                        {"text": "FAQ", "href": "/faq"},
-                        {"text": "База знаний", "href": "/knowledge-base"},
-                        {"text": "Связаться с нами", "href": "/contact"},
-                        {"text": "Сообщить об ошибке", "href": "/report-error"}
-                    ]
-                },
-                {
-                    "title": "Юридическое",
-                    "links": [
-                        {"text": "Пользовательское соглашение", "href": "/terms"},
-                        {"text": "Политика конфиденциальности", "href": "/privacy"}
-                    ]
-                },
-                {
-                    "title": "Контакты",
-                    "links": [
-                        {"text": "Телефон", "href": "tel:+1234567890"},
-                        {"text": "Электронная почта", "href": "mailto:info@lamaplanner.com"},
-                        {"text": "Telegram", "href": "/telegram"}
-                    ]
-                }
-            ]
+            "brandName": "",
+            "copyright": "",
+            "telegramLink": "",
+            "instagramLink": "",
+            "columns": []
         }
     
     result = await db.execute(
@@ -84,10 +51,10 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
     contents = result.scalars().all()
     
     response = {
-        "brandName": "LAMAplanner",
-        "copyright": "© 2025 LamaPlanner. Все права защищены.",
-        "telegramLink": "/telegram",
-        "instagramLink": "/instagram",
+        "brandName": "",
+        "copyright": "",
+        "telegramLink": "",
+        "instagramLink": "",
         "columns": []
     }
     
@@ -95,13 +62,13 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
     
     for content in contents:
         if content.key == "footer_brand_name":
-            response["brandName"] = content.title or content.text or "LAMAplanner"
+            response["brandName"] = content.title or content.text or ""
         elif content.key == "footer_copyright":
-            response["copyright"] = content.text or "© 2025 LamaPlanner. Все права защищены."
+            response["copyright"] = content.text or ""
         elif content.key == "footer_telegram_link":
-            response["telegramLink"] = content.link_url or "/telegram"
+            response["telegramLink"] = content.link_url or ""
         elif content.key == "footer_instagram_link":
-            response["instagramLink"] = content.link_url or "/instagram"
+            response["instagramLink"] = content.link_url or ""
         elif content.key.startswith("footer_column_"):
             column_index = int(content.key.split("_")[-1])
             if column_index not in columns:

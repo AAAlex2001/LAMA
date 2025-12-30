@@ -34,11 +34,11 @@ async def get_lama_content(db: AsyncSession, locale: str | Locale | None = None)
     
     if not section:
         return {
-            "headline": "Подписаться на Telegram-канал",
-            "channel": "@LamaPlanner",
-            "description": "Присоединяйтесь к комьюнити SMM-специалистов и узнавайте о новых функциях LAMAplanner раньше остальных",
-            "buttonText": "Подписаться",
-            "buttonHref": "/telegram-channel"
+            "headline": "",
+            "channel": "",
+            "description": "",
+            "buttonText": "",
+            "buttonHref": ""
         }
     
     result = await db.execute(
@@ -51,24 +51,24 @@ async def get_lama_content(db: AsyncSession, locale: str | Locale | None = None)
     contents = result.scalars().all()
     
     response = {
-        "headline": "Подписаться на Telegram-канал",
-        "channel": "@LamaPlanner",
-        "description": "Присоединяйтесь к комьюнити SMM-специалистов и узнавайте о новых функциях LAMAplanner раньше остальных",
-        "buttonText": "Подписаться",
-        "buttonHref": "/telegram-channel"
+        "headline": "",
+        "channel": "",
+        "description": "",
+        "buttonText": "",
+        "buttonHref": ""
     }
     
     for content in contents:
         if content.key == "lama_headline":
-            response["headline"] = content.title or content.text or "Подписаться на Telegram-канал"
+            response["headline"] = content.title or content.text or ""
         elif content.key == "lama_channel":
-            response["channel"] = content.text or content.title or "@LamaPlanner"
+            response["channel"] = content.text or content.title or ""
         elif content.key == "lama_description":
-            response["description"] = content.text or "Присоединяйтесь к комьюнити SMM-специалистов и узнавайте о новых функциях LAMAplanner раньше остальных"
+            response["description"] = content.text or ""
         elif content.key == "lama_button_text":
-            response["buttonText"] = content.text or content.title or "Подписаться"
+            response["buttonText"] = content.text or content.title or ""
         elif content.key == "lama_button_href":
-            response["buttonHref"] = content.link_url or "/telegram-channel"
+            response["buttonHref"] = content.link_url or ""
     
     return response
 

@@ -28,7 +28,7 @@ async def get_key_advantages_content(db: AsyncSession, locale: str | Locale | No
     
     if not section:
         return {
-            "headline": "Почему выбирают LAMAplanner",
+            "headline": "",
             "advantages": []
         }
     
@@ -62,8 +62,8 @@ async def get_key_advantages_content(db: AsyncSession, locale: str | Locale | No
                 advantages[advantage_index]["description"] = content.text
     
     return {
-        "headline": response.get("headline", "Почему выбирают LAMAplanner"),
-        "advantages": advantages if advantages else []
+        "headline": response.get("headline", ""),
+        "advantages": advantages
     }
 
 

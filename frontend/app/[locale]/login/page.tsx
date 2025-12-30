@@ -26,7 +26,7 @@ export default function LoginPage() {
   useEffect(() => {
     initTelegramWidget();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [state.showTelegramWidget]);
 
   const getSuccessMessage = () => {
     const displayName = state.user?.telegram_account?.first_name 

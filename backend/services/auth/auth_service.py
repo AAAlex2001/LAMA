@@ -1,8 +1,9 @@
-"""
-Главный сервис аутентификации
-"""
+"""Главный сервис аутентификации"""
+
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Tuple, List
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.auth import User, UserSession, UserRole, BotLoginCode
@@ -95,15 +96,37 @@ class AuthService:
         Аутентифицировать пользователя через Telegram Widget
         Возвращает: (User, access_token, refresh_token)
         """
-        access_token = self.create_access_token(0)
-        refresh_token = self.create_refresh_token(0)
+        # WidgetAuthService создаёт UserSession. Раньше мы передавали "временные" токены
+        # (user_id=0), а затем возвращали на фронт новые токены с реальным user_id.
+        # Из-за проверки токена через таблицу user_sessions это ломало все запросы с фронта
+        # (сессии в БД нет для финального access_token). Поэтому:
+        # 1) создаём временные токены для вставки сессии
+        # 2) после получения user.id обновляем эту сессию на финальные токены
+        temp_access_token = self.create_access_token(0)
+        temp_refresh_token = self.create_refresh_token(0)
         
         user = await self.widget_auth.authenticate_telegram_user(
-            auth_data, access_token, refresh_token, user_agent, ip_address
+            auth_data, temp_access_token, temp_refresh_token, user_agent, ip_address
         )
         
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
+
+        # Обновляем созданную сессию на финальные токены
+        query = select(UserSession).where(
+            UserSession.user_id == user.id,
+            UserSession.access_token == temp_access_token,
+            UserSession.is_active == True,
+        )
+        result = await self.db.execute(query)
+        session = result.scalar_one_or_none()
+
+        if session:
+          session.access_token = access_token
+          session.refresh_token = refresh_token
+          session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+          session.last_used_at = datetime.now(timezone.utc)
+          await self.db.commit()
         
         return user, access_token, refresh_token
 
@@ -208,17 +231,19 @@ class AuthService:
         Регистрация пользователя по email
         Возвращает: (User, access_token, refresh_token)
         """
-        # Создаём временные токены (они будут обновлены после получения user_id)
-        access_token = self.create_access_token(0)
-        refresh_token = self.create_refresh_token(0)
+        # EmailAuthService создаёт UserSession. Для совместимости с проверкой токена
+        # через таблицу user_sessions сначала используем временные токены, затем
+        # обновляем эту же сессию на финальные токены с реальным user_id.
+        temp_access_token = self.create_access_token(0)
+        temp_refresh_token = self.create_refresh_token(0)
         
         user = await self.email_auth.register_user(
             email=email,
             password=password,
             agree_personal_data=agree_personal_data,
             agree_terms=agree_terms,
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token=temp_access_token,
+            refresh_token=temp_refresh_token,
             user_agent=user_agent,
             ip_address=ip_address
         )
@@ -226,6 +251,21 @@ class AuthService:
         # Создаём токены с правильным user_id
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
+
+        query = select(UserSession).where(
+            UserSession.user_id == user.id,
+            UserSession.access_token == temp_access_token,
+            UserSession.is_active == True,
+        )
+        result = await self.db.execute(query)
+        session = result.scalar_one_or_none()
+
+        if session:
+            session.access_token = access_token
+            session.refresh_token = refresh_token
+            session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+            session.last_used_at = datetime.now(timezone.utc)
+            await self.db.commit()
         
         return user, access_token, refresh_token
 
@@ -240,15 +280,16 @@ class AuthService:
         Вход пользователя по email/password
         Возвращает: (User, access_token, refresh_token)
         """
-        # Создаём временные токены
-        access_token = self.create_access_token(0)
-        refresh_token = self.create_refresh_token(0)
+        # EmailAuthService создаёт UserSession. Сначала пишем временные токены,
+        # затем обновляем запись на финальные токены.
+        temp_access_token = self.create_access_token(0)
+        temp_refresh_token = self.create_refresh_token(0)
         
         user = await self.email_auth.authenticate_by_email(
             email=email,
             password=password,
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token=temp_access_token,
+            refresh_token=temp_refresh_token,
             user_agent=user_agent,
             ip_address=ip_address
         )
@@ -256,6 +297,21 @@ class AuthService:
         # Создаём токены с правильным user_id
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
+
+        query = select(UserSession).where(
+            UserSession.user_id == user.id,
+            UserSession.access_token == temp_access_token,
+            UserSession.is_active == True,
+        )
+        result = await self.db.execute(query)
+        session = result.scalar_one_or_none()
+
+        if session:
+            session.access_token = access_token
+            session.refresh_token = refresh_token
+            session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+            session.last_used_at = datetime.now(timezone.utc)
+            await self.db.commit()
         
         return user, access_token, refresh_token
 

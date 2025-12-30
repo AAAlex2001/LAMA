@@ -201,8 +201,17 @@ export function useLogin() {
         }
 
         dispatch({ type: "SET_USER", payload: data.user || null });
+
+        // Если аккаунт создан через TG/бота, но не завершил регистрацию (email+галки) —
+        // НЕ пускаем в сервис, отправляем на шаг 2.
+        if (data?.registration_completed === false) {
+          dispatch({ type: "SET_STATUS", payload: "idle" });
+          router.push("/register?step=2");
+          return true;
+        }
+
         dispatch({ type: "SET_STATUS", payload: "success" });
-        
+
         setTimeout(() => {
           router.push("/");
         }, 1500);
@@ -287,6 +296,14 @@ export function useLogin() {
           }
 
           dispatch({ type: "SET_USER", payload: responseData.user || null });
+
+          if (responseData?.registration_completed === false) {
+            dispatch({ type: "SET_STATUS", payload: "idle" });
+            window.history.replaceState({}, document.title, window.location.pathname);
+            router.push("/register?step=2");
+            return;
+          }
+
           dispatch({ type: "SET_STATUS", payload: "success" });
 
           window.history.replaceState({}, document.title, window.location.pathname);
@@ -352,6 +369,13 @@ export function useLogin() {
       }
 
       dispatch({ type: "SET_USER", payload: data.user || null });
+
+      if (data?.registration_completed === false) {
+        dispatch({ type: "SET_STATUS", payload: "idle" });
+        router.push("/register?step=2");
+        return true;
+      }
+
       dispatch({ type: "SET_STATUS", payload: "success" });
 
       setTimeout(() => {

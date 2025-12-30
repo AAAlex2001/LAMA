@@ -9,7 +9,6 @@ const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "
 const ENDPOINTS = {
   telegramAuth: `${API_URL}/auth/telegram`,
   botLogin: `${API_URL}/auth/bot-login`,
-  register: `${API_URL}/auth/register`,
   addEmail: `${API_URL}/auth/me/add-email`,
 } as const;
 
@@ -48,6 +47,7 @@ export interface RegisterState {
   status: "idle" | "loading" | "success" | "error";
   user: User | null;
   showTelegramWidget: boolean;
+  accessToken: string | null;
   
   // Step 2 form
   email: string;
@@ -62,6 +62,7 @@ type RegisterAction =
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_STATUS"; payload: RegisterState["status"] }
   | { type: "SET_USER"; payload: User | null }
+  | { type: "SET_ACCESS_TOKEN"; payload: string | null }
   | { type: "TOGGLE_TELEGRAM_WIDGET" }
   | { type: "SET_EMAIL"; payload: string }
   | { type: "SET_PASSWORD"; payload: string }
@@ -76,6 +77,7 @@ const initialState: RegisterState = {
   status: "idle",
   user: null,
   showTelegramWidget: false,
+  accessToken: null,
   email: "",
   password: "",
   agreePersonalData: false,
@@ -94,6 +96,8 @@ function reducer(state: RegisterState, action: RegisterAction): RegisterState {
       return { ...state, status: action.payload };
     case "SET_USER":
       return { ...state, user: action.payload };
+    case "SET_ACCESS_TOKEN":
+      return { ...state, accessToken: action.payload };
     case "TOGGLE_TELEGRAM_WIDGET":
       return { ...state, showTelegramWidget: !state.showTelegramWidget };
     case "SET_EMAIL":
@@ -152,16 +156,27 @@ export function useRegister() {
           throw new Error(parseErrorMessage(data.detail));
         }
 
+        // Сохраняем токен в стейт для шага 2
         if (data?.access_token) {
+          dispatch({ type: "SET_ACCESS_TOKEN", payload: data.access_token });
+          // Также сохраняем в localStorage
           saveTokens(data.access_token, data.refresh_token);
         }
 
         dispatch({ type: "SET_USER", payload: data.user || null });
-        dispatch({ type: "SET_STATUS", payload: "success" });
         
-        setTimeout(() => {
-          router.push("/");
-        }, 1500);
+        // Проверяем, завершена ли регистрация
+        if (data.registration_completed) {
+          // Регистрация уже завершена - редирект в сервис
+          dispatch({ type: "SET_STATUS", payload: "success" });
+          setTimeout(() => {
+            router.push("/");
+          }, 1500);
+        } else {
+          // Регистрация не завершена - переходим на шаг 2
+          dispatch({ type: "SET_STATUS", payload: "idle" });
+          dispatch({ type: "SET_STEP", payload: 2 });
+        }
 
         return true;
       } catch (error) {
@@ -204,24 +219,37 @@ export function useRegister() {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=register`, "_blank");
   }, []);
 
-  const registerWithEmail = useCallback(async () => {
-    const { email, password, agreePersonalData, agreeTerms } = state;
+  const addEmailToAccount = useCallback(async () => {
+    const { email, password, agreePersonalData, agreeTerms, accessToken } = state;
 
     // Валидация
     if (!email || !password) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
       dispatch({ type: "SET_ERROR", payload: "Заполните email и пароль" });
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
       dispatch({ type: "SET_ERROR", payload: "Некорректный email" });
       return false;
     }
     if (password.length < 8) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
       dispatch({ type: "SET_ERROR", payload: "Пароль должен быть не менее 8 символов" });
       return false;
     }
     if (!agreePersonalData || !agreeTerms) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
       dispatch({ type: "SET_ERROR", payload: "Необходимо принять условия" });
+      return false;
+    }
+
+    // Проверяем что есть токен (пользователь авторизован через TG)
+    const token = accessToken || localStorage.getItem("lamaplanner_access_token");
+    if (!token) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
+      dispatch({ type: "SET_ERROR", payload: "Сначала авторизуйтесь через Telegram" });
+      dispatch({ type: "SET_STEP", payload: 1 });
       return false;
     }
 
@@ -230,9 +258,12 @@ export function useRegister() {
     dispatch({ type: "SET_ERROR", payload: null });
 
     try {
-      const response = await fetch(ENDPOINTS.register, {
+      const response = await fetch(ENDPOINTS.addEmail, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         body: JSON.stringify({
           email,
           password,
@@ -248,11 +279,7 @@ export function useRegister() {
         throw new Error(parseErrorMessage(data.detail));
       }
 
-      if (data?.access_token) {
-        saveTokens(data.access_token, data.refresh_token);
-      }
-
-      dispatch({ type: "SET_USER", payload: data.user || null });
+      dispatch({ type: "SET_USER", payload: data || null });
       dispatch({ type: "SET_STATUS", payload: "success" });
 
       setTimeout(() => {
@@ -264,7 +291,7 @@ export function useRegister() {
       dispatch({ type: "SET_STATUS", payload: "error" });
       dispatch({
         type: "SET_ERROR",
-        payload: error instanceof Error ? error.message : "Ошибка регистрации",
+        payload: error instanceof Error ? error.message : "Ошибка добавления email",
       });
       return false;
     } finally {
@@ -291,7 +318,7 @@ export function useRegister() {
     widgetContainerRef,
     initTelegramWidget,
     openBotForLogin,
-    registerWithEmail,
+    addEmailToAccount,
     ...actions,
   };
 }

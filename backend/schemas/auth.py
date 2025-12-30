@@ -51,6 +51,7 @@ class AuthResponse(BaseModel):
     token_type: str = Field(default="bearer", description="Тип токена")
     expires_in: int = Field(..., description="Время жизни токена в секундах")
     user: "UserResponse"
+    registration_completed: bool = Field(..., description="Регистрация завершена (email добавлен, условия приняты)")
 
 
 class RefreshTokenRequest(BaseModel):
@@ -93,6 +94,8 @@ class UserResponse(BaseModel):
     is_active: bool
     email: Optional[str] = None
     email_verified: bool = False
+    agree_terms: bool = False
+    agree_personal_data: bool = False
     created_at: datetime
     updated_at: datetime
     telegram_account: Optional[TelegramAccountResponse] = None

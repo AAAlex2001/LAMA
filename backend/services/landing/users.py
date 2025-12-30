@@ -34,10 +34,10 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
     
     if not section:
         return {
-            "number": 500,
-            "textLine": "пользователей доверяют",
-            "textLine_1": "Планируйте будущее вашего бренда вместе с нами",
-            "buttonText": "Начать бесплатно"
+            "number": 0,
+            "textLine": "",
+            "textLine_1": "",
+            "buttonText": ""
         }
     
     result = await db.execute(
@@ -50,24 +50,24 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
     contents = result.scalars().all()
     
     response = {
-        "number": 500,
-        "textLine": "пользователей доверяют",
-        "textLine_1": "Планируйте будущее вашего бренда вместе с нами",
-        "buttonText": "Начать бесплатно"
+        "number": 0,
+        "textLine": "",
+        "textLine_1": "",
+        "buttonText": ""
     }
     
     for content in contents:
         if content.key == "users_number":
             try:
-                response["number"] = int(content.text or content.title or "500")
+                response["number"] = int(content.text or content.title or "0")
             except:
-                response["number"] = 500
+                response["number"] = 0
         elif content.key == "users_text_line":
-            response["textLine"] = content.text or content.title or "пользователей доверяют"
+            response["textLine"] = content.text or content.title or ""
         elif content.key == "users_text_line_1":
-            response["textLine_1"] = content.text or content.title or "Планируйте будущее вашего бренда вместе с нами"
+            response["textLine_1"] = content.text or content.title or ""
         elif content.key == "users_button_text":
-            response["buttonText"] = content.text or content.title or "Начать бесплатно"
+            response["buttonText"] = content.text or content.title or ""
     
     return response
 

@@ -28,13 +28,9 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
     
     if not section:
         return {
-            "headline": "Всё для продуктивной и лёгкой работы с контентом",
-            "subtitle": "Профессиональный инструмент для тех, кто ценит порядок и эффективность",
-            "cards": [
-                {"title": "Создавайте ботов", "description": "Подключай ботов по токену @BotFather и управляй ими. Приветственные боты и боты обратной связи легко и быстро настраиваются", "isCta": False, "linkText": None},
-                {"title": "Дополнительная функция 1", "description": "Описание дополнительной функции 1", "isCta": False, "linkText": None},
-                {"title": "cta", "description": "Сомнения позади: вы на пути к верному решению!", "isCta": True, "linkText": None},
-            ]
+            "headline": "",
+            "subtitle": "",
+            "cards": []
         }
     
     result = await db.execute(
@@ -70,9 +66,9 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
                 cards[card_index]["isCta"] = True
     
     return {
-        "headline": response.get("headline", "Всё для продуктивной и лёгкой работы с контентом"),
-        "subtitle": response.get("subtitle", "Профессиональный инструмент для тех, кто ценит порядок и эффективность"),
-        "cards": cards if cards else []
+        "headline": response.get("headline", ""),
+        "subtitle": response.get("subtitle", ""),
+        "cards": cards
     }
 
 

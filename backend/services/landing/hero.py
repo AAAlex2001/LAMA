@@ -28,20 +28,12 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
     section = result.scalar_one_or_none()
     
     if not section:
-        # Возвращаем дефолтные значения если секции нет
-        default_images = [
-            {"url": "/hero_1.svg", "alt": "Hero illustration"},
-            {"url": "/hero_2.svg", "alt": "Hero illustration"},
-            {"url": "/hero_3.svg", "alt": "Hero illustration"},
-            {"url": "/hero_4.svg", "alt": "Hero illustration"},
-            {"url": "/hero_5.svg", "alt": "Hero illustration"}
-        ]
         return {
-            "headline": "Управляйте сообществами и ботами Telegram в одном месте",
-            "paragraph": "Экономьте время на рутине и увеличивайте охваты с помощью LAMAplanner",
-            "paragraphSecondary": "Вы здесь не случайно: нужный сервис перед вами",
-            "buttonText": "Начать бесплатно",
-            "images": default_images
+            "headline": "",
+            "paragraph": "",
+            "paragraphSecondary": "",
+            "buttonText": "",
+            "images": []
         }
     
     # Получаем весь контент для этой секции
@@ -75,28 +67,12 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
                     "alt": content.image_alt or "Hero illustration"
                 })
     
-    # Дефолтные значения если чего-то не хватает
-    default_images = [
-        {"url": "/hero_1.svg", "alt": "Hero illustration"},
-        {"url": "/hero_2.svg", "alt": "Hero illustration"},
-        {"url": "/hero_3.svg", "alt": "Hero illustration"},
-        {"url": "/hero_4.svg", "alt": "Hero illustration"},
-        {"url": "/hero_5.svg", "alt": "Hero illustration"}
-    ]
-    
-    # Дополняем массив изображений до 5 элементов
-    while len(images) < 5:
-        images.append({"url": "", "alt": ""})
-    
-    # Берем только первые 5
-    images = images[:5]
-    
     return {
-        "headline": response.get("headline", "Управляйте сообществами и ботами Telegram в одном месте"),
-        "paragraph": response.get("paragraph", "Экономьте время на рутине и увеличивайте охваты с помощью LAMAplanner"),
-        "paragraphSecondary": response.get("paragraphSecondary", "Вы здесь не случайно: нужный сервис перед вами"),
-        "buttonText": response.get("buttonText", "Начать бесплатно"),
-        "images": images if images else default_images
+        "headline": response.get("headline", ""),
+        "paragraph": response.get("paragraph", ""),
+        "paragraphSecondary": response.get("paragraphSecondary", ""),
+        "buttonText": response.get("buttonText", ""),
+        "images": images
     }
 
 

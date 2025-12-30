@@ -27,39 +27,10 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
     
     if not section:
         return {
-            "headline": "Выберите свой план",
-            "subtitle": "Решение для любого масштаба проектов",
-            "description": "От личного блога до крупного проекта — управляйте контентом эффективно и выгодно",
-            "plans": [
-                {
-                    "title": "Пробный",
-                    "price": "0 ₽/сутки",
-                    "features": ["Тестируйте все функции 24 часа"],
-                    "isHighlighted": False
-                },
-                {
-                    "title": "Базовый",
-                    "price": "890 ₽/месяц",
-                    "features": [
-                        "Доступен полный функционал сервиса",
-                        "Подключение до 5 каналов / чатов",
-                        "Создание и управление 5 ботами",
-                        "Подключение до 3 RSS-лент / репостеров"
-                    ],
-                    "isHighlighted": True
-                },
-                {
-                    "title": "Профессиональный",
-                    "price": "1590 ₽/месяц",
-                    "features": [
-                        "Доступен полный функционал сервиса",
-                        "Подключение до 15 каналов / чатов",
-                        "Создание и управление 15 ботами",
-                        "Подключение до 7 RSS-лент / репостеров"
-                    ],
-                    "isHighlighted": False
-                }
-            ]
+            "headline": "",
+            "subtitle": "",
+            "description": "",
+            "plans": []
         }
     
     result = await db.execute(
@@ -97,10 +68,10 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
                     plans[plan_index]["isHighlighted"] = content.extra_data["isHighlighted"]
     
     return {
-        "headline": response.get("headline", "Выберите свой план"),
-        "subtitle": response.get("subtitle", "Решение для любого масштаба проектов"),
-        "description": response.get("description", "От личного блога до крупного проекта — управляйте контентом эффективно и выгодно"),
-        "plans": plans if plans else []
+        "headline": response.get("headline", ""),
+        "subtitle": response.get("subtitle", ""),
+        "description": response.get("description", ""),
+        "plans": plans
     }
 
 

@@ -34,19 +34,14 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
     
     if not section:
         return {
-            "headline": "Часто задаваемые вопросы",
-            "faqItems": [
-                {
-                    "question": "Можно ли использовать Lama Planner бесплатно?",
-                    "answer": "Да, у нас есть пробный период на 24 часа, в течение которого вы можете протестировать все функции сервиса бесплатно."
-                }
-            ],
-            "primaryButtonText": "База знаний",
-            "primaryButtonLink": "/knowledge-base",
-            "secondaryButtonText": "Telegram канал",
-            "secondaryButtonLink": "/telegram-channel",
-            "helpText": "Не нашли ответ? Напишите нам в @LamaPlannerBot",
-            "botLink": "https://t.me/LamaPlannerBot"
+            "headline": "",
+            "faqItems": [],
+            "primaryButtonText": "",
+            "primaryButtonLink": "",
+            "secondaryButtonText": "",
+            "secondaryButtonLink": "",
+            "helpText": "",
+            "botLink": ""
         }
     
     result = await db.execute(
@@ -85,14 +80,14 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
             response["botLink"] = content.link_url or ""
     
     return {
-        "headline": response.get("headline", "Часто задаваемые вопросы"),
-        "faqItems": faq_items if faq_items else [],
-        "primaryButtonText": response.get("primaryButtonText", "База знаний"),
-        "primaryButtonLink": response.get("primaryButtonLink", "/knowledge-base"),
-        "secondaryButtonText": response.get("secondaryButtonText", "Telegram канал"),
-        "secondaryButtonLink": response.get("secondaryButtonLink", "/telegram-channel"),
-        "helpText": response.get("helpText", "Не нашли ответ? Напишите нам в @LamaPlannerBot"),
-        "botLink": response.get("botLink", "https://t.me/LamaPlannerBot")
+        "headline": response.get("headline", ""),
+        "faqItems": faq_items,
+        "primaryButtonText": response.get("primaryButtonText", ""),
+        "primaryButtonLink": response.get("primaryButtonLink", ""),
+        "secondaryButtonText": response.get("secondaryButtonText", ""),
+        "secondaryButtonLink": response.get("secondaryButtonLink", ""),
+        "helpText": response.get("helpText", ""),
+        "botLink": response.get("botLink", "")
     }
 
 

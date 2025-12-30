@@ -32,10 +32,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def get_auth_service(db: AsyncSession = Depends(get_db)):
     """Получить сервис аутентификации"""
     import os
-    
-    # TODO: Вынести в конфиг/env
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "YOUR_BOT_TOKEN")
-    jwt_secret = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    jwt_secret = os.getenv("JWT_SECRET")
     
     return AuthService(db, bot_token, jwt_secret)
 
@@ -93,12 +91,16 @@ async def login_with_telegram(
             ip_address=ip_address
         )
         
+        # Проверяем, завершена ли регистрация (есть email и приняты условия)
+        registration_completed = bool(user.email and user.agree_terms and user.agree_personal_data)
+        
         return AuthResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user)
+            user=UserResponse.model_validate(user),
+            registration_completed=registration_completed
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -136,12 +138,16 @@ async def login_with_bot(
             ip_address=ip_address
         )
         
+        # Проверяем, завершена ли регистрация (есть email и приняты условия)
+        registration_completed = bool(user.email and user.agree_terms and user.agree_personal_data)
+        
         return AuthResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user)
+            user=UserResponse.model_validate(user),
+            registration_completed=registration_completed
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -183,7 +189,8 @@ async def register_with_email(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user)
+            user=UserResponse.model_validate(user),
+            registration_completed=True  # Регистрация по email всегда завершена
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -214,12 +221,16 @@ async def login_with_email(
             ip_address=ip_address
         )
         
+        # Проверяем, завершена ли регистрация
+        registration_completed = bool(user.email and user.agree_terms and user.agree_personal_data)
+        
         return AuthResponse(
             access_token=access_token,
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user)
+            user=UserResponse.model_validate(user),
+            registration_completed=registration_completed
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -244,12 +255,16 @@ async def refresh_token(
         if not user:
             raise HTTPException(status_code=401, detail="Invalid token")
         
+        # Проверяем, завершена ли регистрация
+        registration_completed = bool(user.email and user.agree_terms and user.agree_personal_data)
+        
         return AuthResponse(
             access_token=new_access_token,
             refresh_token=new_refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user)
+            user=UserResponse.model_validate(user),
+            registration_completed=registration_completed
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
