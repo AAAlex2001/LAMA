@@ -38,31 +38,50 @@ export interface User {
 }
 
 export interface RegisterState {
+  step: 1 | 2;
   loading: boolean;
   error: string | null;
   status: "idle" | "loading" | "success" | "error";
   user: User | null;
   showTelegramWidget: boolean;
+  
+  // Step 2 form
+  email: string;
+  password: string;
+  agreePersonalData: boolean;
+  agreeTerms: boolean;
 }
 
 type RegisterAction =
+  | { type: "SET_STEP"; payload: 1 | 2 }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_STATUS"; payload: RegisterState["status"] }
   | { type: "SET_USER"; payload: User | null }
   | { type: "TOGGLE_TELEGRAM_WIDGET" }
+  | { type: "SET_EMAIL"; payload: string }
+  | { type: "SET_PASSWORD"; payload: string }
+  | { type: "SET_AGREE_PERSONAL_DATA"; payload: boolean }
+  | { type: "SET_AGREE_TERMS"; payload: boolean }
   | { type: "RESET" };
 
 const initialState: RegisterState = {
+  step: 1,
   loading: false,
   error: null,
   status: "idle",
   user: null,
   showTelegramWidget: false,
+  email: "",
+  password: "",
+  agreePersonalData: false,
+  agreeTerms: false,
 };
 
 function reducer(state: RegisterState, action: RegisterAction): RegisterState {
   switch (action.type) {
+    case "SET_STEP":
+      return { ...state, step: action.payload };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "SET_ERROR":
@@ -73,6 +92,14 @@ function reducer(state: RegisterState, action: RegisterAction): RegisterState {
       return { ...state, user: action.payload };
     case "TOGGLE_TELEGRAM_WIDGET":
       return { ...state, showTelegramWidget: !state.showTelegramWidget };
+    case "SET_EMAIL":
+      return { ...state, email: action.payload };
+    case "SET_PASSWORD":
+      return { ...state, password: action.payload };
+    case "SET_AGREE_PERSONAL_DATA":
+      return { ...state, agreePersonalData: action.payload };
+    case "SET_AGREE_TERMS":
+      return { ...state, agreeTerms: action.payload };
     case "RESET":
       return initialState;
     default:
@@ -178,6 +205,11 @@ export function useRegister() {
       setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
       reset: () => dispatch({ type: "RESET" }),
       toggleTelegramWidget: () => dispatch({ type: "TOGGLE_TELEGRAM_WIDGET" }),
+      goToStep: (step: 1 | 2) => dispatch({ type: "SET_STEP", payload: step }),
+      setEmail: (email: string) => dispatch({ type: "SET_EMAIL", payload: email }),
+      setPassword: (password: string) => dispatch({ type: "SET_PASSWORD", payload: password }),
+      setAgreePersonalData: (value: boolean) => dispatch({ type: "SET_AGREE_PERSONAL_DATA", payload: value }),
+      setAgreeTerms: (value: boolean) => dispatch({ type: "SET_AGREE_TERMS", payload: value }),
     }),
     []
   );
