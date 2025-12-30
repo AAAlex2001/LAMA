@@ -5,11 +5,17 @@ import { motion, useMotionValue, useTransform, animate, useInView } from 'framer
 import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
 import Button from "@/components/button/button";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
-type Props = { locale: string; };
+type UsersContent = {
+  number: number;
+  textLine: string;
+  textLine_1: string;
+  buttonText: string;
+};
 
-export default function Users({ locale }: Props) {
+type Props = { locale: string; content: UsersContent };
+
+export default function Users({ locale, content }: Props) {
   const gradientIdMobile = useId();
   const gradientIdTablet = useId();
   const gradientIdDesktop = useId();
@@ -18,32 +24,23 @@ export default function Users({ locale }: Props) {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, amount: 0.3 });
   
-  const [content, setContent] = useState({
-    number: 0,
-    textLine: '',
-    textLine_1: '',
-    buttonText: ''
-  });
+  const safeContent = {
+    number: Number(content?.number || 0),
+    textLine: content?.textLine || '',
+    textLine_1: content?.textLine_1 || '',
+    buttonText: content?.buttonText || '',
+  };
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/users?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        setContent(data);
-      })
-      .catch(() => {});
-  }, [locale]);
-
-  useEffect(() => {
-    if (isInView && content.number > 0) {
-      const controls = animate(count, content.number, {
+    if (isInView && safeContent.number > 0) {
+      const controls = animate(count, safeContent.number, {
         duration: 1,
         ease: "easeOut",
       });
 
       return controls.stop;
     }
-  }, [isInView, count, content.number]);
+  }, [isInView, count, safeContent.number]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -161,13 +158,13 @@ export default function Users({ locale }: Props) {
           <div className={styles.number}>
             <motion.span>{rounded}</motion.span>+
           </div>
-          <p className={styles.textLine}>{renderText(content.textLine)}</p>
+          <p className={styles.textLine}>{renderText(safeContent.textLine)}</p>
           <div className={styles.brandName}>
             <span className={styles.brandLama}>LAMA</span>
             <span className={styles.brandPlanner}>planner</span>
           </div>
-          <p className={styles.textLine_1}>{renderText(content.textLine_1)}</p>
-          <Button text={content.buttonText} href={`/${locale}/login`} active={true} />
+          <p className={styles.textLine_1}>{renderText(safeContent.textLine_1)}</p>
+          <Button text={safeContent.buttonText} href={`/${locale}/login`} active={true} />
         </motion.div>
       </div>
     </section>

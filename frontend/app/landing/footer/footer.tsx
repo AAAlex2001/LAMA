@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import styles from "./footer.module.scss";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface FooterLink {
   text: string;
@@ -14,27 +13,26 @@ interface FooterColumn {
   links: FooterLink[];
 }
 
-type Props = { locale: string; };
+type FooterContent = {
+  brandName: string;
+  copyright: string;
+  telegramLink: string;
+  instagramLink: string;
+  columns: FooterColumn[];
+};
 
-export default function Footer({ locale }: Props) {
-  const [brandName, setBrandName] = useState('');
-  const [copyright, setCopyright] = useState('');
-  const [telegramLink, setTelegramLink] = useState('');
-  const [instagramLink, setInstagramLink] = useState('');
-  const [columns, setColumns] = useState<FooterColumn[]>([]);
+type Props = { locale: string; content: FooterContent };
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/footer?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.brandName) setBrandName(data.brandName);
-        if (data.copyright) setCopyright(data.copyright);
-        if (data.telegramLink) setTelegramLink(data.telegramLink);
-        if (data.instagramLink) setInstagramLink(data.instagramLink);
-        if (data.columns) setColumns(data.columns);
-      })
-      .catch(() => {});
-  }, [locale]);
+export default function Footer({ content }: Props) {
+  const safe = useMemo(() => {
+    return {
+      brandName: content?.brandName || '',
+      copyright: content?.copyright || '',
+      telegramLink: content?.telegramLink || '',
+      instagramLink: content?.instagramLink || '',
+      columns: Array.isArray(content?.columns) ? content.columns : [],
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -71,7 +69,7 @@ export default function Footer({ locale }: Props) {
           <div className={styles.top}>
             <div className={styles.brand}>
               <h2 className={styles.brandName}>
-                {brandName.split('LAMA').map((part, index, array) => 
+                {safe.brandName.split('LAMA').map((part, index, array) => 
                   index < array.length - 1 ? (
                     <span key={index}>
                       {part}
@@ -83,13 +81,13 @@ export default function Footer({ locale }: Props) {
                 )}
               </h2>
               <div className={styles.social}>
-                <a href={telegramLink} className={styles.socialLink} aria-label="Telegram">
+                <a href={safe.telegramLink} className={styles.socialLink} aria-label="Telegram">
                   <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M32.1587 3.10484L1.1503 15.1242C-0.0975299 15.6839 -0.519581 16.8048 0.8487 17.4131L8.80368 19.9543L28.0378 8.00573C29.088 7.25562 30.1632 7.45564 29.238 8.28081L12.7185 23.3154L12.1996 29.678C12.6802 30.6604 13.5603 30.665 14.1216 30.1767L18.692 25.8298L26.5195 31.7215C28.3375 32.8034 29.3267 32.1052 29.7179 30.1223L34.852 5.68589C35.3851 3.24512 34.476 2.16969 32.1587 3.10484Z" fill="#383F45"/>
                   </svg>
 
                 </a>
-                <a href={instagramLink} className={styles.socialLink} aria-label="Instagram">
+                <a href={safe.instagramLink} className={styles.socialLink} aria-label="Instagram">
                   <svg width="35" height="35" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M17.5 12.4031C14.6781 12.4031 12.4031 14.7 12.4031 17.5C12.4031 20.3 14.7 22.5969 17.5 22.5969C20.3 22.5969 22.5969 20.3 22.5969 17.5C22.5969 14.7 20.3 12.4031 17.5 12.4031ZM32.8125 17.5C32.8125 15.3781 32.8125 13.3 32.7031 11.1781C32.5938 8.72813 32.025 6.54063 30.2312 4.76875C28.4375 2.975 26.2719 2.40625 23.8219 2.29687C21.7 2.1875 19.6219 2.1875 17.5 2.1875C15.3781 2.1875 13.3 2.1875 11.1781 2.29687C8.72813 2.40625 6.54063 2.975 4.76875 4.76875C2.975 6.5625 2.40625 8.72813 2.29687 11.1781C2.1875 13.3 2.1875 15.3781 2.1875 17.5C2.1875 19.6219 2.1875 21.7 2.29687 23.8219C2.40625 26.2719 2.975 28.4594 4.76875 30.2312C6.5625 32.025 8.72813 32.5938 11.1781 32.7031C13.3 32.8125 15.3781 32.8125 17.5 32.8125C19.6219 32.8125 21.7 32.8125 23.8219 32.7031C26.2719 32.5938 28.4594 32.025 30.2312 30.2312C32.025 28.4375 32.5938 26.2719 32.7031 23.8219C32.8344 21.7219 32.8125 19.6219 32.8125 17.5ZM17.5 25.3531C13.1469 25.3531 9.64687 21.8531 9.64687 17.5C9.64687 13.1469 13.1469 9.64687 17.5 9.64687C21.8531 9.64687 25.3531 13.1469 25.3531 17.5C25.3531 21.8531 21.8531 25.3531 17.5 25.3531ZM25.6812 11.1562C24.675 11.1562 23.8438 10.3469 23.8438 9.31875C23.8438 8.29063 24.6531 7.48125 25.6812 7.48125C26.7094 7.48125 27.5187 8.29063 27.5187 9.31875C27.5243 9.55836 27.4805 9.79655 27.3902 10.0186C27.2999 10.2406 27.165 10.4417 26.9937 10.6094C26.826 10.7806 26.6249 10.9155 26.4029 11.0059C26.1809 11.0962 25.9427 11.1399 25.7031 11.1344L25.6812 11.1562Z" fill="#383F45"/>
                   </svg>
@@ -99,7 +97,7 @@ export default function Footer({ locale }: Props) {
           </div>
 
           <div className={styles.content}>
-            {columns.map((column, index) => (
+            {safe.columns.map((column, index) => (
               <div key={index} className={styles.column}>
                 <h3 className={styles.columnTitle}>{renderText(column.title)}</h3>
                 <ul className={styles.links}>
@@ -189,7 +187,7 @@ export default function Footer({ locale }: Props) {
               </svg>
             </div>
           </div>
-          <p className={styles.copyright}>{renderText(copyright)}</p>
+          <p className={styles.copyright}>{renderText(safe.copyright)}</p>
         </div>
       </div>
     </footer>

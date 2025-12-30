@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./hero.module.scss";
 import Button from "@/components/button/button";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 type Props = {
   locale: string;
+  content: HeroContent;
 };
 
 interface HeroImage {
@@ -23,21 +23,16 @@ interface HeroContent {
   images: HeroImage[];
 }
 
-export default function Hero({ locale }: Props) {
-  const [content, setContent] = useState<HeroContent>({
-    headline: "",
-    paragraph: "",
-    paragraphSecondary: "",
-    buttonText: "",
-    images: []
-  });
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/hero?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => setContent(data))
-      .catch(() => {});
-  }, [locale]);
+export default function Hero({ locale, content }: Props) {
+  const safeContent = useMemo(() => {
+    return {
+      headline: content?.headline || "",
+      paragraph: content?.paragraph || "",
+      paragraphSecondary: content?.paragraphSecondary || "",
+      buttonText: content?.buttonText || "",
+      images: Array.isArray(content?.images) ? content.images : [],
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -78,21 +73,21 @@ export default function Hero({ locale }: Props) {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h1 className={styles.headline}>
-            {renderText(content.headline)}
+            {renderText(safeContent.headline)}
           </h1>
           <p className={styles.paragraph}>
-            {renderText(content.paragraph)}
+            {renderText(safeContent.paragraph)}
           </p>
           <p className={styles.paragraphSecondary}>
-            {renderText(content.paragraphSecondary)}
+            {renderText(safeContent.paragraphSecondary)}
           </p>
           <div className={styles.buttonContainer}>
-            <Button text={content.buttonText} href={`/${locale}/login`} />
+            <Button text={safeContent.buttonText} href={`/${locale}/login`} />
           </div>
         </motion.div>
       </div>
       <div className={styles.images}>
-        {content.images.map((image, index) => {
+        {safeContent.images.map((image, index) => {
           const delays = [0, 0.1, 0.2, 0, 0.2];
           const durations = [0.6, 0.6, 0.6, 0.8, 0.8];
           const classNames = [

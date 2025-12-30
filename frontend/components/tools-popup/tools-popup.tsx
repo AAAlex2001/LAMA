@@ -75,8 +75,10 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
 
   if (!isOpen) return null;
 
+  const variantClass = variant === 'mobile' ? styles.mobile : undefined;
+
   return (
-    <div className={`${styles.popup} ${styles[variant]}`} ref={popupRef}>
+    <div className={[styles.popup, variantClass].filter(Boolean).join(' ')} ref={popupRef}>
       <div className={styles.content}>
         {toolsItems.map((item, index) => (
           <a 

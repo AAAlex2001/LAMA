@@ -1,42 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
-type Props = { locale: string; };
-
-export default function Pricing({ locale }: Props) {
-  const gradientId768 = useId();
-  const gradientId1440 = useId();
-
-  const [headline, setHeadline] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [plans, setPlans] = useState<Array<{
+type PricingContent = {
+  headline: string;
+  subtitle: string;
+  description: string;
+  plans: Array<{
     title: string;
     price: string;
     features: string[];
     isHighlighted: boolean;
-  }>>([]);
+  }>;
+};
+
+type Props = { locale: string; content: PricingContent };
+
+export default function Pricing({ locale, content }: Props) {
+  const gradientId768 = useId();
+  const gradientId1440 = useId();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/pricing?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.headline) setHeadline(data.headline);
-        if (data.subtitle) setSubtitle(data.subtitle);
-        if (data.description) setDescription(data.description);
-        if (data.plans && data.plans.length > 0) {
-          setPlans(data.plans);
-        }
-      })
-      .catch(() => {});
-  }, [locale]);
+  const safeContent = useMemo(() => {
+    return {
+      headline: content?.headline || '',
+      subtitle: content?.subtitle || '',
+      description: content?.description || '',
+      plans: Array.isArray(content?.plans) ? content.plans : [],
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -126,12 +122,12 @@ export default function Pricing({ locale }: Props) {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h1 className={styles.headline}>{renderText(headline)}</h1>
+          <h1 className={styles.headline}>{renderText(safeContent.headline)}</h1>
           <h2 className={styles.subtitle}>
-            {renderText(subtitle)}
+            {renderText(safeContent.subtitle)}
           </h2>
           <p className={styles.description}>
-            {renderText(description)}
+            {renderText(safeContent.description)}
           </p>
         </motion.div>
 
@@ -155,7 +151,7 @@ export default function Pricing({ locale }: Props) {
           >
             <img src="/hero_4.svg" alt="Pricing illustration" />
           </motion.div>
-          {plans.map((plan, index) => {
+          {safeContent.plans.map((plan, index) => {
             const isBaseCard = index === 1;
             const shouldShowHover = hoveredIndex === null ? isBaseCard : hoveredIndex === index;
             

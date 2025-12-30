@@ -1,10 +1,9 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useMemo, useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./faq.module.scss";
 import Button from "@/components/button/button";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface FAQItem {
   question: string;
@@ -20,35 +19,39 @@ interface FAQActions {
   botLink?: string;
 }
 
-type Props = { locale: string; };
+type FAQContent = {
+  headline: string;
+  faqItems: FAQItem[];
+  primaryButtonText?: string;
+  primaryButtonLink?: string;
+  secondaryButtonText?: string;
+  secondaryButtonLink?: string;
+  helpText?: string;
+  botLink?: string;
+};
 
-export default function FAQ({ locale }: Props) {
+type Props = { locale: string; content: FAQContent };
+
+export default function FAQ({ content }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
 
-  const [headline, setHeadline] = useState('');
-  const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
-  const [actions, setActions] = useState<FAQActions>({});
+  const safe = useMemo(() => {
+    const actions: FAQActions = {
+      primaryText: content?.primaryButtonText,
+      primaryLink: content?.primaryButtonLink,
+      secondaryText: content?.secondaryButtonText,
+      secondaryLink: content?.secondaryButtonLink,
+      helpText: content?.helpText,
+      botLink: content?.botLink,
+    };
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/faq?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.headline) setHeadline(data.headline);
-        if (data.faqItems && data.faqItems.length > 0) {
-          setFaqItems(data.faqItems);
-        }
-        setActions({
-          primaryText: data.primaryText,
-          primaryLink: data.primaryLink,
-          secondaryText: data.secondaryText,
-          secondaryLink: data.secondaryLink,
-          helpText: data.helpText,
-          botLink: data.botLink,
-        });
-      })
-      .catch(() => {});
-  }, [locale]);
+    return {
+      headline: content?.headline || '',
+      faqItems: Array.isArray(content?.faqItems) ? content.faqItems : [],
+      actions,
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     const parts = text.split(/(```.*?```|``.*?``|`.*?`|@\w+)/);
@@ -64,7 +67,7 @@ export default function FAQ({ locale }: Props) {
         return <span key={index} className={styles.highlight}>{part.slice(1, -1)}</span>;
       }
       if (part.startsWith('@')) {
-        return <a key={index} href={actions.botLink || 'https://t.me/LamaPlannerBot'} className={styles.botLink}>{part}</a>;
+        return <a key={index} href={safe.actions.botLink || 'https://t.me/LamaPlannerBot'} className={styles.botLink}>{part}</a>;
       }
       return <span key={index}>{part}</span>;
     });
@@ -84,10 +87,10 @@ export default function FAQ({ locale }: Props) {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.3 }}
         >
-          <h2 className={styles.headline}>{renderText(headline)}</h2>
+          <h2 className={styles.headline}>{renderText(safe.headline)}</h2>
           
           <div className={styles.items}>
-          {faqItems.map((item, index) => (
+          {safe.faqItems.map((item, index) => (
             <div 
               key={index} 
               className={`${styles.item} ${openIndex === index ? styles.open : ''}`}
@@ -136,15 +139,15 @@ export default function FAQ({ locale }: Props) {
 
         <div className={styles.actions}>
           <Button 
-            text={actions.primaryText || "База знаний"} 
-            href={actions.primaryLink || "/knowledge-base"} 
+            text={safe.actions.primaryText || "База знаний"} 
+            href={safe.actions.primaryLink || "/knowledge-base"} 
             active={true} 
             fullWidth={true} 
             showArrow={false}
           />
           <Button 
-            text={actions.secondaryText || "Telegram канал"} 
-            href={actions.secondaryLink || "/telegram-channel"}  
+            text={safe.actions.secondaryText || "Telegram канал"} 
+            href={safe.actions.secondaryLink || "/telegram-channel"}  
             fullWidth={true} 
             showArrow={false}
           />
@@ -152,9 +155,9 @@ export default function FAQ({ locale }: Props) {
 
           <div className={styles.help}>
             <p className={styles.helpText}>
-              {actions.helpText ? renderText(actions.helpText) : (
+              {safe.actions.helpText ? renderText(safe.actions.helpText) : (
                 <>
-                  Не нашли ответ? Напишите нам в <a href={actions.botLink || "https://t.me/LamaPlannerBot"} className={styles.botLink}>@LamaPlannerBot</a>
+                  Не нашли ответ? Напишите нам в <a href={safe.actions.botLink || "https://t.me/LamaPlannerBot"} className={styles.botLink}>@LamaPlannerBot</a>
                 </>
               )}
             </p>

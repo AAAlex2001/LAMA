@@ -1,16 +1,16 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
 import Button from "@/components/button/button";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 type Props = {
   locale: string;
+  content: AdvantagesContent;
 };
 
 interface AdvantagesCard {
@@ -21,25 +21,22 @@ interface AdvantagesCard {
   linkUrl?: string | null;
 }
 
-export default function Advantages({ locale }: Props) {
+interface AdvantagesContent {
+  headline: string;
+  subtitle: string;
+  cards: AdvantagesCard[];
+}
+
+export default function Advantages({ locale, content }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
 
-  const [headline, setHeadline] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [swiperCards, setSwiperCards] = useState<AdvantagesCard[]>([]);
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/advantages?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.headline) setHeadline(data.headline);
-        if (data.subtitle) setSubtitle(data.subtitle);
-        if (data.cards && data.cards.length > 0) {
-          setSwiperCards(data.cards);
-        }
-      })
-      .catch(() => {});
-  }, [locale]);
+  const safe = useMemo(() => {
+    return {
+      headline: content?.headline || '',
+      subtitle: content?.subtitle || '',
+      cards: Array.isArray(content?.cards) ? content.cards : [],
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -79,15 +76,15 @@ export default function Advantages({ locale }: Props) {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h2 className={styles.headline}>
-            {renderText(headline)}
+            {renderText(safe.headline)}
           </h2>
           <p className={styles.subtitle}>
-            {renderText(subtitle)}
+            {renderText(safe.subtitle)}
           </p>
 
           <div className={styles.cards}>
             {/* Первые 2 статичные карточки */}
-            {swiperCards.slice(0, 2).map((card, index) => (
+            {safe.cards.slice(0, 2).map((card, index) => (
               card.isCta ? (
                 <div key={index} className={styles.card}>
                   <div className={styles.ctaCard}>
@@ -113,7 +110,7 @@ export default function Advantages({ locale }: Props) {
             ))}
 
             {/* Остальные карточки в свайпере */}
-            {swiperCards.length > 2 && (
+            {safe.cards.length > 2 && (
               <div className={styles.swiperContainer}>
                 <Swiper
                   onSwiper={(swiper) => {
@@ -132,7 +129,7 @@ export default function Advantages({ locale }: Props) {
                   }}
                   className={styles.swiper}
                 >
-                  {swiperCards.slice(2).map((card, index) => (
+                  {safe.cards.slice(2).map((card, index) => (
                     <SwiperSlide key={index + 2}>
                       {card.isCta ? (
                         <div className={styles.ctaCard}>

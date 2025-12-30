@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./key-advantages.module.scss";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 interface KeyAdvantage {
   icon?: string | null;
@@ -11,23 +10,20 @@ interface KeyAdvantage {
   description: string;
 }
 
-type Props = { locale: string; };
+type KeyAdvantagesContent = {
+  headline: string;
+  advantages: KeyAdvantage[];
+};
 
-export default function KeyAdvantages({ locale }: Props) {
-  const [headline, setHeadline] = useState('');
-  const [advantages, setAdvantages] = useState<KeyAdvantage[]>([]);
+type Props = { locale: string; content: KeyAdvantagesContent };
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/key-advantages?locale=${locale}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.headline) setHeadline(data.headline);
-        if (data.advantages && data.advantages.length > 0) {
-          setAdvantages(data.advantages);
-        }
-      })
-      .catch(() => {});
-  }, [locale]);
+export default function KeyAdvantages({ content }: Props) {
+  const safeContent = useMemo(() => {
+    return {
+      headline: content?.headline || '',
+      advantages: Array.isArray(content?.advantages) ? content.advantages : [],
+    };
+  }, [content]);
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`
@@ -67,7 +63,7 @@ export default function KeyAdvantages({ locale }: Props) {
           viewport={{ once: true, amount: 0.3 }}
         >
           <h1 className={styles.headline}>
-            {headline.split(/(LAMAplanner)/i).map((part, index) => 
+            {safeContent.headline.split(/(LAMAplanner)/i).map((part, index) => 
               part.toLowerCase() === 'lamaplanner' ? (
                 <span key={index} className={styles.highlight}>
                   <span className={styles.lama}>LAMA</span>planner
@@ -79,7 +75,7 @@ export default function KeyAdvantages({ locale }: Props) {
           </h1>
           
           <div className={styles.cards}>
-          {advantages.map((advantage, index) => (
+          {safeContent.advantages.map((advantage, index) => (
             <div key={index} className={styles.card}>
               <div className={styles.cardHeader}>
               <div className={styles.icon}>
