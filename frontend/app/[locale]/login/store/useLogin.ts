@@ -74,7 +74,6 @@ type LoginAction =
   | { type: "SET_FIELD_ERROR"; payload: { field: keyof LoginState["fieldErrors"]; message: string | null } }
   | { type: "CLEAR_FIELD_ERRORS" }
   | { type: "SET_USER"; payload: User | null }
-  | { type: "TOGGLE_TELEGRAM_WIDGET" }
   | { type: "RESET" };
 
 const initialState: LoginState = {
@@ -82,7 +81,7 @@ const initialState: LoginState = {
   error: null,
   status: "idle",
   user: null,
-  showTelegramWidget: false,
+  showTelegramWidget: true,
   
   form: {
     email: "",
@@ -132,9 +131,6 @@ function reducer(state: LoginState, action: LoginAction): LoginState {
       
     case "SET_USER":
       return { ...state, user: action.payload };
-      
-    case "TOGGLE_TELEGRAM_WIDGET":
-      return { ...state, showTelegramWidget: !state.showTelegramWidget };
       
     case "RESET":
       return initialState;
@@ -422,7 +418,6 @@ export function useLogin() {
       setEmail: (v: string) => dispatch({ type: "SET_EMAIL", payload: v }),
       setPassword: (v: string) => dispatch({ type: "SET_PASSWORD", payload: v }),
       toggleShowPassword: () => dispatch({ type: "TOGGLE_SHOW_PASSWORD" }),
-      toggleTelegramWidget: () => dispatch({ type: "TOGGLE_TELEGRAM_WIDGET" }),
       setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
       clearNotifications: () => dispatch({ type: "CLEAR_NOTIFICATIONS" }),
       reset: () => dispatch({ type: "RESET" }),

@@ -22,7 +22,6 @@ export default function RegisterPage() {
     widgetContainerRef,
     initTelegramWidget,
     openBotForLogin,
-    toggleTelegramWidget,
     goToStep,
     setEmail,
     setPassword,
@@ -35,7 +34,7 @@ export default function RegisterPage() {
   useEffect(() => {
     initTelegramWidget();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.showTelegramWidget]);
+  }, []);
 
   useEffect(() => {
     const step = searchParams.get('step');
@@ -64,22 +63,21 @@ export default function RegisterPage() {
         <span className={styles.methodLabel}>Выберите способ входа</span>
         
         <div className={styles.telegramButtons}>
-          <div 
-            ref={widgetContainerRef} 
-            className={styles.widgetContainer}
-            style={{ display: state.showTelegramWidget ? 'flex' : 'none' }}
-          />
-          
-          {!state.showTelegramWidget && (
+          <div className={styles.telegramAuthWrapper}>
             <Button
               text="Через Telegram"
               icon={<TelegramIcon />}
               showArrow={false}
-              onClick={toggleTelegramWidget}
+              onClick={() => {}}
               fullWidth
               active={true}
+              className={styles.telegramButton}
             />
-          )}
+            <div
+              ref={widgetContainerRef}
+              className={styles.telegramWidgetOverlay}
+            />
+          </div>
           
           <Button
             text="Telegram бот"

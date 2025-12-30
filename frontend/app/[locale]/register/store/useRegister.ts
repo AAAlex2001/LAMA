@@ -63,7 +63,6 @@ type RegisterAction =
   | { type: "SET_STATUS"; payload: RegisterState["status"] }
   | { type: "SET_USER"; payload: User | null }
   | { type: "SET_ACCESS_TOKEN"; payload: string | null }
-  | { type: "TOGGLE_TELEGRAM_WIDGET" }
   | { type: "SET_EMAIL"; payload: string }
   | { type: "SET_PASSWORD"; payload: string }
   | { type: "SET_AGREE_PERSONAL_DATA"; payload: boolean }
@@ -76,7 +75,7 @@ const initialState: RegisterState = {
   error: null,
   status: "idle",
   user: null,
-  showTelegramWidget: false,
+  showTelegramWidget: true,
   accessToken: null,
   email: "",
   password: "",
@@ -98,8 +97,6 @@ function reducer(state: RegisterState, action: RegisterAction): RegisterState {
       return { ...state, user: action.payload };
     case "SET_ACCESS_TOKEN":
       return { ...state, accessToken: action.payload };
-    case "TOGGLE_TELEGRAM_WIDGET":
-      return { ...state, showTelegramWidget: !state.showTelegramWidget };
     case "SET_EMAIL":
       return { ...state, email: action.payload };
     case "SET_PASSWORD":
@@ -195,7 +192,6 @@ export function useRegister() {
 
   const initTelegramWidget = useCallback(() => {
     if (!widgetContainerRef.current) return;
-    if (!state.showTelegramWidget) return;
 
     widgetContainerRef.current.innerHTML = "";
 
@@ -213,7 +209,7 @@ export function useRegister() {
     script.setAttribute("data-onauth", "handleTelegramAuth(user)");
 
     widgetContainerRef.current.appendChild(script);
-  }, [handleTelegramAuth, state.showTelegramWidget]);
+  }, [handleTelegramAuth]);
 
   const openBotForLogin = useCallback(() => {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=register`, "_blank");
@@ -303,7 +299,6 @@ export function useRegister() {
     () => ({
       setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
       reset: () => dispatch({ type: "RESET" }),
-      toggleTelegramWidget: () => dispatch({ type: "TOGGLE_TELEGRAM_WIDGET" }),
       goToStep: (step: 1 | 2) => dispatch({ type: "SET_STEP", payload: step }),
       setEmail: (email: string) => dispatch({ type: "SET_EMAIL", payload: email }),
       setPassword: (password: string) => dispatch({ type: "SET_PASSWORD", payload: password }),

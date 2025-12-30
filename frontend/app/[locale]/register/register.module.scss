@@ -76,6 +76,42 @@
   width: 100%;
 }
 
+.telegramAuthWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.telegramAuthWrapper:hover .telegramButton {
+  background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+}
+
+.telegramAuthWrapper:hover .telegramButton button {
+  background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+}
+
+.telegramAuthWrapper:hover .telegramButton span {
+  background-image: none !important;
+  color: #FFFFFF !important;
+  -webkit-text-fill-color: #FFFFFF;
+}
+
+.telegramAuthWrapper:hover .telegramButton svg path {
+  stroke: #FFFFFF !important;
+  fill: #FFFFFF !important;
+}
+
+.telegramWidgetOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  opacity: 0;
+}
+
+.telegramWidgetOverlay iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 .widgetContainer {
   width: 100%;
   display: flex;

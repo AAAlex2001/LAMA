@@ -19,14 +19,13 @@ export default function LoginPage() {
     loginWithEmail,
     setEmail,
     setPassword,
-    toggleTelegramWidget,
     clearNotifications,
   } = useLogin();
 
   useEffect(() => {
     initTelegramWidget();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.showTelegramWidget]);
+  }, []);
 
   const getSuccessMessage = () => {
     const displayName = state.user?.telegram_account?.first_name 
@@ -59,22 +58,21 @@ export default function LoginPage() {
 
         <Card title="Вход в аккаунт">
           <div className={styles.telegramButtons}>
-            <div 
-              ref={widgetContainerRef} 
-              className={styles.widgetContainer}
-              style={{ display: state.showTelegramWidget ? 'flex' : 'none' }}
-            />
-            
-            {!state.showTelegramWidget && (
+            <div className={styles.telegramAuthWrapper}>
               <Button
                 text="Через Telegram"
                 icon={<TelegramIcon />}
                 showArrow={false}
-                onClick={toggleTelegramWidget}
+                onClick={() => {}}
                 active
                 fullWidth
+                className={styles.telegramButton}
               />
-            )}
+              <div
+                ref={widgetContainerRef}
+                className={styles.telegramWidgetOverlay}
+              />
+            </div>
             
             <Button
               text="Telegram бот"
