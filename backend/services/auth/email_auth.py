@@ -7,13 +7,9 @@ from datetime import datetime, timezone, timedelta
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
-from passlib.context import CryptContext
+import bcrypt
 
 from backend.models.auth import User, UserSession
-
-
-# Контекст для хеширования паролей
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class EmailAuthService:
@@ -26,12 +22,20 @@ class EmailAuthService:
     @staticmethod
     def hash_password(password: str) -> str:
         """Хешировать пароль"""
-        return pwd_context.hash(password)
+        password_bytes = password.encode('utf-8')
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
 
     @staticmethod
     def verify_password(password: str, password_hash: str) -> bool:
         """Проверить пароль"""
-        return pwd_context.verify(password, password_hash)
+        try:
+            password_bytes = password.encode('utf-8')
+            hash_bytes = password_hash.encode('utf-8')
+            return bcrypt.checkpw(password_bytes, hash_bytes)
+        except Exception:
+            return False
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Получить пользователя по email"""
@@ -94,7 +98,13 @@ class EmailAuthService:
         self.db.add(session)
         
         await self.db.commit()
-        await self.db.refresh(user)
+        
+        # Перезагружаем пользователя с telegram_account
+        query = select(User).where(User.id == user.id).options(
+            joinedload(User.telegram_account)
+        )
+        result = await self.db.execute(query)
+        user = result.unique().scalar_one()
 
         return user
 
@@ -138,7 +148,13 @@ class EmailAuthService:
         self.db.add(session)
         
         await self.db.commit()
-        await self.db.refresh(user)
+        
+        # Перезагружаем пользователя с telegram_account
+        query = select(User).where(User.id == user.id).options(
+            joinedload(User.telegram_account)
+        )
+        result = await self.db.execute(query)
+        user = result.unique().scalar_one()
 
         return user
 
@@ -178,6 +194,12 @@ class EmailAuthService:
         user.agree_terms = agree_terms
         
         await self.db.commit()
-        await self.db.refresh(user)
+        
+        # Перезагружаем пользователя с telegram_account
+        query = select(User).where(User.id == user.id).options(
+            joinedload(User.telegram_account)
+        )
+        result = await self.db.execute(query)
+        user = result.unique().scalar_one()
 
         return user
