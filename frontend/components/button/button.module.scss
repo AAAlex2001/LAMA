@@ -125,11 +125,11 @@
 }
 
 .button.active .buttonIcon svg path {
-  fill: white;
+  fill: white !important;
 }
 
-.button:not(.active) .buttonIcon svg path {
-  fill: #3B82F6;
+.button:hover .buttonIcon svg path {
+  fill: white !important;
 }
 
 .spinner {

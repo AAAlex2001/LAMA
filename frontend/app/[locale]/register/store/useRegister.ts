@@ -1,0 +1,194 @@
+"use client";
+
+import { useReducer, useCallback, useMemo, useRef } from "react";
+import { useRouter } from "next/navigation";
+
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
+const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "LAMMAPLANNERBOT";
+
+const ENDPOINTS = {
+  telegramAuth: `${API_URL}/auth/telegram`,
+  botLogin: `${API_URL}/auth/bot-login`,
+} as const;
+
+export interface TelegramWidgetUser {
+  id: number;
+  hash: string;
+  auth_date: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  [key: string]: unknown;
+}
+
+export interface User {
+  id: number;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  telegram_account?: {
+    telegram_id: number;
+    username?: string;
+    first_name?: string;
+    last_name?: string;
+    photo_url?: string;
+  };
+}
+
+export interface RegisterState {
+  loading: boolean;
+  error: string | null;
+  status: "idle" | "loading" | "success" | "error";
+  user: User | null;
+  showTelegramWidget: boolean;
+}
+
+type RegisterAction =
+  | { type: "SET_LOADING"; payload: boolean }
+  | { type: "SET_ERROR"; payload: string | null }
+  | { type: "SET_STATUS"; payload: RegisterState["status"] }
+  | { type: "SET_USER"; payload: User | null }
+  | { type: "TOGGLE_TELEGRAM_WIDGET" }
+  | { type: "RESET" };
+
+const initialState: RegisterState = {
+  loading: false,
+  error: null,
+  status: "idle",
+  user: null,
+  showTelegramWidget: false,
+};
+
+function reducer(state: RegisterState, action: RegisterAction): RegisterState {
+  switch (action.type) {
+    case "SET_LOADING":
+      return { ...state, loading: action.payload };
+    case "SET_ERROR":
+      return { ...state, error: action.payload };
+    case "SET_STATUS":
+      return { ...state, status: action.payload };
+    case "SET_USER":
+      return { ...state, user: action.payload };
+    case "TOGGLE_TELEGRAM_WIDGET":
+      return { ...state, showTelegramWidget: !state.showTelegramWidget };
+    case "RESET":
+      return initialState;
+    default:
+      return state;
+  }
+}
+
+function parseErrorMessage(detail: unknown): string {
+  if (Array.isArray(detail)) {
+    return detail.map((d: Record<string, unknown>) => d?.msg || String(d)).join(", ");
+  }
+  if (typeof detail === "string") {
+    return detail;
+  }
+  return "Ошибка сервера. Попробуйте позже";
+}
+
+function saveTokens(accessToken: string, refreshToken?: string) {
+  localStorage.setItem("lamaplanner_access_token", accessToken);
+  if (refreshToken) {
+    localStorage.setItem("lamaplanner_refresh_token", refreshToken);
+  }
+}
+
+export function useRegister() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  const router = useRouter();
+  const widgetContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const handleTelegramAuth = useCallback(
+    async (user: TelegramWidgetUser) => {
+      dispatch({ type: "SET_STATUS", payload: "loading" });
+      dispatch({ type: "SET_LOADING", payload: true });
+
+      try {
+        const response = await fetch(ENDPOINTS.telegramAuth, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(user),
+          credentials: "include",
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(parseErrorMessage(data.detail));
+        }
+
+        if (data?.access_token) {
+          saveTokens(data.access_token, data.refresh_token);
+        }
+
+        dispatch({ type: "SET_USER", payload: data.user || null });
+        dispatch({ type: "SET_STATUS", payload: "success" });
+        
+        setTimeout(() => {
+          router.push("/");
+        }, 1500);
+
+        return true;
+      } catch (error) {
+        dispatch({ type: "SET_STATUS", payload: "error" });
+        dispatch({
+          type: "SET_ERROR",
+          payload: error instanceof Error ? error.message : "Произошла неизвестная ошибка",
+        });
+        return false;
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+      }
+    },
+    [router]
+  );
+
+  const initTelegramWidget = useCallback(() => {
+    if (!widgetContainerRef.current) return;
+    if (!state.showTelegramWidget) return;
+
+    widgetContainerRef.current.innerHTML = "";
+
+    (window as unknown as Record<string, unknown>).handleTelegramAuth = handleTelegramAuth;
+
+    const script = document.createElement("script");
+    script.src = "https://telegram.org/js/telegram-widget.js?22";
+    script.async = true;
+    script.setAttribute("data-telegram-login", TELEGRAM_BOT_USERNAME);
+    script.setAttribute("data-size", "large");
+    script.setAttribute("data-request-access", "write");
+    script.setAttribute("data-radius", "12");
+    script.setAttribute("data-userpic", "false");
+    script.setAttribute("data-lang", "ru");
+    script.setAttribute("data-onauth", "handleTelegramAuth(user)");
+
+    widgetContainerRef.current.appendChild(script);
+  }, [handleTelegramAuth, state.showTelegramWidget]);
+
+  const openBotForLogin = useCallback(() => {
+    window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=register`, "_blank");
+  }, []);
+
+  const actions = useMemo(
+    () => ({
+      setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
+      reset: () => dispatch({ type: "RESET" }),
+      toggleTelegramWidget: () => dispatch({ type: "TOGGLE_TELEGRAM_WIDGET" }),
+    }),
+    []
+  );
+
+  return {
+    state,
+    widgetContainerRef,
+    initTelegramWidget,
+    openBotForLogin,
+    ...actions,
+  };
+}
+
+export type RegisterStore = ReturnType<typeof useRegister>;
