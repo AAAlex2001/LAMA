@@ -9,9 +9,11 @@ from contextlib import asynccontextmanager
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from backend.config import get_bot
 from backend.models.bots import Bot as BotModel
+from backend.models.channels import ChannelGroup
 from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
@@ -48,4 +50,24 @@ async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
     query = select(BotModel).where(BotModel.token == master_token).limit(1)
     result = await db.execute(query)
     return result.scalar_one_or_none()
+
+
+async def get_bot_by_chat_id(db: AsyncSession, chat_id: int) -> Optional[BotModel]:
+    """Получить бота по telegram chat_id (через связь с каналом)"""
+    # Находим канал по telegram_id
+    query = (
+        select(ChannelGroup)
+        .where(ChannelGroup.telegram_id == chat_id)
+        .options(joinedload(ChannelGroup.bot))
+    )
+    result = await db.execute(query)
+    channel = result.unique().scalar_one_or_none()
+    
+    if channel and channel.bot:
+        logger.info(f"Found bot {channel.bot.id} for chat {chat_id}")
+        return channel.bot
+    
+    # Fallback: если канал не найден, пробуем master bot
+    logger.warning(f"Channel not found for chat {chat_id}, falling back to master bot")
+    return await get_master_bot_model(db)
 

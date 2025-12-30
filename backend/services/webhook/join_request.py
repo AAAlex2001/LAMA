@@ -70,6 +70,7 @@ class JoinRequestHandler:
                     await self.db.commit()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
+                    logger.info(f"MANUAL mode detected for bot {self.bot_model.id}, calling handle_manual_mode")
                     await self.handle_manual_mode(telegram_bot, join_request)
                     return
 
@@ -101,8 +102,13 @@ class JoinRequestHandler:
         """Обработка MANUAL режима - отправка капчи в ЛС."""
         captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
         
-        if captcha_mode not in (CaptchaMode.AFTER_JOIN, CaptchaMode.BOTH):
+        logger.info(f"handle_manual_mode: captcha_mode={captcha_mode}")
+        
+        if captcha_mode not in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+            logger.info(f"Captcha disabled for JOIN_REQUEST, mode={captcha_mode}")
             return
+        
+        logger.info("Sending captcha to user...")
 
         try:
             captcha_service = CaptchaService(self.db)

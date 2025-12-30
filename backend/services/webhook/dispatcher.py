@@ -8,7 +8,7 @@ from aiogram.types import Update, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
-from backend.services.webhook.base import get_master_bot_model
+from backend.services.webhook.base import get_master_bot_model, get_bot_by_chat_id
 from backend.services.webhook.moderation import ModerationHandler
 from backend.services.webhook.message import MessageHandler
 from backend.services.webhook.join_request import JoinRequestHandler
@@ -79,7 +79,23 @@ class WebhookDispatcher:
                         await WebhookDispatcher.handle_auth_command(db, update.message)
                         return
                 
-                bot_model = await get_master_bot_model(db)
+                # Определяем chat_id для поиска правильного бота
+                chat_id = None
+                if update.chat_join_request:
+                    chat_id = update.chat_join_request.chat.id
+                elif update.message and update.message.chat:
+                    chat_id = update.message.chat.id
+                elif update.callback_query and update.callback_query.message:
+                    chat_id = update.callback_query.message.chat.id
+                elif update.chat_member:
+                    chat_id = update.chat_member.chat.id
+                
+                # Получаем бота через канал (по настройкам владельца канала)
+                if chat_id:
+                    bot_model = await get_bot_by_chat_id(db, chat_id)
+                else:
+                    bot_model = await get_master_bot_model(db)
+                    
                 if not bot_model:
                     return
 
