@@ -68,6 +68,7 @@ export default function RegisterPage() {
               showArrow={false}
               onClick={toggleTelegramWidget}
               fullWidth
+              active={true}
             />
           )}
           
@@ -77,17 +78,11 @@ export default function RegisterPage() {
             showArrow={false}
             onClick={openBotForLogin}
             fullWidth
+            active={true}
           />
         </div>
 
         <div className={styles.actions}>
-          <Button
-            text="Продолжить"
-            showArrow={false}
-            onClick={() => goToStep(2)}
-            active
-            fullWidth
-          />
           
           <div className={styles.login}>
             <span>Уже есть аккаунт?</span>

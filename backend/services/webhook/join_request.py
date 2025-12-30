@@ -199,8 +199,36 @@ class JoinRequestHandler:
             async with get_bot_session() as telegram_bot:
                 await telegram_bot.approve_chat_join_request(chat_id=chat_id, user_id=user_id)
                 logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
+                
+                # Обновляем member_count для всех ссылок этого чата
+                await self.update_member_count(chat_id)
+                
                 return True
         except TelegramAPIError as e:
             logger.warning(f"Approve join request failed: {e}")
             return False
+
+    async def update_member_count(self, chat_id: int) -> None:
+        """Обновить member_count для всех invite links чата"""
+        try:
+            # Находим канал
+            from backend.models.channels import ChannelGroup
+            query = select(ChannelGroup).where(ChannelGroup.telegram_id == chat_id)
+            result = await self.db.execute(query)
+            channel = result.scalar_one_or_none()
+            
+            if not channel:
+                return
+            
+            # Обновляем member_count для всех ссылок канала
+            stmt = (
+                update(ChatInviteLink)
+                .where(ChatInviteLink.channel_id == channel.id)
+                .values(member_count=ChatInviteLink.member_count + 1)
+            )
+            await self.db.execute(stmt)
+            await self.db.commit()
+            logger.info(f"Updated member_count for channel {channel.id}")
+        except Exception as e:
+            logger.warning(f"Failed to update member_count: {e}")
 
