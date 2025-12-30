@@ -18,6 +18,20 @@ interface HeroContent {
   images: HeroImage[];
 }
 
+function normalizeHeroContent(data: Partial<HeroContent> | null | undefined): HeroContent {
+  const safe = data ?? {};
+  const images = Array.isArray(safe.images) ? safe.images : [];
+  const normalizedImages = Array.from({ length: 5 }, (_, i) => images[i] ?? { url: '', alt: '' });
+
+  return {
+    headline: safe.headline ?? '',
+    paragraph: safe.paragraph ?? '',
+    paragraphSecondary: safe.paragraphSecondary ?? '',
+    buttonText: safe.buttonText ?? '',
+    images: normalizedImages,
+  };
+}
+
 export default function HeroAdminPage() {
   const [locale, setLocale] = useState('ru');
   const [content, setContent] = useState<HeroContent>({
@@ -37,13 +51,12 @@ export default function HeroAdminPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
 
-  // Загружаем текущий контент
   useEffect(() => {
     setLoading(true);
     fetch(`${API_BASE_URL}/hero?locale=${locale}`)
       .then(res => res.json())
       .then(data => {
-        setContent(data);
+        setContent(normalizeHeroContent(data));
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -70,7 +83,6 @@ export default function HeroAdminPage() {
     setSaving(false);
   };
 
-  // Drag & drop для картинок
   const handleDrop = async (index: number, e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
@@ -216,8 +228,8 @@ export default function HeroAdminPage() {
                 >
                   <div
                     className={styles.imagePreview}
-                    onDrop={e => handleDrop(index, e)}      // ← ПЕРЕНОСИМ СЮДА!
-                    onDragOver={handleDragOver}             // ← ПЕРЕНОСИМ СЮДА!
+                    onDrop={e => handleDrop(index, e)}
+                    onDragOver={handleDragOver}
                   >
                     {image.url ? (
                       <img src={image.url} alt={image.alt} />
