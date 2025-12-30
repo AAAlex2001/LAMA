@@ -22,6 +22,14 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     role = Column(Enum(UserRole), default=UserRole.USER, nullable=False, index=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    
+    # Email/Password авторизация
+    email = Column(String(255), unique=True, nullable=True, index=True)
+    password_hash = Column(String(255), nullable=True)
+    email_verified = Column(Boolean, default=False, nullable=False)
+    agree_personal_data = Column(Boolean, default=False, nullable=False)
+    agree_terms = Column(Boolean, default=False, nullable=False)
+    
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
 

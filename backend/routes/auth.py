@@ -16,7 +16,10 @@ from backend.schemas.auth import (
     UserUpdateRequest,
     SessionListResponse,
     UserStatsResponse,
-    BotLoginRequest
+    BotLoginRequest,
+    RegisterRequest,
+    EmailLoginRequest,
+    AddEmailRequest
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -146,6 +149,84 @@ async def login_with_bot(
         raise HTTPException(status_code=500, detail=f"Bot login failed: {str(e)}")
 
 
+# ============================================================================
+# Регистрация и вход по Email
+# ============================================================================
+
+@router.post("/register", response_model=AuthResponse)
+async def register_with_email(
+    register_data: RegisterRequest,
+    request: Request,
+    service: AuthService = Depends(get_auth_service)
+):
+    """
+    Регистрация нового пользователя по email
+    
+    Создаёт нового пользователя с email/password.
+    Требует согласия с обработкой персональных данных и условиями использования.
+    """
+    try:
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+        
+        user, access_token, refresh_token = await service.register_with_email(
+            email=register_data.email,
+            password=register_data.password,
+            agree_personal_data=register_data.agree_personal_data,
+            agree_terms=register_data.agree_terms,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        return AuthResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=service.access_token_expire_minutes * 60,
+            user=UserResponse.model_validate(user)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
+
+
+@router.post("/login", response_model=AuthResponse)
+async def login_with_email(
+    login_data: EmailLoginRequest,
+    request: Request,
+    service: AuthService = Depends(get_auth_service)
+):
+    """
+    Вход по email и паролю
+    
+    Авторизует пользователя по email/password.
+    Возвращает JWT токены для работы с API.
+    """
+    try:
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+        
+        user, access_token, refresh_token = await service.login_with_email(
+            email=login_data.email,
+            password=login_data.password,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        return AuthResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=service.access_token_expire_minutes * 60,
+            user=UserResponse.model_validate(user)
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+
 @router.post("/refresh", response_model=AuthResponse)
 async def refresh_token(
     data: RefreshTokenRequest,
@@ -206,6 +287,33 @@ async def get_current_user_info(
     Получить информацию о текущем пользователе
     """
     return UserResponse.model_validate(current_user)
+
+
+@router.post("/me/add-email", response_model=UserResponse)
+async def add_email_to_account(
+    data: AddEmailRequest,
+    current_user: User = Depends(get_current_user),
+    service: AuthService = Depends(get_auth_service)
+):
+    """
+    Добавить email/password к существующему аккаунту
+    
+    Позволяет пользователю, авторизованному через Telegram,
+    добавить email как резервный способ входа.
+    """
+    try:
+        user = await service.add_email_to_user(
+            user_id=current_user.id,
+            email=data.email,
+            password=data.password,
+            agree_personal_data=data.agree_personal_data,
+            agree_terms=data.agree_terms
+        )
+        return UserResponse.model_validate(user)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to add email: {str(e)}")
 
 
 @router.get("/me/stats", response_model=UserStatsResponse)

@@ -11,6 +11,7 @@ from backend.schemas.auth import TelegramAuthPayload, UserUpdateRequest
 from .token_service import TokenService
 from .widget_auth import WidgetAuthService
 from .bot_auth import BotAuthService
+from .email_auth import EmailAuthService
 from .user_crud import UserCRUDService
 from .session_service import SessionService
 from .stats_service import StatsService
@@ -43,6 +44,9 @@ class AuthService:
             db, bot_token, access_token_expire_minutes
         )
         self.bot_auth = BotAuthService(
+            db, access_token_expire_minutes
+        )
+        self.email_auth = EmailAuthService(
             db, access_token_expire_minutes
         )
         self.user_crud = UserCRUDService(db)
@@ -186,3 +190,91 @@ class AuthService:
     async def get_user_stats(self, user_id: int) -> dict:
         """Получить статистику пользователя"""
         return await self.stats_service.get_user_stats(user_id)
+
+    # ========================================================================
+    # Email/Password авторизация
+    # ========================================================================
+
+    async def register_with_email(
+        self,
+        email: str,
+        password: str,
+        agree_personal_data: bool,
+        agree_terms: bool,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> Tuple[User, str, str]:
+        """
+        Регистрация пользователя по email
+        Возвращает: (User, access_token, refresh_token)
+        """
+        # Создаём временные токены (они будут обновлены после получения user_id)
+        access_token = self.create_access_token(0)
+        refresh_token = self.create_refresh_token(0)
+        
+        user = await self.email_auth.register_user(
+            email=email,
+            password=password,
+            agree_personal_data=agree_personal_data,
+            agree_terms=agree_terms,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        # Создаём токены с правильным user_id
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+        
+        return user, access_token, refresh_token
+
+    async def login_with_email(
+        self,
+        email: str,
+        password: str,
+        user_agent: Optional[str] = None,
+        ip_address: Optional[str] = None
+    ) -> Tuple[User, str, str]:
+        """
+        Вход пользователя по email/password
+        Возвращает: (User, access_token, refresh_token)
+        """
+        # Создаём временные токены
+        access_token = self.create_access_token(0)
+        refresh_token = self.create_refresh_token(0)
+        
+        user = await self.email_auth.authenticate_by_email(
+            email=email,
+            password=password,
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        # Создаём токены с правильным user_id
+        access_token = self.create_access_token(user.id)
+        refresh_token = self.create_refresh_token(user.id)
+        
+        return user, access_token, refresh_token
+
+    async def add_email_to_user(
+        self,
+        user_id: int,
+        email: str,
+        password: str,
+        agree_personal_data: bool,
+        agree_terms: bool
+    ) -> User:
+        """
+        Добавить email/password к существующему пользователю
+        (например, после Telegram авторизации для резервного входа)
+        """
+        return await self.email_auth.add_email_to_existing_user(
+            user_id=user_id,
+            email=email,
+            password=password,
+            agree_personal_data=agree_personal_data,
+            agree_terms=agree_terms
+        )

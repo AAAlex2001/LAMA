@@ -3,7 +3,7 @@
 """
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 
 from backend.models.auth import UserRole
 
@@ -24,6 +24,24 @@ class TelegramAuthPayload(BaseModel):
     photo_url: Optional[str] = Field(None, description="URL фото профиля")
     auth_date: int = Field(..., description="Unix timestamp авторизации")
     hash: str = Field(..., description="Хеш для проверки подлинности")
+
+
+# ============================================================================
+# Email/Password Auth
+# ============================================================================
+
+class RegisterRequest(BaseModel):
+    """Запрос на регистрацию по email"""
+    email: EmailStr = Field(..., description="Электронная почта")
+    password: str = Field(..., min_length=6, max_length=128, description="Пароль (минимум 6 символов)")
+    agree_personal_data: bool = Field(..., description="Согласие на обработку персональных данных")
+    agree_terms: bool = Field(..., description="Согласие с условиями использования")
+
+
+class EmailLoginRequest(BaseModel):
+    """Запрос на вход по email"""
+    email: EmailStr = Field(..., description="Электронная почта")
+    password: str = Field(..., description="Пароль")
 
 
 class AuthResponse(BaseModel):
@@ -73,12 +91,22 @@ class UserResponse(BaseModel):
     id: int
     role: UserRole
     is_active: bool
+    email: Optional[str] = None
+    email_verified: bool = False
     created_at: datetime
     updated_at: datetime
     telegram_account: Optional[TelegramAccountResponse] = None
 
     class Config:
         from_attributes = True
+
+
+class AddEmailRequest(BaseModel):
+    """Запрос на добавление email к существующему аккаунту"""
+    email: EmailStr = Field(..., description="Электронная почта")
+    password: str = Field(..., min_length=6, max_length=128, description="Пароль")
+    agree_personal_data: bool = Field(..., description="Согласие на обработку персональных данных")
+    agree_terms: bool = Field(..., description="Согласие с условиями использования")
 
 
 class UserUpdateRequest(BaseModel):
