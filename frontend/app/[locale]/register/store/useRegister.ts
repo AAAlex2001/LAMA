@@ -9,6 +9,8 @@ const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "
 const ENDPOINTS = {
   telegramAuth: `${API_URL}/auth/telegram`,
   botLogin: `${API_URL}/auth/bot-login`,
+  register: `${API_URL}/auth/register`,
+  addEmail: `${API_URL}/auth/me/add-email`,
 } as const;
 
 export interface TelegramWidgetUser {
@@ -28,6 +30,8 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  email?: string;
+  email_verified?: boolean;
   telegram_account?: {
     telegram_id: number;
     username?: string;
@@ -200,6 +204,74 @@ export function useRegister() {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=register`, "_blank");
   }, []);
 
+  const registerWithEmail = useCallback(async () => {
+    const { email, password, agreePersonalData, agreeTerms } = state;
+
+    // Валидация
+    if (!email || !password) {
+      dispatch({ type: "SET_ERROR", payload: "Заполните email и пароль" });
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      dispatch({ type: "SET_ERROR", payload: "Некорректный email" });
+      return false;
+    }
+    if (password.length < 8) {
+      dispatch({ type: "SET_ERROR", payload: "Пароль должен быть не менее 8 символов" });
+      return false;
+    }
+    if (!agreePersonalData || !agreeTerms) {
+      dispatch({ type: "SET_ERROR", payload: "Необходимо принять условия" });
+      return false;
+    }
+
+    dispatch({ type: "SET_STATUS", payload: "loading" });
+    dispatch({ type: "SET_LOADING", payload: true });
+    dispatch({ type: "SET_ERROR", payload: null });
+
+    try {
+      const response = await fetch(ENDPOINTS.register, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          agree_personal_data: agreePersonalData,
+          agree_terms: agreeTerms,
+        }),
+        credentials: "include",
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(parseErrorMessage(data.detail));
+      }
+
+      if (data?.access_token) {
+        saveTokens(data.access_token, data.refresh_token);
+      }
+
+      dispatch({ type: "SET_USER", payload: data.user || null });
+      dispatch({ type: "SET_STATUS", payload: "success" });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+
+      return true;
+    } catch (error) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
+      dispatch({
+        type: "SET_ERROR",
+        payload: error instanceof Error ? error.message : "Ошибка регистрации",
+      });
+      return false;
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
+  }, [state, router]);
+
   const actions = useMemo(
     () => ({
       setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
@@ -219,6 +291,7 @@ export function useRegister() {
     widgetContainerRef,
     initTelegramWidget,
     openBotForLogin,
+    registerWithEmail,
     ...actions,
   };
 }

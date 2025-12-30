@@ -10,6 +10,8 @@ import Card from '@/components/card';
 import Input from '@/components/input';
 import { Checkbox } from '@/components/checkbox';
 import { TelegramIcon, BotIcon } from '@/components/icons';
+import { ErrorNotification } from '@/components/notifications/ErrorNotification';
+import { SuccessNotification } from '@/components/notifications/SuccessNotification';
 
 export default function RegisterPage() {
   const { locale } = useParams();
@@ -24,6 +26,8 @@ export default function RegisterPage() {
     setPassword,
     setAgreePersonalData,
     setAgreeTerms,
+    registerWithEmail,
+    setError,
   } = useRegister();
 
   useEffect(() => {
@@ -31,20 +35,12 @@ export default function RegisterPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getStatusMessage = () => {
-    switch (state.status) {
-      case 'loading':
-        return 'Регистрация...';
-      case 'success':
-        const displayName = state.user?.telegram_account?.first_name 
-          || state.user?.telegram_account?.username 
-          || 'пользователь';
-        return `Готово! Привет, ${displayName}. Переходим в сервис...`;
-      case 'error':
-        return state.error || 'Произошла ошибка';
-      default:
-        return null;
-    }
+  const getSuccessMessage = () => {
+    const displayName = state.user?.telegram_account?.first_name 
+      || state.user?.telegram_account?.username 
+      || state.email
+      || 'пользователь';
+    return `Готово! Привет, ${displayName}. Переходим в сервис...`;
   };
 
   const renderStep1 = () => (
@@ -156,7 +152,7 @@ export default function RegisterPage() {
         <Button
           text="Зарегистрироваться"
           showArrow={false}
-          onClick={() => {}}
+          onClick={registerWithEmail}
           active
           fullWidth
           loading={state.loading}
@@ -166,23 +162,31 @@ export default function RegisterPage() {
   );
 
   return (
-    <main className={styles.main}>
-      <div className={styles.container}>
-        <div className={styles.logo}>
-          <span className={styles.logoLama}>LAMA</span>
-          <span className={styles.logoPlanner}>planner</span>
+    <>
+      {state.status === 'error' && state.error && (
+        <ErrorNotification
+          message={state.error}
+          onClose={() => setError(null)}
+        />
+      )}
+      {state.status === 'success' && (
+        <SuccessNotification
+          message={getSuccessMessage()}
+          onClose={() => {}}
+        />
+      )}
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.logo}>
+            <span className={styles.logoLama}>LAMA</span>
+            <span className={styles.logoPlanner}>planner</span>
+          </div>
+
+          <Card title={`Регистрация. Шаг ${state.step} из 2`}>
+            {state.step === 1 ? renderStep1() : renderStep2()}
+          </Card>
         </div>
-
-        <Card title={`Регистрация. Шаг ${state.step} из 2`}>
-          {state.step === 1 ? renderStep1() : renderStep2()}
-
-          {getStatusMessage() && (
-            <div className={`${styles.statusMessage} ${styles[state.status]}`}>
-              {getStatusMessage()}
-            </div>
-          )}
-        </Card>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }

@@ -7,6 +7,8 @@ import Input from '@/components/input';
 import Button from '@/components/button/button';
 import Card from '@/components/card';
 import { TelegramIcon, BotIcon } from '@/components/icons';
+import { ErrorNotification } from '@/components/notifications/ErrorNotification';
+import { SuccessNotification } from '@/components/notifications/SuccessNotification';
 
 export default function LoginPage() {
   const {
@@ -14,9 +16,11 @@ export default function LoginPage() {
     widgetContainerRef,
     initTelegramWidget,
     openBotForLogin,
+    loginWithEmail,
     setEmail,
     setPassword,
     toggleTelegramWidget,
+    clearNotifications,
   } = useLogin();
 
   useEffect(() => {
@@ -24,24 +28,29 @@ export default function LoginPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getStatusMessage = () => {
-    switch (state.status) {
-      case 'loading':
-        return 'Авторизация...';
-      case 'success':
-        const displayName = state.user?.telegram_account?.first_name 
-          || state.user?.telegram_account?.username 
-          || 'пользователь';
-        return `Готово! Привет, ${displayName}. Переходим в сервис...`;
-      case 'error':
-        return state.error || 'Произошла ошибка';
-      default:
-        return null;
-    }
+  const getSuccessMessage = () => {
+    const displayName = state.user?.telegram_account?.first_name 
+      || state.user?.telegram_account?.username 
+      || state.user?.email
+      || 'пользователь';
+    return `Готово! Привет, ${displayName}. Переходим в сервис...`;
   };
 
   return (
-    <main className={styles.main}>
+    <>
+      {state.status === 'error' && state.error && (
+        <ErrorNotification
+          message={state.error}
+          onClose={clearNotifications}
+        />
+      )}
+      {state.status === 'success' && (
+        <SuccessNotification
+          message={getSuccessMessage()}
+          onClose={clearNotifications}
+        />
+      )}
+      <main className={styles.main}>
       <div className={styles.container}>
         <div className={styles.logo}>
           <span className={styles.logoLama}>LAMA</span>
@@ -110,6 +119,8 @@ export default function LoginPage() {
                 <Button
                   text="Войти"
                   showArrow={false}
+                  onClick={loginWithEmail}
+                  loading={state.loading}
                   fullWidth
                 />
                 
@@ -120,14 +131,9 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
-
-          {getStatusMessage() && (
-            <div className={`${styles.statusMessage} ${styles[state.status]}`}>
-              {getStatusMessage()}
-            </div>
-          )}
         </Card>
       </div>
     </main>
+    </>
   );
 }

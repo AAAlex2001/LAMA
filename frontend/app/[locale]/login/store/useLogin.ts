@@ -9,6 +9,7 @@ const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "
 const ENDPOINTS = {
   telegramAuth: `${API_URL}/auth/telegram`,
   botLogin: `${API_URL}/auth/bot-login`,
+  emailLogin: `${API_URL}/auth/login`,
   refresh: `${API_URL}/auth/refresh`,
   me: `${API_URL}/auth/me`,
   logout: `${API_URL}/auth/logout`,
@@ -31,6 +32,8 @@ export interface User {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  email?: string;
+  email_verified?: boolean;
   telegram_account?: {
     telegram_id: number;
     username?: string;
@@ -306,6 +309,68 @@ export function useLogin() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const loginWithEmail = useCallback(async () => {
+    dispatch({ type: "CLEAR_FIELD_ERRORS" });
+    dispatch({ type: "CLEAR_NOTIFICATIONS" });
+
+    const { email, password } = state.form;
+
+    // Валидация
+    let hasErrors = false;
+    if (!email) {
+      dispatch({ type: "SET_FIELD_ERROR", payload: { field: "email", message: "Введите email" } });
+      hasErrors = true;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      dispatch({ type: "SET_FIELD_ERROR", payload: { field: "email", message: "Некорректный email" } });
+      hasErrors = true;
+    }
+    if (!password) {
+      dispatch({ type: "SET_FIELD_ERROR", payload: { field: "password", message: "Введите пароль" } });
+      hasErrors = true;
+    }
+    if (hasErrors) return false;
+
+    dispatch({ type: "SET_STATUS", payload: "loading" });
+    dispatch({ type: "SET_LOADING", payload: true });
+
+    try {
+      const response = await fetch(ENDPOINTS.emailLogin, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(parseErrorMessage(data.detail));
+      }
+
+      if (data?.access_token) {
+        saveTokens(data.access_token, data.refresh_token);
+      }
+
+      dispatch({ type: "SET_USER", payload: data.user || null });
+      dispatch({ type: "SET_STATUS", payload: "success" });
+
+      setTimeout(() => {
+        router.push("/");
+      }, 1500);
+
+      return true;
+    } catch (error) {
+      dispatch({ type: "SET_STATUS", payload: "error" });
+      dispatch({
+        type: "SET_ERROR",
+        payload: error instanceof Error ? error.message : "Ошибка входа",
+      });
+      return false;
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
+    }
+  }, [state.form, router]);
+
   const logout = useCallback(async () => {
     const token = getAccessToken();
     
@@ -347,6 +412,7 @@ export function useLogin() {
     initTelegramWidget,
     handleTelegramAuth,
     openBotForLogin,
+    loginWithEmail,
     logout,
     ...actions,
   };

@@ -1,0 +1,81 @@
+.errorNotification {
+  position: fixed;
+  top: 150px;
+  right: 20px;
+  min-width: 320px;
+  max-width: 450px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  transform: translateX(500px);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  z-index: 9999;
+}
+
+.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.exiting {
+  transform: translateX(500px);
+  opacity: 0;
+}
+
+.dark-theme .errorNotification {
+  background: #1e293b;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.errorContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+}
+
+.errorIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #ef4444;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.errorMessage {
+  font-family: var(--font-base);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text-primary);
+}
+
+.dark-theme .errorMessage {
+  color: #e0e0e0;
+}
+
+.progressBar {
+  height: 4px;
+  background: #ef4444;
+  width: 100%;
+  transform-origin: left;
+  animation: progressBarAnimation linear forwards;
+}
+
+@keyframes progressBarAnimation {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+
+
