@@ -10,17 +10,12 @@ import Footer from "../landing/footer/footer";
 import SidebarMenu from "@/components/sidebar-menu/sidebar-menu";
 import { headers } from "next/headers";
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type Props = {
   params: Promise<{ locale: string }>;
 };
-
-export async function generateStaticParams() {
-  return [
-    { locale: 'ru' },
-    { locale: 'sr' },
-    { locale: 'en' },
-  ];
-}
 
 type HeroContent = {
   headline: string;
@@ -87,9 +82,14 @@ async function getApiBaseUrl(): Promise<string> {
   const h = await headers();
   const proto = (h.get('x-forwarded-proto') || 'http').split(',')[0].trim();
   const host = (h.get('x-forwarded-host') || h.get('host') || '').split(',')[0].trim();
-  if (!host) return envBase;
-
   const basePath = envBase.startsWith('/') ? envBase : `/${envBase}`;
+
+  if (!host) {
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL || '').replace(/\/+$/, '');
+    if (/^https?:\/\//i.test(siteUrl)) return `${siteUrl}${basePath}`;
+    return envBase;
+  }
+
   return `${proto}://${host}${basePath}`;
 }
 
