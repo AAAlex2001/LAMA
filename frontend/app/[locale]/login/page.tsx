@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import styles from './login.module.scss';
 import { useLogin } from './store';
 import Input from '@/components/input';
@@ -11,6 +13,7 @@ import { ErrorNotification } from '@/components/notifications/ErrorNotification'
 import { SuccessNotification } from '@/components/notifications/SuccessNotification';
 
 export default function LoginPage() {
+  const { locale } = useParams<{ locale: string }>();
   const {
     state,
     widgetContainerRef,
@@ -51,10 +54,10 @@ export default function LoginPage() {
       )}
       <main className={styles.main}>
       <div className={styles.container}>
-        <div className={styles.logo}>
+        <Link href={`/${locale}`} className={styles.logo} aria-label="LAMAplanner">
           <span className={styles.logoLama}>LAMA</span>
           <span className={styles.logoPlanner}>planner</span>
-        </div>
+        </Link>
 
         <Card title="Вход в аккаунт">
           <div className={styles.telegramButtons}>

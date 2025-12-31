@@ -179,10 +179,10 @@ export default function RegisterPage() {
       )}
       <main className={styles.main}>
         <div className={styles.container}>
-          <div className={styles.logo}>
+          <Link href={`/${locale}`} className={styles.logo} aria-label="LAMAplanner">
             <span className={styles.logoLama}>LAMA</span>
             <span className={styles.logoPlanner}>planner</span>
-          </div>
+          </Link>
 
           <Card title={`Регистрация. Шаг ${state.step} из 2`}>
             {state.step === 1 ? renderStep1() : renderStep2()}

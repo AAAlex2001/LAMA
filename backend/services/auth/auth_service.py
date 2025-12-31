@@ -96,12 +96,6 @@ class AuthService:
         Аутентифицировать пользователя через Telegram Widget
         Возвращает: (User, access_token, refresh_token)
         """
-        # WidgetAuthService создаёт UserSession. Раньше мы передавали "временные" токены
-        # (user_id=0), а затем возвращали на фронт новые токены с реальным user_id.
-        # Из-за проверки токена через таблицу user_sessions это ломало все запросы с фронта
-        # (сессии в БД нет для финального access_token). Поэтому:
-        # 1) создаём временные токены для вставки сессии
-        # 2) после получения user.id обновляем эту сессию на финальные токены
         temp_access_token = self.create_access_token(0)
         temp_refresh_token = self.create_refresh_token(0)
         
