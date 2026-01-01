@@ -8,6 +8,7 @@ import Button from "@/components/button/button";
 type Props = {
   locale: string;
   content: HeroContent;
+  hideImagesOnMobile?: boolean;
 };
 
 interface HeroImage {
@@ -23,7 +24,7 @@ interface HeroContent {
   images: HeroImage[];
 }
 
-export default function Hero({ locale, content }: Props) {
+export default function Hero({ locale, content, hideImagesOnMobile = false }: Props) {
   const safeContent = useMemo(() => {
     return {
       headline: content?.headline || "",
@@ -86,7 +87,7 @@ export default function Hero({ locale, content }: Props) {
           </div>
         </motion.div>
       </div>
-      <div className={styles.images}>
+      <div className={`${styles.images} ${hideImagesOnMobile ? styles.hideOnMobile : ''}`}>
         {safeContent.images.map((image, index) => {
           const delays = [0, 0.1, 0.2, 0, 0.2];
           const durations = [0.6, 0.6, 0.6, 0.8, 0.8];

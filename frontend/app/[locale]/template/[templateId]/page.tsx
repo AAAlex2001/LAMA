@@ -151,7 +151,7 @@ export default async function TemplatePage({ params }: Props) {
   return (
     <main>
       <Header locale={locale} />
-      <Hero locale={locale} content={heroForTemplate} />
+      <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} />
       <Footer locale={locale} content={footer} />
     </main>
   );
