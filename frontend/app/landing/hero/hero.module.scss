@@ -243,6 +243,14 @@
     margin-bottom: 80px;
   }
 
+  /* Hide decorative elements 2-5 on 768px */
+  .relativeElement2,
+  .relativeElement3,
+  .relativeElement4,
+  .relativeElement5 {
+    display: none;
+  }
+
 }
 
 @media (min-width: 1440px) {
@@ -282,8 +290,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 80px;
-    margin: 0 auto;
+    min-height: 480px;
   }
 
   .templateRow .paragraph {
@@ -291,14 +298,25 @@
   }
 
   .templateRow .content {
-    padding: 0 0 80px 50px;
-    width: 100%;
+    padding: 0;
+    width: 649px;
+    min-width: 649px;
+    max-width: 649px;
+    flex-shrink: 0;
+    margin: 0 80px 0 135px;
     align-items: center;
+    justify-content: center;
   }
 
   .templateRow .textContainer {
     margin: 0;
     text-align: center;
+    padding: 0;
+  }
+
+  .templateRow .headline {
+    margin-top: 0;
+    margin-bottom: 50px;
   }
 
   .templateRow .buttonContainer {
@@ -307,21 +325,56 @@
 
   .templateRow .images {
     width: 643px;
+    min-width: 643px;
     height: 342px;
     max-width: 643px;
+    flex-shrink: 0;
     position: relative;
+    padding: 0;
+    margin: 0;
   }
 
   .templateRow .relativeElement1 {
     position: absolute;
     inset: 0;
-    left: 100px;
-    top: 20px;
-    bottom: auto;
-    transform: none;
     width: 100%;
     height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+    overflow: hidden;
+    transform: none;
     max-width: none;
+    left: 210px;
+    top: 20px;
+  }
+
+  .templateRow .relativeElement2,
+  .templateRow .relativeElement3 {
+    display: none !important;
+  }
+
+  .templateRow .relativeElement4 {
+    display: block;
+    position: absolute;
+    width: 120px;
+    height: 113px;
+    bottom: 16px;
+    left: 145px;
+    object-fit: cover;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .templateRow .relativeElement5 {
+    display: block;
+    position: absolute;
+    width: 150px;
+    height: 109px;
+    bottom: 141px;
+    left: 118px;
+    object-fit: cover;
+    border-radius: 10px;
+    overflow: hidden;
   }
 
 }
