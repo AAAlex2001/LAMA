@@ -28,6 +28,10 @@
   padding-bottom: 0;
 }
 
+.templateRow .paragraph {
+  margin-bottom: 32px;
+}
+
 .headline {
   font-size: 20px;
   line-height: 28px;
@@ -271,6 +275,53 @@
 
   .buttonContainer {
     margin-bottom: 80px;
+  }
+
+  .templateRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 80px;
+    margin: 0 auto;
+  }
+
+  .templateRow .paragraph {
+    max-width: 649px;
+  }
+
+  .templateRow .content {
+    padding: 0 0 80px 50px;
+    width: 100%;
+    align-items: center;
+  }
+
+  .templateRow .textContainer {
+    margin: 0;
+    text-align: center;
+  }
+
+  .templateRow .buttonContainer {
+    margin-bottom: 0;
+  }
+
+  .templateRow .images {
+    width: 643px;
+    height: 342px;
+    max-width: 643px;
+    position: relative;
+  }
+
+  .templateRow .relativeElement1 {
+    position: absolute;
+    inset: 0;
+    left: 100px;
+    top: 20px;
+    bottom: auto;
+    transform: none;
+    width: 100%;
+    height: 100%;
+    max-width: none;
   }
 
 }

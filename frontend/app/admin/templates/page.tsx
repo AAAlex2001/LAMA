@@ -133,7 +133,7 @@ export default function TemplatesAdminPage() {
           body: JSON.stringify({
             headline: content.headline,
             lead: content.lead,
-            body: content.body,
+            body: '',
             ctaText: content.ctaText,
             ctaUrl: content.ctaUrl,
             images,
@@ -313,16 +313,6 @@ export default function TemplatesAdminPage() {
                   value={content.lead}
                   onChange={(v) => setContent((p) => ({ ...p, lead: v }))}
                 />
-
-                <div className={styles.textareaField}>
-                  <div className={styles.textareaLabel}>Hero: paragraphSecondary</div>
-                  <textarea
-                    className={styles.textarea}
-                    value={content.body}
-                    onChange={(e) => setContent((p) => ({ ...p, body: e.target.value }))}
-                    rows={10}
-                  />
-                </div>
 
                 <Input
                   label="Hero: buttonText"

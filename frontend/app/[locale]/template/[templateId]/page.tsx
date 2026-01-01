@@ -14,7 +14,6 @@ type Props = {
 type HeroContent = {
   headline: string;
   paragraph: string;
-  paragraphSecondary: string;
   buttonText: string;
   images: Array<{ url: string; alt: string }>;
   templateImages?: Array<{ url: string; alt: string }>;
@@ -76,7 +75,6 @@ export default async function TemplatePage({ params }: Props) {
   const heroFallback: HeroContent = {
     headline: '',
     paragraph: '',
-    paragraphSecondary: '',
     buttonText: '',
     images: [],
   };
@@ -104,13 +102,12 @@ export default async function TemplatePage({ params }: Props) {
   ]);
 
   const baseHeroForTemplate: HeroContent = {
-    ...hero,
+    headline: hero?.headline || '',
+    paragraph: hero?.paragraph || '',
+    buttonText: hero?.buttonText || '',
     images: [],
   };
 
-  // SEO-friendly templates:
-  // - numeric: /template/1 -> permanent redirect to /template/<slug>
-  // - slug: /template/<slug> -> validate via API
   const isNumeric = /^\d+$/.test(raw);
   if (isNumeric) {
     const id = Number(raw);
@@ -125,7 +122,6 @@ export default async function TemplatePage({ params }: Props) {
     if (!match) notFound();
     permanentRedirect(`/${locale}/template/${match.slug}`);
   } else {
-    // validate slug exists
     const res = await fetch(`${apiBaseUrl}/templates/slug/${encodeURIComponent(raw)}?locale=${locale}`, {
       cache: 'no-store',
     });
@@ -143,7 +139,6 @@ export default async function TemplatePage({ params }: Props) {
     ...baseHeroForTemplate,
     headline: templateContent?.headline || baseHeroForTemplate.headline,
     paragraph: templateContent?.lead || baseHeroForTemplate.paragraph,
-    paragraphSecondary: templateContent?.body || baseHeroForTemplate.paragraphSecondary,
     buttonText: (templateContent?.ctaText || baseHeroForTemplate.buttonText) as string,
     images: templateImages,
   };
@@ -151,7 +146,7 @@ export default async function TemplatePage({ params }: Props) {
   return (
     <main>
       <Header locale={locale} />
-      <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} />
+      <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
       <Footer locale={locale} content={footer} />
     </main>
   );

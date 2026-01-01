@@ -9,6 +9,7 @@ type Props = {
   locale: string;
   content: HeroContent;
   hideImagesOnMobile?: boolean;
+  variant?: 'default' | 'template';
 };
 
 interface HeroImage {
@@ -24,12 +25,12 @@ interface HeroContent {
   images: HeroImage[];
 }
 
-export default function Hero({ locale, content, hideImagesOnMobile = false }: Props) {
+export default function Hero({ locale, content, hideImagesOnMobile = false, variant = 'default' }: Props) {
   const safeContent = useMemo(() => {
     return {
       headline: content?.headline || "",
       paragraph: content?.paragraph || "",
-      paragraphSecondary: content?.paragraphSecondary || "",
+      paragraphSecondary: (content as any)?.paragraphSecondary || "",
       buttonText: content?.buttonText || "",
       images: Array.isArray(content?.images) ? content.images : [],
     };
@@ -64,7 +65,7 @@ export default function Hero({ locale, content, hideImagesOnMobile = false }: Pr
   };
 
   return (
-    <section className={styles.hero}>
+    <section className={`${styles.hero} ${variant === 'template' ? styles.templateRow : ''}`}>
       <div className={styles.content}>
         <motion.div 
           className={styles.textContainer}
@@ -79,9 +80,11 @@ export default function Hero({ locale, content, hideImagesOnMobile = false }: Pr
           <p className={styles.paragraph}>
             {renderText(safeContent.paragraph)}
           </p>
-          <p className={styles.paragraphSecondary}>
-            {renderText(safeContent.paragraphSecondary)}
-          </p>
+          {variant !== 'template' && safeContent.paragraphSecondary ? (
+            <p className={styles.paragraphSecondary}>
+              {renderText(safeContent.paragraphSecondary)}
+            </p>
+          ) : null}
           <div className={styles.buttonContainer}>
             <Button text={safeContent.buttonText} href={`/${locale}/login`} />
           </div>
