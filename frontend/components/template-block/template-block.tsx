@@ -65,6 +65,7 @@ export default function TemplateBlock({
   index,
 }: TemplateBlockProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const hasSubtitle = Boolean(String(subtitle ?? '').trim());
 
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 767px)');
@@ -84,7 +85,7 @@ export default function TemplateBlock({
     <div className={styles.content}>
       <div className={styles.textContainer}>
         <h2 className={styles.title}>{title}</h2>
-        <h3 className={styles.subtitle}>{subtitle}</h3>
+        {hasSubtitle && <h3 className={styles.subtitle}>{subtitle}</h3>}
         <p className={styles.description}>{formatDescription(description)}</p>
       </div>
 
@@ -114,11 +115,10 @@ export default function TemplateBlock({
         viewport={{ once: true, amount: 0.2 }}
       >
         <Swiper
-          className={`${styles.swiper} ${isLeft ? styles.swiperReverse : ''}`}
+          className={styles.swiper}
           slidesPerView="auto"
           spaceBetween={16}
           dir={isLeft ? 'rtl' : 'ltr'}
-          initialSlide={0}
         >
           <SwiperSlide className={styles.slide}>{contentSlide}</SwiperSlide>
           {image && <SwiperSlide className={styles.slideImage}>{imageSlide}</SwiperSlide>}

@@ -7,18 +7,13 @@
   margin-bottom: 0;
 
   @media (min-width: 768px) {
-    flex-direction: column;
-    align-items: center;
     gap: 40px;
-    margin-bottom: 0;
   }
 
   @media (min-width: 1440px) {
     flex-direction: row;
     align-items: flex-start;
-    padding-left: 61px;
     gap: 105px;
-    margin-bottom: 0;
   }
 }
 
@@ -27,14 +22,12 @@
   overflow: visible;
 }
 
-// Mobile: если картинка "слева" — разворачиваем направление свайпа,
-// но контент внутри слайдов оставляем LTR
-.swiperReverse {
+.swiper[dir='rtl'] {
   direction: rtl;
 }
 
-.swiperReverse .slide,
-.swiperReverse .slideImage {
+.swiper[dir='rtl'] .slide,
+.swiper[dir='rtl'] .slideImage {
   direction: ltr;
 }
 
@@ -231,12 +224,10 @@
   }
 }
 
-// Форматирование описания: ``слово`` → жирный
 .bold {
   font-weight: 700;
 }
 
-// Форматирование описания: `слово` → градиент
 .gradient {
   background: linear-gradient(
     90deg,
@@ -252,7 +243,6 @@
   background-clip: text;
 }
 
-// Класс для позиции картинки слева — разворачиваем flex-direction
 .imageLeft {
   @media (min-width: 1440px) {
     flex-direction: row-reverse;
