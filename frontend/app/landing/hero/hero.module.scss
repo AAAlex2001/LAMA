@@ -243,14 +243,6 @@
     margin-bottom: 80px;
   }
 
-  /* Hide decorative elements 2-5 on 768px */
-  .relativeElement2,
-  .relativeElement3,
-  .relativeElement4,
-  .relativeElement5 {
-    display: none;
-  }
-
 }
 
 @media (min-width: 1440px) {
@@ -375,6 +367,7 @@
     object-fit: cover;
     border-radius: 10px;
     overflow: hidden;
+    box-shadow: 4px 3px 4px 0px #3B82F640;
   }
 
 }
