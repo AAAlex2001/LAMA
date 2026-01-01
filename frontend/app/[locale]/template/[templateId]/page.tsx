@@ -1,8 +1,10 @@
 import Header from "../../../landing/header/header";
 import Hero from "../../../landing/hero/hero";
 import Footer from "../../../landing/footer/footer";
+import TemplateBlocks from "@/components/template-blocks/template-blocks";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
+import styles from './template-content.module.scss';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -14,9 +16,23 @@ type Props = {
 type HeroContent = {
   headline: string;
   paragraph: string;
+  paragraphSecondary: string;
   buttonText: string;
   images: Array<{ url: string; alt: string }>;
   templateImages?: Array<{ url: string; alt: string }>;
+};
+
+type TemplateBlockAdvantage = {
+  text: string;
+};
+
+type TemplateBlockContent = {
+  title: string;
+  subtitle: string;
+  description: string;
+  advantages?: TemplateBlockAdvantage[];
+  image?: { url: string; alt: string };
+  imagePosition?: 'left' | 'right';
 };
 
 type TemplatePageContent = {
@@ -26,6 +42,7 @@ type TemplatePageContent = {
   ctaText?: string | null;
   ctaUrl?: string | null;
   images?: Array<{ url: string; alt: string }>;
+  blocks?: TemplateBlockContent[];
 };
 
 type FooterContent = {
@@ -75,6 +92,7 @@ export default async function TemplatePage({ params }: Props) {
   const heroFallback: HeroContent = {
     headline: '',
     paragraph: '',
+    paragraphSecondary: '',
     buttonText: '',
     images: [],
   };
@@ -104,6 +122,7 @@ export default async function TemplatePage({ params }: Props) {
   const baseHeroForTemplate: HeroContent = {
     headline: hero?.headline || '',
     paragraph: hero?.paragraph || '',
+    paragraphSecondary: (hero as any)?.paragraphSecondary || '',
     buttonText: hero?.buttonText || '',
     images: [],
   };
@@ -147,6 +166,13 @@ export default async function TemplatePage({ params }: Props) {
     <main>
       <Header locale={locale} />
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
+      
+      {templateContent.blocks && templateContent.blocks.length > 0 && (
+        <section className={styles.blocksContainer}>
+          <TemplateBlocks blocks={templateContent.blocks} />
+        </section>
+      )}
+
       <Footer locale={locale} content={footer} />
     </main>
   );

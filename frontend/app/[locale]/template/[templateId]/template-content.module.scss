@@ -35,3 +35,17 @@
 .cta {
   margin-top: 10px;
 }
+
+.blocksContainer {
+  width: 100%;
+  padding: 0 20px;
+
+  @media (min-width: 768px) {
+    padding: 0 40px;
+  }
+
+  // Desktop
+  @media (min-width: 1440px) {
+    padding: 0;
+  }
+}

@@ -1,0 +1,260 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  width: 100%;
+  margin-bottom: 0;
+
+  @media (min-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    margin-bottom: 0;
+  }
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: flex-start;
+    padding-left: 61px;
+    gap: 105px;
+    margin-bottom: 0;
+  }
+}
+
+.swiper {
+  width: 100%;
+  overflow: visible;
+}
+
+// Mobile: если картинка "слева" — разворачиваем направление свайпа,
+// но контент внутри слайдов оставляем LTR
+.swiperReverse {
+  direction: rtl;
+}
+
+.swiperReverse .slide,
+.swiperReverse .slideImage {
+  direction: ltr;
+}
+
+.slide {
+  width: calc(100% - 40px) !important;
+  height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.slideImage {
+  width: auto !important;
+  height: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.imageContainer {
+  width: 232px;
+  height: 455px;
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  filter: drop-shadow(0px 4px 30px rgba(59, 130, 246, 0.1));
+
+  @media (min-width: 768px) {
+    width: 532px;
+    height: 300px;
+  }
+
+  @media (min-width: 1440px) {
+    width: 425px;
+    height: 377px;
+  }
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: 531px;
+
+  @media (min-width: 768px) {
+    max-width: 100%;
+    width: 100%;
+    gap: 32px;
+  }
+
+  @media (min-width: 1440px) {
+    max-width: 531px;
+    justify-content: center;
+    height: 381px;
+  }
+}
+
+.textContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 24px;
+  background: linear-gradient(
+    90deg,
+    #3b82f6 0%,
+    #2f67c3 50%,
+    #295aaa 75%,
+    #26539d 87.5%,
+    #244f96 93.75%,
+    #234c90 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    font-size: 22px;
+    line-height: 27px;
+  }
+
+  @media (min-width: 1440px) {
+    font-size: 24px;
+    line-height: 29px;
+  }
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  color: #000000;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    font-size: 17px;
+    line-height: 21px;
+  }
+
+  @media (min-width: 1440px) {
+    font-size: 18px;
+    line-height: 22px;
+  }
+}
+
+.description {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #000000;
+  margin: 0;
+
+  @media (min-width: 768px) {
+    font-size: 15px;
+    line-height: 18px;
+  }
+
+  @media (min-width: 1440px) {
+    font-size: 16px;
+    line-height: 19px;
+  }
+}
+
+.advantages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.advantage {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 0;
+}
+
+.dot {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #383f45;
+  }
+}
+
+.advantageText {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  color: #383f45;
+
+  @media (min-width: 768px) {
+    font-size: 15px;
+  }
+
+  @media (min-width: 1440px) {
+    font-size: 16px;
+  }
+}
+
+// Форматирование описания: ``слово`` → жирный
+.bold {
+  font-weight: 700;
+}
+
+// Форматирование описания: `слово` → градиент
+.gradient {
+  background: linear-gradient(
+    90deg,
+    #3b82f6 0%,
+    #2f67c3 50%,
+    #295aaa 75%,
+    #26539d 87.5%,
+    #244f96 93.75%,
+    #234c90 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+// Класс для позиции картинки слева — разворачиваем flex-direction
+.imageLeft {
+  @media (min-width: 1440px) {
+    flex-direction: row-reverse;
+  }
+}

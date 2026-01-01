@@ -109,6 +109,19 @@ class FooterContentRequest(BaseModel):
     columns: List[FooterColumn]
 
 
+class TemplateBlockAdvantage(BaseModel):
+    text: str
+
+
+class TemplateBlock(BaseModel):
+    title: str = ""
+    subtitle: str = ""
+    description: str = ""
+    advantages: Optional[List[TemplateBlockAdvantage]] = None
+    image: Optional[HeroImage] = None
+    imagePosition: Optional[str] = "right"  # "left" or "right"
+
+
 class TemplateContentRequest(BaseModel):
     headline: str = ""
     lead: str = ""
@@ -116,4 +129,5 @@ class TemplateContentRequest(BaseModel):
     ctaText: Optional[str] = None
     ctaUrl: Optional[str] = None
     images: Optional[List[HeroImage]] = None
+    blocks: Optional[List[TemplateBlock]] = None
 

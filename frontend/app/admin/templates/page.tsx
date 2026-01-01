@@ -30,6 +30,14 @@ type TemplatePageContent = {
   ctaText?: string | null;
   ctaUrl?: string | null;
   images?: Array<{ url: string; alt: string }>;
+  blocks?: Array<{
+    title: string;
+    subtitle: string;
+    description: string;
+    advantages?: Array<{ text: string }>;
+    image?: { url: string; alt: string };
+    imagePosition?: 'left' | 'right';
+  }>;
 };
 
 function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | undefined): TemplatePageContent {
@@ -42,6 +50,32 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
       alt: (img as any)?.alt ?? '',
     };
   });
+
+  const blocksIn = Array.isArray((safe as any).blocks) ? ((safe as any).blocks as any[]) : [];
+  const normalizedBlocks = blocksIn
+    .filter((b) => b && typeof b === 'object')
+    .map((b) => {
+      const advantagesIn = Array.isArray((b as any).advantages) ? ((b as any).advantages as any[]) : [];
+      const advantages = advantagesIn
+        .filter((a) => a && typeof a === 'object')
+        .map((a) => ({ text: String((a as any).text ?? '').trim() }))
+        .filter((a) => Boolean(a.text));
+
+      const imageIn = (b as any).image && typeof (b as any).image === 'object' ? (b as any).image : null;
+      const imageUrl = imageIn ? String(imageIn.url ?? '').trim() : '';
+      const imageAlt = imageIn ? String(imageIn.alt ?? '').trim() : '';
+      const image = imageUrl ? { url: imageUrl, alt: imageAlt } : undefined;
+
+      return {
+        title: String((b as any).title ?? ''),
+        subtitle: String((b as any).subtitle ?? ''),
+        description: String((b as any).description ?? ''),
+        advantages: advantages.length > 0 ? advantages : undefined,
+        image,
+        imagePosition: ((b as any).imagePosition === 'left' ? 'left' : 'right') as 'left' | 'right',
+      };
+    });
+
   return {
     headline: safe.headline ?? '',
     lead: safe.lead ?? '',
@@ -49,6 +83,7 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
     ctaText: safe.ctaText ?? '',
     ctaUrl: safe.ctaUrl ?? '',
     images: normalizedImages,
+    blocks: normalizedBlocks,
   };
 }
 
@@ -74,6 +109,7 @@ export default function TemplatesAdminPage() {
       { url: '', alt: '' },
       { url: '', alt: '' },
     ],
+    blocks: [],
   });
 
   useEffect(() => {
@@ -126,6 +162,34 @@ export default function TemplatesAdminPage() {
         .map((img) => ({ url: img?.url || '', alt: img?.alt || '' }))
         .filter((img) => Boolean(img.url));
 
+      const blocks = (Array.isArray(content.blocks) ? content.blocks : [])
+        .map((b) => {
+          const title = String(b?.title ?? '').trim();
+          const subtitle = String(b?.subtitle ?? '').trim();
+          const description = String(b?.description ?? '').trim();
+
+          const advantages = (Array.isArray(b?.advantages) ? b.advantages : [])
+            .map((a) => ({ text: String(a?.text ?? '').trim() }))
+            .filter((a) => Boolean(a.text));
+
+          const imageUrl = String(b?.image?.url ?? '').trim();
+          const imageAlt = String(b?.image?.alt ?? '').trim();
+          const image = imageUrl ? { url: imageUrl, alt: imageAlt } : undefined;
+
+          const hasAny = Boolean(title || subtitle || description || advantages.length > 0 || image);
+          if (!hasAny) return null;
+
+          return {
+            title,
+            subtitle,
+            description,
+            advantages: advantages.length > 0 ? advantages : undefined,
+            image,
+            imagePosition: b?.imagePosition === 'left' ? 'left' : 'right',
+          };
+        })
+        .filter(Boolean);
+
       const res = await fetch(`${API_BASE_URL}/templates/slug/${encodeURIComponent(selectedSlug)}/content?locale=${locale}`,
         {
           method: 'PUT',
@@ -137,6 +201,7 @@ export default function TemplatesAdminPage() {
             ctaText: content.ctaText,
             ctaUrl: content.ctaUrl,
             images,
+            blocks,
           }),
         }
       );
@@ -210,6 +275,117 @@ export default function TemplatesAdminPage() {
     while (newImages.length < 5) newImages.push({ url: '', alt: '' });
     newImages[index] = { url, alt: `Template hero ${index + 1}` };
     setContent((p) => ({ ...p, images: newImages }));
+    setMessage('✅ Картинка загружена');
+  };
+
+  const addBlock = () => {
+    setContent((p) => ({
+      ...p,
+      blocks: [
+        ...(Array.isArray(p.blocks) ? p.blocks : []),
+        { title: '', subtitle: '', description: '', advantages: [], image: undefined, imagePosition: 'right' as const },
+      ],
+    }));
+  };
+
+  const removeBlock = (blockIndex: number) => {
+    setContent((p) => ({
+      ...p,
+      blocks: (Array.isArray(p.blocks) ? p.blocks : []).filter((_, i) => i !== blockIndex),
+    }));
+  };
+
+  const updateBlockField = (
+    blockIndex: number,
+    field: 'title' | 'subtitle' | 'description' | 'imagePosition',
+    value: string
+  ) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex] || { title: '', subtitle: '', description: '', imagePosition: 'right' };
+      blocks[blockIndex] = { ...current, [field]: value };
+      return { ...p, blocks };
+    });
+  };
+
+  const updateBlockImage = (blockIndex: number, url: string, alt: string) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex] || { title: '', subtitle: '', description: '' };
+      const cleanUrl = String(url ?? '').trim();
+      const cleanAlt = String(alt ?? '');
+      const image = cleanUrl ? { url: cleanUrl, alt: cleanAlt } : undefined;
+      blocks[blockIndex] = { ...current, image };
+      return { ...p, blocks };
+    });
+  };
+
+  const clearBlockImage = (blockIndex: number) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex];
+      if (!current) return p;
+      blocks[blockIndex] = { ...current, image: undefined };
+      return { ...p, blocks };
+    });
+  };
+
+  const addAdvantage = (blockIndex: number) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex] || { title: '', subtitle: '', description: '' };
+      const advantages = Array.isArray(current.advantages) ? [...current.advantages] : [];
+      advantages.push({ text: '' });
+      blocks[blockIndex] = { ...current, advantages };
+      return { ...p, blocks };
+    });
+  };
+
+  const updateAdvantage = (blockIndex: number, advIndex: number, text: string) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex] || { title: '', subtitle: '', description: '' };
+      const advantages = Array.isArray(current.advantages) ? [...current.advantages] : [];
+      while (advantages.length <= advIndex) advantages.push({ text: '' });
+      advantages[advIndex] = { text };
+      blocks[blockIndex] = { ...current, advantages };
+      return { ...p, blocks };
+    });
+  };
+
+  const removeAdvantage = (blockIndex: number, advIndex: number) => {
+    setContent((p) => {
+      const blocks = Array.isArray(p.blocks) ? [...p.blocks] : [];
+      const current = blocks[blockIndex];
+      if (!current) return p;
+      const advantages = (Array.isArray(current.advantages) ? current.advantages : []).filter((_, i) => i !== advIndex);
+      blocks[blockIndex] = { ...current, advantages };
+      return { ...p, blocks };
+    });
+  };
+
+  const handleDropBlockImage = async (blockIndex: number, e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    const url = await uploadImage(file);
+    if (!url) return;
+
+    const currentAlt = String((content.blocks?.[blockIndex] as any)?.image?.alt ?? `Template block ${blockIndex + 1}`);
+    updateBlockImage(blockIndex, url, currentAlt);
+    setMessage('✅ Картинка загружена');
+  };
+
+  const handleSelectBlockImage = async (blockIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadImage(file);
+    if (!url) return;
+
+    const currentAlt = String((content.blocks?.[blockIndex] as any)?.image?.alt ?? `Template block ${blockIndex + 1}`);
+    updateBlockImage(blockIndex, url, currentAlt);
     setMessage('✅ Картинка загружена');
   };
 
@@ -348,6 +524,154 @@ export default function TemplatesAdminPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className={styles.blocksSection}>
+                  <div className={styles.blocksHeader}>
+                    <div className={styles.blocksTitle}>Blocks (контент ниже Hero)</div>
+                    <Button
+                      text="Добавить блок"
+                      onClick={addBlock}
+                      showArrow={false}
+                      size="small"
+                    />
+                  </div>
+
+                  {(Array.isArray(content.blocks) ? content.blocks : []).length === 0 ? (
+                    <div className={styles.blocksEmpty}>Пока нет блоков</div>
+                  ) : null}
+
+                  {(Array.isArray(content.blocks) ? content.blocks : []).map((block, blockIndex) => {
+                    const imageUrl = String(block?.image?.url ?? '');
+                    const imageAlt = String(block?.image?.alt ?? '');
+                    const advantages = Array.isArray(block?.advantages) ? block.advantages : [];
+
+                    return (
+                      <div key={blockIndex} className={styles.blockCard}>
+                        <div className={styles.blockTopRow}>
+                          <div className={styles.blockLabel}>Блок {blockIndex + 1}</div>
+                          <Button
+                            text="Удалить"
+                            onClick={() => removeBlock(blockIndex)}
+                            showArrow={false}
+                            size="small"
+                          />
+                        </div>
+
+                        <Input
+                          label="Title"
+                          value={String(block?.title ?? '')}
+                          onChange={(v) => updateBlockField(blockIndex, 'title', v)}
+                        />
+                        <Input
+                          label="Subtitle"
+                          value={String(block?.subtitle ?? '')}
+                          onChange={(v) => updateBlockField(blockIndex, 'subtitle', v)}
+                        />
+
+                        <div className={styles.textareaField}>
+                          <div className={styles.textareaLabel}>Description</div>
+                          <textarea
+                            className={styles.textarea}
+                            value={String(block?.description ?? '')}
+                            onChange={(e) => updateBlockField(blockIndex, 'description', e.target.value)}
+                            rows={4}
+                          />
+                          <div className={styles.formatHint}>Форматирование: ``слово`` — жирный, `слово` — градиент</div>
+                        </div>
+
+                        <div className={styles.textareaField}>
+                          <div className={styles.textareaLabel}>Позиция картинки</div>
+                          <select
+                            className={styles.select}
+                            value={block?.imagePosition ?? 'right'}
+                            onChange={(e) => updateBlockField(blockIndex, 'imagePosition', e.target.value)}
+                          >
+                            <option value="right">Справа</option>
+                            <option value="left">Слева</option>
+                          </select>
+                        </div>
+
+                        <div className={styles.blockImageSection}>
+                          <div className={styles.imagesTitle}>Картинка (опционально)</div>
+                          <div
+                            className={styles.blockImageCard}
+                            onDrop={(e) => handleDropBlockImage(blockIndex, e)}
+                            onDragOver={handleDragOver}
+                          >
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleSelectBlockImage(blockIndex, e)}
+                              className={styles.fileInput}
+                            />
+                            {imageUrl ? (
+                              <img src={imageUrl} alt={imageAlt || ''} />
+                            ) : (
+                              <div className={styles.placeholder}>
+                                <span>Перетащите или кликните</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className={styles.dropHint}>Перетащите или кликните</div>
+
+                          <Input
+                            label="Image URL"
+                            value={imageUrl}
+                            onChange={(v) => updateBlockImage(blockIndex, v, imageAlt)}
+                          />
+                          <Input
+                            label="Image ALT"
+                            value={imageAlt}
+                            onChange={(v) => updateBlockImage(blockIndex, imageUrl, v)}
+                          />
+
+                          {imageUrl ? (
+                            <Button
+                              text="Убрать картинку"
+                              onClick={() => clearBlockImage(blockIndex)}
+                              showArrow={false}
+                              size="small"
+                            />
+                          ) : null}
+                        </div>
+
+                        <div className={styles.advantagesSection}>
+                          <div className={styles.advantagesHeader}>
+                            <div className={styles.advantagesTitle}>Advantages (опционально)</div>
+                            <Button
+                              text="Добавить"
+                              onClick={() => addAdvantage(blockIndex)}
+                              showArrow={false}
+                              size="small"
+                            />
+                          </div>
+
+                          {advantages.length === 0 ? (
+                            <div className={styles.advantagesEmpty}>Пока нет преимуществ</div>
+                          ) : null}
+
+                          <div className={styles.advantagesList}>
+                            {advantages.map((adv, advIndex) => (
+                              <div key={advIndex} className={styles.advRow}>
+                                <Input
+                                  label={`Преимущество ${advIndex + 1}`}
+                                  value={String(adv?.text ?? '')}
+                                  onChange={(v) => updateAdvantage(blockIndex, advIndex, v)}
+                                />
+                                <Button
+                                  text="Удалить"
+                                  onClick={() => removeAdvantage(blockIndex, advIndex)}
+                                  showArrow={false}
+                                  size="small"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

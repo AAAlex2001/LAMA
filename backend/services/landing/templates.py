@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,6 +29,57 @@ def _is_cta(card: Dict[str, Any]) -> bool:
 
 def _safe_str(value: Any) -> str:
     return str(value).strip() if value is not None else ""
+
+
+def _normalize_blocks(raw_blocks: Any) -> List[Dict[str, Any]]:
+    if not isinstance(raw_blocks, list):
+        return []
+
+    blocks: List[Dict[str, Any]] = []
+    for raw in raw_blocks:
+        if not isinstance(raw, dict):
+            continue
+
+        title = _safe_str(raw.get("title"))
+        subtitle = _safe_str(raw.get("subtitle"))
+        description = _safe_str(raw.get("description"))
+
+        # advantages: optional list[{text}]
+        advantages_in = raw.get("advantages")
+        advantages: Optional[List[Dict[str, str]]] = None
+        if isinstance(advantages_in, list):
+            cleaned: List[Dict[str, str]] = []
+            for adv in advantages_in:
+                if not isinstance(adv, dict):
+                    continue
+                text = _safe_str(adv.get("text"))
+                if text:
+                    cleaned.append({"text": text})
+            advantages = cleaned
+
+        # image: optional {url, alt}
+        image_in = raw.get("image")
+        image: Optional[Dict[str, str]] = None
+        if isinstance(image_in, dict):
+            url = _safe_str(image_in.get("url"))
+            if url:
+                alt = _safe_str(image_in.get("alt"))
+                image = {"url": url, "alt": alt}
+
+        block: Dict[str, Any] = {
+            "title": title,
+            "subtitle": subtitle,
+            "description": description,
+            "imagePosition": _safe_str(raw.get("imagePosition")) or "right",
+        }
+        if advantages is not None:
+            block["advantages"] = advantages
+        if image is not None:
+            block["image"] = image
+
+        blocks.append(block)
+
+    return blocks
 
 
 async def list_templates(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
@@ -119,6 +170,7 @@ async def get_template_content(
         "ctaText": template.get("linkText"),
         "ctaUrl": template.get("linkUrl"),
         "images": [],
+        "blocks": [],
     }
 
     result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
@@ -138,6 +190,7 @@ async def get_template_content(
 
     data: Dict[str, Any] = dict(defaults)
     images: List[Dict[str, str]] = []
+    blocks: List[Dict[str, Any]] = []
     for content in contents:
         suffix = content.key[len(prefix) :]
         if suffix == "headline":
@@ -150,6 +203,14 @@ async def get_template_content(
             data["ctaText"] = content.text or ""
         elif suffix == "cta_url":
             data["ctaUrl"] = content.link_url or content.text or ""
+        elif suffix == "blocks":
+            extra = content.extra_data
+            raw_blocks: Any = None
+            if isinstance(extra, dict):
+                raw_blocks = extra.get("blocks") or extra.get("items")
+            elif isinstance(extra, list):
+                raw_blocks = extra
+            blocks = _normalize_blocks(raw_blocks)
         elif suffix.startswith("hero_image_"):
             if content.image_url:
                 images.append(
@@ -160,6 +221,7 @@ async def get_template_content(
                 )
 
     data["images"] = images
+    data["blocks"] = blocks
 
     return data
 
@@ -210,6 +272,7 @@ async def save_template_content(
     cta_text = _safe_str(content.get("ctaText"))
     cta_url = _safe_str(content.get("ctaUrl"))
     images: List[Dict[str, str]] = list(content.get("images") or [])
+    blocks = _normalize_blocks(content.get("blocks"))
 
     rows: List[LandingContent] = [
         LandingContent(
@@ -255,6 +318,34 @@ async def save_template_content(
             )
         )
 
+    if cta_url:
+        rows.append(
+            LandingContent(
+                section_id=section.id,
+                content_type=ContentType.LINK,
+                locale=locale_enum,
+                key=f"{prefix}cta_url",
+                link_url=cta_url,
+                text=cta_url,
+                is_active=True,
+                order=5,
+            )
+        )
+
+    # Blocks (optional)
+    if blocks:
+        rows.append(
+            LandingContent(
+                section_id=section.id,
+                content_type=ContentType.TEXT,
+                locale=locale_enum,
+                key=f"{prefix}blocks",
+                extra_data={"blocks": blocks},
+                is_active=True,
+                order=6,
+            )
+        )
+
     # Hero images for this template (optional)
     for i, img in enumerate(images):
         url = _safe_str((img or {}).get("url"))
@@ -271,18 +362,6 @@ async def save_template_content(
                 image_alt=alt,
                 is_active=True,
                 order=20 + i,
-            )
-        )
-        rows.append(
-            LandingContent(
-                section_id=section.id,
-                content_type=ContentType.LINK,
-                locale=locale_enum,
-                key=f"{prefix}cta_url",
-                link_url=cta_url,
-                text=cta_url,
-                is_active=True,
-                order=5,
             )
         )
 

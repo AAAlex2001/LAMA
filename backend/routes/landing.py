@@ -149,6 +149,25 @@ async def save_template_page_content(
             "ctaText": data.ctaText,
             "ctaUrl": data.ctaUrl,
             "images": [{"url": img.url, "alt": img.alt} for img in (data.images or [])],
+            "blocks": (
+                [
+                    {
+                        "title": block.title,
+                        "subtitle": block.subtitle,
+                        "description": block.description,
+                        "imagePosition": block.imagePosition or "right",
+                        "advantages": (
+                            [{"text": adv.text} for adv in (block.advantages or [])]
+                            if block.advantages is not None
+                            else None
+                        ),
+                        "image": ({"url": block.image.url, "alt": block.image.alt} if block.image else None),
+                    }
+                    for block in (data.blocks or [])
+                ]
+                if data.blocks is not None
+                else None
+            ),
         },
         locale=parsed_locale.value,
     )
