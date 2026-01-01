@@ -95,6 +95,14 @@
   }
 }
 
+.hideOnMobile {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}
+
 .relativeElement1 {
   width: 100%;
   box-sizing: border-box;
@@ -260,16 +268,6 @@
   .textContainer {
     padding-bottom: 0;
   }
-
-
-
-
-
-
-
-
-
-
 
   .buttonContainer {
     margin-bottom: 80px;

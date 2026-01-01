@@ -23,6 +23,7 @@ type HeroContent = {
   paragraphSecondary: string;
   buttonText: string;
   images: Array<{ url: string; alt: string }>;
+  templateImages?: Array<{ url: string; alt: string }>;
 };
 
 type AdvantagesContent = {

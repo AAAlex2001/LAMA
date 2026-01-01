@@ -1,0 +1,37 @@
+.section {
+  padding: 24px 0 40px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.headline {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0 0 10px;
+}
+
+.lead {
+  font-size: 16px;
+  opacity: 0.85;
+  margin: 0 0 14px;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.paragraph {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.cta {
+  margin-top: 10px;
+}

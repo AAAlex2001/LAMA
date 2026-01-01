@@ -21,7 +21,13 @@ interface HeroContent {
 function normalizeHeroContent(data: Partial<HeroContent> | null | undefined): HeroContent {
   const safe = data ?? {};
   const images = Array.isArray(safe.images) ? safe.images : [];
-  const normalizedImages = Array.from({ length: 5 }, (_, i) => images[i] ?? { url: '', alt: '' });
+  const normalizedImages = Array.from({ length: 5 }, (_, i) => {
+    const img = images[i] ?? { url: '', alt: '' };
+    return {
+      url: img.url ?? '',
+      alt: img.alt ?? '',
+    };
+  });
 
   return {
     headline: safe.headline ?? '',
@@ -45,7 +51,7 @@ export default function HeroAdminPage() {
       { url: '', alt: '' },
       { url: '', alt: '' },
       { url: '', alt: '' }
-    ]
+    ],
   });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -108,7 +114,7 @@ export default function HeroAdminPage() {
         if (res.ok) {
           const data = await res.json();
           const newImages = [...content.images];
-          newImages[index] = { url: data.url, alt: `Hero ${index + 1}` };
+          newImages[index] = { url: data.url, alt: `Hero landing ${index + 1}` };
           setContent({ ...content, images: newImages });
           setMessage('✅ Картинка загружена');
         } else {
@@ -140,7 +146,7 @@ export default function HeroAdminPage() {
       if (res.ok) {
         const data = await res.json();
         const newImages = [...content.images];
-        newImages[index] = { url: data.url, alt: `Hero ${index + 1}` };
+        newImages[index] = { url: data.url, alt: `Hero landing ${index + 1}` };
         setContent({ ...content, images: newImages });
         setMessage('✅ Картинка загружена');
       }
@@ -215,10 +221,11 @@ export default function HeroAdminPage() {
               placeholder="Начать бесплатно"
             />
           </label>
+
         </div>
 
         <div className={styles.section}>
-          <h2>Картинки (перетащите или кликните)</h2>
+          <h2>Картинки лендинга (перетащите или кликните)</h2>
           
           <div className={styles.imagesGrid}>
               {content.images.map((image, index) => (
@@ -231,22 +238,20 @@ export default function HeroAdminPage() {
                     onDrop={e => handleDrop(index, e)}
                     onDragOver={handleDragOver}
                   >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => handleFileSelect(index, e)}
+                        className={styles.fileInput}
+                      />
                     {image.url ? (
                       <img src={image.url} alt={image.alt} />
                     ) : (
                       <div className={styles.placeholder}>
-                        <span>📷</span>
                         <span>Картинка {index + 1}</span>
                       </div>
                     )}
                   </div>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => handleFileSelect(index, e)}
-                    className={styles.fileInput}
-                  />
 
                   <div className={styles.dropHint}>
                     Перетащите или кликните

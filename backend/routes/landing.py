@@ -1,12 +1,12 @@
 """
 Роуты для получения и сохранения контента лендинга
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.models.landing import Locale
-from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer
+from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer, templates
 from backend.schemas.landing import (
     HeroContentRequest,
     AdvantagesContentRequest,
@@ -15,7 +15,8 @@ from backend.schemas.landing import (
     FAQContentRequest,
     UsersContentRequest,
     LamaContentRequest,
-    FooterContentRequest
+    FooterContentRequest,
+    TemplateContentRequest,
 )
 
 router = APIRouter()
@@ -49,6 +50,7 @@ async def save_hero_content(
 ):
     """Сохранить контент для секции Hero"""
     images = [{"url": img.url, "alt": img.alt} for img in data.images]
+    template_images = [{"url": img.url, "alt": img.alt} for img in (data.templateImages or [])]
     parsed_locale = parse_locale(locale)
     return await hero.save_hero_content(
         db,
@@ -57,6 +59,7 @@ async def save_hero_content(
         paragraph_secondary=data.paragraphSecondary,
         button_text=data.buttonText,
         images=images,
+        template_images=template_images,
         locale=parsed_locale.value
     )
 
@@ -71,6 +74,89 @@ async def get_advantages_content(
     return await advantages.get_advantages_content(db, locale=parsed_locale.value)
 
 
+@router.get("/templates")
+async def list_templates(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента"),
+):
+    """Список шаблонов.
+
+    Шаблоны генерируются из Advantages карточек, у которых isCta == False.
+    Количество шаблонов равно количеству таких карточек.
+    """
+    parsed_locale = parse_locale(locale)
+    return await templates.list_templates(db, locale=parsed_locale.value)
+
+
+@router.get("/templates/{template_id}")
+async def get_template(
+    template_id: int = Path(ge=1, description="ID шаблона (1..N среди non-CTA карточек)"),
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента"),
+):
+    """Получить один шаблон по ID (1-based индекс в списке non-CTA карточек)."""
+    parsed_locale = parse_locale(locale)
+    template = await templates.get_template(db, template_id=template_id, locale=parsed_locale.value)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.get("/templates/slug/{slug}")
+async def get_template_by_slug(
+    slug: str = Path(min_length=1, description="Slug шаблона"),
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента"),
+):
+    """Получить один шаблон по slug (SEO-friendly URL)."""
+    parsed_locale = parse_locale(locale)
+    template = await templates.get_template_by_slug(db, slug=slug, locale=parsed_locale.value)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.get("/templates/slug/{slug}/content")
+async def get_template_page_content(
+    slug: str = Path(min_length=1, description="Slug шаблона"),
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента"),
+):
+    """Получить контент страницы конкретного шаблона (редактируется в админке)."""
+    parsed_locale = parse_locale(locale)
+    content = await templates.get_template_content(db, slug=slug, locale=parsed_locale.value)
+    if not content:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return content
+
+
+@router.put("/templates/slug/{slug}/content")
+async def save_template_page_content(
+    data: TemplateContentRequest,
+    slug: str = Path(min_length=1, description="Slug шаблона"),
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента"),
+):
+    """Сохранить контент страницы конкретного шаблона (редактируется в админке)."""
+    parsed_locale = parse_locale(locale)
+    result = await templates.save_template_content(
+        db,
+        slug=slug,
+        content={
+            "headline": data.headline,
+            "lead": data.lead,
+            "body": data.body,
+            "ctaText": data.ctaText,
+            "ctaUrl": data.ctaUrl,
+            "images": [{"url": img.url, "alt": img.alt} for img in (data.images or [])],
+        },
+        locale=parsed_locale.value,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return result
+
+
 @router.put("/advantages")
 async def save_advantages_content(
     data: AdvantagesContentRequest,
@@ -80,6 +166,8 @@ async def save_advantages_content(
     """Сохранить контент для секции Advantages"""
     cards = [
         {
+            "uid": getattr(card, "uid", None),
+            "slug": getattr(card, "slug", None),
             "title": card.title,
             "description": card.description,
             "isCta": card.isCta,

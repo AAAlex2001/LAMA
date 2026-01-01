@@ -16,9 +16,12 @@ class HeroContentRequest(BaseModel):
     paragraphSecondary: str
     buttonText: str
     images: List[HeroImage]
+    templateImages: Optional[List[HeroImage]] = None
 
 
 class AdvantagesCard(BaseModel):
+    uid: Optional[str] = None
+    slug: Optional[str] = None
     title: str
     description: str
     isCta: bool = False
@@ -104,4 +107,13 @@ class FooterContentRequest(BaseModel):
     telegramLink: str
     instagramLink: str
     columns: List[FooterColumn]
+
+
+class TemplateContentRequest(BaseModel):
+    headline: str = ""
+    lead: str = ""
+    body: str = ""
+    ctaText: Optional[str] = None
+    ctaUrl: Optional[str] = None
+    images: Optional[List[HeroImage]] = None
 

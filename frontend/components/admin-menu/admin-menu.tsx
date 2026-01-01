@@ -13,6 +13,7 @@ export default function AdminMenu() {
     { href: '/admin', label: 'Главная' },
     { href: '/admin/hero', label: 'Hero' },
     { href: '/admin/advantages', label: 'Advantages' },
+    { href: '/admin/templates', label: 'Templates' },
     { href: '/admin/key-advantages', label: 'Key Advantages' },
     { href: '/admin/pricing', label: 'Pricing' },
     { href: '/admin/faq', label: 'FAQ' },

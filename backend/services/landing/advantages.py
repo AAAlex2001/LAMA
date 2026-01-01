@@ -2,10 +2,54 @@
 Методы для работы с секцией Advantages
 """
 from typing import List, Dict, Any
+from uuid import uuid4
+import re
+import unicodedata
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
 from backend.models.landing import LandingSection, LandingContent, SectionType, ContentType, Locale
+
+
+_CYRILLIC_TRANSLIT = {
+    "а": "a", "б": "b", "в": "v", "г": "g", "д": "d", "е": "e", "ё": "e", "ж": "zh", "з": "z",
+    "и": "i", "й": "i", "к": "k", "л": "l", "м": "m", "н": "n", "о": "o", "п": "p", "р": "r",
+    "с": "s", "т": "t", "у": "u", "ф": "f", "х": "h", "ц": "c", "ч": "ch", "ш": "sh", "щ": "sch",
+    "ъ": "", "ы": "y", "ь": "", "э": "e", "ю": "yu", "я": "ya",
+}
+
+
+def _slugify(value: str) -> str:
+    value = (value or "").strip().lower()
+    if not value:
+        return ""
+
+    value = "".join(_CYRILLIC_TRANSLIT.get(ch, ch) for ch in value)
+    value = unicodedata.normalize("NFKD", value)
+    value = value.encode("ascii", "ignore").decode("ascii")
+    value = re.sub(r"[^a-z0-9]+", "-", value).strip("-")
+    value = re.sub(r"-+", "-", value)
+    return value
+
+
+def _ensure_uid(card: Dict[str, Any], fallback_uid: str | None = None) -> str:
+    uid = str(card.get("uid") or "").strip()
+    if uid:
+        return uid
+    if fallback_uid:
+        return fallback_uid
+    return uuid4().hex
+
+
+def _ensure_slug(card: Dict[str, Any], uid: str) -> str:
+    slug = str(card.get("slug") or "").strip().lower()
+    if slug:
+        slug = _slugify(slug) or slug
+        return slug
+    base = _slugify(str(card.get("title") or ""))
+    if base:
+        return base
+    return f"t-{uid[:10]}"
 
 
 def coerce_locale(locale: str | Locale | None) -> Locale:
@@ -42,8 +86,8 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
     )
     contents = result.scalars().all()
     
-    response = {}
-    cards = []
+    response: Dict[str, Any] = {}
+    cards: List[Dict[str, Any]] = []
     
     for content in contents:
         if content.key == "advantages_headline":
@@ -51,21 +95,26 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         elif content.key == "advantages_subtitle":
             response["subtitle"] = content.text or ""
         elif content.key.startswith("advantages_card_"):
-            card_index = int(content.key.split("_")[-1])
-            while len(cards) <= card_index:
-                cards.append({"title": "", "description": "", "isCta": False, "linkText": None, "linkUrl": None})
-            
-            if content.title:
-                cards[card_index]["title"] = content.title
-            if content.text:
-                cards[card_index]["description"] = content.text
-            if content.link_text:
-                cards[card_index]["linkText"] = content.link_text
-            if content.link_url:
-                cards[card_index]["linkUrl"] = content.link_url
-            # isCta храним в extra_data или как отдельное поле
-            if content.extra_data and content.extra_data.get("isCta"):
-                cards[card_index]["isCta"] = True
+            # Новый формат: ключ advantages_card_<uid>, порядок берём из order.
+            # Старый формат: advantages_card_<index> — тоже поддерживаем.
+            suffix = content.key[len("advantages_card_") :]
+            fallback_uid = suffix if suffix else None
+
+            extra = content.extra_data or {}
+            uid = str(extra.get("uid") or fallback_uid or "").strip() or uuid4().hex
+            slug = str(extra.get("slug") or "").strip() or _ensure_slug({"title": content.title or ""}, uid)
+
+            cards.append(
+                {
+                    "uid": uid,
+                    "slug": slug,
+                    "title": content.title or "",
+                    "description": content.text or "",
+                    "isCta": bool(extra.get("isCta", False)),
+                    "linkText": content.link_text,
+                    "linkUrl": content.link_url,
+                }
+            )
     
     return {
         "headline": response.get("headline", ""),
@@ -126,16 +175,22 @@ async def save_advantages_content(
     ]
     
     for i, card in enumerate(cards):
+        uid = _ensure_uid(card, fallback_uid=str(i))
+        slug = _ensure_slug(card, uid)
         contents.append(LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
             locale=locale_enum,
-            key=f"advantages_card_{i}",
+            key=f"advantages_card_{uid}",
             title=card.get("title", ""),
             text=card.get("description", ""),
             link_text=card.get("linkText"),
             link_url=card.get("linkUrl"),
-            extra_data={"isCta": card.get("isCta", False)} if card.get("isCta", False) else {},
+            extra_data={
+                **({"isCta": True} if card.get("isCta", False) else {}),
+                "uid": uid,
+                "slug": slug,
+            },
             is_active=True,
             order=10 + i
         ))

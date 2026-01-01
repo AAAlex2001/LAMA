@@ -33,7 +33,8 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
             "paragraph": "",
             "paragraphSecondary": "",
             "buttonText": "",
-            "images": []
+            "images": [],
+            "templateImages": [],
         }
     
     # Получаем весь контент для этой секции
@@ -49,6 +50,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
     # Формируем ответ из контента
     response = {}
     images = []
+    template_images = []
     
     for content in contents:
         if content.key == "hero_headline":
@@ -59,12 +61,19 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
             response["paragraphSecondary"] = content.text or ""
         elif content.key == "hero_button":
             response["buttonText"] = content.text or "Начать бесплатно"
-        elif content.key.startswith("hero_image_"):
-            # Картинки с ключами hero_image_1, hero_image_2 и т.д.
+        elif content.key.startswith("hero_image_template_"):
+            # Картинки для шаблонов
+            if content.image_url:
+                template_images.append({
+                    "url": content.image_url,
+                    "alt": content.image_alt or "Hero illustration",
+                })
+        elif content.key.startswith("hero_image_landing_") or content.key.startswith("hero_image_"):
+            # Картинки для лендинга (поддержка legacy hero_image_*)
             if content.image_url:
                 images.append({
                     "url": content.image_url,
-                    "alt": content.image_alt or "Hero illustration"
+                    "alt": content.image_alt or "Hero illustration",
                 })
     
     return {
@@ -72,7 +81,8 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
         "paragraph": response.get("paragraph", ""),
         "paragraphSecondary": response.get("paragraphSecondary", ""),
         "buttonText": response.get("buttonText", ""),
-        "images": images
+        "images": images,
+        "templateImages": template_images,
     }
 
 
@@ -83,6 +93,7 @@ async def save_hero_content(
     paragraph_secondary: str,
     button_text: str,
     images: List[Dict[str, str]],
+    template_images: List[Dict[str, str]] | None = None,
     locale: str | Locale | None = None,
 ) -> Dict[str, str]:
     """Сохранить контент для секции Hero"""
@@ -102,6 +113,8 @@ async def save_hero_content(
         )
         db.add(section)
         await db.flush()
+
+    template_images = template_images or []
     
     # Удаляем старый контент только для текущей локали
     await db.execute(
@@ -156,11 +169,23 @@ async def save_hero_content(
             section_id=section.id,
             content_type=ContentType.IMAGE,
             locale=locale_enum,
-            key=f"hero_image_{i + 1}",
+            key=f"hero_image_landing_{i + 1}",
             image_url=image.get("url", ""),
             image_alt=image.get("alt", "Hero illustration"),
             is_active=True,
             order=10 + i
+        ))
+
+    for i, image in enumerate(template_images):
+        contents.append(LandingContent(
+            section_id=section.id,
+            content_type=ContentType.IMAGE,
+            locale=locale_enum,
+            key=f"hero_image_template_{i + 1}",
+            image_url=image.get("url", ""),
+            image_alt=image.get("alt", "Hero illustration"),
+            is_active=True,
+            order=30 + i,
         ))
     
     db.add_all(contents)
