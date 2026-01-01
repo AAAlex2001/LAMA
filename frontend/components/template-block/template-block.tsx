@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import {JSX, useEffect, useState} from 'react';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
@@ -25,14 +25,13 @@ interface TemplateBlockProps {
   index: number;
 }
 
-// Парсинг форматирования: ``слово`` → жирный, `слово` → градиент
 function formatDescription(text: string) {
   const parts: (string | JSX.Element)[] = [];
   let remaining = text;
   let key = 0;
 
   while (remaining.length > 0) {
-    // ``слово`` → жирный
+
     const boldMatch = remaining.match(/^(.*?)``([^`]+)``(.*)$/s);
     if (boldMatch) {
       if (boldMatch[1]) parts.push(boldMatch[1]);
@@ -40,7 +39,7 @@ function formatDescription(text: string) {
       remaining = boldMatch[3];
       continue;
     }
-    // `слово` → градиент
+
     const gradientMatch = remaining.match(/^(.*?)`([^`]+)`(.*)$/s);
     if (gradientMatch) {
       if (gradientMatch[1]) parts.push(gradientMatch[1]);
@@ -48,7 +47,7 @@ function formatDescription(text: string) {
       remaining = gradientMatch[3];
       continue;
     }
-    // Ничего не найдено
+
     parts.push(remaining);
     break;
   }
@@ -104,7 +103,6 @@ export default function TemplateBlock({
 
   const isLeft = imagePosition === 'left';
 
-  // Mobile: Swiper — текст всегда первый в DOM, direction определяет визуальное расположение
   if (isMobile) {
     return (
       <motion.div
@@ -127,7 +125,6 @@ export default function TemplateBlock({
     );
   }
 
-  // Tablet+: текст первый, картинка после — imagePosition меняет визуальное положение через CSS
   return (
     <motion.div
       className={`${styles.block} ${isLeft ? styles.imageLeft : ''}`}

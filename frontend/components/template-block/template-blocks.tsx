@@ -1,4 +1,4 @@
-import TemplateBlock from '@/components/template-block/template-block';
+import TemplateBlock from './template-block';
 import styles from './template-blocks.module.scss';
 
 type TemplateBlockAdvantage = {
@@ -27,19 +27,21 @@ export default function TemplateBlocks({ blocks }: Props) {
   if (!Array.isArray(blocks) || blocks.length === 0) return null;
 
   return (
-    <div className={styles.list}>
-      {blocks.map((block, index) => (
-        <TemplateBlock
-          key={index}
-          title={block.title}
-          subtitle={block.subtitle}
-          description={block.description}
-          advantages={block.advantages}
-          image={block.image}
-          imagePosition={block.imagePosition}
-          index={index}
-        />
-      ))}
-    </div>
+    <section className={styles.container}>
+      <div className={styles.list}>
+        {blocks.map((block, index) => (
+          <TemplateBlock
+            key={index}
+            title={block.title}
+            subtitle={block.subtitle}
+            description={block.description}
+            advantages={block.advantages}
+            image={block.image}
+            imagePosition={block.imagePosition}
+            index={index}
+          />
+        ))}
+      </div>
+    </section>
   );
 }

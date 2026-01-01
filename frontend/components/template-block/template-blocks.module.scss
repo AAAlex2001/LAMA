@@ -1,0 +1,25 @@
+.container {
+  width: 100%;
+  padding: 0 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  @media (min-width: 768px) {
+    max-width: 1240px;
+  }
+
+  @media (min-width: 1440px) {
+    padding: 0;
+    max-width: 1200px;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 85px;
+
+  @media (min-width: 768px) {
+    gap: 120px;
+  }
+}

@@ -1,10 +1,9 @@
 import Header from "../../../landing/header/header";
 import Hero from "../../../landing/hero/hero";
 import Footer from "../../../landing/footer/footer";
-import TemplateBlocks from "@/components/template-blocks/template-blocks";
+import TemplateBlocks from "@/components/template-block/template-blocks";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
-import styles from './template-content.module.scss';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -168,9 +167,7 @@ export default async function TemplatePage({ params }: Props) {
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
       
       {templateContent.blocks && templateContent.blocks.length > 0 && (
-        <section className={styles.blocksContainer}>
-          <TemplateBlocks blocks={templateContent.blocks} />
-        </section>
+        <TemplateBlocks blocks={templateContent.blocks} />
       )}
 
       <Footer locale={locale} content={footer} />
