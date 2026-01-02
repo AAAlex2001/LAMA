@@ -14,6 +14,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
+  variant?: 'default' | 'templateCard';
   icon?: ReactNode;
   loading?: boolean;
 }
@@ -27,6 +28,7 @@ export default function Button({
   active = false,
   fullWidth = false,
   size = 'default',
+  variant = 'default',
   icon,
   loading = false,
 }: ButtonProps) {
@@ -67,6 +69,7 @@ export default function Button({
         [styles.fullWidthWrapper]: fullWidth,
         [styles.smallWrapper]: size === 'small',
         [styles.mediumWrapper]: size === 'medium',
+        [styles.templateCardWrapper]: variant === 'templateCard',
       }
   );
 
@@ -77,6 +80,7 @@ export default function Button({
         [styles.active]: active,
         [styles.smallButton]: size === 'small',
         [styles.mediumButton]: size === 'medium',
+        [styles.templateCardButton]: variant === 'templateCard',
       }
   );
 

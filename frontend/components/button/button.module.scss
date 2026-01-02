@@ -6,6 +6,12 @@
   max-height: 40px;
 }
 
+.templateCardWrapper {
+  background: transparent;
+  padding: 0;
+  max-height: none;
+}
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -47,6 +53,10 @@
       background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
     }
   }
+}
+
+.templateCardButton {
+  background-color: #DEE9FA;
 }
 
 .buttonWrapper:has(.button.active:hover) {

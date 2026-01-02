@@ -23,7 +23,7 @@ export default function TemplateCard({ title, text, buttonText, buttonLink }: Pr
       </div>
 
       <div className={styles.buttonRow}>
-        <Button text={buttonText} href={buttonLink} fullWidth showArrow />
+        <Button text={buttonText} href={buttonLink} fullWidth showArrow variant="templateCard" />
       </div>
     </div>
   );
