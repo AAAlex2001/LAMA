@@ -51,6 +51,18 @@ type CardsBlock = {
   cards: TemplateCardItem[];
 };
 
+type TemplateSubscribeBlock = {
+  title: string;
+  subtitle: string;
+  buttonText: string;
+  buttonLink?: string | null;
+};
+
+type TemplateSubscribePlacement = {
+  position: 'after_block' | 'after_faq' | 'after_cards';
+  afterBlockNumber?: number | null;
+};
+
 type TemplatePageContent = {
   headline: string;
   lead: string;
@@ -68,6 +80,8 @@ type TemplatePageContent = {
   }>;
   faq?: FAQContent | null;
   cardsBlock?: CardsBlock | null;
+  subscribeBlock?: TemplateSubscribeBlock | null;
+  subscribePlacement?: TemplateSubscribePlacement | null;
 };
 
 function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | undefined): TemplatePageContent {
@@ -153,6 +167,32 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
   };
   const hasCardsBlock = Boolean(cardsBlock.headline.trim() || cardsBlock.cards.length > 0);
 
+  const subscribeIn = (safe as any).subscribeBlock;
+  const subscribe: TemplateSubscribeBlock = {
+    title: String(subscribeIn?.title ?? ''),
+    subtitle: String(subscribeIn?.subtitle ?? ''),
+    buttonText: String(subscribeIn?.buttonText ?? ''),
+    buttonLink: (subscribeIn?.buttonLink ?? '') as any,
+  };
+  const hasSubscribe = Boolean(
+    subscribe.title.trim() ||
+      subscribe.subtitle.trim() ||
+      subscribe.buttonText.trim() ||
+      String(subscribe.buttonLink ?? '').trim()
+  );
+
+  const placementIn = (safe as any).subscribePlacement;
+  const rawPosition = String(placementIn?.position ?? '').trim();
+  const position = (rawPosition === 'after_block' || rawPosition === 'after_faq' ? rawPosition : 'after_cards') as
+    | 'after_block'
+    | 'after_faq'
+    | 'after_cards';
+  const afterBlockNumberRaw = Number(placementIn?.afterBlockNumber ?? 0);
+  const subscribePlacement: TemplateSubscribePlacement = {
+    position,
+    afterBlockNumber: position === 'after_block' && Number.isFinite(afterBlockNumberRaw) && afterBlockNumberRaw >= 1 ? afterBlockNumberRaw : null,
+  };
+
   return {
     headline: safe.headline ?? '',
     lead: safe.lead ?? '',
@@ -163,6 +203,8 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
     blocks: normalizedBlocks,
     faq: hasFaq ? faq : null,
     cardsBlock: hasCardsBlock ? cardsBlock : null,
+    subscribeBlock: hasSubscribe ? subscribe : null,
+    subscribePlacement: hasSubscribe ? subscribePlacement : null,
   };
 }
 
@@ -202,6 +244,16 @@ export default function TemplatesAdminPage() {
     cardsBlock: {
       headline: '',
       cards: [],
+    },
+    subscribeBlock: {
+      title: '',
+      subtitle: '',
+      buttonText: '',
+      buttonLink: '',
+    },
+    subscribePlacement: {
+      position: 'after_cards',
+      afterBlockNumber: null,
     },
   });
 
@@ -327,6 +379,29 @@ export default function TemplatesAdminPage() {
       };
       const hasCardsBlock = Boolean(cardsBlock.headline || cards.length > 0);
 
+      const subscribeBlock = {
+        title: String(content.subscribeBlock?.title ?? '').trim(),
+        subtitle: String(content.subscribeBlock?.subtitle ?? '').trim(),
+        buttonText: String(content.subscribeBlock?.buttonText ?? '').trim(),
+        buttonLink: String(content.subscribeBlock?.buttonLink ?? '').trim() || null,
+      };
+      const hasSubscribe = Boolean(
+        subscribeBlock.title || subscribeBlock.subtitle || subscribeBlock.buttonText || subscribeBlock.buttonLink
+      );
+
+      const placementPosition = (content.subscribePlacement?.position ?? 'after_cards') as
+        | 'after_block'
+        | 'after_faq'
+        | 'after_cards';
+      const afterBlockNumber = Number(content.subscribePlacement?.afterBlockNumber ?? 0);
+      const subscribePlacement = {
+        position: placementPosition,
+        afterBlockNumber:
+          placementPosition === 'after_block' && Number.isFinite(afterBlockNumber) && afterBlockNumber >= 1
+            ? afterBlockNumber
+            : null,
+      };
+
       const res = await fetch(`${API_BASE_URL}/templates/slug/${encodeURIComponent(selectedSlug)}/content?locale=${locale}`,
         {
           method: 'PUT',
@@ -341,6 +416,8 @@ export default function TemplatesAdminPage() {
             blocks,
             faq: hasFaq ? faq : null,
             cardsBlock: hasCardsBlock ? cardsBlock : null,
+            subscribeBlock: hasSubscribe ? subscribeBlock : null,
+            subscribePlacement: hasSubscribe ? subscribePlacement : null,
           }),
         }
       );
@@ -994,6 +1071,75 @@ export default function TemplatesAdminPage() {
                     value={String(content.faq?.botLink ?? '')}
                     onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), botLink: v } }))}
                   />
+                </div>
+
+                <div className={styles.blocksSection}>
+                  <div className={styles.blocksHeader}>
+                    <div className={styles.blocksTitle}>Subscribe (для этого шаблона)</div>
+                  </div>
+
+                  <Input
+                    label="Title"
+                    value={String(content.subscribeBlock?.title ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, subscribeBlock: { ...(p.subscribeBlock ?? { subtitle: '', buttonText: '', buttonLink: '' }), title: v } }))}
+                  />
+
+                  <Input
+                    label="Subtitle"
+                    value={String(content.subscribeBlock?.subtitle ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, subscribeBlock: { ...(p.subscribeBlock ?? { title: '', buttonText: '', buttonLink: '' }), subtitle: v } }))}
+                  />
+
+                  <Input
+                    label="Button text"
+                    value={String(content.subscribeBlock?.buttonText ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, subscribeBlock: { ...(p.subscribeBlock ?? { title: '', subtitle: '', buttonLink: '' }), buttonText: v } }))}
+                  />
+
+                  <Input
+                    label="Button link"
+                    value={String(content.subscribeBlock?.buttonLink ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, subscribeBlock: { ...(p.subscribeBlock ?? { title: '', subtitle: '', buttonText: '' }), buttonLink: v } }))}
+                  />
+
+                  <div className={styles.textareaField}>
+                    <div className={styles.textareaLabel}>Placement</div>
+                    <select
+                      className={styles.select}
+                      value={content.subscribePlacement?.position ?? 'after_cards'}
+                      onChange={(e) =>
+                        setContent((p) => ({
+                          ...p,
+                          subscribePlacement: {
+                            ...(p.subscribePlacement ?? { afterBlockNumber: null }),
+                            position: (e.target.value as any) || 'after_cards',
+                          },
+                        }))
+                      }
+                    >
+                      <option value="after_cards">После карточек</option>
+                      <option value="after_faq">После FAQ</option>
+                      <option value="after_block">После блока #N</option>
+                    </select>
+                  </div>
+
+                  {(content.subscribePlacement?.position ?? 'after_cards') === 'after_block' ? (
+                    <Input
+                      label="After block number (1-based)"
+                      value={String(content.subscribePlacement?.afterBlockNumber ?? '')}
+                      onChange={(v) => {
+                        const parsed = Number(String(v ?? '').replace(/[^0-9]/g, ''));
+                        setContent((p) => ({
+                          ...p,
+                          subscribePlacement: {
+                            ...(p.subscribePlacement ?? { position: 'after_block' as const }),
+                            position: 'after_block',
+                            afterBlockNumber: Number.isFinite(parsed) && parsed >= 1 ? parsed : null,
+                          },
+                        }));
+                      }}
+                    />
+                  ) : null}
                 </div>
               </div>
             )}

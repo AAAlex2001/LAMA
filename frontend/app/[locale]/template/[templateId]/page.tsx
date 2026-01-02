@@ -5,6 +5,7 @@ import FAQ from "../../../landing/faq/faq";
 import FAQDecoration from "../../../landing/faq-decoration/faq-decoration";
 import TemplateBlocks from "@/components/template-block/template-blocks";
 import TemplateCardsBlock from "@/components/template-card/template-cards-block";
+import TemplateSubscribe from "@/components/template-subscribe/template-subscribe";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
 
@@ -65,6 +66,16 @@ type TemplatePageContent = {
   cardsBlock?: {
     headline: string;
     cards: Array<{ title: string; text: string; buttonText: string; buttonLink?: string | null }>;
+  } | null;
+  subscribeBlock?: {
+    title: string;
+    subtitle: string;
+    buttonText: string;
+    buttonLink?: string | null;
+  } | null;
+  subscribePlacement?: {
+    position: 'after_block' | 'after_faq' | 'after_cards';
+    afterBlockNumber?: number | null;
   } | null;
 };
 
@@ -185,22 +196,64 @@ export default async function TemplatePage({ params }: Props) {
     images: templateImages,
   };
 
+  const faqContent = templateContent.faq ?? null;
+  const hasFaq = Boolean(
+    faqContent &&
+      (String(faqContent.headline || '').trim() ||
+        (Array.isArray(faqContent.faqItems) && faqContent.faqItems.length > 0))
+  );
+
+  const subscribe = templateContent.subscribeBlock;
+  const subscribePlacement = templateContent.subscribePlacement;
+  const hasSubscribe = Boolean(
+    subscribe &&
+      (String(subscribe.title || '').trim() ||
+        String(subscribe.subtitle || '').trim() ||
+        String(subscribe.buttonText || '').trim() ||
+        String(subscribe.buttonLink || '').trim())
+  );
+
+  const subscribeNode = hasSubscribe && subscribe ? (
+    <TemplateSubscribe
+      title={subscribe.title}
+      subtitle={subscribe.subtitle}
+      buttonText={subscribe.buttonText}
+      buttonLink={subscribe.buttonLink}
+    />
+  ) : null;
+
+  const blocksCount = Array.isArray(templateContent.blocks) ? templateContent.blocks.length : 0;
+  const requestedAfterBlock =
+    subscribePlacement?.position === 'after_block'
+      ? Number(subscribePlacement.afterBlockNumber || 0)
+      : 0;
+  const canRenderInBlocks = Boolean(subscribeNode && requestedAfterBlock >= 1 && blocksCount >= requestedAfterBlock);
+  const renderAfterFaq = Boolean(subscribeNode && subscribePlacement?.position === 'after_faq');
+  const renderAfterCards = Boolean(
+    subscribeNode &&
+      (!subscribePlacement || subscribePlacement.position === 'after_cards' || (subscribePlacement.position === 'after_block' && !canRenderInBlocks))
+  );
+
   return (
     <main>
       <Header locale={locale} />
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
       
       {templateContent.blocks && templateContent.blocks.length > 0 && (
-        <TemplateBlocks blocks={templateContent.blocks} />
+        <TemplateBlocks
+          blocks={templateContent.blocks}
+          insertAfterBlockNumber={canRenderInBlocks ? requestedAfterBlock : undefined}
+          insertNode={canRenderInBlocks ? subscribeNode : undefined}
+        />
       )}
 
-      {templateContent.faq &&
-      (String(templateContent.faq.headline || '').trim() ||
-        (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
+      {hasFaq && faqContent ? (
           <>
-            <FAQ locale={locale} content={templateContent.faq} />
+            <FAQ locale={locale} content={faqContent} />
           </>
         ) : null}
+
+      {renderAfterFaq ? subscribeNode : null}
 
       {templateContent.cardsBlock &&
       Array.isArray(templateContent.cardsBlock.cards) &&
@@ -208,9 +261,9 @@ export default async function TemplatePage({ params }: Props) {
         <TemplateCardsBlock headline={templateContent.cardsBlock.headline} cards={templateContent.cardsBlock.cards} />
       ) : null}
 
-      {templateContent.faq &&
-      (String(templateContent.faq.headline || '').trim() ||
-        (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
+      {renderAfterCards ? subscribeNode : null}
+
+      {hasFaq && faqContent ? (
           <FAQDecoration />
         ) : null}
 

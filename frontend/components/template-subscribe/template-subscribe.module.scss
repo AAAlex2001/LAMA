@@ -1,0 +1,101 @@
+.section {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+}
+
+.subscribe {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 30px 50px;
+  gap: 49px;
+
+  width: 100%;
+  max-width: 803px;
+  min-height: 230px;
+
+  border-radius: 20px;
+  background: #f1f5fb;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0px;
+  gap: 30px;
+
+  width: 100%;
+  max-width: 703px;
+}
+
+.headings {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 20px;
+
+  width: 100%;
+}
+
+.h2 {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+
+  width: 100%;
+}
+
+.title {
+  width: 100%;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 28px;
+  text-align: center;
+  color: #383f45;
+}
+
+.h4 {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+
+  width: 100%;
+}
+
+.subtitle {
+  width: 100%;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #383f45;
+}
+
+.buttonWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.buttonOverride {
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  border-radius: 10px;
+
+  :global(.button) {
+    padding: 10px 30px;
+    height: 44px;
+    border-radius: 10px;
+  }
+}
