@@ -204,6 +204,38 @@ def _normalize_subscribe_placement(raw: Any) -> Optional[Dict[str, Any]]:
     return placement
 
 
+def _normalize_subscribe_blocks(raw: Any) -> List[Dict[str, Any]]:
+    items_raw: Any = None
+    if isinstance(raw, list):
+        items_raw = raw
+    elif isinstance(raw, dict):
+        items_raw = raw.get("subscribeBlocks") or raw.get("items") or raw.get("blocks")
+
+    blocks: List[Dict[str, Any]] = []
+    if not isinstance(items_raw, list):
+        return blocks
+
+    for item in items_raw:
+        if not isinstance(item, dict):
+            continue
+        block = _normalize_subscribe_block(item)
+        if block is None:
+            continue
+
+        placement = _normalize_subscribe_placement(
+            item.get("placement")
+            or item.get("subscribePlacement")
+            or item.get("subscribe_placement")
+        )
+
+        out: Dict[str, Any] = dict(block)
+        if placement is not None:
+            out["placement"] = placement
+        blocks.append(out)
+
+    return blocks
+
+
 async def list_templates(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     locale_enum = _coerce_locale(locale)
 
@@ -297,6 +329,7 @@ async def get_template_content(
         "cardsBlock": None,
         "subscribeBlock": None,
         "subscribePlacement": None,
+        "subscribeBlocks": [],
     }
 
     result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
@@ -321,6 +354,7 @@ async def get_template_content(
     cards_block: Optional[Dict[str, Any]] = None
     subscribe_block: Optional[Dict[str, Any]] = None
     subscribe_placement: Optional[Dict[str, Any]] = None
+    subscribe_blocks: List[Dict[str, Any]] = []
     for content in contents:
         suffix = content.key[len(prefix) :]
         if suffix == "headline":
@@ -360,6 +394,9 @@ async def get_template_content(
             extra = content.extra_data
             if isinstance(extra, dict):
                 subscribe_placement = _normalize_subscribe_placement(extra)
+        elif suffix == "subscribe_blocks":
+            extra = content.extra_data
+            subscribe_blocks = _normalize_subscribe_blocks(extra)
         elif suffix.startswith("hero_image_"):
             if content.image_url:
                 images.append(
@@ -373,6 +410,19 @@ async def get_template_content(
     data["blocks"] = blocks
     data["faq"] = faq
     data["cardsBlock"] = cards_block
+
+    # Backward/forward compatibility between legacy fields and new array.
+    if subscribe_blocks and subscribe_block is None:
+        first = subscribe_blocks[0]
+        subscribe_block = _normalize_subscribe_block(first)
+        subscribe_placement = _normalize_subscribe_placement(first.get("placement"))
+    elif (not subscribe_blocks) and subscribe_block is not None:
+        first = dict(subscribe_block)
+        if subscribe_placement is not None:
+            first["placement"] = subscribe_placement
+        subscribe_blocks = [first]
+
+    data["subscribeBlocks"] = subscribe_blocks
     data["subscribeBlock"] = subscribe_block
     data["subscribePlacement"] = subscribe_placement
 
@@ -430,6 +480,20 @@ async def save_template_content(
     cards_block = _normalize_cards_block(content.get("cardsBlock"))
     subscribe_block = _normalize_subscribe_block(content.get("subscribeBlock"))
     subscribe_placement = _normalize_subscribe_placement(content.get("subscribePlacement"))
+    subscribe_blocks = _normalize_subscribe_blocks(content.get("subscribeBlocks"))
+
+    if not subscribe_blocks and subscribe_block is not None:
+        first = dict(subscribe_block)
+        if subscribe_placement is not None:
+            first["placement"] = subscribe_placement
+        subscribe_blocks = [first]
+
+    legacy_subscribe_block = subscribe_block
+    legacy_subscribe_placement = subscribe_placement
+    if subscribe_blocks:
+        first = subscribe_blocks[0]
+        legacy_subscribe_block = _normalize_subscribe_block(first)
+        legacy_subscribe_placement = _normalize_subscribe_placement(first.get("placement"))
 
     rows: List[LandingContent] = [
         LandingContent(
@@ -531,30 +595,44 @@ async def save_template_content(
             )
         )
 
-    # Subscribe block + placement (optional)
-    if subscribe_block is not None:
+    # Subscribe blocks (new, optional)
+    if subscribe_blocks:
+        rows.append(
+            LandingContent(
+                section_id=section.id,
+                content_type=ContentType.TEXT,
+                locale=locale_enum,
+                key=f"{prefix}subscribe_blocks",
+                extra_data={"subscribeBlocks": subscribe_blocks},
+                is_active=True,
+                order=9,
+            )
+        )
+
+    # Subscribe block + placement (legacy, optional)
+    if legacy_subscribe_block is not None:
         rows.append(
             LandingContent(
                 section_id=section.id,
                 content_type=ContentType.TEXT,
                 locale=locale_enum,
                 key=f"{prefix}subscribe_block",
-                extra_data=subscribe_block,
+                extra_data=legacy_subscribe_block,
                 is_active=True,
-                order=9,
+                order=10,
             )
         )
 
-    if subscribe_placement is not None:
+    if legacy_subscribe_placement is not None:
         rows.append(
             LandingContent(
                 section_id=section.id,
                 content_type=ContentType.TEXT,
                 locale=locale_enum,
                 key=f"{prefix}subscribe_placement",
-                extra_data=subscribe_placement,
+                extra_data=legacy_subscribe_placement,
                 is_active=True,
-                order=10,
+                order=11,
             )
         )
 

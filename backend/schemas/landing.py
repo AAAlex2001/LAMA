@@ -134,16 +134,17 @@ class TemplateCardsBlockRequest(BaseModel):
     cards: List[TemplateCardItem] = []
 
 
+class TemplateSubscribePlacementRequest(BaseModel):
+    position: str = "after_cards"  # after_block | after_faq | after_cards
+    afterBlockNumber: Optional[int] = None
+
+
 class TemplateSubscribeBlockRequest(BaseModel):
     title: str = ""
     subtitle: str = ""
     buttonText: str = ""
     buttonLink: Optional[str] = None
-
-
-class TemplateSubscribePlacementRequest(BaseModel):
-    position: str = "after_cards"  # after_block | after_faq | after_cards
-    afterBlockNumber: Optional[int] = None
+    placement: Optional[TemplateSubscribePlacementRequest] = None
 
 
 class TemplateContentRequest(BaseModel):
@@ -158,4 +159,5 @@ class TemplateContentRequest(BaseModel):
     cardsBlock: Optional[TemplateCardsBlockRequest] = None
     subscribeBlock: Optional[TemplateSubscribeBlockRequest] = None
     subscribePlacement: Optional[TemplateSubscribePlacementRequest] = None
+    subscribeBlocks: Optional[List[TemplateSubscribeBlockRequest]] = None
 

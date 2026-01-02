@@ -67,6 +67,16 @@ type TemplatePageContent = {
     headline: string;
     cards: Array<{ title: string; text: string; buttonText: string; buttonLink?: string | null }>;
   } | null;
+  subscribeBlocks?: Array<{
+    title: string;
+    subtitle: string;
+    buttonText: string;
+    buttonLink?: string | null;
+    placement?: {
+      position: 'after_block' | 'after_faq' | 'after_cards';
+      afterBlockNumber?: number | null;
+    } | null;
+  }>;
   subscribeBlock?: {
     title: string;
     subtitle: string;
@@ -203,36 +213,66 @@ export default async function TemplatePage({ params }: Props) {
         (Array.isArray(faqContent.faqItems) && faqContent.faqItems.length > 0))
   );
 
-  const subscribe = templateContent.subscribeBlock;
-  const subscribePlacement = templateContent.subscribePlacement;
-  const hasSubscribe = Boolean(
-    subscribe &&
-      (String(subscribe.title || '').trim() ||
-        String(subscribe.subtitle || '').trim() ||
-        String(subscribe.buttonText || '').trim() ||
-        String(subscribe.buttonLink || '').trim())
-  );
-
-  const subscribeNode = hasSubscribe && subscribe ? (
-    <TemplateSubscribe
-      title={subscribe.title}
-      subtitle={subscribe.subtitle}
-      buttonText={subscribe.buttonText}
-      buttonLink={subscribe.buttonLink}
-    />
-  ) : null;
-
   const blocksCount = Array.isArray(templateContent.blocks) ? templateContent.blocks.length : 0;
-  const requestedAfterBlock =
-    subscribePlacement?.position === 'after_block'
-      ? Number(subscribePlacement.afterBlockNumber || 0)
-      : 0;
-  const canRenderInBlocks = Boolean(subscribeNode && requestedAfterBlock >= 1 && blocksCount >= requestedAfterBlock);
-  const renderAfterFaq = Boolean(subscribeNode && subscribePlacement?.position === 'after_faq');
-  const renderAfterCards = Boolean(
-    subscribeNode &&
-      (!subscribePlacement || subscribePlacement.position === 'after_cards' || (subscribePlacement.position === 'after_block' && !canRenderInBlocks))
-  );
+
+  const subscribeItemsRaw = Array.isArray(templateContent.subscribeBlocks) ? templateContent.subscribeBlocks : [];
+  const subscribeLegacy = templateContent.subscribeBlock;
+  const subscribeLegacyPlacement = templateContent.subscribePlacement;
+
+  const subscribeItems = subscribeItemsRaw.length
+    ? subscribeItemsRaw
+    : subscribeLegacy
+      ? [
+          {
+            ...subscribeLegacy,
+            placement: subscribeLegacyPlacement ?? undefined,
+          },
+        ]
+      : [];
+
+  const subscribeAfterFaqNodes: React.ReactNode[] = [];
+  const subscribeAfterCardsNodes: React.ReactNode[] = [];
+  const subscribeInsertions: Array<{ afterBlockNumber: number; node: React.ReactNode; key?: string }> = [];
+
+  subscribeItems.forEach((item, idx) => {
+    const title = String(item?.title || '').trim();
+    const subtitle = String(item?.subtitle || '').trim();
+    const buttonText = String(item?.buttonText || '').trim();
+    const buttonLink = String(item?.buttonLink || '').trim();
+    const hasAny = Boolean(title || subtitle || buttonText || buttonLink);
+    if (!hasAny) return;
+
+    const node = (
+      <TemplateSubscribe
+        title={item.title}
+        subtitle={item.subtitle}
+        buttonText={item.buttonText}
+        buttonLink={item.buttonLink}
+      />
+    );
+
+    const placement = item?.placement ?? null;
+    const position = placement?.position || 'after_cards';
+    const requestedAfterBlock = position === 'after_block' ? Number(placement?.afterBlockNumber || 0) : 0;
+    const canRenderInBlocks = requestedAfterBlock >= 1 && blocksCount >= requestedAfterBlock;
+
+    if (position === 'after_faq') {
+      subscribeAfterFaqNodes.push(<div key={`sub_after_faq_${idx}`}>{node}</div>);
+      return;
+    }
+
+    if (position === 'after_block' && canRenderInBlocks) {
+      subscribeInsertions.push({
+        afterBlockNumber: requestedAfterBlock,
+        node,
+        key: `sub_after_block_${idx}`,
+      });
+      return;
+    }
+
+    // default / fallback
+    subscribeAfterCardsNodes.push(<div key={`sub_after_cards_${idx}`}>{node}</div>);
+  });
 
   return (
     <main>
@@ -242,8 +282,7 @@ export default async function TemplatePage({ params }: Props) {
       {templateContent.blocks && templateContent.blocks.length > 0 && (
         <TemplateBlocks
           blocks={templateContent.blocks}
-          insertAfterBlockNumber={canRenderInBlocks ? requestedAfterBlock : undefined}
-          insertNode={canRenderInBlocks ? subscribeNode : undefined}
+          insertions={subscribeInsertions}
         />
       )}
 
@@ -253,7 +292,7 @@ export default async function TemplatePage({ params }: Props) {
           </>
         ) : null}
 
-      {renderAfterFaq ? subscribeNode : null}
+      {subscribeAfterFaqNodes.length ? subscribeAfterFaqNodes : null}
 
       {templateContent.cardsBlock &&
       Array.isArray(templateContent.cardsBlock.cards) &&
@@ -261,7 +300,7 @@ export default async function TemplatePage({ params }: Props) {
         <TemplateCardsBlock headline={templateContent.cardsBlock.headline} cards={templateContent.cardsBlock.cards} />
       ) : null}
 
-      {renderAfterCards ? subscribeNode : null}
+      {subscribeAfterCardsNodes.length ? subscribeAfterCardsNodes : null}
 
       {hasFaq && faqContent ? (
           <FAQDecoration />

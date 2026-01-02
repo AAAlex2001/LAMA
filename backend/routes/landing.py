@@ -172,6 +172,7 @@ async def save_template_page_content(
             "cardsBlock": (data.cardsBlock.dict() if data.cardsBlock is not None else None),
             "subscribeBlock": (data.subscribeBlock.dict() if data.subscribeBlock is not None else None),
             "subscribePlacement": (data.subscribePlacement.dict() if data.subscribePlacement is not None else None),
+            "subscribeBlocks": ([b.dict() for b in (data.subscribeBlocks or [])] if data.subscribeBlocks is not None else None),
         },
         locale=parsed_locale.value,
     )

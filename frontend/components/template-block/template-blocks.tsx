@@ -24,12 +24,28 @@ type Props = {
   blocks: TemplateBlockContent[];
   insertAfterBlockNumber?: number; // 1-based
   insertNode?: ReactNode;
+  insertions?: Array<{ afterBlockNumber: number; node: ReactNode; key?: string | number }>;
 };
 
-export default function TemplateBlocks({ blocks, insertAfterBlockNumber, insertNode }: Props) {
+export default function TemplateBlocks({ blocks, insertAfterBlockNumber, insertNode, insertions }: Props) {
   if (!Array.isArray(blocks) || blocks.length === 0) return null;
 
-  const afterIndex = typeof insertAfterBlockNumber === 'number' && insertAfterBlockNumber > 0 ? insertAfterBlockNumber - 1 : null;
+  const mergedInsertions: Array<{ afterBlockNumber: number; node: ReactNode; key?: string | number }> = Array.isArray(insertions)
+    ? [...insertions]
+    : [];
+
+  if (insertNode && typeof insertAfterBlockNumber === 'number' && insertAfterBlockNumber > 0) {
+    mergedInsertions.push({ afterBlockNumber: insertAfterBlockNumber, node: insertNode, key: 'legacy' });
+  }
+
+  const insertionMap = new Map<number, Array<{ node: ReactNode; key?: string | number }>>();
+  for (const ins of mergedInsertions) {
+    const afterIndex = typeof ins.afterBlockNumber === 'number' && ins.afterBlockNumber > 0 ? ins.afterBlockNumber - 1 : null;
+    if (afterIndex === null) continue;
+    const list = insertionMap.get(afterIndex) ?? [];
+    list.push({ node: ins.node, key: ins.key });
+    insertionMap.set(afterIndex, list);
+  }
 
   return (
     <section className={styles.container}>
@@ -45,7 +61,9 @@ export default function TemplateBlocks({ blocks, insertAfterBlockNumber, insertN
               imagePosition={block.imagePosition}
               index={index}
             />
-            {afterIndex === index ? insertNode : null}
+            {(insertionMap.get(index) || []).map((ins, i) => (
+              <div key={ins.key ?? i}>{ins.node}</div>
+            ))}
           </div>
         ))}
       </div>
