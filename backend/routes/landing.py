@@ -168,6 +168,7 @@ async def save_template_page_content(
                 if data.blocks is not None
                 else None
             ),
+            "faq": (data.faq.dict() if data.faq is not None else None),
         },
         locale=parsed_locale.value,
     )

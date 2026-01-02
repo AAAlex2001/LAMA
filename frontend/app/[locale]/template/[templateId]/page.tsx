@@ -1,6 +1,7 @@
 import Header from "../../../landing/header/header";
 import Hero from "../../../landing/hero/hero";
 import Footer from "../../../landing/footer/footer";
+import FAQ from "../../../landing/faq/faq";
 import TemplateBlocks from "@/components/template-block/template-blocks";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -34,6 +35,22 @@ type TemplateBlockContent = {
   imagePosition?: 'left' | 'right';
 };
 
+type FAQItem = {
+  question: string;
+  answer: string;
+};
+
+type FAQContent = {
+  headline: string;
+  faqItems: FAQItem[];
+  primaryButtonText?: string;
+  primaryButtonLink?: string;
+  secondaryButtonText?: string;
+  secondaryButtonLink?: string;
+  helpText?: string;
+  botLink?: string;
+};
+
 type TemplatePageContent = {
   headline: string;
   lead: string;
@@ -42,6 +59,7 @@ type TemplatePageContent = {
   ctaUrl?: string | null;
   images?: Array<{ url: string; alt: string }>;
   blocks?: TemplateBlockContent[];
+  faq?: FAQContent | null;
 };
 
 type FooterContent = {
@@ -169,6 +187,12 @@ export default async function TemplatePage({ params }: Props) {
       {templateContent.blocks && templateContent.blocks.length > 0 && (
         <TemplateBlocks blocks={templateContent.blocks} />
       )}
+
+      {templateContent.faq &&
+      (String(templateContent.faq.headline || '').trim() ||
+        (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
+          <FAQ locale={locale} content={templateContent.faq} />
+        ) : null}
 
       <Footer locale={locale} content={footer} />
     </main>

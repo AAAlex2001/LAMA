@@ -82,6 +82,47 @@ def _normalize_blocks(raw_blocks: Any) -> List[Dict[str, Any]]:
     return blocks
 
 
+def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(raw_faq, dict):
+        return None
+
+    headline = _safe_str(raw_faq.get("headline"))
+
+    raw_items = raw_faq.get("faqItems")
+    items: List[Dict[str, str]] = []
+    if isinstance(raw_items, list):
+        for item in raw_items:
+            if not isinstance(item, dict):
+                continue
+            q = _safe_str(item.get("question"))
+            a = _safe_str(item.get("answer"))
+            if q or a:
+                items.append({"question": q, "answer": a})
+
+    faq: Dict[str, Any] = {
+        "headline": headline,
+        "faqItems": items,
+        "primaryButtonText": _safe_str(raw_faq.get("primaryButtonText")) or None,
+        "primaryButtonLink": _safe_str(raw_faq.get("primaryButtonLink")) or None,
+        "secondaryButtonText": _safe_str(raw_faq.get("secondaryButtonText")) or None,
+        "secondaryButtonLink": _safe_str(raw_faq.get("secondaryButtonLink")) or None,
+        "helpText": _safe_str(raw_faq.get("helpText")) or None,
+        "botLink": _safe_str(raw_faq.get("botLink")) or None,
+    }
+
+    has_any = bool(
+        faq.get("headline")
+        or faq.get("faqItems")
+        or faq.get("primaryButtonText")
+        or faq.get("primaryButtonLink")
+        or faq.get("secondaryButtonText")
+        or faq.get("secondaryButtonLink")
+        or faq.get("helpText")
+        or faq.get("botLink")
+    )
+    return faq if has_any else None
+
+
 async def list_templates(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     locale_enum = _coerce_locale(locale)
 
@@ -171,6 +212,7 @@ async def get_template_content(
         "ctaUrl": template.get("linkUrl"),
         "images": [],
         "blocks": [],
+        "faq": None,
     }
 
     result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
@@ -191,6 +233,7 @@ async def get_template_content(
     data: Dict[str, Any] = dict(defaults)
     images: List[Dict[str, str]] = []
     blocks: List[Dict[str, Any]] = []
+    faq: Optional[Dict[str, Any]] = None
     for content in contents:
         suffix = content.key[len(prefix) :]
         if suffix == "headline":
@@ -211,6 +254,13 @@ async def get_template_content(
             elif isinstance(extra, list):
                 raw_blocks = extra
             blocks = _normalize_blocks(raw_blocks)
+        elif suffix == "faq":
+            extra = content.extra_data
+            if isinstance(extra, dict):
+                faq = _normalize_faq(extra)
+            else:
+                headline = content.text or content.title or ""
+                faq = _normalize_faq({"headline": headline, "faqItems": []})
         elif suffix.startswith("hero_image_"):
             if content.image_url:
                 images.append(
@@ -222,6 +272,7 @@ async def get_template_content(
 
     data["images"] = images
     data["blocks"] = blocks
+    data["faq"] = faq
 
     return data
 
@@ -273,6 +324,7 @@ async def save_template_content(
     cta_url = _safe_str(content.get("ctaUrl"))
     images: List[Dict[str, str]] = list(content.get("images") or [])
     blocks = _normalize_blocks(content.get("blocks"))
+    faq = _normalize_faq(content.get("faq"))
 
     rows: List[LandingContent] = [
         LandingContent(
@@ -343,6 +395,20 @@ async def save_template_content(
                 extra_data={"blocks": blocks},
                 is_active=True,
                 order=6,
+            )
+        )
+
+    # FAQ (optional)
+    if faq is not None:
+        rows.append(
+            LandingContent(
+                section_id=section.id,
+                content_type=ContentType.TEXT,
+                locale=locale_enum,
+                key=f"{prefix}faq",
+                extra_data=faq,
+                is_active=True,
+                order=7,
             )
         )
 

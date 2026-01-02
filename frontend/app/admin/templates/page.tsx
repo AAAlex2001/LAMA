@@ -23,6 +23,22 @@ type TemplatesIndex = {
   templates: TemplateItem[];
 };
 
+type FAQItem = {
+  question: string;
+  answer: string;
+};
+
+type FAQContent = {
+  headline: string;
+  faqItems: FAQItem[];
+  primaryButtonText?: string | null;
+  primaryButtonLink?: string | null;
+  secondaryButtonText?: string | null;
+  secondaryButtonLink?: string | null;
+  helpText?: string | null;
+  botLink?: string | null;
+};
+
 type TemplatePageContent = {
   headline: string;
   lead: string;
@@ -38,6 +54,7 @@ type TemplatePageContent = {
     image?: { url: string; alt: string };
     imagePosition?: 'left' | 'right';
   }>;
+  faq?: FAQContent | null;
 };
 
 function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | undefined): TemplatePageContent {
@@ -76,6 +93,35 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
       };
     });
 
+  const faqIn = (safe as any).faq;
+  const faqItemsIn = Array.isArray(faqIn?.faqItems) ? faqIn.faqItems : [];
+  const faqItems = faqItemsIn
+    .filter((it: any) => it && typeof it === 'object')
+    .map((it: any) => ({ question: String(it.question ?? ''), answer: String(it.answer ?? '') }))
+    .filter((it: FAQItem) => Boolean(it.question.trim() || it.answer.trim()));
+
+  const faq: FAQContent = {
+    headline: String(faqIn?.headline ?? ''),
+    faqItems,
+    primaryButtonText: faqIn?.primaryButtonText ?? '',
+    primaryButtonLink: faqIn?.primaryButtonLink ?? '',
+    secondaryButtonText: faqIn?.secondaryButtonText ?? '',
+    secondaryButtonLink: faqIn?.secondaryButtonLink ?? '',
+    helpText: faqIn?.helpText ?? '',
+    botLink: faqIn?.botLink ?? '',
+  };
+
+  const hasFaq = Boolean(
+    faq.headline.trim() ||
+      faq.faqItems.length > 0 ||
+      String(faq.primaryButtonText ?? '').trim() ||
+      String(faq.primaryButtonLink ?? '').trim() ||
+      String(faq.secondaryButtonText ?? '').trim() ||
+      String(faq.secondaryButtonLink ?? '').trim() ||
+      String(faq.helpText ?? '').trim() ||
+      String(faq.botLink ?? '').trim()
+  );
+
   return {
     headline: safe.headline ?? '',
     lead: safe.lead ?? '',
@@ -84,6 +130,7 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
     ctaUrl: safe.ctaUrl ?? '',
     images: normalizedImages,
     blocks: normalizedBlocks,
+    faq: hasFaq ? faq : null,
   };
 }
 
@@ -110,6 +157,16 @@ export default function TemplatesAdminPage() {
       { url: '', alt: '' },
     ],
     blocks: [],
+    faq: {
+      headline: '',
+      faqItems: [],
+      primaryButtonText: '',
+      primaryButtonLink: '',
+      secondaryButtonText: '',
+      secondaryButtonLink: '',
+      helpText: '',
+      botLink: '',
+    },
   });
 
   useEffect(() => {
@@ -190,6 +247,35 @@ export default function TemplatesAdminPage() {
         })
         .filter(Boolean);
 
+      const faqItems = (Array.isArray(content.faq?.faqItems) ? content.faq?.faqItems : [])
+        .map((it) => ({
+          question: String(it?.question ?? '').trim(),
+          answer: String(it?.answer ?? '').trim(),
+        }))
+        .filter((it) => Boolean(it.question || it.answer));
+
+      const faq = {
+        headline: String(content.faq?.headline ?? '').trim(),
+        faqItems,
+        primaryButtonText: String(content.faq?.primaryButtonText ?? '').trim() || null,
+        primaryButtonLink: String(content.faq?.primaryButtonLink ?? '').trim() || null,
+        secondaryButtonText: String(content.faq?.secondaryButtonText ?? '').trim() || null,
+        secondaryButtonLink: String(content.faq?.secondaryButtonLink ?? '').trim() || null,
+        helpText: String(content.faq?.helpText ?? '').trim() || null,
+        botLink: String(content.faq?.botLink ?? '').trim() || null,
+      };
+
+      const hasFaq = Boolean(
+        faq.headline ||
+          faqItems.length > 0 ||
+          faq.primaryButtonText ||
+          faq.primaryButtonLink ||
+          faq.secondaryButtonText ||
+          faq.secondaryButtonLink ||
+          faq.helpText ||
+          faq.botLink
+      );
+
       const res = await fetch(`${API_BASE_URL}/templates/slug/${encodeURIComponent(selectedSlug)}/content?locale=${locale}`,
         {
           method: 'PUT',
@@ -202,6 +288,7 @@ export default function TemplatesAdminPage() {
             ctaUrl: content.ctaUrl,
             images,
             blocks,
+            faq: hasFaq ? faq : null,
           }),
         }
       );
@@ -387,6 +474,33 @@ export default function TemplatesAdminPage() {
     const currentAlt = String((content.blocks?.[blockIndex] as any)?.image?.alt ?? `Template block ${blockIndex + 1}`);
     updateBlockImage(blockIndex, url, currentAlt);
     setMessage('✅ Картинка загружена');
+  };
+
+  const addFAQItem = () => {
+    setContent((p) => {
+      const current = p.faq ?? { headline: '', faqItems: [] };
+      const faqItems = Array.isArray(current.faqItems) ? [...current.faqItems] : [];
+      faqItems.push({ question: '', answer: '' });
+      return { ...p, faq: { ...current, faqItems } };
+    });
+  };
+
+  const removeFAQItem = (index: number) => {
+    setContent((p) => {
+      const current = p.faq ?? { headline: '', faqItems: [] };
+      const faqItems = (Array.isArray(current.faqItems) ? current.faqItems : []).filter((_, i) => i !== index);
+      return { ...p, faq: { ...current, faqItems } };
+    });
+  };
+
+  const updateFAQItem = (index: number, field: 'question' | 'answer', value: string) => {
+    setContent((p) => {
+      const current = p.faq ?? { headline: '', faqItems: [] };
+      const faqItems = Array.isArray(current.faqItems) ? [...current.faqItems] : [];
+      while (faqItems.length <= index) faqItems.push({ question: '', answer: '' });
+      faqItems[index] = { ...faqItems[index], [field]: value };
+      return { ...p, faq: { ...current, faqItems } };
+    });
   };
 
   if (loading) {
@@ -672,6 +786,82 @@ export default function TemplatesAdminPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className={styles.blocksSection}>
+                  <div className={styles.blocksHeader}>
+                    <div className={styles.blocksTitle}>FAQ (для этого шаблона)</div>
+                    <Button text="Добавить вопрос" onClick={addFAQItem} showArrow={false} size="small" />
+                  </div>
+
+                  <Input
+                    label="FAQ: заголовок"
+                    value={String(content.faq?.headline ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), headline: v } }))}
+                  />
+
+                  {(Array.isArray(content.faq?.faqItems) ? content.faq?.faqItems : []).length === 0 ? (
+                    <div className={styles.blocksEmpty}>Пока нет вопросов</div>
+                  ) : null}
+
+                  {(Array.isArray(content.faq?.faqItems) ? content.faq?.faqItems : []).map((item, index) => (
+                    <div key={index} className={styles.blockCard}>
+                      <div className={styles.blockTopRow}>
+                        <div className={styles.blockLabel}>Вопрос {index + 1}</div>
+                        <Button text="Удалить" onClick={() => removeFAQItem(index)} showArrow={false} size="small" />
+                      </div>
+
+                      <Input
+                        label="Question"
+                        value={String(item?.question ?? '')}
+                        onChange={(v) => updateFAQItem(index, 'question', v)}
+                      />
+
+                      <div className={styles.textareaField}>
+                        <div className={styles.textareaLabel}>Answer</div>
+                        <textarea
+                          className={styles.textarea}
+                          value={String(item?.answer ?? '')}
+                          onChange={(e) => updateFAQItem(index, 'answer', e.target.value)}
+                          rows={4}
+                        />
+                        <div className={styles.formatHint}>Форматирование: ``слово`` — жирный, `слово` — градиент</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Input
+                    label="FAQ: Primary button text"
+                    value={String(content.faq?.primaryButtonText ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), primaryButtonText: v } }))}
+                  />
+                  <Input
+                    label="FAQ: Primary button link"
+                    value={String(content.faq?.primaryButtonLink ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), primaryButtonLink: v } }))}
+                  />
+
+                  <Input
+                    label="FAQ: Secondary button text"
+                    value={String(content.faq?.secondaryButtonText ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), secondaryButtonText: v } }))}
+                  />
+                  <Input
+                    label="FAQ: Secondary button link"
+                    value={String(content.faq?.secondaryButtonLink ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), secondaryButtonLink: v } }))}
+                  />
+
+                  <Input
+                    label="FAQ: Help text"
+                    value={String(content.faq?.helpText ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), helpText: v } }))}
+                  />
+                  <Input
+                    label="FAQ: Bot link"
+                    value={String(content.faq?.botLink ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, faq: { ...(p.faq ?? { faqItems: [] }), botLink: v } }))}
+                  />
                 </div>
               </div>
             )}

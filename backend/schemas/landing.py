@@ -130,4 +130,5 @@ class TemplateContentRequest(BaseModel):
     ctaUrl: Optional[str] = None
     images: Optional[List[HeroImage]] = None
     blocks: Optional[List[TemplateBlock]] = None
+    faq: Optional[FAQContentRequest] = None
 
