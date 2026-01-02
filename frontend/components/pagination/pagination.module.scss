@@ -1,0 +1,66 @@
+.navigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.navButton {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: rgba(59, 130, 246, 0.5);
+  border: none;
+  padding: 0;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    padding: 3px;
+    background: linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.5) 0%,
+      rgba(47, 103, 195, 0.5) 50%,
+      rgba(41, 90, 170, 0.5) 75%,
+      rgba(38, 83, 157, 0.5) 87.5%,
+      rgba(36, 79, 150, 0.5) 93.75%,
+      rgba(35, 76, 144, 0.5) 100%
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: background 0.2s;
+  }
+
+  svg path {
+    stroke-opacity: 0.5;
+    transition: stroke-opacity 0.2s;
+  }
+
+  &:hover {
+    &::before {
+      background: linear-gradient(
+        90deg,
+        #3b82f6 0%,
+        #2f67c3 50%,
+        #295aaa 75%,
+        #26539d 87.5%,
+        #244f96 93.75%,
+        #234c90 100%
+      );
+    }
+
+    svg path {
+      stroke-opacity: 1;
+    }
+  }
+}
