@@ -83,8 +83,8 @@ export default function TemplateBlock({
   const contentSlide = (
     <div className={styles.content}>
       <div className={styles.textContainer}>
-        <h2 className={styles.title}>{title}</h2>
-        {hasSubtitle && <h3 className={styles.subtitle}>{subtitle}</h3>}
+        <h1 className={styles.title}>{title}</h1>
+        {hasSubtitle && <h2 className={styles.subtitle}>{subtitle}</h2>}
         <p className={styles.description}>{formatDescription(description)}</p>
       </div>
 
