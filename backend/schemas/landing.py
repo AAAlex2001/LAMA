@@ -122,6 +122,18 @@ class TemplateBlock(BaseModel):
     imagePosition: Optional[str] = "right"  # "left" or "right"
 
 
+class TemplateCardItem(BaseModel):
+    title: str = ""
+    text: str = ""
+    buttonText: str = ""
+    buttonLink: Optional[str] = None
+
+
+class TemplateCardsBlockRequest(BaseModel):
+    headline: str = ""
+    cards: List[TemplateCardItem] = []
+
+
 class TemplateContentRequest(BaseModel):
     headline: str = ""
     lead: str = ""
@@ -131,4 +143,5 @@ class TemplateContentRequest(BaseModel):
     images: Optional[List[HeroImage]] = None
     blocks: Optional[List[TemplateBlock]] = None
     faq: Optional[FAQContentRequest] = None
+    cardsBlock: Optional[TemplateCardsBlockRequest] = None
 

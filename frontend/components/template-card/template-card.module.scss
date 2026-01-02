@@ -1,0 +1,91 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 24px;
+  gap: 10px;
+
+  width: 320px;
+  height: 257px;
+
+  background: #f1f5fb;
+  border-radius: 20px;
+
+  flex: none;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 8px;
+
+  margin: 0 auto;
+  width: 272px;
+  height: 132px;
+}
+
+.heading {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+
+  width: 272px;
+  height: 28px;
+}
+
+.title {
+  width: 272px;
+  height: 28px;
+
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+
+  background: linear-gradient(90deg, #3b82f6 0%, #2f67c3 50%, #295aaa 75%, #26539d 87.5%, #244f96 93.75%, #234c90 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.textRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+
+  width: 272px;
+  height: 96px;
+}
+
+.text {
+  width: 272px;
+  height: 96px;
+
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+
+  color: #383f45;
+}
+
+.buttonRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+
+  margin: 0 auto;
+  width: 272px;
+  height: 44px;
+}

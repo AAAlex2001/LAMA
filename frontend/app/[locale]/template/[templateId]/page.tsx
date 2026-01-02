@@ -4,6 +4,7 @@ import Footer from "../../../landing/footer/footer";
 import FAQ from "../../../landing/faq/faq";
 import FAQDecoration from "../../../landing/faq-decoration/faq-decoration";
 import TemplateBlocks from "@/components/template-block/template-blocks";
+import TemplateCardsBlock from "@/components/template-card/template-cards-block";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
 
@@ -61,6 +62,10 @@ type TemplatePageContent = {
   images?: Array<{ url: string; alt: string }>;
   blocks?: TemplateBlockContent[];
   faq?: FAQContent | null;
+  cardsBlock?: {
+    headline: string;
+    cards: Array<{ title: string; text: string; buttonText: string; buttonLink?: string | null }>;
+  } | null;
 };
 
 type FooterContent = {
@@ -194,8 +199,19 @@ export default async function TemplatePage({ params }: Props) {
         (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
           <>
             <FAQ locale={locale} content={templateContent.faq} />
-            <FAQDecoration />
           </>
+        ) : null}
+
+      {templateContent.cardsBlock &&
+      Array.isArray(templateContent.cardsBlock.cards) &&
+      templateContent.cardsBlock.cards.length > 0 ? (
+        <TemplateCardsBlock headline={templateContent.cardsBlock.headline} cards={templateContent.cardsBlock.cards} />
+      ) : null}
+
+      {templateContent.faq &&
+      (String(templateContent.faq.headline || '').trim() ||
+        (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
+          <FAQDecoration />
         ) : null}
 
       <Footer locale={locale} content={footer} />

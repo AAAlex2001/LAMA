@@ -123,6 +123,40 @@ def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
     return faq if has_any else None
 
 
+def _normalize_cards_block(raw: Any) -> Optional[Dict[str, Any]]:
+    if not isinstance(raw, dict):
+        return None
+
+    headline = _safe_str(raw.get("headline"))
+
+    raw_cards = raw.get("cards")
+    cards: List[Dict[str, Any]] = []
+    if isinstance(raw_cards, list):
+        for c in raw_cards:
+            if not isinstance(c, dict):
+                continue
+            title = _safe_str(c.get("title"))
+            text = _safe_str(c.get("text"))
+            button_text = _safe_str(c.get("buttonText"))
+            button_link = _safe_str(c.get("buttonLink")) or None
+            if title or text or button_text or button_link:
+                cards.append(
+                    {
+                        "title": title,
+                        "text": text,
+                        "buttonText": button_text,
+                        "buttonLink": button_link,
+                    }
+                )
+
+    block: Dict[str, Any] = {
+        "headline": headline,
+        "cards": cards,
+    }
+
+    return block if (headline or cards) else None
+
+
 async def list_templates(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     locale_enum = _coerce_locale(locale)
 
@@ -213,6 +247,7 @@ async def get_template_content(
         "images": [],
         "blocks": [],
         "faq": None,
+        "cardsBlock": None,
     }
 
     result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
@@ -234,6 +269,7 @@ async def get_template_content(
     images: List[Dict[str, str]] = []
     blocks: List[Dict[str, Any]] = []
     faq: Optional[Dict[str, Any]] = None
+    cards_block: Optional[Dict[str, Any]] = None
     for content in contents:
         suffix = content.key[len(prefix) :]
         if suffix == "headline":
@@ -261,6 +297,10 @@ async def get_template_content(
             else:
                 headline = content.text or content.title or ""
                 faq = _normalize_faq({"headline": headline, "faqItems": []})
+        elif suffix == "cards_block":
+            extra = content.extra_data
+            if isinstance(extra, dict):
+                cards_block = _normalize_cards_block(extra)
         elif suffix.startswith("hero_image_"):
             if content.image_url:
                 images.append(
@@ -273,6 +313,7 @@ async def get_template_content(
     data["images"] = images
     data["blocks"] = blocks
     data["faq"] = faq
+    data["cardsBlock"] = cards_block
 
     return data
 
@@ -325,6 +366,7 @@ async def save_template_content(
     images: List[Dict[str, str]] = list(content.get("images") or [])
     blocks = _normalize_blocks(content.get("blocks"))
     faq = _normalize_faq(content.get("faq"))
+    cards_block = _normalize_cards_block(content.get("cardsBlock"))
 
     rows: List[LandingContent] = [
         LandingContent(
@@ -409,6 +451,20 @@ async def save_template_content(
                 extra_data=faq,
                 is_active=True,
                 order=7,
+            )
+        )
+
+    # Cards block (optional)
+    if cards_block is not None:
+        rows.append(
+            LandingContent(
+                section_id=section.id,
+                content_type=ContentType.TEXT,
+                locale=locale_enum,
+                key=f"{prefix}cards_block",
+                extra_data=cards_block,
+                is_active=True,
+                order=8,
             )
         )
 

@@ -9,6 +9,7 @@ type Props = {
   className?: string;
   prevLabel?: string;
   nextLabel?: string;
+  variant?: 'default' | 'cards';
 };
 
 export default function Pagination({
@@ -17,13 +18,16 @@ export default function Pagination({
   className,
   prevLabel = 'Предыдущий',
   nextLabel = 'Следующий',
+  variant = 'default',
 }: Props) {
   const baseId = useId();
   const leftId = `${baseId}-left`;
   const rightId = `${baseId}-right`;
 
+  const wrapperClass = `${styles.navigation} ${variant === 'cards' ? styles.cards : ''} ${className || ''}`.trim();
+
   return (
-    <div className={`${styles.navigation} ${className || ''}`.trim()}>
+    <div className={wrapperClass}>
       <button className={styles.navButton} aria-label={prevLabel} onClick={onPrev} type="button">
         <svg
           width="16"

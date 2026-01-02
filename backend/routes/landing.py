@@ -169,6 +169,7 @@ async def save_template_page_content(
                 else None
             ),
             "faq": (data.faq.dict() if data.faq is not None else None),
+            "cardsBlock": (data.cardsBlock.dict() if data.cardsBlock is not None else None),
         },
         locale=parsed_locale.value,
     )

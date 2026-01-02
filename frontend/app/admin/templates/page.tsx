@@ -39,6 +39,18 @@ type FAQContent = {
   botLink?: string | null;
 };
 
+type TemplateCardItem = {
+  title: string;
+  text: string;
+  buttonText: string;
+  buttonLink?: string | null;
+};
+
+type CardsBlock = {
+  headline: string;
+  cards: TemplateCardItem[];
+};
+
 type TemplatePageContent = {
   headline: string;
   lead: string;
@@ -55,6 +67,7 @@ type TemplatePageContent = {
     imagePosition?: 'left' | 'right';
   }>;
   faq?: FAQContent | null;
+  cardsBlock?: CardsBlock | null;
 };
 
 function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | undefined): TemplatePageContent {
@@ -122,6 +135,24 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
       String(faq.botLink ?? '').trim()
   );
 
+  const cardsBlockIn = (safe as any).cardsBlock;
+  const cardsIn = Array.isArray(cardsBlockIn?.cards) ? cardsBlockIn.cards : [];
+  const cards = cardsIn
+    .filter((c: any) => c && typeof c === 'object')
+    .map((c: any) => ({
+      title: String(c.title ?? ''),
+      text: String(c.text ?? ''),
+      buttonText: String(c.buttonText ?? ''),
+      buttonLink: (c.buttonLink ?? '') as any,
+    }))
+    .filter((c: TemplateCardItem) => Boolean(c.title.trim() || c.text.trim() || c.buttonText.trim() || String(c.buttonLink ?? '').trim()));
+
+  const cardsBlock: CardsBlock = {
+    headline: String(cardsBlockIn?.headline ?? ''),
+    cards,
+  };
+  const hasCardsBlock = Boolean(cardsBlock.headline.trim() || cardsBlock.cards.length > 0);
+
   return {
     headline: safe.headline ?? '',
     lead: safe.lead ?? '',
@@ -131,6 +162,7 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
     images: normalizedImages,
     blocks: normalizedBlocks,
     faq: hasFaq ? faq : null,
+    cardsBlock: hasCardsBlock ? cardsBlock : null,
   };
 }
 
@@ -166,6 +198,10 @@ export default function TemplatesAdminPage() {
       secondaryButtonLink: '',
       helpText: '',
       botLink: '',
+    },
+    cardsBlock: {
+      headline: '',
+      cards: [],
     },
   });
 
@@ -276,6 +312,21 @@ export default function TemplatesAdminPage() {
           faq.botLink
       );
 
+      const cards = (Array.isArray(content.cardsBlock?.cards) ? content.cardsBlock?.cards : [])
+        .map((c) => ({
+          title: String(c?.title ?? '').trim(),
+          text: String(c?.text ?? '').trim(),
+          buttonText: String(c?.buttonText ?? '').trim(),
+          buttonLink: String(c?.buttonLink ?? '').trim() || null,
+        }))
+        .filter((c) => Boolean(c.title || c.text || c.buttonText || c.buttonLink));
+
+      const cardsBlock = {
+        headline: String(content.cardsBlock?.headline ?? '').trim(),
+        cards,
+      };
+      const hasCardsBlock = Boolean(cardsBlock.headline || cards.length > 0);
+
       const res = await fetch(`${API_BASE_URL}/templates/slug/${encodeURIComponent(selectedSlug)}/content?locale=${locale}`,
         {
           method: 'PUT',
@@ -289,6 +340,7 @@ export default function TemplatesAdminPage() {
             images,
             blocks,
             faq: hasFaq ? faq : null,
+            cardsBlock: hasCardsBlock ? cardsBlock : null,
           }),
         }
       );
@@ -500,6 +552,33 @@ export default function TemplatesAdminPage() {
       while (faqItems.length <= index) faqItems.push({ question: '', answer: '' });
       faqItems[index] = { ...faqItems[index], [field]: value };
       return { ...p, faq: { ...current, faqItems } };
+    });
+  };
+
+  const addTemplateCard = () => {
+    setContent((p) => {
+      const current = p.cardsBlock ?? { headline: '', cards: [] };
+      const cards = Array.isArray(current.cards) ? [...current.cards] : [];
+      cards.push({ title: '', text: '', buttonText: '', buttonLink: '' });
+      return { ...p, cardsBlock: { ...current, cards } };
+    });
+  };
+
+  const removeTemplateCard = (index: number) => {
+    setContent((p) => {
+      const current = p.cardsBlock ?? { headline: '', cards: [] };
+      const cards = (Array.isArray(current.cards) ? current.cards : []).filter((_, i) => i !== index);
+      return { ...p, cardsBlock: { ...current, cards } };
+    });
+  };
+
+  const updateTemplateCard = (index: number, field: keyof TemplateCardItem, value: string) => {
+    setContent((p) => {
+      const current = p.cardsBlock ?? { headline: '', cards: [] };
+      const cards = Array.isArray(current.cards) ? [...current.cards] : [];
+      while (cards.length <= index) cards.push({ title: '', text: '', buttonText: '', buttonLink: '' });
+      cards[index] = { ...cards[index], [field]: value };
+      return { ...p, cardsBlock: { ...current, cards } };
     });
   };
 
@@ -786,6 +865,59 @@ export default function TemplatesAdminPage() {
                       </div>
                     );
                   })}
+                </div>
+
+                <div className={styles.blocksSection}>
+                  <div className={styles.blocksHeader}>
+                    <div className={styles.blocksTitle}>Карточки (скролл)</div>
+                    <Button text="Добавить карточку" onClick={addTemplateCard} showArrow={false} size="small" />
+                  </div>
+
+                  <Input
+                    label="Заголовок блока"
+                    value={String(content.cardsBlock?.headline ?? '')}
+                    onChange={(v) => setContent((p) => ({ ...p, cardsBlock: { ...(p.cardsBlock ?? { cards: [] }), headline: v } }))}
+                  />
+
+                  {(Array.isArray(content.cardsBlock?.cards) ? content.cardsBlock?.cards : []).length === 0 ? (
+                    <div className={styles.blocksEmpty}>Пока нет карточек</div>
+                  ) : null}
+
+                  {(Array.isArray(content.cardsBlock?.cards) ? content.cardsBlock?.cards : []).map((card, index) => (
+                    <div key={index} className={styles.blockCard}>
+                      <div className={styles.blockTopRow}>
+                        <div className={styles.blockLabel}>Карточка {index + 1}</div>
+                        <Button text="Удалить" onClick={() => removeTemplateCard(index)} showArrow={false} size="small" />
+                      </div>
+
+                      <Input
+                        label="Title"
+                        value={String(card?.title ?? '')}
+                        onChange={(v) => updateTemplateCard(index, 'title', v)}
+                      />
+
+                      <div className={styles.textareaField}>
+                        <div className={styles.textareaLabel}>Text</div>
+                        <textarea
+                          className={styles.textarea}
+                          value={String(card?.text ?? '')}
+                          onChange={(e) => updateTemplateCard(index, 'text', e.target.value)}
+                          rows={3}
+                        />
+                      </div>
+
+                      <Input
+                        label="Button text"
+                        value={String(card?.buttonText ?? '')}
+                        onChange={(v) => updateTemplateCard(index, 'buttonText', v)}
+                      />
+                      <Input
+                        label="Button link"
+                        value={String(card?.buttonLink ?? '')}
+                        onChange={(v) => updateTemplateCard(index, 'buttonLink', v)}
+                      />
+                    </div>
+                  ))}
                 </div>
 
                 <div className={styles.blocksSection}>
