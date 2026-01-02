@@ -32,7 +32,9 @@ function formatDescription(text: string) {
 
   while (remaining.length > 0) {
 
-    const boldMatch = remaining.match(/^(.*?)``([^`]+)``(.*)$/s);
+    const boldMatch = remaining.match(/^[\s\S]*?``[^`]+``[\s\S]*$/)
+      ? remaining.match(/^(.*?)``([^`]+)``([\s\S]*)$/)
+      : null;
     if (boldMatch) {
       if (boldMatch[1]) parts.push(boldMatch[1]);
       parts.push(<strong key={key++} className={styles.bold}>{boldMatch[2]}</strong>);
@@ -40,7 +42,9 @@ function formatDescription(text: string) {
       continue;
     }
 
-    const gradientMatch = remaining.match(/^(.*?)`([^`]+)`(.*)$/s);
+    const gradientMatch = remaining.match(/^[\s\S]*?`[^`]+`[\s\S]*$/)
+      ? remaining.match(/^(.*?)`([^`]+)`([\s\S]*)$/)
+      : null;
     if (gradientMatch) {
       if (gradientMatch[1]) parts.push(gradientMatch[1]);
       parts.push(<span key={key++} className={styles.gradient}>{gradientMatch[2]}</span>);

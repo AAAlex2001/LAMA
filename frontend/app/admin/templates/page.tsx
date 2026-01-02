@@ -6,7 +6,7 @@ import Button from '@/components/button/button';
 import styles from './templates-admin.module.scss';
 
 import { TemplateProvider } from './store/template-context';
-import type { TemplatePageContent, FAQItem, TemplateCardItem } from './types';
+import type { TemplatePageContent, FAQContent, FAQItem, CardsBlock, TemplateCardItem } from './types';
 
 import HeroSection from './hero';
 import BlocksSection from './template-blocks';
