@@ -2,6 +2,7 @@ import Header from "../../../landing/header/header";
 import Hero from "../../../landing/hero/hero";
 import Footer from "../../../landing/footer/footer";
 import FAQ from "../../../landing/faq/faq";
+import FAQDecoration from "../../../landing/faq-decoration/faq-decoration";
 import TemplateBlocks from "@/components/template-block/template-blocks";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
@@ -191,7 +192,10 @@ export default async function TemplatePage({ params }: Props) {
       {templateContent.faq &&
       (String(templateContent.faq.headline || '').trim() ||
         (Array.isArray(templateContent.faq.faqItems) && templateContent.faq.faqItems.length > 0)) ? (
-          <FAQ locale={locale} content={templateContent.faq} />
+          <>
+            <FAQ locale={locale} content={templateContent.faq} />
+            <FAQDecoration />
+          </>
         ) : null}
 
       <Footer locale={locale} content={footer} />
