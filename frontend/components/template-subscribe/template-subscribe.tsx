@@ -24,15 +24,11 @@ export default function TemplateSubscribe({ title, subtitle, buttonText, buttonL
         <div className={styles.info}>
           <div className={styles.headings}>
             {safeTitle ? (
-              <div className={styles.h2}>
-                <div className={styles.title}>{safeTitle}</div>
-              </div>
+                <h1 className={styles.title}>{safeTitle}</h1>
             ) : null}
 
             {safeSubtitle ? (
-              <div className={styles.h4}>
-                <div className={styles.subtitle}>{safeSubtitle}</div>
-              </div>
+                <h2 className={styles.subtitle}>{safeSubtitle}</h2>
             ) : null}
           </div>
 

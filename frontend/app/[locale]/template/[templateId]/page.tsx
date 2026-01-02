@@ -234,6 +234,14 @@ export default async function TemplatePage({ params }: Props) {
   const subscribeAfterCardsNodes: React.ReactNode[] = [];
   const subscribeInsertions: Array<{ afterBlockNumber: number; node: React.ReactNode; key?: string }> = [];
 
+  const paddingForPosition = (
+    position: 'after_block' | 'after_faq' | 'after_cards'
+  ): string => {
+    if (position === 'after_block') return '100px 20px 0 20px';
+    if (position === 'after_faq') return '0 20px 100px 20px';
+    return '0 20px 180px 20px';
+  };
+
   subscribeItems.forEach((item, idx) => {
     const title = String(item?.title || '').trim();
     const subtitle = String(item?.subtitle || '').trim();
@@ -242,19 +250,21 @@ export default async function TemplatePage({ params }: Props) {
     const hasAny = Boolean(title || subtitle || buttonText || buttonLink);
     if (!hasAny) return;
 
-    const node = (
-      <TemplateSubscribe
-        title={item.title}
-        subtitle={item.subtitle}
-        buttonText={item.buttonText}
-        buttonLink={item.buttonLink}
-      />
-    );
-
     const placement = item?.placement ?? null;
     const position = placement?.position || 'after_cards';
     const requestedAfterBlock = position === 'after_block' ? Number(placement?.afterBlockNumber || 0) : 0;
     const canRenderInBlocks = requestedAfterBlock >= 1 && blocksCount >= requestedAfterBlock;
+
+    const node = (
+      <div style={{ padding: paddingForPosition(position) }}>
+        <TemplateSubscribe
+          title={item.title}
+          subtitle={item.subtitle}
+          buttonText={item.buttonText}
+          buttonLink={item.buttonLink}
+        />
+      </div>
+    );
 
     if (position === 'after_faq') {
       subscribeAfterFaqNodes.push(<div key={`sub_after_faq_${idx}`}>{node}</div>);
@@ -270,7 +280,6 @@ export default async function TemplatePage({ params }: Props) {
       return;
     }
 
-    // default / fallback
     subscribeAfterCardsNodes.push(<div key={`sub_after_cards_${idx}`}>{node}</div>);
   });
 
