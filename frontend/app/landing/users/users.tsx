@@ -11,7 +11,7 @@ type UsersContent = {
   textLine: string;
   textLine_1: string;
   buttonText: string;
-  buttonUrl: string;
+  buttonUrl?: string;
 };
 
 type Props = { locale: string; content: UsersContent };

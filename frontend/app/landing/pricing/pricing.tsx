@@ -15,8 +15,8 @@ type PricingContent = {
     price: string;
     features: string[];
     isHighlighted: boolean;
-    buttonText: string;
-    buttonUrl: string;
+    buttonText?: string;
+    buttonUrl?: string;
   }>;
 };
 
