@@ -15,6 +15,8 @@ type PricingContent = {
     price: string;
     features: string[];
     isHighlighted: boolean;
+    buttonText: string;
+    buttonUrl: string;
   }>;
 };
 
@@ -189,7 +191,12 @@ export default function Pricing({ locale, content }: Props) {
                 ))}
               </ul>
               <div className={styles.cardButton}>
-                <Button text="Выбрать план" href={`/${locale}/login`} fullWidth active={index === 1}/>
+                <Button
+                  text={plan.buttonText || "Выбрать план"}
+                  href={plan.buttonUrl || `/${locale}/login`}
+                  fullWidth
+                  active={index === 1}
+                />
               </div>
             </motion.div>
           )})}

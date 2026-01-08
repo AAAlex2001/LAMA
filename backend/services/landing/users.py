@@ -37,7 +37,8 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
             "number": 0,
             "textLine": "",
             "textLine_1": "",
-            "buttonText": ""
+            "buttonText": "",
+            "buttonUrl": ""
         }
     
     result = await db.execute(
@@ -53,9 +54,10 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
         "number": 0,
         "textLine": "",
         "textLine_1": "",
-        "buttonText": ""
+        "buttonText": "",
+        "buttonUrl": ""
     }
-    
+
     for content in contents:
         if content.key == "users_number":
             try:
@@ -68,7 +70,9 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
             response["textLine_1"] = content.text or content.title or ""
         elif content.key == "users_button_text":
             response["buttonText"] = content.text or content.title or ""
-    
+        elif content.key == "users_button_url":
+            response["buttonUrl"] = content.text or content.title or ""
+
     return response
 
 
@@ -78,6 +82,7 @@ async def save_users_content(
     text_line: str,
     text_line_1: str,
     button_text: str,
+    button_url: str = "",
     locale: str | Locale | None = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции Users"""
@@ -139,6 +144,15 @@ async def save_users_content(
             locale=locale_enum,
             is_active=True,
             order=4
+        ),
+        LandingContent(
+            section_id=section.id,
+            content_type=ContentType.TEXT,
+            key="users_button_url",
+            text=button_url,
+            locale=locale_enum,
+            is_active=True,
+            order=5
         )
     ]
     

@@ -11,6 +11,7 @@ type UsersContent = {
   textLine: string;
   textLine_1: string;
   buttonText: string;
+  buttonUrl: string;
 };
 
 type Props = { locale: string; content: UsersContent };
@@ -29,6 +30,7 @@ export default function Users({ locale, content }: Props) {
     textLine: content?.textLine || '',
     textLine_1: content?.textLine_1 || '',
     buttonText: content?.buttonText || '',
+    buttonUrl: content?.buttonUrl || '',
   };
 
   useEffect(() => {
@@ -164,7 +166,11 @@ export default function Users({ locale, content }: Props) {
             <span className={styles.brandPlanner}>planner</span>
           </div>
           <p className={styles.textLine_1}>{renderText(safeContent.textLine_1)}</p>
-          <Button text={safeContent.buttonText} href={`/${locale}/login`} active={true} />
+          <Button
+            text={safeContent.buttonText || "Начать бесплатно"}
+            href={safeContent.buttonUrl || `/${locale}/login`}
+            active={true}
+          />
         </motion.div>
       </div>
     </section>

@@ -66,6 +66,12 @@ export default function HeroSection() {
         value={String(content.ctaText ?? '')}
         onChange={(v) => setContent((p) => ({ ...p, ctaText: v }))}
       />
+      <Input
+        label="Hero: buttonUrl"
+        value={String(content.ctaUrl ?? '')}
+        onChange={(v) => setContent((p) => ({ ...p, ctaUrl: v }))}
+        placeholder="/ru/login или https://example.com"
+      />
 
       <div className={styles.imagesSection}>
         <div className={styles.imagesTitle}>Hero: картинки (для этого шаблона)</div>

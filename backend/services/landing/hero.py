@@ -33,6 +33,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
             "paragraph": "",
             "paragraphSecondary": "",
             "buttonText": "",
+            "buttonUrl": "",
             "images": [],
             "templateImages": [],
         }
@@ -61,6 +62,8 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
             response["paragraphSecondary"] = content.text or ""
         elif content.key == "hero_button":
             response["buttonText"] = content.text or "Начать бесплатно"
+        elif content.key == "hero_button_url":
+            response["buttonUrl"] = content.text or ""
         elif content.key.startswith("hero_image_template_"):
             # Картинки для шаблонов
             if content.image_url:
@@ -81,6 +84,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
         "paragraph": response.get("paragraph", ""),
         "paragraphSecondary": response.get("paragraphSecondary", ""),
         "buttonText": response.get("buttonText", ""),
+        "buttonUrl": response.get("buttonUrl", ""),
         "images": images,
         "templateImages": template_images,
     }
@@ -92,7 +96,8 @@ async def save_hero_content(
     paragraph: str,
     paragraph_secondary: str,
     button_text: str,
-    images: List[Dict[str, str]],
+    button_url: str = "",
+    images: List[Dict[str, str]] = [],
     template_images: List[Dict[str, str]] | None = None,
     locale: str | Locale | None = None,
 ) -> Dict[str, str]:
@@ -160,6 +165,15 @@ async def save_hero_content(
             text=button_text,
             is_active=True,
             order=4
+        ),
+        LandingContent(
+            section_id=section.id,
+            content_type=ContentType.TEXT,
+            locale=locale_enum,
+            key="hero_button_url",
+            text=button_url,
+            is_active=True,
+            order=5
         )
     ]
     

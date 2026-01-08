@@ -21,6 +21,7 @@ type HeroContent = {
   paragraph: string;
   paragraphSecondary: string;
   buttonText: string;
+  buttonUrl?: string;
   images: Array<{ url: string; alt: string }>;
   templateImages?: Array<{ url: string; alt: string }>;
 };
@@ -203,6 +204,7 @@ export default async function TemplatePage({ params }: Props) {
     headline: templateContent?.headline || baseHeroForTemplate.headline,
     paragraph: templateContent?.lead || baseHeroForTemplate.paragraph,
     buttonText: (templateContent?.ctaText || baseHeroForTemplate.buttonText) as string,
+    buttonUrl: templateContent?.ctaUrl || baseHeroForTemplate.buttonUrl,
     images: templateImages,
   };
 

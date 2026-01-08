@@ -58,6 +58,7 @@ async def save_hero_content(
         paragraph=data.paragraph,
         paragraph_secondary=data.paragraphSecondary,
         button_text=data.buttonText,
+        button_url=data.buttonUrl,
         images=images,
         template_images=template_images,
         locale=parsed_locale.value
@@ -197,6 +198,8 @@ async def save_advantages_content(
             "isCta": card.isCta,
             "linkText": card.linkText,
             "linkUrl": card.linkUrl,
+            "ctaButtonText": getattr(card, "ctaButtonText", None),
+            "ctaButtonUrl": getattr(card, "ctaButtonUrl", None),
         }
         for card in data.cards
     ]
@@ -266,7 +269,9 @@ async def save_pricing_content(
             "title": plan.title,
             "price": plan.price,
             "features": plan.features,
-            "isHighlighted": plan.isHighlighted
+            "isHighlighted": plan.isHighlighted,
+            "buttonText": plan.buttonText,
+            "buttonUrl": plan.buttonUrl
         }
         for plan in data.plans
     ]
@@ -344,6 +349,7 @@ async def save_users_content(
         text_line=data.textLine,
         text_line_1=data.textLine_1,
         button_text=data.buttonText,
+        button_url=data.buttonUrl,
         locale=parsed_locale.value
     )
 

@@ -22,6 +22,7 @@ type HeroContent = {
   paragraph: string;
   paragraphSecondary: string;
   buttonText: string;
+  buttonUrl?: string;
   images: Array<{ url: string; alt: string }>;
   templateImages?: Array<{ url: string; alt: string }>;
 };
@@ -35,6 +36,8 @@ type AdvantagesContent = {
     isCta: boolean;
     linkText?: string | null;
     linkUrl?: string | null;
+    ctaButtonText?: string | null;
+    ctaButtonUrl?: string | null;
   }>;
 };
 
@@ -43,6 +46,7 @@ type UsersContent = {
   textLine: string;
   textLine_1: string;
   buttonText: string;
+  buttonUrl?: string;
 };
 
 type KeyAdvantagesContent = {
@@ -54,7 +58,14 @@ type PricingContent = {
   headline: string;
   subtitle: string;
   description: string;
-  plans: Array<{ title: string; price: string; features: string[]; isHighlighted: boolean }>;
+  plans: Array<{
+    title: string;
+    price: string;
+    features: string[];
+    isHighlighted: boolean;
+    buttonText?: string;
+    buttonUrl?: string;
+  }>;
 };
 
 type FAQContent = {
@@ -114,10 +125,11 @@ export default async function LocalePage({ params }: Props) {
     paragraph: '',
     paragraphSecondary: '',
     buttonText: '',
+    buttonUrl: '',
     images: [],
   };
   const advantagesFallback: AdvantagesContent = { headline: '', subtitle: '', cards: [] };
-  const usersFallback: UsersContent = { number: 0, textLine: '', textLine_1: '', buttonText: '' };
+  const usersFallback: UsersContent = { number: 0, textLine: '', textLine_1: '', buttonText: '', buttonUrl: '' };
   const keyAdvantagesFallback: KeyAdvantagesContent = { headline: '', advantages: [] };
   const pricingFallback: PricingContent = { headline: '', subtitle: '', description: '', plans: [] };
   const faqFallback: FAQContent = { headline: '', faqItems: [] };

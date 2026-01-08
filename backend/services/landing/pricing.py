@@ -56,8 +56,8 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
         elif content.key.startswith("pricing_plan_"):
             plan_index = int(content.key.split("_")[-1])
             while len(plans) <= plan_index:
-                plans.append({"title": "", "price": "", "features": [], "isHighlighted": False})
-            
+                plans.append({"title": "", "price": "", "features": [], "isHighlighted": False, "buttonText": "", "buttonUrl": ""})
+
             if content.title:
                 plans[plan_index]["title"] = content.title
             if content.text:
@@ -67,6 +67,10 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
                     plans[plan_index]["features"] = content.extra_data["features"]
                 if "isHighlighted" in content.extra_data:
                     plans[plan_index]["isHighlighted"] = content.extra_data["isHighlighted"]
+                if "buttonText" in content.extra_data:
+                    plans[plan_index]["buttonText"] = content.extra_data["buttonText"]
+                if "buttonUrl" in content.extra_data:
+                    plans[plan_index]["buttonUrl"] = content.extra_data["buttonUrl"]
     
     return {
         "headline": response.get("headline", ""),
@@ -141,7 +145,9 @@ async def save_pricing_content(
         # Сохраняем features в extra_data
         features = plan.get("features", [])
         is_highlighted = plan.get("isHighlighted", False)
-        
+        button_text = plan.get("buttonText", "")
+        button_url = plan.get("buttonUrl", "")
+
         contents.append(LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
@@ -151,7 +157,9 @@ async def save_pricing_content(
             text=plan.get("price", ""),
             extra_data={
                 "features": features,
-                "isHighlighted": is_highlighted
+                "isHighlighted": is_highlighted,
+                "buttonText": button_text,
+                "buttonUrl": button_url
             },
             is_active=True,
             order=10 + i

@@ -11,6 +11,8 @@ interface AdvantagesCard {
   isCta: boolean;
   linkText: string | null;
   linkUrl: string | null;
+  ctaButtonText?: string | null;
+  ctaButtonUrl?: string | null;
 }
 
 interface AdvantagesContent {
@@ -64,7 +66,7 @@ export default function AdvantagesAdminPage() {
   const addCard = () => {
     setContent({
       ...content,
-      cards: [...content.cards, { title: '', description: '', isCta: false, linkText: null, linkUrl: null }]
+      cards: [...content.cards, { title: '', description: '', isCta: false, linkText: null, linkUrl: null, ctaButtonText: null, ctaButtonUrl: null }]
     });
   };
 
@@ -176,7 +178,28 @@ export default function AdvantagesAdminPage() {
                   <span>Это CTA карточка</span>
                 </label>
 
-                {!card.isCta && (
+                {card.isCta ? (
+                  <>
+                    <label className={styles.field}>
+                      <span>Текст кнопки CTA</span>
+                      <input
+                        type="text"
+                        value={card.ctaButtonText || ''}
+                        onChange={e => updateCard(index, 'ctaButtonText', e.target.value)}
+                        placeholder="Начать бесплатно"
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span>Ссылка кнопки CTA</span>
+                      <input
+                        type="text"
+                        value={card.ctaButtonUrl || ''}
+                        onChange={e => updateCard(index, 'ctaButtonUrl', e.target.value)}
+                        placeholder="/ru/login или https://example.com"
+                      />
+                    </label>
+                  </>
+                ) : (
                   <>
                     <label className={styles.field}>
                       <span>Текст ссылки (опционально)</span>

@@ -113,6 +113,8 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
                     "isCta": bool(extra.get("isCta", False)),
                     "linkText": content.link_text,
                     "linkUrl": content.link_url,
+                    "ctaButtonText": extra.get("ctaButtonText"),
+                    "ctaButtonUrl": extra.get("ctaButtonUrl"),
                 }
             )
     
@@ -177,6 +179,19 @@ async def save_advantages_content(
     for i, card in enumerate(cards):
         uid = _ensure_uid(card, fallback_uid=str(i))
         slug = _ensure_slug(card, uid)
+
+        extra_data = {
+            **({"isCta": True} if card.get("isCta", False) else {}),
+            "uid": uid,
+            "slug": slug,
+        }
+
+        # Добавляем CTA кнопку если есть
+        if card.get("ctaButtonText"):
+            extra_data["ctaButtonText"] = card.get("ctaButtonText")
+        if card.get("ctaButtonUrl"):
+            extra_data["ctaButtonUrl"] = card.get("ctaButtonUrl")
+
         contents.append(LandingContent(
             section_id=section.id,
             content_type=ContentType.TEXT,
@@ -186,11 +201,7 @@ async def save_advantages_content(
             text=card.get("description", ""),
             link_text=card.get("linkText"),
             link_url=card.get("linkUrl"),
-            extra_data={
-                **({"isCta": True} if card.get("isCta", False) else {}),
-                "uid": uid,
-                "slug": slug,
-            },
+            extra_data=extra_data,
             is_active=True,
             order=10 + i
         ))

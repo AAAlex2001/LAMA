@@ -10,6 +10,8 @@ interface PricingPlan {
   price: string;
   features: string[];
   isHighlighted: boolean;
+  buttonText: string;
+  buttonUrl: string;
 }
 
 interface PricingContent {
@@ -65,7 +67,7 @@ export default function PricingAdminPage() {
   const addPlan = () => {
     setContent({
       ...content,
-      plans: [...content.plans, { title: '', price: '', features: [''], isHighlighted: false }]
+      plans: [...content.plans, { title: '', price: '', features: [''], isHighlighted: false, buttonText: '', buttonUrl: '' }]
     });
   };
 
@@ -203,6 +205,26 @@ export default function PricingAdminPage() {
                     onChange={e => updatePlan(index, 'isHighlighted', e.target.checked)}
                   />
                   <span>Выделенный план</span>
+                </label>
+
+                <label className={styles.field}>
+                  <span>Текст кнопки</span>
+                  <input
+                    type="text"
+                    value={plan.buttonText}
+                    onChange={e => updatePlan(index, 'buttonText', e.target.value)}
+                    placeholder="Выбрать план"
+                  />
+                </label>
+
+                <label className={styles.field}>
+                  <span>Ссылка кнопки</span>
+                  <input
+                    type="text"
+                    value={plan.buttonUrl}
+                    onChange={e => updatePlan(index, 'buttonUrl', e.target.value)}
+                    placeholder="/ru/login или https://example.com"
+                  />
                 </label>
 
                 <div className={styles.featuresSection}>

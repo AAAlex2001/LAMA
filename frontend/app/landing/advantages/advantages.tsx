@@ -20,6 +20,8 @@ interface AdvantagesCard {
   isCta: boolean;
   linkText?: string | null;
   linkUrl?: string | null;
+  ctaButtonText?: string | null;
+  ctaButtonUrl?: string | null;
 }
 
 interface AdvantagesContent {
@@ -91,7 +93,11 @@ export default function Advantages({ locale, content }: Props) {
                   <div className={styles.ctaCard}>
                     <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                     <div className={styles.ctaButton}>
-                      <Button text="Начать бесплатно" href={`/${locale}/login`} fullWidth />
+                      <Button
+                        text={card.ctaButtonText || "Начать бесплатно"}
+                        href={card.ctaButtonUrl || `/${locale}/login`}
+                        fullWidth
+                      />
                     </div>
                   </div>
                 </div>
@@ -136,7 +142,11 @@ export default function Advantages({ locale, content }: Props) {
                         <div className={styles.ctaCard}>
                           <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                           <div className={styles.ctaButton}>
-                            <Button text="Начать бесплатно" href={`/${locale}/login`} fullWidth />
+                            <Button
+                              text={card.ctaButtonText || "Начать бесплатно"}
+                              href={card.ctaButtonUrl || `/${locale}/login`}
+                              fullWidth
+                            />
                           </div>
                         </div>
                       ) : card.linkUrl ? (

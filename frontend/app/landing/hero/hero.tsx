@@ -22,6 +22,7 @@ interface HeroContent {
   paragraph: string;
   paragraphSecondary: string;
   buttonText: string;
+  buttonUrl?: string;
   images: HeroImage[];
 }
 
@@ -32,6 +33,7 @@ export default function Hero({ locale, content, hideImagesOnMobile = false, vari
       paragraph: content?.paragraph || "",
       paragraphSecondary: (content as any)?.paragraphSecondary || "",
       buttonText: content?.buttonText || "",
+      buttonUrl: content?.buttonUrl || "",
       images: Array.isArray(content?.images) ? content.images : [],
     };
   }, [content]);
@@ -86,7 +88,10 @@ export default function Hero({ locale, content, hideImagesOnMobile = false, vari
             </p>
           ) : null}
           <div className={styles.buttonContainer}>
-            <Button text={safeContent.buttonText} href={`/${locale}/login`} />
+            <Button
+              text={safeContent.buttonText}
+              href={safeContent.buttonUrl || `/${locale}/login`}
+            />
           </div>
         </motion.div>
       </div>

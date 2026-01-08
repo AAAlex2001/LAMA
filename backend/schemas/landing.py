@@ -15,6 +15,7 @@ class HeroContentRequest(BaseModel):
     paragraph: str
     paragraphSecondary: str
     buttonText: str
+    buttonUrl: str = ""
     images: List[HeroImage]
     templateImages: Optional[List[HeroImage]] = None
 
@@ -27,6 +28,8 @@ class AdvantagesCard(BaseModel):
     isCta: bool = False
     linkText: Optional[str] = None
     linkUrl: Optional[str] = None
+    ctaButtonText: Optional[str] = None
+    ctaButtonUrl: Optional[str] = None
 
 
 class AdvantagesContentRequest(BaseModel):
@@ -51,6 +54,8 @@ class PricingPlan(BaseModel):
     price: str
     features: List[str]
     isHighlighted: bool = False
+    buttonText: str = ""
+    buttonUrl: str = ""
 
 
 class PricingContentRequest(BaseModel):
@@ -81,6 +86,7 @@ class UsersContentRequest(BaseModel):
     textLine: str
     textLine_1: str
     buttonText: str
+    buttonUrl: str = ""
 
 
 class LamaContentRequest(BaseModel):

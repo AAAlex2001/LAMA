@@ -15,6 +15,7 @@ interface HeroContent {
   paragraph: string;
   paragraphSecondary: string;
   buttonText: string;
+  buttonUrl: string;
   images: HeroImage[];
 }
 
@@ -34,6 +35,7 @@ function normalizeHeroContent(data: Partial<HeroContent> | null | undefined): He
     paragraph: safe.paragraph ?? '',
     paragraphSecondary: safe.paragraphSecondary ?? '',
     buttonText: safe.buttonText ?? '',
+    buttonUrl: safe.buttonUrl ?? '',
     images: normalizedImages,
   };
 }
@@ -45,6 +47,7 @@ export default function HeroAdminPage() {
     paragraph: '',
     paragraphSecondary: '',
     buttonText: '',
+    buttonUrl: '',
     images: [
       { url: '', alt: '' },
       { url: '', alt: '' },
@@ -219,6 +222,16 @@ export default function HeroAdminPage() {
               value={content.buttonText}
               onChange={e => setContent({ ...content, buttonText: e.target.value })}
               placeholder="Начать бесплатно"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span>Ссылка кнопки</span>
+            <input
+              type="text"
+              value={content.buttonUrl}
+              onChange={e => setContent({ ...content, buttonUrl: e.target.value })}
+              placeholder="/ru/login или https://example.com"
             />
           </label>
 
