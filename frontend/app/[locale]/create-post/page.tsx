@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
+import PostSettings from '@/components/post-settings/post-settings';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -19,6 +20,7 @@ const MAX_CHARS = 4096;
 
 export default function CreatePostPage() {
   const [text, setText] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const charCount = text.length;
@@ -41,10 +43,20 @@ export default function CreatePostPage() {
         {/* Header */}
         <div className={styles.header}>
           <span className={styles.headerTitle}>Новая публикация</span>
-          <button className={styles.settingsButton} type="button" aria-label="Настройки">
+          <button
+            className={styles.settingsButton}
+            type="button"
+            aria-label="Настройки"
+            onClick={() => setShowSettings(!showSettings)}
+          >
             <SettingsIcon width={24} height={24} />
           </button>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <PostSettings className={styles.settingsPanel} />
+        )}
 
         {/* Content */}
         <div className={styles.content}>

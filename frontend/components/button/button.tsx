@@ -17,6 +17,7 @@ interface ButtonProps {
   variant?: 'default' | 'templateCard';
   icon?: ReactNode;
   loading?: boolean;
+  counter?: string;
 }
 
 export default function Button({ 
@@ -31,6 +32,7 @@ export default function Button({
   variant = 'default',
   icon,
   loading = false,
+  counter,
 }: ButtonProps) {
   const gradientId = useId();
   
@@ -42,6 +44,7 @@ export default function Button({
         <>
           {icon && <span className={styles.buttonIcon}>{icon}</span>}
           <span className={styles.buttonText}>{text}</span>
+          {counter && <span className={styles.counter}>{counter}</span>}
           {showArrow && (
             <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke={`url(#${gradientId})`} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

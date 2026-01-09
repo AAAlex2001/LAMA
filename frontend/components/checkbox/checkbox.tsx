@@ -6,7 +6,7 @@ import classNames from 'classnames';
 interface CheckboxProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  label: string | React.ReactNode;
+  label?: string | React.ReactNode;
   className?: string;
 }
 
@@ -23,7 +23,7 @@ export default function Checkbox({ checked, onChange, label, className }: Checkb
           </svg>
         )}
       </div>
-      <span className={styles.label}>{label}</span>
+      {label && <span className={styles.label}>{label}</span>}
     </label>
   );
 }

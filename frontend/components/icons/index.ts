@@ -9,3 +9,5 @@ export { default as SettingsIcon } from './settings-icon';
 export { default as AiEditIcon } from './ai-edit-icon';
 export { default as EmojiIcon } from './emoji-icon';
 export { default as PaperclipIcon } from './paperclip-icon';
+export { default as ChevronDownIcon } from './chevron-down-icon';
+export { default as SearchIcon } from './search-icon';
