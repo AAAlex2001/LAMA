@@ -1,11 +1,13 @@
 .buttonWrapper {
   display: inline-block;
   border-radius: 10px;
+  min-width: 0;
 }
 
 .templateCardWrapper {
   background: transparent;
   padding: 0;
+  display: flex;
 }
 
 .button {
@@ -14,7 +16,7 @@
   align-items: center;
   gap: 15px;
   background-color: white;
-  padding: 9px 20px;
+  padding: 9px;
   border-radius: 10px;
   text-decoration: none;
   border: 1px solid transparent;
@@ -68,6 +70,8 @@
   background: #F0F4FA;
   background-image: none;
   border: none;
+  width: 100%;
+  justify-content: center;
 
   .buttonText {
     background: none;
@@ -101,7 +105,6 @@
   font-size: 14px;
   line-height: 17px;
   transition: color 0.2s;
-  white-space: nowrap;
 }
 
 .fullWidthWrapper {

@@ -2,18 +2,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0;
+  padding: 0 16px;
   gap: 24px;
   width: 100%;
-  max-width: 360px;
   margin: 64px auto 0;
+  box-sizing: border-box;
+
+  @media (min-width: 768px) {
+    max-width: none;
+    padding: 0 24px;
+  }
 }
 
 .editor {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 16px;
   gap: 24px;
   width: 100%;
   background: #FFFFFF;
@@ -25,13 +29,11 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
-  padding: 0;
   gap: 24px;
   width: 100%;
 }
 
 .headerTitle {
-  margin: 0 auto;
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 400;
@@ -69,9 +71,10 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   align-items: flex-start;
   padding: 8px 10px;
-  gap: 10px;
+  gap: 20px;
   width: 100%;
   min-height: 154px;
   background: #FFFFFF;
@@ -82,12 +85,15 @@
 .textareaInner {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   padding: 0;
-  gap: 61px;
   width: 100%;
   flex-grow: 1;
+}
+
+.textareaFooterWrapper {
+  width: 100%;
 }
 
 .textarea {
@@ -96,12 +102,16 @@
   border: none;
   outline: none;
   resize: none;
+  overflow: hidden;
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
   color: #383F45;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 
   &::placeholder {
     color: #CED2D6;
@@ -162,31 +172,60 @@
 .actionsMenu {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 0;
   gap: 4px;
   width: 100%;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
 
 .actionsRow {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
   width: 100%;
+
+  @media (min-width: 768px) {
+    display: contents;
+  }
 }
 
-.actionButtonHalf {
-  flex: 1;
+.actionsRowCenter {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    display: contents;
+  }
+}
+
+.actionButton {
+  flex: 1 1 0;
+  min-width: 0;
+
+  @media (min-width: 768px) {
+    flex: 0 0 auto;
+  }
+}
+
+.actionButtonCenter {
+  flex: 1 1 100%;
+  min-width: 0;
+
+  @media (min-width: 768px) {
+    flex: 0 0 auto;
+  }
 }
 
 .mediaSection {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 0;
   gap: 14px;
   width: 100%;
@@ -207,6 +246,69 @@
   color: #383F45;
 }
 
+.mediaMobile {
+  width: 100%;
+
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.mediaDropzone {
+  display: none;
+
+  @media (min-width: 768px) {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 30px;
+    gap: 16px;
+    width: 100%;
+    height: 143px;
+    background: #FFFFFF;
+    border: 1px dashed #CED2D6;
+    border-radius: 10px;
+  }
+}
+
+.dropzoneText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #CED2D6;
+}
+
+.attachButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 6px;
+  background: #F0F4FA;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+
+  span {
+    font-family: 'Inter', sans-serif;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 12px;
+    line-height: 15px;
+    color: #383F45;
+  }
+
+  &:hover {
+    background: #CBDBFF;
+  }
+}
+
 .footerButtons {
   display: flex;
   flex-direction: column;
@@ -214,6 +316,31 @@
   padding: 0;
   gap: 16px;
   width: 100%;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.saveDraftBtn {
+  width: 100%;
+  display: flex;
+
+  button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 768px) {
+    width: auto;
+    display: inline-block;
+
+    button {
+      width: auto;
+    }
+  }
 }
 
 .publishRow {
@@ -221,12 +348,50 @@
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   width: 100%;
+
+  @media (min-width: 768px) {
+    display: flex;
+    width: auto;
+    gap: 8px;
+  }
 }
 
 .publishNowBtn {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+
+  button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 768px) {
+    flex: 0 0 auto;
+    display: inline-block;
+
+    button {
+      width: auto;
+    }
+  }
 }
 
 .scheduleBtn {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+
+  button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 768px) {
+    flex: 0 0 auto;
+    display: inline-block;
+
+    button {
+      width: auto;
+    }
+  }
 }
