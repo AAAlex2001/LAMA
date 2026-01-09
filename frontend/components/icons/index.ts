@@ -1,2 +1,11 @@
 export { default as TelegramIcon } from './telegram-icon';
 export { default as BotIcon } from './bot-icon';
+export { default as DraftsIcon } from './drafts-icon';
+export { default as InlineButtonIcon } from './inline-button-icon';
+export { default as TemplatesIcon } from './templates-icon';
+export { default as QuizIcon } from './quiz-icon';
+export { default as ReplyIcon } from './reply-icon';
+export { default as SettingsIcon } from './settings-icon';
+export { default as AiEditIcon } from './ai-edit-icon';
+export { default as EmojiIcon } from './emoji-icon';
+export { default as PaperclipIcon } from './paperclip-icon';

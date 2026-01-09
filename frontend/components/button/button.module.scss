@@ -1,54 +1,63 @@
 .buttonWrapper {
   display: inline-block;
-  padding: 2px;
   border-radius: 10px;
-  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  max-height: 40px;
 }
 
 .templateCardWrapper {
   background: transparent;
   padding: 0;
-  max-height: none;
 }
 
 .button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 15px;
   background-color: white;
-  padding: 12.5px 20px;
-  border-radius: 8px;
+  padding: 9px 20px;
+  border-radius: 10px;
   text-decoration: none;
-  border: none;
+  border: 1px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
   cursor: pointer;
   transition: background 0.2s;
   font-family: inherit;
-  max-height: 36px;
-  
-  &:hover {
+  box-sizing: border-box;
+  height: 37px;
+
+  &:not(.templateCardButton):hover {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    
+    border-color: transparent;
+
     .buttonText {
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
       color: white;
     }
-    
+
     svg path {
       stroke: white;
     }
   }
-  
+
   &.active {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    
+    border-color: transparent;
+
     .buttonText {
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
       color: white;
     }
-    
+
     svg path {
       stroke: white;
     }
-    
+
     &:hover {
       background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
     }
@@ -56,11 +65,31 @@
 }
 
 .templateCardButton {
-  background-color: #DEE9FA;
-}
+  background: #F0F4FA;
+  background-image: none;
+  border: none;
 
-.buttonWrapper:has(.button.active:hover) {
-  background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  .buttonText {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    color: #383F45;
+    font-size: 14px;
+    line-height: 28px;
+  }
+
+  .buttonIcon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  &:hover {
+    background: #CBDBFF;
+
+    .buttonText {
+      color: #383F45;
+    }
+  }
 }
 
 .buttonText {
@@ -69,9 +98,10 @@
   background-clip: text;
   color: transparent;
   font-weight: 400;
-  font-size: 16px;
-  line-height: 19px;
+  font-size: 14px;
+  line-height: 17px;
   transition: color 0.2s;
+  white-space: nowrap;
 }
 
 .fullWidthWrapper {
@@ -86,7 +116,6 @@
 }
 
 .smallWrapper {
-  padding: 1px;
   border-radius: 8px;
   width: 72px;
 }
@@ -97,7 +126,7 @@
   border-radius: 6px;
   gap: 8px;
   justify-content: center;
-  
+
   .buttonText {
     font-size: 14px;
     line-height: 20px;
@@ -105,7 +134,6 @@
 }
 
 .mediumWrapper {
-  padding: 2px;
   border-radius: 10px;
   width: 110px;
 }
@@ -116,7 +144,7 @@
   border-radius: 8px;
   gap: 10px;
   justify-content: center;
-  
+
   .buttonText {
     font-size: 16px;
     line-height: 24px;
@@ -127,7 +155,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
+
   svg {
     width: 20px;
     height: 20px;
@@ -135,10 +163,6 @@
 }
 
 .button.active .buttonIcon svg path {
-  fill: white !important;
-}
-
-.button:hover .buttonIcon svg path {
   fill: white !important;
 }
 
@@ -164,4 +188,3 @@
     transform: rotate(360deg);
   }
 }
-
