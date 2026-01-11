@@ -87,55 +87,22 @@ export default function CreatePostPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.editor}>
-        <div className={styles.header}>
-          <span className={styles.headerTitle}>Новая публикация</span>
-          <button
-            className={styles.settingsButton}
-            type="button"
-            aria-label="Настройки"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <SettingsIcon width={24} height={24} />
-          </button>
-        </div>
+      <div className={styles.mainContent}>
+        <div className={styles.editorColumn}>
+          <div className={styles.editor}>
+            <div className={styles.header}>
+              <span className={styles.headerTitle}>Новая публикация</span>
+              <button
+                className={styles.settingsButton}
+                type="button"
+                aria-label="Настройки"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                <SettingsIcon width={24} height={24} />
+              </button>
+            </div>
 
-        {showSettings && (
-          <PostSettings 
-            className={styles.settingsPanel}
-            // Channels
-            channelOptions={postSettings.channelOptions}
-            channelsLoading={postSettings.channelsLoading}
-            channelsSyncing={postSettings.channelsSyncing}
-            selectedCount={postSettings.selectedCount}
-            totalChannels={postSettings.totalChannels}
-            onFetchChannels={postSettings.fetchChannels}
-            onChannelChange={postSettings.handleChannelChange}
-            onAddChannelClick={postSettings.openCreateChannel}
-            // Tags
-            recentTags={postSettings.recentTags}
-            searchResults={postSettings.searchResults}
-            tagInputValue={postSettings.tagInputValue}
-            tagsLoading={postSettings.tagsLoading}
-            tagsSearching={postSettings.tagsSearching}
-            onLoadRecentTags={postSettings.loadRecentTags}
-            onSearchTags={postSettings.searchTags}
-            onTagInputChange={postSettings.setTagInputValue}
-            onSelectTag={postSettings.selectTag}
-            // Toggles
-            notifySubscribers={postSettings.notifySubscribers}
-            onNotifyChange={postSettings.handleNotifyChange}
-            pinPost={postSettings.pinPost}
-            onPinChange={postSettings.handlePinChange}
-            // Modal
-            showCreateChannel={postSettings.showCreateChannel}
-            onAddChannel={postSettings.handleAddChannel}
-            onCloseCreateChannel={postSettings.closeCreateChannel}
-            // Actions
-            onReset={postSettings.resetSettings}
-          />
-        )}
-        <div className={styles.content}>
+          <div className={styles.content}>
           <div className={styles.textareaWrapper}>
             <div className={styles.textareaInner}>
               <textarea
@@ -229,34 +196,102 @@ export default function CreatePostPage() {
             </div>
           </div>
         </div>
-        <div className={styles.footerButtons}>
-          <Button
-            text="Сохранить в черновики"
-            showArrow={false}
-            className={styles.saveDraftBtn}
-            onClick={onSaveDraft}
-          />
-          <div className={styles.publishRow}>
+          <div className={styles.footerButtons}>
             <Button
-              text={isPublishing ? "Публикуем..." : "Опубликовать сейчас"}
+              text="Сохранить в черновики"
               showArrow={false}
-              className={styles.publishNowBtn}
-              onClick={onPublishNow}
+              className={styles.saveDraftBtn}
+              onClick={onSaveDraft}
             />
-            <Button
-              text="Запланировать"
-              showArrow={false}
-              active
-              className={styles.scheduleBtn}
-            />
+            <div className={styles.publishRow}>
+              <Button
+                text={isPublishing ? "Публикуем..." : "Опубликовать сейчас"}
+                showArrow={false}
+                className={styles.publishNowBtn}
+                onClick={onPublishNow}
+              />
+              <Button
+                text="Запланировать"
+                showArrow={false}
+                active
+                className={styles.scheduleBtn}
+              />
+            </div>
           </div>
+          </div>
+
+          <Button
+            text="Добавить серию постов"
+            showArrow={false}
+            className={styles.addSeriesBtn}
+          />
+        </div>
+
+        <div className={styles.settingsPanelDesktop}>
+          <PostSettings 
+            channelOptions={postSettings.channelOptions}
+            channelsLoading={postSettings.channelsLoading}
+            channelsSyncing={postSettings.channelsSyncing}
+            selectedCount={postSettings.selectedCount}
+            totalChannels={postSettings.totalChannels}
+            onFetchChannels={postSettings.fetchChannels}
+            onChannelChange={postSettings.handleChannelChange}
+            onAddChannelClick={postSettings.openCreateChannel}
+            recentTags={postSettings.recentTags}
+            searchResults={postSettings.searchResults}
+            tagInputValue={postSettings.tagInputValue}
+            tagsLoading={postSettings.tagsLoading}
+            tagsSearching={postSettings.tagsSearching}
+            onLoadRecentTags={postSettings.loadRecentTags}
+            onSearchTags={postSettings.searchTags}
+            onTagInputChange={postSettings.setTagInputValue}
+            onSelectTag={postSettings.selectTag}
+            notifySubscribers={postSettings.notifySubscribers}
+            onNotifyChange={postSettings.handleNotifyChange}
+            pinPost={postSettings.pinPost}
+            onPinChange={postSettings.handlePinChange}
+            showCreateChannel={postSettings.showCreateChannel}
+            onAddChannel={postSettings.handleAddChannel}
+            onCloseCreateChannel={postSettings.closeCreateChannel}
+            onReset={postSettings.resetSettings}
+          />
         </div>
       </div>
 
-      <Button
-        text="Добавить серию постов"
-        showArrow={false}
-      />
+      {/* Mobile Settings Modal */}
+      {showSettings && (
+        <div className={styles.settingsModalOverlay} onClick={() => setShowSettings(false)}>
+          <div className={styles.settingsModal} onClick={(e) => e.stopPropagation()}>
+            <PostSettings
+              channelOptions={postSettings.channelOptions}
+              channelsLoading={postSettings.channelsLoading}
+              channelsSyncing={postSettings.channelsSyncing}
+              selectedCount={postSettings.selectedCount}
+              totalChannels={postSettings.totalChannels}
+              onFetchChannels={postSettings.fetchChannels}
+              onChannelChange={postSettings.handleChannelChange}
+              onAddChannelClick={postSettings.openCreateChannel}
+              recentTags={postSettings.recentTags}
+              searchResults={postSettings.searchResults}
+              tagInputValue={postSettings.tagInputValue}
+              tagsLoading={postSettings.tagsLoading}
+              tagsSearching={postSettings.tagsSearching}
+              onLoadRecentTags={postSettings.loadRecentTags}
+              onSearchTags={postSettings.searchTags}
+              onTagInputChange={postSettings.setTagInputValue}
+              onSelectTag={postSettings.selectTag}
+              notifySubscribers={postSettings.notifySubscribers}
+              onNotifyChange={postSettings.handleNotifyChange}
+              pinPost={postSettings.pinPost}
+              onPinChange={postSettings.handlePinChange}
+              showCreateChannel={postSettings.showCreateChannel}
+              onAddChannel={postSettings.handleAddChannel}
+              onCloseCreateChannel={postSettings.closeCreateChannel}
+              onReset={postSettings.resetSettings}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
