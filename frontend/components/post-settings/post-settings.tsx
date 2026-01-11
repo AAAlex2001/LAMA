@@ -14,24 +14,51 @@ interface Channel {
 
 interface PostSettingsProps {
   className?: string;
+  onSettingsChange?: (settings: {
+    channels: Channel[];
+    notifySubscribers: boolean;
+    pinPost: boolean;
+  }) => void;
 }
 
-export default function PostSettings({ className }: PostSettingsProps) {
+export default function PostSettings({ className, onSettingsChange }: PostSettingsProps) {
   const [channels, setChannels] = useState<Channel[]>([
-    { id: '1', name: 'LamaPlanner', selected: true },
-    { id: '2', name: 'LamaPlanner 2', selected: true },
-    { id: '3', name: 'LamaPlanner 3', selected: false },
-    { id: '4', name: 'LamaPlanner 4', selected: false },
-    { id: '5', name: 'LamaPlanner 5', selected: false },
+    { id: '1', name: 'Тест лама 1', selected: true },
   ]);
 
   const [notifySubscribers, setNotifySubscribers] = useState(false);
   const [pinPost, setPinPost] = useState(false);
 
   const handleChannelChange = (id: string, checked: boolean) => {
-    setChannels((prev) =>
-      prev.map((ch) => (ch.id === id ? { ...ch, selected: checked } : ch))
-    );
+    setChannels((prev) => {
+      const updated = prev.map((ch) => (ch.id === id ? { ...ch, selected: checked } : ch));
+      
+      // Уведомляем родителя об изменениях
+      if (onSettingsChange) {
+        onSettingsChange({
+          channels: updated,
+          notifySubscribers,
+          pinPost,
+        });
+      }
+      
+      return updated;
+    });
+  };
+
+  // Уведомляем об изменениях toggles
+  const handleNotifyChange = (checked: boolean) => {
+    setNotifySubscribers(checked);
+    if (onSettingsChange) {
+      onSettingsChange({ channels, notifySubscribers: checked, pinPost });
+    }
+  };
+
+  const handlePinChange = (checked: boolean) => {
+    setPinPost(checked);
+    if (onSettingsChange) {
+      onSettingsChange({ channels, notifySubscribers, pinPost: checked });
+    }
   };
 
   const selectedChannelsCount = channels.filter((ch) => ch.selected).length;
@@ -42,7 +69,6 @@ export default function PostSettings({ className }: PostSettingsProps) {
         <div className={styles.title}>Настройки публикации</div>
 
         <div className={styles.settingsList}>
-          {/* Каналы и чаты для постинга */}
           <Dropdown
             label="Каналы и чаты для постинга"
             options={channels.map((ch) => ({
@@ -57,10 +83,14 @@ export default function PostSettings({ className }: PostSettingsProps) {
             addNewLabel="Подключить новый"
             selectedCount={selectedChannelsCount}
             totalCount={channels.length}
+            ChannelsAndChats="channels"
           />
 
-          {/* Тег поста */}
-          <Dropdown label="Тег поста" />
+          <Dropdown 
+            label="Тег поста"
+            Tags='tags'
+            showSearch
+          />
 
           {/* Автоудаление поста */}
           <Dropdown label="Автоудаление поста" />
@@ -71,13 +101,13 @@ export default function PostSettings({ className }: PostSettingsProps) {
           {/* Уведомлять подписчиков */}
           <div className={styles.toggleRow}>
             <span className={styles.toggleLabel}>Уведомлять подписчиков</span>
-            <Toggle checked={notifySubscribers} onChange={setNotifySubscribers} />
+            <Toggle checked={notifySubscribers} onChange={handleNotifyChange} />
           </div>
 
           {/* Закрепить пост после публикации */}
           <div className={styles.toggleRow}>
             <span className={styles.toggleLabel}>Закрепить пост после публикации</span>
-            <Toggle checked={pinPost} onChange={setPinPost} />
+            <Toggle checked={pinPost} onChange={handlePinChange} />
           </div>
         </div>
       </div>

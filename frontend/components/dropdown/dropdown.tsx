@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import styles from './dropdown.module.scss';
 import classNames from 'classnames';
 import { ChevronDownIcon } from '@/components/icons';
@@ -26,6 +26,8 @@ interface DropdownProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   className?: string;
+  ChannelsAndChats?: string;
+  Tags?: string;
 }
 
 export default function Dropdown({
@@ -40,9 +42,13 @@ export default function Dropdown({
   onAddNew,
   addNewLabel = 'Подключить новый',
   className,
+  ChannelsAndChats,
+  Tags,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchQueryTags1, setSearchQueryTags1] = useState('');
+  const [searchQueryTags2, setSearchQueryTags2] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter((option) =>
@@ -67,7 +73,7 @@ export default function Dropdown({
         />
       </button>
 
-      {isOpen && (
+      {isOpen && ChannelsAndChats && (
         <div className={styles.content}>
           {showSearch && (
             <SearchBar
@@ -105,6 +111,27 @@ export default function Dropdown({
                 counter={selectedCount !== undefined && totalCount !== undefined ? `${selectedCount}/${totalCount}` : undefined}
               />
             </div>
+          )}
+        </div>
+      )}
+
+      {isOpen && Tags && (
+        <div className={styles.content}>
+          {showSearch && (
+            <>
+              <SearchBar
+                placeholder={placeholder}
+                value={searchQueryTags1}
+                onChange={setSearchQueryTags1}
+                showSearchIcon={false}
+              />
+              <SearchBar
+                placeholder={placeholder}
+                value={searchQueryTags2}
+                onChange={setSearchQueryTags2}
+                showSearchIcon={true}
+              />
+            </>
           )}
         </div>
       )}

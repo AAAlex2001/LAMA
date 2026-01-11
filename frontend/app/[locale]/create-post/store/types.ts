@@ -1,0 +1,60 @@
+// Типы для создания и публикации постов
+
+export type ContentType = 'text' | 'text_with_media' | 'image' | 'video' | 'audio' | 'document' | 'link' | 'poll' | 'quiz';
+export type PublicationStatus = 'draft' | 'scheduled' | 'published' | 'partial_success' | 'failed' | 'deleted';
+
+export interface InlineButton {
+  text: string;
+  url?: string;
+  callback_data?: string;
+}
+
+export interface InlineKeyboard {
+  buttons: InlineButton[][];
+}
+
+export interface PollData {
+  question: string;
+  options: string[];
+  is_anonymous?: boolean;
+  allows_multiple_answers?: boolean;
+  correct_option_id?: number;
+  explanation?: string;
+  is_quiz?: boolean;
+}
+
+export interface CreatePostRequest {
+  content_type: ContentType;
+  text_content?: string;
+  formatted_content?: Record<string, any>;
+  media_urls?: string[];
+  media_blur?: boolean;
+  inline_keyboard?: InlineKeyboard;
+  poll_data?: PollData;
+  pin_message?: boolean;
+  auto_delete_hours?: number;
+  auto_delete_delay_seconds?: number;
+  scheduled_time?: string; // ISO date string
+  timezone?: string;
+  series_id?: number;
+  series_order?: number;
+  ai_prompt?: string;
+  channel_ids: number[];
+  tag_names?: string[];
+  status?: PublicationStatus;
+}
+
+export interface CreatePostResponse {
+  success: boolean;
+  postId?: number;
+  message?: string;
+  errors?: string[];
+  id?: number; // API возвращает id вместо postId
+}
+
+export interface PublishPostResponse {
+  success: boolean;
+  publishedTo?: string[];
+  message?: string;
+  errors?: string[];
+}

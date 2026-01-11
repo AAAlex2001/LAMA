@@ -10,6 +10,7 @@ interface SearchBarProps {
   value?: string;
   onChange?: (value: string) => void;
   className?: string;
+  showSearchIcon?: boolean;
 }
 
 export default function SearchBar({
@@ -17,6 +18,7 @@ export default function SearchBar({
   value,
   onChange,
   className,
+  showSearchIcon = true,
 }: SearchBarProps) {
   const [internalValue, setInternalValue] = useState('');
   
@@ -38,7 +40,7 @@ export default function SearchBar({
         onChange={(e) => handleChange(e.target.value)}
         className={styles.searchInput}
       />
-      <SearchIcon width={18} height={18} />
+      {showSearchIcon && <SearchIcon width={18} height={18} />}
     </div>
   );
 }

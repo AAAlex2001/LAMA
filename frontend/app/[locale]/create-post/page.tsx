@@ -15,12 +15,31 @@ import {
   EmojiIcon,
   PaperclipIcon,
 } from '@/components/icons';
+import { handlePublishNow, handleSaveDraft } from './store/actions';
 
 const MAX_CHARS = 4096;
+
+interface Channel {
+  id: string;
+  name: string;
+  selected: boolean;
+}
+
+interface PostSettings {
+  channels: Channel[];
+  notifySubscribers: boolean;
+  pinPost: boolean;
+}
 
 export default function CreatePostPage() {
   const [text, setText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [postSettings, setPostSettings] = useState<PostSettings>({
+    channels: [],
+    notifySubscribers: false,
+    pinPost: false,
+  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const charCount = text.length;
@@ -37,10 +56,53 @@ export default function CreatePostPage() {
     adjustTextareaHeight();
   }, [text]);
 
+  const onPublishNow = async () => {
+    setIsPublishing(true);
+    
+    try {
+      const result = await handlePublishNow(
+        { text },
+        postSettings
+      );
+
+      if (result.success) {
+        alert(result.message);
+        setText('');
+      } else {
+        alert(`Ошибка: ${result.message}`);
+        if (result.errors) {
+          console.error('Детали ошибок:', result.errors);
+        }
+      }
+    } catch (error) {
+      alert('Произошла ошибка при публикации');
+      console.error(error);
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const onSaveDraft = async () => {
+    try {
+      const result = await handleSaveDraft(
+        { text },
+        postSettings
+      );
+
+      if (result.success) {
+        alert(result.message);
+      } else {
+        alert(`Ошибка: ${result.message}`);
+      }
+    } catch (error) {
+      alert('Произошла ошибка при сохранении черновика');
+      console.error(error);
+    }
+  };
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.editor}>
-        {/* Header */}
         <div className={styles.header}>
           <span className={styles.headerTitle}>Новая публикация</span>
           <button
@@ -53,14 +115,14 @@ export default function CreatePostPage() {
           </button>
         </div>
 
-        {/* Settings Panel */}
         {showSettings && (
-          <PostSettings className={styles.settingsPanel} />
+          <PostSettings 
+            className={styles.settingsPanel}
+            onSettingsChange={setPostSettings}
+          />
         )}
 
-        {/* Content */}
         <div className={styles.content}>
-          {/* Textarea */}
           <div className={styles.textareaWrapper}>
             <div className={styles.textareaInner}>
               <textarea
@@ -90,7 +152,6 @@ export default function CreatePostPage() {
             </div>
           </div>
 
-          {/* Actions Menu */}
           <div className={styles.actionsMenu}>
             <div className={styles.actionsRow}>
               <Button
@@ -167,12 +228,14 @@ export default function CreatePostPage() {
             text="Сохранить в черновики"
             showArrow={false}
             className={styles.saveDraftBtn}
+            onClick={onSaveDraft}
           />
           <div className={styles.publishRow}>
             <Button
-              text="Опубликовать сейчас"
+              text={isPublishing ? "Публикуем..." : "Опубликовать сейчас"}
               showArrow={false}
               className={styles.publishNowBtn}
+              onClick={onPublishNow}
             />
             <Button
               text="Запланировать"
