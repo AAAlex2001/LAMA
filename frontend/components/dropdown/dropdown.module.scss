@@ -122,3 +122,104 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+// Tags styles
+.tagInputWrapper {
+  width: 100%;
+}
+
+.tagInput {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 14px 16px;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  background: #F8FAFF;
+  border: 1px solid rgba(1, 42, 249, 0.1);
+  box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  outline: none;
+
+  &::placeholder {
+    color: #8C8C8C;
+  }
+}
+
+.colorLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.colorPicker {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 8px;
+}
+
+.colorOption {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  box-shadow: 0px 2px 5px rgba(103, 110, 118, 0.08), 0px 0px 0px 1px rgba(103, 110, 118, 0.16), 0px 1px 1px rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &.selected {
+    box-shadow: 0px 0px 0px 2px #3B82F6, 0px 2px 5px rgba(103, 110, 118, 0.08), 0px 1px 1px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.tagsPreview {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  gap: 6px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.tagPreviewItem {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 3px 4px;
+  gap: 8px;
+  height: 22px;
+  border-radius: 5px;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #383F45;
+  flex: 1 1 0;
+  min-width: 60px;
+  max-width: calc(33.33% - 4px);
+}

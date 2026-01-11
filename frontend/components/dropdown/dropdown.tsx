@@ -14,6 +14,14 @@ interface DropdownOption {
   checked?: boolean;
 }
 
+interface Tag {
+  id: string;
+  label: string;
+  color: string;
+}
+
+const TAG_COLORS = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'] as const;
+
 interface DropdownProps {
   label: string;
   placeholder?: string;
@@ -26,8 +34,12 @@ interface DropdownProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   className?: string;
-  ChannelsAndChats?: string;
-  Tags?: string;
+  variant?: 'channels' | 'tags';
+  tags?: Tag[];
+  onAddTag?: (name: string, color: string) => void;
+  onSearchTags?: (query: string) => void;
+  onOpen?: () => void;
+  loading?: boolean;
 }
 
 export default function Dropdown({
@@ -42,18 +54,36 @@ export default function Dropdown({
   onAddNew,
   addNewLabel = 'Подключить новый',
   className,
-  ChannelsAndChats,
-  Tags,
+  variant = 'channels',
+  tags = [],
+  onAddTag,
+  onSearchTags,
+  onOpen,
+  loading = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchQueryTags1, setSearchQueryTags1] = useState('');
-  const [searchQueryTags2, setSearchQueryTags2] = useState('');
+  const [tagName, setTagName] = useState('');
+  const [selectedColor, setSelectedColor] = useState<string>(TAG_COLORS[0]);
+  const [tagSearchQuery, setTagSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredOptions = options.filter((option) =>
     option.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleTagSearch = (query: string) => {
+    setTagSearchQuery(query);
+    onSearchTags?.(query);
+  };
+
+  const handleToggle = () => {
+    const willOpen = !isOpen;
+    setIsOpen(willOpen);
+    if (willOpen) {
+      onOpen?.();
+    }
+  };
 
   return (
     <div
@@ -63,7 +93,7 @@ export default function Dropdown({
       <button
         type="button"
         className={styles.header}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
       >
         <span className={styles.label}>{label}</span>
         <ChevronDownIcon
@@ -73,7 +103,7 @@ export default function Dropdown({
         />
       </button>
 
-      {isOpen && ChannelsAndChats && (
+      {isOpen && variant === 'channels' && (
         <div className={styles.content}>
           {showSearch && (
             <SearchBar
@@ -115,26 +145,57 @@ export default function Dropdown({
         </div>
       )}
 
-      {isOpen && Tags && (
+      {isOpen && variant === 'tags' && (
         <div className={styles.content}>
-          {showSearch && (
-            <>
-              <SearchBar
-                placeholder={placeholder}
-                value={searchQueryTags1}
-                onChange={setSearchQueryTags1}
-                showSearchIcon={false}
+          {/* Инпут для названия тега */}
+          <div className={styles.tagInputWrapper}>
+            <input
+              type="text"
+              placeholder="Дата"
+              value={tagName}
+              onChange={(e) => setTagName(e.target.value)}
+              className={styles.tagInput}
+            />
+          </div>
+
+          {/* Выберите цвет тега */}
+          <span className={styles.colorLabel}>Выберите цвет тега</span>
+          <div className={styles.colorPicker}>
+            {TAG_COLORS.map((color) => (
+              <button
+                key={color}
+                type="button"
+                className={classNames(styles.colorOption, {
+                  [styles.selected]: selectedColor === color,
+                })}
+                style={{ backgroundColor: color }}
+                onClick={() => setSelectedColor(color)}
               />
-              <SearchBar
-                placeholder={placeholder}
-                value={searchQueryTags2}
-                onChange={setSearchQueryTags2}
-                showSearchIcon={true}
-              />
-            </>
-          )}
+            ))}
+          </div>
+
+          {/* Превью тегов */}
+          <div className={styles.tagsPreview}>
+            {tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag.id}
+                className={styles.tagPreviewItem}
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.label}
+              </span>
+            ))}
+          </div>
+
+          {/* Поиск по тегам */}
+          <SearchBar
+            placeholder="Введите название тега"
+            value={tagSearchQuery}
+            onChange={handleTagSearch}
+          />
         </div>
       )}
     </div>
   );
 }
+
