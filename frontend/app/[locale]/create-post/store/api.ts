@@ -3,7 +3,6 @@
 import type {
   CreatePostRequest,
   CreatePostResponse,
-  PublishPostRequest,
   PublishPostResponse,
 } from './types';
 

@@ -18,6 +18,7 @@ interface ButtonProps {
   icon?: ReactNode;
   loading?: boolean;
   counter?: string;
+  disabled?: boolean;
 }
 
 export default function Button({ 
@@ -33,6 +34,7 @@ export default function Button({
   icon,
   loading = false,
   counter,
+  disabled = false,
 }: ButtonProps) {
   const gradientId = useId();
   
@@ -84,6 +86,7 @@ export default function Button({
         [styles.smallButton]: size === 'small',
         [styles.mediumButton]: size === 'medium',
         [styles.templateCardButton]: variant === 'templateCard',
+        [styles.disabled]: disabled,
       }
   );
 
@@ -99,7 +102,7 @@ export default function Button({
 
   return (
     <div className={wrapperClasses}>
-      <button onClick={onClick} className={buttonClasses}>
+      <button onClick={onClick} className={buttonClasses} disabled={disabled || loading}>
         {buttonContent}
       </button>
     </div>

@@ -2,9 +2,10 @@ import type { CreatePostRequest } from './types';
 import { createAndPublishPost, saveDraft } from './api';
 
 interface PostSettingsFromUI {
-  channels: { id: string; name: string; selected: boolean }[];
+  channelIds: number[];
   notifySubscribers: boolean;
   pinPost: boolean;
+  tagName: string | null;
 }
 
 export async function handlePublishNow(
@@ -16,17 +17,17 @@ export async function handlePublishNow(
       throw new Error('Текст поста не может быть пустым');
     }
 
-    const selectedChannels = settings.channels.filter((ch) => ch.selected);
-    if (selectedChannels.length === 0) {
+    if (settings.channelIds.length === 0) {
       throw new Error('Выберите хотя бы один канал для публикации');
     }
 
     const request: CreatePostRequest = {
       content_type: 'text',
       text_content: content.text,
-      channel_ids: selectedChannels.map((ch) => parseInt(ch.id)),
+      channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
+      tag_names: settings.tagName ? [settings.tagName] : undefined,
     };
 
     const response = await createAndPublishPost(request);
@@ -63,14 +64,13 @@ export async function handleSaveDraft(
       throw new Error('Текст поста не может быть пустым');
     }
 
-    const selectedChannels = settings.channels.filter((ch) => ch.selected);
-
     const request: CreatePostRequest = {
       content_type: 'text',
       text_content: content.text,
-      channel_ids: selectedChannels.map((ch) => parseInt(ch.id)),
+      channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
+      tag_names: settings.tagName ? [settings.tagName] : undefined,
     };
 
     const response = await saveDraft(request);
