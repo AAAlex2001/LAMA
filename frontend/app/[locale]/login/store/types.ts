@@ -30,6 +30,34 @@ export interface User {
   telegram_account?: TelegramAccount;
 }
 
+// API Request/Response типы
+export interface AuthResponse {
+  access_token: string;
+  refresh_token?: string;
+  token_type: string;
+  user?: User;
+  registration_completed?: boolean;
+}
+
+export interface EmailLoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface BotLoginRequest {
+  telegram_id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface LoginResult {
+  success: boolean;
+  message?: string;
+  requiresRegistration?: boolean;
+}
+
+// State типы
 export interface LoginState {
   loading: boolean;
   error: string | null;
