@@ -8,7 +8,7 @@
   margin: 64px auto 0;
   box-sizing: border-box;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     max-width: none;
     padding: 0 24px;
   }
@@ -180,7 +180,7 @@
   gap: 4px;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -193,7 +193,7 @@
   gap: 4px;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     display: contents;
   }
 }
@@ -203,7 +203,7 @@
   justify-content: center;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     display: contents;
   }
 }
@@ -212,7 +212,7 @@
   flex: 1 1 0;
   min-width: 0;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex: 0 0 auto;
   }
 }
@@ -221,7 +221,7 @@
   flex: 1 1 100%;
   min-width: 0;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex: 0 0 auto;
   }
 }
@@ -254,7 +254,7 @@
 .mediaMobile {
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     display: none;
   }
 }
@@ -262,7 +262,7 @@
 .mediaDropzone {
   display: none;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
@@ -322,7 +322,7 @@
   gap: 16px;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
@@ -338,7 +338,7 @@
     justify-content: center;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     width: auto;
     display: inline-block;
 
@@ -354,7 +354,7 @@
   gap: 8px;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     display: flex;
     width: auto;
     gap: 8px;
@@ -371,7 +371,7 @@
     justify-content: center;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex: 0 0 auto;
     display: inline-block;
 
@@ -391,7 +391,7 @@
     justify-content: center;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex: 0 0 auto;
     display: inline-block;
 
