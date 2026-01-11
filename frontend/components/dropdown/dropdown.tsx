@@ -7,6 +7,7 @@ import { ChevronDownIcon } from '@/components/icons';
 import Checkbox from '@/components/checkbox/checkbox';
 import Button from '@/components/button/button';
 import SearchBar from '@/components/search-bar/search-bar';
+import Input from '@/components/input';
 
 interface DropdownOption {
   id: string;
@@ -14,13 +15,12 @@ interface DropdownOption {
   checked?: boolean;
 }
 
-interface Tag {
-  id: string;
-  label: string;
-  color: string;
+// Тег из API
+interface ApiTag {
+  id: number;
+  name: string;
+  created_at: string;
 }
-
-const TAG_COLORS = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'] as const;
 
 interface DropdownProps {
   label: string;
@@ -35,9 +35,17 @@ interface DropdownProps {
   addNewLabel?: string;
   className?: string;
   variant?: 'channels' | 'tags';
-  tags?: Tag[];
-  onAddTag?: (name: string, color: string) => void;
+  // Tags props (чистый UI - только отображение и выбор)
+  recentTags?: ApiTag[];
+  searchResults?: ApiTag[];
+  tagInputValue?: string;
+  onTagInputChange?: (value: string) => void;
+  onSelectTag?: (tag: ApiTag) => void;
   onSearchTags?: (query: string) => void;
+  onLoadRecentTags?: () => void;
+  tagsLoading?: boolean;
+  tagsSearching?: boolean;
+  // General
   onOpen?: () => void;
   loading?: boolean;
 }
@@ -55,16 +63,22 @@ export default function Dropdown({
   addNewLabel = 'Подключить новый',
   className,
   variant = 'channels',
-  tags = [],
-  onAddTag,
+  // Tags
+  recentTags = [],
+  searchResults = [],
+  tagInputValue = '',
+  onTagInputChange,
+  onSelectTag,
   onSearchTags,
+  onLoadRecentTags,
+  tagsLoading = false,
+  tagsSearching = false,
+  // General
   onOpen,
   loading = false,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [tagName, setTagName] = useState('');
-  const [selectedColor, setSelectedColor] = useState<string>(TAG_COLORS[0]);
   const [tagSearchQuery, setTagSearchQuery] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -82,7 +96,17 @@ export default function Dropdown({
     setIsOpen(willOpen);
     if (willOpen) {
       onOpen?.();
+      // Для тегов загружаем недавние при открытии
+      if (variant === 'tags') {
+        onLoadRecentTags?.();
+      }
     }
+  };
+
+  const handleSelectTag = (tag: ApiTag) => {
+    onTagInputChange?.(tag.name);
+    onSelectTag?.(tag);
+    setTagSearchQuery('');
   };
 
   return (
@@ -147,52 +171,61 @@ export default function Dropdown({
 
       {isOpen && variant === 'tags' && (
         <div className={styles.content}>
-          {/* Инпут для названия тега */}
+          {/* Инпут для ввода названия тега */}
           <div className={styles.tagInputWrapper}>
-            <input
-              type="text"
-              placeholder="Дата"
-              value={tagName}
-              onChange={(e) => setTagName(e.target.value)}
-              className={styles.tagInput}
+            <Input
+              placeholder="Введите название тега"
+              value={tagInputValue}
+              onChange={(value) => onTagInputChange?.(value)}
             />
           </div>
 
-          {/* Выберите цвет тега */}
-          <span className={styles.colorLabel}>Выберите цвет тега</span>
-          <div className={styles.colorPicker}>
-            {TAG_COLORS.map((color) => (
-              <button
-                key={color}
-                type="button"
-                className={classNames(styles.colorOption, {
-                  [styles.selected]: selectedColor === color,
-                })}
-                style={{ backgroundColor: color }}
-                onClick={() => setSelectedColor(color)}
-              />
-            ))}
-          </div>
-
-          {/* Превью тегов */}
-          <div className={styles.tagsPreview}>
-            {tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag.id}
-                className={styles.tagPreviewItem}
-                style={{ backgroundColor: tag.color }}
-              >
-                {tag.label}
-              </span>
-            ))}
-          </div>
+          {/* Недавние теги */}
+          {recentTags.length > 0 && (
+            <>
+              <span className={styles.recentTagsLabel}>Недавние теги</span>
+              <div className={styles.tagsPreview}>
+                {recentTags.slice(0, 5).map((tag) => (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    className={classNames(styles.tagPreviewItem, {
+                      [styles.tagSelected]: tagInputValue === tag.name,
+                    })}
+                    onClick={() => handleSelectTag(tag)}
+                  >
+                    {tag.name}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {/* Поиск по тегам */}
           <SearchBar
-            placeholder="Введите название тега"
+            placeholder="Поиск по тегам"
             value={tagSearchQuery}
             onChange={handleTagSearch}
           />
+
+          {/* Результаты поиска */}
+          {tagSearchQuery && searchResults.length > 0 && (
+            <div className={styles.searchResults}>
+              {searchResults.map((tag) => (
+                <button
+                  key={tag.id}
+                  type="button"
+                  className={styles.searchResultItem}
+                  onClick={() => handleSelectTag(tag)}
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tagsSearching && <div className={styles.loadingText}>Поиск...</div>}
+          {tagsLoading && <div className={styles.loadingText}>Загрузка...</div>}
         </div>
       )}
     </div>

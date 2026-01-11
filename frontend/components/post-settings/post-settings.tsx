@@ -5,7 +5,8 @@ import Dropdown from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CreateChannel from '@/components/create-channel/create-channel';
-import type { Tag, ChannelOption } from './store';
+import type { ChannelOption } from './store';
+import type { Tag } from '@/stores/tags';
 
 interface PostSettingsProps {
   className?: string;
@@ -20,9 +21,16 @@ interface PostSettingsProps {
   onChannelChange: (id: string, checked: boolean) => void;
   onAddChannelClick: () => void;
   
-  // Tags
-  tags: Tag[];
-  onAddTag: (name: string, color: string) => void;
+  // Tags (чистый UI)
+  recentTags: Tag[];
+  searchResults: Tag[];
+  tagInputValue: string;
+  tagsLoading: boolean;
+  tagsSearching: boolean;
+  onLoadRecentTags: () => void;
+  onSearchTags: (query: string) => void;
+  onTagInputChange: (value: string) => void;
+  onSelectTag: (tag: Tag) => void;
   
   // Toggles
   notifySubscribers: boolean;
@@ -50,8 +58,15 @@ export default function PostSettings({
   onFetchChannels,
   onChannelChange,
   onAddChannelClick,
-  tags,
-  onAddTag,
+  recentTags,
+  searchResults,
+  tagInputValue,
+  tagsLoading,
+  tagsSearching,
+  onLoadRecentTags,
+  onSearchTags,
+  onTagInputChange,
+  onSelectTag,
   notifySubscribers,
   onNotifyChange,
   pinPost,
@@ -87,8 +102,15 @@ export default function PostSettings({
             <Dropdown
               label="Тег поста"
               variant="tags"
-              tags={tags}
-              onAddTag={onAddTag}
+              recentTags={recentTags}
+              searchResults={searchResults}
+              tagInputValue={tagInputValue}
+              tagsLoading={tagsLoading}
+              tagsSearching={tagsSearching}
+              onLoadRecentTags={onLoadRecentTags}
+              onSearchTags={onSearchTags}
+              onTagInputChange={onTagInputChange}
+              onSelectTag={onSelectTag}
             />
 
             <Dropdown label="Автоудаление поста" />

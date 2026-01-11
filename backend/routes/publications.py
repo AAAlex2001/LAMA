@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from typing import Optional, List
 from datetime import datetime
 
@@ -8,8 +9,10 @@ from backend.schemas.publications import (
     PublicationListResponse, PublicationStatus, ContentType,
     AIGenerateRequest, AIEditRequest,
     PublicationSeriesCreate, PublicationSeriesUpdate, PublicationSeriesResponse, CalendarEntry,
-    RescheduleRequest, EditPublishedRequest
+    RescheduleRequest, EditPublishedRequest,
+    TagCreate, TagResponse, TagListResponse,
 )
+from backend.models.publications import Tag, publication_tags
 from backend.services.publications import PublicationService
 from backend.database import get_db
 from backend.config import OPENAI_API_KEY
@@ -342,4 +345,109 @@ async def edit_content_with_ai(
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ============ Tags ============
+
+
+@router.get("/tags/", response_model=TagListResponse)
+async def list_tags(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Получить список тегов.
+    Сортировка по частоте использования (популярные первыми).
+    """
+    count_query = (
+        select(Tag.id, func.count(publication_tags.c.publication_id).label('usage_count'))
+        .outerjoin(publication_tags, Tag.id == publication_tags.c.tag_id)
+        .group_by(Tag.id)
+        .order_by(func.count(publication_tags.c.publication_id).desc(), Tag.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    
+    result = await db.execute(count_query)
+    tag_ids_with_counts = result.all()
+    
+    if not tag_ids_with_counts:
+        return TagListResponse(items=[], total=0)
+    
+    tag_ids = [row[0] for row in tag_ids_with_counts]
+    
+    tags_query = select(Tag).where(Tag.id.in_(tag_ids))
+    tags_result = await db.execute(tags_query)
+    tags_map = {tag.id: tag for tag in tags_result.scalars().all()}
+    
+    tags = [tags_map[tag_id] for tag_id in tag_ids if tag_id in tags_map]
+    
+    total_query = select(func.count(Tag.id))
+    total_result = await db.execute(total_query)
+    total = total_result.scalar() or 0
+    
+    return TagListResponse(items=tags, total=total)
+
+
+@router.get("/tags/search", response_model=TagListResponse)
+async def search_tags(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Поиск тегов по имени"""
+    query = (
+        select(Tag)
+        .where(Tag.name.ilike(f"%{q}%"))
+        .order_by(Tag.name)
+        .limit(limit)
+    )
+    
+    result = await db.execute(query)
+    tags = list(result.scalars().all())
+    
+    return TagListResponse(items=tags, total=len(tags))
+
+
+@router.post("/tags/", response_model=TagResponse, status_code=201)
+async def create_tag(
+    data: TagCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Создать новый тег"""
+    existing_query = select(Tag).where(Tag.name == data.name)
+    existing_result = await db.execute(existing_query)
+    existing_tag = existing_result.scalar_one_or_none()
+    
+    if existing_tag:
+        return existing_tag
+    
+    tag = Tag(name=data.name)
+    db.add(tag)
+    await db.commit()
+    await db.refresh(tag)
+    
+    return tag
+
+
+@router.delete("/tags/{tag_id}", status_code=204)
+async def delete_tag(
+    tag_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Удалить тег"""
+    query = select(Tag).where(Tag.id == tag_id)
+    result = await db.execute(query)
+    tag = result.scalar_one_or_none()
+    
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    
+    await db.delete(tag)
+    await db.commit()
 

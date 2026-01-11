@@ -2,8 +2,8 @@
 
 import { useReducer, useCallback, useMemo } from 'react';
 import { useChannels } from '@/stores/channels';
+import { useTags } from '@/stores/tags';
 import {
-  type Tag,
   type ChannelOption,
   type PostSettingsData,
   initialPostSettingsState,
@@ -23,6 +23,9 @@ export function usePostSettings() {
     addChannel,
     toggleChannelSelected,
   } = useChannels();
+
+  // Подключаем store тегов
+  const tagsStore = useTags();
 
   // Преобразуем каналы в формат для Dropdown
   const channelOptions: ChannelOption[] = useMemo(
@@ -45,9 +48,9 @@ export function usePostSettings() {
       channelIds: selectedChannelIds,
       notifySubscribers: state.notifySubscribers,
       pinPost: state.pinPost,
-      tags: state.tags,
+      tagName: tagsStore.tagInputValue.trim() || null,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, state.tags]);
+  }, [channels, state.notifySubscribers, state.pinPost, tagsStore.tagInputValue]);
 
   // Обработчик изменения канала
   const handleChannelChange = useCallback(
@@ -81,21 +84,6 @@ export function usePostSettings() {
     dispatch({ type: 'SET_SHOW_CREATE_CHANNEL', payload: false });
   }, []);
 
-  // Добавить тег
-  const handleAddTag = useCallback((name: string, color: string) => {
-    const newTag: Tag = {
-      id: String(Date.now()),
-      label: name,
-      color,
-    };
-    dispatch({ type: 'ADD_TAG', payload: newTag });
-  }, []);
-
-  // Удалить тег
-  const handleRemoveTag = useCallback((tagId: string) => {
-    dispatch({ type: 'REMOVE_TAG', payload: tagId });
-  }, []);
-
   // Toggle уведомления
   const handleNotifyChange = useCallback((checked: boolean) => {
     dispatch({ type: 'SET_NOTIFY_SUBSCRIBERS', payload: checked });
@@ -109,11 +97,11 @@ export function usePostSettings() {
   // Сброс настроек
   const resetSettings = useCallback(() => {
     dispatch({ type: 'RESET' });
-  }, []);
+    tagsStore.reset();
+  }, [tagsStore]);
 
   return {
     // State
-    tags: state.tags,
     notifySubscribers: state.notifySubscribers,
     pinPost: state.pinPost,
     showCreateChannel: state.showCreateChannel,
@@ -125,14 +113,24 @@ export function usePostSettings() {
     selectedCount,
     totalChannels: channels.length,
 
+    // Tags (проброс из tags store)
+    recentTags: tagsStore.recentTags,
+    tagsLoading: tagsStore.loading,
+    tagsSearching: tagsStore.searching,
+    searchResults: tagsStore.searchResults,
+    tagInputValue: tagsStore.tagInputValue,
+    loadRecentTags: tagsStore.loadRecentTags,
+    searchTags: tagsStore.searchTags,
+    setTagInputValue: tagsStore.setTagInputValue,
+    selectTag: tagsStore.selectTag,
+    clearSearch: tagsStore.clearSearch,
+
     // Actions
     fetchChannels,
     handleChannelChange,
     handleAddChannel,
     openCreateChannel,
     closeCreateChannel,
-    handleAddTag,
-    handleRemoveTag,
     handleNotifyChange,
     handlePinChange,
     resetSettings,

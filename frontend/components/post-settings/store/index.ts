@@ -4,7 +4,6 @@ export type { PostSettingsStore } from './usePostSettings';
 
 // Types
 export type {
-  Tag,
   ChannelOption,
   PostSettingsData,
   PostSettingsState,

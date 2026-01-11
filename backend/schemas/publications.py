@@ -61,6 +61,11 @@ class TagResponse(TagBase):
         from_attributes = True
 
 
+class TagListResponse(BaseModel):
+    items: List[TagResponse]
+    total: int
+
+
 class ChannelResponse(BaseModel):
     """Минимальная схема канала для отображения в публикациях"""
     id: int

@@ -113,8 +113,15 @@ export default function CreatePostPage() {
             onChannelChange={postSettings.handleChannelChange}
             onAddChannelClick={postSettings.openCreateChannel}
             // Tags
-            tags={postSettings.tags}
-            onAddTag={postSettings.handleAddTag}
+            recentTags={postSettings.recentTags}
+            searchResults={postSettings.searchResults}
+            tagInputValue={postSettings.tagInputValue}
+            tagsLoading={postSettings.tagsLoading}
+            tagsSearching={postSettings.tagsSearching}
+            onLoadRecentTags={postSettings.loadRecentTags}
+            onSearchTags={postSettings.searchTags}
+            onTagInputChange={postSettings.setTagInputValue}
+            onSelectTag={postSettings.selectTag}
             // Toggles
             notifySubscribers={postSettings.notifySubscribers}
             onNotifyChange={postSettings.handleNotifyChange}
