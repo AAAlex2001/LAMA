@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
+import { usePostSettings } from '@/components/post-settings/store';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -19,28 +20,12 @@ import { handlePublishNow, handleSaveDraft } from './store/actions';
 
 const MAX_CHARS = 4096;
 
-interface Channel {
-  id: string;
-  name: string;
-  selected: boolean;
-}
-
-interface PostSettings {
-  channels: Channel[];
-  notifySubscribers: boolean;
-  pinPost: boolean;
-}
-
 export default function CreatePostPage() {
   const [text, setText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-  const [postSettings, setPostSettings] = useState<PostSettings>({
-    channels: [],
-    notifySubscribers: false,
-    pinPost: false,
-  });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const postSettings = usePostSettings();
 
   const charCount = text.length;
 
@@ -62,7 +47,7 @@ export default function CreatePostPage() {
     try {
       const result = await handlePublishNow(
         { text },
-        postSettings
+        postSettings.getSettingsData()
       );
 
       if (result.success) {
@@ -86,7 +71,7 @@ export default function CreatePostPage() {
     try {
       const result = await handleSaveDraft(
         { text },
-        postSettings
+        postSettings.getSettingsData()
       );
 
       if (result.success) {
@@ -118,10 +103,31 @@ export default function CreatePostPage() {
         {showSettings && (
           <PostSettings 
             className={styles.settingsPanel}
-            onSettingsChange={setPostSettings}
+            // Channels
+            channelOptions={postSettings.channelOptions}
+            channelsLoading={postSettings.channelsLoading}
+            channelsSyncing={postSettings.channelsSyncing}
+            selectedCount={postSettings.selectedCount}
+            totalChannels={postSettings.totalChannels}
+            onFetchChannels={postSettings.fetchChannels}
+            onChannelChange={postSettings.handleChannelChange}
+            onAddChannelClick={postSettings.openCreateChannel}
+            // Tags
+            tags={postSettings.tags}
+            onAddTag={postSettings.handleAddTag}
+            // Toggles
+            notifySubscribers={postSettings.notifySubscribers}
+            onNotifyChange={postSettings.handleNotifyChange}
+            pinPost={postSettings.pinPost}
+            onPinChange={postSettings.handlePinChange}
+            // Modal
+            showCreateChannel={postSettings.showCreateChannel}
+            onAddChannel={postSettings.handleAddChannel}
+            onCloseCreateChannel={postSettings.closeCreateChannel}
+            // Actions
+            onReset={postSettings.resetSettings}
           />
         )}
-
         <div className={styles.content}>
           <div className={styles.textareaWrapper}>
             <div className={styles.textareaInner}>
@@ -151,7 +157,6 @@ export default function CreatePostPage() {
               </div>
             </div>
           </div>
-
           <div className={styles.actionsMenu}>
             <div className={styles.actionsRow}>
               <Button
@@ -195,11 +200,8 @@ export default function CreatePostPage() {
               />
             </div>
           </div>
-
-          {/* Media Section */}
           <div className={styles.mediaSection}>
             <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
-            {/* Mobile: Button */}
             <div className={styles.mediaMobile}>
               <Button
                 text="Прикрепить файл"
@@ -209,7 +211,6 @@ export default function CreatePostPage() {
                 fullWidth
               />
             </div>
-            {/* Desktop: Drag and Drop */}
             <div className={styles.mediaDropzone}>
               <span className={styles.dropzoneText}>
                 Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
@@ -221,8 +222,6 @@ export default function CreatePostPage() {
             </div>
           </div>
         </div>
-
-        {/* Footer Buttons */}
         <div className={styles.footerButtons}>
           <Button
             text="Сохранить в черновики"
@@ -247,7 +246,6 @@ export default function CreatePostPage() {
         </div>
       </div>
 
-      {/* Add Series Button (outside editor) */}
       <Button
         text="Добавить серию постов"
         showArrow={false}
