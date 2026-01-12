@@ -320,7 +320,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseEnter={() => setHoveredButton('emoji')}
             onMouseLeave={() => setHoveredButton(null)}
           >
-            <EmojiIcon width={21} height={21} color={getIconColor('emoji')} />
+            <EmojiIcon width={21} height={21} color={showEmojiPicker ? '#3B82F6' : getIconColor('emoji')} />
           </button>
           {showEmojiPicker && (
             <div className={styles.emojiPickerWrapper}>
