@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useImperativeHandle, forwardRef } from 'react';
+import { useEffect, useImperativeHandle, forwardRef, useState, useCallback } from 'react';
 import styles from './rich-text-editor.module.scss';
 import { useRichTextEditor } from './store';
+import AiInputBar from '@/components/ai-input-bar';
 import {
   AiEditIcon,
   EmojiIcon,
@@ -36,6 +37,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   placeholder = 'Напишите текст публикации...',
   maxLength = MAX_CHARS,
 }, ref) => {
+  const [showAiInput, setShowAiInput] = useState(false);
+  const [selectedText, setSelectedText] = useState('');
+  
   const {
     state,
     editorRef,
@@ -48,6 +52,95 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     getIconColor,
     reset,
   } = useRichTextEditor(maxLength);
+
+  const getSelectedText = useCallback(() => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      return selection.toString();
+    }
+    return '';
+  }, []);
+
+  const handleAiButtonClick = () => {
+    const text = getSelectedText();
+    if (text) {
+      setSelectedText(text);
+      setShowAiInput(true);
+    } else {
+      setShowAiInput(!showAiInput);
+    }
+  };
+
+  const handleAiSubmit = async (prompt: string) => {
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('lamaplanner_access_token') : null;
+      
+      if (!token) {
+        console.error('No auth token found');
+        return;
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/publications/ai/edit-text-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          text: selectedText || value,
+          instruction: prompt,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('AI request failed');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let result = '';
+
+      if (!reader || !editorRef.current) return;
+      
+      while (true) {
+        const { done, value: chunk } = await reader.read();
+        if (done) break;
+
+        const text = decoder.decode(chunk);
+        const lines = text.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6);
+            if (data === '[DONE]') break;
+            if (data.startsWith('[ERROR]')) {
+              throw new Error(data.slice(8));
+            }
+            result += data;
+          }
+        }
+        
+        // Обновляем innerHTML напрямую
+        if (editorRef.current) {
+          editorRef.current.innerHTML = result;
+        }
+      }
+      
+      // Вызываем handleInput для обновления счетчика и onChange
+      if (editorRef.current) {
+        const html = handleInput();
+        if (html !== undefined) {
+          onChange(html);
+        }
+      }
+      
+      setShowAiInput(false);
+      setSelectedText('');
+    } catch (error) {
+      console.error('AI edit error:', error);
+    }
+  };
 
   useImperativeHandle(ref, () => ({
     reset: () => {
@@ -81,16 +174,25 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
         />
         {state.isEmpty && <div className={styles.placeholder}>{placeholder}</div>}
       </div>
+      
+      {showAiInput && (
+        <AiInputBar 
+          onSubmit={handleAiSubmit}
+          className={styles.aiInputBar}
+        />
+      )}
+      
       <div className={styles.textareaFooter}>
         <div className={styles.textareaTools}>
           <button 
-            className={styles.toolButton} 
+            className={`${styles.toolButton} ${showAiInput ? styles.active : ''}`} 
             type="button" 
             aria-label="AI редактирование"
+            onClick={handleAiButtonClick}
             onMouseEnter={() => setHoveredButton('ai')}
             onMouseLeave={() => setHoveredButton(null)}
           >
-            <AiEditIcon width={21} height={21} color={getIconColor('ai')} />
+            <AiEditIcon width={21} height={21} color={showAiInput ? '#3B82F6' : getIconColor('ai')} />
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 

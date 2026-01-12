@@ -122,7 +122,11 @@
   &:hover {
     transform: scale(1.05);
   }
+}
 
+.aiInputBar {
+  width: 100%;
+  margin-top: 8px;
 }
 
 .desktopOnly {

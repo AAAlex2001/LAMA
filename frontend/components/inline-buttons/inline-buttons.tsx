@@ -33,7 +33,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const addColumn = () => {
     if (rows.length === 0) {
-      // Если рядов нет - создаём первый ряд с одной кнопкой
       onChange([{
         id: `row-${Date.now()}`,
         buttons: [{
@@ -44,14 +43,10 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
         }],
       }]);
     } else {
-      // Находим максимальное количество кнопок в рядах
       const maxButtons = Math.max(...rows.map(r => r.buttons.length));
-      
-      // Находим первый ряд, в котором кнопок меньше максимума
       const rowToAddIndex = rows.findIndex(r => r.buttons.length < maxButtons);
       
       if (rowToAddIndex !== -1) {
-        // Добавляем кнопку в этот ряд
         const newRows = rows.map((row, idx) => {
           if (idx === rowToAddIndex) {
             return {
@@ -68,7 +63,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
         });
         onChange(newRows);
       } else {
-        // Все ряды заполнены одинаково - добавляем в первый ряд
         const newRows = rows.map((row, idx) => {
           if (idx === 0) {
             return {
@@ -89,7 +83,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
   };
 
   const addRow = () => {
-    // Добавляем новый ряд с одной кнопкой
     onChange([...rows, {
       id: `row-${Date.now()}`,
       buttons: [{
@@ -129,11 +122,10 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
         };
       }
       return row;
-    }).filter(row => row.buttons.length > 0); // Удаляем пустые ряды
+    }).filter(row => row.buttons.length > 0);
     onChange(newRows);
   };
 
-  // Собираем все кнопки в плоский список для редакторов и нумерации
   const allButtons: { rowIndex: number; btnIndex: number; button: InlineButton; number: number }[] = [];
   let buttonCounter = 1;
   rows.forEach((row, rowIndex) => {
@@ -143,7 +135,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
     });
   });
 
-  // Получить номер кнопки по позиции
   const getButtonNumber = (rowIndex: number, btnIndex: number) => {
     const found = allButtons.find(b => b.rowIndex === rowIndex && b.btnIndex === btnIndex);
     return found?.number || 1;
@@ -151,7 +142,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
 
   return (
     <div className={`${styles.container} ${className || ''}`}>
-      {/* Визуальная таблица кнопок */}
       <div className={styles.tableContainer}>
         <div className={styles.tableTop}>
           <button type="button" className={styles.addColumnButton} onClick={addColumn}>
@@ -193,7 +183,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
         </div>
       </div>
 
-      {/* Редакторы для каждой кнопки */}
       <div className={styles.editors}>
         {allButtons.map(({ rowIndex, btnIndex, button }) => {
           const btnNumber = getButtonNumber(rowIndex, btnIndex);

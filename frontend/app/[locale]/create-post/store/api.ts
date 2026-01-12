@@ -30,13 +30,9 @@ async function fetchApi<T>(
     'Content-Type': 'application/json',
   };
 
-  // Добавляем токен авторизации если есть
-  // TODO: временно захардкожен для тестирования
-  const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2ODI1MTI1MywiaWF0IjoxNzY4MTY0ODUzLCJqdGkiOiJMXy1ubTJtUjBUTDlFRHY0aWJXNmRRIn0.O_uin6IoStQQUUcwDmMLzeWL1aLzI-V9wncq10fy-08';
-  
-  // const token = typeof window !== 'undefined' 
-  //   ? localStorage.getItem('lamaplanner_access_token') 
-  //   : null;
+  const token = typeof window !== 'undefined' 
+    ? localStorage.getItem('lamaplanner_access_token') 
+    : null;
     
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;

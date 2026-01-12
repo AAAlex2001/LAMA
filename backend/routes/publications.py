@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional, List
@@ -7,7 +8,7 @@ from datetime import datetime
 from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate, PublicationResponse,
     PublicationListResponse, PublicationStatus, ContentType,
-    AIGenerateRequest, AIEditRequest,
+    AIGenerateRequest, AIEditRequest, AIEditTextRequest, AIEditTextResponse,
     PublicationSeriesCreate, PublicationSeriesUpdate, PublicationSeriesResponse, CalendarEntry,
     RescheduleRequest, EditPublishedRequest,
     TagCreate, TagResponse, TagListResponse,
@@ -169,6 +170,45 @@ async def generate_content_with_ai(
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/ai/edit-text", response_model=AIEditTextResponse)
+async def edit_text_with_ai(
+    request: AIEditTextRequest,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Редактировать текст с помощью AI без привязки к публикации"""
+    try:
+        result = await service.edit_text_with_ai(request.text, request.instruction)
+        return AIEditTextResponse(result=result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/ai/edit-text-stream")
+async def edit_text_with_ai_stream(
+    request: AIEditTextRequest,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Редактировать текст с помощью AI со streaming"""
+    async def generate():
+        try:
+            async for chunk in service.edit_text_with_ai_stream(request.text, request.instruction):
+                yield f"data: {chunk}\n\n"
+        except Exception as e:
+            yield f"data: [ERROR] {str(e)}\n\n"
+        yield "data: [DONE]\n\n"
+    
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 @router.post("/series", response_model=PublicationSeriesResponse, status_code=201)

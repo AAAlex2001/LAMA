@@ -133,6 +133,21 @@ class PublicationService:
 
         return publication
 
+    async def edit_text_with_ai(self, text: str, instruction: str) -> str:
+        """Редактировать текст с помощью AI без привязки к публикации"""
+        return await self.ai_service.edit_content(
+            original_text=text,
+            instruction=instruction
+        )
+
+    async def edit_text_with_ai_stream(self, text: str, instruction: str):
+        """Редактировать текст с помощью AI со streaming"""
+        async for chunk in self.ai_service.edit_content_stream(
+            original_text=text,
+            instruction=instruction
+        ):
+            yield chunk
+
     # ========================================================================
     # Публикация в Telegram
     # ========================================================================

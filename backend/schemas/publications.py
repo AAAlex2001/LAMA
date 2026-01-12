@@ -291,6 +291,15 @@ class AIEditRequest(BaseModel):
     instruction: str = Field(..., min_length=10, max_length=500)
 
 
+class AIEditTextRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=4096)
+    instruction: str = Field(..., min_length=1, max_length=500)
+
+
+class AIEditTextResponse(BaseModel):
+    result: str
+
+
 class EditPublishedRequest(BaseModel):
     """Параметры изменения уже опубликованного сообщения в Telegram."""
 

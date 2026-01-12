@@ -80,3 +80,47 @@ class AIService:
 
         result = response.json()
         return result['choices'][0]['message']['content']
+
+    async def edit_content_stream(self, original_text: str, instruction: str):
+        """Редактировать контент с помощью AI со streaming"""
+        if not self.api_key:
+            raise ValueError("AI API key not configured")
+
+        async with self.http_client.stream(
+            "POST",
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "deepseek-chat",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "You are a professional content editor for Telegram channels. Edit the content according to the instruction. Write in Russian language."
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Original text: {original_text}\n\nInstruction: {instruction}\n\nProvide only the edited text."
+                    }
+                ],
+                "temperature": 0.7,
+                "stream": True
+            }
+        ) as response:
+            if response.status_code != 200:
+                raise ValueError(f"DeepSeek API error: {await response.aread()}")
+            
+            async for line in response.aiter_lines():
+                if line.startswith("data: "):
+                    data = line[6:]
+                    if data == "[DONE]":
+                        break
+                    try:
+                        import json
+                        chunk = json.loads(data)
+                        if chunk['choices'][0]['delta'].get('content'):
+                            yield chunk['choices'][0]['delta']['content']
+                    except:
+                        continue

@@ -13,6 +13,10 @@ interface InputProps {
   error?: string | null;
   disabled?: boolean;
   className?: string;
+  icon?: React.ReactNode;
+  onIconClick?: () => void;
+  iconDisabled?: boolean;
+  variant?: 'default' | 'white';
 }
 
 export default function Input({
@@ -24,6 +28,10 @@ export default function Input({
   error,
   disabled = false,
   className,
+  icon,
+  onIconClick,
+  iconDisabled = false,
+  variant = 'default',
 }: InputProps) {
   const id = useId();
 
@@ -45,8 +53,20 @@ export default function Input({
           className={classNames(styles.input, {
             [styles.error]: error,
             [styles.disabled]: disabled,
+            [styles.withIcon]: icon,
+            [styles.white]: variant === 'white',
           })}
         />
+        {icon && (
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={onIconClick}
+            disabled={iconDisabled || disabled}
+          >
+            {icon}
+          </button>
+        )}
       </div>
       {error && <span className={styles.errorMessage}>{error}</span>}
     </div>
