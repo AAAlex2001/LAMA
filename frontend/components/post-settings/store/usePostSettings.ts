@@ -7,6 +7,7 @@ import {
   type ChannelOption,
   type PostSettingsData,
   type RepeatOption,
+  type AutoDeleteOption,
   initialPostSettingsState,
   postSettingsReducer,
 } from './types';
@@ -51,8 +52,11 @@ export function usePostSettings() {
       pinPost: state.pinPost,
       tagName: tagsStore.tagInputValue.trim() || null,
       repeatInterval: state.repeatInterval,
+      autoDeleteInterval: state.autoDeleteInterval,
+      autoDeleteCustomDays: state.autoDeleteCustomDays,
+      autoDeleteCustomHours: state.autoDeleteCustomHours,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, state.repeatInterval, tagsStore.tagInputValue]);
+  }, [channels, state.notifySubscribers, state.pinPost, state.repeatInterval, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
 
   // Обработчик изменения канала
   const handleChannelChange = useCallback(
@@ -100,6 +104,18 @@ export function usePostSettings() {
     dispatch({ type: 'SET_REPEAT_INTERVAL', payload: value });
   }, []);
 
+  const handleAutoDeleteChange = useCallback((value: AutoDeleteOption) => {
+    dispatch({ type: 'SET_AUTO_DELETE_INTERVAL', payload: value });
+  }, []);
+
+  const handleAutoDeleteCustomDaysChange = useCallback((value: number) => {
+    dispatch({ type: 'SET_AUTO_DELETE_CUSTOM_DAYS', payload: value });
+  }, []);
+
+  const handleAutoDeleteCustomHoursChange = useCallback((value: number) => {
+    dispatch({ type: 'SET_AUTO_DELETE_CUSTOM_HOURS', payload: value });
+  }, []);
+
   // Сброс настроек
   const resetSettings = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -112,6 +128,9 @@ export function usePostSettings() {
     pinPost: state.pinPost,
     showCreateChannel: state.showCreateChannel,
     repeatInterval: state.repeatInterval,
+    autoDeleteInterval: state.autoDeleteInterval,
+    autoDeleteCustomDays: state.autoDeleteCustomDays,
+    autoDeleteCustomHours: state.autoDeleteCustomHours,
 
     // Channels
     channelOptions,
@@ -141,6 +160,9 @@ export function usePostSettings() {
     handleNotifyChange,
     handlePinChange,
     handleRepeatChange,
+    handleAutoDeleteChange,
+    handleAutoDeleteCustomDaysChange,
+    handleAutoDeleteCustomHoursChange,
     resetSettings,
     getSettingsData,
   };

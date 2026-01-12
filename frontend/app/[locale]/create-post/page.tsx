@@ -282,6 +282,12 @@ export default function CreatePostPage() {
             onSelectTag={postSettings.selectTag}
             repeatInterval={postSettings.repeatInterval}
             onRepeatChange={postSettings.handleRepeatChange}
+            autoDeleteInterval={postSettings.autoDeleteInterval}
+            onAutoDeleteChange={postSettings.handleAutoDeleteChange}
+            autoDeleteCustomDays={postSettings.autoDeleteCustomDays}
+            autoDeleteCustomHours={postSettings.autoDeleteCustomHours}
+            onAutoDeleteCustomDaysChange={postSettings.handleAutoDeleteCustomDaysChange}
+            onAutoDeleteCustomHoursChange={postSettings.handleAutoDeleteCustomHoursChange}
             notifySubscribers={postSettings.notifySubscribers}
             onNotifyChange={postSettings.handleNotifyChange}
             pinPost={postSettings.pinPost}
@@ -318,6 +324,12 @@ export default function CreatePostPage() {
               onSelectTag={postSettings.selectTag}
               repeatInterval={postSettings.repeatInterval}
               onRepeatChange={postSettings.handleRepeatChange}
+              autoDeleteInterval={postSettings.autoDeleteInterval}
+              onAutoDeleteChange={postSettings.handleAutoDeleteChange}
+              autoDeleteCustomDays={postSettings.autoDeleteCustomDays}
+              autoDeleteCustomHours={postSettings.autoDeleteCustomHours}
+              onAutoDeleteCustomDaysChange={postSettings.handleAutoDeleteCustomDaysChange}
+              onAutoDeleteCustomHoursChange={postSettings.handleAutoDeleteCustomHoursChange}
               notifySubscribers={postSettings.notifySubscribers}
               onNotifyChange={postSettings.handleNotifyChange}
               pinPost={postSettings.pinPost}

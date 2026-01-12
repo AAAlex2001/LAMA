@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './post-settings.module.scss';
-import Dropdown, { type RepeatOption } from '@/components/dropdown/dropdown';
+import Dropdown, { type RepeatOption, type AutoDeleteOption } from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CreateChannel from '@/components/create-channel/create-channel';
@@ -35,6 +35,14 @@ interface PostSettingsProps {
   // Repeat
   repeatInterval: RepeatOption;
   onRepeatChange: (value: RepeatOption) => void;
+  
+  // Auto-delete
+  autoDeleteInterval: AutoDeleteOption;
+  onAutoDeleteChange: (value: AutoDeleteOption) => void;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
+  onAutoDeleteCustomDaysChange: (value: number) => void;
+  onAutoDeleteCustomHoursChange: (value: number) => void;
   
   // Toggles
   notifySubscribers: boolean;
@@ -73,6 +81,12 @@ export default function PostSettings({
   onSelectTag,
   repeatInterval,
   onRepeatChange,
+  autoDeleteInterval,
+  onAutoDeleteChange,
+  autoDeleteCustomDays,
+  autoDeleteCustomHours,
+  onAutoDeleteCustomDaysChange,
+  onAutoDeleteCustomHoursChange,
   notifySubscribers,
   onNotifyChange,
   pinPost,
@@ -119,7 +133,16 @@ export default function PostSettings({
               onSelectTag={onSelectTag}
             />
 
-            <Dropdown label="Автоудаление поста" />
+            <Dropdown
+              label="Автоудаление поста"
+              variant="auto-delete"
+              autoDeleteValue={autoDeleteInterval}
+              onAutoDeleteChange={onAutoDeleteChange}
+              autoDeleteCustomDays={autoDeleteCustomDays}
+              autoDeleteCustomHours={autoDeleteCustomHours}
+              onAutoDeleteCustomDaysChange={onAutoDeleteCustomDaysChange}
+              onAutoDeleteCustomHoursChange={onAutoDeleteCustomHoursChange}
+            />
 
             <Dropdown
               label="Повтор"

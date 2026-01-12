@@ -3,6 +3,7 @@
 export type ContentType = 'text' | 'text_with_media' | 'image' | 'video' | 'audio' | 'document' | 'link' | 'poll' | 'quiz';
 export type PublicationStatus = 'draft' | 'scheduled' | 'published' | 'partial_success' | 'failed' | 'deleted';
 export type RepeatInterval = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type AutoDeleteInterval = 'never' | '24h' | '48h' | '72h' | 'custom';
 
 export interface InlineButton {
   text: string;
@@ -45,6 +46,8 @@ export interface CreatePostRequest {
   status?: PublicationStatus;
   repeat_interval?: RepeatInterval;
   repeat_custom_days?: number;
+  auto_delete_interval?: AutoDeleteInterval;
+  auto_delete_custom_hours?: number;
 }
 
 export interface CreatePostResponse {

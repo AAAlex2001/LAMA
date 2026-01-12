@@ -1,0 +1,88 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 11px;
+}
+
+.labelsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 60px;
+  gap: 45px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  text-align: center;
+  color: #D1D1D6;
+  flex: 1;
+}
+
+.valuesRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 60px;
+  gap: 45px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.inactiveValue {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #D1D1D6;
+  flex: 1;
+}
+
+.activeRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0 60px;
+  gap: 45px;
+  width: 100%;
+  background: #EBF5FF;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.activeValueWrapper {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+}
+
+.activeValue {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #454545;
+}

@@ -7,6 +7,7 @@ export interface ChannelOption {
 }
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 
 export interface PostSettingsData {
   channelIds: number[];
@@ -14,6 +15,9 @@ export interface PostSettingsData {
   pinPost: boolean;
   tagName: string | null;
   repeatInterval: RepeatOption;
+  autoDeleteInterval: AutoDeleteOption;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
 }
 
 export interface PostSettingsState {
@@ -21,6 +25,9 @@ export interface PostSettingsState {
   pinPost: boolean;
   showCreateChannel: boolean;
   repeatInterval: RepeatOption;
+  autoDeleteInterval: AutoDeleteOption;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
 }
 
 export type PostSettingsAction =
@@ -28,6 +35,9 @@ export type PostSettingsAction =
   | { type: 'SET_PIN_POST'; payload: boolean }
   | { type: 'SET_SHOW_CREATE_CHANNEL'; payload: boolean }
   | { type: 'SET_REPEAT_INTERVAL'; payload: RepeatOption }
+  | { type: 'SET_AUTO_DELETE_INTERVAL'; payload: AutoDeleteOption }
+  | { type: 'SET_AUTO_DELETE_CUSTOM_DAYS'; payload: number }
+  | { type: 'SET_AUTO_DELETE_CUSTOM_HOURS'; payload: number }
   | { type: 'RESET' };
 
 export const initialPostSettingsState: PostSettingsState = {
@@ -35,6 +45,9 @@ export const initialPostSettingsState: PostSettingsState = {
   pinPost: false,
   showCreateChannel: false,
   repeatInterval: 'never',
+  autoDeleteInterval: 'never',
+  autoDeleteCustomDays: 0,
+  autoDeleteCustomHours: 0,
 };
 
 export function postSettingsReducer(
@@ -50,6 +63,12 @@ export function postSettingsReducer(
       return { ...state, showCreateChannel: action.payload };
     case 'SET_REPEAT_INTERVAL':
       return { ...state, repeatInterval: action.payload };
+    case 'SET_AUTO_DELETE_INTERVAL':
+      return { ...state, autoDeleteInterval: action.payload };
+    case 'SET_AUTO_DELETE_CUSTOM_DAYS':
+      return { ...state, autoDeleteCustomDays: action.payload };
+    case 'SET_AUTO_DELETE_CUSTOM_HOURS':
+      return { ...state, autoDeleteCustomHours: action.payload };
     case 'RESET':
       return initialPostSettingsState;
     default:

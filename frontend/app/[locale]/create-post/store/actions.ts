@@ -1,4 +1,4 @@
-import type { CreatePostRequest, RepeatInterval } from './types';
+import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval } from './types';
 import { createAndPublishPost, saveDraft } from './api';
 
 interface PostSettingsFromUI {
@@ -7,6 +7,33 @@ interface PostSettingsFromUI {
   pinPost: boolean;
   tagName: string | null;
   repeatInterval: RepeatInterval;
+  autoDeleteInterval: AutoDeleteInterval;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
+}
+
+// Конвертация AutoDeleteInterval в секунды
+function convertAutoDeleteToSeconds(
+  interval: AutoDeleteInterval, 
+  customDays: number = 0, 
+  customHours: number = 0
+): number | undefined {
+  switch (interval) {
+    case 'never':
+      return undefined;
+    case '24h':
+      return 24 * 60 * 60; // 86400 секунд
+    case '48h':
+      return 48 * 60 * 60; // 172800 секунд
+    case '72h':
+      return 72 * 60 * 60; // 259200 секунд
+    case 'custom':
+      // Преобразуем дни и часы в секунды
+      const totalSeconds = (customDays * 24 * 60 * 60) + (customHours * 60 * 60);
+      return totalSeconds > 0 ? totalSeconds : undefined;
+    default:
+      return undefined;
+  }
 }
 
 export async function handlePublishNow(
@@ -22,6 +49,12 @@ export async function handlePublishNow(
       throw new Error('Выберите хотя бы один канал для публикации');
     }
 
+    const autoDeleteSeconds = convertAutoDeleteToSeconds(
+      settings.autoDeleteInterval,
+      settings.autoDeleteCustomDays,
+      settings.autoDeleteCustomHours
+    );
+
     const request: CreatePostRequest = {
       content_type: 'text',
       text_content: content.text,
@@ -30,6 +63,7 @@ export async function handlePublishNow(
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       repeat_interval: settings.repeatInterval,
+      auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
     const response = await createAndPublishPost(request);
@@ -74,6 +108,7 @@ export async function handleSaveDraft(
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       repeat_interval: settings.repeatInterval,
+      auto_delete_interval: settings.autoDeleteInterval,
     };
 
     const response = await saveDraft(request);
