@@ -1,0 +1,209 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Таблица кнопок */
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+}
+
+.tableTop {
+  display: flex;
+  justify-content: flex-end;
+  padding-left: 76px;
+  margin-bottom: 10px;
+}
+
+.addColumnButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  gap: 4px;
+  height: 37px;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.tableBody {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tableLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.addRowButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  gap: 4px;
+  width: 66px;
+  height: 37px;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.buttonsGrid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.buttonRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.buttonCell {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 10px;
+  min-width: 100px;
+  height: 37px;
+  background: #FFFFFF;
+  border: 1px solid #CED2D6;
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+}
+
+/* Редакторы кнопок */
+.editors {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+}
+
+.editorHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+}
+
+.buttonLabel {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  white-space: nowrap;
+}
+
+.typeDropdown {
+  min-width: auto;
+}
+
+.editorFields {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+  }
+}
+
+.fieldInput {
+  flex: 1;
+  width: 100%;
+
+  input {
+    width: 100%;
+    height: 37px;
+    padding: 14px 16px;
+    background: #F8FAFF;
+    border: 1px solid rgba(1, 42, 249, 0.1);
+    box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 17px;
+    color: #383F45;
+
+    &::placeholder {
+      color: #8C8C8C;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: rgba(1, 42, 249, 0.3);
+    }
+  }
+}
+

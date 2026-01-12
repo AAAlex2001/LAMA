@@ -19,4 +19,6 @@ export { default as CodeIcon } from './code-icon';
 export { default as BlurIcon } from './blur-icon';
 export { default as StrikethroughIcon } from './strikethrough-icon';
 export { default as UnderlineIcon } from './underline-icon';
+export { default as PlusIcon } from './plus-icon';
+export { default as TrashIcon } from './trash-icon';
 

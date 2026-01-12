@@ -6,6 +6,7 @@ import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
 import { usePostSettings } from '@/components/post-settings/store';
 import RichTextEditor, { RichTextEditorRef } from '@/components/rich-text-editor';
+import InlineButtons, { ButtonRow } from '@/components/inline-buttons';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -20,11 +21,32 @@ import { handlePublishNow, handleSaveDraft } from './store/actions';
 export default function CreatePostPage() {
   const [text, setText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
+  const [showInlineButtons, setShowInlineButtons] = useState(false);
+  const [buttonRows, setButtonRows] = useState<ButtonRow[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const postSettings = usePostSettings();
   const editorRef = useRef<RichTextEditorRef>(null);
+
+  // Конвертируем buttonRows в формат InlineKeyboard для бекенда
+  const getInlineKeyboard = () => {
+    if (buttonRows.length === 0) return undefined;
+    
+    const buttons = buttonRows.map(row => 
+      row.buttons.map(btn => {
+        const button: any = { text: btn.text };
+        if (btn.type === 'url' && btn.url) {
+          button.url = btn.url;
+        } else if (btn.type === 'callback' && btn.callback_data) {
+          button.callback_data = btn.callback_data;
+        }
+        return button;
+      })
+    );
+
+    return { buttons };
+  };
 
   const onPublishNow = async () => {
     setIsPublishing(true);
@@ -32,7 +54,8 @@ export default function CreatePostPage() {
     try {
       const result = await handlePublishNow(
         { text },
-        postSettings.getSettingsData()
+        postSettings.getSettingsData(),
+        getInlineKeyboard()
       );
 
       if (result.success) {
@@ -40,6 +63,8 @@ export default function CreatePostPage() {
         // Сбрасываем редактор и все его состояние
         editorRef.current?.reset();
         postSettings.resetSettings();
+        setButtonRows([]);
+        setShowInlineButtons(false);
       } else {
         alert(`Ошибка: ${result.message}`);
         if (result.errors) {
@@ -59,7 +84,8 @@ export default function CreatePostPage() {
     try {
       const result = await handleSaveDraft(
         { text },
-        postSettings.getSettingsData()
+        postSettings.getSettingsData(),
+        getInlineKeyboard()
       );
 
       if (result.success) {
@@ -114,6 +140,22 @@ export default function CreatePostPage() {
                 showArrow={false}
                 icon={<InlineButtonIcon width={24} height={24} />}
                 className={styles.actionButton}
+                active={showInlineButtons}
+                onClick={() => {
+                  if (!showInlineButtons && buttonRows.length === 0) {
+                    // При первом открытии создаём одну кнопку
+                    setButtonRows([{
+                      id: `row-${Date.now()}`,
+                      buttons: [{
+                        id: `btn-${Date.now()}`,
+                        text: '',
+                        type: 'url',
+                        url: '',
+                      }],
+                    }]);
+                  }
+                  setShowInlineButtons(!showInlineButtons);
+                }}
               />
             </div>
             <div className={styles.actionsRow}>
@@ -142,6 +184,15 @@ export default function CreatePostPage() {
               />
             </div>
           </div>
+          
+          {showInlineButtons && (
+            <InlineButtons 
+              rows={buttonRows}
+              onChange={setButtonRows}
+              className={styles.inlineButtonsSection}
+            />
+          )}
+
           <div className={styles.mediaSection}>
             <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
             <div className={styles.mediaMobile}>

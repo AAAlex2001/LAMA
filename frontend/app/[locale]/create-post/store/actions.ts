@@ -1,4 +1,4 @@
-import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval } from './types';
+import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard } from './types';
 import { createAndPublishPost, saveDraft } from './api';
 
 interface PostSettingsFromUI {
@@ -41,7 +41,8 @@ function convertAutoDeleteToSeconds(
 
 export async function handlePublishNow(
   content: { text: string },
-  settings: PostSettingsFromUI
+  settings: PostSettingsFromUI,
+  inlineKeyboard?: InlineKeyboard
 ) {
   try {
     if (!content.text.trim()) {
@@ -74,6 +75,7 @@ export async function handlePublishNow(
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
+      inline_keyboard: inlineKeyboard,
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
@@ -109,7 +111,8 @@ export async function handlePublishNow(
 
 export async function handleSaveDraft(
   content: { text: string },
-  settings: PostSettingsFromUI
+  settings: PostSettingsFromUI,
+  inlineKeyboard?: InlineKeyboard
 ) {
   try {
     if (!content.text.trim()) {
@@ -130,6 +133,9 @@ export async function handleSaveDraft(
       formatted_content: formattedContent,
       media_blur: hasSpoiler,
       channel_ids: settings.channelIds,
+      pin_message: settings.pinPost,
+      status: 'draft',
+      inline_keyboard: inlineKeyboardttings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,

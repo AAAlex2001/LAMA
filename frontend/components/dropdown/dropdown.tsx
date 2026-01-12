@@ -27,6 +27,7 @@ interface ApiTag {
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
+export type ButtonTypeOption = 'url' | 'hidden_text' | 'callback';
 
 export const TAG_COLORS: TagColor[] = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'];
 
@@ -42,7 +43,7 @@ interface DropdownProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   className?: string;
-  variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete';
+  variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete' | 'button-type';
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
   tagInputValue?: string;
@@ -68,6 +69,8 @@ interface DropdownProps {
   onAutoDeleteCustomHoursChange?: (value: number) => void;
   onOpen?: () => void;
   loading?: boolean;
+  buttonTypeValue?: ButtonTypeOption;
+  onButtonTypeChange?: (value: ButtonTypeOption) => void;
 }
 
 export default function Dropdown({
@@ -108,6 +111,8 @@ export default function Dropdown({
   onAutoDeleteCustomHoursChange,
   onOpen,
   loading = false,
+  buttonTypeValue = 'url',
+  onButtonTypeChange,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -359,6 +364,27 @@ export default function Dropdown({
               maxDays={365}
             />
           )}
+        </div>
+      )}
+
+      {isOpen && variant === 'button-type' && (
+        <div className={styles.content}>
+          <div className={styles.repeatList}>
+            {([
+              { id: 'url', label: 'URL' },
+              { id: 'hidden_text', label: 'Скрытый текст' },
+              { id: 'callback', label: 'Callback' },
+            ] as { id: ButtonTypeOption; label: string }[]).map((option) => (
+              <div key={option.id} className={styles.repeatRow}>
+                <Checkbox
+                  variant="radio"
+                  checked={buttonTypeValue === option.id}
+                  onChange={() => onButtonTypeChange?.(option.id)}
+                />
+                <span className={styles.optionLabel}>{option.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
