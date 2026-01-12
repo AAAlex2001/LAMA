@@ -129,7 +129,7 @@ function saveTokens(accessToken: string, refreshToken?: string) {
   }
 }
 
-export function useRegister() {
+export function useRegister(locale: string = 'ru') {
   const [state, dispatch] = useReducer(reducer, initialState);
   const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
@@ -167,7 +167,7 @@ export function useRegister() {
           // Регистрация уже завершена - редирект в сервис
           dispatch({ type: "SET_STATUS", payload: "success" });
           setTimeout(() => {
-            router.push("/");
+            router.push(`/${locale}/create-post`);
           }, 1500);
         } else {
           // Регистрация не завершена - переходим на шаг 2
@@ -279,7 +279,7 @@ export function useRegister() {
       dispatch({ type: "SET_STATUS", payload: "success" });
 
       setTimeout(() => {
-        router.push("/");
+        router.push(`/${locale}/create-post`);
       }, 1500);
 
       return true;

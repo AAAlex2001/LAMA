@@ -66,9 +66,11 @@ export default function Header({ locale: localeProp }: Props) {
       <header className={`${styles.header} ${!isVisible ? styles.hidden : ''}`}>
         <div className={styles.container}>
           <div className={styles.brand}>
-            <h1 className={styles.brandName}>
-              <span className={styles.lama}>LAMA</span>planner
-            </h1>
+            <a href={`/${locale}`} className={styles.brandName}>
+              <h1>
+                <span className={styles.lama}>LAMA</span>planner
+              </h1>
+            </a>
           </div>
 
           <nav className={styles.nav}>

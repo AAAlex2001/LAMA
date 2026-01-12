@@ -23,7 +23,7 @@ export default function LoginPage() {
     setEmail,
     setPassword,
     clearNotifications,
-  } = useLogin();
+  } = useLogin(locale);
 
   useEffect(() => {
     initTelegramWidget();

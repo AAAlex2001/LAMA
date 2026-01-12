@@ -29,7 +29,7 @@ export default function RegisterPage() {
     setAgreeTerms,
     addEmailToAccount,
     setError,
-  } = useRegister();
+  } = useRegister(locale as string);
 
   useEffect(() => {
     initTelegramWidget();

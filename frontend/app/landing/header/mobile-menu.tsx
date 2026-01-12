@@ -45,9 +45,11 @@ export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps)
       >
         <div className={styles.header}>
           <div className={styles.brand}>
-            <h1 className={styles.brandName}>
-              <span className={styles.lama}>LAMA</span>planner
-            </h1>
+            <a href={`/${locale}`} className={styles.brandName}>
+              <h1>
+                <span className={styles.lama}>LAMA</span>planner
+              </h1>
+            </a>
           </div>
           <button className={styles.closeButton} onClick={handleClose} aria-label="Close menu">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

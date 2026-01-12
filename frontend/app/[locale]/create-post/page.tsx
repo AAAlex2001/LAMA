@@ -272,13 +272,13 @@ export default function CreatePostPage() {
               style={{ display: 'none' }}
             />
             
-            <MediaPreview 
-              files={mediaFiles}
-              onRemove={handleRemoveMedia}
-              onToggleBlur={handleToggleBlur}
-            />
-            
             <div className={styles.mediaMobile}>
+              <MediaPreview 
+                files={mediaFiles}
+                onRemove={handleRemoveMedia}
+                onToggleBlur={handleToggleBlur}
+              />
+              
               <Button
                 text="Прикрепить файл"
                 variant="templateCard"
@@ -290,17 +290,37 @@ export default function CreatePostPage() {
               />
             </div>
             <div className={styles.mediaDropzone}>
-              <span className={styles.dropzoneText}>
-                Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-              </span>
-              <Button
-                text="Прикрепить файл"
-                variant="templateCard"
-                showArrow={false}
-                icon={<PaperclipIcon width={24} height={24} />}
-                disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
-                onClick={() => fileInputRef.current?.click()}
-              />
+              {mediaFiles.length === 0 ? (
+                <>
+                  <span className={styles.dropzoneText}>
+                    Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
+                  </span>
+                  <Button
+                    text="Прикрепить файл"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<PaperclipIcon width={24} height={24} />}
+                    disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
+                    onClick={() => fileInputRef.current?.click()}
+                  />
+                </>
+              ) : (
+                <div className={styles.mediaDropzoneContent}>
+                  <MediaPreview 
+                    files={mediaFiles}
+                    onRemove={handleRemoveMedia}
+                    onToggleBlur={handleToggleBlur}
+                  />
+                  <Button
+                    text="Прикрепить файл"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<PaperclipIcon width={24} height={24} />}
+                    disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
+                    onClick={() => fileInputRef.current?.click()}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

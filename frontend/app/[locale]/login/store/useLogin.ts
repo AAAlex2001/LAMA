@@ -20,7 +20,7 @@ import {
 
 const TELEGRAM_BOT_USERNAME = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "LAMMAPLANNERBOT";
 
-export function useLogin() {
+export function useLogin(locale: string = 'ru') {
   const [state, dispatch] = useReducer(loginReducer, initialLoginState);
   const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
@@ -42,7 +42,7 @@ export function useLogin() {
         }
 
         dispatch({ type: "SET_STATUS", payload: "success" });
-        setTimeout(() => router.push("/"), 1500);
+        setTimeout(() => router.push(`/${locale}/create-post`), 1500);
         return true;
       }
 
@@ -117,7 +117,7 @@ export function useLogin() {
 
           dispatch({ type: "SET_STATUS", payload: "success" });
           window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(() => router.push("/"), 1500);
+          setTimeout(() => router.push(`/${locale}/create-post`), 1500);
         } else {
           dispatch({ type: "SET_STATUS", payload: "error" });
           dispatch({ type: "SET_ERROR", payload: result.message || "Ошибка авторизации" });
@@ -165,7 +165,7 @@ export function useLogin() {
       }
 
       dispatch({ type: "SET_STATUS", payload: "success" });
-      setTimeout(() => router.push("/"), 1500);
+      setTimeout(() => router.push(`/${locale}/create-post`), 1500);
       dispatch({ type: "SET_LOADING", payload: false });
       return true;
     }
