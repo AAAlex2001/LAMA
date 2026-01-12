@@ -280,6 +280,8 @@ export default function CreatePostPage() {
             onSearchTags={postSettings.searchTags}
             onTagInputChange={postSettings.setTagInputValue}
             onSelectTag={postSettings.selectTag}
+            repeatInterval={postSettings.repeatInterval}
+            onRepeatChange={postSettings.handleRepeatChange}
             notifySubscribers={postSettings.notifySubscribers}
             onNotifyChange={postSettings.handleNotifyChange}
             pinPost={postSettings.pinPost}
@@ -314,6 +316,8 @@ export default function CreatePostPage() {
               onSearchTags={postSettings.searchTags}
               onTagInputChange={postSettings.setTagInputValue}
               onSelectTag={postSettings.selectTag}
+              repeatInterval={postSettings.repeatInterval}
+              onRepeatChange={postSettings.handleRepeatChange}
               notifySubscribers={postSettings.notifySubscribers}
               onNotifyChange={postSettings.handleNotifyChange}
               pinPost={postSettings.pinPost}

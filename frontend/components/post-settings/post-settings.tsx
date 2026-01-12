@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './post-settings.module.scss';
-import Dropdown from '@/components/dropdown/dropdown';
+import Dropdown, { type RepeatOption } from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CreateChannel from '@/components/create-channel/create-channel';
@@ -31,6 +31,10 @@ interface PostSettingsProps {
   onSearchTags: (query: string) => void;
   onTagInputChange: (value: string) => void;
   onSelectTag: (tag: Tag) => void;
+  
+  // Repeat
+  repeatInterval: RepeatOption;
+  onRepeatChange: (value: RepeatOption) => void;
   
   // Toggles
   notifySubscribers: boolean;
@@ -67,6 +71,8 @@ export default function PostSettings({
   onSearchTags,
   onTagInputChange,
   onSelectTag,
+  repeatInterval,
+  onRepeatChange,
   notifySubscribers,
   onNotifyChange,
   pinPost,
@@ -115,7 +121,12 @@ export default function PostSettings({
 
             <Dropdown label="Автоудаление поста" />
 
-            <Dropdown label="Повтор" />
+            <Dropdown
+              label="Повтор"
+              variant="repeat"
+              repeatValue={repeatInterval}
+              onRepeatChange={onRepeatChange}
+            />
 
             <div className={styles.toggleRow}>
               <span className={styles.toggleLabel}>Уведомлять подписчиков</span>

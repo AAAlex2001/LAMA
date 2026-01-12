@@ -1,4 +1,4 @@
-import type { CreatePostRequest } from './types';
+import type { CreatePostRequest, RepeatInterval } from './types';
 import { createAndPublishPost, saveDraft } from './api';
 
 interface PostSettingsFromUI {
@@ -6,6 +6,7 @@ interface PostSettingsFromUI {
   notifySubscribers: boolean;
   pinPost: boolean;
   tagName: string | null;
+  repeatInterval: RepeatInterval;
 }
 
 export async function handlePublishNow(
@@ -28,6 +29,7 @@ export async function handlePublishNow(
       pin_message: settings.pinPost,
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
+      repeat_interval: settings.repeatInterval,
     };
 
     const response = await createAndPublishPost(request);
@@ -71,6 +73,7 @@ export async function handleSaveDraft(
       pin_message: settings.pinPost,
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
+      repeat_interval: settings.repeatInterval,
     };
 
     const response = await saveDraft(request);

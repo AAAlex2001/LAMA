@@ -6,6 +6,7 @@ import { useTags } from '@/stores/tags';
 import {
   type ChannelOption,
   type PostSettingsData,
+  type RepeatOption,
   initialPostSettingsState,
   postSettingsReducer,
 } from './types';
@@ -49,8 +50,9 @@ export function usePostSettings() {
       notifySubscribers: state.notifySubscribers,
       pinPost: state.pinPost,
       tagName: tagsStore.tagInputValue.trim() || null,
+      repeatInterval: state.repeatInterval,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, tagsStore.tagInputValue]);
+  }, [channels, state.notifySubscribers, state.pinPost, state.repeatInterval, tagsStore.tagInputValue]);
 
   // Обработчик изменения канала
   const handleChannelChange = useCallback(
@@ -94,6 +96,10 @@ export function usePostSettings() {
     dispatch({ type: 'SET_PIN_POST', payload: checked });
   }, []);
 
+  const handleRepeatChange = useCallback((value: RepeatOption) => {
+    dispatch({ type: 'SET_REPEAT_INTERVAL', payload: value });
+  }, []);
+
   // Сброс настроек
   const resetSettings = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -105,6 +111,7 @@ export function usePostSettings() {
     notifySubscribers: state.notifySubscribers,
     pinPost: state.pinPost,
     showCreateChannel: state.showCreateChannel,
+    repeatInterval: state.repeatInterval,
 
     // Channels
     channelOptions,
@@ -133,6 +140,7 @@ export function usePostSettings() {
     closeCreateChannel,
     handleNotifyChange,
     handlePinChange,
+    handleRepeatChange,
     resetSettings,
     getSettingsData,
   };

@@ -8,19 +8,29 @@ interface CheckboxProps {
   onChange: (checked: boolean) => void;
   label?: string | React.ReactNode;
   className?: string;
+  variant?: 'checkbox' | 'radio';
 }
 
-export default function Checkbox({ checked, onChange, label, className }: CheckboxProps) {
+export default function Checkbox({ checked, onChange, label, className, variant = 'checkbox' }: CheckboxProps) {
   return (
     <label className={classNames(styles.container, className)}>
       <div 
-        className={classNames(styles.checkbox, { [styles.checked]: checked })}
+        className={classNames(
+          styles.checkbox, 
+          { 
+            [styles.checked]: checked,
+            [styles.radio]: variant === 'radio',
+          }
+        )}
         onClick={() => onChange(!checked)}
       >
-        {checked && (
+        {checked && variant === 'checkbox' && (
           <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
+        )}
+        {checked && variant === 'radio' && (
+          <span className={styles.radioCheck} />
         )}
       </div>
       {label && <span className={styles.label}>{label}</span>}

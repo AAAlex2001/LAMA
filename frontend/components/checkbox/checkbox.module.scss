@@ -24,6 +24,18 @@
     background: #3B82F6;
     box-shadow: none;
   }
+
+  &.radio {
+    border-radius: 100px;
+    padding: 3px;
+  }
+}
+
+.radioCheck {
+  width: 6px;
+  height: 6px;
+  background: #FFFFFF;
+  border-radius: 50%;
 }
 
 .label {

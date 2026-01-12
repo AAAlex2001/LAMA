@@ -22,6 +22,8 @@ interface ApiTag {
   created_at: string;
 }
 
+export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+
 interface DropdownProps {
   label: string;
   placeholder?: string;
@@ -34,7 +36,7 @@ interface DropdownProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   className?: string;
-  variant?: 'channels' | 'tags';
+  variant?: 'channels' | 'tags' | 'repeat';
   // Tags props (чистый UI - только отображение и выбор)
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
@@ -45,6 +47,8 @@ interface DropdownProps {
   onLoadRecentTags?: () => void;
   tagsLoading?: boolean;
   tagsSearching?: boolean;
+  repeatValue?: RepeatOption;
+  onRepeatChange?: (value: RepeatOption) => void;
   // General
   onOpen?: () => void;
   loading?: boolean;
@@ -73,6 +77,8 @@ export default function Dropdown({
   onLoadRecentTags,
   tagsLoading = false,
   tagsSearching = false,
+  repeatValue = 'never',
+  onRepeatChange,
   // General
   onOpen,
   loading = false,
@@ -226,6 +232,31 @@ export default function Dropdown({
 
           {tagsSearching && <div className={styles.loadingText}>Поиск...</div>}
           {tagsLoading && <div className={styles.loadingText}>Загрузка...</div>}
+        </div>
+      )}
+
+      {isOpen && variant === 'repeat' && (
+        <div className={styles.content}>
+          <div className={styles.repeatList}>
+            {([
+              { id: 'never', label: 'Никогда' },
+              { id: 'daily', label: 'Каждый день' },
+              { id: 'weekly', label: 'Каждую неделю' },
+              { id: 'biweekly', label: 'Каждые 2 недели' },
+              { id: 'monthly', label: 'Каждый месяц' },
+              { id: 'yearly', label: 'Каждый год' },
+              { id: 'custom', label: 'Другой вариант' },
+            ] as { id: RepeatOption; label: string }[]).map((option) => (
+              <div key={option.id} className={styles.repeatRow}>
+                <Checkbox
+                  variant="radio"
+                  checked={repeatValue === option.id}
+                  onChange={() => onRepeatChange?.(option.id)}
+                />
+                <span className={styles.optionLabel}>{option.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

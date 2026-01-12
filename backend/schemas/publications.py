@@ -25,6 +25,17 @@ class ContentType(str, Enum):
     QUIZ = "quiz"
 
 
+class RepeatInterval(str, Enum):
+    """Интервал повторения публикации"""
+    NEVER = "never"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    BIWEEKLY = "biweekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    CUSTOM = "custom"
+
+
 class InlineButton(BaseModel):
     text: str
     url: Optional[str] = None
@@ -125,6 +136,12 @@ class PublicationBase(BaseModel):
         gt=0,
         description="Delay in seconds after publication before auto-deletion kicks in"
     )
+    repeat_interval: RepeatInterval = RepeatInterval.NEVER
+    repeat_custom_days: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Custom repeat interval in days (only used when repeat_interval is CUSTOM)"
+    )
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"
     series_id: Optional[int] = None
@@ -174,6 +191,12 @@ class PublicationUpdate(BaseModel):
         gt=0,
         description="Delay in seconds after publication before auto-deletion kicks in"
     )
+    repeat_interval: Optional[RepeatInterval] = None
+    repeat_custom_days: Optional[int] = Field(
+        None,
+        gt=0,
+        description="Custom repeat interval in days (only used when repeat_interval is CUSTOM)"
+    )
     scheduled_time: Optional[datetime] = None
     timezone: Optional[str] = None
     series_id: Optional[int] = None
@@ -211,6 +234,9 @@ class PublicationResponse(BaseModel):
     ai_generated: bool
     ai_prompt: Optional[str] = None
     published_time: Optional[datetime] = None
+    repeat_interval: RepeatInterval = RepeatInterval.NEVER
+    repeat_custom_days: Optional[int] = None
+    next_repeat_time: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     channels: List[ChannelResponse] = []
