@@ -42,6 +42,10 @@
     color: #B0B4B8;
   }
   
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+  
   &:focus {
     outline: none;
     border-color: rgba(59, 130, 246, 0.5);

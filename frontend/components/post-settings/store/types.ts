@@ -8,12 +8,14 @@ export interface ChannelOption {
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
+export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
 
 export interface PostSettingsData {
   channelIds: number[];
   notifySubscribers: boolean;
   pinPost: boolean;
   tagName: string | null;
+  tagColor: string | null;
   repeatInterval: RepeatOption;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
@@ -28,6 +30,7 @@ export interface PostSettingsState {
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
+  selectedTagColor: TagColor;
 }
 
 export type PostSettingsAction =
@@ -38,6 +41,7 @@ export type PostSettingsAction =
   | { type: 'SET_AUTO_DELETE_INTERVAL'; payload: AutoDeleteOption }
   | { type: 'SET_AUTO_DELETE_CUSTOM_DAYS'; payload: number }
   | { type: 'SET_AUTO_DELETE_CUSTOM_HOURS'; payload: number }
+  | { type: 'SET_SELECTED_TAG_COLOR'; payload: TagColor }
   | { type: 'RESET' };
 
 export const initialPostSettingsState: PostSettingsState = {
@@ -48,6 +52,7 @@ export const initialPostSettingsState: PostSettingsState = {
   autoDeleteInterval: 'never',
   autoDeleteCustomDays: 0,
   autoDeleteCustomHours: 0,
+  selectedTagColor: '#FAC7C7',
 };
 
 export function postSettingsReducer(
@@ -69,6 +74,8 @@ export function postSettingsReducer(
       return { ...state, autoDeleteCustomDays: action.payload };
     case 'SET_AUTO_DELETE_CUSTOM_HOURS':
       return { ...state, autoDeleteCustomHours: action.payload };
+    case 'SET_SELECTED_TAG_COLOR':
+      return { ...state, selectedTagColor: action.payload };
     case 'RESET':
       return initialPostSettingsState;
     default:

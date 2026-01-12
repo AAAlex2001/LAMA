@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './post-settings.module.scss';
-import Dropdown, { type RepeatOption, type AutoDeleteOption } from '@/components/dropdown/dropdown';
+import Dropdown, { type RepeatOption, type AutoDeleteOption, type TagColor } from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CreateChannel from '@/components/create-channel/create-channel';
@@ -31,6 +31,8 @@ interface PostSettingsProps {
   onSearchTags: (query: string) => void;
   onTagInputChange: (value: string) => void;
   onSelectTag: (tag: Tag) => void;
+  selectedTagColor: TagColor;
+  onTagColorChange: (color: TagColor) => void;
   
   // Repeat
   repeatInterval: RepeatOption;
@@ -79,6 +81,8 @@ export default function PostSettings({
   onSearchTags,
   onTagInputChange,
   onSelectTag,
+  selectedTagColor,
+  onTagColorChange,
   repeatInterval,
   onRepeatChange,
   autoDeleteInterval,
@@ -131,6 +135,8 @@ export default function PostSettings({
               onSearchTags={onSearchTags}
               onTagInputChange={onTagInputChange}
               onSelectTag={onSelectTag}
+              selectedTagColor={selectedTagColor}
+              onTagColorChange={onTagColorChange}
             />
 
             <Dropdown

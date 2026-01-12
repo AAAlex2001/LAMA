@@ -58,6 +58,7 @@ class PollData(BaseModel):
 
 class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
+    color: Optional[str] = Field(None, max_length=7)  # HEX color like #FAC7C7
 
 
 class TagCreate(TagBase):
@@ -204,6 +205,7 @@ class PublicationUpdate(BaseModel):
     status: Optional[PublicationStatus] = None
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
+    tag_color: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_auto_delete(cls, values):

@@ -129,6 +129,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
+    color = Column(String(7), nullable=True)  # HEX color like #FAC7C7
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', secondary=publication_tags, back_populates='tags')

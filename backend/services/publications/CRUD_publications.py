@@ -62,7 +62,7 @@ class CRUDPublicationService:
             publication.channels = channels
 
         if data.tag_names:
-            tags = await self.get_or_create_tags(data.tag_names)
+            tags = await self.get_or_create_tags(data.tag_names, data.tag_color)
             publication.tags = tags
 
         self.db.add(publication)
@@ -159,7 +159,7 @@ class CRUDPublicationService:
             publication.channels = channels
 
         if 'tag_names' in update_data:
-            tags = await self.get_or_create_tags(update_data.pop('tag_names'))
+            tags = await self.get_or_create_tags(update_data.pop('tag_names'), update_data.get('tag_color'))
             publication.tags = tags
 
         if 'inline_keyboard' in update_data:
@@ -228,7 +228,7 @@ class CRUDPublicationService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_or_create_tags(self, tag_names: List[str]) -> List[Tag]:
+    async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None) -> List[Tag]:
         """Получить или создать теги"""
         query = select(Tag).where(Tag.name.in_(tag_names))
         result = await self.db.execute(query)
@@ -239,9 +239,12 @@ class CRUDPublicationService:
 
         for name in tag_names:
             if name in existing_tags:
-                tags.append(existing_tags[name])
+                tag = existing_tags[name]
+                if tag_color and tag.color != tag_color:
+                    tag.color = tag_color
+                tags.append(tag)
             else:
-                new_tag = Tag(name=name)
+                new_tag = Tag(name=name, color=tag_color)
                 new_tags.append(new_tag)
                 tags.append(new_tag)
 

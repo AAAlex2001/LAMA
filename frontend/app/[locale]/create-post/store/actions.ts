@@ -6,6 +6,7 @@ interface PostSettingsFromUI {
   notifySubscribers: boolean;
   pinPost: boolean;
   tagName: string | null;
+  tagColor: string | null;
   repeatInterval: RepeatInterval;
   autoDeleteInterval: AutoDeleteInterval;
   autoDeleteCustomDays: number;
@@ -62,6 +63,7 @@ export async function handlePublishNow(
       pin_message: settings.pinPost,
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
+      tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
       auto_delete_delay_seconds: autoDeleteSeconds,
     };
@@ -107,6 +109,7 @@ export async function handleSaveDraft(
       pin_message: settings.pinPost,
       status: 'draft',
       tag_names: settings.tagName ? [settings.tagName] : undefined,
+      tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
       auto_delete_interval: settings.autoDeleteInterval,
     };

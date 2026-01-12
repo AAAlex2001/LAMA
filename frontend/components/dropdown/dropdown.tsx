@@ -9,6 +9,7 @@ import Button from '@/components/button/button';
 import SearchBar from '@/components/search-bar/search-bar';
 import Input from '@/components/input';
 import TimeDurationPicker from '@/components/time-duration-picker';
+import Loader from '@/components/loader';
 
 interface DropdownOption {
   id: string;
@@ -21,10 +22,14 @@ interface ApiTag {
   id: number;
   name: string;
   created_at: string;
+  color?: string;
 }
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
+export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
+
+export const TAG_COLORS: TagColor[] = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'];
 
 interface DropdownProps {
   label: string;
@@ -49,6 +54,8 @@ interface DropdownProps {
   onLoadRecentTags?: () => void;
   tagsLoading?: boolean;
   tagsSearching?: boolean;
+  selectedTagColor?: TagColor;
+  onTagColorChange?: (color: TagColor) => void;
   repeatValue?: RepeatOption;
   onRepeatChange?: (value: RepeatOption) => void;
   autoDeleteValue?: AutoDeleteOption;
@@ -85,6 +92,8 @@ export default function Dropdown({
   onLoadRecentTags,
   tagsLoading = false,
   tagsSearching = false,
+  selectedTagColor = '#FAC7C7',
+  onTagColorChange,
   repeatValue = 'never',
   onRepeatChange,
   autoDeleteValue = 'never',
@@ -158,21 +167,27 @@ export default function Dropdown({
           )}
 
           <div className={styles.optionsList}>
-            {filteredOptions.map((option) => (
-              <div key={option.id} className={styles.optionRow}>
-                {showCheckboxes ? (
-                  <>
-                    <Checkbox
-                      checked={option.checked || false}
-                      onChange={(checked) => onOptionChange?.(option.id, checked)}
-                    />
-                    <span className={styles.optionLabel}>{option.label}</span>
-                  </>
-                ) : (
-                  <span className={styles.optionLabelGradient}>{option.label}</span>
-                )}
+            {loading ? (
+              <div className={styles.loadingContainer}>
+                <Loader size={24} color="blue" />
               </div>
-            ))}
+            ) : (
+              filteredOptions.map((option) => (
+                <div key={option.id} className={styles.optionRow}>
+                  {showCheckboxes ? (
+                    <>
+                      <Checkbox
+                        checked={option.checked || false}
+                        onChange={(checked) => onOptionChange?.(option.id, checked)}
+                      />
+                      <span className={styles.optionLabel}>{option.label}</span>
+                    </>
+                  ) : (
+                    <span className={styles.optionLabelGradient}>{option.label}</span>
+                  )}
+                </div>
+              ))
+            )}
           </div>
 
           {(onAddNew || (selectedCount !== undefined && totalCount !== undefined)) && (
@@ -200,6 +215,24 @@ export default function Dropdown({
             />
           </div>
 
+          {/* Выбор цвета тега */}
+          <div className={styles.colorPickerSection}>
+            <span className={styles.colorPickerLabel}>Выберите цвет тега</span>
+            <div className={styles.colorButtons}>
+              {TAG_COLORS.map((color) => (
+                <button
+                  key={color}
+                  type="button"
+                  className={classNames(styles.colorButton, {
+                    [styles.colorButtonSelected]: selectedTagColor === color,
+                  })}
+                  style={{ backgroundColor: color }}
+                  onClick={() => onTagColorChange?.(color)}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* Недавние теги */}
           {recentTags.length > 0 && (
             <>
@@ -212,6 +245,7 @@ export default function Dropdown({
                     className={classNames(styles.tagPreviewItem, {
                       [styles.tagSelected]: tagInputValue === tag.name,
                     })}
+                    style={{ backgroundColor: tag.color || '#FAC7C7' }}
                     onClick={() => handleSelectTag(tag)}
                   >
                     {tag.name}
@@ -219,6 +253,13 @@ export default function Dropdown({
                 ))}
               </div>
             </>
+          )}
+
+          {/* Лоадер при загрузке тегов */}
+          {tagsLoading && (
+            <div className={styles.loadingContainer}>
+              <Loader size={24} color="blue" />
+            </div>
           )}
 
           {/* Поиск по тегам */}
@@ -243,9 +284,6 @@ export default function Dropdown({
               ))}
             </div>
           )}
-
-          {tagsSearching && <div className={styles.loadingText}>Поиск...</div>}
-          {tagsLoading && <div className={styles.loadingText}>Загрузка...</div>}
         </div>
       )}
 

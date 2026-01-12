@@ -83,6 +83,14 @@
   }
 }
 
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
 .optionRow {
   display: flex;
   flex-direction: row;
@@ -126,6 +134,49 @@
 // Tags styles
 .tagInputWrapper {
   width: 100%;
+}
+
+.colorPickerSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.colorPickerLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #97A3B0;
+}
+
+.colorButtons {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: center;
+}
+
+.colorButton {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  box-shadow: 0px 0px 0px 0px transparent;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+
+  &.colorButtonSelected {
+    box-shadow: 0px 0px 0px 2px #3B82F6;
+  }
 }
 
 .tagInput {
@@ -219,13 +270,12 @@
   line-height: 16px;
   text-align: center;
   color: #383F45;
-  background: #F0F4FA;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: opacity 0.15s ease;
 
   &:hover {
-    background: #E5EBFA;
+    opacity: 0.85;
   }
 
   &.tagSelected {
@@ -287,16 +337,6 @@
   &:hover {
     color: #3B82F6;
   }
-}
-
-.loadingText {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  color: #8C8C8C;
-  padding: 8px 0;
 }
 
 // Repeat styles

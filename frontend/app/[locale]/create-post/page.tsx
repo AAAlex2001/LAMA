@@ -32,6 +32,8 @@ export default function CreatePostPage() {
   const [text, setText] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isScheduling, setIsScheduling] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const postSettings = usePostSettings();
 
@@ -76,6 +78,7 @@ export default function CreatePostPage() {
   };
 
   const onSaveDraft = async () => {
+    setIsSavingDraft(true);
     try {
       const result = await handleSaveDraft(
         { text },
@@ -90,6 +93,8 @@ export default function CreatePostPage() {
     } catch (error) {
       alert('Произошла ошибка при сохранении черновика');
       console.error(error);
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -236,18 +241,24 @@ export default function CreatePostPage() {
               showArrow={false}
               className={styles.saveDraftBtn}
               onClick={onSaveDraft}
+              loading={isSavingDraft}
+              disabled={isSavingDraft}
             />
             <div className={styles.publishRow}>
               <Button
-                text={isPublishing ? "Публикуем..." : "Опубликовать сейчас"}
+                text="Опубликовать сейчас"
                 showArrow={false}
                 className={styles.publishNowBtn}
                 onClick={onPublishNow}
+                loading={isPublishing}
+                disabled={isPublishing}
               />
               <Button
                 text="Запланировать"
                 showArrow={false}
                 active
+                loading={isScheduling}
+                disabled={isScheduling}
                 className={styles.scheduleBtn}
               />
             </div>
@@ -280,6 +291,8 @@ export default function CreatePostPage() {
             onSearchTags={postSettings.searchTags}
             onTagInputChange={postSettings.setTagInputValue}
             onSelectTag={postSettings.selectTag}
+            selectedTagColor={postSettings.selectedTagColor}
+            onTagColorChange={postSettings.handleTagColorChange}
             repeatInterval={postSettings.repeatInterval}
             onRepeatChange={postSettings.handleRepeatChange}
             autoDeleteInterval={postSettings.autoDeleteInterval}
@@ -322,6 +335,8 @@ export default function CreatePostPage() {
               onSearchTags={postSettings.searchTags}
               onTagInputChange={postSettings.setTagInputValue}
               onSelectTag={postSettings.selectTag}
+              selectedTagColor={postSettings.selectedTagColor}
+              onTagColorChange={postSettings.handleTagColorChange}
               repeatInterval={postSettings.repeatInterval}
               onRepeatChange={postSettings.handleRepeatChange}
               autoDeleteInterval={postSettings.autoDeleteInterval}

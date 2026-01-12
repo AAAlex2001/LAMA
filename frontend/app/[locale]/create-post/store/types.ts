@@ -43,6 +43,7 @@ export interface CreatePostRequest {
   ai_prompt?: string;
   channel_ids: number[];
   tag_names?: string[];
+  tag_color?: string;
   status?: PublicationStatus;
   repeat_interval?: RepeatInterval;
   repeat_custom_days?: number;

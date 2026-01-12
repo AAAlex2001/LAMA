@@ -8,6 +8,7 @@ import {
   type PostSettingsData,
   type RepeatOption,
   type AutoDeleteOption,
+  type TagColor,
   initialPostSettingsState,
   postSettingsReducer,
 } from './types';
@@ -51,12 +52,13 @@ export function usePostSettings() {
       notifySubscribers: state.notifySubscribers,
       pinPost: state.pinPost,
       tagName: tagsStore.tagInputValue.trim() || null,
+      tagColor: tagsStore.tagInputValue.trim() ? state.selectedTagColor : null,
       repeatInterval: state.repeatInterval,
       autoDeleteInterval: state.autoDeleteInterval,
       autoDeleteCustomDays: state.autoDeleteCustomDays,
       autoDeleteCustomHours: state.autoDeleteCustomHours,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, state.repeatInterval, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
+  }, [channels, state.notifySubscribers, state.pinPost, state.selectedTagColor, state.repeatInterval, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
 
   // Обработчик изменения канала
   const handleChannelChange = useCallback(
@@ -116,6 +118,10 @@ export function usePostSettings() {
     dispatch({ type: 'SET_AUTO_DELETE_CUSTOM_HOURS', payload: value });
   }, []);
 
+  const handleTagColorChange = useCallback((color: TagColor) => {
+    dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color });
+  }, []);
+
   // Сброс настроек
   const resetSettings = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -131,6 +137,7 @@ export function usePostSettings() {
     autoDeleteInterval: state.autoDeleteInterval,
     autoDeleteCustomDays: state.autoDeleteCustomDays,
     autoDeleteCustomHours: state.autoDeleteCustomHours,
+    selectedTagColor: state.selectedTagColor,
 
     // Channels
     channelOptions,
@@ -163,6 +170,7 @@ export function usePostSettings() {
     handleAutoDeleteChange,
     handleAutoDeleteCustomDaysChange,
     handleAutoDeleteCustomHoursChange,
+    handleTagColorChange,
     resetSettings,
     getSettingsData,
   };

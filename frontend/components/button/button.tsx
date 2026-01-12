@@ -2,6 +2,7 @@
 
 import { useId, ReactNode } from 'react';
 import styles from "./button.module.scss";
+import Loader from '@/components/loader';
 
 import classNames from "classnames";
 
@@ -41,7 +42,7 @@ export default function Button({
   const buttonContent = (
     <>
       {loading ? (
-        <span className={styles.spinner} />
+        <Loader size={18} color={active ? 'white' : 'blue'} />
       ) : (
         <>
           {icon && <span className={styles.buttonIcon}>{icon}</span>}
