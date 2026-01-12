@@ -359,30 +359,17 @@ async def list_tags(
 ):
     """
     Получить список тегов.
-    Сортировка по частоте использования (популярные первыми).
+    Сортировка по дате последнего использования (недавние первыми).
     """
-    count_query = (
-        select(Tag.id, func.count(publication_tags.c.publication_id).label('usage_count'))
-        .outerjoin(publication_tags, Tag.id == publication_tags.c.tag_id)
-        .group_by(Tag.id)
-        .order_by(func.count(publication_tags.c.publication_id).desc(), Tag.created_at.desc())
+    tags_query = (
+        select(Tag)
+        .order_by(Tag.last_used_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )
     
-    result = await db.execute(count_query)
-    tag_ids_with_counts = result.all()
-    
-    if not tag_ids_with_counts:
-        return TagListResponse(items=[], total=0)
-    
-    tag_ids = [row[0] for row in tag_ids_with_counts]
-    
-    tags_query = select(Tag).where(Tag.id.in_(tag_ids))
-    tags_result = await db.execute(tags_query)
-    tags_map = {tag.id: tag for tag in tags_result.scalars().all()}
-    
-    tags = [tags_map[tag_id] for tag_id in tag_ids if tag_id in tags_map]
+    result = await db.execute(tags_query)
+    tags = list(result.scalars().all())
     
     total_query = select(func.count(Tag.id))
     total_result = await db.execute(total_query)

@@ -1,0 +1,152 @@
+.textareaWrapper {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 10px;
+  gap: 20px;
+  width: 100%;
+  min-height: 154px;
+  background: #FFFFFF;
+  border: 1px solid #CED2D6;
+  border-radius: 10px;
+}
+
+.textareaInner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  flex-grow: 1;
+  position: relative;
+}
+
+.editor {
+  width: 100%;
+  min-height: 60px;
+  border: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+
+  &:empty::before {
+    content: '';
+  }
+
+  // Стили для форматированного текста
+  b, strong {
+    font-weight: 700;
+  }
+
+  i, em {
+    font-style: italic;
+  }
+
+  u {
+    text-decoration: underline;
+  }
+
+  s, strike, del {
+    text-decoration: line-through;
+  }
+
+  code {
+    font-family: 'Consolas', 'Monaco', monospace;
+    background: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+}
+
+.placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: #CED2D6;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 17px;
+  pointer-events: none;
+}
+
+.spoiler {
+  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 50%, #3B82F6 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.textareaFooter {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 100%;
+}
+
+.textareaTools {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 7px;
+}
+
+.toolButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  border-radius: 4px;
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+}
+
+.desktopOnly {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+  }
+}
+
+.charCountWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 16px;
+}
+
+.charCount {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #AEAEB2;
+}

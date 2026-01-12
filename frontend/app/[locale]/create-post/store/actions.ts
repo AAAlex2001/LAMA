@@ -59,7 +59,8 @@ export async function handlePublishNow(
     );
 
     // Проверяем, есть ли HTML теги форматирования
-    const hasFormatting = /<\/?(?:b|i|s|u|code|pre)>/i.test(content.text);
+    const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasSpoiler = /<\/?tg-spoiler>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -69,6 +70,7 @@ export async function handlePublishNow(
       content_type: 'text',
       text_content: content.text,
       formatted_content: formattedContent,
+      media_blur: hasSpoiler,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
@@ -115,7 +117,8 @@ export async function handleSaveDraft(
     }
 
     // Проверяем, есть ли HTML теги форматирования
-    const hasFormatting = /<\/?(?:b|i|s|u|code|pre)>/i.test(content.text);
+    const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasSpoiler = /<\/?tg-spoiler>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -125,6 +128,7 @@ export async function handleSaveDraft(
       content_type: 'text',
       text_content: content.text,
       formatted_content: formattedContent,
+      media_blur: hasSpoiler,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',

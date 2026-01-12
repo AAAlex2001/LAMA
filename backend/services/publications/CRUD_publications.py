@@ -231,21 +231,25 @@ class CRUDPublicationService:
 
     async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None) -> List[Tag]:
         """Получить или создать теги"""
+        from datetime import datetime, timezone
+        
         query = select(Tag).where(Tag.name.in_(tag_names))
         result = await self.db.execute(query)
         existing_tags = {tag.name: tag for tag in result.scalars().all()}
 
         tags = []
         new_tags = []
+        now = datetime.now(timezone.utc)
 
         for name in tag_names:
             if name in existing_tags:
                 tag = existing_tags[name]
                 if tag_color and tag.color != tag_color:
                     tag.color = tag_color
+                tag.last_used_at = now
                 tags.append(tag)
             else:
-                new_tag = Tag(name=name, color=tag_color)
+                new_tag = Tag(name=name, color=tag_color, last_used_at=now)
                 new_tags.append(new_tag)
                 tags.append(new_tag)
 
@@ -259,6 +263,9 @@ class CRUDPublicationService:
                 result = await self.db.execute(query)
                 existing_tags = {tag.name: tag for tag in result.scalars().all()}
                 tags = [existing_tags[name] for name in tag_names]
+                # Обновляем время последнего использования для найденных тегов
+                for tag in tags:
+                    tag.last_used_at = now
 
         return tags
 

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
 import { usePostSettings } from '@/components/post-settings/store';
+import RichTextEditor, { RichTextEditorRef } from '@/components/rich-text-editor';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -12,21 +13,9 @@ import {
   QuizIcon,
   ReplyIcon,
   SettingsIcon,
-  AiEditIcon,
-  EmojiIcon,
   PaperclipIcon,
-  BoldIcon,
-  ItalicIcon,
-  LinkIcon,
-  QuoteIcon,
-  CodeIcon,
-  BlurIcon,
-  StrikethroughIcon,
-  UnderlineIcon,
 } from '@/components/icons';
 import { handlePublishNow, handleSaveDraft } from './store/actions';
-
-const MAX_CHARS = 4096;
 
 export default function CreatePostPage() {
   const [text, setText] = useState('');
@@ -34,52 +23,8 @@ export default function CreatePostPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const postSettings = usePostSettings();
-
-  const charCount = text.length;
-
-  const adjustTextareaHeight = () => {
-    const textarea = textareaRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${textarea.scrollHeight}px`;
-    }
-  };
-
-  useEffect(() => {
-    adjustTextareaHeight();
-  }, [text]);
-
-  const applyFormatting = (tag: 'b' | 'i' | 's' | 'u' | 'code') => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-
-    if (start === end) return; // Ничего не выделено
-
-    const selectedText = text.substring(start, end);
-    
-    // Для кода: используем <pre> для многострочного, <code> для однострочного
-    let actualTag = tag;
-    if (tag === 'code' && selectedText.includes('\n')) {
-      actualTag = 'pre' as any;
-    }
-    
-    const formattedText = `<${actualTag}>${selectedText}</${actualTag}>`;
-
-    const newText = text.substring(0, start) + formattedText + text.substring(end);
-    setText(newText);
-
-    // Восстанавливаем фокус и позицию курсора
-    setTimeout(() => {
-      textarea.focus();
-      const newCursorPos = start + formattedText.length;
-      textarea.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
+  const editorRef = useRef<RichTextEditorRef>(null);
 
   const onPublishNow = async () => {
     setIsPublishing(true);
@@ -92,7 +37,9 @@ export default function CreatePostPage() {
 
       if (result.success) {
         alert(result.message);
-        setText('');
+        // Сбрасываем редактор и все его состояние
+        editorRef.current?.reset();
+        postSettings.resetSettings();
       } else {
         alert(`Ошибка: ${result.message}`);
         if (result.errors) {
@@ -146,58 +93,12 @@ export default function CreatePostPage() {
             </div>
 
           <div className={styles.content}>
-          <div className={styles.textareaWrapper}>
-            <div className={styles.textareaInner}>
-              <textarea
-                ref={textareaRef}
-                className={styles.textarea}
-                placeholder="Напишите текст публикации..."
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                maxLength={MAX_CHARS}
-              />
-            </div>
-            <div className={styles.textareaFooter}>
-              <div className={styles.textareaTools}>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Жирный" onClick={() => applyFormatting('b')}>
-                  <BoldIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Курсив" onClick={() => applyFormatting('i')}>
-                  <ItalicIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Ссылка">
-                  <LinkIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Цитата">
-                  <QuoteIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Код" onClick={() => applyFormatting('code')}>
-                  <CodeIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Блюр">
-                  <BlurIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Перечеркнутый" onClick={() => applyFormatting('s')}>
-                  <StrikethroughIcon width={21} height={21} />
-                </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Подчеркнутый" onClick={() => applyFormatting('u')}>
-                  <UnderlineIcon width={21} height={21} />
-                </button>
-                <button className={styles.toolButton} type="button" aria-label="AI редактирование">
-                  <AiEditIcon width={21} height={21} />
-                </button>
-                <button className={styles.toolButton} type="button" aria-label="Эмодзи">
-                  <EmojiIcon width={21} height={21} />
-                </button>
-              </div>
-              <div className={styles.charCountWrapper}>
-                <button className={styles.toolButton} type="button" aria-label="Подсчет символов">
-                  <TemplatesIcon width={21} height={21} />
-                </button>
-                <span className={styles.charCount}>{charCount}/{MAX_CHARS}</span>
-              </div>
-            </div>
-          </div>
+          <RichTextEditor
+            ref={editorRef}
+            value={text}
+            onChange={setText}
+            placeholder="Напишите текст публикации..."
+          />
           <div className={styles.actionsMenu}>
             <div className={styles.actionsRow}>
               <Button
