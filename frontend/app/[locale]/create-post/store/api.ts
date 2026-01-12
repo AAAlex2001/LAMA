@@ -115,14 +115,23 @@ export async function createAndPublishPost(
       };
     }
 
-    // Затем публикуем его
-    await publishPost(postId);
+    const publishedPost = await publishPost(postId);
+
+    if (!publishedPost || publishedPost.status === 'failed') {
+      return {
+        success: false,
+        postId: postId,
+        id: postId,
+        message: `Не удалось опубликовать`,
+        errors: ['Публикация не удалась'],
+      };
+    }
 
     return {
       success: true,
       postId: postId,
       id: postId,
-      message: 'Пост успешно создан и опубликован',
+      message: `Пост успешно опубликован!`,
     };
   } catch (error) {
     return {

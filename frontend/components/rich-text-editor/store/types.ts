@@ -20,7 +20,6 @@ export type RichTextEditorData = {
 export type RichTextEditorAction =
   | { type: 'SET_CONTENT'; payload: string }
   | { type: 'SET_ACTIVE_FORMATS'; payload: Set<string> }
-  | { type: 'TOGGLE_FORMAT'; payload: string }
   | { type: 'SET_HOVERED_BUTTON'; payload: string | null }
   | { type: 'SET_IS_EMPTY'; payload: boolean }
   | { type: 'SET_CHAR_COUNT'; payload: number }

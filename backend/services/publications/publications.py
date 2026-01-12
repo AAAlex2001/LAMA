@@ -259,8 +259,15 @@ class PublicationService:
                 )
 
         await self.db.commit()
+        await self.db.refresh(publication)
 
-        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": total_count}
+        return {
+            "success": success_count > 0,
+            "results": results,
+            "success_count": success_count,
+            "total_count": total_count,
+            "publication": publication
+        }
 
     async def republish(self, publication_id: int) -> Dict[str, Any]:
         """

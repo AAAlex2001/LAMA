@@ -49,7 +49,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     reset,
   } = useRichTextEditor(maxLength);
 
-  // Экспортируем reset через ref
   useImperativeHandle(ref, () => ({
     reset: () => {
       reset();
@@ -57,7 +56,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     },
   }), [reset, onChange]);
 
-  // Синхронизация с внешним value
   useEffect(() => {
     syncContent(value);
   }, [value, syncContent]);
@@ -78,7 +76,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           contentEditable
           onInput={onInputChange}
           onPaste={handlePaste}
-          onKeyDown={(e) => handleKeyDown(e, styles.spoiler)}
+          onKeyDown={(e) => handleKeyDown(e)}
           suppressContentEditableWarning
         />
         {state.isEmpty && <div className={styles.placeholder}>{placeholder}</div>}
@@ -98,7 +96,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Жирный" 
-            onClick={() => applyFormatting('bold', 'b')}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('b'); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('b')}
             onMouseLeave={() => setHoveredButton(null)}
           >
@@ -108,7 +106,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Курсив" 
-            onClick={() => applyFormatting('italic', 'i')}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('i'); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('i')}
             onMouseLeave={() => setHoveredButton(null)}
           >
@@ -118,7 +116,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Перечеркнутый" 
-            onClick={() => applyFormatting('strikeThrough', 's')}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('s'); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('s')}
             onMouseLeave={() => setHoveredButton(null)}
           >
@@ -128,7 +126,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Подчеркнутый" 
-            onClick={() => applyFormatting('underline', 'u')}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('u'); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('u')}
             onMouseLeave={() => setHoveredButton(null)}
           >
@@ -138,7 +136,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Скрытый текст" 
-            onClick={() => applyFormatting('', 'tg-spoiler', styles.spoiler)}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('tg-spoiler', styles.spoiler); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('tg-spoiler')}
             onMouseLeave={() => setHoveredButton(null)}
           >
@@ -166,7 +164,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
             type="button" 
             aria-label="Код" 
-            onClick={() => applyFormatting('', 'code')}
+            onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('code'); if (html !== undefined) onChange(html); }}
             onMouseEnter={() => setHoveredButton('code')}
             onMouseLeave={() => setHoveredButton(null)}
           >

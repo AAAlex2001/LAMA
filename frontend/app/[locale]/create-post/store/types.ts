@@ -61,8 +61,48 @@ export interface CreatePostResponse {
 }
 
 export interface PublishPostResponse {
-  success: boolean;
-  publishedTo?: string[];
-  message?: string;
-  errors?: string[];
+  id: number;
+  status: PublicationStatus;
+  content_type: ContentType;
+  text_content?: string;
+  formatted_content?: Record<string, any>;
+  media_urls?: string[];
+  media_blur?: boolean;
+  inline_keyboard?: Record<string, any>;
+  poll_data?: Record<string, any>;
+  pin_message?: boolean;
+  auto_delete_hours?: number;
+  auto_delete_delay_seconds?: number;
+  scheduled_time?: string;
+  timezone?: string;
+  series_id?: number;
+  series_order?: number;
+  ai_generated?: boolean;
+  ai_prompt?: string;
+  published_time?: string;
+  repeat_interval?: RepeatInterval;
+  repeat_custom_days?: number;
+  repeat_custom_hours?: number;
+  next_repeat_time?: string;
+  created_at: string;
+  updated_at: string;
+  channels: Array<{
+    id: number;
+    telegram_id: number;
+    title: string;
+    username?: string;
+    is_active: boolean;
+  }>;
+  tags: Array<{
+    id: number;
+    name: string;
+    color?: string;
+  }>;
+  series?: {
+    id: number;
+    name: string;
+    description?: string;
+    reply_to_previous: boolean;
+    created_at: string;
+  };
 }

@@ -266,7 +266,7 @@ async def delete_publication(
         raise HTTPException(status_code=404, detail="Publication not found")
 
 
-@router.post("/{publication_id}/publish")
+@router.post("/{publication_id}/publish", response_model=PublicationResponse)
 async def publish_now(
     publication_id: int,
     service: PublicationService = Depends(get_publication_service),
@@ -274,8 +274,9 @@ async def publish_now(
 ):
     """Опубликовать сейчас"""
     result = await service.publish_now(publication_id, owner_id=current_user.id)
-    # Возвращаем подробный результат по каналам даже при частичных сбоях
-    return result
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail={"results": result.get("results", [])})
+    return result["publication"]
 
 
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)

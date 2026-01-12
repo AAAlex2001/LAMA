@@ -20,32 +20,16 @@ function richTextEditorReducer(
   switch (action.type) {
     case 'SET_CONTENT':
       return { ...state, content: action.payload };
-
     case 'SET_ACTIVE_FORMATS':
       return { ...state, activeFormats: action.payload };
-
-    case 'TOGGLE_FORMAT': {
-      const newFormats = new Set(state.activeFormats);
-      if (newFormats.has(action.payload)) {
-        newFormats.delete(action.payload);
-      } else {
-        newFormats.add(action.payload);
-      }
-      return { ...state, activeFormats: newFormats };
-    }
-
     case 'SET_HOVERED_BUTTON':
       return { ...state, hoveredButton: action.payload };
-
     case 'SET_IS_EMPTY':
       return { ...state, isEmpty: action.payload };
-
     case 'SET_CHAR_COUNT':
       return { ...state, charCount: action.payload };
-
     case 'RESET':
       return { ...initialState, activeFormats: new Set() };
-
     default:
       return state;
   }
@@ -59,93 +43,7 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
   
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalUpdate = useRef(false);
-
-  const getTextContent = useCallback(() => {
-    if (!editorRef.current) return '';
-    return editorRef.current.textContent || '';
-  }, []);
-
-  const checkSpoilerInSelection = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return false;
-    
-    const range = selection.getRangeAt(0);
-    let node: Node | null = range.commonAncestorContainer;
-    
-    if (node.nodeType === Node.TEXT_NODE) {
-      node = node.parentNode;
-    }
-    
-    while (node && node !== editorRef.current) {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        if (element.getAttribute('data-spoiler') === 'true' || 
-            element.classList.contains('spoiler')) {
-          return true;
-        }
-      }
-      node = node.parentNode;
-    }
-    
-    return false;
-  }, []);
-
-  const checkCodeInSelection = useCallback(() => {
-    const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return false;
-    
-    const range = selection.getRangeAt(0);
-    
-    const findCodeParent = (node: Node | null): Element | null => {
-      while (node && node !== editorRef.current) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          const element = node as Element;
-          if (element.tagName.toLowerCase() === 'code') {
-            return element;
-          }
-        }
-        node = node.parentNode;
-      }
-      return null;
-    };
-    
-    let startNode: Node | null = range.startContainer;
-    if (startNode.nodeType === Node.TEXT_NODE) {
-      startNode = startNode.parentNode;
-    }
-    
-    let endNode: Node | null = range.endContainer;
-    if (endNode.nodeType === Node.TEXT_NODE) {
-      endNode = endNode.parentNode;
-    }
-    
-    if (findCodeParent(startNode) || findCodeParent(endNode)) {
-      return true;
-    }
-    
-    if (!editorRef.current) return false;
-    const codeElements = editorRef.current.querySelectorAll('code');
-    for (const code of codeElements) {
-      if (range.intersectsNode(code)) {
-        return true;
-      }
-    }
-    
-    return false;
-  }, []);
-
-  const updateActiveFormats = useCallback(() => {
-    const newFormats = new Set<string>();
-    
-    if (document.queryCommandState('bold')) newFormats.add('b');
-    if (document.queryCommandState('italic')) newFormats.add('i');
-    if (document.queryCommandState('strikeThrough')) newFormats.add('s');
-    if (document.queryCommandState('underline')) newFormats.add('u');
-    if (checkSpoilerInSelection()) newFormats.add('tg-spoiler');
-    if (checkCodeInSelection()) newFormats.add('code');
-    
-    dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
-  }, [checkSpoilerInSelection, checkCodeInSelection]);
+  const processingRef = useRef(false);
 
   const syncContent = useCallback((value: string) => {
     if (editorRef.current && !isInternalUpdate.current) {
@@ -160,157 +58,323 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
     isInternalUpdate.current = false;
   }, []);
 
-  const handleInput = useCallback(() => {
-    if (!editorRef.current) return '';
-    
-    editorRef.current.querySelectorAll('code').forEach(codeEl => {
-      if (!codeEl.textContent?.trim()) {
-        codeEl.remove();
-      }
-    });
-    
-    editorRef.current.querySelectorAll('span[data-spoiler="true"]').forEach(spoilerEl => {
-      if (!spoilerEl.textContent?.trim()) {
-        spoilerEl.remove();
-      }
-    });
-    
-    const textContent = editorRef.current.textContent || '';
-    
-    if (textContent.length > maxLength) {
-      editorRef.current.innerHTML = state.content;
-      
-      const range = document.createRange();
-      const sel = window.getSelection();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(false);
-      sel?.removeAllRanges();
-      sel?.addRange(range);
-      
-      return state.content;
-    }
-    
-    dispatch({ type: 'SET_IS_EMPTY', payload: !textContent.trim() });
-    dispatch({ type: 'SET_CHAR_COUNT', payload: textContent.length });
-    
-    let html = editorRef.current.innerHTML;
-    
-    html = html
-      .replace(/\u200B/g, '')
-      .replace(/<strong>/gi, '<b>')
-      .replace(/<\/strong>/gi, '</b>')
-      .replace(/<em>/gi, '<i>')
-      .replace(/<\/em>/gi, '</i>')
-      .replace(/<strike>/gi, '<s>')
-      .replace(/<\/strike>/gi, '</s>')
-      .replace(/<del>/gi, '<s>')
-      .replace(/<\/del>/gi, '</s>')
-      .replace(/<span[^>]*data-spoiler="true"[^>]*>/gi, '<tg-spoiler>')
-      .replace(/<\/span>/gi, (match, offset, string) => {
-        const beforeMatch = string.substring(0, offset);
-        const lastTgSpoilerOpen = beforeMatch.lastIndexOf('<tg-spoiler>');
-        const lastTgSpoilerClose = beforeMatch.lastIndexOf('</tg-spoiler>');
-        if (lastTgSpoilerOpen > lastTgSpoilerClose) {
-          return '</tg-spoiler>';
-        }
-        return match;
-      });
-    
-    isInternalUpdate.current = true;
-    dispatch({ type: 'SET_CONTENT', payload: html });
-    
-    return html;
-  }, [maxLength, state.content]);
-
-  const findParentWrapper = useCallback((tag: 'tg-spoiler' | 'code'): Element | null => {
+  const updateActiveFormats = useCallback(() => {
+    const newFormats = new Set<string>();
     const selection = window.getSelection();
-    if (!selection || selection.rangeCount === 0) return null;
     
+    if (!selection || selection.rangeCount === 0 || !editorRef.current) {
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+      return;
+    }
+
+    if (document.queryCommandState('bold')) newFormats.add('b');
+    if (document.queryCommandState('italic')) newFormats.add('i');
+    if (document.queryCommandState('strikeThrough')) newFormats.add('s');
+    if (document.queryCommandState('underline')) newFormats.add('u');
+
     const range = selection.getRangeAt(0);
     let node: Node | null = range.commonAncestorContainer;
-    
-    if (node.nodeType === Node.TEXT_NODE) {
-      node = node.parentNode;
-    }
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
     
     while (node && node !== editorRef.current) {
       if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as Element;
-        if (tag === 'tg-spoiler' && (element.getAttribute('data-spoiler') === 'true' || element.classList.contains('spoiler'))) {
-          return element;
-        }
-        if (tag === 'code' && element.tagName.toLowerCase() === 'code') {
-          return element;
-        }
+        const el = node as Element;
+        if (el.getAttribute('data-spoiler') === 'true') newFormats.add('tg-spoiler');
+        if (el.tagName.toLowerCase() === 'code') newFormats.add('code');
       }
       node = node.parentNode;
     }
-    
-    return null;
+
+    dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
   }, []);
 
-  const applyFormatting = useCallback((command: string, tag: FormatType, spoilerClassName?: string) => {
-    editorRef.current?.focus();
+  const handleInput = useCallback(() => {
+    if (!editorRef.current) return '';
+
+    // Защита от одновременной обработки (избегаем каскадных вызовов)
+    if (processingRef.current) {
+      return state.content;
+    }
+    processingRef.current = true;
+
+    try {
+      const textContent = editorRef.current.textContent || '';
+
+      if (textContent.length > maxLength) {
+        editorRef.current.innerHTML = state.content;
+        return state.content;
+      }
+
+      dispatch({ type: 'SET_IS_EMPTY', payload: !textContent.trim() });
+      dispatch({ type: 'SET_CHAR_COUNT', payload: textContent.length });
+    
+      let html = editorRef.current.innerHTML;
+      
+      // Убираем zero-width space
+      html = html.replace(/\u200B/g, '');
+      
+      // Нормализация HTML-тегов (простые замены)
+      html = html
+        .replace(/<strong>/gi, '<b>')
+        .replace(/<\/strong>/gi, '</b>')
+        .replace(/<em>/gi, '<i>')
+        .replace(/<\/em>/gi, '</i>')
+        .replace(/<strike>/gi, '<s>')
+        .replace(/<\/strike>/gi, '</s>')
+        .replace(/<del>/gi, '<s>')
+        .replace(/<\/del>/gi, '</s>');
+      
+      // Убираем style атрибуты из форматирующих тегов (оптимизированный regex без backtracking)
+      html = html.replace(/<(b|i|u|s|strong|em|strike|del)\s+style="[^"]+"/gi, '<$1');
+      html = html.replace(/\s+style=""/gi, '');
+      
+      // Конвертируем spoiler spans через DOM вместо regex (избегаем catastrophic backtracking)
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      const spoilerSpans = tempDiv.querySelectorAll('span[data-spoiler="true"]');
+      spoilerSpans.forEach(span => {
+        const spoilerTag = document.createElement('tg-spoiler');
+        while (span.firstChild) {
+          spoilerTag.appendChild(span.firstChild);
+        }
+        span.parentNode?.replaceChild(spoilerTag, span);
+      });
+      html = tempDiv.innerHTML;
+      
+      isInternalUpdate.current = true;
+      dispatch({ type: 'SET_CONTENT', payload: html });
+      
+      return html;
+    } finally {
+      processingRef.current = false;
+    }
+  }, [maxLength, state.content]);
+
+  const applyFormatting = useCallback((variant: FormatType, spoilerClassName?: string): string | undefined => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    
+    editor.focus();
     
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     
-    const isInsideCode = checkCodeInSelection();
-    if (isInsideCode && tag !== 'code') return;
-    
-    if (tag === 'tg-spoiler' || tag === 'code') {
-      const range = selection.getRangeAt(0);
-      
-      if (range.collapsed) {
-        const parentWrapper = findParentWrapper(tag);
-        if (parentWrapper) {
-          const zwsp = document.createTextNode('\u200B');
-          if (parentWrapper.nextSibling) {
-            parentWrapper.parentNode?.insertBefore(zwsp, parentWrapper.nextSibling);
-          } else {
-            parentWrapper.parentNode?.appendChild(zwsp);
-          }
-          
-          range.setStartAfter(zwsp);
-          range.setEndAfter(zwsp);
-          selection.removeAllRanges();
-          selection.addRange(range);
-          
-          updateActiveFormats();
-        }
-        return;
-      }
-      
-      const wrapper = document.createElement(tag === 'code' ? 'code' : 'span');
-      
-      if (tag === 'tg-spoiler' && spoilerClassName) {
-        wrapper.className = spoilerClassName;
-        wrapper.setAttribute('data-spoiler', 'true');
-      }
-      
-      const contents = range.cloneContents();
-      wrapper.appendChild(contents);
-      range.deleteContents();
-      range.insertNode(wrapper);
-      
-      const zwsp = document.createTextNode('\u200B');
-      if (wrapper.nextSibling) {
-        wrapper.parentNode?.insertBefore(zwsp, wrapper.nextSibling);
+    const range = selection.getRangeAt(0);
+
+    if (variant === 'b') {
+      const isActive = state.activeFormats.has('b');
+      const newFormats = new Set(state.activeFormats);
+      if (isActive) {
+        newFormats.delete('b');
       } else {
-        wrapper.parentNode?.appendChild(zwsp);
+        newFormats.add('b');
       }
-      
-      range.setStartAfter(zwsp);
-      range.setEndAfter(zwsp);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } else {
-      document.execCommand(command, false);
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+      document.execCommand('bold', false);
+      return handleInput();
     }
-    
-    handleInput();
-    updateActiveFormats();
-  }, [updateActiveFormats, handleInput, findParentWrapper, checkCodeInSelection]);
+
+    if (variant === 'i') {
+      const isActive = state.activeFormats.has('i');
+      const newFormats = new Set(state.activeFormats);
+      if (isActive) {
+        newFormats.delete('i');
+      } else {
+        newFormats.add('i');
+      }
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+      document.execCommand('italic', false);
+      return handleInput();
+    }
+
+    if (variant === 's') {
+      const isActive = state.activeFormats.has('s');
+      const newFormats = new Set(state.activeFormats);
+      if (isActive) {
+        newFormats.delete('s');
+      } else {
+        newFormats.add('s');
+      }
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+      document.execCommand('strikeThrough', false);
+      return handleInput();
+    }
+
+    if (variant === 'u') {
+      const isActive = state.activeFormats.has('u');
+      const newFormats = new Set(state.activeFormats);
+      if (isActive) {
+        newFormats.delete('u');
+      } else {
+        newFormats.add('u');
+      }
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+      document.execCommand('underline', false);
+      return handleInput();
+    }
+
+    if (variant === 'tg-spoiler') {
+      const findSpoilerAncestor = (start: Node | null): HTMLElement | null => {
+        let current: Node | null = start;
+        if (current?.nodeType === Node.TEXT_NODE) current = current.parentNode;
+        while (current && current !== editor) {
+          if (current.nodeType === Node.ELEMENT_NODE) {
+            const el = current as HTMLElement;
+            if (el.getAttribute('data-spoiler') === 'true') return el;
+          }
+          current = current.parentNode;
+        }
+        return null;
+      };
+
+      const unwrapElement = (el: Element) => {
+        const fragment = document.createDocumentFragment();
+        while (el.firstChild) fragment.appendChild(el.firstChild);
+        el.parentNode?.replaceChild(fragment, el);
+      };
+
+      const spoilerAtCaret = findSpoilerAncestor(range.commonAncestorContainer);
+
+      // Случай 1: курсор без выделения
+      if (range.collapsed) {
+        if (spoilerAtCaret) {
+          // Выключаем spoiler mode
+          const newFormats = new Set(state.activeFormats);
+          newFormats.delete('tg-spoiler');
+          dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+
+          const zwsp = document.createTextNode('\u200B');
+          if (spoilerAtCaret.nextSibling) {
+            spoilerAtCaret.parentNode?.insertBefore(zwsp, spoilerAtCaret.nextSibling);
+          } else {
+            spoilerAtCaret.parentNode?.appendChild(zwsp);
+          }
+
+          const r = document.createRange();
+          r.setStartAfter(zwsp);
+          r.collapse(true);
+          selection.removeAllRanges();
+          selection.addRange(r);
+
+          return handleInput();
+        }
+
+        // Включаем spoiler mode
+        const newFormats = new Set(state.activeFormats);
+        newFormats.add('tg-spoiler');
+        dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+
+        const wrapper = document.createElement('span');
+        if (spoilerClassName) wrapper.className = spoilerClassName;
+        wrapper.setAttribute('data-spoiler', 'true');
+
+        const zwsp = document.createTextNode('\u200B');
+        wrapper.appendChild(zwsp);
+        range.insertNode(wrapper);
+
+        const r = document.createRange();
+        r.setStart(zwsp, 1);
+        r.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(r);
+
+        return handleInput();
+      }
+
+      // Случай 2: есть выделенный текст
+      // Проверяем, есть ли уже spoiler на выделении
+      const spoilers = Array.from(editor.querySelectorAll('span[data-spoiler="true"]'));
+      const rangeClone = range.cloneRange();
+      
+      const intersecting = spoilers.filter((el) => {
+        try {
+          return rangeClone.intersectsNode(el);
+        } catch {
+          return false;
+        }
+      });
+
+      if (intersecting.length > 0) {
+        // Снимаем spoiler
+        const newFormats = new Set(state.activeFormats);
+        newFormats.delete('tg-spoiler');
+        dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+
+        // Просто разворачиваем spoiler spans
+        intersecting.forEach(unwrapElement);
+
+        return handleInput();
+      }
+
+      // Накладываем spoiler на выделение
+      const newFormats = new Set(state.activeFormats);
+      newFormats.add('tg-spoiler');
+      dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
+
+      const wrapper = document.createElement('span');
+      if (spoilerClassName) wrapper.className = spoilerClassName;
+      wrapper.setAttribute('data-spoiler', 'true');
+
+      const contents = range.extractContents();
+      wrapper.appendChild(contents);
+      range.insertNode(wrapper);
+
+      // Выделяем новый wrapper
+      const newRange = document.createRange();
+      newRange.selectNodeContents(wrapper);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+
+      return handleInput();
+    }
+
+    if (variant === 'code') {
+      if (range.collapsed) return;
+
+      let node: Node | null = range.commonAncestorContainer;
+      if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+      
+      let existingCode: Element | null = null;
+      let tempNode = node;
+      while (tempNode && tempNode !== editor) {
+        if (tempNode.nodeType === Node.ELEMENT_NODE) {
+          const el = tempNode as Element;
+          if (el.tagName.toLowerCase() === 'code') {
+            existingCode = el;
+            break;
+          }
+        }
+        tempNode = tempNode.parentNode;
+      }
+
+      if (existingCode) {
+        const text = existingCode.textContent || '';
+        const textNode = document.createTextNode(text);
+        existingCode.parentNode?.replaceChild(textNode, existingCode);
+      } else {
+        const wrapper = document.createElement('code');
+        const contents = range.extractContents();
+        wrapper.appendChild(contents);
+        range.insertNode(wrapper);
+        
+        const br = document.createElement('br');
+        if (wrapper.nextSibling) {
+          wrapper.parentNode?.insertBefore(br, wrapper.nextSibling);
+        } else {
+          wrapper.parentNode?.appendChild(br);
+        }
+        
+        range.setStartAfter(br);
+        range.setEndAfter(br);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+
+      const html = handleInput();
+      updateActiveFormats();
+      return html;
+    }
+  }, [handleInput, updateActiveFormats, state.activeFormats]);
 
   const setHoveredButton = useCallback((buttonId: string | null) => {
     dispatch({ type: 'SET_HOVERED_BUTTON', payload: buttonId });
@@ -328,18 +392,18 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
     document.execCommand('insertText', false, text);
   }, []);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent, spoilerClassName?: string) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.ctrlKey && e.key === 'b') {
       e.preventDefault();
-      applyFormatting('bold', 'b');
+      applyFormatting('b');
     }
     if (e.ctrlKey && e.key === 'i') {
       e.preventDefault();
-      applyFormatting('italic', 'i');
+      applyFormatting('i');
     }
     if (e.ctrlKey && e.key === 'u') {
       e.preventDefault();
-      applyFormatting('underline', 'u');
+      applyFormatting('u');
     }
   }, [applyFormatting]);
 
@@ -351,8 +415,8 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
   }, []);
 
   const getEditorData = useCallback((): RichTextEditorData => {
-    const textContent = getTextContent();
-    const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(state.content);
+    const textContent = editorRef.current?.textContent || '';
+    const hasFormatting = /<\/?(?:b|i|s|u|code|tg-spoiler)>/i.test(state.content);
     
     return {
       content: state.content,
@@ -360,7 +424,7 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
       textContent,
       hasFormatting,
     };
-  }, [state.content, getTextContent]);
+  }, [state.content]);
 
   useEffect(() => {
     document.addEventListener('selectionchange', updateActiveFormats);
@@ -379,7 +443,6 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
     setHoveredButton,
     syncContent,
     getIconColor,
-    getTextContent,
     getEditorData,
     reset,
     dispatch,
