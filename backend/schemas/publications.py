@@ -150,6 +150,7 @@ class PublicationBase(BaseModel):
     ai_prompt: Optional[str] = None
     channel_ids: List[int] = Field(default_factory=list)
     tag_names: List[str] = Field(default_factory=list)
+    tag_color: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_auto_delete(cls, values):

@@ -17,7 +17,6 @@ interface DropdownOption {
   checked?: boolean;
 }
 
-// Тег из API
 interface ApiTag {
   id: number;
   name: string;
@@ -44,7 +43,6 @@ interface DropdownProps {
   addNewLabel?: string;
   className?: string;
   variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete';
-  // Tags props (чистый UI - только отображение и выбор)
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
   tagInputValue?: string;
@@ -64,7 +62,6 @@ interface DropdownProps {
   autoDeleteCustomHours?: number;
   onAutoDeleteCustomDaysChange?: (value: number) => void;
   onAutoDeleteCustomHoursChange?: (value: number) => void;
-  // General
   onOpen?: () => void;
   loading?: boolean;
 }
@@ -82,7 +79,6 @@ export default function Dropdown({
   addNewLabel = 'Подключить новый',
   className,
   variant = 'channels',
-  // Tags
   recentTags = [],
   searchResults = [],
   tagInputValue = '',
@@ -102,7 +98,6 @@ export default function Dropdown({
   autoDeleteCustomHours = 0,
   onAutoDeleteCustomDaysChange,
   onAutoDeleteCustomHoursChange,
-  // General
   onOpen,
   loading = false,
 }: DropdownProps) {
@@ -125,7 +120,6 @@ export default function Dropdown({
     setIsOpen(willOpen);
     if (willOpen) {
       onOpen?.();
-      // Для тегов загружаем недавние при открытии
       if (variant === 'tags') {
         onLoadRecentTags?.();
       }
