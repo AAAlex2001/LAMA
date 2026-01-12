@@ -15,11 +15,14 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
-  variant?: 'default' | 'templateCard';
+  variant?: 'default' | 'templateCard' | 'inlineButton';
   icon?: ReactNode;
   loading?: boolean;
   counter?: string;
   disabled?: boolean;
+  hovered?: boolean;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export default function Button({ 
@@ -36,6 +39,9 @@ export default function Button({
   loading = false,
   counter,
   disabled = false,
+  hovered = false,
+  onMouseEnter,
+  onMouseLeave,
 }: ButtonProps) {
   const gradientId = useId();
   
@@ -76,6 +82,7 @@ export default function Button({
         [styles.smallWrapper]: size === 'small',
         [styles.mediumWrapper]: size === 'medium',
         [styles.templateCardWrapper]: variant === 'templateCard',
+        [styles.inlineButtonWrapper]: variant === 'inlineButton',
       }
   );
 
@@ -87,6 +94,8 @@ export default function Button({
         [styles.smallButton]: size === 'small',
         [styles.mediumButton]: size === 'medium',
         [styles.templateCardButton]: variant === 'templateCard',
+        [styles.inlineButton]: variant === 'inlineButton',
+        [styles.inlineButtonHovered]: variant === 'inlineButton' && hovered,
         [styles.disabled]: disabled,
       }
   );
@@ -94,7 +103,12 @@ export default function Button({
   if (href) {
     return (
       <div className={wrapperClasses}>
-        <a href={href} className={buttonClasses}>
+        <a 
+          href={href} 
+          className={buttonClasses}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
           {buttonContent}
         </a>
       </div>
@@ -103,7 +117,13 @@ export default function Button({
 
   return (
     <div className={wrapperClasses}>
-      <button onClick={onClick} className={buttonClasses} disabled={disabled || loading}>
+      <button 
+        onClick={onClick} 
+        className={buttonClasses} 
+        disabled={disabled || loading}
+        onMouseEnter={onMouseEnter}
+        onMouseLeave={onMouseLeave}
+      >
         {buttonContent}
       </button>
     </div>

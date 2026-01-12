@@ -1,7 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import styles from './inline-buttons.module.scss';
 import Input from '@/components/input';
+import Button from '@/components/button/button';
 import { PlusIcon } from '@/components/icons';
 import Dropdown, { ButtonTypeOption } from '@/components/dropdown/dropdown';
 
@@ -27,13 +29,8 @@ interface InlineButtonsProps {
   className?: string;
 }
 
-const BUTTON_TYPE_LABELS: Record<ButtonType, string> = {
-  url: 'URL',
-  hidden_text: 'Скрытый текст',
-  callback: 'Callback',
-};
-
 export default function InlineButtons({ rows, onChange, className }: InlineButtonsProps) {
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
   const addColumn = () => {
     if (rows.length === 0) {
       // Если рядов нет - создаём первый ряд с одной кнопкой
@@ -122,6 +119,20 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
     onChange(newRows);
   };
 
+  const deleteButton = (rowIndex: number, btnIndex: number) => {
+    const newRows = rows.map((row, rIdx) => {
+      if (rIdx === rowIndex) {
+        const newButtons = row.buttons.filter((_, bIdx) => bIdx !== btnIndex);
+        return {
+          ...row,
+          buttons: newButtons,
+        };
+      }
+      return row;
+    }).filter(row => row.buttons.length > 0); // Удаляем пустые ряды
+    onChange(newRows);
+  };
+
   // Собираем все кнопки в плоский список для редакторов и нумерации
   const allButtons: { rowIndex: number; btnIndex: number; button: InlineButton; number: number }[] = [];
   let buttonCounter = 1;
@@ -162,10 +173,18 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
               <div key={row.id} className={styles.buttonRow}>
                 {row.buttons.map((button, btnIndex) => {
                   const btnNumber = getButtonNumber(rowIndex, btnIndex);
+                  const isHovered = hoveredButton === button.id;
                   return (
-                    <div key={button.id} className={styles.buttonCell}>
-                      Кнопка {btnNumber}
-                    </div>
+                    <Button
+                      key={button.id}
+                      text={isHovered ? 'Удалить' : `Кнопка ${btnNumber}`}
+                      variant="inlineButton"
+                      showArrow={false}
+                      onClick={() => deleteButton(rowIndex, btnIndex)}
+                      hovered={isHovered}
+                      onMouseEnter={() => setHoveredButton(button.id)}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    />
                   );
                 })}
               </div>
@@ -178,7 +197,6 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
       <div className={styles.editors}>
         {allButtons.map(({ rowIndex, btnIndex, button }) => {
           const btnNumber = getButtonNumber(rowIndex, btnIndex);
-          const currentTypeLabel = BUTTON_TYPE_LABELS[button.type] || 'URL';
           
           const getPlaceholder = () => {
             switch (button.type) {
@@ -216,7 +234,7 @@ export default function InlineButtons({ rows, onChange, className }: InlineButto
                 <span className={styles.buttonLabel}>Кнопка {btnNumber}</span>
                 <Dropdown
                   variant="button-type"
-                  label={currentTypeLabel}
+                  label="Тип кнопки"
                   buttonTypeValue={button.type as ButtonTypeOption}
                   onButtonTypeChange={(value: ButtonTypeOption) => {
                     updateButton(rowIndex, btnIndex, { 
