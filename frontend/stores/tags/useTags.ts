@@ -6,7 +6,7 @@ import {
   initialTagsState,
   tagsReducer,
 } from './types';
-import { fetchTags, searchTags } from './api';
+import { fetchTags, searchTags, deleteTag } from './api';
 
 export function useTags() {
   const [state, dispatch] = useReducer(tagsReducer, initialTagsState);
@@ -68,6 +68,17 @@ export function useTags() {
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
   }, []);
 
+  // Удалить тег
+  const handleDeleteTag = useCallback(async (tagId: number) => {
+    try {
+      await deleteTag(tagId);
+      // Удаляем тег из локального состояния
+      dispatch({ type: 'REMOVE_TAG', payload: tagId });
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+    }
+  }, []);
+
   // Сброс состояния
   const reset = useCallback(() => {
     dispatch({ type: 'RESET' });
@@ -88,6 +99,7 @@ export function useTags() {
     setTagInputValue,
     selectTag,
     clearSearch,
+    deleteTag: handleDeleteTag,
     reset,
   };
 }

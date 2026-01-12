@@ -10,6 +10,7 @@ import SearchBar from '@/components/search-bar/search-bar';
 import Input from '@/components/input';
 import TimeDurationPicker from '@/components/time-duration-picker';
 import Loader from '@/components/loader';
+import TagCloseIcon from '@/components/icons/tag-close-icon';
 
 interface DropdownOption {
   id: string;
@@ -51,6 +52,7 @@ interface DropdownProps {
   onSelectTag?: (tag: ApiTag) => void;
   onSearchTags?: (query: string) => void;
   onLoadRecentTags?: () => void;
+  onDeleteTag?: (tagId: number) => void;
   tagsLoading?: boolean;
   tagsSearching?: boolean;
   selectedTagColor?: TagColor;
@@ -93,6 +95,7 @@ export default function Dropdown({
   onSelectTag,
   onSearchTags,
   onLoadRecentTags,
+  onDeleteTag,
   tagsLoading = false,
   tagsSearching = false,
   selectedTagColor = '#FAC7C7',
@@ -245,7 +248,7 @@ export default function Dropdown({
             <>
               <span className={styles.recentTagsLabel}>Недавние теги</span>
               <div className={styles.tagsPreview}>
-                {recentTags.slice(0, 5).map((tag) => (
+                {recentTags.slice(0, 6).map((tag) => (
                   <button
                     key={tag.id}
                     type="button"
@@ -258,6 +261,17 @@ export default function Dropdown({
                     <span className={styles.tagText} title={tag.name}>
                       {tag.name}
                     </span>
+                    {onDeleteTag && (
+                      <span 
+                        className={styles.tagDeleteIcon}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteTag(tag.id);
+                        }}
+                      >
+                        <TagCloseIcon width={12} height={12} color="#383F45" />
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>

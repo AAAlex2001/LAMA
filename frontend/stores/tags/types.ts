@@ -28,6 +28,7 @@ export type TagsAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_SEARCH_RESULTS'; payload: Tag[] }
   | { type: 'SET_TAG_INPUT_VALUE'; payload: string }
+  | { type: 'REMOVE_TAG'; payload: number }
   | { type: 'RESET' };
 
 export const initialTagsState: TagsState = {
@@ -56,6 +57,12 @@ export function tagsReducer(
       return { ...state, searchResults: action.payload };
     case 'SET_TAG_INPUT_VALUE':
       return { ...state, tagInputValue: action.payload };
+    case 'REMOVE_TAG':
+      return { 
+        ...state, 
+        recentTags: state.recentTags.filter(tag => tag.id !== action.payload),
+        searchResults: state.searchResults.filter(tag => tag.id !== action.payload),
+      };
     case 'RESET':
       return initialTagsState;
     default:

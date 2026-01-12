@@ -40,6 +40,7 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
 
   const editorRef = useRef<HTMLDivElement>(null);
   const isInternalUpdate = useRef(false);
+  const processingRef = useRef(false);
 
   const ensureInlineFormatsEnabled = useCallback((formats: Set<string>) => {
     if (formats.has('b') && !document.queryCommandState('bold')) {
@@ -107,25 +108,37 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
   }, []);
 
   const handleInput = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) return '';
-
-    const textContent = editor.textContent || '';
-
-    if (textContent.length > maxLength) {
-      editor.innerHTML = state.content;
+    if (!editorRef.current) return '';
+    if (processingRef.current) {
       return state.content;
     }
+    processingRef.current = true;
 
-    dispatch({ type: 'SET_IS_EMPTY', payload: !textContent.trim() });
-    dispatch({ type: 'SET_CHAR_COUNT', payload: textContent.length });
+    try {
+      const textContent = editorRef.current.textContent || '';
 
-    const html = normalizeHtml(editor.innerHTML);
+      if (textContent.length > maxLength) {
+        editorRef.current.innerHTML = state.content;
+        return state.content;
+      }
 
-    isInternalUpdate.current = true;
-    dispatch({ type: 'SET_CONTENT', payload: html });
+      const isEmpty = !textContent.trim();
+      dispatch({ type: 'SET_IS_EMPTY', payload: isEmpty });
+      dispatch({ type: 'SET_CHAR_COUNT', payload: textContent.length });
 
-    return html;
+      if (isEmpty) {
+        dispatch({ type: 'SET_ACTIVE_FORMATS', payload: new Set() });
+      }
+
+      const html = normalizeHtml(editorRef.current.innerHTML);
+
+      isInternalUpdate.current = true;
+      dispatch({ type: 'SET_CONTENT', payload: html });
+
+      return html;
+    } finally {
+      processingRef.current = false;
+    }
   }, [maxLength, state.content, normalizeHtml]);
 
   const applyFormatting = useCallback(

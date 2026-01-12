@@ -31,6 +31,7 @@ interface PostSettingsProps {
   onSearchTags: (query: string) => void;
   onTagInputChange: (value: string) => void;
   onSelectTag: (tag: Tag) => void;
+  onDeleteTag: (tagId: number) => void;
   selectedTagColor: TagColor;
   onTagColorChange: (color: TagColor) => void;
   
@@ -85,6 +86,7 @@ export default function PostSettings({
   onSearchTags,
   onTagInputChange,
   onSelectTag,
+  onDeleteTag,
   selectedTagColor,
   onTagColorChange,
   repeatInterval,
@@ -143,6 +145,7 @@ export default function PostSettings({
               onSearchTags={onSearchTags}
               onTagInputChange={onTagInputChange}
               onSelectTag={onSelectTag}
+              onDeleteTag={onDeleteTag}
               selectedTagColor={selectedTagColor}
               onTagColorChange={onTagColorChange}
             />

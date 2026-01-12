@@ -55,10 +55,11 @@ export default function CreatePostPage() {
     const files = event.target.files;
     if (!files) return;
 
-    // Ограничение максимум 10 файлов
+    // Ограничение: если есть кнопки - максимум 1 файл, иначе 10
+    const maxFiles = buttonRows.length > 0 ? 1 : 10;
     const filesToProcess = Array.from(files);
     const currentCount = mediaFiles.length;
-    const availableSlots = 10 - currentCount;
+    const availableSlots = maxFiles - currentCount;
     
     if (availableSlots <= 0) {
       event.target.value = '';
@@ -284,7 +285,7 @@ export default function CreatePostPage() {
                 showArrow={false}
                 icon={<PaperclipIcon width={24} height={24} />}
                 fullWidth
-                disabled={mediaFiles.length >= 10 || buttonRows.length > 0}
+                disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
                 onClick={() => fileInputRef.current?.click()}
               />
             </div>
@@ -297,7 +298,7 @@ export default function CreatePostPage() {
                 variant="templateCard"
                 showArrow={false}
                 icon={<PaperclipIcon width={24} height={24} />}
-                disabled={mediaFiles.length >= 10 || buttonRows.length > 0}
+                disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
                 onClick={() => fileInputRef.current?.click()}
               />
             </div>
@@ -359,6 +360,7 @@ export default function CreatePostPage() {
             onSearchTags={postSettings.searchTags}
             onTagInputChange={postSettings.setTagInputValue}
             onSelectTag={postSettings.selectTag}
+            onDeleteTag={postSettings.deleteTag}
             selectedTagColor={postSettings.selectedTagColor}
             onTagColorChange={postSettings.handleTagColorChange}
             repeatInterval={postSettings.repeatInterval}
@@ -407,6 +409,7 @@ export default function CreatePostPage() {
               onSearchTags={postSettings.searchTags}
               onTagInputChange={postSettings.setTagInputValue}
               onSelectTag={postSettings.selectTag}
+              onDeleteTag={postSettings.deleteTag}
               selectedTagColor={postSettings.selectedTagColor}
               onTagColorChange={postSettings.handleTagColorChange}
               repeatInterval={postSettings.repeatInterval}

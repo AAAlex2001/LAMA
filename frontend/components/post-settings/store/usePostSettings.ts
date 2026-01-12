@@ -168,6 +168,7 @@ export function usePostSettings() {
     searchTags: tagsStore.searchTags,
     setTagInputValue: tagsStore.setTagInputValue,
     selectTag: tagsStore.selectTag,
+    deleteTag: tagsStore.deleteTag,
     clearSearch: tagsStore.clearSearch,
 
     // Actions

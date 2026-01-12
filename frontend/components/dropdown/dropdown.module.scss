@@ -254,10 +254,10 @@
 
 .tagPreviewItem {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 3px 8px;
+  padding: 3px 4px;
   gap: 8px;
   height: 22px;
   border-radius: 5px;
@@ -275,8 +275,21 @@
   min-width: 0;
   max-width: 100%;
 
+  .tagDeleteIcon {
+    display: none;
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
   &:hover {
     opacity: 0.85;
+    
+    .tagDeleteIcon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 
   &.tagSelected {
