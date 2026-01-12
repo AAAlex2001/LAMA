@@ -90,8 +90,6 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
 
   const handleInput = useCallback(() => {
     if (!editorRef.current) return '';
-
-    // Защита от одновременной обработки (избегаем каскадных вызовов)
     if (processingRef.current) {
       return state.content;
     }
@@ -109,11 +107,7 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
       dispatch({ type: 'SET_CHAR_COUNT', payload: textContent.length });
     
       let html = editorRef.current.innerHTML;
-      
-      // Убираем zero-width space
       html = html.replace(/\u200B/g, '');
-      
-      // Нормализация HTML-тегов (простые замены)
       html = html
         .replace(/<strong>/gi, '<b>')
         .replace(/<\/strong>/gi, '</b>')
@@ -124,11 +118,8 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
         .replace(/<del>/gi, '<s>')
         .replace(/<\/del>/gi, '</s>');
       
-      // Убираем style атрибуты из форматирующих тегов (оптимизированный regex без backtracking)
       html = html.replace(/<(b|i|u|s|strong|em|strike|del)\s+style="[^"]+"/gi, '<$1');
       html = html.replace(/\s+style=""/gi, '');
-      
-      // Конвертируем spoiler spans через DOM вместо regex (избегаем catastrophic backtracking)
       const tempDiv = document.createElement('div');
       tempDiv.innerHTML = html;
       const spoilerSpans = tempDiv.querySelectorAll('span[data-spoiler="true"]');
@@ -153,6 +144,21 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
   const applyFormatting = useCallback((variant: FormatType, spoilerClassName?: string): string | undefined => {
     const editor = editorRef.current;
     if (!editor) return;
+
+    const ensureInlineFormatsEnabled = (formats: Set<string>) => {
+      if (formats.has('b') && !document.queryCommandState('bold')) {
+        document.execCommand('bold', false);
+      }
+      if (formats.has('i') && !document.queryCommandState('italic')) {
+        document.execCommand('italic', false);
+      }
+      if (formats.has('u') && !document.queryCommandState('underline')) {
+        document.execCommand('underline', false);
+      }
+      if (formats.has('s') && !document.queryCommandState('strikeThrough')) {
+        document.execCommand('strikeThrough', false);
+      }
+    };
     
     editor.focus();
     
@@ -235,10 +241,8 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
 
       const spoilerAtCaret = findSpoilerAncestor(range.commonAncestorContainer);
 
-      // Случай 1: курсор без выделения
       if (range.collapsed) {
         if (spoilerAtCaret) {
-          // Выключаем spoiler mode
           const newFormats = new Set(state.activeFormats);
           newFormats.delete('tg-spoiler');
           dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
@@ -255,11 +259,12 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
           r.collapse(true);
           selection.removeAllRanges();
           selection.addRange(r);
+          ensureInlineFormatsEnabled(newFormats);
+          updateActiveFormats();
 
           return handleInput();
         }
 
-        // Включаем spoiler mode
         const newFormats = new Set(state.activeFormats);
         newFormats.add('tg-spoiler');
         dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
@@ -278,11 +283,11 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
         selection.removeAllRanges();
         selection.addRange(r);
 
+        updateActiveFormats();
+
         return handleInput();
       }
 
-      // Случай 2: есть выделенный текст
-      // Проверяем, есть ли уже spoiler на выделении
       const spoilers = Array.from(editor.querySelectorAll('span[data-spoiler="true"]'));
       const rangeClone = range.cloneRange();
       
@@ -295,18 +300,18 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
       });
 
       if (intersecting.length > 0) {
-        // Снимаем spoiler
         const newFormats = new Set(state.activeFormats);
         newFormats.delete('tg-spoiler');
         dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
 
-        // Просто разворачиваем spoiler spans
         intersecting.forEach(unwrapElement);
+
+        ensureInlineFormatsEnabled(newFormats);
+        updateActiveFormats();
 
         return handleInput();
       }
 
-      // Накладываем spoiler на выделение
       const newFormats = new Set(state.activeFormats);
       newFormats.add('tg-spoiler');
       dispatch({ type: 'SET_ACTIVE_FORMATS', payload: newFormats });
@@ -319,11 +324,12 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
       wrapper.appendChild(contents);
       range.insertNode(wrapper);
 
-      // Выделяем новый wrapper
       const newRange = document.createRange();
       newRange.selectNodeContents(wrapper);
       selection.removeAllRanges();
       selection.addRange(newRange);
+
+      updateActiveFormats();
 
       return handleInput();
     }
