@@ -58,6 +58,9 @@
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .optionsList {
@@ -66,21 +69,6 @@
   align-items: flex-start;
   padding: 0;
   width: 100%;
-  max-height: 222px;
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #F0F4FA;
-    border-radius: 3px;
-  }
 }
 
 .loadingContainer {
@@ -254,6 +242,15 @@
   flex-wrap: wrap;
 }
 
+.tagText {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tagPreviewItem {
   display: flex;
   flex-direction: column;
@@ -273,6 +270,9 @@
   border: none;
   cursor: pointer;
   transition: opacity 0.15s ease;
+  flex: 1 1 calc((100% - 12px) / 3);
+  min-width: 0;
+  max-width: 100%;
 
   &:hover {
     opacity: 0.85;
@@ -299,21 +299,6 @@
   align-items: flex-start;
   padding: 0;
   width: 100%;
-  max-height: 150px;
-  overflow-y: auto;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #F0F4FA;
-    border-radius: 3px;
-  }
 }
 
 .searchResultItem {
@@ -322,6 +307,7 @@
   align-items: center;
   padding: 10px 0;
   width: 100%;
+  min-width: 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 400;
@@ -333,6 +319,9 @@
   cursor: pointer;
   text-align: left;
   transition: color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &:hover {
     color: #3B82F6;

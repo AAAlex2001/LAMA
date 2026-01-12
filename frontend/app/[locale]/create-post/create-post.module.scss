@@ -109,7 +109,8 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 12px;
-  overflow-y: auto;
+  max-height: 435px;
+  overflow: hidden;
   width: 100%;
   max-width: 320px;
   animation: modalSlideIn 0.2s ease-out;

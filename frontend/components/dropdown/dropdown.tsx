@@ -242,7 +242,9 @@ export default function Dropdown({
                     style={{ backgroundColor: tag.color || '#FAC7C7' }}
                     onClick={() => handleSelectTag(tag)}
                   >
-                    {tag.name}
+                    <span className={styles.tagText} title={tag.name}>
+                      {tag.name}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -273,7 +275,9 @@ export default function Dropdown({
                   className={styles.searchResultItem}
                   onClick={() => handleSelectTag(tag)}
                 >
-                  {tag.name}
+                  <span className={styles.tagText} title={tag.name}>
+                    {tag.name}
+                  </span>
                 </button>
               ))}
             </div>
