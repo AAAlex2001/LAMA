@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "classnames": "^2.5.1",
+    "emoji-picker-react": "^4.16.1",
     "framer-motion": "^12.23.25",
     "next": "16.0.10",
     "next-intl": "^4.6.1",

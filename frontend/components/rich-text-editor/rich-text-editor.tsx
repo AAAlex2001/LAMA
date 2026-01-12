@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useImperativeHandle, forwardRef, useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import styles from './rich-text-editor.module.scss';
 import { useRichTextEditor } from './store';
 import AiInputBar from '@/components/ai-input-bar';
+
+const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 import {
   AiEditIcon,
   EmojiIcon,
@@ -39,6 +42,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
 }, ref) => {
   const [showAiInput, setShowAiInput] = useState(false);
   const [selectedText, setSelectedText] = useState('');
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
   const {
     state,
@@ -70,6 +74,42 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
       setShowAiInput(!showAiInput);
     }
   };
+
+  const handleEmojiClick = useCallback((emojiData: any) => {
+    if (!editorRef.current) return;
+    
+    editorRef.current.focus();
+    
+    const selection = window.getSelection();
+    let range: Range;
+    
+    if (selection && selection.rangeCount > 0) {
+      range = selection.getRangeAt(0);
+    } else {
+      range = document.createRange();
+      range.selectNodeContents(editorRef.current);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    }
+    
+    const textNode = document.createTextNode(emojiData.emoji);
+    range.insertNode(textNode);
+    
+    // Перемещаем курсор после вставленного эмодзи
+    range.setStartAfter(textNode);
+    range.setEndAfter(textNode);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+    
+    const html = handleInput();
+    if (html !== undefined) {
+      onChange(html);
+    }
+    
+    setShowEmojiPicker(false);
+    editorRef.current.focus();
+  }, [editorRef, handleInput, onChange]);
 
   const handleAiSubmit = async (prompt: string) => {
     try {
@@ -276,11 +316,23 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             className={styles.toolButton} 
             type="button" 
             aria-label="Эмодзи"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             onMouseEnter={() => setHoveredButton('emoji')}
             onMouseLeave={() => setHoveredButton(null)}
           >
             <EmojiIcon width={21} height={21} color={getIconColor('emoji')} />
           </button>
+          {showEmojiPicker && (
+            <div className={styles.emojiPickerWrapper}>
+              <EmojiPicker 
+                onEmojiClick={handleEmojiClick} 
+                width={300} 
+                height={300}
+                searchDisabled
+                skinTonesDisabled
+              />
+            </div>
+          )}
         </div>
         <div className={styles.charCountWrapper}>
           <button className={styles.toolButton} type="button" aria-label="Подсчет символов">
