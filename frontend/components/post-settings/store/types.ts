@@ -51,7 +51,7 @@ export type PostSettingsAction =
   | { type: 'RESET' };
 
 export const initialPostSettingsState: PostSettingsState = {
-  notifySubscribers: false,
+  notifySubscribers: true,
   pinPost: false,
   showCreateChannel: false,
   repeatInterval: 'never',

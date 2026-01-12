@@ -127,6 +127,7 @@ class PublicationBase(BaseModel):
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: bool = False
+    disable_notification: bool = False
     auto_delete_hours: Optional[int] = Field(
         None,
         gt=0,
@@ -188,6 +189,7 @@ class PublicationUpdate(BaseModel):
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: Optional[bool] = None
+    disable_notification: Optional[bool] = None
     auto_delete_hours: Optional[int] = Field(
         None,
         gt=0,
@@ -238,6 +240,7 @@ class PublicationResponse(BaseModel):
     inline_keyboard: Optional[Dict[str, Any]] = None
     poll_data: Optional[Dict[str, Any]] = None
     pin_message: bool = False
+    disable_notification: bool = False
     auto_delete_hours: Optional[int] = None
     auto_delete_delay_seconds: Optional[int] = None
     scheduled_time: Optional[datetime] = None

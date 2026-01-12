@@ -1,2 +1,2 @@
-export { useRichTextEditor } from './useRichTextEditor';
+export { useRichTextEditor } from './useRichTextEditorRefactored';
 export type { FormatType, RichTextEditorState, RichTextEditorData } from './types';

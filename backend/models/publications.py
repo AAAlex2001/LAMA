@@ -70,6 +70,7 @@ class Publication(Base):
     poll_data = Column(JSON, nullable=True)
     
     pin_message = Column(Boolean, default=False)
+    disable_notification = Column(Boolean, default=False)
     auto_delete_hours = Column(Integer, nullable=True)
     auto_delete_seconds = Column(Integer, nullable=True)
     

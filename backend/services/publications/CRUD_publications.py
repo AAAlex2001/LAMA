@@ -43,6 +43,7 @@ class CRUDPublicationService:
             inline_keyboard=data.inline_keyboard.model_dump() if data.inline_keyboard else None,
             poll_data=data.poll_data.model_dump() if data.poll_data else None,
             pin_message=data.pin_message,
+            disable_notification=data.disable_notification,
             auto_delete_hours=data.auto_delete_hours,
             auto_delete_seconds=auto_delete_seconds,
             repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],

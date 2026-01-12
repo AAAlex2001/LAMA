@@ -34,6 +34,7 @@ export interface CreatePostRequest {
   inline_keyboard?: InlineKeyboard;
   poll_data?: PollData;
   pin_message?: boolean;
+  disable_notification?: boolean;
   auto_delete_hours?: number;
   auto_delete_delay_seconds?: number;
   scheduled_time?: string; // ISO date string

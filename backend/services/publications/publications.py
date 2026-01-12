@@ -205,7 +205,8 @@ class PublicationService:
                         try:
                             await bot.pin_chat_message(
                                 chat_id=channel.telegram_id,
-                                message_id=message_ids[0]
+                                message_id=message_ids[0],
+                                disable_notification=publication.disable_notification
                             )
                         except Exception:
                             pass
@@ -385,7 +386,8 @@ class PublicationService:
                 chat_id=channel.telegram_id,
                 text=publication.text_content,
                 reply_markup=keyboard,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -403,7 +405,8 @@ class PublicationService:
                             caption=publication.text_content,
                             reply_markup=keyboard,
                             parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler
+                            has_spoiler=spoiler,
+                            disable_notification=publication.disable_notification
                         )
                         return [message]
                     else:
@@ -413,7 +416,8 @@ class PublicationService:
                             caption=publication.text_content,
                             reply_markup=keyboard,
                             parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler
+                            has_spoiler=spoiler,
+                            disable_notification=publication.disable_notification
                         )
                         return [message]
 
@@ -451,14 +455,19 @@ class PublicationService:
                                 media=url,
                                 has_spoiler=spoiler
                             ))
-                messages = await bot.send_media_group(chat_id=channel.telegram_id, media=media)
+                messages = await bot.send_media_group(
+                    chat_id=channel.telegram_id,
+                    media=media,
+                    disable_notification=publication.disable_notification
+                )
                 return list(messages)
             else:
                 message = await bot.send_message(
                     chat_id=channel.telegram_id,
                     text=publication.text_content,
                     reply_markup=keyboard,
-                    parse_mode=ParseMode.HTML
+                    parse_mode=ParseMode.HTML,
+                    disable_notification=publication.disable_notification
                 )
             return [message]
 
@@ -469,7 +478,8 @@ class PublicationService:
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur
+                has_spoiler=publication.media_blur,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -480,7 +490,8 @@ class PublicationService:
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur
+                has_spoiler=publication.media_blur,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -490,7 +501,8 @@ class PublicationService:
                 audio=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -500,7 +512,8 @@ class PublicationService:
                 document=publication.media_urls[0],
                 caption=publication.text_content,
                 reply_markup=keyboard,
-                parse_mode=ParseMode.HTML
+                parse_mode=ParseMode.HTML,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -510,7 +523,8 @@ class PublicationService:
                 text=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
-                disable_web_page_preview=False
+                disable_web_page_preview=False,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
@@ -525,7 +539,8 @@ class PublicationService:
                 allows_multiple_answers=poll_data.get('allows_multiple_answers', False),
                 correct_option_id=poll_data.get('correct_option_id'),
                 explanation=poll_data.get('explanation'),
-                reply_markup=keyboard
+                reply_markup=keyboard,
+                disable_notification=publication.disable_notification
             )
             return [message]
 
