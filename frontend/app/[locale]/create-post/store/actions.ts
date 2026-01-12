@@ -58,9 +58,17 @@ export async function handlePublishNow(
       settings.autoDeleteCustomHours
     );
 
+    // Проверяем, есть ли HTML теги форматирования
+    const hasFormatting = /<\/?(?:b|i|s|u|code|pre)>/i.test(content.text);
+    const formattedContent = hasFormatting ? {
+      text: content.text,
+      parse_mode: 'HTML'
+    } : undefined;
+
     const request: CreatePostRequest = {
       content_type: 'text',
       text_content: content.text,
+      formatted_content: formattedContent,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',
@@ -106,9 +114,17 @@ export async function handleSaveDraft(
       throw new Error('Текст поста не может быть пустым');
     }
 
+    // Проверяем, есть ли HTML теги форматирования
+    const hasFormatting = /<\/?(?:b|i|s|u|code|pre)>/i.test(content.text);
+    const formattedContent = hasFormatting ? {
+      text: content.text,
+      parse_mode: 'HTML'
+    } : undefined;
+
     const request: CreatePostRequest = {
       content_type: 'text',
       text_content: content.text,
+      formatted_content: formattedContent,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       status: 'draft',

@@ -51,6 +51,36 @@ export default function CreatePostPage() {
     adjustTextareaHeight();
   }, [text]);
 
+  const applyFormatting = (tag: 'b' | 'i' | 's' | 'u' | 'code') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+
+    if (start === end) return; // Ничего не выделено
+
+    const selectedText = text.substring(start, end);
+    
+    // Для кода: используем <pre> для многострочного, <code> для однострочного
+    let actualTag = tag;
+    if (tag === 'code' && selectedText.includes('\n')) {
+      actualTag = 'pre' as any;
+    }
+    
+    const formattedText = `<${actualTag}>${selectedText}</${actualTag}>`;
+
+    const newText = text.substring(0, start) + formattedText + text.substring(end);
+    setText(newText);
+
+    // Восстанавливаем фокус и позицию курсора
+    setTimeout(() => {
+      textarea.focus();
+      const newCursorPos = start + formattedText.length;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
   const onPublishNow = async () => {
     setIsPublishing(true);
     
@@ -129,10 +159,10 @@ export default function CreatePostPage() {
             </div>
             <div className={styles.textareaFooter}>
               <div className={styles.textareaTools}>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Жирный">
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Жирный" onClick={() => applyFormatting('b')}>
                   <BoldIcon width={21} height={21} />
                 </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Курсив">
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Курсив" onClick={() => applyFormatting('i')}>
                   <ItalicIcon width={21} height={21} />
                 </button>
                 <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Ссылка">
@@ -141,16 +171,16 @@ export default function CreatePostPage() {
                 <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Цитата">
                   <QuoteIcon width={21} height={21} />
                 </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Код">
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Код" onClick={() => applyFormatting('code')}>
                   <CodeIcon width={21} height={21} />
                 </button>
                 <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Блюр">
                   <BlurIcon width={21} height={21} />
                 </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Перечеркнутый">
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Перечеркнутый" onClick={() => applyFormatting('s')}>
                   <StrikethroughIcon width={21} height={21} />
                 </button>
-                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Подчеркнутый">
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Подчеркнутый" onClick={() => applyFormatting('u')}>
                   <UnderlineIcon width={21} height={21} />
                 </button>
                 <button className={styles.toolButton} type="button" aria-label="AI редактирование">
