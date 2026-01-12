@@ -64,7 +64,12 @@ export function tagsReducer(
         searchResults: state.searchResults.filter(tag => tag.id !== action.payload),
       };
     case 'RESET':
-      return initialTagsState;
+      // Сбрасываем только инпут и результаты поиска, но оставляем загруженные теги
+      return {
+        ...state,
+        tagInputValue: '',
+        searchResults: [],
+      };
     default:
       return state;
   }

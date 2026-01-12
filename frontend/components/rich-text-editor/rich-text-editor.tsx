@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import styles from './rich-text-editor.module.scss';
 import { useRichTextEditor } from './store';
 import AiInputBar from '@/components/ai-input-bar';
+import Tooltip from '@/components/tooltip/tooltip';
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
 import {
@@ -43,6 +44,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   const [showAiInput, setShowAiInput] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [hasSelection, setHasSelection] = useState(false);
+  const [selectionPosition, setSelectionPosition] = useState({ top: 0, left: 0 });
   
   const {
     state,
@@ -64,6 +67,32 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
     }
     return '';
   }, []);
+
+  const handleSelectionChange = useCallback(() => {
+    const selection = window.getSelection();
+    const hasText = !!selection && selection.toString().trim().length > 0;
+    setHasSelection(hasText);
+    
+    if (hasText && selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const editorRect = editorRef.current?.getBoundingClientRect();
+      
+      if (editorRect) {
+        setSelectionPosition({
+          top: rect.top - editorRect.top - 50,
+          left: rect.left - editorRect.left + (rect.width / 2) - 30,
+        });
+      }
+    }
+  }, [editorRef]);
+
+  useEffect(() => {
+    document.addEventListener('selectionchange', handleSelectionChange);
+    return () => {
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, [handleSelectionChange]);
 
   const handleAiButtonClick = () => {
     const text = getSelectedText();
@@ -213,6 +242,66 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           suppressContentEditableWarning
         />
         {state.isEmpty && <div className={styles.placeholder}>{placeholder}</div>}
+        
+        {/* Floating toolbar для мобилки */}
+        {hasSelection && (
+          <div 
+            className={styles.floatingToolbar}
+            style={{
+              top: `${selectionPosition.top}px`,
+              left: `${selectionPosition.left}px`,
+            }}
+          >
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Жирный" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('b'); if (html !== undefined) onChange(html); }}
+            >
+              <BoldIcon width={21} height={21} color="#383F45" />
+            </button>
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Курсив" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('i'); if (html !== undefined) onChange(html); }}
+            >
+              <ItalicIcon width={21} height={21} color="#383F45" />
+            </button>
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Подчеркнутый" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('u'); if (html !== undefined) onChange(html); }}
+            >
+              <UnderlineIcon width={21} height={21} color="#383F45" />
+            </button>
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Перечеркнутый" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('s'); if (html !== undefined) onChange(html); }}
+            >
+              <StrikethroughIcon width={21} height={21} color="#383F45" />
+            </button>
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Скрытый текст" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('tg-spoiler', styles.spoiler); if (html !== undefined) onChange(html); }}
+            >
+              <BlurIcon width={21} height={21} color="#383F45" />
+            </button>
+            <button 
+              className={styles.floatingButton} 
+              type="button" 
+              aria-label="Код" 
+              onMouseDown={(e) => { e.preventDefault(); const html = applyFormatting('code'); if (html !== undefined) onChange(html); }}
+            >
+              <CodeIcon width={21} height={21} color="#383F45" />
+            </button>
+          </div>
+        )}
       </div>
       
       {showAiInput && (
@@ -233,6 +322,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <AiEditIcon width={21} height={21} color={showAiInput ? '#3B82F6' : getIconColor('ai')} />
+            {state.hoveredButton === 'ai' && <Tooltip text="ии редактор" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -243,6 +333,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <BoldIcon width={21} height={21} color={getIconColor('b', 'b')} />
+            {state.hoveredButton === 'b' && <Tooltip text="жирный" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -253,6 +344,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <ItalicIcon width={21} height={21} color={getIconColor('i', 'i')} />
+            {state.hoveredButton === 'i' && <Tooltip text="курсив" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -263,6 +355,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <StrikethroughIcon width={21} height={21} color={getIconColor('s', 's')} />
+            {state.hoveredButton === 's' && <Tooltip text="зачеркнутый" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -273,6 +366,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <UnderlineIcon width={21} height={21} color={getIconColor('u', 'u')} />
+            {state.hoveredButton === 'u' && <Tooltip text="подчеркнутый" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -283,6 +377,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <BlurIcon width={21} height={21} color={getIconColor('tg-spoiler', 'tg-spoiler')} />
+            {state.hoveredButton === 'tg-spoiler' && <Tooltip text="скрытый" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -292,6 +387,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <QuoteIcon width={21} height={21} color={getIconColor('quote')} />
+            {state.hoveredButton === 'quote' && <Tooltip text="цитата" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -301,6 +397,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <LinkIcon width={21} height={21} color={getIconColor('link')} />
+            {state.hoveredButton === 'link' && <Tooltip text="ссылка" />}
           </button>
           <button 
             className={`${styles.toolButton} ${styles.desktopOnly}`} 
@@ -311,6 +408,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <CodeIcon width={21} height={21} color={getIconColor('code', 'code')} />
+            {state.hoveredButton === 'code' && <Tooltip text="код" />}
           </button>
           <button 
             className={styles.toolButton} 
@@ -321,6 +419,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
             onMouseLeave={() => setHoveredButton(null)}
           >
             <EmojiIcon width={21} height={21} color={showEmojiPicker ? '#3B82F6' : getIconColor('emoji')} />
+            {state.hoveredButton === 'emoji' && <Tooltip text="эмодзи" />}
           </button>
           {showEmojiPicker && (
             <div className={styles.emojiPickerWrapper}>

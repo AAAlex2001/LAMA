@@ -135,6 +135,7 @@ export function usePostSettings() {
   // Сброс настроек
   const resetSettings = useCallback(() => {
     dispatch({ type: 'RESET' });
+    // Сбрасываем только инпут тега и результаты поиска
     tagsStore.reset();
   }, [tagsStore]);
 

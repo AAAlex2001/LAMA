@@ -197,6 +197,7 @@ export default function PostSettings({
           fullWidth
           variant="templateCard"
           onClick={onReset}
+          disabled
         />
       </div>
 

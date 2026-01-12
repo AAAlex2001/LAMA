@@ -130,6 +130,8 @@ export default function CreatePostPage() {
         setButtonRows([]);
         setMediaFiles([]);
         setShowInlineButtons(false);
+        // Обновляем теги - загружаем актуальный список
+        postSettings.loadRecentTags();
       } else {
         alert(`Ошибка: ${result.message}`);
         if (result.errors) {
@@ -169,10 +171,10 @@ export default function CreatePostPage() {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.mainContent}>
-        <div className={styles.editorColumn}>
-          <div className={styles.editor}>
-            <div className={styles.header}>
+        <div className={styles.mainContent}>
+          <div className={styles.editorColumn}>
+            <div className={styles.editor}>
+              <div className={styles.header}>
               <span className={styles.headerTitle}>Новая публикация</span>
               <button
                 className={styles.settingsButton}
