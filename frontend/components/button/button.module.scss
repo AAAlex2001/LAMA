@@ -28,6 +28,7 @@
   font-family: inherit;
   box-sizing: border-box;
   height: 37px;
+  min-width: 110px;
 
   &:not(.templateCardButton):hover {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
