@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 import pytz
 import asyncio
@@ -13,7 +13,8 @@ from aiogram.exceptions import TelegramRetryAfter
 from backend.models.publications import (
     Publication, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
-    ContentType as DBContentType
+    ContentType as DBContentType,
+    RepeatInterval as DBRepeatInterval
 )
 from backend.models.channels import ChannelGroup as Channel, BackupMode
 from backend.schemas.publications import AIGenerateRequest, AIEditRequest, EditPublishedRequest
@@ -32,6 +33,31 @@ class PublicationService:
         self.crud = CRUDPublicationService(db)
         self.ai_service = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
+
+    @staticmethod
+    def calculate_next_repeat_time(
+        base_time: datetime,
+        repeat_interval: DBRepeatInterval,
+        custom_days: Optional[int] = None
+    ) -> Optional[datetime]:
+        """Вычислить следующее время повтора"""
+        if repeat_interval == DBRepeatInterval.NEVER:
+            return None
+        
+        if repeat_interval == DBRepeatInterval.DAILY:
+            return base_time + timedelta(days=1)
+        elif repeat_interval == DBRepeatInterval.WEEKLY:
+            return base_time + timedelta(weeks=1)
+        elif repeat_interval == DBRepeatInterval.BIWEEKLY:
+            return base_time + timedelta(weeks=2)
+        elif repeat_interval == DBRepeatInterval.MONTHLY:
+            return base_time + timedelta(days=30)
+        elif repeat_interval == DBRepeatInterval.YEARLY:
+            return base_time + timedelta(days=365)
+        elif repeat_interval == DBRepeatInterval.CUSTOM and custom_days:
+            return base_time + timedelta(days=custom_days)
+        
+        return None
 
     def get_master_bot(self) -> RateLimitedBot:
         """Получить мастер-бота для публикаций (с rate limiting)"""
@@ -216,13 +242,92 @@ class PublicationService:
         elif success_count == total_count:
             publication.status = DBPublicationStatus.PUBLISHED
             publication.published_time = datetime.now(timezone.utc)
+            if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
+                publication.next_repeat_time = self.calculate_next_repeat_time(
+                    publication.published_time,
+                    publication.repeat_interval,
+                    publication.repeat_custom_days
+                )
         else:
             publication.status = DBPublicationStatus.PARTIAL_SUCCESS
             publication.published_time = datetime.now(timezone.utc)
+            if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
+                publication.next_repeat_time = self.calculate_next_repeat_time(
+                    publication.published_time,
+                    publication.repeat_interval,
+                    publication.repeat_custom_days
+                )
 
         await self.db.commit()
 
         return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": total_count}
+
+    async def republish(self, publication_id: int) -> Dict[str, Any]:
+        """
+        Повторно опубликовать пост (для повторяющихся постов).
+        Отправляет пост заново во все каналы и обновляет next_repeat_time.
+        """
+        publication = await self.get_publication(publication_id)
+        if not publication:
+            return {"success": False, "error": "Publication not found"}
+
+        if not publication.channels:
+            return {"success": False, "error": "No channels selected"}
+
+        if publication.repeat_interval == DBRepeatInterval.NEVER:
+            return {"success": False, "error": "Publication is not set to repeat"}
+
+        results: List[Dict[str, Any]] = []
+        
+        for channel in publication.channels:
+            channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
+            
+            try:
+                bot = await self.get_bot_for_channel(channel)
+            except ValueError as e:
+                results.append({"channel": channel_name, "success": False, "error": str(e)})
+                continue
+
+            for attempt in range(5):
+                try:
+                    sent_messages = await self.send_to_telegram(publication, channel, bot)
+                    
+                    for msg in sent_messages:
+                        telegram_message = TelegramMessage(
+                            publication_id=publication.id,
+                            channel_id=channel.id,
+                            message_id=msg.message_id,
+                            chat_id=channel.telegram_id
+                        )
+                        self.db.add(telegram_message)
+                    
+                    results.append({"channel": channel_name, "success": True, "message_count": len(sent_messages)})
+                    break
+                    
+                except TelegramRetryAfter as e:
+                    if attempt < 4:
+                        await asyncio.sleep(e.retry_after)
+                    else:
+                        results.append({"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"})
+                        
+                except Exception as e:
+                    if attempt == 4:
+                        results.append({"channel": channel_name, "success": False, "error": str(e)})
+                    await asyncio.sleep(2 ** attempt)
+
+        success_count = sum(1 for r in results if r.get("success"))
+        
+        if success_count > 0:
+            publication.published_time = datetime.now(timezone.utc)
+            publication.next_repeat_time = self.calculate_next_repeat_time(
+                publication.published_time,
+                publication.repeat_interval,
+                publication.repeat_custom_days
+            )
+        
+        await self.db.commit()
+        
+        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
 
     def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
         """Построить inline клавиатуру"""

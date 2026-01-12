@@ -6,7 +6,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import pytz
 
-from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus
+from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus, RepeatInterval as DBRepeatInterval
 from backend.services.publications import PublicationService
 from backend.services.bot.triggers import TriggerService
 from backend.services.bot.recurring_messages import RecurringMessageService
@@ -123,6 +123,46 @@ async def process_recurring_messages():
             logger.error(f"Failed to process recurring messages: {e}")
 
 
+async def process_repeating_publications():
+    """Обработка повторяющихся публикаций (DAILY, WEEKLY, etc.)"""
+    async with AsyncSessionLocal() as db:
+        now = datetime.now(timezone.utc)
+        
+        # Выбираем публикации, у которых:
+        # 1. Статус PUBLISHED или PARTIAL_SUCCESS (уже были опубликованы)
+        # 2. repeat_interval != NEVER
+        # 3. next_repeat_time <= now (пора повторять)
+        query = select(Publication).where(
+            Publication.status.in_([DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]),
+            Publication.repeat_interval != DBRepeatInterval.NEVER,
+            Publication.next_repeat_time.isnot(None),
+            Publication.next_repeat_time <= now
+        ).limit(50)  # Ограничение для предотвращения перегрузки
+        
+        result = await db.execute(query)
+        publications = result.scalars().all()
+        
+        logger.info(f"Found {len(publications)} repeating publications to process")
+        
+        for publication in publications:
+            service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+            try:
+                result = await service.republish(publication.id)
+                if result.get("success"):
+                    logger.info(f"Successfully republished publication {publication.id}")
+                else:
+                    logger.warning(f"Failed to republish publication {publication.id}: {result.get('error')}")
+            except Exception as e:
+                logger.error(f"Failed to republish publication {publication.id}: {e}")
+                # В случае ошибки всё равно сдвигаем next_repeat_time, чтобы не зациклиться
+                publication.next_repeat_time = PublicationService.calculate_next_repeat_time(
+                    datetime.now(timezone.utc),
+                    publication.repeat_interval,
+                    publication.repeat_custom_days
+                )
+                await db.commit()
+
+
 def start_scheduler():
     scheduler.add_job(
         process_scheduled_publications,
@@ -169,6 +209,14 @@ def start_scheduler():
         trigger=IntervalTrigger(minutes=1),
         id="process_recurring_messages",
         name="Process recurring messages every 1 minute",
+        replace_existing=True
+    )
+
+    scheduler.add_job(
+        process_repeating_publications,
+        trigger=IntervalTrigger(minutes=1),
+        id="process_repeating_publications",
+        name="Process repeating publications (DAILY, WEEKLY, etc.) every 1 minute",
         replace_existing=True
     )
 
