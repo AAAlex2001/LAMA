@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator, model_validator
+from pydantic import BaseModel, Field, validator, model_validator, ConfigDict
 from enum import Enum
 
 
@@ -140,7 +140,7 @@ class PublicationBase(BaseModel):
     repeat_custom_days: Optional[int] = Field(
         None,
         gt=0,
-        description="Custom repeat interval in days (only used when repeat_interval is CUSTOM)"
+        description="Custom repeat interval in days (only used when repeat_interval is custom)"
     )
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"

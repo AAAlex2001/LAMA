@@ -10,7 +10,8 @@ from backend.models.publications import (
     Publication, Tag, PublicationSeries,
     TelegramMessage, PublicationNotification,
     PublicationStatus as DBPublicationStatus,
-    ContentType as DBContentType
+    ContentType as DBContentType,
+    RepeatInterval as DBRepeatInterval
 )
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
@@ -44,6 +45,8 @@ class CRUDPublicationService:
             pin_message=data.pin_message,
             auto_delete_hours=data.auto_delete_hours,
             auto_delete_seconds=auto_delete_seconds,
+            repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
+            repeat_custom_days=data.repeat_custom_days,
             scheduled_time=data.scheduled_time,
             timezone=data.timezone,
             series_id=data.series_id,

@@ -73,7 +73,11 @@ class Publication(Base):
     auto_delete_hours = Column(Integer, nullable=True)
     auto_delete_seconds = Column(Integer, nullable=True)
     
-    repeat_interval = Column(SQLEnum(RepeatInterval), default=RepeatInterval.NEVER, nullable=False)
+    repeat_interval = Column(
+        SQLEnum(RepeatInterval, values_callable=lambda x: [e.value for e in x]),
+        default=RepeatInterval.NEVER,
+        nullable=False
+    )
     repeat_custom_days = Column(Integer, nullable=True)  # Для custom интервала (количество дней)
     next_repeat_time = Column(DateTime(timezone=True), nullable=True)  # Время следующего повтора
     
