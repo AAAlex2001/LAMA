@@ -15,6 +15,14 @@ import {
   AiEditIcon,
   EmojiIcon,
   PaperclipIcon,
+  BoldIcon,
+  ItalicIcon,
+  LinkIcon,
+  QuoteIcon,
+  CodeIcon,
+  BlurIcon,
+  StrikethroughIcon,
+  UnderlineIcon,
 } from '@/components/icons';
 import { handlePublishNow, handleSaveDraft } from './store/actions';
 
@@ -116,6 +124,30 @@ export default function CreatePostPage() {
             </div>
             <div className={styles.textareaFooter}>
               <div className={styles.textareaTools}>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Жирный">
+                  <BoldIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Курсив">
+                  <ItalicIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Ссылка">
+                  <LinkIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Цитата">
+                  <QuoteIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Код">
+                  <CodeIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Блюр">
+                  <BlurIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Перечеркнутый">
+                  <StrikethroughIcon width={21} height={21} />
+                </button>
+                <button className={`${styles.toolButton} ${styles.desktopOnly}`} type="button" aria-label="Подчеркнутый">
+                  <UnderlineIcon width={21} height={21} />
+                </button>
                 <button className={styles.toolButton} type="button" aria-label="AI редактирование">
                   <AiEditIcon width={21} height={21} />
                 </button>
@@ -189,10 +221,12 @@ export default function CreatePostPage() {
               <span className={styles.dropzoneText}>
                 Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
               </span>
-              <button className={styles.attachButton} type="button">
-                <PaperclipIcon width={16} height={16} />
-                <span>Прикрепить файл</span>
-              </button>
+              <Button
+                text="Прикрепить файл"
+                variant="templateCard"
+                showArrow={false}
+                icon={<PaperclipIcon width={24} height={24} />}
+              />
             </div>
           </div>
         </div>

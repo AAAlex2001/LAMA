@@ -11,3 +11,12 @@ export { default as EmojiIcon } from './emoji-icon';
 export { default as PaperclipIcon } from './paperclip-icon';
 export { default as ChevronDownIcon } from './chevron-down-icon';
 export { default as SearchIcon } from './search-icon';
+export { default as BoldIcon } from './bold-icon';
+export { default as ItalicIcon } from './italic-icon';
+export { default as LinkIcon } from './link-icon';
+export { default as QuoteIcon } from './quote-icon';
+export { default as CodeIcon } from './code-icon';
+export { default as BlurIcon } from './blur-icon';
+export { default as StrikethroughIcon } from './strikethrough-icon';
+export { default as UnderlineIcon } from './underline-icon';
+

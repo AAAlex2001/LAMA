@@ -2,16 +2,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 16px;
+  justify-content: center;
+  padding: 0 20px;
   gap: 24px;
   width: 100%;
-  margin: 64px auto 0;
   box-sizing: border-box;
-
-  @media (min-width: 1440px) {
-    max-width: none;
-    padding: 0 24px;
-  }
+  min-height: 100vh;
+  background: #F0F4FA;
 }
 
 .mainContent {
@@ -19,6 +16,8 @@
   flex-direction: column;
   width: 100%;
   gap: 24px;
+  max-width: 1320px;
+  margin: 0 auto;
 
   @media (min-width: 1440px) {
     flex-direction: row;
@@ -47,6 +46,7 @@
   width: 100%;
   background: #FFFFFF;
   border-radius: 12px;
+  padding: 26px 24px;
 }
 
 .header {
@@ -87,7 +87,6 @@
   }
 }
 
-// Mobile Settings Modal
 .settingsModalOverlay {
   position: fixed;
   top: 0;
@@ -99,7 +98,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 16px;
+  padding: 20px;
 
   @media (min-width: 1440px) {
     display: none;
@@ -110,10 +109,9 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 12px;
-  max-height: 90vh;
   overflow-y: auto;
   width: 100%;
-  max-width: 400px;
+  max-width: 320px;
   animation: modalSlideIn 0.2s ease-out;
 }
 
@@ -233,6 +231,14 @@
 
   &:hover {
     opacity: 0.7;
+  }
+}
+
+.desktopOnly {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
   }
 }
 
@@ -365,32 +371,6 @@
   line-height: 15px;
   text-align: center;
   color: #CED2D6;
-}
-
-.attachButton {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 16px;
-  gap: 6px;
-  background: #F0F4FA;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-
-  span {
-    font-family: 'Inter', sans-serif;
-    font-style: normal;
-    font-weight: 400;
-    font-size: 12px;
-    line-height: 15px;
-    color: #383F45;
-  }
-
-  &:hover {
-    background: #CBDBFF;
-  }
 }
 
 .footerButtons {
