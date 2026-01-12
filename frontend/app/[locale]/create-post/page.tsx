@@ -7,6 +7,7 @@ import PostSettings from '@/components/post-settings/post-settings';
 import { usePostSettings } from '@/components/post-settings/store';
 import RichTextEditor, { RichTextEditorRef } from '@/components/rich-text-editor';
 import InlineButtons, { ButtonRow } from '@/components/inline-buttons';
+import MediaPreview, { type MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -23,11 +24,13 @@ export default function CreatePostPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [showInlineButtons, setShowInlineButtons] = useState(false);
   const [buttonRows, setButtonRows] = useState<ButtonRow[]>([]);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const postSettings = usePostSettings();
   const editorRef = useRef<RichTextEditorRef>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Конвертируем buttonRows в формат InlineKeyboard для бекенда
   const getInlineKeyboard = () => {
@@ -48,15 +51,75 @@ export default function CreatePostPage() {
     return { buttons };
   };
 
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files) return;
+
+    // Ограничение максимум 10 файлов
+    const filesToProcess = Array.from(files);
+    const currentCount = mediaFiles.length;
+    const availableSlots = 10 - currentCount;
+    
+    if (availableSlots <= 0) {
+      event.target.value = '';
+      return;
+    }
+    
+    const filesToAdd = filesToProcess.slice(0, availableSlots);
+
+    filesToAdd.forEach((file, index) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const url = e.target?.result as string;
+        const type = file.type.startsWith('image/') ? 'image' 
+                   : file.type.startsWith('video/') ? 'video' 
+                   : 'document';
+        
+        // Уникальный ID с индексом файла
+        const uniqueId = `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        setMediaFiles(prev => [...prev, {
+          id: uniqueId,
+          url,
+          type,
+          blur: false,
+          file,  // Сохраняем оригинальный File объект для загрузки на сервер
+        }]);
+      };
+      
+      reader.readAsDataURL(file);
+    });
+    
+    // Reset input
+    event.target.value = '';
+  };
+
+  const handleRemoveMedia = (id: string) => {
+    setMediaFiles(prev => prev.filter(file => file.id !== id));
+  };
+
+  // Переключаем blur для конкретного файла
+  const handleToggleBlur = (id: string) => {
+    setMediaFiles(prev => prev.map(file => 
+      file.id === id ? { ...file, blur: !file.blur } : file
+    ));
+  };
+
   const onPublishNow = async () => {
     setIsPublishing(true);
     
     try {
+      console.log('Publishing with:', { text, mediaFiles, settings: postSettings.getSettingsData() });
+      
       const result = await handlePublishNow(
         { text },
         postSettings.getSettingsData(),
+        mediaFiles,
         getInlineKeyboard()
       );
+
+      console.log('Publish result:', result);
 
       if (result.success) {
         alert(result.message);
@@ -64,6 +127,7 @@ export default function CreatePostPage() {
         editorRef.current?.reset();
         postSettings.resetSettings();
         setButtonRows([]);
+        setMediaFiles([]);
         setShowInlineButtons(false);
       } else {
         alert(`Ошибка: ${result.message}`);
@@ -85,6 +149,7 @@ export default function CreatePostPage() {
       const result = await handleSaveDraft(
         { text },
         postSettings.getSettingsData(),
+        mediaFiles,
         getInlineKeyboard()
       );
 
@@ -141,6 +206,7 @@ export default function CreatePostPage() {
                 icon={<InlineButtonIcon width={24} height={24} />}
                 className={styles.actionButton}
                 active={showInlineButtons}
+                disabled={mediaFiles.length > 1}
                 onClick={() => {
                   if (!showInlineButtons && buttonRows.length === 0) {
                     // При первом открытии создаём одну кнопку
@@ -195,6 +261,22 @@ export default function CreatePostPage() {
 
           <div className={styles.mediaSection}>
             <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+            
+            <MediaPreview 
+              files={mediaFiles}
+              onRemove={handleRemoveMedia}
+              onToggleBlur={handleToggleBlur}
+            />
+            
             <div className={styles.mediaMobile}>
               <Button
                 text="Прикрепить файл"
@@ -202,6 +284,8 @@ export default function CreatePostPage() {
                 showArrow={false}
                 icon={<PaperclipIcon width={24} height={24} />}
                 fullWidth
+                disabled={mediaFiles.length >= 10 || buttonRows.length > 0}
+                onClick={() => fileInputRef.current?.click()}
               />
             </div>
             <div className={styles.mediaDropzone}>
@@ -213,6 +297,8 @@ export default function CreatePostPage() {
                 variant="templateCard"
                 showArrow={false}
                 icon={<PaperclipIcon width={24} height={24} />}
+                disabled={mediaFiles.length >= 10 || buttonRows.length > 0}
+                onClick={() => fileInputRef.current?.click()}
               />
             </div>
           </div>

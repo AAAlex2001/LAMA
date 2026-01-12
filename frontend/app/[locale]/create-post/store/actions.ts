@@ -1,5 +1,6 @@
 import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard } from './types';
-import { createAndPublishPost, saveDraft } from './api';
+import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import { createAndPublishPost, saveDraft, uploadMediaFiles } from './api';
 
 interface PostSettingsFromUI {
   channelIds: number[];
@@ -42,11 +43,12 @@ function convertAutoDeleteToSeconds(
 export async function handlePublishNow(
   content: { text: string },
   settings: PostSettingsFromUI,
+  mediaFiles: MediaFile[] = [],
   inlineKeyboard?: InlineKeyboard
 ) {
   try {
-    if (!content.text.trim()) {
-      throw new Error('Текст поста не может быть пустым');
+    if (!content.text.trim() && mediaFiles.length === 0) {
+      throw new Error('Текст поста или медиа файлы не могут быть пустыми');
     }
 
     if (settings.channelIds.length === 0) {
@@ -59,6 +61,37 @@ export async function handlePublishNow(
       settings.autoDeleteCustomHours
     );
 
+    // Определяем content_type в зависимости от медиа
+    let contentType: 'text' | 'text_with_media' = 'text';
+    let mediaUrls: string[] = [];
+    // Собираем массив blur-состояний для каждого файла
+    const mediaBlurArray = mediaFiles.map(f => f.blur || false);
+    
+    // Если есть медиа файлы - загружаем их на сервер
+    if (mediaFiles.length > 0) {
+      const filesToUpload = mediaFiles
+        .filter(f => f.file)
+        .map(f => f.file as File);
+      
+      if (filesToUpload.length > 0) {
+        try {
+          console.log('Uploading files to server...');
+          const uploadResponse = await uploadMediaFiles(filesToUpload);
+          console.log('Upload response:', uploadResponse);
+          
+          // Получаем полные URL-ы (добавляем домен если нужно)
+          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+          mediaUrls = uploadResponse.files.map(f => `${baseUrl}${f.url}`);
+          console.log('Media URLs:', mediaUrls);
+        } catch (error) {
+          console.error('Failed to upload media:', error);
+          throw new Error('Не удалось загрузить медиа файлы');
+        }
+      }
+      
+      contentType = 'text_with_media';
+    }
+
     // Проверяем, есть ли HTML теги форматирования
     const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const hasSpoiler = /<\/?tg-spoiler>/i.test(content.text);
@@ -68,10 +101,11 @@ export async function handlePublishNow(
     } : undefined;
 
     const request: CreatePostRequest = {
-      content_type: 'text',
-      text_content: content.text,
+      content_type: contentType,
+      text_content: content.text || undefined,
       formatted_content: formattedContent,
-      media_blur: hasSpoiler,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       disable_notification: !settings.notifySubscribers,
@@ -85,7 +119,11 @@ export async function handlePublishNow(
       auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
+    console.log('Request to backend:', request);
+
     const response = await createAndPublishPost(request);
+    
+    console.log('Response from backend:', response);
 
     if (response.success || response.id) {
       return {
@@ -113,11 +151,38 @@ export async function handlePublishNow(
 export async function handleSaveDraft(
   content: { text: string },
   settings: PostSettingsFromUI,
+  mediaFiles: MediaFile[] = [],
   inlineKeyboard?: InlineKeyboard
 ) {
   try {
-    if (!content.text.trim()) {
-      throw new Error('Текст поста не может быть пустым');
+    if (!content.text.trim() && mediaFiles.length === 0) {
+      throw new Error('Текст поста или медиа файлы не могут быть пустыми');
+    }
+
+    // Определяем content_type в зависимости от медиа
+    let contentType: 'text' | 'text_with_media' = 'text';
+    let mediaUrls: string[] = [];
+    // Собираем массив blur-состояний для каждого файла
+    const mediaBlurArray = mediaFiles.map(f => f.blur || false);
+    
+    // Если есть медиа файлы - загружаем их на сервер
+    if (mediaFiles.length > 0) {
+      const filesToUpload = mediaFiles
+        .filter(f => f.file)
+        .map(f => f.file as File);
+      
+      if (filesToUpload.length > 0) {
+        try {
+          const uploadResponse = await uploadMediaFiles(filesToUpload);
+          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+          mediaUrls = uploadResponse.files.map(f => `${baseUrl}${f.url}`);
+        } catch (error) {
+          console.error('Failed to upload media:', error);
+          throw new Error('Не удалось загрузить медиа файлы');
+        }
+      }
+      
+      contentType = 'text_with_media';
     }
 
     // Проверяем, есть ли HTML теги форматирования
@@ -129,10 +194,11 @@ export async function handleSaveDraft(
     } : undefined;
 
     const request: CreatePostRequest = {
-      content_type: 'text',
-      text_content: content.text,
+      content_type: contentType,
+      text_content: content.text || undefined,
       formatted_content: formattedContent,
-      media_blur: hasSpoiler,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       disable_notification: !settings.notifySubscribers,

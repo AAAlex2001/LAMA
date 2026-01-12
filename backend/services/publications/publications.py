@@ -393,10 +393,18 @@ class PublicationService:
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
-                spoiler = publication.media_blur
+                # media_blur теперь массив bool, по одному на каждый файл
+                blur_list = publication.media_blur or []
+                
+                def get_spoiler(index: int) -> bool:
+                    """Получить значение spoiler для файла по индексу"""
+                    if index < len(blur_list):
+                        return bool(blur_list[index])
+                    return False
 
                 if len(publication.media_urls) == 1:
                     single_url = publication.media_urls[0]
+                    spoiler = get_spoiler(0)
                     is_video = single_url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
                     if is_video:
                         message = await bot.send_video(
@@ -429,31 +437,32 @@ class PublicationService:
 
                 urls = publication.media_urls[:10]
                 for i, url in enumerate(urls):
+                    file_spoiler = get_spoiler(i)
                     if i == 0 and publication.text_content:
                         if is_video_url(url):
                             media.append(InputMediaVideo(
                                 media=url,
                                 caption=publication.text_content,
                                 parse_mode=ParseMode.HTML,
-                                has_spoiler=spoiler
+                                has_spoiler=file_spoiler
                             ))
                         else:
                             media.append(InputMediaPhoto(
                                 media=url,
                                 caption=publication.text_content,
                                 parse_mode=ParseMode.HTML,
-                                has_spoiler=spoiler
+                                has_spoiler=file_spoiler
                             ))
                     else:
                         if is_video_url(url):
                             media.append(InputMediaVideo(
                                 media=url,
-                                has_spoiler=spoiler
+                                has_spoiler=file_spoiler
                             ))
                         else:
                             media.append(InputMediaPhoto(
                                 media=url,
-                                has_spoiler=spoiler
+                                has_spoiler=file_spoiler
                             ))
                 messages = await bot.send_media_group(
                     chat_id=channel.telegram_id,

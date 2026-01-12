@@ -64,7 +64,7 @@ class Publication(Base):
     text_content = Column(Text, nullable=True)
     formatted_content = Column(JSON, nullable=True)
     media_urls = Column(JSON, nullable=True)
-    media_blur = Column(Boolean, default=False)
+    media_blur = Column(JSON, nullable=True)  # List of booleans, one per media file
     
     inline_keyboard = Column(JSON, nullable=True)
     poll_data = Column(JSON, nullable=True)

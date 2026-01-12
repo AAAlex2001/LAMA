@@ -30,7 +30,7 @@ export interface CreatePostRequest {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
-  media_blur?: boolean;
+  media_blur?: boolean[];  // Array of booleans, one per media file
   inline_keyboard?: InlineKeyboard;
   poll_data?: PollData;
   pin_message?: boolean;

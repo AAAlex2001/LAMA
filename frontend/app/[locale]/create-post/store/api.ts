@@ -20,6 +20,12 @@ class ApiError extends Error {
   }
 }
 
+function getAuthToken(): string | null {
+  return typeof window !== 'undefined' 
+    ? localStorage.getItem('lamaplanner_access_token') 
+    : null;
+}
+
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -30,9 +36,7 @@ async function fetchApi<T>(
     'Content-Type': 'application/json',
   };
 
-  const token = typeof window !== 'undefined' 
-    ? localStorage.getItem('lamaplanner_access_token') 
-    : null;
+  const token = getAuthToken();
     
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
@@ -148,4 +152,76 @@ export async function saveDraft(
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+export interface UploadedFile {
+  url: string;
+  filename: string;
+  type: 'image' | 'video' | 'document';
+  original_name: string;
+}
+
+export interface UploadMediaResponse {
+  files: UploadedFile[];
+}
+
+/**
+ * Загрузить один медиа файл на сервер
+ */
+async function uploadSingleFile(file: File): Promise<UploadedFile> {
+  const url = `${API_BASE_URL}/upload-media`;
+  
+  const formData = new FormData();
+  formData.append('files', file);
+
+  const token = getAuthToken();
+  const headers: HeadersInit = {};
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      errorData.detail || `Ошибка при загрузке ${file.name}`,
+      response.status
+    );
+  }
+
+  const data = await response.json();
+  return data.files[0];
+}
+
+/**
+ * Загрузить медиа файлы на сервер (параллельно, каждый отдельным запросом)
+ */
+export async function uploadMediaFiles(files: File[]): Promise<UploadMediaResponse> {
+  // Загружаем все файлы параллельно
+  const uploadPromises = files.map(file => uploadSingleFile(file));
+  
+  const results = await Promise.allSettled(uploadPromises);
+  
+  const uploadedFiles: UploadedFile[] = [];
+  const errors: string[] = [];
+  
+  results.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      uploadedFiles.push(result.value);
+    } else {
+      errors.push(`${files[index].name}: ${result.reason?.message || 'Ошибка загрузки'}`);
+      console.error(`Failed to upload ${files[index].name}:`, result.reason);
+    }
+  });
+  
+  if (uploadedFiles.length === 0 && errors.length > 0) {
+    throw new ApiError(`Не удалось загрузить файлы: ${errors.join(', ')}`);
+  }
+  
+  return { files: uploadedFiles };
 }

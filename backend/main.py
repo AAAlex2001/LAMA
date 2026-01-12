@@ -17,6 +17,7 @@ from backend.routes.auth import router as auth_router
 from backend.routes.webhook import router as webhook_router
 from backend.routes.landing import router as landing_router
 from backend.routes.upload import router as upload_router
+from backend.routes.media_upload import router as media_upload_router
 # Импорт моделей для регистрации в SQLAlchemy
 from backend.models import landing as landing_models  # noqa: F401
 
@@ -59,10 +60,13 @@ app.include_router(bots_router, prefix=api_prefix)
 app.include_router(webhook_router)
 app.include_router(landing_router, prefix=api_prefix)
 app.include_router(upload_router, prefix=api_prefix)
+app.include_router(media_upload_router, prefix=api_prefix)
 
 # Статические файлы (загруженные картинки)
 upload_dir = Path("uploads/landing")
 upload_dir.mkdir(parents=True, exist_ok=True)
+publications_upload_dir = Path("uploads/publications")
+publications_upload_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 

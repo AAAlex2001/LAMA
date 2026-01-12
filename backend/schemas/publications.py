@@ -123,7 +123,7 @@ class PublicationBase(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
-    media_blur: bool = False
+    media_blur: Optional[List[bool]] = None  # List of booleans, one per media file
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: bool = False
@@ -185,7 +185,7 @@ class PublicationUpdate(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
-    media_blur: Optional[bool] = None
+    media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: Optional[bool] = None
@@ -236,7 +236,7 @@ class PublicationResponse(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
-    media_blur: bool = False
+    media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[Dict[str, Any]] = None
     poll_data: Optional[Dict[str, Any]] = None
     pin_message: bool = False
