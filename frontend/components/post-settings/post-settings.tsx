@@ -37,6 +37,10 @@ interface PostSettingsProps {
   // Repeat
   repeatInterval: RepeatOption;
   onRepeatChange: (value: RepeatOption) => void;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
+  onRepeatCustomDaysChange: (value: number) => void;
+  onRepeatCustomHoursChange: (value: number) => void;
   
   // Auto-delete
   autoDeleteInterval: AutoDeleteOption;
@@ -85,6 +89,10 @@ export default function PostSettings({
   onTagColorChange,
   repeatInterval,
   onRepeatChange,
+  repeatCustomDays,
+  repeatCustomHours,
+  onRepeatCustomDaysChange,
+  onRepeatCustomHoursChange,
   autoDeleteInterval,
   onAutoDeleteChange,
   autoDeleteCustomDays,
@@ -155,6 +163,10 @@ export default function PostSettings({
               variant="repeat"
               repeatValue={repeatInterval}
               onRepeatChange={onRepeatChange}
+              repeatCustomDays={repeatCustomDays}
+              repeatCustomHours={repeatCustomHours}
+              onRepeatCustomDaysChange={onRepeatCustomDaysChange}
+              onRepeatCustomHoursChange={onRepeatCustomHoursChange}
             />
 
             <div className={styles.toggleRow}>

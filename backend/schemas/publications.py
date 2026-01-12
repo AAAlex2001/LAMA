@@ -140,8 +140,13 @@ class PublicationBase(BaseModel):
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     repeat_custom_days: Optional[int] = Field(
         None,
-        gt=0,
+        ge=0,
         description="Custom repeat interval in days (only used when repeat_interval is custom)"
+    )
+    repeat_custom_hours: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Custom repeat interval in hours (only used when repeat_interval is custom)"
     )
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"
@@ -196,8 +201,13 @@ class PublicationUpdate(BaseModel):
     repeat_interval: Optional[RepeatInterval] = None
     repeat_custom_days: Optional[int] = Field(
         None,
-        gt=0,
+        ge=0,
         description="Custom repeat interval in days (only used when repeat_interval is CUSTOM)"
+    )
+    repeat_custom_hours: Optional[int] = Field(
+        None,
+        ge=0,
+        description="Custom repeat interval in hours (only used when repeat_interval is CUSTOM)"
     )
     scheduled_time: Optional[datetime] = None
     timezone: Optional[str] = None
@@ -239,6 +249,7 @@ class PublicationResponse(BaseModel):
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     repeat_custom_days: Optional[int] = None
+    repeat_custom_hours: Optional[int] = None
     next_repeat_time: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime

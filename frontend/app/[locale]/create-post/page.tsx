@@ -295,6 +295,10 @@ export default function CreatePostPage() {
             onTagColorChange={postSettings.handleTagColorChange}
             repeatInterval={postSettings.repeatInterval}
             onRepeatChange={postSettings.handleRepeatChange}
+            repeatCustomDays={postSettings.repeatCustomDays}
+            repeatCustomHours={postSettings.repeatCustomHours}
+            onRepeatCustomDaysChange={postSettings.handleRepeatCustomDaysChange}
+            onRepeatCustomHoursChange={postSettings.handleRepeatCustomHoursChange}
             autoDeleteInterval={postSettings.autoDeleteInterval}
             onAutoDeleteChange={postSettings.handleAutoDeleteChange}
             autoDeleteCustomDays={postSettings.autoDeleteCustomDays}
@@ -339,6 +343,10 @@ export default function CreatePostPage() {
               onTagColorChange={postSettings.handleTagColorChange}
               repeatInterval={postSettings.repeatInterval}
               onRepeatChange={postSettings.handleRepeatChange}
+              repeatCustomDays={postSettings.repeatCustomDays}
+              repeatCustomHours={postSettings.repeatCustomHours}
+              onRepeatCustomDaysChange={postSettings.handleRepeatCustomDaysChange}
+              onRepeatCustomHoursChange={postSettings.handleRepeatCustomHoursChange}
               autoDeleteInterval={postSettings.autoDeleteInterval}
               onAutoDeleteChange={postSettings.handleAutoDeleteChange}
               autoDeleteCustomDays={postSettings.autoDeleteCustomDays}

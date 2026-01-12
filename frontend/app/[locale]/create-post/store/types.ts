@@ -47,6 +47,7 @@ export interface CreatePostRequest {
   status?: PublicationStatus;
   repeat_interval?: RepeatInterval;
   repeat_custom_days?: number;
+  repeat_custom_hours?: number;
   auto_delete_interval?: AutoDeleteInterval;
   auto_delete_custom_hours?: number;
 }

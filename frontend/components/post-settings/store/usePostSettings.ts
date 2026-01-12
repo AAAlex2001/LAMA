@@ -54,11 +54,13 @@ export function usePostSettings() {
       tagName: tagsStore.tagInputValue.trim() || null,
       tagColor: tagsStore.tagInputValue.trim() ? state.selectedTagColor : null,
       repeatInterval: state.repeatInterval,
+      repeatCustomDays: state.repeatCustomDays,
+      repeatCustomHours: state.repeatCustomHours,
       autoDeleteInterval: state.autoDeleteInterval,
       autoDeleteCustomDays: state.autoDeleteCustomDays,
       autoDeleteCustomHours: state.autoDeleteCustomHours,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, state.selectedTagColor, state.repeatInterval, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
+  }, [channels, state.notifySubscribers, state.pinPost, state.selectedTagColor, state.repeatInterval, state.repeatCustomDays, state.repeatCustomHours, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
 
   // Обработчик изменения канала
   const handleChannelChange = useCallback(
@@ -106,6 +108,14 @@ export function usePostSettings() {
     dispatch({ type: 'SET_REPEAT_INTERVAL', payload: value });
   }, []);
 
+  const handleRepeatCustomDaysChange = useCallback((value: number) => {
+    dispatch({ type: 'SET_REPEAT_CUSTOM_DAYS', payload: value });
+  }, []);
+
+  const handleRepeatCustomHoursChange = useCallback((value: number) => {
+    dispatch({ type: 'SET_REPEAT_CUSTOM_HOURS', payload: value });
+  }, []);
+
   const handleAutoDeleteChange = useCallback((value: AutoDeleteOption) => {
     dispatch({ type: 'SET_AUTO_DELETE_INTERVAL', payload: value });
   }, []);
@@ -134,6 +144,8 @@ export function usePostSettings() {
     pinPost: state.pinPost,
     showCreateChannel: state.showCreateChannel,
     repeatInterval: state.repeatInterval,
+    repeatCustomDays: state.repeatCustomDays,
+    repeatCustomHours: state.repeatCustomHours,
     autoDeleteInterval: state.autoDeleteInterval,
     autoDeleteCustomDays: state.autoDeleteCustomDays,
     autoDeleteCustomHours: state.autoDeleteCustomHours,
@@ -167,6 +179,8 @@ export function usePostSettings() {
     handleNotifyChange,
     handlePinChange,
     handleRepeatChange,
+    handleRepeatCustomDaysChange,
+    handleRepeatCustomHoursChange,
     handleAutoDeleteChange,
     handleAutoDeleteCustomDaysChange,
     handleAutoDeleteCustomHoursChange,

@@ -8,6 +8,8 @@ interface PostSettingsFromUI {
   tagName: string | null;
   tagColor: string | null;
   repeatInterval: RepeatInterval;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
   autoDeleteInterval: AutoDeleteInterval;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -65,6 +67,8 @@ export async function handlePublishNow(
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
+      repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
+      repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
       auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
@@ -111,6 +115,8 @@ export async function handleSaveDraft(
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
+      repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
+      repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
       auto_delete_interval: settings.autoDeleteInterval,
     };
 

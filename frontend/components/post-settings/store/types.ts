@@ -17,6 +17,8 @@ export interface PostSettingsData {
   tagName: string | null;
   tagColor: string | null;
   repeatInterval: RepeatOption;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -27,6 +29,8 @@ export interface PostSettingsState {
   pinPost: boolean;
   showCreateChannel: boolean;
   repeatInterval: RepeatOption;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -38,6 +42,8 @@ export type PostSettingsAction =
   | { type: 'SET_PIN_POST'; payload: boolean }
   | { type: 'SET_SHOW_CREATE_CHANNEL'; payload: boolean }
   | { type: 'SET_REPEAT_INTERVAL'; payload: RepeatOption }
+  | { type: 'SET_REPEAT_CUSTOM_DAYS'; payload: number }
+  | { type: 'SET_REPEAT_CUSTOM_HOURS'; payload: number }
   | { type: 'SET_AUTO_DELETE_INTERVAL'; payload: AutoDeleteOption }
   | { type: 'SET_AUTO_DELETE_CUSTOM_DAYS'; payload: number }
   | { type: 'SET_AUTO_DELETE_CUSTOM_HOURS'; payload: number }
@@ -49,6 +55,8 @@ export const initialPostSettingsState: PostSettingsState = {
   pinPost: false,
   showCreateChannel: false,
   repeatInterval: 'never',
+  repeatCustomDays: 0,
+  repeatCustomHours: 0,
   autoDeleteInterval: 'never',
   autoDeleteCustomDays: 0,
   autoDeleteCustomHours: 0,
@@ -68,6 +76,10 @@ export function postSettingsReducer(
       return { ...state, showCreateChannel: action.payload };
     case 'SET_REPEAT_INTERVAL':
       return { ...state, repeatInterval: action.payload };
+    case 'SET_REPEAT_CUSTOM_DAYS':
+      return { ...state, repeatCustomDays: action.payload };
+    case 'SET_REPEAT_CUSTOM_HOURS':
+      return { ...state, repeatCustomHours: action.payload };
     case 'SET_AUTO_DELETE_INTERVAL':
       return { ...state, autoDeleteInterval: action.payload };
     case 'SET_AUTO_DELETE_CUSTOM_DAYS':

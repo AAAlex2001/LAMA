@@ -47,6 +47,7 @@ class CRUDPublicationService:
             auto_delete_seconds=auto_delete_seconds,
             repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
             repeat_custom_days=data.repeat_custom_days,
+            repeat_custom_hours=data.repeat_custom_hours,
             scheduled_time=data.scheduled_time,
             timezone=data.timezone,
             series_id=data.series_id,

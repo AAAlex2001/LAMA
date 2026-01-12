@@ -56,6 +56,10 @@ interface DropdownProps {
   onTagColorChange?: (color: TagColor) => void;
   repeatValue?: RepeatOption;
   onRepeatChange?: (value: RepeatOption) => void;
+  repeatCustomDays?: number;
+  repeatCustomHours?: number;
+  onRepeatCustomDaysChange?: (value: number) => void;
+  onRepeatCustomHoursChange?: (value: number) => void;
   autoDeleteValue?: AutoDeleteOption;
   onAutoDeleteChange?: (value: AutoDeleteOption) => void;
   autoDeleteCustomDays?: number;
@@ -92,6 +96,10 @@ export default function Dropdown({
   onTagColorChange,
   repeatValue = 'never',
   onRepeatChange,
+  repeatCustomDays = 0,
+  repeatCustomHours = 0,
+  onRepeatCustomDaysChange,
+  onRepeatCustomHoursChange,
   autoDeleteValue = 'never',
   onAutoDeleteChange,
   autoDeleteCustomDays = 0,
@@ -307,6 +315,16 @@ export default function Dropdown({
               </div>
             ))}
           </div>
+
+          {repeatValue === 'custom' && (
+            <TimeDurationPicker
+              days={repeatCustomDays}
+              hours={repeatCustomHours}
+              onDaysChange={(val) => onRepeatCustomDaysChange?.(val)}
+              onHoursChange={(val) => onRepeatCustomHoursChange?.(val)}
+              maxDays={365}
+            />
+          )}
         </div>
       )}
 

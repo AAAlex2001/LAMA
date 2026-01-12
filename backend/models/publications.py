@@ -79,6 +79,7 @@ class Publication(Base):
         nullable=False
     )
     repeat_custom_days = Column(Integer, nullable=True)  # Для custom интервала (количество дней)
+    repeat_custom_hours = Column(Integer, nullable=True)  # Для custom интервала (количество часов)
     next_repeat_time = Column(DateTime(timezone=True), nullable=True)  # Время следующего повтора
     
     scheduled_time = Column(DateTime(timezone=True), nullable=True, index=True)
