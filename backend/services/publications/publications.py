@@ -3,6 +3,10 @@ from typing import Optional, List, Dict, Any
 import pytz
 import asyncio
 import os
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
@@ -154,12 +158,17 @@ class PublicationService:
 
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
         """Опубликовать сейчас"""
+        publish_start = time.monotonic()
+        logger.info(f"[TIMING] publish_now START publication_id={publication_id}")
+
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
             return {"success": False, "error": "Publication not found"}
 
         if not publication.channels:
             return {"success": False, "error": "No channels selected"}
+
+        logger.info(f"[TIMING] publish_now channels_count={len(publication.channels)}")
 
         # Если публикация в серии с включённым reply_to_previous — используем SeriesService
         if publication.series_id and publication.series:
@@ -187,18 +196,15 @@ class PublicationService:
                     # Rate limiting управляется через RateLimitedBot
                     sent_messages = await self.send_to_telegram(publication, channel, bot)
 
-                    message_ids: List[int] = []
+                    message_ids: List[int] = [msg.message_id for msg in sent_messages]
 
-                    for msg in sent_messages:
-                        message_ids.append(msg.message_id)
-                        telegram_message = TelegramMessage(
-                            publication_id=publication.id,
-                            channel_id=channel.id,
-                            telegram_message_id=msg.message_id
-                        )
-                        self.db.add(telegram_message)
+                    # Собираем данные для TelegramMessage, но НЕ добавляем в сессию здесь
+                    # (будет добавлено после завершения всех параллельных задач)
+                    telegram_messages_data = [
+                        {"publication_id": publication.id, "channel_id": channel.id, "telegram_message_id": msg_id}
+                        for msg_id in message_ids
+                    ]
 
-                    await self.db.flush()
                     await self.handle_instant_backup(channel, sent_messages, publication_id=publication.id)
 
                     if publication.pin_message and message_ids:
@@ -211,13 +217,12 @@ class PublicationService:
                         except Exception:
                             pass
 
-                    await self.create_notification(
-                        publication.id,
-                        "success",
-                        f"Published to {channel_name}"
-                    )
-
-                    return {"channel": channel_name, "success": True, "message_ids": message_ids}
+                    return {
+                        "channel": channel_name,
+                        "success": True,
+                        "message_ids": message_ids,
+                        "telegram_messages_data": telegram_messages_data
+                    }
 
                 except TelegramRetryAfter as e:
                     if attempt < 4:
@@ -244,11 +249,40 @@ class PublicationService:
 
             return None
 
+        # Параллельная отправка во все каналы
+        logger.info(f"[TIMING] Starting parallel send to {len(publication.channels)} channels")
+        tasks = [safe_send_to_channel(channel) for channel in publication.channels]
+        raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
         results: List[Dict[str, Any]] = []
-        for channel in publication.channels:
-            result = await safe_send_to_channel(channel)
-            if result is not None:
+        for i, result in enumerate(raw_results):
+            if isinstance(result, Exception):
+                channel = publication.channels[i]
+                channel_name = getattr(channel, "title", str(channel.telegram_id))
+                logger.error(f"[TIMING] Exception for channel {channel_name}: {result}")
+                results.append({"channel": channel_name, "success": False, "error": str(result)})
+            elif result is not None:
                 results.append(result)
+
+        # Сохраняем TelegramMessage ПОСЛЕ завершения всех параллельных задач
+        for result in results:
+            if result.get("success") and result.get("telegram_messages_data"):
+                for msg_data in result["telegram_messages_data"]:
+                    telegram_message = TelegramMessage(
+                        publication_id=msg_data["publication_id"],
+                        channel_id=msg_data["channel_id"],
+                        telegram_message_id=msg_data["telegram_message_id"]
+                    )
+                    self.db.add(telegram_message)
+
+        # Создаем уведомления ПОСЛЕ параллельной отправки
+        for result in results:
+            if result.get("success"):
+                await self.create_notification(
+                    publication.id,
+                    "success",
+                    f"Published to {result['channel']}"
+                )
 
         success_count = sum(1 for r in results if r.get("success"))
         total_count = len(results)
@@ -276,6 +310,9 @@ class PublicationService:
 
         await self.db.commit()
         await self.db.refresh(publication)
+
+        publish_end = time.monotonic()
+        logger.info(f"[TIMING] publish_now DONE publication_id={publication_id}, total={publish_end-publish_start:.3f}s, success={success_count}/{total_count}")
 
         return {
             "success": success_count > 0,
