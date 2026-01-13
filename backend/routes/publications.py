@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -39,7 +39,6 @@ async def create_publication(
     """Создать новую публикацию (черновик)"""
     try:
         publication = await service.create_publication(data, owner_id=current_user.id)
-        publication = await service.get_publication(publication.id, owner_id=current_user.id)
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -164,9 +163,8 @@ async def generate_content_with_ai(
             channel_ids=[],
             tag_names=[]
         )
-        
+
         publication = await service.create_publication(publication_data, owner_id=current_user.id)
-        publication = await service.get_publication(publication.id, owner_id=current_user.id)
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -275,7 +273,6 @@ async def update_publication(
     publication = await service.update_publication(publication_id, data, owner_id=current_user.id)
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
-    publication = await service.get_publication(publication.id, owner_id=current_user.id)
     return publication
 
 
@@ -290,7 +287,6 @@ async def patch_publication(
     publication = await service.update_publication(publication_id, data, owner_id=current_user.id)
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
-    publication = await service.get_publication(publication.id, owner_id=current_user.id)
     return publication
 
 
@@ -306,35 +302,17 @@ async def delete_publication(
         raise HTTPException(status_code=404, detail="Publication not found")
 
 
-@router.post("/{publication_id}/publish", status_code=202)
+@router.post("/{publication_id}/publish", response_model=PublicationResponse)
 async def publish_now(
     publication_id: int,
-    background_tasks: BackgroundTasks,
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
-    """Опубликовать сейчас (асинхронно)"""
-    # Проверяем что публикация существует
-    publication = await service.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
-    
-    # Создаем функцию-обертку для фоновой задачи с новой сессией БД
-    async def publish_in_background():
-        from backend.database import AsyncSessionLocal
-        async with AsyncSessionLocal() as db:
-            bg_service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-            await bg_service.publish_now(publication_id, owner_id=current_user.id)
-    
-    # Запускаем публикацию в фоне
-    background_tasks.add_task(publish_in_background)
-    
-    # Сразу возвращаем 202 Accepted
-    return {
-        "success": True,
-        "message": "Publication started",
-        "publication_id": publication_id
-    }
+    """Опубликовать сейчас"""
+    result = await service.publish_now(publication_id, owner_id=current_user.id)
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail={"results": result.get("results", [])})
+    return result["publication"]
 
 
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)
@@ -352,7 +330,6 @@ async def reschedule_publication(
     )
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
-    publication = await service.get_publication(publication.id, owner_id=current_user.id)
     return publication
 
 
@@ -400,7 +377,6 @@ async def edit_content_with_ai(
         publication = await service.edit_with_ai(payload, owner_id=current_user.id)
         if not publication:
             raise HTTPException(status_code=404, detail="Publication not found")
-        publication = await service.get_publication(publication.id, owner_id=current_user.id)
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

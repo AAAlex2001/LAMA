@@ -69,7 +69,11 @@ class CRUDPublicationService:
 
         self.db.add(publication)
         await self.db.commit()
-        await self.db.refresh(publication)
+
+        # Загружаем все связи сразу
+        await self.db.refresh(publication, ['channels', 'tags', 'series'])
+        for channel in publication.channels:
+            await self.db.refresh(channel, ['bot'])
 
         return publication
 
