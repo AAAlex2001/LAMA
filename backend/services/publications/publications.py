@@ -5,10 +5,7 @@ import asyncio
 import time
 import logging
 
-logger = logging.getLogger(__name__)
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram import Bot
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, Message
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramRetryAfter
@@ -29,6 +26,8 @@ from backend.services.publications.CRUD_publications import CRUDPublicationServi
 from backend.services.publications.ai_service import AIService
 from backend.services.telegram_client import RateLimitedBot
 from backend.config import get_bot
+
+logger = logging.getLogger(__name__)
 
 
 class PublicationService:
@@ -146,7 +145,6 @@ class PublicationService:
         ):
             yield chunk
 
-
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> PublishResult:
         """Опубликовать сейчас"""
         publish_start = time.monotonic()
@@ -165,7 +163,18 @@ class PublicationService:
                 from backend.services.publications.series_service import SeriesService
                 series_service = SeriesService(self.db)
                 bot = self.get_master_bot()
-                return await series_service.publish_series_post(publication, bot)
+                series_result = await series_service.publish_series_post(publication, bot)
+                # Преобразуем dict в PublishResult если необходимо
+                if isinstance(series_result, dict):
+                    return PublishResult(
+                        success=series_result.get("success", False),
+                        results=series_result.get("results", []),
+                        success_count=series_result.get("success_count", 0),
+                        total_count=series_result.get("total_count", 0),
+                        publication_id=publication.id,
+                        error=series_result.get("error")
+                    )
+                return series_result
 
         async def safe_send_to_channel(channel: Channel) -> ChannelPublishResult:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
@@ -237,12 +246,12 @@ class PublicationService:
         raw_results = await asyncio.gather(*tasks, return_exceptions=True)
         results: List[ChannelPublishResult] = []
         for i, result in enumerate(raw_results):
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
                 channel = publication.channels[i]
                 channel_name = getattr(channel, "title", str(channel.telegram_id))
                 logger.error(f"[TIMING] Exception for channel {channel_name}: {result}")
                 results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(result)))
-            elif result is not None:
+            else:
                 results.append(result)
 
         for result in results:
@@ -317,10 +326,10 @@ class PublicationService:
             return PublishResult(success=False, error="Publication is not set to repeat", results=[], success_count=0, total_count=0)
 
         results: List[ChannelPublishResult] = []
-        
+
         for channel in publication.channels:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
-            
+
             try:
                 bot = await self.get_bot_for_channel(channel)
             except ValueError as e:
@@ -330,7 +339,7 @@ class PublicationService:
             for attempt in range(5):
                 try:
                     sent_messages = await self.send_to_telegram(publication, channel, bot)
-                    
+
                     for msg in sent_messages:
                         telegram_message = TelegramMessage(
                             publication_id=publication.id,
@@ -339,23 +348,23 @@ class PublicationService:
                             chat_id=channel.telegram_id
                         )
                         self.db.add(telegram_message)
-                    
+
                     results.append(ChannelPublishResult(channel=channel_name, success=True, message_ids=[msg.message_id for msg in sent_messages]))
                     break
-                    
+
                 except TelegramRetryAfter as e:
                     if attempt < 4:
                         await asyncio.sleep(e.retry_after)
                     else:
                         results.append(ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s"))
-                        
+
                 except Exception as e:
                     if attempt == 4:
                         results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(e)))
-                    await asyncio.sleep(2 ** attempt)
+                    await asyncio.sleep(2**attempt)
 
         success_count = sum(1 for r in results if r.success)
-        
+
         if success_count > 0:
             publication.published_time = datetime.now(timezone.utc)
             publication.next_repeat_time = self.calculate_next_repeat_time(
@@ -363,9 +372,9 @@ class PublicationService:
                 publication.repeat_interval,
                 publication.repeat_custom_days
             )
-        
+
         await self.db.commit()
-        
+
         return PublishResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results), publication_id=publication.id)
 
     def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
@@ -410,7 +419,7 @@ class PublicationService:
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
                 blur_list = publication.media_blur or []
-        
+
                 def get_spoiler(index: int) -> bool:
                     """Получить значение spoiler для файла по индексу"""
                     if index < len(blur_list):
@@ -811,4 +820,3 @@ class PublicationService:
             original_post=original_post,
             target_channel_id=target_channel_id
         )
-

@@ -64,7 +64,7 @@ class Publication(Base):
     text_content = Column(Text, nullable=True)
     formatted_content = Column(JSON, nullable=True)
     media_urls = Column(JSON, nullable=True)
-    media_blur = Column(JSON, nullable=True)  # List of booleans, one per media file
+    media_blur = Column(JSON, nullable=True)
     
     inline_keyboard = Column(JSON, nullable=True)
     poll_data = Column(JSON, nullable=True)
@@ -79,9 +79,9 @@ class Publication(Base):
         default=RepeatInterval.NEVER,
         nullable=False
     )
-    repeat_custom_days = Column(Integer, nullable=True)  # Для custom интервала (количество дней)
-    repeat_custom_hours = Column(Integer, nullable=True)  # Для custom интервала (количество часов)
-    next_repeat_time = Column(DateTime(timezone=True), nullable=True)  # Время следующего повтора
+    repeat_custom_days = Column(Integer, nullable=True)
+    repeat_custom_hours = Column(Integer, nullable=True)
+    next_repeat_time = Column(DateTime(timezone=True), nullable=True)
     
     scheduled_time = Column(DateTime(timezone=True), nullable=True, index=True)
     published_time = Column(DateTime(timezone=True), nullable=True)
@@ -118,7 +118,7 @@ class PublicationSeries(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
-    reply_to_previous = Column(Boolean, default=True, nullable=False)  # Включить/выключить режим ответов
+    reply_to_previous = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', back_populates='series')
@@ -131,7 +131,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
-    color = Column(String(7), nullable=True)  # HEX color like #FAC7C7
+    color = Column(String(7), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_used_at = Column(DateTime(timezone=True), server_default=func.now())
     
