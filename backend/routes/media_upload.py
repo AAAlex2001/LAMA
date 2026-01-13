@@ -1,21 +1,14 @@
 """
 Роуты для загрузки медиа файлов для публикаций
 """
-import os
-import uuid
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 from typing import List
-from backend.models.auth import User
-from backend.database import get_db
-from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.services.storage import get_storage_service
 
 router = APIRouter()
-
-# Папка для загрузки медиа файлов публикаций
-UPLOAD_DIR = Path("uploads/publications")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # Разрешенные форматы
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
@@ -30,7 +23,8 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 async def upload_media(
     files: List[UploadFile] = File(...),
 ):
-    """Загрузить медиа файлы для публикации"""
+    """Загрузить медиа файлы для публикации (с поддержкой облачного хранилища)"""
+    storage = get_storage_service()
     uploaded_files = []
     
     for file in files:
@@ -50,33 +44,37 @@ async def upload_media(
                 detail=f"Файл {file.filename} слишком большой (макс. 50MB)"
             )
         
-        # Генерируем уникальное имя файла
-        file_id = str(uuid.uuid4())
-        filename = f"{file_id}{file_ext}"
-        file_path = UPLOAD_DIR / filename
+        # Определяем content type
+        content_type = file.content_type or "application/octet-stream"
         
-        # Сохраняем файл
-        with open(file_path, "wb") as f:
-            f.write(contents)
+        # Загружаем в хранилище (локальное или облачное)
+        # Для изображений генерируем thumbnail
+        generate_thumbnail = file_ext in ALLOWED_IMAGE_EXTENSIONS
         
-        # Определяем тип файла
-        if file_ext in ALLOWED_IMAGE_EXTENSIONS:
-            file_type = "image"
-        elif file_ext in ALLOWED_VIDEO_EXTENSIONS:
-            file_type = "video"
-        else:
-            file_type = "document"
-        
-        # Возвращаем URL для использования в публикации
-        file_url = f"/uploads/publications/{filename}"
-        
-        uploaded_files.append({
-            "url": file_url,
-            "filename": filename,
-            "type": file_type,
-            "original_name": file.filename
-        })
+        try:
+            result = await storage.upload_file(
+                file_content=contents,
+                filename=file.filename,
+                content_type=content_type,
+                generate_thumbnail=generate_thumbnail
+            )
+            
+            uploaded_files.append({
+                "url": result["url"],
+                "thumbnailUrl": result.get("thumbnail_url"),
+                "name": file.filename,
+                "path": result["path"],
+                "size": result["size"],
+                "type": result["type"]
+            })
+            
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Не удалось загрузить файл {file.filename}: {str(e)}"
+            )
     
     return JSONResponse({
-        "files": uploaded_files
+        "success": True,
+        "data": uploaded_files
     })

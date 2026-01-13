@@ -60,9 +60,9 @@ class RateLimitedBot:
             return await self.bot.send_animation(chat_id=chat_id, animation=animation, **kwargs)
 
     async def send_media_group(self, chat_id: Union[int, str], media: list, **kwargs) -> list:
-        """Отправить медиагруппу (альбом) с rate limiting - это ОДНО действие!"""
-        weight = len(media) if media else 1
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), weight=weight):
+        """Отправить медиагруппу (альбом) с rate limiting - это ОДИН API запрос!"""
+        # send_media_group = 1 HTTP запрос к Telegram API, weight всегда 1
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), weight=1):
             return await self.bot.send_media_group(chat_id=chat_id, media=media, **kwargs)
 
     async def delete_message(self, chat_id: Union[int, str], message_id: int, **kwargs) -> bool:
@@ -194,16 +194,8 @@ class RateLimitedBot:
             if chat_id is None and args:
                 chat_id = args[0]
 
-            # Для media_group учитываем, что Telegram создаёт N сообщений за 1 запрос.
+            # send_media_group = 1 HTTP запрос, weight всегда 1
             weight = 1
-            if name == "send_media_group":
-                media = kwargs.get("media")
-                if media is None and len(args) >= 2:
-                    media = args[1]
-                try:
-                    weight = len(media) if media else 1
-                except Exception:
-                    weight = 1
 
             extracted = self.extract_chat_id(chat_id)
             if extracted is None:
