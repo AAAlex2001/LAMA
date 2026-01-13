@@ -98,11 +98,11 @@ class AuthService:
         """
         temp_access_token = self.create_access_token(0)
         temp_refresh_token = self.create_refresh_token(0)
-        
+
         user = await self.widget_auth.authenticate_telegram_user(
             auth_data, temp_access_token, temp_refresh_token, user_agent, ip_address
         )
-        
+
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
 
@@ -118,10 +118,11 @@ class AuthService:
         if session:
           session.access_token = access_token
           session.refresh_token = refresh_token
-          session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+          session.expires_at = datetime.now(
+              timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
           session.last_used_at = datetime.now(timezone.utc)
           await self.db.commit()
-        
+
         return user, access_token, refresh_token
 
     # ========================================================================
@@ -146,16 +147,16 @@ class AuthService:
         user = await self.bot_auth.get_or_create_user_by_telegram_id(
             telegram_id, username, first_name, last_name, photo_url
         )
-        
+
         # Создаём токены
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
-        
+
         # Сохраняем сессию
         await self.bot_auth.create_direct_session(
             user, access_token, refresh_token, user_agent, ip_address
         )
-        
+
         return user, access_token, refresh_token
 
     # ========================================================================
@@ -230,7 +231,7 @@ class AuthService:
         # обновляем эту же сессию на финальные токены с реальным user_id.
         temp_access_token = self.create_access_token(0)
         temp_refresh_token = self.create_refresh_token(0)
-        
+
         user = await self.email_auth.register_user(
             email=email,
             password=password,
@@ -241,7 +242,7 @@ class AuthService:
             user_agent=user_agent,
             ip_address=ip_address
         )
-        
+
         # Создаём токены с правильным user_id
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
@@ -257,10 +258,11 @@ class AuthService:
         if session:
             session.access_token = access_token
             session.refresh_token = refresh_token
-            session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+            session.expires_at = datetime.now(
+                timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
             await self.db.commit()
-        
+
         return user, access_token, refresh_token
 
     async def login_with_email(
@@ -278,7 +280,7 @@ class AuthService:
         # затем обновляем запись на финальные токены.
         temp_access_token = self.create_access_token(0)
         temp_refresh_token = self.create_refresh_token(0)
-        
+
         user = await self.email_auth.authenticate_by_email(
             email=email,
             password=password,
@@ -287,7 +289,7 @@ class AuthService:
             user_agent=user_agent,
             ip_address=ip_address
         )
-        
+
         # Создаём токены с правильным user_id
         access_token = self.create_access_token(user.id)
         refresh_token = self.create_refresh_token(user.id)
@@ -303,10 +305,11 @@ class AuthService:
         if session:
             session.access_token = access_token
             session.refresh_token = refresh_token
-            session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+            session.expires_at = datetime.now(
+                timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
             await self.db.commit()
-        
+
         return user, access_token, refresh_token
 
     async def add_email_to_user(

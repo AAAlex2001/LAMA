@@ -46,17 +46,19 @@ class TelegramRateLimiter:
             weight = 1
 
         lock = await self.get_chat_lock(chat_id)
-        
+
         async with lock:
             if chat_id in self.chat_last_request:
                 elapsed = time.monotonic() - self.chat_last_request[chat_id]
                 wait_time = (self.per_chat_delay * weight) - elapsed
-                
+
                 if wait_time > 0:
-                    logger.info(f"[RateLimit] chat {chat_id}: waiting {wait_time:.3f}s")
+                    logger.info(
+                        f"[RateLimit] chat {chat_id}: waiting {wait_time:.3f}s")
                     await asyncio.sleep(wait_time)
-            
-            logger.info(f"[RateLimit] chat {chat_id}: executing request (weight={weight})")
+
+            logger.info(
+                f"[RateLimit] chat {chat_id}: executing request (weight={weight})")
             try:
                 yield
             finally:
@@ -87,6 +89,7 @@ class TelegramRateLimiter:
             "per_chat_delay": self.per_chat_delay,
         }
 
+
 global_rate_limiter: Optional[TelegramRateLimiter] = None
 
 
@@ -98,5 +101,3 @@ def get_rate_limiter() -> TelegramRateLimiter:
             per_chat_delay=0.5,
         )
     return global_rate_limiter
-
-

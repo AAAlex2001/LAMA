@@ -62,12 +62,12 @@ async def get_bot_by_chat_id(db: AsyncSession, chat_id: int) -> Optional[BotMode
     )
     result = await db.execute(query)
     channel = result.unique().scalar_one_or_none()
-    
+
     if channel and channel.bot:
         logger.info(f"Found bot {channel.bot.id} for chat {chat_id}")
         return channel.bot
-    
-    # Fallback: если канал не найден, пробуем master bot
-    logger.warning(f"Channel not found for chat {chat_id}, falling back to master bot")
-    return await get_master_bot_model(db)
 
+    # Fallback: если канал не найден, пробуем master bot
+    logger.warning(
+        f"Channel not found for chat {chat_id}, falling back to master bot")
+    return await get_master_bot_model(db)

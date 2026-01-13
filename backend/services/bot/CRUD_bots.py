@@ -104,7 +104,8 @@ class CRUDBotService:
         total = total_result.scalar() or 0
 
         # Получение данных с пагинацией
-        data_query = base_query.order_by(desc(BotModel.created_at)).offset(skip).limit(limit)
+        data_query = base_query.order_by(
+            desc(BotModel.created_at)).offset(skip).limit(limit)
         result = await self.db.execute(data_query)
         bots = list(result.scalars().all())
 

@@ -49,10 +49,10 @@ class WelcomeService:
         try:
             # Обработка шорткодов
             text = self.process_shortcodes(bot_model.welcome_message, context)
-            
+
             # Формирование клавиатуры
             reply_markup = build_keyboard(bot_model.welcome_buttons)
-            
+
             # Отправка сообщения
             message = await self.send_message(
                 telegram_bot=telegram_bot,
@@ -63,12 +63,14 @@ class WelcomeService:
                 reply_markup=reply_markup,
                 message_thread_id=message_thread_id,
             )
-            
-            logger.info(f"Welcome message sent to user {user_id} in chat {chat_id}")
+
+            logger.info(
+                f"Welcome message sent to user {user_id} in chat {chat_id}")
             return message
-            
+
         except TelegramAPIError as e:
-            logger.warning(f"Failed to send welcome message to user {user_id}: {e}")
+            logger.warning(
+                f"Failed to send welcome message to user {user_id}: {e}")
             return None
 
     def process_shortcodes(
@@ -79,10 +81,8 @@ class WelcomeService:
         """Обработать шорткоды в тексте"""
         if not context:
             return text
-        
+
         return ShortcodeProcessor.process(text, context)
-
-
 
     async def send_message(
         self,
@@ -95,12 +95,12 @@ class WelcomeService:
         message_thread_id: Optional[int] = None,
     ) -> Message:
         """Универсальная отправка сообщения с медиа"""
-        
+
         send_kwargs = {
             "chat_id": chat_id,
             "reply_markup": reply_markup,
         }
-        
+
         # Добавляем топик если указан
         if message_thread_id:
             send_kwargs["message_thread_id"] = message_thread_id
@@ -228,4 +228,3 @@ class WelcomeService:
             context=context,
             message_thread_id=message_thread_id,
         )
-

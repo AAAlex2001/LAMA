@@ -31,7 +31,7 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "headline": "",
@@ -43,7 +43,7 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
             "helpText": "",
             "botLink": ""
         }
-    
+
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
@@ -52,10 +52,10 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     response = {}
     faq_items: list[dict[str, str]] = []
-    
+
     for content in contents:
         if content.key == "faq_headline":
             response["headline"] = content.title or content.text or ""
@@ -63,7 +63,7 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
             item_index = int(content.key.split("_")[-1])
             while len(faq_items) <= item_index:
                 faq_items.append({"question": "", "answer": ""})
-            
+
             if content.title:
                 faq_items[item_index]["question"] = content.title
             if content.text:
@@ -78,7 +78,7 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
             response["helpText"] = content.text or ""
         elif content.key == "faq_bot_link":
             response["botLink"] = content.link_url or ""
-    
+
     return {
         "headline": response.get("headline", ""),
         "faqItems": faq_items,
@@ -106,10 +106,11 @@ async def save_faq_content(
     """Сохранить контент для секции FAQ"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.FAQ)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.FAQ)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.FAQ,
@@ -119,13 +120,13 @@ async def save_faq_content(
         )
         db.add(section)
         await db.flush()
-    
+
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     contents = [
         LandingContent(
             section_id=section.id,
@@ -137,7 +138,7 @@ async def save_faq_content(
             order=1
         )
     ]
-    
+
     for i, item in enumerate(faq_items):
         contents.append(LandingContent(
             section_id=section.id,
@@ -149,7 +150,7 @@ async def save_faq_content(
             is_active=True,
             order=10 + i
         ))
-    
+
     # Кнопки и подпись
     if primary_button_text or primary_button_link:
         contents.append(LandingContent(
@@ -162,7 +163,7 @@ async def save_faq_content(
             is_active=True,
             order=1000
         ))
-    
+
     if secondary_button_text or secondary_button_link:
         contents.append(LandingContent(
             section_id=section.id,
@@ -174,7 +175,7 @@ async def save_faq_content(
             is_active=True,
             order=1001
         ))
-    
+
     if help_text:
         contents.append(LandingContent(
             section_id=section.id,
@@ -185,7 +186,7 @@ async def save_faq_content(
             is_active=True,
             order=1002
         ))
-    
+
     if bot_link:
         contents.append(LandingContent(
             section_id=section.id,
@@ -196,9 +197,8 @@ async def save_faq_content(
             is_active=True,
             order=1003
         ))
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "FAQ content saved"}
 
+    return {"status": "ok", "message": "FAQ content saved"}

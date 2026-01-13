@@ -25,7 +25,8 @@ class UserCRUDService:
 
     async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[User]:
         """Получить пользователя по Telegram ID"""
-        query = select(User).join(TelegramAccount).where(TelegramAccount.telegram_id == telegram_id)
+        query = select(User).join(TelegramAccount).where(
+            TelegramAccount.telegram_id == telegram_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 

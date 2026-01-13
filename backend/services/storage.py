@@ -13,7 +13,7 @@ except ImportError:
     CLOUD_STORAGE_AVAILABLE = False
 
 from backend.config import (
-    USE_CLOUD_STORAGE, S3_ENDPOINT_URL, S3_ACCESS_KEY, 
+    USE_CLOUD_STORAGE, S3_ENDPOINT_URL, S3_ACCESS_KEY,
     S3_SECRET_KEY, S3_BUCKET_NAME, S3_REGION, CDN_URL
 )
 
@@ -21,15 +21,16 @@ logger = logging.getLogger(__name__)
 
 
 class StorageService:
-    
+
     def __init__(self):
         self.use_cloud = USE_CLOUD_STORAGE and CLOUD_STORAGE_AVAILABLE
         self.local_upload_dir = Path("uploads/publications")
         self.local_upload_dir.mkdir(parents=True, exist_ok=True)
-        
+
         if self.use_cloud:
             if not all([S3_ACCESS_KEY, S3_SECRET_KEY, S3_BUCKET_NAME]):
-                logger.warning("Cloud storage enabled but credentials missing. Falling back to local storage.")
+                logger.warning(
+                    "Cloud storage enabled but credentials missing. Falling back to local storage.")
                 self.use_cloud = False
             else:
                 self.s3_client = boto3.client(
@@ -41,13 +42,14 @@ class StorageService:
                 )
                 self.bucket_name = S3_BUCKET_NAME
                 self.cdn_url = CDN_URL if CDN_URL else None
-                logger.info(f"Cloud storage initialized: {self.bucket_name} (CDN: {self.cdn_url or 'S3 direct'})")
+                logger.info(
+                    f"Cloud storage initialized: {self.bucket_name} (CDN: {self.cdn_url or 'S3 direct'})")
         else:
             logger.info("Using local file storage")
-    
+
     async def upload_file(
-        self, 
-        file_content: bytes, 
+        self,
+        file_content: bytes,
         filename: str,
         content_type: str = "application/octet-stream",
         generate_thumbnail: bool = False
@@ -76,7 +78,7 @@ class StorageService:
                 )
             except Exception as e:
                 logger.warning(f"Failed to generate thumbnail: {e}")
-        
+
         if self.use_cloud:
             return await self._upload_to_cloud(
                 file_content, unique_filename, content_type, size, thumbnail_url
@@ -85,11 +87,11 @@ class StorageService:
             return await self._upload_to_local(
                 file_content, unique_filename, size, thumbnail_url
             )
-    
+
     async def _upload_to_cloud(
-        self, 
-        file_content: bytes, 
-        filename: str, 
+        self,
+        file_content: bytes,
+        filename: str,
         content_type: str,
         size: int,
         thumbnail_url: Optional[str]
@@ -110,9 +112,9 @@ class StorageService:
             else:
                 endpoint = S3_ENDPOINT_URL or "https://storage.yandexcloud.net"
                 public_url = f"{endpoint.rstrip('/')}/{self.bucket_name}/{s3_key}"
-            
+
             logger.info(f"File uploaded to cloud: {public_url}")
-            
+
             return {
                 "url": public_url,
                 "path": s3_key,
@@ -121,28 +123,28 @@ class StorageService:
                 "type": self._get_file_type(Path(filename).suffix),
                 "name": filename
             }
-            
+
         except ClientError as e:
             logger.error(f"Failed to upload to S3: {e}")
             return await self.upload_to_local(file_content, filename, size, thumbnail_url)
-    
+
     async def upload_to_local(
-        self, 
-        file_content: bytes, 
+        self,
+        file_content: bytes,
         filename: str,
         size: int,
         thumbnail_url: Optional[str]
     ) -> dict:
         """Загрузка в локальное хранилище"""
         file_path = self.local_upload_dir / filename
-        
+
         with open(file_path, "wb") as f:
             f.write(file_content)
-        
+
         file_url = f"/uploads/publications/{filename}"
-        
+
         logger.info(f"File uploaded locally: {file_url}")
-        
+
         return {
             "url": file_url,
             "path": str(file_path),
@@ -151,24 +153,25 @@ class StorageService:
             "type": self._get_file_type(Path(filename).suffix),
             "name": filename
         }
-    
+
     async def generate_and_upload_thumbnail(
-        self, 
-        file_content: bytes, 
+        self,
+        file_content: bytes,
         filename: str,
         content_type: str
     ) -> Optional[str]:
         """Создать и загрузить миниатюру изображения"""
         if not CLOUD_STORAGE_AVAILABLE:
             return None
-        
+
         try:
             image = Image.open(BytesIO(file_content))
             if image.mode in ('RGBA', 'LA', 'P'):
                 background = Image.new('RGB', image.size, (255, 255, 255))
                 if image.mode == 'P':
                     image = image.convert('RGBA')
-                background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+                background.paste(image, mask=image.split()
+                                 [-1] if image.mode in ('RGBA', 'LA') else None)
                 image = background
 
             image.thumbnail((300, 300), Image.Resampling.LANCZOS)
@@ -176,10 +179,10 @@ class StorageService:
             image.save(thumb_buffer, format='JPEG', quality=85, optimize=True)
             thumb_content = thumb_buffer.getvalue()
             thumb_filename = Path(filename).stem + "-thumb.jpg"
-            
+
             if self.use_cloud:
                 s3_key = f"thumbnails/{thumb_filename}"
-                
+
                 self.s3_client.put_object(
                     Bucket=self.bucket_name,
                     Key=s3_key,
@@ -187,32 +190,32 @@ class StorageService:
                     ContentType='image/jpeg',
                     ACL='public-read'
                 )
-                
+
                 if self.cdn_url:
                     thumb_url = f"{self.cdn_url.rstrip('/')}/{s3_key}"
                 else:
                     endpoint = S3_ENDPOINT_URL or "https://storage.yandexcloud.net"
                     thumb_url = f"{endpoint.rstrip('/')}/{self.bucket_name}/{s3_key}"
-                
+
                 return thumb_url
             else:
                 thumb_dir = Path("uploads/thumbnails")
                 thumb_dir.mkdir(parents=True, exist_ok=True)
                 thumb_path = thumb_dir / thumb_filename
-                
+
                 with open(thumb_path, "wb") as f:
                     f.write(thumb_content)
-                
+
                 return f"/uploads/thumbnails/{thumb_filename}"
-                
+
         except Exception as e:
             logger.error(f"Failed to generate thumbnail: {e}")
             return None
-    
+
     def is_image(self, file_ext: str) -> bool:
         """Проверить является ли файл изображением"""
         return file_ext.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
-    
+
     def get_file_type(self, file_ext: str) -> str:
         """Определить тип файла"""
         ext = file_ext.lower()

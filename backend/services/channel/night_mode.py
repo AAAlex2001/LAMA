@@ -41,7 +41,8 @@ class ChannelNightModeService:
         return False, None
 
     async def get_channel(self, telegram_chat_id: int) -> Optional[ChannelGroup]:
-        query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_chat_id)
+        query = select(ChannelGroup).where(
+            ChannelGroup.telegram_id == telegram_chat_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -91,4 +92,3 @@ class ChannelNightModeService:
             f"🌙 Ночной режим активен с {start} до {end} ({timezone_name}). "
             f"В это время нельзя отправлять {restrictions}."
         )
-

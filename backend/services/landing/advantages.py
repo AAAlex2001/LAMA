@@ -69,14 +69,14 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "headline": "",
             "subtitle": "",
             "cards": []
         }
-    
+
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
@@ -85,10 +85,10 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     response: Dict[str, Any] = {}
     cards: List[Dict[str, Any]] = []
-    
+
     for content in contents:
         if content.key == "advantages_headline":
             response["headline"] = content.title or content.text or ""
@@ -97,12 +97,14 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         elif content.key.startswith("advantages_card_"):
             # Новый формат: ключ advantages_card_<uid>, порядок берём из order.
             # Старый формат: advantages_card_<index> — тоже поддерживаем.
-            suffix = content.key[len("advantages_card_") :]
+            suffix = content.key[len("advantages_card_"):]
             fallback_uid = suffix if suffix else None
 
             extra = content.extra_data or {}
-            uid = str(extra.get("uid") or fallback_uid or "").strip() or uuid4().hex
-            slug = str(extra.get("slug") or "").strip() or _ensure_slug({"title": content.title or ""}, uid)
+            uid = str(extra.get("uid")
+                      or fallback_uid or "").strip() or uuid4().hex
+            slug = str(extra.get("slug") or "").strip() or _ensure_slug(
+                {"title": content.title or ""}, uid)
 
             cards.append(
                 {
@@ -117,7 +119,7 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
                     "ctaButtonUrl": extra.get("ctaButtonUrl"),
                 }
             )
-    
+
     return {
         "headline": response.get("headline", ""),
         "subtitle": response.get("subtitle", ""),
@@ -135,10 +137,11 @@ async def save_advantages_content(
     """Сохранить контент для секции Advantages"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.ADVANTAGES)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.ADVANTAGES)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.ADVANTAGES,
@@ -148,13 +151,13 @@ async def save_advantages_content(
         )
         db.add(section)
         await db.flush()
-    
+
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     contents = [
         LandingContent(
             section_id=section.id,
@@ -175,7 +178,7 @@ async def save_advantages_content(
             order=2
         )
     ]
-    
+
     for i, card in enumerate(cards):
         uid = _ensure_uid(card, fallback_uid=str(i))
         slug = _ensure_slug(card, uid)
@@ -205,9 +208,8 @@ async def save_advantages_content(
             is_active=True,
             order=10 + i
         ))
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "Advantages content saved"}
 
+    return {"status": "ok", "message": "Advantages content saved"}

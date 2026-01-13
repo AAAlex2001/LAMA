@@ -100,5 +100,3 @@ class CaptchaService:
             pending.is_rejected = True
         await self.db.commit()
         return False, "wrong"
-
-

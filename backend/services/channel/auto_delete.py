@@ -113,8 +113,8 @@ class ChannelAutoDeleteService:
             select(ChannelGroup)
             .options(selectinload(ChannelGroup.auto_delete_settings))
             .where(
-            ChannelGroup.id == channel_id,
-            ChannelGroup.owner_id == owner_id,
+                ChannelGroup.id == channel_id,
+                ChannelGroup.owner_id == owner_id,
             )
         )
         result = await self.db.execute(query)
@@ -140,4 +140,3 @@ class ChannelAutoDeleteService:
             return True
         except TelegramAPIError:
             return False
-

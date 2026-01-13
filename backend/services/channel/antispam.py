@@ -61,15 +61,15 @@ class AntispamService:
         """
         if link_filter_mode == LinkFilterMode.DISABLED:
             return False, None
-        
+
         links = self.extract_links(text)
         if not links:
             return False, None
-        
+
         # BLOCK_ALL: блокируем любые ссылки
         if link_filter_mode == LinkFilterMode.BLOCK_ALL:
             return True, links[0]
-        
+
         # ALLOW_TME_ONLY: разрешены только t.me
         if link_filter_mode == LinkFilterMode.ALLOW_TME_ONLY:
             for link in links:
@@ -77,7 +77,7 @@ class AntispamService:
                 if domain and domain != "t.me":
                     return True, link
             return False, None
-        
+
         # WHITELIST: блокируем всё, кроме белого списка
         if link_filter_mode == LinkFilterMode.WHITELIST:
             if not whitelist:
@@ -87,7 +87,7 @@ class AntispamService:
                 if domain and not self.is_in_list(link, domain, whitelist):
                     return True, link
             return False, None
-        
+
         # BLACKLIST: блокируем только из чёрного списка
         if link_filter_mode == LinkFilterMode.BLACKLIST:
             if not blacklist:
@@ -97,7 +97,7 @@ class AntispamService:
                 if domain and self.is_in_list(link, domain, blacklist):
                     return True, link
             return False, None
-        
+
         return False, None
 
     async def check_antispam_by_telegram_id(
@@ -113,21 +113,22 @@ class AntispamService:
         """
         if not text:
             return False, None, None, None
-        
-        query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_id)
+
+        query = select(ChannelGroup).where(
+            ChannelGroup.telegram_id == telegram_id)
         result = await self.db.execute(query)
         channel = result.scalar_one_or_none()
-        
+
         if not channel:
             return False, None, None, None
-        
+
         should_block, matched_link = self.check_link_filter(
             text,
             channel.link_filter_mode,
             channel.link_whitelist,
             channel.link_blacklist
         )
-        
+
         if should_block:
             return (
                 True,
@@ -135,7 +136,7 @@ class AntispamService:
                 channel.link_filter_mute_duration,
                 f"Link filter triggered: {matched_link}"
             )
-        
+
         return False, None, None, None
 
     async def update_channel_antispam(
@@ -155,10 +156,10 @@ class AntispamService:
         )
         result = await self.db.execute(query)
         channel = result.scalar_one_or_none()
-        
+
         if not channel:
             return None
-        
+
         if link_filter_mode is not None:
             channel.link_filter_mode = link_filter_mode
         if link_whitelist is not None:
@@ -169,10 +170,9 @@ class AntispamService:
             channel.link_filter_action = link_filter_action
         if link_filter_mute_duration is not None:
             channel.link_filter_mute_duration = link_filter_mute_duration
-        
+
         channel.updated_at = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(channel)
-        
-        return channel
 
+        return channel

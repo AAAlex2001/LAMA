@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 class ModerationTriggerService:
     """Сервис для обработки модерационных команд"""
-    
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
@@ -38,14 +38,14 @@ class ModerationTriggerService:
         # Проверяем, что это групповой чат
         if message.chat.type not in ("group", "supergroup"):
             return False
-        
+
         # Проверяем права пользователя
         try:
             member = await telegram_bot.get_chat_member(message.chat.id, message.from_user.id)
             is_admin = member.status in ("administrator", "creator")
         except TelegramAPIError:
             is_admin = False
-        
+
         parts = message.text.split()
         cmd = command.lower()
 
@@ -79,7 +79,7 @@ class ModerationTriggerService:
             return await self.handle_unmute(message, telegram_bot, target_user_id, target_username)
         elif cmd == "/delitetime":
             return await self.handle_delete_time(message, telegram_bot, parts)
-        
+
         return False
 
     async def handle_admin_call(self, message: Message, telegram_bot: Bot) -> bool:
@@ -90,7 +90,7 @@ class ModerationTriggerService:
         except TelegramAPIError as e:
             print(f"Failed to notify bot owner: {str(e)}")
             return False
-    
+
     async def notify_bot_owner(self, message: Message, telegram_bot: Bot) -> None:
         """Отправить уведомление владельцу группы (создателю) в ЛС"""
         try:
@@ -101,11 +101,12 @@ class ModerationTriggerService:
                 if admin.status == "creator":
                     group_owner = admin.user
                     break
-            
+
             if not group_owner:
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.warning(f"No group creator found for chat {message.chat.id}")
+                logger.warning(
+                    f"No group creator found for chat {message.chat.id}")
                 return
 
             chat_title = message.chat.title or "Unknown Group"
@@ -118,9 +119,10 @@ class ModerationTriggerService:
             replied_text_preview = None
             replied_user_id = None
             replied_message_id = replied.message_id if replied else None
-            
+
             if replied:
-                replied_text_preview = (replied.text or replied.caption or "").strip()
+                replied_text_preview = (
+                    replied.text or replied.caption or "").strip()
                 if len(replied_text_preview) > 200:
                     replied_text_preview = replied_text_preview[:200] + "…"
                 if replied.from_user:
@@ -130,7 +132,7 @@ class ModerationTriggerService:
                         replied_user_info += f" (@{replied.from_user.username})"
 
             chat_link = f"https://t.me/c/{str(message.chat.id)[4:]}/{message.message_id}"
-            
+
             owner_message = (
                 f"🚨 ВЫЗОВ АДМИНИСТРАТОРА\n\n"
                 f"👤 Пользователь: {user_info}\n"
@@ -169,7 +171,7 @@ class ModerationTriggerService:
                 text=owner_message,
                 reply_markup=reply_markup,
             )
-                
+
         except Exception as e:
             import logging
             logger = logging.getLogger(__name__)
@@ -190,13 +192,14 @@ class ModerationTriggerService:
                 text="❌ Ответьте на сообщение пользователя или укажите @username"
             )
             return True
-        
+
         # Парсим время
         time_minutes = self.parse_time(parts[-1] if len(parts) > 1 else "0")
-        
+
         try:
             if time_minutes > 0:
-                until_date = datetime.now(timezone.utc) + timedelta(minutes=time_minutes)
+                until_date = datetime.now(
+                    timezone.utc) + timedelta(minutes=time_minutes)
                 await telegram_bot.ban_chat_member(
                     chat_id=message.chat.id,
                     user_id=target_user_id,
@@ -237,7 +240,7 @@ class ModerationTriggerService:
                 text="❌ Ответьте на сообщение пользователя или укажите @username"
             )
             return True
-        
+
         try:
             await telegram_bot.unban_chat_member(
                 chat_id=message.chat.id,
@@ -270,11 +273,12 @@ class ModerationTriggerService:
                 text="❌ Ответьте на сообщение пользователя или укажите @username"
             )
             return True
-        
+
         time_minutes = self.parse_time(parts[-1] if len(parts) > 1 else "10")
-        
+
         try:
-            until_date = datetime.now(timezone.utc) + timedelta(minutes=time_minutes)
+            until_date = datetime.now(timezone.utc) + \
+                                      timedelta(minutes=time_minutes)
             await telegram_bot.restrict_chat_member(
                 chat_id=message.chat.id,
                 user_id=target_user_id,
@@ -307,7 +311,7 @@ class ModerationTriggerService:
                 text="❌ Ответьте на сообщение пользователя или укажите @username"
             )
             return True
-        
+
         try:
             await telegram_bot.restrict_chat_member(
                 chat_id=message.chat.id,
@@ -348,7 +352,7 @@ class ModerationTriggerService:
                 text="❌ Укажите время: /delitetime <секунды>"
             )
             return True
-        
+
         try:
             seconds = int(parts[1])
             if seconds < 0 or seconds > 31536000:  # Максимум 1 год
@@ -357,12 +361,12 @@ class ModerationTriggerService:
                     text="❌ Время должно быть от 0 до 31536000 секунд (1 год)"
                 )
                 return True
-            
+
             await telegram_bot.set_chat_message_auto_delete_time(
                 chat_id=message.chat.id,
                 message_auto_delete_time=seconds
             )
-            
+
             if seconds == 0:
                 await telegram_bot.send_message(
                     chat_id=message.chat.id,
@@ -391,23 +395,23 @@ class ModerationTriggerService:
         """Парсить время из строки (например: 10m, 1h, 30)"""
         if not time_str or not time_str[0].isdigit():
             return 0
-        
+
         # Извлекаем число
         num_str = ""
         unit = "m"  # По умолчанию минуты
-        
+
         for char in time_str:
             if char.isdigit():
                 num_str += char
             else:
                 unit = char.lower()
                 break
-        
+
         if not num_str:
             return 0
-        
+
         num = int(num_str)
-        
+
         # Конвертируем в минуты
         if unit == "s":  # секунды
             return num // 60
@@ -419,4 +423,3 @@ class ModerationTriggerService:
             return num * 60 * 24
         else:
             return num  # По умолчанию считаем минутами
-

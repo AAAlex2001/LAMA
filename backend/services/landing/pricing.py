@@ -25,7 +25,7 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "headline": "",
@@ -33,7 +33,7 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
             "description": "",
             "plans": []
         }
-    
+
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
@@ -42,10 +42,10 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     response = {}
     plans: list[dict[str, Any]] = []
-    
+
     for content in contents:
         if content.key == "pricing_headline":
             response["headline"] = content.title or content.text or ""
@@ -56,7 +56,8 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
         elif content.key.startswith("pricing_plan_"):
             plan_index = int(content.key.split("_")[-1])
             while len(plans) <= plan_index:
-                plans.append({"title": "", "price": "", "features": [], "isHighlighted": False, "buttonText": "", "buttonUrl": ""})
+                plans.append({"title": "", "price": "", "features": [
+                             ], "isHighlighted": False, "buttonText": "", "buttonUrl": ""})
 
             if content.title:
                 plans[plan_index]["title"] = content.title
@@ -71,7 +72,7 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
                     plans[plan_index]["buttonText"] = content.extra_data["buttonText"]
                 if "buttonUrl" in content.extra_data:
                     plans[plan_index]["buttonUrl"] = content.extra_data["buttonUrl"]
-    
+
     return {
         "headline": response.get("headline", ""),
         "subtitle": response.get("subtitle", ""),
@@ -91,10 +92,11 @@ async def save_pricing_content(
     """Сохранить контент для секции Pricing"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.PRICING)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.PRICING)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.PRICING,
@@ -104,13 +106,13 @@ async def save_pricing_content(
         )
         db.add(section)
         await db.flush()
-    
+
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     contents = [
         LandingContent(
             section_id=section.id,
@@ -140,7 +142,7 @@ async def save_pricing_content(
             order=3
         )
     ]
-    
+
     for i, plan in enumerate(plans):
         # Сохраняем features в extra_data
         features = plan.get("features", [])
@@ -164,9 +166,8 @@ async def save_pricing_content(
             is_active=True,
             order=10 + i
         ))
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "Pricing content saved"}
 
+    return {"status": "ok", "message": "Pricing content saved"}

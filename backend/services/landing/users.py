@@ -31,7 +31,7 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "number": 0,
@@ -40,7 +40,7 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
             "buttonText": "",
             "buttonUrl": ""
         }
-    
+
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
@@ -49,7 +49,7 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     response = {
         "number": 0,
         "textLine": "",
@@ -88,10 +88,11 @@ async def save_users_content(
     """Сохранить контент для секции Users"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.USERS)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.USERS)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.USERS,
@@ -101,13 +102,13 @@ async def save_users_content(
         )
         db.add(section)
         await db.flush()
-    
+
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     contents = [
         LandingContent(
             section_id=section.id,
@@ -155,9 +156,8 @@ async def save_users_content(
             order=5
         )
     ]
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "Users content saved"}
 
+    return {"status": "ok", "message": "Users content saved"}

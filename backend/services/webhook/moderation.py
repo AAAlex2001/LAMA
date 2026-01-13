@@ -73,7 +73,8 @@ class ModerationHandler:
                 await self.apply_action(message, rule.action, rule.mute_duration_minutes)
 
         except asyncio.TimeoutError:
-            logger.warning(f"Moderation timeout for message {message.message_id}")
+            logger.warning(
+                f"Moderation timeout for message {message.message_id}")
         except Exception as e:
             logger.error(f"Moderation error: {e}", exc_info=True)
 
@@ -110,15 +111,18 @@ class ModerationHandler:
                     await self.unmute_user(bot, message)
 
         except asyncio.TimeoutError:
-            logger.warning(f"Moderation action timeout for user {message.from_user.id if message.from_user else 'unknown'}")
+            logger.warning(
+                f"Moderation action timeout for user {message.from_user.id if message.from_user else 'unknown'}")
         except Exception as e:
-            logger.error(f"Failed to apply moderation action: {e}", exc_info=True)
+            logger.error(
+                f"Failed to apply moderation action: {e}", exc_info=True)
 
     async def mute_user(self, bot, message: Message, mute_duration: Optional[int]) -> None:
         """Заглушить пользователя"""
         until_date = None
         if mute_duration:
-            until_date = datetime.now(timezone.utc) + timedelta(minutes=mute_duration)
+            until_date = datetime.now(timezone.utc) + \
+                                      timedelta(minutes=mute_duration)
 
         permissions = ChatPermissions(
             can_send_messages=False,
@@ -173,4 +177,3 @@ class ModerationHandler:
             ),
             timeout=TELEGRAM_API_TIMEOUT
         )
-

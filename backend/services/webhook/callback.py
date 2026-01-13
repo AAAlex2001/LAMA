@@ -94,7 +94,8 @@ class CallbackHandler:
                 await self.answer_callback(telegram_bot, callback_query.id, answer_text)
 
             except TelegramAPIError as e:
-                logger.warning(f"Admin action '{action}' failed in chat {chat_id}: {e}")
+                logger.warning(
+                    f"Admin action '{action}' failed in chat {chat_id}: {e}")
                 await self.answer_callback(telegram_bot, callback_query.id, f"❌ Ошибка: {e}", True)
 
     async def process_captcha(self, callback_query: CallbackQuery) -> None:
@@ -180,7 +181,8 @@ class CallbackHandler:
         try:
             await bot.approve_chat_join_request(chat_id=pending.chat_id, user_id=pending.user_id)
         except TelegramAPIError as e:
-            logger.warning(f"Failed to approve join request for user {pending.user_id}: {e}")
+            logger.warning(
+                f"Failed to approve join request for user {pending.user_id}: {e}")
 
     async def delete_captcha_message(self, bot, message) -> None:
         """Удалить сообщение с капчей."""
@@ -205,7 +207,8 @@ class CallbackHandler:
                 ),
             )
         except TelegramAPIError as e:
-            logger.warning(f"Failed to unrestrict user {user_id} in chat {chat_id}: {e}")
+            logger.warning(
+                f"Failed to unrestrict user {user_id} in chat {chat_id}: {e}")
 
     async def send_welcome(self, callback_query: CallbackQuery) -> None:
         """Отправить приветственное сообщение после прохождения капчи."""
@@ -240,4 +243,3 @@ class CallbackHandler:
             )
         except Exception as e:
             logger.error(f"Failed to fire {trigger_type.value} trigger: {e}")
-

@@ -11,7 +11,8 @@ class AIService:
         self.api_key = api_key
         self.http_client = httpx.AsyncClient(
             timeout=30.0,
-            limits=httpx.Limits(max_keepalive_connections=20, max_connections=100)
+            limits=httpx.Limits(
+                max_keepalive_connections=20, max_connections=100)
         )
 
     async def generate_content(self, request: AIGenerateRequest) -> str:
@@ -112,7 +113,7 @@ class AIService:
             if response.status_code != 200:
                 error_text = (await response.aread()).decode('utf-8', errors='replace')
                 raise ValueError(f"DeepSeek API error: {error_text}")
-            
+
             async for line in response.aiter_lines():
                 if line.startswith("data: "):
                     data = line[6:]

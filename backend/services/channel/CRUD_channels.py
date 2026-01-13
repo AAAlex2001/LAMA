@@ -24,11 +24,11 @@ class CRUDChannelService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.master_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-    
+
     def create_bot(self, token: str) -> Bot:
         """Создать экземпляр Bot из токена"""
         return Bot(token=token)
-    
+
     def get_master_bot(self) -> Bot:
         """Получить мастер-бота из env для управления каналами"""
         if not self.master_bot_token:
@@ -74,7 +74,8 @@ class CRUDChannelService:
 
     async def get_channel_by_telegram_id(self, telegram_id: int) -> Optional[ChannelGroup]:
         """Получение канала по Telegram ID"""
-        query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_id)
+        query = select(ChannelGroup).where(
+            ChannelGroup.telegram_id == telegram_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -89,19 +90,23 @@ class CRUDChannelService:
     ) -> tuple[List[ChannelGroup], int]:
         """Список каналов с фильтрацией и пагинацией"""
         query = select(ChannelGroup).where(ChannelGroup.owner_id == owner_id)
-        count_query = select(func.count(distinct(ChannelGroup.id))).where(ChannelGroup.owner_id == owner_id)
+        count_query = select(func.count(distinct(ChannelGroup.id))).where(
+            ChannelGroup.owner_id == owner_id)
 
         if channel_type:
             query = query.where(ChannelGroup.channel_type == channel_type)
-            count_query = count_query.where(ChannelGroup.channel_type == channel_type)
+            count_query = count_query.where(
+                ChannelGroup.channel_type == channel_type)
 
         if is_active is not None:
             query = query.where(ChannelGroup.is_active == is_active)
-            count_query = count_query.where(ChannelGroup.is_active == is_active)
+            count_query = count_query.where(
+                ChannelGroup.is_active == is_active)
 
         if backup_mode:
             query = query.where(ChannelGroup.backup_mode == backup_mode)
-            count_query = count_query.where(ChannelGroup.backup_mode == backup_mode)
+            count_query = count_query.where(
+                ChannelGroup.backup_mode == backup_mode)
 
         total_result = await self.db.execute(count_query)
         total = total_result.scalar() or 0
@@ -160,12 +165,14 @@ class CRUDChannelService:
             raise ValueError("Either bot_id or token must be provided")
 
         if not telegram_id and not username and not invite_link:
-            raise ValueError("One of telegram_id, username, or invite_link must be provided")
+            raise ValueError(
+                "One of telegram_id, username, or invite_link must be provided")
 
         chat_identifier = telegram_id
 
         if username:
-            chat_identifier = username if username.startswith("@") else f"@{username}"
+            chat_identifier = username if username.startswith(
+                "@") else f"@{username}"
         elif invite_link:
             if "t.me/" in invite_link:
                 extracted = invite_link.split("t.me/")[-1]

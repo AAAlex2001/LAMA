@@ -3,4 +3,5 @@ from backend.services.publications.CRUD_publications import CRUDPublicationServi
 from backend.services.publications.ai_service import AIService
 from backend.services.publications.series_service import SeriesService
 
-__all__ = ["PublicationService", "CRUDPublicationService", "AIService", "SeriesService"]
+__all__ = ["PublicationService", "CRUDPublicationService",
+    "AIService", "SeriesService"]

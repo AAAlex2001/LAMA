@@ -95,11 +95,13 @@ class SubscriptionHandler:
                                 chat_id=pending.chat_id,
                                 telegram_bot=telegram_bot,
                                 chat_type='private',
-                                context={"auto_approved": True, "channel_id": channel_id}
+                                context={"auto_approved": True,
+                                    "channel_id": channel_id}
                             )
 
                         except (TelegramAPIError, asyncio.TimeoutError) as e:
-                            logger.warning(f"Failed to approve join request: {e}")
+                            logger.warning(
+                                f"Failed to approve join request: {e}")
 
                         # Удаляем обработанный pending
                         await self.db.delete(pending)
@@ -110,4 +112,3 @@ class SubscriptionHandler:
         except Exception as e:
             logger.error(f"Subscription processing error: {e}", exc_info=True)
             await self.db.rollback()
-

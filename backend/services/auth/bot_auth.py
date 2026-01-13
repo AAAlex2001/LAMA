@@ -89,7 +89,8 @@ class BotAuthService:
         ip_address: Optional[str] = None
     ) -> None:
         """Создать сессию для прямой авторизации"""
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires_at = datetime.now(
+            timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
             user_id=user.id,
             access_token=access_token,
@@ -113,7 +114,8 @@ class BotAuthService:
     ) -> BotLoginCode:
         """Создать временный код для авторизации через бота"""
         code = secrets.token_urlsafe(16)
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
+        expires_at = datetime.now(timezone.utc) + \
+                                  timedelta(minutes=expires_minutes)
 
         login_code = BotLoginCode(
             code=code,
@@ -213,7 +215,8 @@ class BotAuthService:
         if not login_code:
             raise ValueError("Invalid or expired login code")
 
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires_at = datetime.now(
+            timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
             user_id=user.id,
             access_token=access_token,
@@ -229,4 +232,3 @@ class BotAuthService:
         login_code.used_at = datetime.now(timezone.utc)
 
         await self.db.commit()
-

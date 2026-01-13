@@ -31,7 +31,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "brandName": "",
@@ -40,7 +40,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
             "instagramLink": "",
             "columns": []
         }
-    
+
     result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
@@ -49,7 +49,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     response = {
         "brandName": "",
         "copyright": "",
@@ -57,9 +57,9 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
         "instagramLink": "",
         "columns": []
     }
-    
+
     columns = {}
-    
+
     for content in contents:
         if content.key == "footer_brand_name":
             response["brandName"] = content.title or content.text or ""
@@ -77,9 +77,10 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
                 columns[column_index]["title"] = content.title
             if content.extra_data and "links" in content.extra_data:
                 columns[column_index]["links"] = content.extra_data["links"]
-    
-    response["columns"] = [columns[i] for i in sorted(columns.keys())] if columns else []  # type: ignore[misc]
-    
+
+    response["columns"] = [columns[i] for i in sorted(
+        columns.keys())] if columns else []  # type: ignore[misc]
+
     return response
 
 
@@ -95,10 +96,11 @@ async def save_footer_content(
     """Сохранить контент для секции Footer"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.FOOTER)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.FOOTER)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.FOOTER,
@@ -108,13 +110,13 @@ async def save_footer_content(
         )
         db.add(section)
         await db.flush()
-    
+
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     contents = [
         LandingContent(
             section_id=section.id,
@@ -153,7 +155,7 @@ async def save_footer_content(
             order=4
         )
     ]
-    
+
     for i, column in enumerate(columns):
         contents.append(LandingContent(
             section_id=section.id,
@@ -165,9 +167,8 @@ async def save_footer_content(
             is_active=True,
             order=10 + i
         ))
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "Footer content saved"}
 
+    return {"status": "ok", "message": "Footer content saved"}

@@ -35,7 +35,8 @@ class ChannelModerationService:
         if not channel:
             raise ValueError("Channel not found")
 
-        query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
+        query = select(ChannelModerationRule).where(
+            ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -61,7 +62,8 @@ class ChannelModerationService:
         return True
 
     async def check_message(self, channel_id: int, text: str) -> Optional[ChannelModerationRule]:
-        query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
+        query = select(ChannelModerationRule).where(
+            ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
         lowered_text = text.lower()
         for rule in result.scalars():

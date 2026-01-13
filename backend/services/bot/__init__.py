@@ -15,7 +15,3 @@ __all__ = [
     "TriggerService",
     "WelcomeService",
 ]
-
-
-
-

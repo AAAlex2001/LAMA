@@ -38,7 +38,8 @@ class BotCommandService:
         existing = result.scalar_one_or_none()
 
         if existing:
-            raise ValueError(f"Command {data.command} already exists for this bot")
+            raise ValueError(
+                f"Command {data.command} already exists for this bot")
 
         command = BotCommand(
             bot_id=bot_id,
@@ -62,7 +63,8 @@ class BotCommandService:
         """Получить команду по ID"""
         query = select(BotCommand).where(BotCommand.id == command_id)
         if owner_id is not None:
-            query = query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
+            query = query.join(BotModel, BotCommand.bot_id == BotModel.id).where(
+                BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -75,7 +77,8 @@ class BotCommandService:
         """Получить список команд бота"""
         base_query = select(BotCommand).where(BotCommand.bot_id == bot_id)
         if owner_id is not None:
-            base_query = base_query.join(BotModel, BotCommand.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
+            base_query = base_query.join(BotModel, BotCommand.bot_id == BotModel.id).where(
+                BotModel.owner_id == owner_id)
 
         if is_active is not None:
             base_query = base_query.where(BotCommand.is_active == is_active)
@@ -142,23 +145,23 @@ class BotCommandService:
             BotCommand.command == text,
             BotCommand.is_active == True
         )
-        
+
         # Фильтруем по области работы, если указана
         if chat_type:
             if chat_type == "private":
                 # В личных сообщениях работают команды с scope PRIVATE или ALL
                 query = query.where(
-                    (BotCommand.scope == "PRIVATE") | 
+                    (BotCommand.scope == "PRIVATE") |
                     (BotCommand.scope == "ALL") |
                     (BotCommand.scope.is_(None))  # Для обратной совместимости
                 )
             elif chat_type in ("group", "supergroup"):
                 # В группах работают команды с scope GROUPS или ALL
                 query = query.where(
-                    (BotCommand.scope == "GROUPS") | 
+                    (BotCommand.scope == "GROUPS") |
                     (BotCommand.scope == "ALL") |
                     (BotCommand.scope.is_(None))  # Для обратной совместимости
                 )
-        
+
         result = await self.db.execute(query)
         return result.scalar_one_or_none()

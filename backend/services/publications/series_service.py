@@ -55,15 +55,16 @@ class SeriesService:
     ) -> List[Publication]:
         """Получить все публикации серии в порядке series_order"""
         query = select(Publication).where(Publication.series_id == series_id).options(
-            selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel),
+            selectinload(Publication.telegram_messages).selectinload(
+                TelegramMessage.channel),
             selectinload(Publication.channels)
         )
-        
+
         if order_by_series_order:
             query = query.order_by(Publication.series_order.asc())
         else:
             query = query.order_by(Publication.created_at.asc())
-        
+
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
@@ -104,7 +105,7 @@ class SeriesService:
     ) -> Optional[int]:
         """Получить message_id корневого поста серии в канале для reply"""
         root_pub = await self.get_root_published_in_series(series_id, channel_id)
-        
+
         if not root_pub or not root_pub.telegram_messages:
             return None
 
@@ -126,9 +127,9 @@ class SeriesService:
         """Отправить публикацию как ответ на предыдущее сообщение"""
         # Для простых типов контента (text, image, video и т.д.)
         # добавляем reply_to_message_id
-        
+
         from backend.models.publications import ContentType as DBContentType
-        
+
         if publication.content_type == DBContentType.TEXT:
             message = await bot.send_message(
                 chat_id=channel.telegram_id,
@@ -201,11 +202,11 @@ class SeriesService:
             # Отправляем первое сообщение как reply, остальные без reply
             if publication.media_urls and len(publication.media_urls) > 0:
                 spoiler = publication.media_blur
-                
+
                 if len(publication.media_urls) == 1:
                     single_url = publication.media_urls[0]
                     is_video = single_url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-                    
+
                     if is_video:
                         message = await bot.send_video(
                             chat_id=channel.telegram_id,
@@ -227,7 +228,7 @@ class SeriesService:
                             reply_markup=reply_markup
                         )
                     return [message]
-                
+
                 # Для медиагруппы: отправляем без reply (Telegram API ограничение)
                 # Можно отправить текстовое сообщение с reply, а потом медиагруппу
                 messages = []
@@ -239,21 +240,23 @@ class SeriesService:
                         parse_mode=ParseMode.HTML
                     )
                     messages.append(text_msg)
-                
+
                 # Затем медиагруппа без caption
                 from aiogram.types import InputMediaPhoto, InputMediaVideo
                 media = []
-                
+
                 def is_video_url(u: str) -> bool:
                     return u.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-                
+
                 urls = publication.media_urls[:10]
                 for url in urls:
                     if is_video_url(url):
-                        media.append(InputMediaVideo(media=url, has_spoiler=spoiler))
+                        media.append(InputMediaVideo(
+                            media=url, has_spoiler=spoiler))
                     else:
-                        media.append(InputMediaPhoto(media=url, has_spoiler=spoiler))
-                
+                        media.append(InputMediaPhoto(
+                            media=url, has_spoiler=spoiler))
+
                 media_msgs = await bot.send_media_group(chat_id=channel.telegram_id, media=media)
                 messages.extend(list(media_msgs))
                 return messages
@@ -275,7 +278,8 @@ class SeriesService:
                 options=poll_data['options'],
                 is_anonymous=poll_data.get('is_anonymous', True),
                 type='quiz' if publication.content_type == DBContentType.QUIZ else 'regular',
-                allows_multiple_answers=poll_data.get('allows_multiple_answers', False),
+                allows_multiple_answers=poll_data.get(
+                    'allows_multiple_answers', False),
                 correct_option_id=poll_data.get('correct_option_id'),
                 explanation=poll_data.get('explanation'),
                 reply_to_message_id=reply_to_message_id,
@@ -283,7 +287,8 @@ class SeriesService:
             )
             return [message]
 
-        raise ValueError(f"Unsupported content type: {publication.content_type}")
+        raise ValueError(
+            f"Unsupported content type: {publication.content_type}")
 
     async def publish_series_post(
         self,
@@ -310,7 +315,7 @@ class SeriesService:
         for channel in publication.channels:
             try:
                 reply_to_id = None
-                
+
                 # Проверяем флаг серии reply_to_previous
                 if series.reply_to_previous:
                     reply_to_id = await self.get_reply_to_message_id(
@@ -322,7 +327,8 @@ class SeriesService:
                 reply_markup = None
                 if publication.inline_keyboard:
                     from backend.services.publications.publications import PublicationService
-                    reply_markup = PublicationService(self.db).build_inline_keyboard(publication.inline_keyboard)
+                    reply_markup = PublicationService(
+                        self.db).build_inline_keyboard(publication.inline_keyboard)
 
                 if reply_to_id and series.reply_to_previous:
                     sent_messages = await self.send_as_reply(
@@ -351,7 +357,8 @@ class SeriesService:
 
                 await self.db.flush()
 
-                channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
+                channel_name = getattr(channel, "title", getattr(
+                    channel, "name", str(channel.telegram_id)))
                 results.append({
                     "channel": channel_name,
                     "success": True,
@@ -360,7 +367,8 @@ class SeriesService:
                 })
 
             except Exception as e:
-                channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
+                channel_name = getattr(channel, "title", getattr(
+                    channel, "name", str(channel.telegram_id)))
                 results.append({
                     "channel": channel_name,
                     "success": False,
@@ -383,4 +391,3 @@ class SeriesService:
             "success_count": success_count,
             "total_count": len(results)
         }
-

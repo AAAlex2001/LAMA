@@ -31,7 +31,9 @@ class TokenService:
 
     def create_access_token(self, user_id: int) -> str:
         """Создать access token"""
-        expires = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires = datetime.now(timezone.utc) + \
+                               timedelta(
+                                   minutes=self.access_token_expire_minutes)
         payload = {
             "sub": str(user_id),
             "type": "access",
@@ -43,7 +45,8 @@ class TokenService:
 
     def create_refresh_token(self, user_id: int) -> str:
         """Создать refresh token"""
-        expires = datetime.now(timezone.utc) + timedelta(days=self.refresh_token_expire_days)
+        expires = datetime.now(timezone.utc) + \
+                               timedelta(days=self.refresh_token_expire_days)
         payload = {
             "sub": str(user_id),
             "type": "refresh",
@@ -56,7 +59,8 @@ class TokenService:
     async def verify_access_token(self, token: str) -> Optional[User]:
         """Проверить access token и вернуть пользователя"""
         try:
-            payload = jwt.decode(token, self.jwt_secret, algorithms=[self.jwt_algorithm])
+            payload = jwt.decode(token, self.jwt_secret,
+                                 algorithms=[self.jwt_algorithm])
             user_id = int(payload.get("sub"))
             token_type = payload.get("type")
 
@@ -79,7 +83,7 @@ class TokenService:
             query = select(User).where(User.id == user_id)
             result = await self.db.execute(query)
             user = result.scalar_one_or_none()
-            
+
             return user if user and user.is_active else None
 
         except JWTError:
@@ -91,7 +95,8 @@ class TokenService:
         Возвращает: (new_access_token, new_refresh_token)
         """
         try:
-            payload = jwt.decode(refresh_token, self.jwt_secret, algorithms=[self.jwt_algorithm])
+            payload = jwt.decode(refresh_token, self.jwt_secret, algorithms=[
+                                 self.jwt_algorithm])
             user_id = int(payload.get("sub"))
             token_type = payload.get("type")
 
@@ -113,7 +118,8 @@ class TokenService:
 
             session.access_token = new_access_token
             session.refresh_token = new_refresh_token
-            session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+            session.expires_at = datetime.now(
+                timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
 
             await self.db.commit()

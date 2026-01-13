@@ -13,7 +13,3 @@ __all__ = [
     "ChannelAutoDeleteService",
     "ChannelNightModeService",
 ]
-
-
-
-

@@ -30,7 +30,7 @@ class BotService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.crud = CRUDBotService(db)
-    
+
     def get_master_bot(self) -> Bot:
         """Получить мастер-бота из env"""
         return get_bot()
@@ -96,13 +96,13 @@ class BotService:
         bot.welcome_message_thread_id = data.welcome_message_thread_id
         if data.join_captcha_enabled is not None:
             bot.join_captcha_enabled = data.join_captcha_enabled
-        
+
         # НОВЫЕ ПОЛЯ
         if data.captcha_mode is not None:
             bot.captcha_mode = data.captcha_mode
         if data.captcha_timeout_seconds is not None:
             bot.captcha_timeout_seconds = data.captcha_timeout_seconds
-        
+
         bot.updated_at = datetime.now(timezone.utc)
 
         await self.db.commit()
@@ -162,7 +162,7 @@ class BotService:
         if required_channels:
             telegram_bot = self.get_master_bot()
             missing_channels = []
-            
+
             try:
                 for channel_id in required_channels:
                     try:
@@ -176,7 +176,7 @@ class BotService:
                     return False, missing_channels
 
                 return True, []
-                
+
             except Exception:
                 return False, required_channels
         return False, []
@@ -260,7 +260,8 @@ class BotService:
                 user_id=None,
                 message_type=data.media_type or MessageType.TEXT,
                 text_content=data.text_content,
-                media_file_id=getattr(message.photo[-1], "file_id", None) if message.photo else None,
+                media_file_id=getattr(
+                    message.photo[-1], "file_id", None) if message.photo else None,
                 media_url=data.media_url,
                 is_incoming=False,
                 raw_data=message.model_dump(mode="json")
@@ -327,7 +328,8 @@ class BotService:
         total = total_result.scalar() or 0
 
         # Получение данных
-        query = query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+        query = query.order_by(desc(BotMessage.created_at)
+                               ).offset(skip).limit(limit)
         result = await self.db.execute(query)
         messages = list(result.scalars().all())
 
@@ -348,7 +350,8 @@ class BotService:
             raise ValueError("Bot not found")
 
         # Общее количество сообщений
-        total_messages_query = select(func.count()).where(BotMessage.bot_id == bot_id)
+        total_messages_query = select(func.count()).where(
+            BotMessage.bot_id == bot_id)
         total_messages_result = await self.db.execute(total_messages_query)
         total_messages = total_messages_result.scalar()
 

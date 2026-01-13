@@ -70,7 +70,8 @@ class JoinRequestHandler:
                     await self.db.commit()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    logger.info(f"MANUAL mode detected for bot {self.bot_model.id}, calling handle_manual_mode")
+                    logger.info(
+                        f"MANUAL mode detected for bot {self.bot_model.id}, calling handle_manual_mode")
                     await self.handle_manual_mode(telegram_bot, join_request)
                     return
 
@@ -100,14 +101,16 @@ class JoinRequestHandler:
 
     async def handle_manual_mode(self, telegram_bot, join_request: ChatJoinRequest) -> None:
         """Обработка MANUAL режима - отправка капчи в ЛС."""
-        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-        
+        captcha_mode = getattr(
+            self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+
         logger.info(f"handle_manual_mode: captcha_mode={captcha_mode}")
-        
+
         if captcha_mode not in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-            logger.info(f"Captcha disabled for JOIN_REQUEST, mode={captcha_mode}")
+            logger.info(
+                f"Captcha disabled for JOIN_REQUEST, mode={captcha_mode}")
             return
-        
+
         logger.info("Sending captcha to user...")
 
         try:
@@ -131,7 +134,8 @@ class JoinRequestHandler:
             random.shuffle(options_list)
 
             buttons = [[
-                InlineKeyboardButton(text=str(opt), callback_data=f"captcha_{pending.id}_{opt}")
+                InlineKeyboardButton(
+                    text=str(opt), callback_data=f"captcha_{pending.id}_{opt}")
             ] for opt in options_list]
 
             await telegram_bot.send_message(
@@ -163,7 +167,8 @@ class JoinRequestHandler:
                     if chat.username:
                         url = f"https://t.me/{chat.username}"
                         message_text += f"{idx}. {title}\n"
-                        buttons.append([InlineKeyboardButton(text=f"📢 {title}", url=url)])
+                        buttons.append(
+                            [InlineKeyboardButton(text=f"📢 {title}", url=url)])
                     else:
                         message_text += f"{idx}. {title} (приватный)\n"
 
@@ -173,7 +178,8 @@ class JoinRequestHandler:
             await telegram_bot.send_message(
                 chat_id=user_id,
                 text=message_text,
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
+                reply_markup=InlineKeyboardMarkup(
+                    inline_keyboard=buttons) if buttons else None
             )
 
         except TelegramAPIError as e:
@@ -189,7 +195,8 @@ class JoinRequestHandler:
             )
             await self.db.execute(stmt)
             await self.db.commit()
-            logger.info(f"Обновлена метрика для invite link: {invite_link_url}")
+            logger.info(
+                f"Обновлена метрика для invite link: {invite_link_url}")
         except Exception as e:
             logger.warning(f"Не удалось обновить метрику invite link: {e}")
 
@@ -198,11 +205,12 @@ class JoinRequestHandler:
         try:
             async with get_bot_session() as telegram_bot:
                 await telegram_bot.approve_chat_join_request(chat_id=chat_id, user_id=user_id)
-                logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
-                
+                logger.info(
+                    f"Approved join request: user={user_id}, chat={chat_id}")
+
                 # Обновляем member_count для всех ссылок этого чата
                 await self.update_member_count(chat_id)
-                
+
                 return True
         except TelegramAPIError as e:
             logger.warning(f"Approve join request failed: {e}")
@@ -213,13 +221,14 @@ class JoinRequestHandler:
         try:
             # Находим канал
             from backend.models.channels import ChannelGroup
-            query = select(ChannelGroup).where(ChannelGroup.telegram_id == chat_id)
+            query = select(ChannelGroup).where(
+                ChannelGroup.telegram_id == chat_id)
             result = await self.db.execute(query)
             channel = result.scalar_one_or_none()
-            
+
             if not channel:
                 return
-            
+
             # Обновляем member_count для всех ссылок канала
             stmt = (
                 update(ChatInviteLink)
@@ -231,4 +240,3 @@ class JoinRequestHandler:
             logger.info(f"Updated member_count for channel {channel.id}")
         except Exception as e:
             logger.warning(f"Failed to update member_count: {e}")
-

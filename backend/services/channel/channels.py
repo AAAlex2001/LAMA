@@ -20,15 +20,16 @@ from backend.models.channels import ChannelType
 from backend.services.channel.CRUD_channels import CRUDChannelService
 from backend.config import get_bot
 
+
 class ChannelService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.crud = CRUDChannelService(db)
-    
+
     def get_master_bot(self) -> Bot:
         """Получить мастер-бота для управления каналами"""
         return get_bot()
-    
+
     async def get_bot_for_channel(self, channel: ChannelGroup) -> Bot:
         """Получить бота для канала (теперь всегда используется мастер-бот)"""
         return get_bot()
@@ -66,7 +67,7 @@ class ChannelService:
         return await self.crud.delete_channel(channel_id, owner_id)
 
     async def sync_channel_from_telegram(
-        self, 
+        self,
         telegram_id: Optional[int] = None,
         username: Optional[str] = None,
         invite_link: Optional[str] = None,
@@ -95,16 +96,16 @@ class ChannelService:
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             return None
-        
+
         if backup_mode == BackupMode.INSTANT and backup_target_id:
             target = await self.get_channel(backup_target_id, owner_id=owner_id)
             if not target:
                 raise ValueError("Target channel not found")
-        
+
         channel.backup_mode = backup_mode
         channel.backup_target_id = backup_target_id
         channel.updated_at = datetime.now(timezone.utc)
-        
+
         await self.db.commit()
         await self.db.refresh(channel)
         return channel
@@ -114,7 +115,7 @@ class ChannelService:
         content_type = "text"
         media_urls = []
         media_file_ids = []
-        
+
         if message.photo:
             content_type = "photo"
             media_file_ids = [message.photo[-1].file_id]
@@ -136,7 +137,7 @@ class ChannelService:
         elif message.sticker:
             content_type = "sticker"
             media_file_ids = [message.sticker.file_id]
-        
+
         raw_data = message.model_dump(mode="json")
         media_group_id = getattr(message, "media_group_id", None)
 
@@ -165,15 +166,19 @@ class ChannelService:
             )
 
             if message.reply_markup:
-                existing_post.reply_markup = message.reply_markup.model_dump(mode="json")
+                existing_post.reply_markup = message.reply_markup.model_dump(
+                    mode="json")
 
             existing_post.views_count = (
-                message.views if hasattr(message, "views") and message.views else existing_post.views_count
+                message.views if hasattr(
+                    message, "views") and message.views else existing_post.views_count
             )
             existing_post.forwards_count = (
-                message.forwards if hasattr(message, "forwards") and message.forwards else existing_post.forwards_count
+                message.forwards if hasattr(
+                    message, "forwards") and message.forwards else existing_post.forwards_count
             )
-            existing_post.original_date = min(existing_post.original_date, message.date)
+            existing_post.original_date = min(
+                existing_post.original_date, message.date)
             existing_post.backed_up_at = datetime.now(timezone.utc)
 
             if existing_post.raw_data is None:
@@ -197,14 +202,18 @@ class ChannelService:
             text_content=message.text or message.caption,
             media_urls=media_urls if media_urls else None,
             media_file_ids=media_file_ids if media_file_ids else None,
-            has_spoiler=message.has_media_spoiler if hasattr(message, "has_media_spoiler") else False,
-            reply_markup=message.reply_markup.model_dump(mode="json") if message.reply_markup else None,
-            views_count=message.views if hasattr(message, "views") and message.views else 0,
-            forwards_count=message.forwards if hasattr(message, "forwards") and message.forwards else 0,
+            has_spoiler=message.has_media_spoiler if hasattr(
+                message, "has_media_spoiler") else False,
+            reply_markup=message.reply_markup.model_dump(
+                mode="json") if message.reply_markup else None,
+            views_count=message.views if hasattr(
+                message, "views") and message.views else 0,
+            forwards_count=message.forwards if hasattr(
+                message, "forwards") and message.forwards else 0,
             original_date=message.date,
             raw_data=raw_data
         )
-        
+
         try:
             self.db.add(backed_up_post)
             await self.db.commit()
@@ -219,7 +228,7 @@ class ChannelService:
             )
             result = await self.db.execute(query)
             backed_up_post = result.scalar_one()
-        
+
         return backed_up_post
 
     async def retransmit_post(
@@ -239,11 +248,11 @@ class ChannelService:
         if bot is None:
             bot = await self.get_bot_for_channel(target_channel)
             bot_created = True
-        
+
         success = True
         error_message = None
         target_message_id = 0
-        
+
         try:
             sent_message = await self.copy_message_to_channel(
                 original_post,
@@ -254,7 +263,7 @@ class ChannelService:
         except Exception as e:
             success = False
             error_message = str(e)
-        
+
         retransmission = PostRetransmission(
             original_post_id=original_post.id,
             target_channel_id=target_channel_id,
@@ -262,7 +271,7 @@ class ChannelService:
             success=success,
             error_message=error_message
         )
-        
+
         self.db.add(retransmission)
         await self.db.commit()
         await self.db.refresh(retransmission)
@@ -274,11 +283,13 @@ class ChannelService:
             try:
                 if post.media_group_id and post.media_file_ids and len(post.media_file_ids) > 1:
                     media_inputs = []
-                    raw_entries = post.raw_data if isinstance(post.raw_data, list) else [post.raw_data]
+                    raw_entries = post.raw_data if isinstance(
+                        post.raw_data, list) else [post.raw_data]
                     for index, entry in enumerate(raw_entries):
                         caption = post.text_content if index == 0 else None
                         parse_mode = ParseMode.HTML if caption else None
-                        has_spoiler = entry.get("has_media_spoiler") if isinstance(entry, dict) else False
+                        has_spoiler = entry.get("has_media_spoiler") if isinstance(
+                            entry, dict) else False
 
                         if isinstance(entry, dict) and entry.get("photo"):
                             file_id = entry["photo"][-1]["file_id"]
@@ -403,42 +414,46 @@ class ChannelService:
         end_date: Optional[datetime] = None
     ) -> tuple[List[BackedUpPost], int]:
         """Получение списка бекапнутых постов"""
-        query = select(BackedUpPost).where(BackedUpPost.channel_id == channel_id)
-        count_query = select(func.count(BackedUpPost.id)).where(BackedUpPost.channel_id == channel_id)
-        
+        query = select(BackedUpPost).where(
+            BackedUpPost.channel_id == channel_id)
+        count_query = select(func.count(BackedUpPost.id)).where(
+            BackedUpPost.channel_id == channel_id)
+
         if start_date:
             query = query.where(BackedUpPost.original_date >= start_date)
-            count_query = count_query.where(BackedUpPost.original_date >= start_date)
-        
+            count_query = count_query.where(
+                BackedUpPost.original_date >= start_date)
+
         if end_date:
             query = query.where(BackedUpPost.original_date <= end_date)
-            count_query = count_query.where(BackedUpPost.original_date <= end_date)
-        
+            count_query = count_query.where(
+                BackedUpPost.original_date <= end_date)
+
         total_result = await self.db.execute(count_query)
         total = total_result.scalar() or 0
-        
+
         query = query.order_by(BackedUpPost.original_date.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)
-        
+
         result = await self.db.execute(query)
         posts = list(result.scalars().all())
-        
+
         return posts, total
 
     async def create_backup_job(self, data: BackupJobCreate, owner_id: int) -> BackupJob:
         """Создание задачи на полное копирование канала"""
         source = await self.get_channel(data.source_channel_id, owner_id=owner_id)
         target = await self.get_channel(data.target_channel_id, owner_id=owner_id)
-        
+
         if not source or not target:
             raise ValueError("Source or target channel not found")
-        
+
         query = select(func.count(BackedUpPost.id)).where(
             BackedUpPost.channel_id == data.source_channel_id
         )
         result = await self.db.execute(query)
         total_posts = result.scalar()
-        
+
         job = BackupJob(
             owner_id=owner_id,
             source_channel_id=data.source_channel_id,
@@ -448,7 +463,7 @@ class ChannelService:
             processed_posts=0,
             failed_posts=0
         )
-        
+
         self.db.add(job)
         await self.db.commit()
         await self.db.refresh(job)
@@ -459,29 +474,29 @@ class ChannelService:
         query = select(BackupJob).where(BackupJob.id == job_id)
         result = await self.db.execute(query)
         job = result.scalar_one_or_none()
-        
+
         if not job:
             raise ValueError("Backup job not found")
-        
+
         if job.status != BackupStatus.IN_PROGRESS:
             return job
-        
+
         query = select(BackedUpPost).where(
             BackedUpPost.channel_id == job.source_channel_id
         ).order_by(BackedUpPost.original_date.asc())
-        
+
         result = await self.db.execute(query)
         posts = list(result.scalars().all())
-        
+
         job.total_posts = len(posts)
         await self.db.commit()
 
         target_channel = await self.get_channel(job.target_channel_id)
         if not target_channel:
             raise ValueError("Target channel not found")
-        
+
         bot = await self.get_bot_for_channel(target_channel)
-        
+
         for post in posts:
             try:
                 await self.retransmit_post(post, job.target_channel_id, target_channel=target_channel, bot=bot)
@@ -495,17 +510,17 @@ class ChannelService:
                     "error": str(e),
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 })
-            
+
             if job.processed_posts % 10 == 0:
                 await self.db.commit()
-        
+
         if job.failed_posts == 0:
             job.status = BackupStatus.COMPLETED
         elif job.processed_posts > 0:
             job.status = BackupStatus.ACTIVE
         else:
             job.status = BackupStatus.FAILED
-        
+
         job.completed_at = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(job)
@@ -520,21 +535,22 @@ class ChannelService:
     ) -> tuple[List[BackupJob], int]:
         """Получение списка задач бекапа"""
         query = select(BackupJob).where(BackupJob.owner_id == owner_id)
-        count_query = select(func.count(BackupJob.id)).where(BackupJob.owner_id == owner_id)
-        
+        count_query = select(func.count(BackupJob.id)).where(
+            BackupJob.owner_id == owner_id)
+
         if status:
             query = query.where(BackupJob.status == status)
             count_query = count_query.where(BackupJob.status == status)
-        
+
         total_result = await self.db.execute(count_query)
         total = total_result.scalar() or 0
-        
+
         query = query.order_by(BackupJob.started_at.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)
-        
+
         result = await self.db.execute(query)
         jobs = list(result.scalars().all())
-        
+
         return jobs, total
 
     async def get_channel_stats(self, channel_id: int) -> Dict[str, Any]:
@@ -544,20 +560,20 @@ class ChannelService:
         )
         result = await self.db.execute(query)
         total_posts = result.scalar()
-        
+
         query = select(func.count(PostRetransmission.id)).join(
             BackedUpPost, PostRetransmission.original_post_id == BackedUpPost.id
         ).where(BackedUpPost.channel_id == channel_id)
         result = await self.db.execute(query)
         total_retransmissions = result.scalar()
-        
+
         query = select(
             func.min(BackedUpPost.original_date),
             func.max(BackedUpPost.original_date)
         ).where(BackedUpPost.channel_id == channel_id)
         result = await self.db.execute(query)
         dates = result.one()
-        
+
         return {
             "channel_id": channel_id,
             "total_backed_up_posts": total_posts,
@@ -586,32 +602,33 @@ class ChannelService:
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             raise ValueError("Channel not found")
-        
+
         bot = self.get_master_bot()
-        
+
         try:
             if title is not None:
                 await bot.set_chat_title(chat_id=channel.telegram_id, title=title)
                 channel.title = title
-            
+
             if description is not None:
                 await bot.set_chat_description(chat_id=channel.telegram_id, description=description)
                 channel.description = description
-            
+
             if photo_file_path is not None:
                 from aiogram.types import FSInputFile, BufferedInputFile
-                
+
                 if photo_file_path.startswith(("http://", "https://")):
                     async with aiohttp.ClientSession() as session:
                         async with session.get(photo_file_path) as resp:
                             if resp.status == 200:
                                 file_data = await resp.read()
-                                photo = BufferedInputFile(file_data, filename="photo.jpg")
+                                photo = BufferedInputFile(
+                                    file_data, filename="photo.jpg")
                                 await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
                 else:
                     photo = FSInputFile(photo_file_path)
                     await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
-                
+
                 chat = await bot.get_chat(channel.telegram_id)
                 if chat.photo:
                     try:
@@ -623,44 +640,44 @@ class ChannelService:
                         channel.photo_big_file_unique_id = chat.photo.big_file_unique_id
                     except Exception:
                         pass
-            
+
             channel.updated_at = datetime.now(timezone.utc)
             await self.db.commit()
             await self.db.refresh(channel)
-            
+
             return channel
-            
+
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to update channel settings: {str(e)}")
         except Exception as e:
             raise ValueError(f"Unexpected error: {str(e)}")
-    
+
     async def delete_channel_photo(self, channel_id: int, owner_id: int) -> ChannelGroup:
         """Удаление фото канала через Telegram API (deleteChatPhoto)"""
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             raise ValueError("Channel not found")
-        
+
         bot = self.get_master_bot()
-        
+
         try:
             await bot.delete_chat_photo(chat_id=channel.telegram_id)
-            
+
             channel.photo_url = None
             channel.photo_small_file_id = None
             channel.photo_small_file_unique_id = None
             channel.photo_big_file_id = None
             channel.photo_big_file_unique_id = None
             channel.updated_at = datetime.now(timezone.utc)
-            
+
             await self.db.commit()
             await self.db.refresh(channel)
-            
+
             return channel
-            
+
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to delete channel photo: {str(e)}")
-    
+
     async def set_channel_permissions(
         self,
         channel_id: int,
@@ -690,9 +707,9 @@ class ChannelService:
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             raise ValueError("Channel not found")
-        
+
         bot = self.get_master_bot()
-        
+
         try:
             if permissions:
                 chat_permissions = ChatPermissions(**permissions)
@@ -701,26 +718,29 @@ class ChannelService:
 
             if night_mode_settings:
                 if "night_mode_enabled" in night_mode_settings:
-                    channel.night_mode_enabled = bool(night_mode_settings["night_mode_enabled"])
+                    channel.night_mode_enabled = bool(
+                        night_mode_settings["night_mode_enabled"])
                 if "night_mode_start" in night_mode_settings:
                     channel.night_mode_start = night_mode_settings["night_mode_start"]
                 if "night_mode_end" in night_mode_settings:
                     channel.night_mode_end = night_mode_settings["night_mode_end"]
                 if "night_mode_block_media" in night_mode_settings:
-                    channel.night_mode_block_media = bool(night_mode_settings["night_mode_block_media"])
+                    channel.night_mode_block_media = bool(
+                        night_mode_settings["night_mode_block_media"])
                 if "night_mode_block_text" in night_mode_settings:
-                    channel.night_mode_block_text = bool(night_mode_settings["night_mode_block_text"])
+                    channel.night_mode_block_text = bool(
+                        night_mode_settings["night_mode_block_text"])
 
             channel.updated_at = datetime.now(timezone.utc)
-            
+
             await self.db.commit()
             await self.db.refresh(channel)
-            
+
             return channel
-            
+
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to set channel permissions: {str(e)}")
-    
+
     async def pin_channel_message(
         self,
         channel_id: int,
@@ -732,29 +752,30 @@ class ChannelService:
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             raise ValueError("Channel not found")
-        
+
         bot = self.get_master_bot()
-        
+
         try:
             await bot.pin_chat_message(
                 chat_id=channel.telegram_id,
                 message_id=message_id,
                 disable_notification=disable_notification
             )
-            
+
             chat = await bot.get_chat(channel.telegram_id)
             if hasattr(chat, "pinned_message") and chat.pinned_message:
-                channel.pinned_message = chat.pinned_message.model_dump(mode="json")
-            
+                channel.pinned_message = chat.pinned_message.model_dump(
+                    mode="json")
+
             channel.updated_at = datetime.now(timezone.utc)
             await self.db.commit()
             await self.db.refresh(channel)
-            
+
             return channel
-            
+
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to pin message: {str(e)}")
-    
+
     async def unpin_channel_message(
         self,
         channel_id: int,
@@ -769,27 +790,28 @@ class ChannelService:
         channel = await self.get_channel(channel_id, owner_id=owner_id)
         if not channel:
             raise ValueError("Channel not found")
-        
+
         bot = self.get_master_bot()
-        
+
         try:
             if message_id is None:
                 await bot.unpin_all_chat_messages(chat_id=channel.telegram_id)
                 channel.pinned_message = None
             else:
                 await bot.unpin_chat_message(chat_id=channel.telegram_id, message_id=message_id)
-                
+
                 chat = await bot.get_chat(channel.telegram_id)
                 if hasattr(chat, "pinned_message") and chat.pinned_message:
-                    channel.pinned_message = chat.pinned_message.model_dump(mode="json")
+                    channel.pinned_message = chat.pinned_message.model_dump(
+                        mode="json")
                 else:
                     channel.pinned_message = None
-            
+
             channel.updated_at = datetime.now(timezone.utc)
             await self.db.commit()
             await self.db.refresh(channel)
-            
+
             return channel
-            
+
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to unpin message: {str(e)}")

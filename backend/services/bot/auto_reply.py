@@ -53,7 +53,8 @@ class AutoReplyService:
         """Получить автоответ по ID"""
         query = select(AutoReply).where(AutoReply.id == auto_reply_id)
         if owner_id is not None:
-            query = query.join(BotModel, AutoReply.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
+            query = query.join(BotModel, AutoReply.bot_id == BotModel.id).where(
+                BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
@@ -66,7 +67,8 @@ class AutoReplyService:
         """Получить список автоответов бота"""
         base_query = select(AutoReply).where(AutoReply.bot_id == bot_id)
         if owner_id is not None:
-            base_query = base_query.join(BotModel, AutoReply.bot_id == BotModel.id).where(BotModel.owner_id == owner_id)
+            base_query = base_query.join(BotModel, AutoReply.bot_id == BotModel.id).where(
+                BotModel.owner_id == owner_id)
 
         if is_active is not None:
             base_query = base_query.where(AutoReply.is_active == is_active)
@@ -132,32 +134,30 @@ class AutoReplyService:
             AutoReply.bot_id == bot_id,
             AutoReply.is_active == True
         )
-        
+
         # Фильтруем по области работы, если указана
         if chat_type:
             if chat_type == "private":
                 query = query.where(
-                    (AutoReply.scope == "PRIVATE") | 
+                    (AutoReply.scope == "PRIVATE") |
                     (AutoReply.scope == "ALL") |
                     (AutoReply.scope.is_(None))
                 )
             elif chat_type in ("group", "supergroup"):
                 query = query.where(
-                    (AutoReply.scope == "GROUPS") | 
+                    (AutoReply.scope == "GROUPS") |
                     (AutoReply.scope == "ALL") |
                     (AutoReply.scope.is_(None))
                 )
-        
+
         result = await self.db.execute(query)
         auto_replies = list(result.scalars().all())
-        
+
         # Ищем совпадение по ключевым словам
         text_lower = text.lower()
         for auto_reply in auto_replies:
             for keyword in auto_reply.keywords:
                 if keyword.lower() in text_lower:
                     return auto_reply
-        
+
         return None
-
-

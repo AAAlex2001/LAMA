@@ -44,7 +44,8 @@ class CRUDPublicationService:
             disable_notification=data.disable_notification,
             auto_delete_hours=data.auto_delete_hours,
             auto_delete_seconds=auto_delete_seconds,
-            repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
+            repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(
+                data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
             repeat_custom_days=data.repeat_custom_days,
             repeat_custom_hours=data.repeat_custom_hours,
             scheduled_time=data.scheduled_time,
@@ -58,7 +59,8 @@ class CRUDPublicationService:
         if data.channel_ids:
             channels = await self.get_channels_by_ids(data.channel_ids, owner_id=owner_id)
             if len(channels) != len(set(data.channel_ids)):
-                raise ValueError("One or more channels not found or do not belong to the user")
+                raise ValueError(
+                    "One or more channels not found or do not belong to the user")
             publication.channels = channels
 
         if data.tag_names:
@@ -113,9 +115,11 @@ class CRUDPublicationService:
 
         filters = []
         if status:
-            filters.append(Publication.status == DBPublicationStatus[status.value.upper()])
+            filters.append(Publication.status ==
+                           DBPublicationStatus[status.value.upper()])
         if content_type:
-            filters.append(Publication.content_type == DBContentType[content_type.value.upper()])
+            filters.append(Publication.content_type ==
+                           DBContentType[content_type.value.upper()])
         if series_id:
             filters.append(Publication.series_id == series_id)
         if start_date:
@@ -127,10 +131,12 @@ class CRUDPublicationService:
             base_query = base_query.where(and_(*filters))
 
         if channel_id:
-            base_query = base_query.join(Publication.channels).where(Channel.id == channel_id)
+            base_query = base_query.join(
+                Publication.channels).where(Channel.id == channel_id)
 
         if tag_names:
-            base_query = base_query.join(Publication.tags).where(Tag.name.in_(tag_names))
+            base_query = base_query.join(
+                Publication.tags).where(Tag.name.in_(tag_names))
 
         ordered_query = base_query.order_by(Publication.created_at.desc())
 
@@ -157,7 +163,8 @@ class CRUDPublicationService:
             channel_ids = update_data.pop('channel_ids')
             channels = await self.get_channels_by_ids(channel_ids, owner_id=owner_id)
             if owner_id is not None and channel_ids and len(channels) != len(set(channel_ids)):
-                raise ValueError("One or more channels not found or do not belong to the user")
+                raise ValueError(
+                    "One or more channels not found or do not belong to the user")
             publication.channels = channels
 
         if 'tag_names' in update_data:
@@ -186,12 +193,14 @@ class CRUDPublicationService:
             else:
                 update_data['poll_data'] = None
 
-        auto_delete_delay_seconds = update_data.pop('auto_delete_delay_seconds', None)
+        auto_delete_delay_seconds = update_data.pop(
+            'auto_delete_delay_seconds', None)
         if auto_delete_delay_seconds is not None:
             update_data['auto_delete_seconds'] = auto_delete_delay_seconds
         elif 'auto_delete_hours' in update_data:
             hours_value = update_data['auto_delete_hours']
-            update_data['auto_delete_seconds'] = hours_value * 3600 if hours_value is not None else None
+            update_data['auto_delete_seconds'] = hours_value * \
+                3600 if hours_value is not None else None
 
         if 'content_type' in update_data:
             update_data['content_type'] = DBContentType[update_data['content_type'].value.upper()]
@@ -224,7 +233,8 @@ class CRUDPublicationService:
         owner_id: Optional[int] = None
     ) -> List[Channel]:
         """Получить каналы по ID"""
-        query = select(Channel).options(selectinload(Channel.bot)).where(Channel.id.in_(channel_ids))
+        query = select(Channel).options(selectinload(
+            Channel.bot)).where(Channel.id.in_(channel_ids))
         if owner_id is not None:
             query = query.where(Channel.owner_id == owner_id)
         result = await self.db.execute(query)
@@ -233,7 +243,7 @@ class CRUDPublicationService:
     async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None) -> List[Tag]:
         """Получить или создать теги"""
         from datetime import datetime, timezone
-        
+
         query = select(Tag).where(Tag.name.in_(tag_names))
         result = await self.db.execute(query)
         existing_tags = {tag.name: tag for tag in result.scalars().all()}
@@ -262,7 +272,8 @@ class CRUDPublicationService:
                 await self.db.rollback()
                 query = select(Tag).where(Tag.name.in_(tag_names))
                 result = await self.db.execute(query)
-                existing_tags = {tag.name: tag for tag in result.scalars().all()}
+                existing_tags = {
+                    tag.name: tag for tag in result.scalars().all()}
                 tags = [existing_tags[name] for name in tag_names]
                 for tag in tags:
                     tag.last_used_at = now
@@ -340,7 +351,8 @@ class CRUDPublicationService:
             and_(
                 Publication.scheduled_time >= start_date,
                 Publication.scheduled_time < end_date,
-                Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED])
+                Publication.status.in_(
+                    [DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED])
             )
         ).options(
             selectinload(Publication.channels),

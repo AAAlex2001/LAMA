@@ -30,7 +30,8 @@ class FloodService:
             return False, None, None
 
         # Получаем канал по telegram_id
-        query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_id)
+        query = select(ChannelGroup).where(
+            ChannelGroup.telegram_id == telegram_id)
         result = await self.db.execute(query)
         channel: Optional[ChannelGroup] = result.scalar_one_or_none()
 
@@ -122,5 +123,3 @@ class FloodService:
         await self.db.refresh(channel)
 
         return channel
-
-

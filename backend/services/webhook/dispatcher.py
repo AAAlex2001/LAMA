@@ -31,9 +31,9 @@ class WebhookDispatcher:
 
         # Получаем сообщение из разных источников
         message = (
-            update.message or 
-            update.channel_post or 
-            update.edited_message or 
+            update.message or
+            update.channel_post or
+            update.edited_message or
             update.edited_channel_post
         )
 
@@ -78,7 +78,7 @@ class WebhookDispatcher:
                     if command == "/start":
                         await WebhookDispatcher.handle_auth_command(db, update.message)
                         return
-                
+
                 # Определяем chat_id для поиска правильного бота
                 chat_id = None
                 if update.chat_join_request:
@@ -89,13 +89,13 @@ class WebhookDispatcher:
                     chat_id = update.callback_query.message.chat.id
                 elif update.chat_member:
                     chat_id = update.chat_member.chat.id
-                
+
                 # Получаем бота через канал (по настройкам владельца канала)
                 if chat_id:
                     bot_model = await get_bot_by_chat_id(db, chat_id)
                 else:
                     bot_model = await get_master_bot_model(db)
-                    
+
                 if not bot_model:
                     return
 
@@ -125,7 +125,7 @@ class WebhookDispatcher:
 
         except Exception as e:
             logger.error(f"Bot logic error: {e}", exc_info=True)
-    
+
     @staticmethod
     async def handle_auth_command(db: AsyncSession, message: Message) -> None:
         """Обработка команды /start для авторизации"""
@@ -133,37 +133,38 @@ class WebhookDispatcher:
         from aiogram import Bot
         from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
         import os
-        
+
         user_id = message.from_user.id if message.from_user else 0
         if not user_id:
             return
-        
+
         bot = Bot(token=TELEGRAM_BOT_TOKEN)
-        
+
         try:
             # Получаем URL фронтенда
             frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
-            
+
             # Создаём инлайн кнопку с параметрами пользователя
             login_url = f"{frontend_url}/login?tg_id={user_id}"
-            
+
             if message.from_user and message.from_user.username:
                 login_url += f"&username={message.from_user.username}"
             if message.from_user and message.from_user.first_name:
                 login_url += f"&first_name={message.from_user.first_name}"
             if message.from_user and message.from_user.last_name:
                 login_url += f"&last_name={message.from_user.last_name}"
-            
+
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔐 Войти в Lama Planner", url=login_url)]
+                [InlineKeyboardButton(
+                    text="🔐 Войти в Lama Planner", url=login_url)]
             ])
-            
+
             first_name = message.from_user.first_name if message.from_user else "пользователь"
             response_text = (
                 f"👋 <b>Привет, {first_name}!</b>\n\n"
                 f"Для того, чтобы войти в аккаунт, нажмите на кнопку ниже:"
             )
-            
+
             await bot.send_message(
                 chat_id=message.chat.id,
                 text=response_text,
@@ -171,7 +172,7 @@ class WebhookDispatcher:
                 reply_markup=keyboard,
                 reply_to_message_id=message.message_id
             )
-            
+
         except Exception as e:
             logger.error(f"Auth command error: {e}", exc_info=True)
             await bot.send_message(
@@ -181,4 +182,3 @@ class WebhookDispatcher:
             )
         finally:
             await bot.session.close()
-

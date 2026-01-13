@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 
 # Константы
 TELEGRAM_API_TIMEOUT = 5.0
-MODERATION_COMMANDS = {"/admin", "/ban", "/unban", "/mute", "/unmute", "/delitetime"}
+MODERATION_COMMANDS = {"/admin", "/ban",
+    "/unban", "/mute", "/unmute", "/delitetime"}
 
 
 def get_master_bot() -> Bot:
@@ -77,7 +78,8 @@ async def process_bot_updates():
                 try:
                     await process_single_bot(db, bot_model)
                 except TelegramRetryAfter as e:
-                    logger.warning(f"Rate limit {bot_model.username}: {e.retry_after}s")
+                    logger.warning(
+                        f"Rate limit {bot_model.username}: {e.retry_after}s")
                     await asyncio.sleep(e.retry_after)
                 except Exception as e:
                     logger.error(f"Bot {bot_model.username} error: {e}")
@@ -95,7 +97,8 @@ async def process_single_bot(db: AsyncSession, bot_model: BotModel):
         updates: List[Update] = await telegram_bot.get_updates(
             offset=bot_model.last_update_id + 1,
             timeout=0,
-            allowed_updates=["message", "edited_message", "chat_join_request", "callback_query"]
+            allowed_updates=["message", "edited_message",
+                "chat_join_request", "callback_query"]
         )
 
         if not updates:
@@ -327,7 +330,8 @@ async def send_captcha(
         random.shuffle(options_list)
 
         buttons = [[
-            InlineKeyboardButton(text=str(opt), callback_data=f"captcha_{pending.id}_{opt}")
+            InlineKeyboardButton(
+                text=str(opt), callback_data=f"captcha_{pending.id}_{opt}")
         ] for opt in options_list]
 
         await telegram_bot.send_message(
@@ -359,7 +363,8 @@ async def send_subscription_requirements(
                 if chat.username:
                     url = f"https://t.me/{chat.username}"
                     message_text += f"{idx}. {title}\n"
-                    buttons.append([InlineKeyboardButton(text=f"📢 {title}", url=url)])
+                    buttons.append(
+                        [InlineKeyboardButton(text=f"📢 {title}", url=url)])
                 else:
                     message_text += f"{idx}. {title} (приватный)\n"
 
@@ -371,7 +376,8 @@ async def send_subscription_requirements(
         await telegram_bot.send_message(
             chat_id=user_id,
             text=message_text,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons) if buttons else None
+            reply_markup=InlineKeyboardMarkup(
+                inline_keyboard=buttons) if buttons else None
         )
 
     except TelegramAPIError as e:
@@ -383,7 +389,8 @@ async def approve_join_request(chat_id: int, user_id: int):
     try:
         async with bot_session(os.getenv("TELEGRAM_BOT_TOKEN", "")) as master_bot:
             await master_bot.approve_chat_join_request(chat_id=chat_id, user_id=user_id)
-            logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
+            logger.info(
+                f"Approved join request: user={user_id}, chat={chat_id}")
     except TelegramAPIError as e:
         logger.warning(f"Approve join request failed: {e}")
 
@@ -570,7 +577,8 @@ async def try_delete_message(telegram_bot: Bot, message: Message):
     """Попытаться удалить сообщение"""
     try:
         await asyncio.wait_for(
-            telegram_bot.delete_message(chat_id=message.chat.id, message_id=message.message_id),
+            telegram_bot.delete_message(
+                chat_id=message.chat.id, message_id=message.message_id),
             timeout=TELEGRAM_API_TIMEOUT
         )
     except (TelegramAPIError, asyncio.TimeoutError):

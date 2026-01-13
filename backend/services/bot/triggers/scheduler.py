@@ -22,7 +22,8 @@ async def schedule_trigger(
     context: Optional[Dict[str, Any]] = None,
 ):
     """Запланировать отложенный триггер"""
-    execute_at = datetime.now(timezone.utc) + timedelta(minutes=trigger.delay_minutes)
+    execute_at = datetime.now(timezone.utc) + \
+                              timedelta(minutes=trigger.delay_minutes)
 
     task = ScheduledTriggerTask(
         trigger_id=trigger.id,
@@ -59,7 +60,8 @@ async def schedule_for_next_window(
     start_hour = trigger.delivery_window.get("start_hour", 9)
 
     if now.hour >= start_hour:
-        next_window = now.replace(hour=start_hour, minute=0, second=0) + timedelta(days=1)
+        next_window = now.replace(
+            hour=start_hour, minute=0, second=0) + timedelta(days=1)
     else:
         next_window = now.replace(hour=start_hour, minute=0, second=0)
 

@@ -26,7 +26,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
         .where(LandingSection.is_active == True)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         return {
             "headline": "",
@@ -37,7 +37,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
             "images": [],
             "templateImages": [],
         }
-    
+
     # Получаем весь контент для этой секции
     result = await db.execute(
         select(LandingContent)
@@ -47,12 +47,12 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
         .order_by(LandingContent.order)
     )
     contents = result.scalars().all()
-    
+
     # Формируем ответ из контента
     response = {}
     images = []
     template_images = []
-    
+
     for content in contents:
         if content.key == "hero_headline":
             response["headline"] = content.title or content.text or ""
@@ -78,7 +78,7 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
                     "url": content.image_url,
                     "alt": content.image_alt or "Hero illustration",
                 })
-    
+
     return {
         "headline": response.get("headline", ""),
         "paragraph": response.get("paragraph", ""),
@@ -105,10 +105,11 @@ async def save_hero_content(
     locale_enum = coerce_locale(locale)
     # Получаем или создаем секцию Hero
     result = await db.execute(
-        select(LandingSection).where(LandingSection.section_type == SectionType.HERO)
+        select(LandingSection).where(
+            LandingSection.section_type == SectionType.HERO)
     )
     section = result.scalar_one_or_none()
-    
+
     if not section:
         section = LandingSection(
             section_type=SectionType.HERO,
@@ -120,14 +121,14 @@ async def save_hero_content(
         await db.flush()
 
     template_images = template_images or []
-    
+
     # Удаляем старый контент только для текущей локали
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
-    
+
     # Создаем новый контент
     contents = [
         LandingContent(
@@ -176,7 +177,7 @@ async def save_hero_content(
             order=5
         )
     ]
-    
+
     # Добавляем картинки
     for i, image in enumerate(images):
         contents.append(LandingContent(
@@ -201,9 +202,8 @@ async def save_hero_content(
             is_active=True,
             order=30 + i,
         ))
-    
+
     db.add_all(contents)
     await db.commit()
-    
-    return {"status": "ok", "message": "Hero content saved"}
 
+    return {"status": "ok", "message": "Hero content saved"}

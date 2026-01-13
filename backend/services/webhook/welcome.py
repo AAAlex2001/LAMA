@@ -33,15 +33,16 @@ class WelcomeHandler:
                     bot_model=self.bot_model,
                     join_request=join_request,
                 )
-                
+
                 if message:
                     logger.info(
                         f"Welcome sent for join request: user={join_request.from_user.id}, "
                         f"chat={join_request.chat.id}"
                     )
-                    
+
         except Exception as e:
-            logger.error(f"Failed to send join request welcome: {e}", exc_info=True)
+            logger.error(
+                f"Failed to send join request welcome: {e}", exc_info=True)
 
     async def handle_new_member(
         self,
@@ -60,8 +61,9 @@ class WelcomeHandler:
                 # 2. Если не указан (None), то отправляем в тот топик, куда добавили участника
                 message_thread_id = self.bot_model.welcome_message_thread_id
                 if message_thread_id is None:
-                    message_thread_id = getattr(message, "message_thread_id", None)
-                
+                    message_thread_id = getattr(
+                        message, "message_thread_id", None)
+
                 sent_message = await self.welcome_service.handle_member_joined_welcome(
                     telegram_bot=telegram_bot,
                     bot_model=self.bot_model,
@@ -73,13 +75,13 @@ class WelcomeHandler:
                     chat_title=message.chat.title if message.chat else None,
                     message_thread_id=message_thread_id,
                 )
-                
+
                 if sent_message:
                     logger.info(
                         f"Welcome sent for new member: user={new_member_user.id}, "
                         f"chat={message.chat.id}, thread={message_thread_id}"
                     )
-                    
-        except Exception as e:
-            logger.error(f"Failed to send new member welcome: {e}", exc_info=True)
 
+        except Exception as e:
+            logger.error(
+                f"Failed to send new member welcome: {e}", exc_info=True)

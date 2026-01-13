@@ -45,7 +45,8 @@ class WidgetAuthService:
         if auth_data.photo_url:
             check_data["photo_url"] = auth_data.photo_url
 
-        data_check_string = "\n".join([f"{k}={v}" for k, v in sorted(check_data.items())])
+        data_check_string = "\n".join(
+            [f"{k}={v}" for k, v in sorted(check_data.items())])
 
         secret_key = hashlib.sha256(self.bot_token.encode()).digest()
         computed_hash = hmac.new(
@@ -86,7 +87,8 @@ class WidgetAuthService:
             telegram_account.first_name = auth_data.first_name
             telegram_account.last_name = auth_data.last_name
             telegram_account.photo_url = auth_data.photo_url
-            telegram_account.auth_date = datetime.fromtimestamp(auth_data.auth_date, tz=timezone.utc)
+            telegram_account.auth_date = datetime.fromtimestamp(
+                auth_data.auth_date, tz=timezone.utc)
             telegram_account.updated_at = datetime.now(timezone.utc)
 
             user = telegram_account.user
@@ -105,11 +107,13 @@ class WidgetAuthService:
                 first_name=auth_data.first_name,
                 last_name=auth_data.last_name,
                 photo_url=auth_data.photo_url,
-                auth_date=datetime.fromtimestamp(auth_data.auth_date, tz=timezone.utc)
+                auth_date=datetime.fromtimestamp(
+                    auth_data.auth_date, tz=timezone.utc)
             )
             self.db.add(telegram_account)
 
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires_at = datetime.now(
+            timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
             user_id=user.id,
             access_token=access_token,

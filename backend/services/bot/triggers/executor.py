@@ -20,7 +20,7 @@ def build_shortcode_context(user_id: int, action_data: dict, bot_info) -> dict:
     ctx = action_data.get("context", {})
     if not isinstance(ctx, dict):
         ctx = {}
-    
+
     return {
         "user": {
             "id": user_id,
@@ -79,7 +79,8 @@ async def send_media(
 
     if caption:
         bot_info = await telegram_bot.get_me()
-        shortcode_context = build_shortcode_context(user_id, action_data, bot_info)
+        shortcode_context = build_shortcode_context(
+            user_id, action_data, bot_info)
         caption = ShortcodeProcessor.process(caption, shortcode_context)
 
     reply_markup = build_keyboard(action_data.get("buttons"))
@@ -124,7 +125,8 @@ async def mute_user(
         action_data = {}
 
     duration_minutes = action_data.get("duration_minutes", 60)
-    until_date = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)
+    until_date = datetime.now(timezone.utc) + \
+                              timedelta(minutes=duration_minutes)
 
     try:
         await telegram_bot.restrict_chat_member(
@@ -151,7 +153,8 @@ async def ban_user(
 
     try:
         if duration_minutes > 0:
-            until_date = datetime.now(timezone.utc) + timedelta(minutes=duration_minutes)
+            until_date = datetime.now(timezone.utc) + \
+                                      timedelta(minutes=duration_minutes)
             await telegram_bot.ban_chat_member(
                 chat_id=chat_id,
                 user_id=user_id,

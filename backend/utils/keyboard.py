@@ -43,12 +43,12 @@ def build_keyboard(
     for row in rows:
         if not isinstance(row, list):
             continue
-            
+
         button_row = []
         for btn in row:
             if not isinstance(btn, dict):
                 continue
-                
+
             button_row.append(
                 InlineKeyboardButton(
                     text=btn.get("text", ""),
@@ -56,7 +56,7 @@ def build_keyboard(
                     callback_data=btn.get("callback_data"),
                 )
             )
-            
+
         if button_row:
             keyboard.append(button_row)
 

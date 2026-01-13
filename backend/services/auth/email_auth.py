@@ -61,7 +61,8 @@ class EmailAuthService:
         """
         # Проверяем, что пользователь согласился с условиями
         if not agree_personal_data:
-            raise ValueError("Необходимо согласие на обработку персональных данных")
+            raise ValueError(
+                "Необходимо согласие на обработку персональных данных")
         if not agree_terms:
             raise ValueError("Необходимо принять условия использования")
 
@@ -72,7 +73,7 @@ class EmailAuthService:
 
         # Создаём пользователя
         password_hash = self.hash_password(password)
-        
+
         user = User(
             email=email.lower(),
             password_hash=password_hash,
@@ -85,7 +86,8 @@ class EmailAuthService:
         await self.db.flush()
 
         # Создаём сессию
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires_at = datetime.now(
+            timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
             user_id=user.id,
             access_token=access_token,
@@ -96,9 +98,9 @@ class EmailAuthService:
             ip_address=ip_address
         )
         self.db.add(session)
-        
+
         await self.db.commit()
-        
+
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(
             joinedload(User.telegram_account)
@@ -121,21 +123,23 @@ class EmailAuthService:
         Авторизация пользователя по email/password
         """
         user = await self.get_user_by_email(email)
-        
+
         if not user:
             raise ValueError("Неверный email или пароль")
-        
+
         if not user.password_hash:
-            raise ValueError("Для этого аккаунта не установлен пароль. Используйте вход через Telegram")
-        
+            raise ValueError(
+                "Для этого аккаунта не установлен пароль. Используйте вход через Telegram")
+
         if not self.verify_password(password, user.password_hash):
             raise ValueError("Неверный email или пароль")
-        
+
         if not user.is_active:
             raise ValueError("Аккаунт деактивирован")
 
         # Создаём сессию
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
+        expires_at = datetime.now(
+            timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
         session = UserSession(
             user_id=user.id,
             access_token=access_token,
@@ -146,9 +150,9 @@ class EmailAuthService:
             ip_address=ip_address
         )
         self.db.add(session)
-        
+
         await self.db.commit()
-        
+
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(
             joinedload(User.telegram_account)
@@ -170,20 +174,22 @@ class EmailAuthService:
         Добавить email/password к существующему пользователю (например, после Telegram авторизации)
         """
         if not agree_personal_data:
-            raise ValueError("Необходимо согласие на обработку персональных данных")
+            raise ValueError(
+                "Необходимо согласие на обработку персональных данных")
         if not agree_terms:
             raise ValueError("Необходимо принять условия использования")
 
         # Проверяем, что email не занят
         existing_user = await self.get_user_by_email(email)
         if existing_user and existing_user.id != user_id:
-            raise ValueError("Этот email уже используется другим пользователем")
+            raise ValueError(
+                "Этот email уже используется другим пользователем")
 
         # Получаем пользователя
         query = select(User).where(User.id == user_id)
         result = await self.db.execute(query)
         user = result.scalar_one_or_none()
-        
+
         if not user:
             raise ValueError("Пользователь не найден")
 
@@ -192,9 +198,9 @@ class EmailAuthService:
         user.password_hash = self.hash_password(password)
         user.agree_personal_data = agree_personal_data
         user.agree_terms = agree_terms
-        
+
         await self.db.commit()
-        
+
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(
             joinedload(User.telegram_account)

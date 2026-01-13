@@ -24,7 +24,8 @@ from backend.utils import build_keyboard
 logger = logging.getLogger(__name__)
 
 # Модерационные команды
-MODERATION_COMMANDS = {"/admin", "/ban", "/unban", "/mute", "/unmute", "/delitetime"}
+MODERATION_COMMANDS = {"/admin", "/ban",
+    "/unban", "/mute", "/unmute", "/delitetime"}
 
 
 class MessageHandler:
@@ -116,13 +117,14 @@ class MessageHandler:
             bot_id = bot_info.id
         except Exception:
             bot_id = None
-        
+
         for new_member in message.new_chat_members:
             if bot_id and new_member.id == bot_id:
                 logger.info(f"Skipping captcha for bot itself (id={bot_id})")
                 continue
 
-            captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+            captcha_mode = getattr(
+                self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
             if captcha_mode in (CaptchaMode.AFTER_JOIN, CaptchaMode.BOTH):
                 await self.send_group_captcha(telegram_bot, message, new_member)
             else:
@@ -141,11 +143,11 @@ class MessageHandler:
                     "last_name": new_member.last_name,
                 }
             )
-    
+
     async def send_group_captcha(self, telegram_bot: Bot, message: Message, new_member) -> None:
         """Отправить капчу в группе после вступления"""
         import random
-        
+
         try:
             captcha_service = CaptchaService(self.db)
             question, answer = captcha_service.generate_captcha()
@@ -177,21 +179,23 @@ class MessageHandler:
                 options.add(correct + random.randint(-5, 5))
                 if len(options) >= 10:
                     break
-            
+
             options_list = list(options)[:3]
             random.shuffle(options_list)
 
             buttons = [[
-                InlineKeyboardButton(text=str(opt), callback_data=f"group_captcha_{pending.id}_{opt}")
+                InlineKeyboardButton(
+                    text=str(opt), callback_data=f"group_captcha_{pending.id}_{opt}")
             ] for opt in options_list]
 
-            timeout_seconds = getattr(self.bot_model, "captcha_timeout_seconds", 10)
+            timeout_seconds = getattr(
+                self.bot_model, "captcha_timeout_seconds", 10)
 
             captcha_text = (
                 f"⚠️ {new_member.first_name}, реши капчу за {timeout_seconds} секунд, иначе будешь удалён!\n\n"
                 f"{question}"
             )
-            
+
             captcha_message = await telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text=captcha_text,
@@ -200,22 +204,22 @@ class MessageHandler:
 
             asyncio.create_task(
                 self.captcha_timeout_kick(
-                    telegram_bot, 
-                    message.chat.id, 
-                    new_member.id, 
+                    telegram_bot,
+                    message.chat.id,
+                    new_member.id,
                     captcha_message.message_id,
                     pending.id,
                     timeout_seconds
                 )
             )
-            
+
         except Exception as e:
             logger.error(f"Failed to send group captcha: {e}", exc_info=True)
-    
+
     async def captcha_timeout_kick(
-        self, 
-        telegram_bot: Bot, 
-        chat_id: int, 
+        self,
+        telegram_bot: Bot,
+        chat_id: int,
         user_id: int,
         captcha_message_id: int,
         pending_id: int,
@@ -228,7 +232,8 @@ class MessageHandler:
 
         try:
             await self.db.rollback()
-            query = select(PendingApproval).where(PendingApproval.id == pending_id)
+            query = select(PendingApproval).where(
+                PendingApproval.id == pending_id)
             result = await self.db.execute(query)
             pending = result.scalar_one_or_none()
 
@@ -317,30 +322,31 @@ class MessageHandler:
             from backend.config import TELEGRAM_BOT_TOKEN
             from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
             import os
-            
+
             # Получаем URL фронтенда
             frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
-            
+
             # Создаём инлайн кнопку с параметрами пользователя
             login_url = f"{frontend_url}/login?tg_id={user_id}"
-            
+
             if message.from_user and message.from_user.username:
                 login_url += f"&username={message.from_user.username}"
             if message.from_user and message.from_user.first_name:
                 login_url += f"&first_name={message.from_user.first_name}"
             if message.from_user and message.from_user.last_name:
                 login_url += f"&last_name={message.from_user.last_name}"
-            
+
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🔐 Войти в Lama Planner", url=login_url)]
+                [InlineKeyboardButton(
+                    text="🔐 Войти в Lama Planner", url=login_url)]
             ])
-            
+
             first_name = message.from_user.first_name if message.from_user else "пользователь"
             response_text = (
                 f"👋 <b>Привет, {first_name}!</b>\n\n"
                 f"Для того, чтобы войти в аккаунт, нажмите на кнопку ниже:"
             )
-            
+
             await telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text=response_text,
@@ -348,7 +354,7 @@ class MessageHandler:
                 reply_markup=keyboard,
                 reply_to_message_id=message.message_id
             )
-            
+
             await auto_delete_service.delete_if_command_message(telegram_bot, message)
             return
 
@@ -399,8 +405,6 @@ class MessageHandler:
             },
             "bot": {"first_name": self.bot_model.first_name}
         }
-
-
 
     async def send_response(
         self,
@@ -469,4 +473,3 @@ class MessageHandler:
             media_type=auto_reply.response_media_type,
             buttons=auto_reply.response_buttons,
         )
-
