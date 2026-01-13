@@ -194,7 +194,7 @@ export default function TemplatesAdminPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/templates?locale=${locale}`)
+    fetch(`${API_BASE_URL}/templates?locale=${locale}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
         setData(data);

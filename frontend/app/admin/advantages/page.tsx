@@ -34,7 +34,7 @@ export default function AdvantagesAdminPage() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_BASE_URL}/advantages?locale=${locale}`)
+    fetch(`${API_BASE_URL}/advantages?locale=${locale}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         setContent(data);
