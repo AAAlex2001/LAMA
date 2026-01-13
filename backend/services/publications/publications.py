@@ -20,7 +20,10 @@ from backend.models.publications import (
     RepeatInterval as DBRepeatInterval
 )
 from backend.models.channels import ChannelGroup as Channel, BackupMode
-from backend.schemas.publications import AIGenerateRequest, AIEditRequest, EditPublishedRequest
+from backend.schemas.publications import (
+    AIGenerateRequest, AIEditRequest, EditPublishedRequest,
+    PublishResult, ChannelPublishResult, EditMessageResult, DeleteMessageResult
+)
 from backend.services.channel import ChannelService
 from backend.services.publications.CRUD_publications import CRUDPublicationService
 from backend.services.publications.ai_service import AIService
@@ -144,17 +147,17 @@ class PublicationService:
             yield chunk
 
 
-    async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+    async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> PublishResult:
         """Опубликовать сейчас"""
         publish_start = time.monotonic()
         logger.info(f"[TIMING] publish_now START publication_id={publication_id}")
 
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return {"success": False, "error": "Publication not found"}
+            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
 
         if not publication.channels:
-            return {"success": False, "error": "No channels selected"}
+            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
 
         logger.info(f"[TIMING] publish_now channels_count={len(publication.channels)}")
         if publication.series_id and publication.series:
@@ -164,7 +167,7 @@ class PublicationService:
                 bot = self.get_master_bot()
                 return await series_service.publish_series_post(publication, bot)
 
-        async def safe_send_to_channel(channel: Channel) -> Dict[str, Any]:
+        async def safe_send_to_channel(channel: Channel) -> ChannelPublishResult:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
 
             try:
@@ -175,7 +178,7 @@ class PublicationService:
                     "error",
                     f"Failed to publish to {channel_name}: {str(e)}"
                 )
-                return {"channel": channel_name, "success": False, "error": str(e)}
+                return ChannelPublishResult(channel=channel_name, success=False, error=str(e))
 
             for attempt in range(5):
                 try:
@@ -198,12 +201,12 @@ class PublicationService:
                         except Exception:
                             pass
 
-                    return {
-                        "channel": channel_name,
-                        "success": True,
-                        "message_ids": message_ids,
-                        "telegram_messages_data": telegram_messages_data
-                    }
+                    return ChannelPublishResult(
+                        channel=channel_name,
+                        success=True,
+                        message_ids=message_ids,
+                        telegram_messages_data=telegram_messages_data
+                    )
 
                 except TelegramRetryAfter as e:
                     if attempt < 4:
@@ -215,7 +218,7 @@ class PublicationService:
                             f"Failed to publish to {channel_name}: Rate limit",
                             {"error": str(e)}
                         )
-                        return {"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"}
+                        return ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s")
 
                 except Exception as e:
                     if attempt == 4:
@@ -225,26 +228,26 @@ class PublicationService:
                             f"Failed to publish to {channel_name}",
                             {"error": str(e)}
                         )
-                        return {"channel": channel_name, "success": False, "error": str(e)}
+                        return ChannelPublishResult(channel=channel_name, success=False, error=str(e))
                     await asyncio.sleep(2 ** attempt)
-            return None
+            return ChannelPublishResult(channel=channel_name, success=False, error="Unknown error")
 
         logger.info(f"[TIMING] Starting parallel send to {len(publication.channels)} channels")
         tasks = [safe_send_to_channel(channel) for channel in publication.channels]
         raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-        results: List[Dict[str, Any]] = []
+        results: List[ChannelPublishResult] = []
         for i, result in enumerate(raw_results):
             if isinstance(result, Exception):
                 channel = publication.channels[i]
                 channel_name = getattr(channel, "title", str(channel.telegram_id))
                 logger.error(f"[TIMING] Exception for channel {channel_name}: {result}")
-                results.append({"channel": channel_name, "success": False, "error": str(result)})
+                results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(result)))
             elif result is not None:
                 results.append(result)
 
         for result in results:
-            if result.get("success") and result.get("telegram_messages_data"):
-                for msg_data in result["telegram_messages_data"]:
+            if result.success and result.telegram_messages_data:
+                for msg_data in result.telegram_messages_data:
                     telegram_message = TelegramMessage(
                         publication_id=msg_data["publication_id"],
                         channel_id=msg_data["channel_id"],
@@ -253,14 +256,14 @@ class PublicationService:
                     self.db.add(telegram_message)
 
         for result in results:
-            if result.get("success"):
+            if result.success:
                 await self.create_notification(
                     publication.id,
                     "success",
-                    f"Published to {result['channel']}"
+                    f"Published to {result.channel}"
                 )
 
-        success_count = sum(1 for r in results if r.get("success"))
+        success_count = sum(1 for r in results if r.success)
         total_count = len(results)
 
         if success_count == 0:
@@ -290,30 +293,30 @@ class PublicationService:
         publish_end = time.monotonic()
         logger.info(f"[TIMING] publish_now DONE publication_id={publication_id}, total={publish_end-publish_start:.3f}s, success={success_count}/{total_count}")
 
-        return {
-            "success": success_count > 0,
-            "results": results,
-            "success_count": success_count,
-            "total_count": total_count,
-            "publication": publication
-        }
+        return PublishResult(
+            success=success_count > 0,
+            results=results,
+            success_count=success_count,
+            total_count=total_count,
+            publication_id=publication.id
+        )
 
-    async def republish(self, publication_id: int) -> Dict[str, Any]:
+    async def republish(self, publication_id: int) -> PublishResult:
         """
         Повторно опубликовать пост (для повторяющихся постов).
         Отправляет пост заново во все каналы и обновляет next_repeat_time.
         """
         publication = await self.get_publication(publication_id)
         if not publication:
-            return {"success": False, "error": "Publication not found"}
+            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
 
         if not publication.channels:
-            return {"success": False, "error": "No channels selected"}
+            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
 
         if publication.repeat_interval == DBRepeatInterval.NEVER:
-            return {"success": False, "error": "Publication is not set to repeat"}
+            return PublishResult(success=False, error="Publication is not set to repeat", results=[], success_count=0, total_count=0)
 
-        results: List[Dict[str, Any]] = []
+        results: List[ChannelPublishResult] = []
         
         for channel in publication.channels:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
@@ -321,7 +324,7 @@ class PublicationService:
             try:
                 bot = await self.get_bot_for_channel(channel)
             except ValueError as e:
-                results.append({"channel": channel_name, "success": False, "error": str(e)})
+                results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(e)))
                 continue
 
             for attempt in range(5):
@@ -337,21 +340,21 @@ class PublicationService:
                         )
                         self.db.add(telegram_message)
                     
-                    results.append({"channel": channel_name, "success": True, "message_count": len(sent_messages)})
+                    results.append(ChannelPublishResult(channel=channel_name, success=True, message_ids=[msg.message_id for msg in sent_messages]))
                     break
                     
                 except TelegramRetryAfter as e:
                     if attempt < 4:
                         await asyncio.sleep(e.retry_after)
                     else:
-                        results.append({"channel": channel_name, "success": False, "error": f"Rate limit: {e.retry_after}s"})
+                        results.append(ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s"))
                         
                 except Exception as e:
                     if attempt == 4:
-                        results.append({"channel": channel_name, "success": False, "error": str(e)})
+                        results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(e)))
                     await asyncio.sleep(2 ** attempt)
 
-        success_count = sum(1 for r in results if r.get("success"))
+        success_count = sum(1 for r in results if r.success)
         
         if success_count > 0:
             publication.published_time = datetime.now(timezone.utc)
@@ -363,7 +366,7 @@ class PublicationService:
         
         await self.db.commit()
         
-        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
+        return PublishResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results), publication_id=publication.id)
 
     def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
         """Построить inline клавиатуру"""
@@ -602,30 +605,36 @@ class PublicationService:
         publication_id: int,
         request: EditPublishedRequest,
         owner_id: Optional[int] = None
-    ) -> Dict[str, Any]:
+    ) -> EditMessageResult:
         """Редактировать уже опубликованное сообщение"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return {"success": False, "error": "Publication not found"}
+            return EditMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
 
         if not publication.telegram_messages:
-            return {"success": False, "error": "No Telegram messages found for publication"}
+            return EditMessageResult(success=False, error="No Telegram messages found for publication", results=[], success_count=0, total_count=0)
 
         if publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
-            return {
-                "success": False,
-                "error": "Editing poll or quiz messages via Telegram API is not supported"
-            }
+            return EditMessageResult(
+                success=False,
+                error="Editing poll or quiz messages via Telegram API is not supported",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
         if (
             publication.content_type == DBContentType.TEXT_WITH_MEDIA
             and publication.media_urls
             and len(publication.media_urls) > 1
         ):
-            return {
-                "success": False,
-                "error": "Editing media albums is not supported by the Telegram Bot API"
-            }
+            return EditMessageResult(
+                success=False,
+                error="Editing media albums is not supported by the Telegram Bot API",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
         new_text = (
             request.text_content
@@ -743,11 +752,11 @@ class PublicationService:
                             reply_markup=reply_markup
                         )
 
-                results.append({"channel": channel_label, "success": True})
+                results.append(ChannelPublishResult(channel=channel_label, success=True))
             except Exception as e:
-                results.append({"channel": channel_label, "success": False, "error": str(e)})
+                results.append(ChannelPublishResult(channel=channel_label, success=False, error=str(e)))
 
-        success_count = sum(1 for r in results if r.get("success"))
+        success_count = sum(1 for r in results if r.success)
 
         if success_count > 0:
             if request.text_content is not None:
@@ -766,13 +775,13 @@ class PublicationService:
         else:
             await self.db.rollback()
 
-        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
+        return EditMessageResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results))
 
-    async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
+    async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None) -> DeleteMessageResult:
         """Удалить опубликованные сообщения из Telegram"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return {"success": False, "error": "Publication not found"}
+            return DeleteMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
 
         results = []
         for tg_msg in publication.telegram_messages:
@@ -783,18 +792,18 @@ class PublicationService:
                     chat_id=tg_msg.channel.telegram_id,
                     message_id=tg_msg.telegram_message_id
                 )
-                results.append({"channel": channel_label, "success": True})
+                results.append(ChannelPublishResult(channel=channel_label, success=True))
             except Exception as e:
-                results.append({"channel": channel_label, "success": False, "error": str(e)})
+                results.append(ChannelPublishResult(channel=channel_label, success=False, error=str(e)))
 
-        success_count = sum(1 for r in results if r.get("success"))
+        success_count = sum(1 for r in results if r.success)
 
         if success_count == len(results):
             publication.status = DBPublicationStatus.DELETED
 
         await self.db.commit()
 
-        return {"success": success_count > 0, "results": results, "success_count": success_count, "total_count": len(results)}
+        return DeleteMessageResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results))
 
     async def retransmit_post(self, original_post, target_channel_id: int):
         """Ретранслировать пост"""

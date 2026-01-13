@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator, model_validator, ConfigDict
+from pydantic import BaseModel, Field, validator, model_validator
 from enum import Enum
 
 
@@ -58,7 +58,7 @@ class PollData(BaseModel):
 
 class TagBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
-    color: Optional[str] = Field(None, max_length=7)  # HEX color like #FAC7C7
+    color: Optional[str] = Field(None, max_length=7)
 
 
 class TagCreate(TagBase):
@@ -123,7 +123,7 @@ class PublicationBase(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
-    media_blur: Optional[List[bool]] = None  # List of booleans, one per media file
+    media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None
     pin_message: bool = False
@@ -335,3 +335,39 @@ class TelegramMessageResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+class ChannelPublishResult(BaseModel):
+    """Результат публикации в один канал"""
+    channel: str
+    success: bool
+    error: Optional[str] = None
+    message_ids: Optional[List[int]] = None
+    telegram_messages_data: Optional[List[Dict[str, Any]]] = None
+
+
+class PublishResult(BaseModel):
+    """Результат публикации в несколько каналов"""
+    success: bool
+    results: List[ChannelPublishResult]
+    success_count: int
+    total_count: int
+    publication_id: Optional[int] = None
+    error: Optional[str] = None
+
+
+class EditMessageResult(BaseModel):
+    """Результат редактирования сообщения"""
+    success: bool
+    results: List[ChannelPublishResult]
+    success_count: int
+    total_count: int
+    error: Optional[str] = None
+
+
+class DeleteMessageResult(BaseModel):
+    """Результат удаления сообщения"""
+    success: bool
+    results: List[ChannelPublishResult]
+    success_count: int
+    total_count: int
+    error: Optional[str] = None

@@ -230,11 +230,9 @@ async def update_series(
     db: AsyncSession = Depends(get_db),
     service: PublicationService = Depends(get_publication_service)
 ):
-    """Обновить серию (в том числе включить/выключить reply_to_previous)"""
+    """Обновить серию публикаций"""
     from backend.models.publications import PublicationSeries
     from sqlalchemy import select
-
-    # простое обновление серии без отдельного сервиса, чтобы не раздувать код
     result = await db.execute(select(PublicationSeries).where(PublicationSeries.id == series_id))
     series = result.scalar_one_or_none()
     if not series:
