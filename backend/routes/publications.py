@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -306,17 +306,35 @@ async def delete_publication(
         raise HTTPException(status_code=404, detail="Publication not found")
 
 
-@router.post("/{publication_id}/publish", response_model=PublicationResponse)
+@router.post("/{publication_id}/publish", status_code=202)
 async def publish_now(
     publication_id: int,
+    background_tasks: BackgroundTasks,
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
-    """Опубликовать сейчас"""
-    result = await service.publish_now(publication_id, owner_id=current_user.id)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail={"results": result.get("results", [])})
-    return result["publication"]
+    """Опубликовать сейчас (асинхронно)"""
+    # Проверяем что публикация существует
+    publication = await service.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    
+    # Создаем функцию-обертку для фоновой задачи с новой сессией БД
+    async def publish_in_background():
+        from backend.database import AsyncSessionLocal
+        async with AsyncSessionLocal() as db:
+            bg_service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+            await bg_service.publish_now(publication_id, owner_id=current_user.id)
+    
+    # Запускаем публикацию в фоне
+    background_tasks.add_task(publish_in_background)
+    
+    # Сразу возвращаем 202 Accepted
+    return {
+        "success": True,
+        "message": "Publication started",
+        "publication_id": publication_id
+    }
 
 
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)

@@ -115,23 +115,15 @@ export async function createAndPublishPost(
       };
     }
 
-    const publishedPost = await publishPost(postId);
+    // Запускаем публикацию (она идет в фоне, возвращает 202 Accepted)
+    await publishPost(postId);
 
-    if (!publishedPost || publishedPost.status === 'failed') {
-      return {
-        success: false,
-        postId: postId,
-        id: postId,
-        message: `Не удалось опубликовать`,
-        errors: ['Публикация не удалась'],
-      };
-    }
-
+    // Сразу возвращаем успех, не дожидаясь завершения публикации
     return {
       success: true,
       postId: postId,
       id: postId,
-      message: `Пост успешно опубликован!`,
+      message: `Пост отправлен в публикацию!`,
     };
   } catch (error) {
     return {
