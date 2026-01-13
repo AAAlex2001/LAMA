@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Enum as SQLEnum, JSON, Index
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import Integer, String, Boolean, BigInteger, Text, DateTime, ForeignKey, Enum as SQLEnum, JSON, Index
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
 
@@ -43,124 +44,124 @@ class LinkFilterMode(str, enum.Enum):
 class ChannelGroup(Base):
     __tablename__ = "channel_groups"
 
-    id = Column(Integer, primary_key=True, index=True)
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    bot_id = Column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), nullable=True, index=True)
-    telegram_id = Column(BigInteger, unique=True, nullable=False, index=True)
-    channel_type = Column(SQLEnum(ChannelType), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    bot_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), index=True)
+    telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    channel_type: Mapped[ChannelType] = mapped_column(SQLEnum(ChannelType))
     
     # Основная информация (ChatFullInfo)
-    title = Column(String(255), nullable=False)
-    username = Column(String(255), nullable=True, index=True)
-    first_name = Column(String(255), nullable=True)  # For private chats
-    last_name = Column(String(255), nullable=True)  # For private chats
-    description = Column(Text, nullable=True)
-    invite_link = Column(String(500), nullable=True)
-    bio = Column(Text, nullable=True)  # For private chats
+    title: Mapped[str] = mapped_column(String(255))
+    username: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+    first_name: Mapped[Optional[str]] = mapped_column(String(255))  # For private chats
+    last_name: Mapped[Optional[str]] = mapped_column(String(255))  # For private chats
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    invite_link: Mapped[Optional[str]] = mapped_column(String(500))
+    bio: Mapped[Optional[str]] = mapped_column(Text)  # For private chats
     
     # Chat appearance
-    accent_color_id = Column(Integer, nullable=True)
-    profile_accent_color_id = Column(Integer, nullable=True)
-    background_custom_emoji_id = Column(String(255), nullable=True)
-    profile_background_custom_emoji_id = Column(String(255), nullable=True)
-    emoji_status_custom_emoji_id = Column(String(255), nullable=True)
-    emoji_status_expiration_date = Column(Integer, nullable=True)
+    accent_color_id: Mapped[Optional[int]] = mapped_column(Integer)
+    profile_accent_color_id: Mapped[Optional[int]] = mapped_column(Integer)
+    background_custom_emoji_id: Mapped[Optional[str]] = mapped_column(String(255))
+    profile_background_custom_emoji_id: Mapped[Optional[str]] = mapped_column(String(255))
+    emoji_status_custom_emoji_id: Mapped[Optional[str]] = mapped_column(String(255))
+    emoji_status_expiration_date: Mapped[Optional[int]] = mapped_column(Integer)
     
     # Chat settings/features
-    is_forum = Column(Boolean, default=False)
-    is_direct_messages = Column(Boolean, default=False)
-    max_reaction_count = Column(Integer, nullable=True)
-    slow_mode_delay = Column(Integer, nullable=True)
-    unrestrict_boost_count = Column(Integer, nullable=True)
-    message_auto_delete_time = Column(Integer, nullable=True)
+    is_forum: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_direct_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    max_reaction_count: Mapped[Optional[int]] = mapped_column(Integer)
+    slow_mode_delay: Mapped[Optional[int]] = mapped_column(Integer)
+    unrestrict_boost_count: Mapped[Optional[int]] = mapped_column(Integer)
+    message_auto_delete_time: Mapped[Optional[int]] = mapped_column(Integer)
     
     # Privacy & restrictions
-    has_private_forwards = Column(Boolean, default=False)
-    has_restricted_voice_and_video_messages = Column(Boolean, default=False)
-    has_aggressive_anti_spam_enabled = Column(Boolean, default=False)
-    has_hidden_members = Column(Boolean, default=False)
-    has_protected_content = Column(Boolean, default=False)
-    has_visible_history = Column(Boolean, default=False)
-    join_to_send_messages = Column(Boolean, default=False)
-    join_by_request = Column(Boolean, default=False)
-    can_send_paid_media = Column(Boolean, default=False)
+    has_private_forwards: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_restricted_voice_and_video_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_aggressive_anti_spam_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_hidden_members: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_protected_content: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_visible_history: Mapped[bool] = mapped_column(Boolean, default=False)
+    join_to_send_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    join_by_request: Mapped[bool] = mapped_column(Boolean, default=False)
+    can_send_paid_media: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # Stickers
-    sticker_set_name = Column(String(255), nullable=True)
-    can_set_sticker_set = Column(Boolean, default=False)
-    custom_emoji_sticker_set_name = Column(String(255), nullable=True)
+    sticker_set_name: Mapped[Optional[str]] = mapped_column(String(255))
+    can_set_sticker_set: Mapped[bool] = mapped_column(Boolean, default=False)
+    custom_emoji_sticker_set_name: Mapped[Optional[str]] = mapped_column(String(255))
     
     # Linked chats & location
-    linked_chat_id = Column(BigInteger, nullable=True)
-    parent_chat_id = Column(BigInteger, nullable=True)  # For direct messages chats
-    location_address = Column(String(500), nullable=True)
-    location_latitude = Column(String(50), nullable=True)
-    location_longitude = Column(String(50), nullable=True)
+    linked_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)
+    parent_chat_id: Mapped[Optional[int]] = mapped_column(BigInteger)  # For direct messages chats
+    location_address: Mapped[Optional[str]] = mapped_column(String(500))
+    location_latitude: Mapped[Optional[str]] = mapped_column(String(50))
+    location_longitude: Mapped[Optional[str]] = mapped_column(String(50))
     
     # Статистика
-    members_count = Column(Integer, default=0)
+    members_count: Mapped[int] = mapped_column(Integer, default=0)
     
     # Photo
-    photo_url = Column(String(500), nullable=True)
-    photo_small_file_id = Column(String(255), nullable=True)
-    photo_small_file_unique_id = Column(String(255), nullable=True)
-    photo_big_file_id = Column(String(255), nullable=True)
-    photo_big_file_unique_id = Column(String(255), nullable=True)
+    photo_url: Mapped[Optional[str]] = mapped_column(String(500))
+    photo_small_file_id: Mapped[Optional[str]] = mapped_column(String(255))
+    photo_small_file_unique_id: Mapped[Optional[str]] = mapped_column(String(255))
+    photo_big_file_id: Mapped[Optional[str]] = mapped_column(String(255))
+    photo_big_file_unique_id: Mapped[Optional[str]] = mapped_column(String(255))
     
     # Chat permissions (JSON for flexibility)
-    permissions = Column(JSON, nullable=True)
+    permissions: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Available reactions (JSON array)
-    available_reactions = Column(JSON, nullable=True)
+    available_reactions: Mapped[Optional[list]] = mapped_column(JSON)
     
     # Accepted gift types (JSON)
-    accepted_gift_types = Column(JSON, nullable=True)
+    accepted_gift_types: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Active usernames (JSON array)
-    active_usernames = Column(JSON, nullable=True)
+    active_usernames: Mapped[Optional[list]] = mapped_column(JSON)
     
     # Pinned message info (stored as JSON for simplicity)
-    pinned_message = Column(JSON, nullable=True)
+    pinned_message: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Business account fields (JSON)
-    business_intro = Column(JSON, nullable=True)
-    business_location = Column(JSON, nullable=True)
-    business_opening_hours = Column(JSON, nullable=True)
-    birthdate = Column(JSON, nullable=True)
-    personal_chat = Column(JSON, nullable=True)
+    business_intro: Mapped[Optional[dict]] = mapped_column(JSON)
+    business_location: Mapped[Optional[dict]] = mapped_column(JSON)
+    business_opening_hours: Mapped[Optional[dict]] = mapped_column(JSON)
+    birthdate: Mapped[Optional[dict]] = mapped_column(JSON)
+    personal_chat: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Настройки бекапа
-    backup_mode = Column(SQLEnum(BackupMode), default=BackupMode.DISABLED, nullable=False)
-    backup_target_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="SET NULL"), nullable=True)
+    backup_mode: Mapped[BackupMode] = mapped_column(SQLEnum(BackupMode), default=BackupMode.DISABLED)
+    backup_target_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="SET NULL"))
     
     # Настройки антиспама
-    link_filter_mode = Column(SQLEnum(LinkFilterMode), default=LinkFilterMode.DISABLED, nullable=False)
-    link_whitelist = Column(JSON, nullable=True)
-    link_blacklist = Column(JSON, nullable=True)
-    link_filter_action = Column(SQLEnum(ActionType), default=ActionType.DELETE, nullable=False)
-    link_filter_mute_duration = Column(Integer, nullable=True)
+    link_filter_mode: Mapped[LinkFilterMode] = mapped_column(SQLEnum(LinkFilterMode), default=LinkFilterMode.DISABLED)
+    link_whitelist: Mapped[Optional[list]] = mapped_column(JSON)
+    link_blacklist: Mapped[Optional[list]] = mapped_column(JSON)
+    link_filter_action: Mapped[ActionType] = mapped_column(SQLEnum(ActionType), default=ActionType.DELETE)
+    link_filter_mute_duration: Mapped[Optional[int]] = mapped_column(Integer)
 
     # Night mode settings
-    night_mode_enabled = Column(Boolean, default=False, nullable=False)
-    night_mode_start = Column(String(5), nullable=True)
-    night_mode_end = Column(String(5), nullable=True)
-    night_mode_block_media = Column(Boolean, default=False, nullable=False)
-    night_mode_block_text = Column(Boolean, default=False, nullable=False)
+    night_mode_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    night_mode_start: Mapped[Optional[str]] = mapped_column(String(5))
+    night_mode_end: Mapped[Optional[str]] = mapped_column(String(5))
+    night_mode_block_media: Mapped[bool] = mapped_column(Boolean, default=False)
+    night_mode_block_text: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Настройки антифлуда
-    flood_message_limit = Column(Integer, nullable=True)  # N сообщений
-    flood_interval_seconds = Column(Integer, nullable=True)  # за M секунд
-    flood_action = Column(SQLEnum(ActionType), default=ActionType.MUTE, nullable=False)
-    flood_mute_duration_minutes = Column(Integer, nullable=True)
+    flood_message_limit: Mapped[Optional[int]] = mapped_column(Integer)  # N сообщений
+    flood_interval_seconds: Mapped[Optional[int]] = mapped_column(Integer)  # за M секунд
+    flood_action: Mapped[ActionType] = mapped_column(SQLEnum(ActionType), default=ActionType.MUTE)
+    flood_mute_duration_minutes: Mapped[Optional[int]] = mapped_column(Integer)
     
     # Метаданные
-    is_active = Column(Boolean, default=True)
-    last_sync_at = Column(DateTime(timezone=True), nullable=True)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     # Дополнительные данные из TG API (для полей, которые не вошли в структуру)
-    extra_data = Column(JSON, nullable=True)
+    extra_data: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Relationships
     owner = relationship("User", back_populates="channel_groups")
@@ -192,29 +193,29 @@ class ChannelGroup(Base):
 class BackedUpPost(Base):
     __tablename__ = "backed_up_posts"
 
-    id = Column(Integer, primary_key=True, index=True)
-    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
-    telegram_message_id = Column(BigInteger, nullable=False)
-    media_group_id = Column(String(255), nullable=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
+    telegram_message_id: Mapped[int] = mapped_column(BigInteger)
+    media_group_id: Mapped[Optional[str]] = mapped_column(String(255))
     
     # Контент поста
-    content_type = Column(String(50), nullable=False)
-    text_content = Column(Text, nullable=True)
-    media_urls = Column(JSON, nullable=True)
-    media_file_ids = Column(JSON, nullable=True)
+    content_type: Mapped[str] = mapped_column(String(50))
+    text_content: Mapped[Optional[str]] = mapped_column(Text)
+    media_urls: Mapped[Optional[list]] = mapped_column(JSON)
+    media_file_ids: Mapped[Optional[list]] = mapped_column(JSON)
     
     # Метаданные поста
-    has_spoiler = Column(Boolean, default=False)
-    reply_markup = Column(JSON, nullable=True)
-    views_count = Column(Integer, default=0)
-    forwards_count = Column(Integer, default=0)
+    has_spoiler: Mapped[bool] = mapped_column(Boolean, default=False)
+    reply_markup: Mapped[Optional[dict]] = mapped_column(JSON)
+    views_count: Mapped[int] = mapped_column(Integer, default=0)
+    forwards_count: Mapped[int] = mapped_column(Integer, default=0)
     
     # Временные метки
-    original_date = Column(DateTime(timezone=True), nullable=False)
-    backed_up_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    original_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    backed_up_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     
     # Полный JSON от Telegram
-    raw_data = Column(JSON, nullable=False)
+    raw_data: Mapped[dict] = mapped_column(JSON)
     
     # Relationships
     channel = relationship("ChannelGroup", back_populates="backed_up_posts")
@@ -230,14 +231,14 @@ class BackedUpPost(Base):
 class PostRetransmission(Base):
     __tablename__ = "post_retransmissions"
 
-    id = Column(Integer, primary_key=True, index=True)
-    original_post_id = Column(Integer, ForeignKey("backed_up_posts.id", ondelete="CASCADE"), nullable=False)
-    target_channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
-    target_message_id = Column(BigInteger, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    original_post_id: Mapped[int] = mapped_column(Integer, ForeignKey("backed_up_posts.id", ondelete="CASCADE"))
+    target_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
+    target_message_id: Mapped[int] = mapped_column(BigInteger)
     
-    retransmitted_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    success = Column(Boolean, default=True)
-    error_message = Column(Text, nullable=True)
+    retransmitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    success: Mapped[bool] = mapped_column(Boolean, default=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text)
     
     # Relationships
     original_post = relationship("BackedUpPost", back_populates="retransmissions")
@@ -252,22 +253,22 @@ class PostRetransmission(Base):
 class BackupJob(Base):
     __tablename__ = "backup_jobs"
 
-    id = Column(Integer, primary_key=True, index=True)
-    source_channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
-    target_channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    source_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
+    target_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
     
-    status = Column(SQLEnum(BackupStatus), default=BackupStatus.IN_PROGRESS, nullable=False)
+    status: Mapped[BackupStatus] = mapped_column(SQLEnum(BackupStatus), default=BackupStatus.IN_PROGRESS)
     
     # Прогресс
-    total_posts = Column(Integer, default=0)
-    processed_posts = Column(Integer, default=0)
-    failed_posts = Column(Integer, default=0)
+    total_posts: Mapped[int] = mapped_column(Integer, default=0)
+    processed_posts: Mapped[int] = mapped_column(Integer, default=0)
+    failed_posts: Mapped[int] = mapped_column(Integer, default=0)
     
     # Временные рамки
-    started_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    completed_at = Column(DateTime(timezone=True), nullable=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     
-    error_details = Column(JSON, nullable=True)
+    error_details: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Relationships
     source_channel = relationship("ChannelGroup", foreign_keys=[source_channel_id], back_populates="backup_jobs")
@@ -281,17 +282,17 @@ class BackupJob(Base):
 class ChannelModerationRule(Base):
     __tablename__ = "channel_moderation_rules"
 
-    id = Column(Integer, primary_key=True, index=True)
-    phrase = Column(Text, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    phrase: Mapped[str] = mapped_column(Text)
 
-    action = Column(SQLEnum(ActionType), nullable=False)
+    action: Mapped[ActionType] = mapped_column(SQLEnum(ActionType))
 
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    mute_duration_minutes = Column(Integer, nullable=True)
+    mute_duration_minutes: Mapped[Optional[int]] = mapped_column(Integer)
 
-    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
 
     channel = relationship("ChannelGroup", back_populates="moderation_rules")
 
@@ -299,13 +300,13 @@ class ChannelModerationRule(Base):
 class ChannelFloodState(Base):
     __tablename__ = "channel_flood_states"
 
-    id = Column(Integer, primary_key=True, index=True)
-    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(BigInteger, nullable=False)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(BigInteger)
 
-    message_count = Column(Integer, default=0, nullable=False)
-    window_start = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    last_message_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    message_count: Mapped[int] = mapped_column(Integer, default=0)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     channel = relationship("ChannelGroup")
 
@@ -317,17 +318,16 @@ class ChannelFloodState(Base):
 class ChannelAutoDeleteSettings(Base):
     __tablename__ = "channel_auto_delete_settings"
 
-    id = Column(Integer, primary_key=True, index=True)
-    channel_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(
         Integer,
         ForeignKey("channel_groups.id", ondelete="CASCADE"),
-        nullable=False,
         unique=True,
     )
-    delete_system_messages = Column(Boolean, default=False, nullable=False)
-    delete_command_messages = Column(Boolean, default=False, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    delete_system_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_command_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     channel = relationship("ChannelGroup", back_populates="auto_delete_settings")
 
@@ -336,34 +336,34 @@ class ChatInviteLink(Base):
     """Пригласительные ссылки для каналов/групп"""
     __tablename__ = "chat_invite_links"
 
-    id = Column(Integer, primary_key=True, index=True)
-    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), index=True)
     
     # Данные ссылки из Telegram API
-    invite_link = Column(String(500), nullable=False, unique=True)
-    name = Column(String(255), nullable=True)
-    creator_id = Column(BigInteger, nullable=True)
+    invite_link: Mapped[str] = mapped_column(String(500), unique=True)
+    name: Mapped[Optional[str]] = mapped_column(String(255))
+    creator_id: Mapped[Optional[int]] = mapped_column(BigInteger)
     
     # Настройки ссылки
-    creates_join_request = Column(Boolean, default=False, nullable=False)
-    is_primary = Column(Boolean, default=False, nullable=False)
-    is_revoked = Column(Boolean, default=False, nullable=False)
+    creates_join_request: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # Лимиты
-    expire_date = Column(DateTime(timezone=True), nullable=True)
-    member_limit = Column(Integer, nullable=True)
+    expire_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    member_limit: Mapped[Optional[int]] = mapped_column(Integer)
     
     # Метрики (обновляются при синхронизации)
-    pending_join_request_count = Column(Integer, default=0, nullable=False)
-    member_count = Column(Integer, default=0, nullable=False)
+    pending_join_request_count: Mapped[int] = mapped_column(Integer, default=0)
+    member_count: Mapped[int] = mapped_column(Integer, default=0)
     
     # Для подписных ссылок
-    subscription_period = Column(Integer, nullable=True)
-    subscription_price = Column(Integer, nullable=True)
+    subscription_period: Mapped[Optional[int]] = mapped_column(Integer)
+    subscription_price: Mapped[Optional[int]] = mapped_column(Integer)
     
     # Метаданные
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     channel = relationship("ChannelGroup", back_populates="invite_links")
 
