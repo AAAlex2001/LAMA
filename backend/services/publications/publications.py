@@ -2,7 +2,6 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any
 import pytz
 import asyncio
-import os
 import time
 import logging
 
@@ -71,10 +70,6 @@ class PublicationService:
         """Получить мастер-бота для публикаций в канал (с rate limiting)"""
         return get_bot()
 
-    # ========================================================================
-    # Проксирование CRUD методов
-    # ========================================================================
-
     async def create_publication(self, data, owner_id: int):
         return await self.crud.create_publication(data, owner_id)
 
@@ -112,10 +107,6 @@ class PublicationService:
             calendar_dict[date_key].append(pub)
         return calendar_dict
 
-    # ========================================================================
-    # AI методы
-    # ========================================================================
-
     async def generate_with_ai(self, request: AIGenerateRequest) -> str:
         """Сгенерировать контент с помощью AI"""
         return await self.ai_service.generate_content(request)
@@ -152,9 +143,6 @@ class PublicationService:
         ):
             yield chunk
 
-    # ========================================================================
-    # Публикация в Telegram
-    # ========================================================================
 
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
         """Опубликовать сейчас"""
@@ -169,8 +157,6 @@ class PublicationService:
             return {"success": False, "error": "No channels selected"}
 
         logger.info(f"[TIMING] publish_now channels_count={len(publication.channels)}")
-
-        # Если публикация в серии с включённым reply_to_previous — используем SeriesService
         if publication.series_id and publication.series:
             if publication.series.reply_to_previous:
                 from backend.services.publications.series_service import SeriesService
@@ -193,13 +179,8 @@ class PublicationService:
 
             for attempt in range(5):
                 try:
-                    # Rate limiting управляется через RateLimitedBot
                     sent_messages = await self.send_to_telegram(publication, channel, bot)
-
                     message_ids: List[int] = [msg.message_id for msg in sent_messages]
-
-                    # Собираем данные для TelegramMessage, но НЕ добавляем в сессию здесь
-                    # (будет добавлено после завершения всех параллельных задач)
                     telegram_messages_data = [
                         {"publication_id": publication.id, "channel_id": channel.id, "telegram_message_id": msg_id}
                         for msg_id in message_ids
@@ -246,14 +227,11 @@ class PublicationService:
                         )
                         return {"channel": channel_name, "success": False, "error": str(e)}
                     await asyncio.sleep(2 ** attempt)
-
             return None
 
-        # Параллельная отправка во все каналы
         logger.info(f"[TIMING] Starting parallel send to {len(publication.channels)} channels")
         tasks = [safe_send_to_channel(channel) for channel in publication.channels]
         raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-
         results: List[Dict[str, Any]] = []
         for i, result in enumerate(raw_results):
             if isinstance(result, Exception):
@@ -264,7 +242,6 @@ class PublicationService:
             elif result is not None:
                 results.append(result)
 
-        # Сохраняем TelegramMessage ПОСЛЕ завершения всех параллельных задач
         for result in results:
             if result.get("success") and result.get("telegram_messages_data"):
                 for msg_data in result["telegram_messages_data"]:
@@ -275,7 +252,6 @@ class PublicationService:
                     )
                     self.db.add(telegram_message)
 
-        # Создаем уведомления ПОСЛЕ параллельной отправки
         for result in results:
             if result.get("success"):
                 await self.create_notification(
@@ -430,9 +406,8 @@ class PublicationService:
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
             if publication.media_urls and len(publication.media_urls) > 0:
-                # media_blur теперь массив bool, по одному на каждый файл
                 blur_list = publication.media_blur or []
-                
+        
                 def get_spoiler(index: int) -> bool:
                     """Получить значение spoiler для файла по индексу"""
                     if index < len(blur_list):
@@ -466,7 +441,6 @@ class PublicationService:
                         )
                         return [message]
 
-                # Медиальбом (фото+видео)
                 media = []
 
                 def is_video_url(u: str) -> bool:
@@ -622,10 +596,6 @@ class PublicationService:
                 f"Instant backup failed for {getattr(channel, 'title', channel.telegram_id)}",
                 {"error": str(error)}
             )
-
-    # ========================================================================
-    # Редактирование опубликованного
-    # ========================================================================
 
     async def edit_published_message(
         self,

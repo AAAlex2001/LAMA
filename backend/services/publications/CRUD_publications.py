@@ -1,6 +1,5 @@
 from datetime import datetime, timezone
-from typing import List, Optional, Dict, Any
-
+from typing import List, Optional, Dict
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -21,7 +20,6 @@ from backend.schemas.publications import (
 
 
 class CRUDPublicationService:
-    """Чистые CRUD операции для публикаций"""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -69,8 +67,6 @@ class CRUDPublicationService:
 
         self.db.add(publication)
         await self.db.commit()
-
-        # Загружаем все связи сразу
         await self.db.refresh(publication, ['channels', 'tags', 'series'])
         for channel in publication.channels:
             await self.db.refresh(channel, ['bot'])
@@ -268,7 +264,6 @@ class CRUDPublicationService:
                 result = await self.db.execute(query)
                 existing_tags = {tag.name: tag for tag in result.scalars().all()}
                 tags = [existing_tags[name] for name in tag_names]
-                # Обновляем время последнего использования для найденных тегов
                 for tag in tags:
                     tag.last_used_at = now
 
