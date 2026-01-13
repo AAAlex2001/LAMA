@@ -195,7 +195,8 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
   }
 
   const data = await response.json();
-  return data.files[0];
+  // API возвращает {success: true, data: [...]}
+  return data.data[0];
 }
 
 /**

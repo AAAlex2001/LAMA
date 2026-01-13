@@ -79,9 +79,16 @@ export async function handlePublishNow(
           const uploadResponse = await uploadMediaFiles(filesToUpload);
           console.log('Upload response:', uploadResponse);
           
-          // Получаем полные URL-ы (добавляем домен если нужно)
+          // Получаем полные URL-ы (добавляем домен только для локальных путей)
           const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
-          mediaUrls = uploadResponse.files.map(f => `${baseUrl}${f.url}`);
+          mediaUrls = uploadResponse.files.map(f => {
+            // Если URL уже абсолютный (http/https), используем как есть
+            if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
+              return f.url;
+            }
+            // Иначе добавляем baseUrl для локальных файлов
+            return `${baseUrl}${f.url}`;
+          });
           console.log('Media URLs:', mediaUrls);
         } catch (error) {
           console.error('Failed to upload media:', error);
@@ -175,7 +182,14 @@ export async function handleSaveDraft(
         try {
           const uploadResponse = await uploadMediaFiles(filesToUpload);
           const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
-          mediaUrls = uploadResponse.files.map(f => `${baseUrl}${f.url}`);
+          mediaUrls = uploadResponse.files.map(f => {
+            // Если URL уже абсолютный (http/https), используем как есть
+            if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
+              return f.url;
+            }
+            // Иначе добавляем baseUrl для локальных файлов
+            return `${baseUrl}${f.url}`;
+          });
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
