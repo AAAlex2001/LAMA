@@ -317,7 +317,7 @@ async def get_template_content(
     uid = _safe_str(template.get("uid"))
     prefix = f"template_{uid}_"
 
-    defaults = {
+    defaults: dict[str, Any] = {
         "headline": _safe_str(template.get("title")),
         "lead": _safe_str(template.get("description")),
         "body": "",

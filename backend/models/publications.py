@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func
-from sqlalchemy.orm import relationship
+from typing import Optional
+from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
 
@@ -56,45 +57,44 @@ publication_channels = Table(
 class Publication(Base):
     __tablename__ = 'publications'
 
-    id = Column(Integer, primary_key=True, index=True)
-    owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    content_type = Column(SQLEnum(ContentType), nullable=False)
-    status = Column(SQLEnum(PublicationStatus), default=PublicationStatus.DRAFT, nullable=False, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    content_type: Mapped[ContentType] = mapped_column(SQLEnum(ContentType))
+    status: Mapped[PublicationStatus] = mapped_column(SQLEnum(PublicationStatus), default=PublicationStatus.DRAFT, index=True)
     
-    text_content = Column(Text, nullable=True)
-    formatted_content = Column(JSON, nullable=True)
-    media_urls = Column(JSON, nullable=True)
-    media_blur = Column(JSON, nullable=True)
+    text_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    formatted_content: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    media_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    media_blur: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
-    inline_keyboard = Column(JSON, nullable=True)
-    poll_data = Column(JSON, nullable=True)
+    inline_keyboard: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    poll_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
-    pin_message = Column(Boolean, default=False)
-    disable_notification = Column(Boolean, default=False)
-    auto_delete_hours = Column(Integer, nullable=True)
-    auto_delete_seconds = Column(Integer, nullable=True)
+    pin_message: Mapped[bool] = mapped_column(Boolean, default=False)
+    disable_notification: Mapped[bool] = mapped_column(Boolean, default=False)
+    auto_delete_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    auto_delete_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
-    repeat_interval = Column(
+    repeat_interval: Mapped[RepeatInterval] = mapped_column(
         SQLEnum(RepeatInterval, values_callable=lambda x: [e.value for e in x]),
-        default=RepeatInterval.NEVER,
-        nullable=False
+        default=RepeatInterval.NEVER
     )
-    repeat_custom_days = Column(Integer, nullable=True)
-    repeat_custom_hours = Column(Integer, nullable=True)
-    next_repeat_time = Column(DateTime(timezone=True), nullable=True)
+    repeat_custom_days: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    repeat_custom_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    next_repeat_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
-    scheduled_time = Column(DateTime(timezone=True), nullable=True, index=True)
-    published_time = Column(DateTime(timezone=True), nullable=True)
-    timezone = Column(String(50), default='UTC')
+    scheduled_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    published_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    timezone: Mapped[str] = mapped_column(String(50), default='UTC')
     
-    series_id = Column(Integer, ForeignKey('publication_series.id', ondelete='SET NULL'), nullable=True)
-    series_order = Column(Integer, nullable=True)
+    series_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('publication_series.id', ondelete='SET NULL'), nullable=True)
+    series_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     
-    ai_generated = Column(Boolean, default=False)
-    ai_prompt = Column(Text, nullable=True)
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
     owner = relationship("User", back_populates="publications")
     channels = relationship('ChannelGroup', secondary=publication_channels, back_populates='publications')
@@ -115,11 +115,11 @@ class Publication(Base):
 class PublicationSeries(Base):
     __tablename__ = 'publication_series'
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), nullable=False)
-    description = Column(Text, nullable=True)
-    reply_to_previous = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    reply_to_previous: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', back_populates='series')
 
@@ -129,11 +129,11 @@ class PublicationSeries(Base):
 class Tag(Base):
     __tablename__ = 'tags'
 
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), unique=True, nullable=False, index=True)
-    color = Column(String(7), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    last_used_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     publications = relationship('Publication', secondary=publication_tags, back_populates='tags')
 
@@ -141,11 +141,11 @@ class Tag(Base):
 class TelegramMessage(Base):
     __tablename__ = 'telegram_messages'
 
-    id = Column(Integer, primary_key=True, index=True)
-    publication_id = Column(Integer, ForeignKey('publications.id', ondelete='CASCADE'), nullable=False)
-    channel_id = Column(Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'), nullable=False)
-    telegram_message_id = Column(Integer, nullable=False)
-    published_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    publication_id: Mapped[int] = mapped_column(Integer, ForeignKey('publications.id', ondelete='CASCADE'))
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'))
+    telegram_message_id: Mapped[int] = mapped_column(Integer)
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     publication = relationship('Publication', back_populates='telegram_messages')
     channel = relationship('ChannelGroup', back_populates='telegram_messages')
@@ -154,12 +154,12 @@ class TelegramMessage(Base):
 class PublicationNotification(Base):
     __tablename__ = 'publication_notifications'
 
-    id = Column(Integer, primary_key=True, index=True)
-    publication_id = Column(Integer, ForeignKey('publications.id', ondelete='CASCADE'), nullable=False)
-    status = Column(String(50), nullable=False)
-    message = Column(Text, nullable=False)
-    error_details = Column(JSON, nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    publication_id: Mapped[int] = mapped_column(Integer, ForeignKey('publications.id', ondelete='CASCADE'))
+    status: Mapped[str] = mapped_column(String(50))
+    message: Mapped[str] = mapped_column(Text)
+    error_details: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     publication = relationship('Publication', back_populates='notifications')
 

@@ -21,13 +21,13 @@ class SessionService:
 
         count_query = select(func.count()).select_from(query.subquery())
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         query = query.order_by(desc(UserSession.created_at))
         result = await self.db.execute(query)
         sessions = list(result.scalars().all())
 
-        return sessions, total
+        return sessions, total or 0
 
     async def revoke_session(self, session_id: int, user_id: int) -> bool:
         """Отозвать сессию"""

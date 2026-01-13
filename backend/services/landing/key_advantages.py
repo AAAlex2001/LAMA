@@ -42,7 +42,7 @@ async def get_key_advantages_content(db: AsyncSession, locale: str | Locale | No
     contents = result.scalars().all()
     
     response = {}
-    advantages = []
+    advantages: list[dict[str, Any]] = []
     
     for content in contents:
         if content.key == "key_advantages_headline":

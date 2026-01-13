@@ -124,7 +124,7 @@ class RecurringMessageService:
             RecurringMessage.bot_id == bot_id
         )
         count_result = await self.db.execute(count_query)
-        total = count_result.scalar()
+        total = count_result.scalar() or 0
         
         return messages, total
     

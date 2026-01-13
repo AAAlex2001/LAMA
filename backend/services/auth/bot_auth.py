@@ -161,7 +161,9 @@ class BotAuthService:
             telegram_account.auth_date = datetime.now(timezone.utc)
             telegram_account.updated_at = datetime.now(timezone.utc)
 
-            user = telegram_account.user
+            user = await self.db.get(User, telegram_account.user_id)
+            if not user:
+                raise ValueError("User not found")
         else:
             user = User(
                 role=UserRole.USER,
@@ -187,9 +189,9 @@ class BotAuthService:
             selectinload(User.telegram_account)
         ).where(User.id == user.id)
         result = await self.db.execute(query)
-        user = result.scalar_one()
+        user_final = result.scalar_one()
 
-        return user
+        return user_final
 
     async def create_session_from_code(
         self,

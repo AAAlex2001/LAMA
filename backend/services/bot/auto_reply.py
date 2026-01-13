@@ -74,7 +74,7 @@ class AutoReplyService:
         # Подсчёт
         count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         # Получение данных
         data_query = base_query.order_by(AutoReply.created_at.desc())

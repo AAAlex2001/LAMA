@@ -78,7 +78,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
             if content.extra_data and "links" in content.extra_data:
                 columns[column_index]["links"] = content.extra_data["links"]
     
-    response["columns"] = [columns[i] for i in sorted(columns.keys())] if columns else []
+    response["columns"] = [columns[i] for i in sorted(columns.keys())] if columns else []  # type: ignore[misc]
     
     return response
 

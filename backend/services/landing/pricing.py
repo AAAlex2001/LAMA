@@ -44,7 +44,7 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
     contents = result.scalars().all()
     
     response = {}
-    plans = []
+    plans: list[dict[str, Any]] = []
     
     for content in contents:
         if content.key == "pricing_headline":

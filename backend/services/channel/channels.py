@@ -415,7 +415,7 @@ class ChannelService:
             count_query = count_query.where(BackedUpPost.original_date <= end_date)
         
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
         
         query = query.order_by(BackedUpPost.original_date.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)
@@ -527,7 +527,7 @@ class ChannelService:
             count_query = count_query.where(BackupJob.status == status)
         
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
         
         query = query.order_by(BackupJob.started_at.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)

@@ -110,7 +110,8 @@ class AIService:
             }
         ) as response:
             if response.status_code != 200:
-                raise ValueError(f"DeepSeek API error: {await response.aread()}")
+                error_text = (await response.aread()).decode('utf-8', errors='replace')
+                raise ValueError(f"DeepSeek API error: {error_text}")
             
             async for line in response.aiter_lines():
                 if line.startswith("data: "):

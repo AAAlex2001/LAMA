@@ -54,7 +54,7 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
     contents = result.scalars().all()
     
     response = {}
-    faq_items = []
+    faq_items: list[dict[str, str]] = []
     
     for content in contents:
         if content.key == "faq_headline":

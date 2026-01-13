@@ -91,13 +91,13 @@ async def get_triggers(
 
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
-    total = total_result.scalar()
+    total = total_result.scalar() or 0
 
     query = query.order_by(Trigger.created_at.desc())
     result = await db.execute(query)
     triggers = list(result.scalars().all())
 
-    return triggers, total
+    return triggers, total or 0
 
 
 async def update_trigger(

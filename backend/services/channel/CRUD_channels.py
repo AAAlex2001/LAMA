@@ -104,7 +104,7 @@ class CRUDChannelService:
             count_query = count_query.where(ChannelGroup.backup_mode == backup_mode)
 
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         query = query.order_by(ChannelGroup.created_at.desc())
         query = query.offset((page - 1) * page_size).limit(page_size)

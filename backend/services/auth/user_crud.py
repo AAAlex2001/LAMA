@@ -46,7 +46,7 @@ class UserCRUDService:
 
         count_query = select(func.count()).select_from(query.subquery())
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         query = query.order_by(desc(User.created_at)).offset(skip).limit(limit)
         result = await self.db.execute(query)

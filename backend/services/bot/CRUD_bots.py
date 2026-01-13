@@ -101,7 +101,7 @@ class CRUDBotService:
         # Подсчёт общего количества
         count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         # Получение данных с пагинацией
         data_query = base_query.order_by(desc(BotModel.created_at)).offset(skip).limit(limit)

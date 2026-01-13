@@ -30,11 +30,11 @@ class BotCommandService:
             raise ValueError("Bot not found")
 
         # Проверяем, не существует ли уже команда
-        query = select(BotCommand).where(
+        check_query = select(BotCommand).where(
             BotCommand.bot_id == bot_id,
             BotCommand.command == data.command
         )
-        result = await self.db.execute(query)
+        result = await self.db.execute(check_query)
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -83,14 +83,14 @@ class BotCommandService:
         # Подсчёт
         count_query = select(func.count()).select_from(base_query.subquery())
         total_result = await self.db.execute(count_query)
-        total = total_result.scalar()
+        total = total_result.scalar() or 0
 
         # Получение данных
         data_query = base_query.order_by(BotCommand.command)
         result = await self.db.execute(data_query)
         commands = list(result.scalars().all())
 
-        return commands, total
+        return commands, total or 0
 
     async def update_command(
         self,
