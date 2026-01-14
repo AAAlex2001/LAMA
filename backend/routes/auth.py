@@ -32,9 +32,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 async def get_auth_service(db: AsyncSession = Depends(get_db)):
     """Получить сервис аутентификации"""
     import os
-    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    jwt_secret = os.getenv("JWT_SECRET")
-    
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    jwt_secret = os.getenv("JWT_SECRET", "")
+
     return AuthService(db, bot_token, jwt_secret)
 
 
@@ -99,7 +99,7 @@ async def login_with_telegram(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user),
+            user=user,
             registration_completed=registration_completed
         )
     except ValueError as e:
@@ -146,7 +146,7 @@ async def login_with_bot(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user),
+            user=user,
             registration_completed=registration_completed
         )
     except ValueError as e:
@@ -189,7 +189,7 @@ async def register_with_email(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user),
+            user=user,
             registration_completed=True  # Регистрация по email всегда завершена
         )
     except ValueError as e:
@@ -229,7 +229,7 @@ async def login_with_email(
             refresh_token=refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user),
+            user=user,
             registration_completed=registration_completed
         )
     except ValueError as e:
@@ -263,7 +263,7 @@ async def refresh_token(
             refresh_token=new_refresh_token,
             token_type="bearer",
             expires_in=service.access_token_expire_minutes * 60,
-            user=UserResponse.model_validate(user),
+            user=user,
             registration_completed=registration_completed
         )
     except ValueError as e:
@@ -301,7 +301,7 @@ async def get_current_user_info(
     """
     Получить информацию о текущем пользователе
     """
-    return UserResponse.model_validate(current_user)
+    return current_user
 
 
 @router.post("/me/add-email", response_model=UserResponse)
@@ -324,7 +324,7 @@ async def add_email_to_account(
             agree_personal_data=data.agree_personal_data,
             agree_terms=data.agree_terms
         )
-        return UserResponse.model_validate(user)
+        return user
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -352,7 +352,7 @@ async def get_current_user_sessions(
     Получить список активных сессий текущего пользователя
     """
     sessions, total = await service.get_user_sessions(current_user.id)
-    
+
     return SessionListResponse(
         items=sessions,
         total=total
@@ -391,7 +391,7 @@ async def get_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return UserResponse.model_validate(user)
+    return user
 
 
 @router.put("/users/{user_id}", response_model=UserResponse)
@@ -408,7 +408,7 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return UserResponse.model_validate(user)
+    return user
 
 
 @router.delete("/users/{user_id}", status_code=204)
