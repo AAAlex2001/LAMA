@@ -1,15 +1,19 @@
 .tooltip {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 1000;
+  display: none; // Скрываем на мобилках
+  
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1000;
+  }
 }
 
 .content {

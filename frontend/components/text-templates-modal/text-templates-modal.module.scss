@@ -86,17 +86,16 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  margin-bottom: 8px;
+  padding: 12px 0;
   cursor: pointer;
-  transition: all 0.2s;
-  background: white;
   
   &:hover {
-    background: #f9fafb;
-    border-color: #d1d5db;
+    .templateName {
+      background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   }
 }
 
@@ -125,40 +124,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
   flex-shrink: 0;
-  transition: color 0.2s;
-  
-  &:hover {
-    color: #ef4444; // Красный при ховере
-  }
 }
 
 .deleteTooltip {
-  position: absolute;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-right: 8px;
-  background: #1a1a1a;
-  color: white;
-  padding: 6px 10px;
-  border-radius: 6px;
-  font-size: 14px;
-  line-height: 17px;
-  white-space: nowrap;
-  pointer-events: none;
-  z-index: 10;
+  display: none; // Скрываем на мобилках по дефолту
   
-  &::after {
-    content: '';
+  @media (min-width: 1440px) {
+    display: block;
     position: absolute;
-    right: -4px;
+    right: calc(100% + 8px);
     top: 50%;
-    transform: translateY(-50%) rotate(45deg);
-    width: 8px;
-    height: 8px;
-    background: #1a1a1a;
+    transform: translateY(-50%);
+    background: #F0F4FA;
+    color: #000000;
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1000;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 8px;
+      height: 8px;
+      background: #F0F4FA;
+    }
   }
 }
 

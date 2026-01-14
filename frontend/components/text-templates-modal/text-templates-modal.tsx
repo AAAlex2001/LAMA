@@ -112,7 +112,11 @@ export default function TextTemplatesModal({
                     onMouseEnter={() => setHoveredDeleteId(template.id)}
                     onMouseLeave={() => setHoveredDeleteId(null)}
                   >
-                    <TrashIcon width={16} height={16} />
+                    <TrashIcon 
+                      width={16} 
+                      height={16} 
+                      color={hoveredDeleteId === template.id ? '#EF4444' : '#B0B4B8'} 
+                    />
                   </button>
                   {hoveredDeleteId === template.id && (
                     <div className={styles.deleteTooltip}>удалить шаблон?</div>
