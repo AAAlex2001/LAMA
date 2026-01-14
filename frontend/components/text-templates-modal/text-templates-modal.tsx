@@ -46,14 +46,19 @@ export default function TextTemplatesModal({
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Сразу удаляем из UI
+    setTemplates(prev => prev.filter(t => t.id !== id));
+    if (selectedTemplateId === id) {
+      setSelectedTemplateId(null);
+    }
+
+    // Затем отправляем запрос на сервер
     try {
       await templatesApi.deleteTemplate(id);
-      setTemplates(templates.filter(t => t.id !== id));
-      if (selectedTemplateId === id) {
-        setSelectedTemplateId(null);
-      }
     } catch (error) {
       console.error('Failed to delete template:', error);
+      // В случае ошибки можно перезагрузить список
+      loadTemplates();
     }
   };
 
