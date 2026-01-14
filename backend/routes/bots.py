@@ -618,7 +618,6 @@ async def create_trigger(
             action_data=data.action_data,
             delay_minutes=data.delay_minutes,
             delivery_window=data.delivery_window,
-            filters=data.filters,
             chat_type=data.chat_type,
             is_active=data.is_active,
             owner_id=current_user.id,
@@ -649,7 +648,10 @@ async def get_triggers(
         owner_id=current_user.id,
     )
 
-    return TriggerListResponse(items=triggers, total=total)
+    return TriggerListResponse(
+        items=triggers,
+        total=total
+    )
 
 
 @router.get("/{bot_id}/triggers/{trigger_id}", response_model=TriggerResponse)
@@ -728,7 +730,10 @@ async def list_recurring_messages(
     """Список повторяющихся сообщений бота"""
     try:
         items, total = await service.list(bot_id, current_user.id, skip, limit)
-        return RecurringMessageListResponse(items=items, total=total)
+        return RecurringMessageListResponse(
+            items=items,
+            total=total
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
