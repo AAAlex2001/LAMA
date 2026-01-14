@@ -19,7 +19,7 @@ import {
   PaperclipIcon,
 } from '@/components/icons';
 import { handlePublishNow, handleSaveDraft } from './store/actions';
-import { textTemplatesApi } from './store/text-templates-api';
+import { templatesApi } from '@/stores/templates';
 
 export default function CreatePostPage() {
   const [text, setText] = useState('');
@@ -179,18 +179,19 @@ export default function CreatePostPage() {
       return;
     }
 
-    const templateName = prompt('Введите название шаблона:');
-    if (!templateName || templateName.trim() === '') {
-      return;
-    }
-
     setIsSavingTemplate(true);
     try {
+      // Создаем название из начала текста (убираем HTML теги, берем первые 50 символов)
+      const plainText = text.replace(/<[^>]*>/g, '').trim();
+      const templateName = plainText.length > 50 
+        ? plainText.substring(0, 50) 
+        : plainText;
+      
       const editorDiv = editorRef.current;
       const formattedContent = editorDiv ? { html: text } : { html: text };
       
-      await textTemplatesApi.createTemplate({
-        name: templateName.trim(),
+      await templatesApi.createTemplate({
+        name: templateName,
         formatted_content: formattedContent,
       });
       

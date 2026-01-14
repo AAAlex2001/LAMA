@@ -12,6 +12,7 @@ from backend.schemas.publications import (
     PublicationSeriesCreate, PublicationSeriesUpdate, PublicationSeriesResponse, CalendarEntry,
     RescheduleRequest, EditPublishedRequest,
     TagCreate, TagResponse, TagListResponse,
+    TextTemplateCreate, TextTemplateUpdate, TextTemplateResponse, TextTemplateListResponse,
 )
 from backend.models.publications import Tag, publication_tags
 from backend.services.publications import PublicationService
@@ -480,4 +481,68 @@ async def delete_tag(
     
     await db.delete(tag)
     await db.commit()
+
+
+@router.post("/text-templates/", response_model=TextTemplateResponse, status_code=201)
+async def create_text_template_route(
+    data: TextTemplateCreate,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Создать новый текстовый шаблон"""
+    template = await service.crud.create_text_template(current_user.id, data)
+    return template
+
+
+@router.get("/text-templates/", response_model=TextTemplateListResponse)
+async def list_text_templates_route(
+    search: Optional[str] = Query(None, description="Поиск по названию"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить список шаблонов пользователя"""
+    templates, total = await service.crud.get_text_templates(current_user.id, search, skip, limit)
+    return TextTemplateListResponse(items=templates, total=total)
+
+
+@router.get("/text-templates/{template_id}", response_model=TextTemplateResponse)
+async def get_text_template_route(
+    template_id: int,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Получить шаблон по ID"""
+    template = await service.crud.get_text_template_by_id(template_id, current_user.id)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.patch("/text-templates/{template_id}", response_model=TextTemplateResponse)
+async def update_text_template_route(
+    template_id: int,
+    data: TextTemplateUpdate,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Обновить текстовый шаблон"""
+    template = await service.crud.update_text_template(template_id, current_user.id, data)
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return template
+
+
+@router.delete("/text-templates/{template_id}", status_code=204)
+async def delete_text_template_route(
+    template_id: int,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Удалить текстовый шаблон"""
+    success = await service.crud.delete_text_template(template_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return None
 

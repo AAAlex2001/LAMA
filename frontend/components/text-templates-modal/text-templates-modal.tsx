@@ -4,7 +4,9 @@ import { useState, useEffect } from 'react';
 import styles from './text-templates-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import TrashIcon from '@/components/icons/trash-icon';
-import { textTemplatesApi, TextTemplate } from '@/app/[locale]/create-post/store/text-templates-api';
+import Loader from '@/components/loader';
+import Checkbox from '@/components/checkbox/checkbox';
+import { templatesApi, type TextTemplate } from '@/stores/templates';
 
 interface TextTemplatesModalProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ export default function TextTemplatesModal({
   const [templates, setTemplates] = useState<TextTemplate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+  const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -30,7 +34,7 @@ export default function TextTemplatesModal({
   const loadTemplates = async () => {
     setIsLoading(true);
     try {
-      const response = await textTemplatesApi.getTemplates(searchQuery || undefined);
+      const response = await templatesApi.getTemplates(searchQuery || undefined);
       setTemplates(response.items);
     } catch (error) {
       console.error('Failed to load templates:', error);
@@ -41,17 +45,20 @@ export default function TextTemplatesModal({
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Удалить этот шаблон?')) return;
 
     try {
-      await textTemplatesApi.deleteTemplate(id);
+      await templatesApi.deleteTemplate(id);
       setTemplates(templates.filter(t => t.id !== id));
+      if (selectedTemplateId === id) {
+        setSelectedTemplateId(null);
+      }
     } catch (error) {
       console.error('Failed to delete template:', error);
     }
   };
 
   const handleTemplateClick = (template: TextTemplate) => {
+    setSelectedTemplateId(template.id);
     onSelectTemplate(template.formatted_content);
     onClose();
   };
@@ -66,26 +73,21 @@ export default function TextTemplatesModal({
   return (
     <div className={styles.templatesModal} onClick={handleClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <h2 className={styles.modalTitle}>Шаблоны текста</h2>
-          <button className={styles.closeButton} onClick={handleClose}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path d="M18 6L6 18M6 6l12 12" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </button>
-        </div>
-
         <div className={styles.searchWrapper}>
           <SearchBar
-            placeholder="Поиск по названию..."
+            placeholder="Введите текст"
             value={searchQuery}
             onChange={setSearchQuery}
           />
         </div>
 
+        <h2 className={styles.modalTitle}>Шаблоны текста</h2>
+
         <div className={styles.templatesList}>
           {isLoading ? (
-            <div className={styles.emptyState}>Загрузка...</div>
+            <div className={styles.emptyState}>
+              <Loader size={24} color="blue" />
+            </div>
           ) : templates.length === 0 ? (
             <div className={styles.emptyState}>
               {searchQuery ? 'Шаблоны не найдены' : 'У вас пока нет шаблонов'}
@@ -97,13 +99,25 @@ export default function TextTemplatesModal({
                 className={styles.templateItem}
                 onClick={() => handleTemplateClick(template)}
               >
+                <Checkbox
+                  variant="radio"
+                  checked={selectedTemplateId === template.id}
+                  onChange={() => handleTemplateClick(template)}
+                />
                 <span className={styles.templateName}>{template.name}</span>
-                <button
-                  className={styles.deleteButton}
-                  onClick={(e) => handleDelete(template.id, e)}
-                >
-                  <TrashIcon width={16} height={16} />
-                </button>
+                <div className={styles.deleteButtonWrapper}>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={(e) => handleDelete(template.id, e)}
+                    onMouseEnter={() => setHoveredDeleteId(template.id)}
+                    onMouseLeave={() => setHoveredDeleteId(null)}
+                  >
+                    <TrashIcon width={16} height={16} />
+                  </button>
+                  {hoveredDeleteId === template.id && (
+                    <div className={styles.deleteTooltip}>удалить шаблон?</div>
+                  )}
+                </div>
               </div>
             ))
           )}

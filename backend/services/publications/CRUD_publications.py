@@ -10,12 +10,14 @@ from backend.models.publications import (
     TelegramMessage, PublicationNotification,
     PublicationStatus as DBPublicationStatus,
     ContentType as DBContentType,
-    RepeatInterval as DBRepeatInterval
+    RepeatInterval as DBRepeatInterval,
+    TextTemplate
 )
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate,
-    PublicationStatus, ContentType
+    PublicationStatus, ContentType,
+    TextTemplateCreate, TextTemplateUpdate
 )
 
 
@@ -365,3 +367,93 @@ class CRUDPublicationService:
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def create_text_template(
+        self,
+        user_id: int,
+        data: TextTemplateCreate
+    ) -> TextTemplate:
+        """Создать новый текстовый шаблон"""
+        template = TextTemplate(
+            owner_id=user_id,
+            name=data.name,
+            formatted_content=data.formatted_content
+        )
+        self.db.add(template)
+        await self.db.commit()
+        await self.db.refresh(template)
+        return template
+
+    async def get_text_templates(
+        self,
+        user_id: int,
+        search: Optional[str] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> tuple[List[TextTemplate], int]:
+        """Получить список шаблонов пользователя с пагинацией"""
+        query = select(TextTemplate).where(TextTemplate.owner_id == user_id)
+        
+        if search:
+            query = query.where(TextTemplate.name.ilike(f"%{search}%"))
+        
+        count_query = select(TextTemplate.id).where(TextTemplate.owner_id == user_id)
+        if search:
+            count_query = count_query.where(TextTemplate.name.ilike(f"%{search}%"))
+        
+        total_result = await self.db.execute(count_query)
+        total = len(total_result.all())
+        
+        query = query.order_by(TextTemplate.created_at.desc()).offset(skip).limit(limit)
+        result = await self.db.execute(query)
+        templates = result.scalars().all()
+        
+        return list(templates), total
+
+    async def get_text_template_by_id(
+        self,
+        template_id: int,
+        user_id: int
+    ) -> Optional[TextTemplate]:
+        """Получить шаблон по ID"""
+        query = select(TextTemplate).where(
+            and_(
+                TextTemplate.id == template_id,
+                TextTemplate.owner_id == user_id
+            )
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def update_text_template(
+        self,
+        template_id: int,
+        user_id: int,
+        data: TextTemplateUpdate
+    ) -> Optional[TextTemplate]:
+        """Обновить текстовый шаблон"""
+        template = await self.get_text_template_by_id(template_id, user_id)
+        if not template:
+            return None
+        
+        update_data = data.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(template, field, value)
+        
+        await self.db.commit()
+        await self.db.refresh(template)
+        return template
+
+    async def delete_text_template(
+        self,
+        template_id: int,
+        user_id: int
+    ) -> bool:
+        """Удалить текстовый шаблон"""
+        template = await self.get_text_template_by_id(template_id, user_id)
+        if not template:
+            return False
+        
+        await self.db.delete(template)
+        await self.db.commit()
+        return True
