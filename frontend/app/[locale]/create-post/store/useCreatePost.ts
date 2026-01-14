@@ -7,14 +7,12 @@ import type { RichTextEditorRef } from '@/components/rich-text-editor';
 import { usePostSettings } from '@/components/post-settings/store';
 import { handlePublishNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
+import type { InlineKeyboard, InlineButton } from './types';
 
-// Размер thumbnail для превью (маленький = быстрый рендеринг)
 const THUMBNAIL_MAX_SIZE = 200;
 
-// Создаём маленький thumbnail через canvas
 function createThumbnail(file: File): Promise<string> {
   return new Promise((resolve) => {
-    // Для не-изображений возвращаем пустую строку
     if (!file.type.startsWith('image/')) {
       resolve('');
       return;
@@ -24,7 +22,6 @@ function createThumbnail(file: File): Promise<string> {
     const objectUrl = URL.createObjectURL(file);
 
     img.onload = () => {
-      // Вычисляем размеры с сохранением пропорций
       let width = img.width;
       let height = img.height;
 
@@ -40,7 +37,6 @@ function createThumbnail(file: File): Promise<string> {
         }
       }
 
-      // Рисуем на canvas
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -48,7 +44,6 @@ function createThumbnail(file: File): Promise<string> {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(img, 0, 0, width, height);
-        // Конвертируем в blob URL (качество 0.7 для баланса размер/качество)
         canvas.toBlob(
           (blob) => {
             URL.revokeObjectURL(objectUrl);
@@ -74,19 +69,16 @@ function createThumbnail(file: File): Promise<string> {
   });
 }
 
-// Создаём thumbnail для видео (первый кадр)
 function createVideoThumbnail(file: File): Promise<string> {
   return new Promise((resolve) => {
     const video = document.createElement('video');
     const objectUrl = URL.createObjectURL(file);
 
     video.onloadeddata = () => {
-      // Переходим на первый кадр
       video.currentTime = 0.1;
     };
 
     video.onseeked = () => {
-      // Вычисляем размеры
       let width = video.videoWidth;
       let height = video.videoHeight;
 
@@ -137,7 +129,6 @@ function createVideoThumbnail(file: File): Promise<string> {
   });
 }
 
-// State
 interface CreatePostState {
   text: string;
   showSettings: boolean;
@@ -164,7 +155,6 @@ const initialState: CreatePostState = {
   isSavingTemplate: false,
 };
 
-// Actions
 type CreatePostAction =
   | { type: 'SET_TEXT'; payload: string }
   | { type: 'TOGGLE_SETTINGS' }
@@ -182,7 +172,6 @@ type CreatePostAction =
   | { type: 'SET_IS_SAVING_TEMPLATE'; payload: boolean }
   | { type: 'RESET_FORM' };
 
-// Reducer
 function createPostReducer(state: CreatePostState, action: CreatePostAction): CreatePostState {
   switch (action.type) {
     case 'SET_TEXT':
@@ -196,7 +185,6 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
 
     case 'TOGGLE_INLINE_BUTTONS': {
       const shouldShow = !state.showInlineButtons;
-      // При первом открытии создаём одну кнопку
       if (shouldShow && state.buttonRows.length === 0) {
         return {
           ...state,
@@ -223,7 +211,6 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
 
     case 'REMOVE_MEDIA_FILE': {
       const fileToRemove = state.mediaFiles.find(f => f.id === action.payload);
-      // Освобождаем Object URL
       if (fileToRemove?.url.startsWith('blob:')) {
         URL.revokeObjectURL(fileToRemove.url);
       }
@@ -242,7 +229,6 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
       };
 
     case 'CLEAR_MEDIA_FILES':
-      // Освобождаем все Object URLs
       state.mediaFiles.forEach(f => {
         if (f.url.startsWith('blob:')) {
           URL.revokeObjectURL(f.url);
@@ -266,7 +252,6 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
       return { ...state, isSavingTemplate: action.payload };
 
     case 'RESET_FORM':
-      // Освобождаем все Object URLs
       state.mediaFiles.forEach(f => {
         if (f.url.startsWith('blob:')) {
           URL.revokeObjectURL(f.url);
@@ -285,7 +270,6 @@ export function useCreatePost() {
   const editorRef = useRef<RichTextEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Actions
   const setText = useCallback((text: string) => {
     dispatch({ type: 'SET_TEXT', payload: text });
   }, []);
@@ -310,7 +294,6 @@ export function useCreatePost() {
     const files = event.target.files;
     if (!files) return;
 
-    // Ограничение: если есть кнопки - максимум 1 файл, иначе 10
     const maxFiles = state.buttonRows.length > 0 ? 1 : 10;
     const currentCount = state.mediaFiles.length;
     const availableSlots = maxFiles - currentCount;
@@ -322,14 +305,12 @@ export function useCreatePost() {
 
     const filesToAdd = Array.from(files).slice(0, availableSlots);
 
-    // Создаём thumbnails для всех файлов параллельно
     const newMediaFiles = await Promise.all(
       filesToAdd.map(async (file, index) => {
         const type = file.type.startsWith('image/') ? 'image'
                    : file.type.startsWith('video/') ? 'video'
                    : 'document';
 
-        // Создаём маленький thumbnail вместо полного изображения
         let thumbnailUrl = '';
         if (type === 'image') {
           thumbnailUrl = await createThumbnail(file);
@@ -363,13 +344,12 @@ export function useCreatePost() {
     dispatch({ type: 'SET_SHOW_TEMPLATES_MODAL', payload: show });
   }, []);
 
-  // Конвертируем buttonRows в формат InlineKeyboard для бекенда
-  const getInlineKeyboard = useCallback(() => {
+  const getInlineKeyboard = useCallback((): InlineKeyboard | undefined => {
     if (state.buttonRows.length === 0) return undefined;
 
-    const buttons = state.buttonRows.map(row =>
+    const buttons: InlineButton[][] = state.buttonRows.map(row =>
       row.buttons.map(btn => {
-        const button: Record<string, string> = { text: btn.text };
+        const button: InlineButton = { text: btn.text };
         if (btn.type === 'url' && btn.url) {
           button.url = btn.url;
         } else if (btn.type === 'callback' && btn.callback_data) {
@@ -402,7 +382,7 @@ export function useCreatePost() {
       } else {
         alert(`Ошибка: ${result.message}`);
         if (result.errors) {
-          console.error('Детали ошибок:', result.errors);
+          console.error(result.errors);
         }
       }
     } catch (error) {
@@ -458,7 +438,7 @@ export function useCreatePost() {
 
       alert('Шаблон успешно сохранен!');
     } catch (error) {
-      console.error('Failed to save template:', error);
+      console.error(error);
       alert('Ошибка при сохранении шаблона');
     } finally {
       dispatch({ type: 'SET_IS_SAVING_TEMPLATE', payload: false });
@@ -475,28 +455,18 @@ export function useCreatePost() {
     fileInputRef.current?.click();
   }, []);
 
-  // Computed values
   const canAddMedia = state.mediaFiles.length < 10 &&
     !(state.buttonRows.length > 0 && state.mediaFiles.length >= 1);
 
   const canShowInlineButtons = state.mediaFiles.length <= 1;
 
   return {
-    // State
     ...state,
-
-    // Refs
     editorRef,
     fileInputRef,
-
-    // Post Settings (проброс)
     postSettings,
-
-    // Computed
     canAddMedia,
     canShowInlineButtons,
-
-    // Actions
     setText,
     toggleSettings,
     setShowSettings,
