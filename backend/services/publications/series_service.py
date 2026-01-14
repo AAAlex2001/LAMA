@@ -125,8 +125,6 @@ class SeriesService:
         reply_markup=None
     ) -> List[Message]:
         """Отправить публикацию как ответ на предыдущее сообщение"""
-        # Для простых типов контента (text, image, video и т.д.)
-        # добавляем reply_to_message_id
 
         from backend.models.publications import ContentType as DBContentType
 
@@ -198,8 +196,6 @@ class SeriesService:
             return [message]
 
         elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
-            # Для медиагруппы reply_to_message_id не поддерживается напрямую
-            # Отправляем первое сообщение как reply, остальные без reply
             if publication.media_urls and len(publication.media_urls) > 0:
                 spoiler = publication.media_blur
 
@@ -228,9 +224,6 @@ class SeriesService:
                             reply_markup=reply_markup
                         )
                     return [message]
-
-                # Для медиагруппы: отправляем без reply (Telegram API ограничение)
-                # Можно отправить текстовое сообщение с reply, а потом медиагруппу
                 messages = []
                 if publication.text_content:
                     text_msg = await bot.send_message(
@@ -241,7 +234,6 @@ class SeriesService:
                     )
                     messages.append(text_msg)
 
-                # Затем медиагруппа без caption
                 from aiogram.types import InputMediaPhoto, InputMediaVideo
                 media = []
 
@@ -305,7 +297,6 @@ class SeriesService:
         if not publication.channels:
             raise ValueError("No channels selected for publication")
 
-        # Получаем серию чтобы проверить reply_to_previous
         series = await self.get_series(publication.series_id)
         if not series:
             raise ValueError("Series not found")
@@ -316,14 +307,12 @@ class SeriesService:
             try:
                 reply_to_id = None
 
-                # Проверяем флаг серии reply_to_previous
                 if series.reply_to_previous:
                     reply_to_id = await self.get_reply_to_message_id(
                         publication.series_id,
                         channel.id
                     )
 
-                # Подготовка inline keyboard если есть
                 reply_markup = None
                 if publication.inline_keyboard:
                     from backend.services.publications.publications import PublicationService
@@ -339,12 +328,10 @@ class SeriesService:
                         reply_markup=reply_markup
                     )
                 else:
-                    # Отправляем обычным способом через основной сервис
                     from backend.services.publications.publications import PublicationService
                     pub_service = PublicationService(self.db)
                     sent_messages = await pub_service.send_to_telegram(publication, channel, bot)
 
-                # Сохраняем telegram_messages
                 message_ids = []
                 for msg in sent_messages:
                     message_ids.append(msg.message_id)
