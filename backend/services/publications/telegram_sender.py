@@ -105,8 +105,23 @@ async def send_text_with_media(
         
         spoiler = get_spoiler(blur_list, 0)
         is_video = is_video_url(single_url)
+        is_document = is_document_url(single_url)
         
-        if is_video:
+        logger.info(
+            f"Single media: url={single_url[:80]}, "
+            f"file_id={'Yes' if file_id else 'No'}, is_video={is_video}, is_document={is_document}"
+        )
+        
+        if is_document:
+            message = await bot.send_document(
+                chat_id=channel.telegram_id,
+                document=media_to_send,
+                caption=publication.text_content,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+                disable_notification=publication.disable_notification
+            )
+        elif is_video:
             message = await bot.send_video(
                 chat_id=channel.telegram_id,
                 video=media_to_send,
@@ -131,10 +146,14 @@ async def send_text_with_media(
     media = []
     urls = publication.media_urls[:10]
     
+    logger.info(f"Preparing media_group: {len(urls)} files, file_ids={publication.media_file_ids}")
+    
     for i, url in enumerate(urls):
         file_id = get_file_id_for_media(publication.media_file_ids, i)
         media_to_send = file_id if file_id else url
         file_spoiler = get_spoiler(blur_list, i)
+        
+        logger.info(f"Media {i+1}/{len(urls)}: using {'file_id' if file_id else 'URL'} = {media_to_send[:50]}...")
         
         if i == 0 and publication.text_content:
             if is_document_url(url):

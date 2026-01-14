@@ -75,6 +75,8 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
                            '.mp3', '.wav', '.ogg', '.m4a', '.flac',
                            '.pdf', '.doc', '.docx', '.txt', '.zip', '.rar'])
         
+        logger.info(f"Warmup file: {filename}, is_photo={is_photo}, url={url_lower[:80]}")
+        
         if is_photo:
             file_bytes = resize_image_if_needed(file_bytes, filename)
         

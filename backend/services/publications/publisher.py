@@ -186,6 +186,10 @@ async def send_to_channel_with_retry(
             )
 
         except TelegramRetryAfter as e:
+            logger.warning(
+                f"TelegramRetryAfter in {channel_name}: retry_after={e.retry_after}s, "
+                f"attempt={attempt+1}/{MAX_RETRY_ATTEMPTS}, message: {str(e)}"
+            )
             if attempt < MAX_RETRY_ATTEMPTS - 1:
                 if e.retry_after > LARGE_RETRY_AFTER_THRESHOLD:
                     logger.warning(
@@ -208,6 +212,11 @@ async def send_to_channel_with_retry(
                 )
 
         except Exception as e:
+            logger.error(
+                f"Error publishing to {channel_name}, attempt={attempt+1}/{MAX_RETRY_ATTEMPTS}: "
+                f"{type(e).__name__}: {str(e)}", 
+                exc_info=True
+            )
             if attempt == MAX_RETRY_ATTEMPTS - 1:
                 return ChannelPublishResult(
                     channel=channel_name,

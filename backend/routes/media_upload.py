@@ -79,15 +79,11 @@ async def upload_media(
     if media_urls:
         try:
             bot = get_bot()
-            if background_tasks:
-                background_tasks.add_task(
-                    warmup_media_files,
-                    bot.bot,
-                    media_urls
-                )
+            file_ids = await warmup_media_files(bot.bot, media_urls)
         except Exception as e:
             import logging
-            logging.error(f"Failed to schedule media warmup: {e}")
+            logging.error(f"Failed to warmup media: {e}")
+            file_ids = [None] * len(media_urls)
     
     return JSONResponse({
         "success": True,
