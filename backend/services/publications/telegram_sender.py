@@ -137,7 +137,13 @@ async def send_text_with_media(
         file_spoiler = get_spoiler(blur_list, i)
         
         if i == 0 and publication.text_content:
-            if is_video_url(url):
+            if is_document_url(url):
+                media.append(InputMediaDocument(
+                    media=media_to_send,
+                    caption=publication.text_content,
+                    parse_mode=ParseMode.HTML
+                ))
+            elif is_video_url(url):
                 media.append(InputMediaVideo(
                     media=media_to_send,
                     caption=publication.text_content,
@@ -152,7 +158,9 @@ async def send_text_with_media(
                     has_spoiler=file_spoiler
                 ))
         else:
-            if is_video_url(url):
+            if is_document_url(url):
+                media.append(InputMediaDocument(media=media_to_send))
+            elif is_video_url(url):
                 media.append(InputMediaVideo(media=media_to_send, has_spoiler=file_spoiler))
             else:
                 media.append(InputMediaPhoto(media=media_to_send, has_spoiler=file_spoiler))
@@ -174,16 +182,27 @@ async def send_image(
     """Отправить фото"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
+    url = publication.media_urls[0]
     
-    message = await bot.send_photo(
-        chat_id=channel.telegram_id,
-        photo=media_to_send,
-        caption=publication.text_content,
-        reply_markup=keyboard,
-        parse_mode=ParseMode.HTML,
-        has_spoiler=publication.media_blur,
-        disable_notification=publication.disable_notification
-    )
+    if file_id and is_document_url(url):
+        message = await bot.send_document(
+            chat_id=channel.telegram_id,
+            document=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            disable_notification=publication.disable_notification
+        )
+    else:
+        message = await bot.send_photo(
+            chat_id=channel.telegram_id,
+            photo=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            has_spoiler=publication.media_blur,
+            disable_notification=publication.disable_notification
+        )
     return [message]
 
 
@@ -196,16 +215,27 @@ async def send_video(
     """Отправить видео"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
+    url = publication.media_urls[0]
     
-    message = await bot.send_video(
-        chat_id=channel.telegram_id,
-        video=media_to_send,
-        caption=publication.text_content,
-        reply_markup=keyboard,
-        parse_mode=ParseMode.HTML,
-        has_spoiler=publication.media_blur,
-        disable_notification=publication.disable_notification
-    )
+    if file_id and is_document_url(url):
+        message = await bot.send_document(
+            chat_id=channel.telegram_id,
+            document=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            disable_notification=publication.disable_notification
+        )
+    else:
+        message = await bot.send_video(
+            chat_id=channel.telegram_id,
+            video=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            has_spoiler=publication.media_blur,
+            disable_notification=publication.disable_notification
+        )
     return [message]
 
 
@@ -218,15 +248,26 @@ async def send_audio(
     """Отправить аудио"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
+    url = publication.media_urls[0]
     
-    message = await bot.send_audio(
-        chat_id=channel.telegram_id,
-        audio=media_to_send,
-        caption=publication.text_content,
-        reply_markup=keyboard,
-        parse_mode=ParseMode.HTML,
-        disable_notification=publication.disable_notification
-    )
+    if file_id and is_document_url(url):
+        message = await bot.send_document(
+            chat_id=channel.telegram_id,
+            document=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            disable_notification=publication.disable_notification
+        )
+    else:
+        message = await bot.send_audio(
+            chat_id=channel.telegram_id,
+            audio=media_to_send,
+            caption=publication.text_content,
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML,
+            disable_notification=publication.disable_notification
+        )
     return [message]
 
 
@@ -304,3 +345,13 @@ def get_spoiler(blur_list: Optional[List[bool]], index: int) -> bool:
 def is_video_url(url: str) -> bool:
     """Проверить является ли URL видео"""
     return url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
+
+
+def is_document_url(url: str) -> bool:
+    """Проверить является ли URL документом"""
+    return url.lower().endswith((".pdf", ".doc", ".docx", ".txt", ".zip", ".rar"))
+
+
+def is_audio_url(url: str) -> bool:
+    """Проверить является ли URL аудио"""
+    return url.lower().endswith((".mp3", ".wav", ".ogg", ".m4a", ".flac"))
