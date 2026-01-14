@@ -11,6 +11,7 @@ from backend.models.publications import Publication, ContentType as DBContentTyp
 from backend.models.channels import ChannelGroup as Channel
 from backend.services.telegram_client import RateLimitedBot
 from backend.utils.keyboard import build_keyboard
+from backend.services.publications.media_warmup import get_file_id_for_media
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +100,16 @@ async def send_text_with_media(
     
     if len(publication.media_urls) == 1:
         single_url = publication.media_urls[0]
+        file_id = get_file_id_for_media(publication.media_file_ids, 0)
+        media_to_send = file_id if file_id else single_url
+        
         spoiler = get_spoiler(blur_list, 0)
         is_video = is_video_url(single_url)
         
         if is_video:
             message = await bot.send_video(
                 chat_id=channel.telegram_id,
-                video=single_url,
+                video=media_to_send,
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -115,7 +119,7 @@ async def send_text_with_media(
         else:
             message = await bot.send_photo(
                 chat_id=channel.telegram_id,
-                photo=single_url,
+                photo=media_to_send,
                 caption=publication.text_content,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
@@ -128,28 +132,30 @@ async def send_text_with_media(
     urls = publication.media_urls[:10]
     
     for i, url in enumerate(urls):
+        file_id = get_file_id_for_media(publication.media_file_ids, i)
+        media_to_send = file_id if file_id else url
         file_spoiler = get_spoiler(blur_list, i)
         
         if i == 0 and publication.text_content:
             if is_video_url(url):
                 media.append(InputMediaVideo(
-                    media=url,
+                    media=media_to_send,
                     caption=publication.text_content,
                     parse_mode=ParseMode.HTML,
                     has_spoiler=file_spoiler
                 ))
             else:
                 media.append(InputMediaPhoto(
-                    media=url,
+                    media=media_to_send,
                     caption=publication.text_content,
                     parse_mode=ParseMode.HTML,
                     has_spoiler=file_spoiler
                 ))
         else:
             if is_video_url(url):
-                media.append(InputMediaVideo(media=url, has_spoiler=file_spoiler))
+                media.append(InputMediaVideo(media=media_to_send, has_spoiler=file_spoiler))
             else:
-                media.append(InputMediaPhoto(media=url, has_spoiler=file_spoiler))
+                media.append(InputMediaPhoto(media=media_to_send, has_spoiler=file_spoiler))
     
     messages = await bot.send_media_group(
         chat_id=channel.telegram_id,
@@ -166,9 +172,12 @@ async def send_image(
     keyboard: Optional[InlineKeyboardMarkup]
 ) -> List[Message]:
     """Отправить фото"""
+    file_id = get_file_id_for_media(publication.media_file_ids, 0)
+    media_to_send = file_id if file_id else publication.media_urls[0]
+    
     message = await bot.send_photo(
         chat_id=channel.telegram_id,
-        photo=publication.media_urls[0],
+        photo=media_to_send,
         caption=publication.text_content,
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
@@ -185,9 +194,12 @@ async def send_video(
     keyboard: Optional[InlineKeyboardMarkup]
 ) -> List[Message]:
     """Отправить видео"""
+    file_id = get_file_id_for_media(publication.media_file_ids, 0)
+    media_to_send = file_id if file_id else publication.media_urls[0]
+    
     message = await bot.send_video(
         chat_id=channel.telegram_id,
-        video=publication.media_urls[0],
+        video=media_to_send,
         caption=publication.text_content,
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
@@ -204,9 +216,12 @@ async def send_audio(
     keyboard: Optional[InlineKeyboardMarkup]
 ) -> List[Message]:
     """Отправить аудио"""
+    file_id = get_file_id_for_media(publication.media_file_ids, 0)
+    media_to_send = file_id if file_id else publication.media_urls[0]
+    
     message = await bot.send_audio(
         chat_id=channel.telegram_id,
-        audio=publication.media_urls[0],
+        audio=media_to_send,
         caption=publication.text_content,
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
@@ -222,9 +237,12 @@ async def send_document(
     keyboard: Optional[InlineKeyboardMarkup]
 ) -> List[Message]:
     """Отправить документ"""
+    file_id = get_file_id_for_media(publication.media_file_ids, 0)
+    media_to_send = file_id if file_id else publication.media_urls[0]
+    
     message = await bot.send_document(
         chat_id=channel.telegram_id,
-        document=publication.media_urls[0],
+        document=media_to_send,
         caption=publication.text_content,
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,

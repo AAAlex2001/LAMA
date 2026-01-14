@@ -159,10 +159,12 @@ export interface UploadedFile {
   filename: string;
   type: 'image' | 'video' | 'document';
   original_name: string;
+  file_id?: string;  // Telegram file_id после прогрева медиа
 }
 
 export interface UploadMediaResponse {
   files: UploadedFile[];
+  file_ids?: string[];  // Telegram file_ids после прогрева медиа
 }
 
 /**
@@ -195,8 +197,13 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
   }
 
   const data = await response.json();
-  // API возвращает {success: true, data: [...]}
-  return data.data[0];
+  // API возвращает {success: true, data: [...], file_ids: [...]}
+  // Возвращаем первый элемент и его file_id
+  const result = data.data[0];
+  if (data.file_ids && data.file_ids.length > 0) {
+    result.file_id = data.file_ids[0];
+  }
+  return result;
 }
 
 /**
@@ -224,5 +231,11 @@ export async function uploadMediaFiles(files: File[]): Promise<UploadMediaRespon
     throw new ApiError(`Не удалось загрузить файлы: ${errors.join(', ')}`);
   }
   
-  return { files: uploadedFiles };
+  // Собираем file_ids из загруженных файлов
+  const fileIds = uploadedFiles.map(f => f.file_id).filter(id => id !== undefined) as string[];
+  
+  return { 
+    files: uploadedFiles,
+    file_ids: fileIds.length > 0 ? fileIds : undefined
+  };
 }

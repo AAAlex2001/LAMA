@@ -64,6 +64,7 @@ export async function handlePublishNow(
     // Определяем content_type в зависимости от медиа
     let contentType: 'text' | 'text_with_media' = 'text';
     let mediaUrls: string[] = [];
+    let mediaFileIds: string[] | undefined;
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
@@ -89,7 +90,13 @@ export async function handlePublishNow(
             // Иначе добавляем baseUrl для локальных файлов
             return `${baseUrl}${f.url}`;
           });
+          
+          mediaFileIds = uploadResponse.file_ids;
+          
           console.log('Media URLs:', mediaUrls);
+          if (mediaFileIds && mediaFileIds.length > 0) {
+            console.log('✅ Media warmed up! File IDs:', mediaFileIds);
+          }
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
@@ -112,6 +119,7 @@ export async function handlePublishNow(
       text_content: content.text || undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
       media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
@@ -169,6 +177,7 @@ export async function handleSaveDraft(
     // Определяем content_type в зависимости от медиа
     let contentType: 'text' | 'text_with_media' = 'text';
     let mediaUrls: string[] = [];
+    let mediaFileIds: string[] | undefined;
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
@@ -190,6 +199,8 @@ export async function handleSaveDraft(
             // Иначе добавляем baseUrl для локальных файлов
             return `${baseUrl}${f.url}`;
           });
+          
+          mediaFileIds = uploadResponse.file_ids;
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
@@ -212,6 +223,7 @@ export async function handleSaveDraft(
       text_content: content.text || undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
+      media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
       media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,

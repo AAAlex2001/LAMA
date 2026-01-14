@@ -1,9 +1,12 @@
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
 from typing import List
+import asyncio
 
 from backend.services.storage import get_storage_service
+from backend.services.publications.media_warmup import warmup_media_files
+from backend.config import get_bot
 
 router = APIRouter()
 
@@ -18,10 +21,12 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 @router.post("/upload-media")
 async def upload_media(
     files: List[UploadFile] = File(...),
+    background_tasks: BackgroundTasks = None,
 ):
-    """Загрузить медиа файлы для публикации (с поддержкой облачного хранилища)"""
+    """Загрузить медиа файлы для публикации (с поддержкой облачного хранилища и прогревом в Telegram)"""
     storage = get_storage_service()
     uploaded_files = []
+    media_urls = []
     
     for file in files:
         if not file.filename:
@@ -61,13 +66,29 @@ async def upload_media(
                 "type": result["type"]
             })
             
+            media_urls.append(result["url"])
+            
         except Exception as e:
             raise HTTPException(
                 status_code=500,
                 detail=f"Не удалось загрузить файл {file.filename}: {str(e)}"
             )
     
+    # Прогреваем медиа в Telegram в фоновом режиме
+    file_ids = []
+    if media_urls:
+        try:
+            bot = get_bot()
+            # Прогреваем сразу, так как это быстро
+            file_ids = await warmup_media_files(bot.bot, media_urls)
+        except Exception as e:
+            # Если не удалось прогреть - не падаем, просто логируем
+            import logging
+            logging.error(f"Failed to warmup media: {e}")
+            file_ids = [None] * len(media_urls)
+    
     return JSONResponse({
         "success": True,
-        "data": uploaded_files
+        "data": uploaded_files,
+        "file_ids": file_ids
     })

@@ -37,6 +37,7 @@ class CRUDPublicationService:
             text_content=data.text_content,
             formatted_content=data.formatted_content,
             media_urls=data.media_urls,
+            media_file_ids=data.media_file_ids,
             media_blur=data.media_blur,
             inline_keyboard=data.inline_keyboard.model_dump() if data.inline_keyboard else None,
             poll_data=data.poll_data.model_dump() if data.poll_data else None,

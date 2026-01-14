@@ -30,6 +30,7 @@ export interface CreatePostRequest {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
+  media_file_ids?: string[];  // Telegram file_ids для быстрой рассылки
   media_blur?: boolean[];  // Array of booleans, one per media file
   inline_keyboard?: InlineKeyboard;
   poll_data?: PollData;
@@ -68,6 +69,7 @@ export interface PublishPostResponse {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
+  media_file_ids?: string[];
   media_blur?: boolean;
   inline_keyboard?: Record<string, any>;
   poll_data?: Record<string, any>;
