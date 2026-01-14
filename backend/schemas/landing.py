@@ -167,3 +167,16 @@ class TemplateContentRequest(BaseModel):
     subscribePlacement: Optional[TemplateSubscribePlacementRequest] = None
     subscribeBlocks: Optional[List[TemplateSubscribeBlockRequest]] = None
 
+
+class CreateTemplateRequest(BaseModel):
+    slug: str
+    title: str
+    description: Optional[str] = None
+    order: int = 0
+
+
+class UpdateTemplateRequest(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    order: Optional[int] = None
+    is_active: Optional[bool] = None

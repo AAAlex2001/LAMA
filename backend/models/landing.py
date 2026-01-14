@@ -92,3 +92,46 @@ class LandingContent(Base):
     # Relationships
     section = relationship("LandingSection", back_populates="contents")
 
+
+class Template(Base):
+    """Шаблоны страниц (отдельная сущность, не зависит от Advantages)"""
+    __tablename__ = "templates"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    slug: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    contents = relationship("TemplateContent", back_populates="template", cascade="all, delete-orphan")
+
+
+class TemplateContent(Base):
+    """Контент шаблонов (тексты, блоки, FAQ и т.д.) с поддержкой локализации"""
+    __tablename__ = "template_contents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    template_id: Mapped[int] = mapped_column(Integer, ForeignKey("templates.id", ondelete="CASCADE"), nullable=False, index=True)
+    locale: Mapped[Locale] = mapped_column(SQLEnum(Locale), nullable=False, default=Locale.RU, index=True)
+    
+    headline: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    lead: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    cta_text: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    cta_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    
+    images: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+    blocks: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+    faq: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+    cards_block: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+    subscribe_blocks: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=dict)
+    
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+    template = relationship("Template", back_populates="contents")

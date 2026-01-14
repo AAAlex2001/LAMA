@@ -17,6 +17,8 @@ from backend.schemas.landing import (
     LamaContentRequest,
     FooterContentRequest,
     TemplateContentRequest,
+    CreateTemplateRequest,
+    UpdateTemplateRequest,
 )
 
 router = APIRouter()
@@ -80,22 +82,18 @@ async def list_templates(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Список шаблонов.
-
-    Шаблоны генерируются из Advantages карточек, у которых isCta == False.
-    Количество шаблонов равно количеству таких карточек.
-    """
+    """Список всех активных шаблонов."""
     parsed_locale = parse_locale(locale)
     return await templates.list_templates(db, locale=parsed_locale.value)
 
 
 @router.get("/templates/{template_id}")
 async def get_template(
-    template_id: int = Path(ge=1, description="ID шаблона (1..N среди non-CTA карточек)"),
+    template_id: int = Path(ge=1, description="ID шаблона"),
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Получить один шаблон по ID (1-based индекс в списке non-CTA карточек)."""
+    """Получить шаблон по ID."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template(db, template_id=template_id, locale=parsed_locale.value)
     if not template:
@@ -109,7 +107,7 @@ async def get_template_by_slug(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Получить один шаблон по slug (SEO-friendly URL)."""
+    """Получить шаблон по slug."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template_by_slug(db, slug=slug, locale=parsed_locale.value)
     if not template:
@@ -180,6 +178,53 @@ async def save_template_page_content(
     if not result:
         raise HTTPException(status_code=404, detail="Template not found")
     return result
+
+
+@router.post("/templates")
+async def create_template(
+    data: CreateTemplateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Создать новый шаблон."""
+    return await templates.create_template(
+        db,
+        slug=data.slug,
+        title=data.title,
+        description=data.description,
+        order=data.order,
+    )
+
+
+@router.patch("/templates/slug/{slug}")
+async def update_template(
+    data: UpdateTemplateRequest,
+    slug: str = Path(min_length=1, description="Slug шаблона"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Обновить шаблон."""
+    result = await templates.update_template(
+        db,
+        slug=slug,
+        title=data.title,
+        description=data.description,
+        order=data.order,
+        is_active=data.is_active,
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return result
+
+
+@router.delete("/templates/slug/{slug}")
+async def delete_template(
+    slug: str = Path(min_length=1, description="Slug шаблона"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Удалить шаблон."""
+    success = await templates.delete_template(db, slug=slug)
+    if not success:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"status": "ok", "message": "Template deleted"}
 
 
 @router.put("/advantages")
