@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional, List
 from datetime import datetime
+import logging
 
 from backend.schemas.publications import (
     PublicationCreate, PublicationUpdate, PublicationResponse,
@@ -16,11 +17,12 @@ from backend.schemas.publications import (
 )
 from backend.models.publications import Tag, publication_tags
 from backend.services.publications import PublicationService
-from backend.database import get_db
+from backend.database import get_db, AsyncSessionLocal
 from backend.config import OPENAI_API_KEY
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/publications", tags=["publications"])
 
@@ -307,14 +309,22 @@ async def delete_publication(
 @router.post("/{publication_id}/publish", response_model=PublicationResponse)
 async def publish_now(
     publication_id: int,
+    background_tasks: BackgroundTasks,
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
-    """Опубликовать сейчас"""
-    result = await service.publish_now(publication_id, owner_id=current_user.id)
-    if not result.success:
-        raise HTTPException(status_code=400, detail={"results": [r.dict() for r in result.results]})
+    """Опубликовать сейчас (в фоне)"""
     publication = await service.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    
+    async def do_publish():
+        async with AsyncSessionLocal() as db:
+            svc = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+            result = await svc.publish_now(publication_id, owner_id=current_user.id)
+            logger.info(f"Publish done: {result.success_count}/{result.total_count}")
+    
+    background_tasks.add_task(do_publish)
     return publication
 
 
