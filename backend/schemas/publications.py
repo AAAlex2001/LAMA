@@ -337,6 +337,12 @@ class ChannelPublishResult(BaseModel):
     error: Optional[str] = None
     message_ids: Optional[List[int]] = None
     telegram_messages_data: Optional[List[Dict[str, Any]]] = None
+    sent_messages: Optional[Any] = None
+    channel_obj: Optional[Any] = None
+    notification_error: Optional[str] = None
+    
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class PublishResult(BaseModel):

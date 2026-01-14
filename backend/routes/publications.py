@@ -311,9 +311,10 @@ async def publish_now(
 ):
     """Опубликовать сейчас"""
     result = await service.publish_now(publication_id, owner_id=current_user.id)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail={"results": result.get("results", [])})
-    return result["publication"]
+    if not result.success:
+        raise HTTPException(status_code=400, detail={"results": [r.dict() for r in result.results]})
+    publication = await service.get_publication(publication_id, owner_id=current_user.id)
+    return publication
 
 
 @router.post("/{publication_id}/reschedule", response_model=PublicationResponse)

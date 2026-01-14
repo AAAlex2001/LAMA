@@ -166,7 +166,6 @@ class PublicationService:
                 series_service = SeriesService(self.db)
                 bot = self.get_master_bot()
                 series_result = await series_service.publish_series_post(publication, bot)
-                # Преобразуем dict в PublishResult если необходимо
                 if isinstance(series_result, dict):
                     return PublishResult(
                         success=series_result.get("success", False),
@@ -185,12 +184,7 @@ class PublicationService:
             try:
                 bot = await self.get_bot_for_channel(channel)
             except ValueError as e:
-                await self.create_notification(
-                    publication.id,
-                    "error",
-                    f"Failed to publish to {channel_name}: {str(e)}"
-                )
-                return ChannelPublishResult(channel=channel_name, success=False, error=str(e))
+                return ChannelPublishResult(channel=channel_name, success=False, error=str(e), notification_error=f"Failed to publish to {channel_name}: {str(e)}")
 
             for attempt in range(5):
                 try:
@@ -202,8 +196,6 @@ class PublicationService:
                             "channel_id": channel.id, "telegram_message_id": msg_id}
                         for msg_id in message_ids
                     ]
-
-                    await self.handle_instant_backup(channel, sent_messages, publication_id=publication.id)
 
                     if publication.pin_message and message_ids:
                         try:
@@ -219,32 +211,22 @@ class PublicationService:
                         channel=channel_name,
                         success=True,
                         message_ids=message_ids,
-                        telegram_messages_data=telegram_messages_data
+                        telegram_messages_data=telegram_messages_data,
+                        sent_messages=sent_messages,  # Сохраняем для handle_instant_backup
+                        channel_obj=channel  # Сохраняем для handle_instant_backup
                     )
 
                 except TelegramRetryAfter as e:
                     if attempt < 4:
                         await asyncio.sleep(e.retry_after)
                     else:
-                        await self.create_notification(
-                            publication.id,
-                            "error",
-                            f"Failed to publish to {channel_name}: Rate limit",
-                            {"error": str(e)}
-                        )
-                        return ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s")
+                        return ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s", notification_error=f"Failed to publish to {channel_name}: Rate limit")
 
                 except Exception as e:
                     if attempt == 4:
-                        await self.create_notification(
-                            publication.id,
-                            "error",
-                            f"Failed to publish to {channel_name}",
-                            {"error": str(e)}
-                        )
-                        return ChannelPublishResult(channel=channel_name, success=False, error=str(e))
+                        return ChannelPublishResult(channel=channel_name, success=False, error=str(e), notification_error=f"Failed to publish to {channel_name}")
                     await asyncio.sleep(2 ** attempt)
-            return ChannelPublishResult(channel=channel_name, success=False, error="Unknown error")
+            return ChannelPublishResult(channel=channel_name, success=False, error="Unknown error", notification_error=f"Failed to publish to {channel_name}: Unknown error")
 
         logger.info(
             f"[TIMING] Starting parallel send to {len(publication.channels)} channels")
@@ -275,11 +257,24 @@ class PublicationService:
                     self.db.add(telegram_message)
 
         for result in results:
+            if result.success and hasattr(result, 'sent_messages') and hasattr(result, 'channel_obj'):
+                try:
+                    await self.handle_instant_backup(result.channel_obj, result.sent_messages, publication_id=publication.id)
+                except Exception as e:
+                    logger.error(f"Failed to handle instant backup for {result.channel}: {e}")
+
+        for result in results:
             if result.success:
                 await self.create_notification(
                     publication.id,
                     "success",
                     f"Published to {result.channel}"
+                )
+            elif hasattr(result, 'notification_error') and result.notification_error:
+                await self.create_notification(
+                    publication.id,
+                    "error",
+                    result.notification_error
                 )
 
         success_count = sum(1 for r in results if r.success)
