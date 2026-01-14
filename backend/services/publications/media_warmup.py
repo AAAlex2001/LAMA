@@ -60,7 +60,7 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
     url_lower = media_url.lower()
 
     try:
-        file_bytes, filename = await _download_media(media_url)
+        file_bytes, filename = await download_media(media_url)
         
         is_photo = not any(url_lower.endswith(ext) for ext in 
                           ['.mp4', '.mov', '.m4v', '.webm', '.avi',
@@ -68,7 +68,7 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
                            '.pdf', '.doc', '.docx', '.txt', '.zip', '.rar'])
         
         if is_photo:
-            file_bytes = _resize_image_if_needed(file_bytes, filename)
+            file_bytes = resize_image_if_needed(file_bytes, filename)
         
         input_file = BufferedInputFile(file_bytes, filename=filename)
         message: Optional[Message] = None
@@ -101,7 +101,7 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
         return None
 
 
-async def _download_media(url: str) -> Tuple[bytes, str]:
+async def download_media(url: str) -> Tuple[bytes, str]:
     """Скачивает файл по URL."""
     parsed = urlparse(url)
     filename = parsed.path.split("/")[-1] or "media"
@@ -122,7 +122,7 @@ async def _download_media(url: str) -> Tuple[bytes, str]:
     return resp.content, filename
 
 
-def _resize_image_if_needed(file_bytes: bytes, filename: str) -> bytes:
+def resize_image_if_needed(file_bytes: bytes, filename: str) -> bytes:
     """Сжимает изображение если оно превышает лимиты Telegram."""
     try:
         img = Image.open(io.BytesIO(file_bytes))
