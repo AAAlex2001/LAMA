@@ -384,7 +384,19 @@ async def save_template_content(
     )
     template_content = result.scalar_one_or_none()
 
-    images = _normalize_blocks(content.get("images")) if content.get("images") else []
+    def normalize_images(raw: Any) -> List[Dict[str, str]]:
+        if not isinstance(raw, list):
+            return []
+        result = []
+        for img in raw:
+            if isinstance(img, dict) and img.get("url"):
+                result.append({
+                    "url": _safe_str(img.get("url")),
+                    "alt": _safe_str(img.get("alt")) or "Hero illustration"
+                })
+        return result
+
+    images = normalize_images(content.get("images")) if content.get("images") else []
     blocks = _normalize_blocks(content.get("blocks")) if content.get("blocks") else []
     faq = _normalize_faq(content.get("faq")) if content.get("faq") else None
     cards_block = _normalize_cards_block(content.get("cardsBlock")) if content.get("cardsBlock") else None

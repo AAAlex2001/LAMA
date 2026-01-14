@@ -403,19 +403,37 @@ export default function TemplatesAdminPage() {
       <div className={styles.container}>
         <div className={styles.header}>
           <h1 className={styles.title}>Templates</h1>
-          <select
-            className={styles.localeSelector}
-            value={locale}
-            onChange={(e) => setLocale(e.target.value)}
-          >
-            <option value="ru">🇷🇺 Русский</option>
-            <option value="sr">🇷🇸 Сербский</option>
-            <option value="en">🇬🇧 Английский</option>
-          </select>
-        </div>
-
-        <div className={styles.note}>
-          Количество шаблонов = количество карточек Advantages без CTA. Сейчас: <b>{templates.length}</b>
+          <div className={styles.headerActions}>
+            <select
+              className={styles.localeSelector}
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+            >
+              <option value="ru">🇷🇺 Русский</option>
+              <option value="sr">🇷🇸 Сербский</option>
+              <option value="en">🇬🇧 Английский</option>
+            </select>
+            <Button
+              text="+ Новый шаблон"
+              onClick={() => {
+                const slug = prompt('Введите slug (английский, через дефис):');
+                const title = prompt('Введите заголовок (английский):');
+                if (slug && title) {
+                  fetch(`${API_BASE_URL}/landing/templates`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug: slug.toLowerCase().trim(), title: title.trim(), description: '', order: templates.length + 1 }),
+                  })
+                    .then((r) => r.json())
+                    .then(() => {
+                      alert('Шаблон создан!');
+                      window.location.reload();
+                    })
+                    .catch(() => alert('Ошибка создания'));
+                }
+              }}
+            />
+          </div>
         </div>
 
         <div className={styles.layout}>

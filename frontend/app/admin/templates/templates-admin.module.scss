@@ -16,6 +16,12 @@
   margin-bottom: 16px;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .title {
   font-size: 28px;
   font-weight: 800;
