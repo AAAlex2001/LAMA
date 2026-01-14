@@ -171,7 +171,7 @@ class RecurringMessageService:
                 return
 
         keyboard = build_keyboard(recurring_msg.inline_buttons)
-        text = self.process_shortcodes(recurring_msg.text_content)
+        text = self.process_shortcodes(recurring_msg.text_content or "")
 
         for chat_id in recurring_msg.target_chats:
             await self.send_to_chat(telegram_bot, chat_id, recurring_msg, text, keyboard)

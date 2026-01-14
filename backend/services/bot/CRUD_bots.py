@@ -201,11 +201,11 @@ class CRUDBotService:
 
         if bot:
             # Обновляем существующего
-            bot.username = bot_info.username
+            bot.username = bot_info.username or ""
             bot.first_name = bot_info.first_name
             bot.token = token
             if description_value is not None:
-                bot.description = description_value
+                bot.description = description_value or ""
             if short_description_value is not None:
                 bot.short_description = short_description_value
             bot.last_sync_at = datetime.now(timezone.utc)

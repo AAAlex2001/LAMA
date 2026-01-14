@@ -21,6 +21,9 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 @router.post("/upload-image")
 async def upload_image(file: UploadFile = File(...)):
     """Загрузить картинку для лендинга"""
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Файл должен иметь имя")
+
     # Проверяем расширение
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:

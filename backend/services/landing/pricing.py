@@ -19,12 +19,12 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Pricing"""
     locale_enum = coerce_locale(locale)
-    result = await db.execute(
+    section_result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.PRICING)
         .where(LandingSection.is_active == True)
     )
-    section = result.scalar_one_or_none()
+    section = section_result.scalar_one_or_none()
 
     if not section:
         return {
@@ -34,17 +34,17 @@ async def get_pricing_content(db: AsyncSession, locale: str | Locale | None = No
             "plans": []
         }
 
-    result = await db.execute(
+    content_result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
-    contents = result.scalars().all()
+    contents: List[LandingContent] = list(content_result.scalars().all())
 
-    response = {}
-    plans: list[dict[str, Any]] = []
+    response: Dict[str, Any] = {}
+    plans: List[Dict[str, Any]] = []
 
     for content in contents:
         if content.key == "pricing_headline":

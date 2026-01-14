@@ -81,10 +81,13 @@ class ModerationHandler:
     async def apply_action(
         self,
         message: Message,
-        action: ActionType,
+        action: Optional[ActionType],
         mute_duration: Optional[int]
     ) -> None:
         """Применить действие модерации"""
+        if not action:
+            return
+
         try:
             async with get_bot_session() as bot:
                 # Удаляем сообщение
@@ -119,6 +122,9 @@ class ModerationHandler:
 
     async def mute_user(self, bot, message: Message, mute_duration: Optional[int]) -> None:
         """Заглушить пользователя"""
+        if not message.from_user:
+            return
+
         until_date = None
         if mute_duration:
             until_date = datetime.now(timezone.utc) + \
@@ -147,6 +153,9 @@ class ModerationHandler:
 
     async def kick_user(self, bot, message: Message) -> None:
         """Кикнуть пользователя"""
+        if not message.from_user:
+            return
+
         await asyncio.wait_for(
             bot.ban_chat_member(
                 chat_id=message.chat.id,
@@ -158,6 +167,9 @@ class ModerationHandler:
 
     async def unmute_user(self, bot, message: Message) -> None:
         """Снять мут с пользователя"""
+        if not message.from_user:
+            return
+
         permissions = ChatPermissions(
             can_send_messages=True,
             can_send_media_messages=True,

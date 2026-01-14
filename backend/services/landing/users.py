@@ -1,7 +1,7 @@
 """
 Методы для работы с секцией Users
 """
-from typing import Dict, Any
+from typing import Dict, Any, List
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
@@ -25,12 +25,12 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 async def get_users_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Users"""
     locale_enum = coerce_locale(locale)
-    result = await db.execute(
+    section_result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.USERS)
         .where(LandingSection.is_active == True)
     )
-    section = result.scalar_one_or_none()
+    section = section_result.scalar_one_or_none()
 
     if not section:
         return {
@@ -41,16 +41,16 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
             "buttonUrl": ""
         }
 
-    result = await db.execute(
+    content_result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
-    contents = result.scalars().all()
+    contents: List[LandingContent] = list(content_result.scalars().all())
 
-    response = {
+    response: Dict[str, Any] = {
         "number": 0,
         "textLine": "",
         "textLine_1": "",

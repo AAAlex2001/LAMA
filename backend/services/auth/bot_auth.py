@@ -70,11 +70,11 @@ class BotAuthService:
             await self.db.flush()
 
         # Загружаем User с telegram_account для Pydantic
-        query = select(User).options(
+        user_query = select(User).options(
             selectinload(User.telegram_account)
         ).where(User.id == user.id)
-        result = await self.db.execute(query)
-        user = result.scalar_one()
+        user_result = await self.db.execute(user_query)
+        user = user_result.scalar_one()
 
         await self.db.commit()
 
@@ -149,11 +149,11 @@ class BotAuthService:
         if datetime.now(timezone.utc) > login_code.expires_at:
             raise ValueError("Login code has expired")
 
-        query = select(TelegramAccount).options(
+        account_query = select(TelegramAccount).options(
             selectinload(TelegramAccount.user)
         ).where(TelegramAccount.telegram_id == login_code.telegram_id)
-        result = await self.db.execute(query)
-        telegram_account = result.scalar_one_or_none()
+        account_result = await self.db.execute(account_query)
+        telegram_account = account_result.scalar_one_or_none()
 
         if telegram_account:
             telegram_account.username = login_code.username
@@ -187,11 +187,11 @@ class BotAuthService:
             await self.db.flush()
 
         # Загружаем User с telegram_account для Pydantic
-        query = select(User).options(
+        user_query = select(User).options(
             selectinload(User.telegram_account)
         ).where(User.id == user.id)
-        result = await self.db.execute(query)
-        user_final = result.scalar_one()
+        user_result = await self.db.execute(user_query)
+        user_final = user_result.scalar_one()
 
         return user_final
 

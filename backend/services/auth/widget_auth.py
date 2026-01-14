@@ -127,10 +127,10 @@ class WidgetAuthService:
 
         await self.db.commit()
 
-        query = select(User).options(
+        user_query = select(User).options(
             selectinload(User.telegram_account)
         ).where(User.id == user.id)
-        result = await self.db.execute(query)
-        user = result.scalar_one()
+        user_result = await self.db.execute(user_query)
+        user = user_result.scalar_one()
 
         return user

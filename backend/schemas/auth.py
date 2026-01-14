@@ -3,7 +3,7 @@
 """
 from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, ConfigDict
 
 from backend.models.auth import UserRole
 
@@ -74,6 +74,8 @@ class BotLoginRequest(BaseModel):
 
 class TelegramAccountResponse(BaseModel):
     """Информация о Telegram-аккаунте"""
+    model_config = ConfigDict(from_attributes=True)
+
     telegram_id: int
     username: Optional[str] = None
     first_name: Optional[str] = None
@@ -83,12 +85,11 @@ class TelegramAccountResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class UserResponse(BaseModel):
     """Информация о пользователе"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     role: UserRole
     is_active: bool
@@ -99,9 +100,6 @@ class UserResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     telegram_account: Optional[TelegramAccountResponse] = None
-
-    class Config:
-        from_attributes = True
 
 
 class AddEmailRequest(BaseModel):
@@ -124,6 +122,8 @@ class UserUpdateRequest(BaseModel):
 
 class SessionResponse(BaseModel):
     """Информация о сессии"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     expires_at: datetime
@@ -132,9 +132,6 @@ class SessionResponse(BaseModel):
     ip_address: Optional[str] = None
     created_at: datetime
     last_used_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class SessionListResponse(BaseModel):

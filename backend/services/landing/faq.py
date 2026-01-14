@@ -1,7 +1,7 @@
 """
 Методы для работы с секцией FAQ
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
@@ -25,12 +25,12 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции FAQ"""
     locale_enum = coerce_locale(locale)
-    result = await db.execute(
+    section_result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.FAQ)
         .where(LandingSection.is_active == True)
     )
-    section = result.scalar_one_or_none()
+    section = section_result.scalar_one_or_none()
 
     if not section:
         return {
@@ -44,17 +44,17 @@ async def get_faq_content(db: AsyncSession, locale: str | Locale | None = None) 
             "botLink": ""
         }
 
-    result = await db.execute(
+    content_result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
-    contents = result.scalars().all()
+    contents: List[LandingContent] = list(content_result.scalars().all())
 
-    response = {}
-    faq_items: list[dict[str, str]] = []
+    response: Dict[str, Any] = {}
+    faq_items: List[Dict[str, str]] = []
 
     for content in contents:
         if content.key == "faq_headline":
@@ -95,12 +95,12 @@ async def save_faq_content(
     db: AsyncSession,
     headline: str,
     faq_items: List[Dict[str, Any]],
-    primary_button_text: str = None,
-    primary_button_link: str = None,
-    secondary_button_text: str = None,
-    secondary_button_link: str = None,
-    help_text: str = None,
-    bot_link: str = None,
+    primary_button_text: Optional[str] = None,
+    primary_button_link: Optional[str] = None,
+    secondary_button_text: Optional[str] = None,
+    secondary_button_link: Optional[str] = None,
+    help_text: Optional[str] = None,
+    bot_link: Optional[str] = None,
     locale: str | Locale | None = None
 ) -> Dict[str, str]:
     """Сохранить контент для секции FAQ"""

@@ -40,11 +40,17 @@ class ModerationTriggerService:
             return False
 
         # Проверяем права пользователя
+        if not message.from_user:
+            return False
+
         try:
             member = await telegram_bot.get_chat_member(message.chat.id, message.from_user.id)
             is_admin = member.status in ("administrator", "creator")
         except TelegramAPIError:
             is_admin = False
+
+        if not message.text:
+            return False
 
         parts = message.text.split()
         cmd = command.lower()
@@ -110,6 +116,8 @@ class ModerationTriggerService:
                 return
 
             chat_title = message.chat.title or "Unknown Group"
+            if not message.from_user:
+                return
             user_info = f"{message.from_user.first_name}"
             if message.from_user.username:
                 user_info += f" (@{message.from_user.username})"

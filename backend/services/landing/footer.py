@@ -25,12 +25,12 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 async def get_footer_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
     """Получить контент для секции Footer"""
     locale_enum = coerce_locale(locale)
-    result = await db.execute(
+    section_result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.FOOTER)
         .where(LandingSection.is_active == True)
     )
-    section = result.scalar_one_or_none()
+    section = section_result.scalar_one_or_none()
 
     if not section:
         return {
@@ -41,16 +41,16 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
             "columns": []
         }
 
-    result = await db.execute(
+    content_result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
         .where(LandingContent.is_active == True)
         .order_by(LandingContent.order)
     )
-    contents = result.scalars().all()
+    contents: List[LandingContent] = list(content_result.scalars().all())
 
-    response = {
+    response: Dict[str, Any] = {
         "brandName": "",
         "copyright": "",
         "telegramLink": "",
@@ -58,7 +58,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
         "columns": []
     }
 
-    columns = {}
+    columns: Dict[int, Dict[str, Any]] = {}
 
     for content in contents:
         if content.key == "footer_brand_name":
@@ -78,8 +78,7 @@ async def get_footer_content(db: AsyncSession, locale: str | Locale | None = Non
             if content.extra_data and "links" in content.extra_data:
                 columns[column_index]["links"] = content.extra_data["links"]
 
-    response["columns"] = [columns[i] for i in sorted(
-        columns.keys())] if columns else []  # type: ignore[misc]
+    response["columns"] = [columns[i] for i in sorted(columns.keys())] if columns else []
 
     return response
 

@@ -71,20 +71,20 @@ class StorageService:
         size = len(file_content)
         thumbnail_url = None
 
-        if generate_thumbnail and self._is_image(file_ext):
+        if generate_thumbnail and self.is_image(file_ext):
             try:
-                thumbnail_url = await self._generate_and_upload_thumbnail(
+                thumbnail_url = await self.generate_and_upload_thumbnail(
                     file_content, unique_filename, content_type
                 )
             except Exception as e:
                 logger.warning(f"Failed to generate thumbnail: {e}")
 
         if self.use_cloud:
-            return await self._upload_to_cloud(
+            return await self.upload_to_cloud(
                 file_content, unique_filename, content_type, size, thumbnail_url
             )
         else:
-            return await self._upload_to_local(
+            return await self.upload_to_local(
                 file_content, unique_filename, size, thumbnail_url
             )
 
@@ -120,7 +120,7 @@ class StorageService:
                 "path": s3_key,
                 "size": size,
                 "thumbnail_url": thumbnail_url,
-                "type": self._get_file_type(Path(filename).suffix),
+                "type": self.get_file_type(Path(filename).suffix),
                 "name": filename
             }
 
@@ -150,7 +150,7 @@ class StorageService:
             "path": str(file_path),
             "size": size,
             "thumbnail_url": thumbnail_url,
-            "type": self._get_file_type(Path(filename).suffix),
+            "type": self.get_file_type(Path(filename).suffix),
             "name": filename
         }
 

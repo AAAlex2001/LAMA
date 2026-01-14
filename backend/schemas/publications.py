@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, validator, model_validator
+from pydantic import BaseModel, Field, validator, model_validator, ConfigDict
 from enum import Enum
 
 
@@ -66,11 +66,10 @@ class TagCreate(TagBase):
 
 
 class TagResponse(TagBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class TagListResponse(BaseModel):
@@ -80,14 +79,13 @@ class TagListResponse(BaseModel):
 
 class ChannelResponse(BaseModel):
     """Минимальная схема канала для отображения в публикациях"""
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     telegram_id: int
     title: str
     username: Optional[str] = None
     is_active: bool
-
-    class Config:
-        from_attributes = True
 
 
 class PublicationSeriesBase(BaseModel):
@@ -107,11 +105,10 @@ class PublicationSeriesUpdate(BaseModel):
 
 
 class PublicationSeriesResponse(PublicationSeriesBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class RescheduleRequest(BaseModel):
@@ -230,6 +227,8 @@ class PublicationUpdate(BaseModel):
 
 
 class PublicationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     content_type: ContentType
     status: PublicationStatus
@@ -259,9 +258,6 @@ class PublicationResponse(BaseModel):
     channels: List[ChannelResponse] = []
     tags: List[TagResponse] = []
     series: Optional[PublicationSeriesResponse] = None
-
-    class Config:
-        from_attributes = True
 
 
 class PublicationListResponse(BaseModel):
@@ -314,6 +310,8 @@ class EditPublishedRequest(BaseModel):
 
 
 class NotificationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     publication_id: int
     status: str
@@ -321,19 +319,15 @@ class NotificationResponse(BaseModel):
     error_details: Optional[Dict[str, Any]]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-
 
 class TelegramMessageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     publication_id: int
     channel_id: int
     telegram_message_id: int
     published_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ChannelPublishResult(BaseModel):

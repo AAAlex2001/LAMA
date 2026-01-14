@@ -232,7 +232,7 @@ async def process_text_content(
 
         # Модерационные команды
         if command_text in MODERATION_COMMANDS:
-            moderation_service = ModerationTriggerService()
+            moderation_service = ModerationTriggerService(db)
             if await moderation_service.handle_moderation_command(command_text, message, telegram_bot):
                 await auto_delete_service.delete_if_command_message(telegram_bot, message)
                 return

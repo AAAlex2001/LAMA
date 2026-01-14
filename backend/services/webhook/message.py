@@ -118,6 +118,9 @@ class MessageHandler:
         except Exception:
             bot_id = None
 
+        if not message.new_chat_members:
+            return
+
         for new_member in message.new_chat_members:
             if bot_id and new_member.id == bot_id:
                 logger.info(f"Skipping captcha for bot itself (id={bot_id})")
@@ -257,6 +260,9 @@ class MessageHandler:
     async def handle_member_left(self, telegram_bot: Bot, message: Message) -> None:
         """Обработка ухода участника - триггер MEMBER_LEFT"""
         left_member = message.left_chat_member
+        if not left_member:
+            return
+
         await self.trigger_service.fire_event(
             bot_id=self.bot_model.id,
             trigger_type=TriggerType.MEMBER_LEFT,

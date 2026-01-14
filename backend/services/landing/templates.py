@@ -335,12 +335,12 @@ async def get_template_content(
         "subscribeBlocks": [],
     }
 
-    result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
-    section = result.scalar_one_or_none()
+    section_result = await db.execute(select(LandingSection).where(LandingSection.section_type == SectionType.OTHER))
+    section = section_result.scalar_one_or_none()
     if not section:
         return defaults
 
-    result = await db.execute(
+    content_result = await db.execute(
         select(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
@@ -348,7 +348,7 @@ async def get_template_content(
         .where(LandingContent.key.like(f"{prefix}%"))
         .order_by(LandingContent.order)
     )
-    contents = list(result.scalars().all())
+    contents: List[LandingContent] = list(content_result.scalars().all())
 
     data: Dict[str, Any] = dict(defaults)
     images: List[Dict[str, str]] = []

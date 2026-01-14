@@ -96,33 +96,32 @@ class WelcomeService:
     ) -> Message:
         """Универсальная отправка сообщения с медиа"""
 
-        send_kwargs = {
-            "chat_id": chat_id,
-            "reply_markup": reply_markup,
-        }
-
-        # Добавляем топик если указан
-        if message_thread_id:
-            send_kwargs["message_thread_id"] = message_thread_id
-
         # Отправка с медиа
         if media_url and media_type:
             send_methods = {
-                MessageType.PHOTO: (telegram_bot.send_photo, "photo"),
-                MessageType.VIDEO: (telegram_bot.send_video, "video"),
-                MessageType.DOCUMENT: (telegram_bot.send_document, "document"),
-                MessageType.ANIMATION: (telegram_bot.send_animation, "animation"),
+                MessageType.PHOTO: telegram_bot.send_photo,
+                MessageType.VIDEO: telegram_bot.send_video,
+                MessageType.DOCUMENT: telegram_bot.send_document,
+                MessageType.ANIMATION: telegram_bot.send_animation,
             }
 
             if media_type in send_methods:
-                method, param_name = send_methods[media_type]
-                send_kwargs[param_name] = media_url
-                send_kwargs["caption"] = text
-                return await method(**send_kwargs)
+                method = send_methods[media_type]
+                return await method(  # type: ignore[operator]
+                    chat_id=chat_id,
+                    **{media_type.value.lower(): media_url},  # type: ignore[arg-type]
+                    caption=text,
+                    reply_markup=reply_markup,
+                    message_thread_id=message_thread_id,
+                )
 
         # Отправка текстового сообщения
-        send_kwargs["text"] = text
-        return await telegram_bot.send_message(**send_kwargs)
+        return await telegram_bot.send_message(
+            chat_id=chat_id,
+            text=text,
+            reply_markup=reply_markup,
+            message_thread_id=message_thread_id,
+        )
 
     def build_context(
         self,

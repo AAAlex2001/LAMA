@@ -139,8 +139,11 @@ async def get_calendar(
     
     entries = []
     for date_str, publications in calendar_data.items():
-        entries.append(CalendarEntry(date=date_str, publications=publications))
-    
+        entries.append(CalendarEntry(
+            date=date_str,
+            publications=publications
+        ))
+
     return {"calendar": entries}
 
 
@@ -408,7 +411,10 @@ async def list_tags(
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
     
-    return TagListResponse(items=tags, total=total)
+    return TagListResponse(
+        items=tags,
+        total=total
+    )
 
 
 @router.get("/tags/search", response_model=TagListResponse)
@@ -428,8 +434,11 @@ async def search_tags(
     
     result = await db.execute(query)
     tags = list(result.scalars().all())
-    
-    return TagListResponse(items=tags, total=len(tags))
+
+    return TagListResponse(
+        items=tags,
+        total=len(tags)
+    )
 
 
 @router.post("/tags/", response_model=TagResponse, status_code=201)

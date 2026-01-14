@@ -24,6 +24,9 @@ async def upload_media(
     uploaded_files = []
     
     for file in files:
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="Файл должен иметь имя")
+
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in ALLOWED_EXTENSIONS:
             raise HTTPException(
@@ -34,13 +37,13 @@ async def upload_media(
         contents = await file.read()
         if len(contents) > MAX_FILE_SIZE:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail=f"Файл {file.filename} слишком большой (макс. 50MB)"
             )
-        
+
         content_type = file.content_type or "application/octet-stream"
         generate_thumbnail = file_ext in ALLOWED_IMAGE_EXTENSIONS
-        
+
         try:
             result = await storage.upload_file(
                 file_content=contents,

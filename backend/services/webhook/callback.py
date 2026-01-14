@@ -1,5 +1,7 @@
 import asyncio
 import logging
+from typing import Optional
+from datetime import datetime, timezone
 
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
@@ -27,6 +29,8 @@ class CallbackHandler:
     async def process(self, callback_query: CallbackQuery) -> None:
         """Роутинг callback query по типу."""
         callback_data = callback_query.data
+        if not callback_data:
+            return
 
         if callback_data.startswith("captcha_"):
             await self.process_captcha(callback_query)
@@ -100,6 +104,8 @@ class CallbackHandler:
 
     async def process_captcha(self, callback_query: CallbackQuery) -> None:
         """Обработка ответа на капчу в ЛС (при заявке на вступление)."""
+        if not callback_query.data:
+            return
         parts = callback_query.data.split("_")
         if len(parts) < 3:
             return
@@ -131,6 +137,8 @@ class CallbackHandler:
 
     async def process_group_captcha(self, callback_query: CallbackQuery) -> None:
         """Обработка ответа на капчу в группе (после вступления)."""
+        if not callback_query.data:
+            return
         parts = callback_query.data.split("_")
         if len(parts) < 4:
             return
@@ -212,19 +220,21 @@ class CallbackHandler:
 
     async def send_welcome(self, callback_query: CallbackQuery) -> None:
         """Отправить приветственное сообщение после прохождения капчи."""
+        if not callback_query.message:
+            return
 
         welcome_handler = WelcomeHandler(self.db, self.bot_model)
         fake_message = Message(
             message_id=0,
-            date=callback_query.message.date if callback_query.message else None,
-            chat=callback_query.message.chat if callback_query.message else None,
+            date=callback_query.message.date,
+            chat=callback_query.message.chat,
         )
         try:
             await welcome_handler.handle_new_member(fake_message, callback_query.from_user)
         except Exception as e:
             logger.error(f"Failed to send welcome message: {e}")
 
-    async def fire_captcha_trigger(self, bot, user_id: int, chat_id: int, trigger_type: TriggerType, pending_id: int, chat_type: str, answer: str = None) -> None:
+    async def fire_captcha_trigger(self, bot, user_id: int, chat_id: int, trigger_type: TriggerType, pending_id: int, chat_type: str, answer: Optional[str] = None) -> None:
         """Запустить триггер CAPTCHA_PASSED или CAPTCHA_FAILED."""
         context = {"pending_id": pending_id}
         if chat_type == 'group':

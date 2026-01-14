@@ -80,9 +80,9 @@ class TokenService:
             session.last_used_at = datetime.now(timezone.utc)
             await self.db.commit()
 
-            query = select(User).where(User.id == user_id)
-            result = await self.db.execute(query)
-            user = result.scalar_one_or_none()
+            user_query = select(User).where(User.id == user_id)
+            user_result = await self.db.execute(user_query)
+            user = user_result.scalar_one_or_none()
 
             return user if user and user.is_active else None
 
