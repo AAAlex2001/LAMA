@@ -120,7 +120,7 @@ class PublicationBase(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
-    media_file_ids: Optional[List[str]] = Field(None, description="Telegram file_ids для быстрой рассылки")
+    media_file_ids: Optional[List[Optional[str]]] = Field(None, description="Telegram file_ids для быстрой рассылки")
     media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None

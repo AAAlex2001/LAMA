@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, BackgroundTasks
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
@@ -307,14 +307,22 @@ async def delete_publication(
 @router.post("/{publication_id}/publish", response_model=PublicationResponse)
 async def publish_now(
     publication_id: int,
+    background_tasks: BackgroundTasks,
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
     """Опубликовать сейчас"""
-    result = await service.publish_now(publication_id, owner_id=current_user.id)
-    if not result.success:
-        raise HTTPException(status_code=400, detail={"results": [r.dict() for r in result.results]})
     publication = await service.get_publication(publication_id, owner_id=current_user.id)
+    
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    
+    background_tasks.add_task(
+        service.publish_now,
+        publication_id,
+        owner_id=current_user.id
+    )
+    
     return publication
 
 

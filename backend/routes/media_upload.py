@@ -74,18 +74,20 @@ async def upload_media(
                 detail=f"Не удалось загрузить файл {file.filename}: {str(e)}"
             )
     
-    # Прогреваем медиа в Telegram в фоновом режиме
-    file_ids = []
+    file_ids = [None] * len(media_urls)
+    
     if media_urls:
         try:
             bot = get_bot()
-            # Прогреваем сразу, так как это быстро
-            file_ids = await warmup_media_files(bot.bot, media_urls)
+            if background_tasks:
+                background_tasks.add_task(
+                    warmup_media_files,
+                    bot.bot,
+                    media_urls
+                )
         except Exception as e:
-            # Если не удалось прогреть - не падаем, просто логируем
             import logging
-            logging.error(f"Failed to warmup media: {e}")
-            file_ids = [None] * len(media_urls)
+            logging.error(f"Failed to schedule media warmup: {e}")
     
     return JSONResponse({
         "success": True,

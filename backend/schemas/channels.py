@@ -224,7 +224,7 @@ class BackedUpPostResponse(BaseModel):
     content_type: str
     text_content: Optional[str]
     media_urls: Optional[List[str]] = None
-    media_file_ids: Optional[List[str]] = None
+    media_file_ids: Optional[List[Optional[str]]] = None
     views_count: int
     forwards_count: int
     original_date: datetime
