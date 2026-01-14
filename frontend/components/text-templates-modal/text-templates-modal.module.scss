@@ -9,15 +9,15 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 0 20px; // Боковые паддинги для адаптивности
+  padding: 0 20px;
 }
 
 .modalContent {
   width: 100%;
   max-width: 442px;
-  background: #F0F4FA; // Новый бекграунд
+  background: #F0F4FA;
   border-radius: 12px;
-  padding: 24px 26px; // Внутренние паддинги
+  padding: 24px 26px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 0;
+  padding: 12px 3px;
   cursor: pointer;
   
   &:hover {
@@ -107,7 +107,7 @@
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; // Троеточие вместо скролла
+  text-overflow: ellipsis;
 }
 
 .deleteButtonWrapper {
@@ -128,7 +128,7 @@
 }
 
 .deleteTooltip {
-  display: none; // Скрываем на мобилках по дефолту
+  display: none;
   
   @media (min-width: 1440px) {
     display: block;
@@ -136,7 +136,7 @@
     right: calc(100% + 8px);
     top: 50%;
     transform: translateY(-50%);
-    background: #F0F4FA;
+    background: #CBDBFF;
     color: #000000;
     padding: 4px 8px;
     border-radius: 5px;
@@ -155,7 +155,7 @@
       transform: translateY(-50%) rotate(45deg);
       width: 8px;
       height: 8px;
-      background: #F0F4FA;
+      background: #CBDBFF;
     }
   }
 }
