@@ -1,13 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
-import { usePostSettings } from '@/components/post-settings/store';
-import RichTextEditor, { RichTextEditorRef } from '@/components/rich-text-editor';
-import InlineButtons, { ButtonRow } from '@/components/inline-buttons';
-import MediaPreview, { type MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import RichTextEditor from '@/components/rich-text-editor';
+import InlineButtons from '@/components/inline-buttons';
+import MediaPreview from '@/components/rich-text-editor/media-preview/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import {
   DraftsIcon,
@@ -18,204 +16,54 @@ import {
   SettingsIcon,
   PaperclipIcon,
 } from '@/components/icons';
-import { handlePublishNow, handleSaveDraft } from './store/actions';
-import { templatesApi } from '@/stores/templates';
+import { useCreatePost } from './store/useCreatePost';
 
 export default function CreatePostPage() {
-  const [text, setText] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showInlineButtons, setShowInlineButtons] = useState(false);
-  const [buttonRows, setButtonRows] = useState<ButtonRow[]>([]);
-  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
-  const [isPublishing, setIsPublishing] = useState(false);
-  const [isSavingDraft, setIsSavingDraft] = useState(false);
-  const [isScheduling, setIsScheduling] = useState(false);
-  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
-  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
-  const postSettings = usePostSettings();
-  const editorRef = useRef<RichTextEditorRef>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    // State
+    text,
+    showSettings,
+    showInlineButtons,
+    buttonRows,
+    mediaFiles,
+    isPublishing,
+    isSavingDraft,
+    isScheduling,
+    showTemplatesModal,
 
-  // Конвертируем buttonRows в формат InlineKeyboard для бекенда
-  const getInlineKeyboard = () => {
-    if (buttonRows.length === 0) return undefined;
-    
-    const buttons = buttonRows.map(row => 
-      row.buttons.map(btn => {
-        const button: any = { text: btn.text };
-        if (btn.type === 'url' && btn.url) {
-          button.url = btn.url;
-        } else if (btn.type === 'callback' && btn.callback_data) {
-          button.callback_data = btn.callback_data;
-        }
-        return button;
-      })
-    );
+    // Refs
+    editorRef,
+    fileInputRef,
 
-    return { buttons };
-  };
+    // Post Settings
+    postSettings,
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
+    // Computed
+    canAddMedia,
+    canShowInlineButtons,
 
-    // Ограничение: если есть кнопки - максимум 1 файл, иначе 10
-    const maxFiles = buttonRows.length > 0 ? 1 : 10;
-    const filesToProcess = Array.from(files);
-    const currentCount = mediaFiles.length;
-    const availableSlots = maxFiles - currentCount;
-    
-    if (availableSlots <= 0) {
-      event.target.value = '';
-      return;
-    }
-    
-    const filesToAdd = filesToProcess.slice(0, availableSlots);
-
-    filesToAdd.forEach((file, index) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        const url = e.target?.result as string;
-        const type = file.type.startsWith('image/') ? 'image' 
-                   : file.type.startsWith('video/') ? 'video' 
-                   : 'document';
-        
-        // Уникальный ID с индексом файла
-        const uniqueId = `${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
-        
-        setMediaFiles(prev => [...prev, {
-          id: uniqueId,
-          url,
-          type,
-          blur: false,
-          file,  // Сохраняем оригинальный File объект для загрузки на сервер
-        }]);
-      };
-      
-      reader.readAsDataURL(file);
-    });
-    
-    // Reset input
-    event.target.value = '';
-  };
-
-  const handleRemoveMedia = (id: string) => {
-    setMediaFiles(prev => prev.filter(file => file.id !== id));
-  };
-
-  // Переключаем blur для конкретного файла
-  const handleToggleBlur = (id: string) => {
-    setMediaFiles(prev => prev.map(file => 
-      file.id === id ? { ...file, blur: !file.blur } : file
-    ));
-  };
-
-  const onPublishNow = async () => {
-    setIsPublishing(true);
-    
-    try {
-      console.log('Publishing with:', { text, mediaFiles, settings: postSettings.getSettingsData() });
-      
-      const result = await handlePublishNow(
-        { text },
-        postSettings.getSettingsData(),
-        mediaFiles,
-        getInlineKeyboard()
-      );
-
-      console.log('Publish result:', result);
-
-      if (result.success) {
-        alert(result.message);
-        // Сбрасываем редактор и все его состояние
-        editorRef.current?.reset();
-        postSettings.resetSettings();
-        setButtonRows([]);
-        setMediaFiles([]);
-        setShowInlineButtons(false);
-        // Обновляем теги - загружаем актуальный список
-        postSettings.loadRecentTags();
-      } else {
-        alert(`Ошибка: ${result.message}`);
-        if (result.errors) {
-          console.error('Детали ошибок:', result.errors);
-        }
-      }
-    } catch (error) {
-      alert('Произошла ошибка при публикации');
-      console.error(error);
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const onSaveDraft = async () => {
-    setIsSavingDraft(true);
-    try {
-      const result = await handleSaveDraft(
-        { text },
-        postSettings.getSettingsData(),
-        mediaFiles,
-        getInlineKeyboard()
-      );
-
-      if (result.success) {
-        alert(result.message);
-      } else {
-        alert(`Ошибка: ${result.message}`);
-      }
-    } catch (error) {
-      alert('Произошла ошибка при сохранении черновика');
-      console.error(error);
-    } finally {
-      setIsSavingDraft(false);
-    }
-  };
-
-  const handleSaveAsTemplate = async () => {
-    if (!text || text.trim() === '') {
-      alert('Текст пуст. Нечего сохранять в шаблон.');
-      return;
-    }
-
-    setIsSavingTemplate(true);
-    try {
-      // Создаем название из начала текста (убираем HTML теги, берем первые 50 символов)
-      const plainText = text.replace(/<[^>]*>/g, '').trim();
-      const templateName = plainText.length > 50 
-        ? plainText.substring(0, 50) 
-        : plainText;
-      
-      const editorDiv = editorRef.current;
-      const formattedContent = editorDiv ? { html: text } : { html: text };
-      
-      await templatesApi.createTemplate({
-        name: templateName,
-        formatted_content: formattedContent,
-      });
-      
-      alert('Шаблон успешно сохранен!');
-    } catch (error) {
-      console.error('Failed to save template:', error);
-      alert('Ошибка при сохранении шаблона');
-    } finally {
-      setIsSavingTemplate(false);
-    }
-  };
-
-  const handleSelectTemplate = (formattedContent: Record<string, any>) => {
-    if (formattedContent?.html) {
-      setText(formattedContent.html);
-    }
-  };
+    // Actions
+    setText,
+    setShowSettings,
+    toggleInlineButtons,
+    setButtonRows,
+    handleFileUpload,
+    handleRemoveMedia,
+    handleToggleBlur,
+    setShowTemplatesModal,
+    onPublishNow,
+    onSaveDraft,
+    handleSaveAsTemplate,
+    handleSelectTemplate,
+    openFileDialog,
+  } = useCreatePost();
 
   return (
     <div className={styles.pageWrapper}>
-        <div className={styles.mainContent}>
-          <div className={styles.editorColumn}>
-            <div className={styles.editor}>
-              <div className={styles.header}>
+      <div className={styles.mainContent}>
+        <div className={styles.editorColumn}>
+          <div className={styles.editor}>
+            <div className={styles.header}>
               <span className={styles.headerTitle}>Новая публикация</span>
               <button
                 className={styles.settingsButton}
@@ -227,176 +75,162 @@ export default function CreatePostPage() {
               </button>
             </div>
 
-          <div className={styles.content}>
-          <RichTextEditor
-            ref={editorRef}
-            value={text}
-            onChange={setText}
-            placeholder="Напишите текст публикации..."
-            onSaveAsTemplate={handleSaveAsTemplate}
-          />
-          <div className={styles.actionsMenu}>
-            <div className={styles.actionsRow}>
-              <Button
-                text="Черновики"
-                variant="templateCard"
-                showArrow={false}
-                icon={<DraftsIcon width={24} height={24} />}
-                className={styles.actionButton}
+            <div className={styles.content}>
+              <RichTextEditor
+                ref={editorRef}
+                value={text}
+                onChange={setText}
+                placeholder="Напишите текст публикации..."
+                onSaveAsTemplate={handleSaveAsTemplate}
               />
-              <Button
-                text="Кнопки"
-                variant="templateCard"
-                showArrow={false}
-                icon={<InlineButtonIcon width={24} height={24} />}
-                className={styles.actionButton}
-                active={showInlineButtons}
-                disabled={mediaFiles.length > 1}
-                onClick={() => {
-                  if (!showInlineButtons && buttonRows.length === 0) {
-                    // При первом открытии создаём одну кнопку
-                    setButtonRows([{
-                      id: `row-${Date.now()}`,
-                      buttons: [{
-                        id: `btn-${Date.now()}`,
-                        text: '',
-                        type: 'url',
-                        url: '',
-                      }],
-                    }]);
-                  }
-                  setShowInlineButtons(!showInlineButtons);
-                }}
-              />
-            </div>
-            <div className={styles.actionsRow}>
-              <Button
-                text="Шаблоны"
-                variant="templateCard"
-                showArrow={false}
-                icon={<TemplatesIcon width={24} height={24} />}
-                className={styles.actionButton}
-                onClick={() => setShowTemplatesModal(true)}
-              />
-              <Button
-                text="Опрос"
-                variant="templateCard"
-                showArrow={false}
-                icon={<QuizIcon width={24} height={24} />}
-                className={styles.actionButton}
-              />
-            </div>
-            <div className={styles.actionsRowCenter}>
-              <Button
-                text="Ответ на свой пост"
-                variant="templateCard"
-                showArrow={false}
-                icon={<ReplyIcon width={24} height={24} />}
-                className={styles.actionButtonCenter}
-              />
-            </div>
-          </div>
-          
-          {showInlineButtons && (
-            <InlineButtons 
-              rows={buttonRows}
-              onChange={setButtonRows}
-              className={styles.inlineButtonsSection}
-            />
-          )}
-
-          <div className={styles.mediaSection}>
-            <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-              onChange={handleFileUpload}
-              style={{ display: 'none' }}
-            />
-            
-            <div className={styles.mediaMobile}>
-              <MediaPreview 
-                files={mediaFiles}
-                onRemove={handleRemoveMedia}
-                onToggleBlur={handleToggleBlur}
-              />
-              
-              <Button
-                text="Прикрепить файл"
-                variant="templateCard"
-                showArrow={false}
-                icon={<PaperclipIcon width={24} height={24} />}
-                fullWidth
-                disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
-                onClick={() => fileInputRef.current?.click()}
-              />
-            </div>
-            <div className={styles.mediaDropzone}>
-              {mediaFiles.length === 0 ? (
-                <>
-                  <span className={styles.dropzoneText}>
-                    Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-                  </span>
+              <div className={styles.actionsMenu}>
+                <div className={styles.actionsRow}>
                   <Button
-                    text="Прикрепить файл"
+                    text="Черновики"
                     variant="templateCard"
                     showArrow={false}
-                    icon={<PaperclipIcon width={24} height={24} />}
-                    disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
-                    onClick={() => fileInputRef.current?.click()}
+                    icon={<DraftsIcon width={24} height={24} />}
+                    className={styles.actionButton}
                   />
-                </>
-              ) : (
-                <div className={styles.mediaDropzoneContent}>
-                  <MediaPreview 
+                  <Button
+                    text="Кнопки"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<InlineButtonIcon width={24} height={24} />}
+                    className={styles.actionButton}
+                    active={showInlineButtons}
+                    disabled={!canShowInlineButtons}
+                    onClick={toggleInlineButtons}
+                  />
+                </div>
+                <div className={styles.actionsRow}>
+                  <Button
+                    text="Шаблоны"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<TemplatesIcon width={24} height={24} />}
+                    className={styles.actionButton}
+                    onClick={() => setShowTemplatesModal(true)}
+                  />
+                  <Button
+                    text="Опрос"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<QuizIcon width={24} height={24} />}
+                    className={styles.actionButton}
+                  />
+                </div>
+                <div className={styles.actionsRowCenter}>
+                  <Button
+                    text="Ответ на свой пост"
+                    variant="templateCard"
+                    showArrow={false}
+                    icon={<ReplyIcon width={24} height={24} />}
+                    className={styles.actionButtonCenter}
+                  />
+                </div>
+              </div>
+
+              {showInlineButtons && (
+                <InlineButtons
+                  rows={buttonRows}
+                  onChange={setButtonRows}
+                  className={styles.inlineButtonsSection}
+                />
+              )}
+
+              <div className={styles.mediaSection}>
+                <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                  onChange={handleFileUpload}
+                  style={{ display: 'none' }}
+                />
+
+                <div className={styles.mediaMobile}>
+                  <MediaPreview
                     files={mediaFiles}
                     onRemove={handleRemoveMedia}
                     onToggleBlur={handleToggleBlur}
                   />
+
                   <Button
                     text="Прикрепить файл"
                     variant="templateCard"
                     showArrow={false}
                     icon={<PaperclipIcon width={24} height={24} />}
-                    disabled={mediaFiles.length >= 10 || (buttonRows.length > 0 && mediaFiles.length >= 1)}
-                    onClick={() => fileInputRef.current?.click()}
+                    fullWidth
+                    disabled={!canAddMedia}
+                    onClick={openFileDialog}
                   />
                 </div>
-              )}
+                <div className={styles.mediaDropzone}>
+                  {mediaFiles.length === 0 ? (
+                    <>
+                      <span className={styles.dropzoneText}>
+                        Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
+                      </span>
+                      <Button
+                        text="Прикрепить файл"
+                        variant="templateCard"
+                        showArrow={false}
+                        icon={<PaperclipIcon width={24} height={24} />}
+                        disabled={!canAddMedia}
+                        onClick={openFileDialog}
+                      />
+                    </>
+                  ) : (
+                    <div className={styles.mediaDropzoneContent}>
+                      <MediaPreview
+                        files={mediaFiles}
+                        onRemove={handleRemoveMedia}
+                        onToggleBlur={handleToggleBlur}
+                      />
+                      <Button
+                        text="Прикрепить файл"
+                        variant="templateCard"
+                        showArrow={false}
+                        icon={<PaperclipIcon width={24} height={24} />}
+                        disabled={!canAddMedia}
+                        onClick={openFileDialog}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-          <div className={styles.footerButtons}>
-            <Button
-              text="Сохранить в черновики"
-              showArrow={false}
-              className={styles.saveDraftBtn}
-              onClick={onSaveDraft}
-              loading={isSavingDraft}
-              disabled={isSavingDraft}
-            />
-            <div className={styles.publishRow}>
+            <div className={styles.footerButtons}>
               <Button
-                text="Опубликовать сейчас"
+                text="Сохранить в черновики"
                 showArrow={false}
-                className={styles.publishNowBtn}
-                onClick={onPublishNow}
-                loading={isPublishing}
-                disabled={isPublishing}
+                className={styles.saveDraftBtn}
+                onClick={onSaveDraft}
+                loading={isSavingDraft}
+                disabled={isSavingDraft}
               />
-              <Button
-                text="Запланировать"
-                showArrow={false}
-                active
-                loading={isScheduling}
-                disabled={isScheduling}
-                className={styles.scheduleBtn}
-              />
+              <div className={styles.publishRow}>
+                <Button
+                  text="Опубликовать сейчас"
+                  showArrow={false}
+                  className={styles.publishNowBtn}
+                  onClick={onPublishNow}
+                  loading={isPublishing}
+                  disabled={isPublishing}
+                />
+                <Button
+                  text="Запланировать"
+                  showArrow={false}
+                  active
+                  loading={isScheduling}
+                  disabled={isScheduling}
+                  className={styles.scheduleBtn}
+                />
+              </div>
             </div>
-          </div>
           </div>
 
           <Button
@@ -407,7 +241,7 @@ export default function CreatePostPage() {
         </div>
 
         <div className={styles.settingsPanelDesktop}>
-          <PostSettings 
+          <PostSettings
             channelOptions={postSettings.channelOptions}
             channelsLoading={postSettings.channelsLoading}
             channelsSyncing={postSettings.channelsSyncing}
