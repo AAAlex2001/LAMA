@@ -1,37 +1,25 @@
-from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any
+from datetime import datetime, timedelta
+from typing import Optional, List, Dict
 import pytz
-import asyncio
-import time
-import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, InputMediaDocument, InputMediaAudio, Message
-from aiogram.enums import ParseMode
-from aiogram.exceptions import TelegramRetryAfter
 
-from backend.models.publications import (
-    Publication, TelegramMessage,
-    PublicationStatus as DBPublicationStatus,
-    ContentType as DBContentType,
-    RepeatInterval as DBRepeatInterval
-)
-from backend.models.channels import ChannelGroup as Channel, BackupMode
+from backend.models.publications import Publication, RepeatInterval as DBRepeatInterval
+from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
     AIGenerateRequest, AIEditRequest, EditPublishedRequest,
-    PublishResult, ChannelPublishResult, EditMessageResult, DeleteMessageResult
+    PublishResult, EditMessageResult, DeleteMessageResult
 )
 from backend.services.channel import ChannelService
 from backend.services.publications.CRUD_publications import CRUDPublicationService
 from backend.services.publications.ai_service import AIService
+from backend.services.publications import publisher, message_editor
 from backend.services.telegram_client import RateLimitedBot
 from backend.config import get_bot
 
-logger = logging.getLogger(__name__)
-
 
 class PublicationService:
-    """Сервис публикаций: Telegram API + AI + оркестрация"""
+    """Сервис публикаций - главный оркестратор"""
 
     def __init__(self, db: AsyncSession, openai_api_key: Optional[str] = None):
         self.db = db
@@ -39,37 +27,12 @@ class PublicationService:
         self.ai_service = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
 
-    @staticmethod
-    def calculate_next_repeat_time(
-        base_time: datetime,
-        repeat_interval: DBRepeatInterval,
-        custom_days: Optional[int] = None
-    ) -> Optional[datetime]:
-        """Вычислить следующее время повтора"""
-        if repeat_interval == DBRepeatInterval.NEVER:
-            return None
-
-        if repeat_interval == DBRepeatInterval.DAILY:
-            return base_time + timedelta(days=1)
-        elif repeat_interval == DBRepeatInterval.WEEKLY:
-            return base_time + timedelta(weeks=1)
-        elif repeat_interval == DBRepeatInterval.BIWEEKLY:
-            return base_time + timedelta(weeks=2)
-        elif repeat_interval == DBRepeatInterval.MONTHLY:
-            return base_time + timedelta(days=30)
-        elif repeat_interval == DBRepeatInterval.YEARLY:
-            return base_time + timedelta(days=365)
-        elif repeat_interval == DBRepeatInterval.CUSTOM and custom_days:
-            return base_time + timedelta(days=custom_days)
-
-        return None
-
     def get_master_bot(self) -> RateLimitedBot:
-        """Получить мастер-бота для публикаций (с rate limiting)"""
+        """Получить мастер-бота для публикаций"""
         return get_bot()
 
     async def get_bot_for_channel(self, channel: Channel) -> RateLimitedBot:
-        """Получить мастер-бота для публикаций в канал (с rate limiting)"""
+        """Получить бота для публикаций в канал"""
         return get_bot()
 
     async def create_publication(self, data, owner_id: int):
@@ -147,25 +110,32 @@ class PublicationService:
 
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> PublishResult:
         """Опубликовать сейчас"""
-        publish_start = time.monotonic()
-        logger.info(
-            f"[TIMING] publish_now START publication_id={publication_id}")
-
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            return PublishResult(
+                success=False,
+                error="Publication not found",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
         if not publication.channels:
-            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
+            return PublishResult(
+                success=False,
+                error="No channels selected",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
-        logger.info(
-            f"[TIMING] publish_now channels_count={len(publication.channels)}")
         if publication.series_id and publication.series:
             if publication.series.reply_to_previous:
                 from backend.services.publications.series_service import SeriesService
                 series_service = SeriesService(self.db)
                 bot = self.get_master_bot()
                 series_result = await series_service.publish_series_post(publication, bot)
+                
                 if isinstance(series_result, dict):
                     return PublishResult(
                         success=series_result.get("success", False),
@@ -177,452 +147,42 @@ class PublicationService:
                     )
                 return series_result
 
-        async def safe_send_to_channel(channel: Channel) -> ChannelPublishResult:
-            channel_name = getattr(channel, "title", getattr(
-                channel, "name", str(channel.telegram_id)))
-
-            try:
-                bot = await self.get_bot_for_channel(channel)
-            except ValueError as e:
-                return ChannelPublishResult(channel=channel_name, success=False, error=str(e), notification_error=f"Failed to publish to {channel_name}: {str(e)}")
-
-            for attempt in range(5):
-                try:
-                    sent_messages = await self.send_to_telegram(publication, channel, bot)
-                    message_ids: List[int] = [
-                        msg.message_id for msg in sent_messages]
-                    telegram_messages_data = [
-                        {"publication_id": publication.id,
-                            "channel_id": channel.id, "telegram_message_id": msg_id}
-                        for msg_id in message_ids
-                    ]
-
-                    if publication.pin_message and message_ids:
-                        try:
-                            await bot.pin_chat_message(
-                                chat_id=channel.telegram_id,
-                                message_id=message_ids[0],
-                                disable_notification=publication.disable_notification
-                            )
-                        except Exception:
-                            pass
-
-                    return ChannelPublishResult(
-                        channel=channel_name,
-                        success=True,
-                        message_ids=message_ids,
-                        telegram_messages_data=telegram_messages_data,
-                        sent_messages=sent_messages,  # Сохраняем для handle_instant_backup
-                        channel_obj=channel  # Сохраняем для handle_instant_backup
-                    )
-
-                except TelegramRetryAfter as e:
-                    if attempt < 4:
-                        await asyncio.sleep(e.retry_after)
-                    else:
-                        return ChannelPublishResult(channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s", notification_error=f"Failed to publish to {channel_name}: Rate limit")
-
-                except Exception as e:
-                    if attempt == 4:
-                        return ChannelPublishResult(channel=channel_name, success=False, error=str(e), notification_error=f"Failed to publish to {channel_name}")
-                    await asyncio.sleep(2 ** attempt)
-            return ChannelPublishResult(channel=channel_name, success=False, error="Unknown error", notification_error=f"Failed to publish to {channel_name}: Unknown error")
-
-        logger.info(
-            f"[TIMING] Starting parallel send to {len(publication.channels)} channels")
-        tasks = [safe_send_to_channel(channel)
-                                      for channel in publication.channels]
-        raw_results = await asyncio.gather(*tasks, return_exceptions=True)
-        results: List[ChannelPublishResult] = []
-        for i, result in enumerate(raw_results):
-            if isinstance(result, BaseException):
-                channel = publication.channels[i]
-                channel_name = getattr(
-                    channel, "title", str(channel.telegram_id))
-                logger.error(
-                    f"[TIMING] Exception for channel {channel_name}: {result}")
-                results.append(ChannelPublishResult(
-                    channel=channel_name, success=False, error=str(result)))
-            else:
-                results.append(result)
-
-        for result in results:
-            if result.success and result.telegram_messages_data:
-                for msg_data in result.telegram_messages_data:
-                    telegram_message = TelegramMessage(
-                        publication_id=msg_data["publication_id"],
-                        channel_id=msg_data["channel_id"],
-                        telegram_message_id=msg_data["telegram_message_id"]
-                    )
-                    self.db.add(telegram_message)
-
-        for result in results:
-            if result.success and hasattr(result, 'sent_messages') and hasattr(result, 'channel_obj'):
-                try:
-                    await self.handle_instant_backup(result.channel_obj, result.sent_messages, publication_id=publication.id)
-                except Exception as e:
-                    logger.error(f"Failed to handle instant backup for {result.channel}: {e}")
-
-        for result in results:
-            if result.success:
-                await self.create_notification(
-                    publication.id,
-                    "success",
-                    f"Published to {result.channel}"
-                )
-            elif hasattr(result, 'notification_error') and result.notification_error:
-                await self.create_notification(
-                    publication.id,
-                    "error",
-                    result.notification_error
-                )
-
-        success_count = sum(1 for r in results if r.success)
-        total_count = len(results)
-
-        if success_count == 0:
-            publication.status = DBPublicationStatus.FAILED
-        elif success_count == total_count:
-            publication.status = DBPublicationStatus.PUBLISHED
-            publication.published_time = datetime.now(timezone.utc)
-            if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
-                publication.next_repeat_time = self.calculate_next_repeat_time(
-                    publication.published_time,
-                    publication.repeat_interval,
-                    publication.repeat_custom_days
-                )
-        else:
-            publication.status = DBPublicationStatus.PARTIAL_SUCCESS
-            publication.published_time = datetime.now(timezone.utc)
-            if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
-                publication.next_repeat_time = self.calculate_next_repeat_time(
-                    publication.published_time,
-                    publication.repeat_interval,
-                    publication.repeat_custom_days
-                )
-
-        await self.db.commit()
-        await self.db.refresh(publication)
-
-        publish_end = time.monotonic()
-        logger.info(
-            f"[TIMING] publish_now DONE publication_id={publication_id}, total={publish_end-publish_start:.3f}s, success={success_count}/{total_count}")
-
-        return PublishResult(
-            success=success_count > 0,
-            results=results,
-            success_count=success_count,
-            total_count=total_count,
-            publication_id=publication.id
+        return await publisher.publish_to_channels(
+            publication,
+            self.db,
+            self.channel_service,
+            self.get_bot_for_channel,
+            self.create_notification,
+            calculate_next_repeat_time
         )
 
     async def republish(self, publication_id: int) -> PublishResult:
-        """
-        Повторно опубликовать пост (для повторяющихся постов).
-        Отправляет пост заново во все каналы и обновляет next_repeat_time.
-        """
+        """Повторно опубликовать пост"""
         publication = await self.get_publication(publication_id)
         if not publication:
-            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            return PublishResult(
+                success=False,
+                error="Publication not found",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
         if not publication.channels:
-            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
-
-        if publication.repeat_interval == DBRepeatInterval.NEVER:
-            return PublishResult(success=False, error="Publication is not set to repeat", results=[], success_count=0, total_count=0)
-
-        results: List[ChannelPublishResult] = []
-
-        for channel in publication.channels:
-            channel_name = getattr(channel, "title", getattr(
-                channel, "name", str(channel.telegram_id)))
-
-            try:
-                bot = await self.get_bot_for_channel(channel)
-            except ValueError as e:
-                results.append(ChannelPublishResult(
-                    channel=channel_name, success=False, error=str(e)))
-                continue
-
-            for attempt in range(5):
-                try:
-                    sent_messages = await self.send_to_telegram(publication, channel, bot)
-
-                    for msg in sent_messages:
-                        telegram_message = TelegramMessage(
-                            publication_id=publication.id,
-                            channel_id=channel.id,
-                            message_id=msg.message_id,
-                            chat_id=channel.telegram_id
-                        )
-                        self.db.add(telegram_message)
-
-                    results.append(ChannelPublishResult(channel=channel_name, success=True, message_ids=[
-                                   msg.message_id for msg in sent_messages]))
-                    break
-
-                except TelegramRetryAfter as e:
-                    if attempt < 4:
-                        await asyncio.sleep(e.retry_after)
-                    else:
-                        results.append(ChannelPublishResult(
-                            channel=channel_name, success=False, error=f"Rate limit: {e.retry_after}s"))
-
-                except Exception as e:
-                    if attempt == 4:
-                        results.append(ChannelPublishResult(
-                            channel=channel_name, success=False, error=str(e)))
-                    await asyncio.sleep(2**attempt)
-
-        success_count = sum(1 for r in results if r.success)
-
-        if success_count > 0:
-            publication.published_time = datetime.now(timezone.utc)
-            publication.next_repeat_time = self.calculate_next_repeat_time(
-                publication.published_time,
-                publication.repeat_interval,
-                publication.repeat_custom_days
+            return PublishResult(
+                success=False,
+                error="No channels selected",
+                results=[],
+                success_count=0,
+                total_count=0
             )
 
-        await self.db.commit()
-
-        return PublishResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results), publication_id=publication.id)
-
-    def build_inline_keyboard(self, keyboard_data: Dict) -> InlineKeyboardMarkup:
-        """Построить inline клавиатуру"""
-        keyboard = InlineKeyboardMarkup(inline_keyboard=[])
-        for row in keyboard_data.get('buttons', []):
-            button_row = []
-            for btn in row:
-                if btn.get('url'):
-                    button_row.append(InlineKeyboardButton(
-                        text=btn['text'], url=btn['url']))
-                elif btn.get('callback_data'):
-                    button_row.append(InlineKeyboardButton(
-                        text=btn['text'], callback_data=btn['callback_data']))
-            if button_row:
-                keyboard.inline_keyboard.append(button_row)
-        return keyboard
-
-    async def send_to_telegram(self, publication: Publication, channel: Channel, bot: RateLimitedBot) -> List[Message]:
-        """Отправить публикацию в Telegram"""
-        keyboard = None
-        if publication.inline_keyboard:
-            keyboard = self.build_inline_keyboard(publication.inline_keyboard)
-
-        if publication.content_type == DBContentType.IMAGE and (not publication.media_urls or not publication.media_urls[0]):
-            raise ValueError("media_urls is required for IMAGE content type")
-        if publication.content_type == DBContentType.VIDEO and (not publication.media_urls or not publication.media_urls[0]):
-            raise ValueError("media_urls is required for VIDEO content type")
-        if publication.content_type == DBContentType.AUDIO and (not publication.media_urls or not publication.media_urls[0]):
-            raise ValueError("media_urls is required for AUDIO content type")
-        if publication.content_type == DBContentType.DOCUMENT and (not publication.media_urls or not publication.media_urls[0]):
-            raise ValueError(
-                "media_urls is required for DOCUMENT content type")
-
-        if publication.content_type == DBContentType.TEXT:
-            message = await bot.send_message(
-                chat_id=channel.telegram_id,
-                text=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
-            if publication.media_urls and len(publication.media_urls) > 0:
-                blur_list = publication.media_blur or []
-
-                def get_spoiler(index: int) -> bool:
-                    """Получить значение spoiler для файла по индексу"""
-                    if index < len(blur_list):
-                        return bool(blur_list[index])
-                    return False
-
-                if len(publication.media_urls) == 1:
-                    single_url = publication.media_urls[0]
-                    spoiler = get_spoiler(0)
-                    is_video = single_url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-                    if is_video:
-                        message = await bot.send_video(
-                            chat_id=channel.telegram_id,
-                            video=single_url,
-                            caption=publication.text_content,
-                            reply_markup=keyboard,
-                            parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler,
-                            disable_notification=publication.disable_notification
-                        )
-                        return [message]
-                    else:
-                        message = await bot.send_photo(
-                            chat_id=channel.telegram_id,
-                            photo=single_url,
-                            caption=publication.text_content,
-                            reply_markup=keyboard,
-                            parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler,
-                            disable_notification=publication.disable_notification
-                        )
-                        return [message]
-
-                media = []
-
-                def is_video_url(u: str) -> bool:
-                    return u.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-
-                urls = publication.media_urls[:10]
-                for i, url in enumerate(urls):
-                    file_spoiler = get_spoiler(i)
-                    if i == 0 and publication.text_content:
-                        if is_video_url(url):
-                            media.append(InputMediaVideo(
-                                media=url,
-                                caption=publication.text_content,
-                                parse_mode=ParseMode.HTML,
-                                has_spoiler=file_spoiler
-                            ))
-                        else:
-                            media.append(InputMediaPhoto(
-                                media=url,
-                                caption=publication.text_content,
-                                parse_mode=ParseMode.HTML,
-                                has_spoiler=file_spoiler
-                            ))
-                    else:
-                        if is_video_url(url):
-                            media.append(InputMediaVideo(
-                                media=url,
-                                has_spoiler=file_spoiler
-                            ))
-                        else:
-                            media.append(InputMediaPhoto(
-                                media=url,
-                                has_spoiler=file_spoiler
-                            ))
-                messages = await bot.send_media_group(
-                    chat_id=channel.telegram_id,
-                    media=media,
-                    disable_notification=publication.disable_notification
-                )
-                return list(messages)
-            else:
-                message = await bot.send_message(
-                    chat_id=channel.telegram_id,
-                    text=publication.text_content,
-                    reply_markup=keyboard,
-                    parse_mode=ParseMode.HTML,
-                    disable_notification=publication.disable_notification
-                )
-            return [message]
-
-        elif publication.content_type == DBContentType.IMAGE:
-            message = await bot.send_photo(
-                chat_id=channel.telegram_id,
-                photo=publication.media_urls[0],
-                caption=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.VIDEO:
-            message = await bot.send_video(
-                chat_id=channel.telegram_id,
-                video=publication.media_urls[0],
-                caption=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.AUDIO:
-            message = await bot.send_audio(
-                chat_id=channel.telegram_id,
-                audio=publication.media_urls[0],
-                caption=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.DOCUMENT:
-            message = await bot.send_document(
-                chat_id=channel.telegram_id,
-                document=publication.media_urls[0],
-                caption=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.LINK:
-            message = await bot.send_message(
-                chat_id=channel.telegram_id,
-                text=publication.text_content,
-                reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=False,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
-            poll_data = publication.poll_data
-            message = await bot.send_poll(
-                chat_id=channel.telegram_id,
-                question=poll_data['question'],
-                options=poll_data['options'],
-                is_anonymous=poll_data.get('is_anonymous', True),
-                type='quiz' if publication.content_type == DBContentType.QUIZ else 'regular',
-                allows_multiple_answers=poll_data.get(
-                    'allows_multiple_answers', False),
-                correct_option_id=poll_data.get('correct_option_id'),
-                explanation=poll_data.get('explanation'),
-                reply_markup=keyboard,
-                disable_notification=publication.disable_notification
-            )
-            return [message]
-
-        raise ValueError("Unsupported content type")
-
-    async def handle_instant_backup(
-        self,
-        channel: Channel,
-        messages: List[Message],
-        publication_id: int
-    ) -> None:
-        """Обработать бекап и при необходимости мгновенную ретрансляцию"""
-        if channel.backup_mode == BackupMode.DISABLED:
-            return
-
-        try:
-            for message in messages:
-                backed_up_post = await self.channel_service.save_post_backup(channel.id, message)
-
-                if (
-                    channel.backup_mode == BackupMode.INSTANT
-                    and channel.backup_target_id
-                    and channel.backup_target_id != channel.id
-                ):
-                    await self.channel_service.retransmit_post(
-                        backed_up_post,
-                        channel.backup_target_id
-                    )
-        except Exception as error:
-            await self.create_notification(
-                publication_id,
-                "error",
-                f"Instant backup failed for {getattr(channel, 'title', channel.telegram_id)}",
-                {"error": str(error)}
-            )
+        return await publisher.republish(
+            publication,
+            self.db,
+            self.get_bot_for_channel,
+            calculate_next_repeat_time
+        )
 
     async def edit_published_message(
         self,
@@ -633,213 +193,38 @@ class PublicationService:
         """Редактировать уже опубликованное сообщение"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return EditMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
-
-        if not publication.telegram_messages:
-            return EditMessageResult(success=False, error="No Telegram messages found for publication", results=[], success_count=0, total_count=0)
-
-        if publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
             return EditMessageResult(
                 success=False,
-                error="Editing poll or quiz messages via Telegram API is not supported",
+                error="Publication not found",
                 results=[],
                 success_count=0,
                 total_count=0
             )
 
-        if (
-            publication.content_type == DBContentType.TEXT_WITH_MEDIA
-            and publication.media_urls
-            and len(publication.media_urls) > 1
-        ):
-            return EditMessageResult(
-                success=False,
-                error="Editing media albums is not supported by the Telegram Bot API",
-                results=[],
-                success_count=0,
-                total_count=0
-            )
-
-        new_text = (
-            request.text_content
-            if request.text_content is not None
-            else publication.text_content
+        return await message_editor.edit_published_message(
+            publication,
+            request,
+            self.db,
+            self.get_bot_for_channel
         )
-
-        requested_media = request.media_urls if request.media_urls is not None else publication.media_urls
-
-        inline_keyboard_data: Optional[Dict[str, Any]]
-        if request.inline_keyboard is not None:
-            inline_keyboard_data = (
-                request.inline_keyboard.model_dump()
-                if hasattr(request.inline_keyboard, "model_dump")
-                else request.inline_keyboard
-            )
-        else:
-            inline_keyboard_data = publication.inline_keyboard
-
-        reply_markup = (
-            self.build_inline_keyboard(inline_keyboard_data)
-            if inline_keyboard_data
-            else None
-        )
-
-        results = []
-
-        for tg_msg in publication.telegram_messages:
-            bot = None
-            channel_label = getattr(tg_msg.channel, "title", getattr(
-                tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
-            try:
-                bot = await self.get_bot_for_channel(tg_msg.channel)
-
-                if publication.content_type in [DBContentType.TEXT, DBContentType.LINK]:
-                    if new_text is None:
-                        raise ValueError(
-                            "text_content must be provided for text publications")
-                    await bot.edit_message_text(
-                        chat_id=tg_msg.channel.telegram_id,
-                        message_id=tg_msg.telegram_message_id,
-                        text=new_text,
-                        parse_mode=ParseMode.HTML,
-                        reply_markup=reply_markup
-                    )
-
-                elif publication.content_type in [
-                    DBContentType.IMAGE,
-                    DBContentType.VIDEO,
-                    DBContentType.AUDIO,
-                    DBContentType.DOCUMENT,
-                    DBContentType.TEXT_WITH_MEDIA
-                ]:
-                    if request.media_urls is not None and not request.media_urls:
-                        raise ValueError(
-                            "media_urls cannot be empty when provided")
-
-                    media_url = None
-                    if requested_media:
-                        if len(requested_media) > 1:
-                            raise ValueError(
-                                "Only one media item can be edited at a time")
-                        media_url = requested_media[0]
-
-                    caption_value = new_text if new_text is not None else publication.text_content
-
-                    can_use_caption_edit = (
-                        media_url is None or (
-                            publication.media_urls and media_url == publication.media_urls[0])
-                    )
-
-                    if request.media_urls is None and can_use_caption_edit:
-                        await bot.edit_message_caption(
-                            chat_id=tg_msg.channel.telegram_id,
-                            message_id=tg_msg.telegram_message_id,
-                            caption=caption_value or "",
-                            parse_mode=ParseMode.HTML,
-                            reply_markup=reply_markup
-                        )
-                    else:
-                        if media_url is None:
-                            if not publication.media_urls:
-                                raise ValueError(
-                                    "Original media is missing and no replacement provided")
-                            media_url = publication.media_urls[0]
-
-                        media_input = None
-                        if publication.content_type in [DBContentType.IMAGE, DBContentType.TEXT_WITH_MEDIA]:
-                            media_input = InputMediaPhoto(
-                                media=media_url,
-                                caption=caption_value or "",
-                                parse_mode=ParseMode.HTML,
-                                has_spoiler=publication.media_blur
-                            )
-                        elif publication.content_type == DBContentType.VIDEO:
-                            media_input = InputMediaVideo(
-                                media=media_url,
-                                caption=caption_value or "",
-                                parse_mode=ParseMode.HTML,
-                                has_spoiler=publication.media_blur
-                            )
-                        elif publication.content_type == DBContentType.AUDIO:
-                            media_input = InputMediaAudio(
-                                media=media_url,
-                                caption=caption_value or "",
-                                parse_mode=ParseMode.HTML
-                            )
-                        elif publication.content_type == DBContentType.DOCUMENT:
-                            media_input = InputMediaDocument(
-                                media=media_url,
-                                caption=caption_value or "",
-                                parse_mode=ParseMode.HTML
-                            )
-                        else:
-                            raise ValueError(
-                                "Unsupported media type for editing")
-
-                        await bot.edit_message_media(
-                            chat_id=tg_msg.channel.telegram_id,
-                            message_id=tg_msg.telegram_message_id,
-                            media=media_input,
-                            reply_markup=reply_markup
-                        )
-
-                results.append(ChannelPublishResult(
-                    channel=channel_label, success=True))
-            except Exception as e:
-                results.append(ChannelPublishResult(
-                    channel=channel_label, success=False, error=str(e)))
-
-        success_count = sum(1 for r in results if r.success)
-
-        if success_count > 0:
-            if request.text_content is not None:
-                publication.text_content = request.text_content
-            if request.inline_keyboard is not None:
-                publication.inline_keyboard = (
-                    request.inline_keyboard.model_dump()
-                    if request.inline_keyboard
-                    else None
-                )
-            if request.media_urls is not None:
-                publication.media_urls = request.media_urls
-            publication.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
-            await self.db.refresh(publication)
-        else:
-            await self.db.rollback()
-
-        return EditMessageResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results))
 
     async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None) -> DeleteMessageResult:
         """Удалить опубликованные сообщения из Telegram"""
         publication = await self.get_publication(publication_id, owner_id=owner_id)
         if not publication:
-            return DeleteMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            return DeleteMessageResult(
+                success=False,
+                error="Publication not found",
+                results=[],
+                success_count=0,
+                total_count=0
+            )
 
-        results = []
-        for tg_msg in publication.telegram_messages:
-            channel_label = getattr(tg_msg.channel, "title", getattr(
-                tg_msg.channel, "name", str(tg_msg.channel.telegram_id)))
-            try:
-                bot = await self.get_bot_for_channel(tg_msg.channel)
-                await bot.delete_message(
-                    chat_id=tg_msg.channel.telegram_id,
-                    message_id=tg_msg.telegram_message_id
-                )
-                results.append(ChannelPublishResult(
-                    channel=channel_label, success=True))
-            except Exception as e:
-                results.append(ChannelPublishResult(
-                    channel=channel_label, success=False, error=str(e)))
-
-        success_count = sum(1 for r in results if r.success)
-
-        if success_count == len(results):
-            publication.status = DBPublicationStatus.DELETED
-
-        await self.db.commit()
-
-        return DeleteMessageResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results))
+        return await message_editor.delete_telegram_messages(
+            publication,
+            self.db,
+            self.get_bot_for_channel
+        )
 
     async def retransmit_post(self, original_post, target_channel_id: int):
         """Ретранслировать пост"""
@@ -847,3 +232,28 @@ class PublicationService:
             original_post=original_post,
             target_channel_id=target_channel_id
         )
+
+
+def calculate_next_repeat_time(
+    base_time: datetime,
+    repeat_interval: DBRepeatInterval,
+    custom_days: Optional[int] = None
+) -> Optional[datetime]:
+    """Вычислить следующее время повтора"""
+    if repeat_interval == DBRepeatInterval.NEVER:
+        return None
+
+    if repeat_interval == DBRepeatInterval.DAILY:
+        return base_time + timedelta(days=1)
+    elif repeat_interval == DBRepeatInterval.WEEKLY:
+        return base_time + timedelta(weeks=1)
+    elif repeat_interval == DBRepeatInterval.BIWEEKLY:
+        return base_time + timedelta(weeks=2)
+    elif repeat_interval == DBRepeatInterval.MONTHLY:
+        return base_time + timedelta(days=30)
+    elif repeat_interval == DBRepeatInterval.YEARLY:
+        return base_time + timedelta(days=365)
+    elif repeat_interval == DBRepeatInterval.CUSTOM and custom_days:
+        return base_time + timedelta(days=custom_days)
+
+    return None
