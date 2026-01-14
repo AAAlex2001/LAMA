@@ -11,16 +11,18 @@ from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import BufferedInputFile, Message
 from PIL import Image
 
+from backend.services.rate_limiter import get_rate_limiter
+
 logger = logging.getLogger(__name__)
 
-STORAGE_CHANNEL_ID = -1003209009153
+STORAGE_CHANNEL_ID = 874275963
 MAX_IMAGE_DIMENSION = 8000
 MAX_IMAGE_PIXELS = 10_000_000
 
 
 async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[str]]:
     """
-    Прогревает медиа файлы в Telegram.
+    Прогревает медиа файлы в Telegram параллельно.
     
     Args:
         bot: Telegram бот
@@ -29,21 +31,27 @@ async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[s
     Returns:
         Список file_id (None если прогрев не удался)
     """
-    file_ids: List[Optional[str]] = []
-
-    for idx, url in enumerate(media_urls, start=1):
+    import asyncio
+    
+    async def warmup_with_logging(idx: int, url: str, total: int) -> Optional[str]:
         try:
             file_id = await warmup_single_media(bot, url)
-            file_ids.append(file_id)
             if file_id:
-                logger.info("Warmup ok (%s/%s): %s -> %s", idx, len(media_urls), url, file_id)
+                logger.info("Warmup ok (%s/%s): %s -> %s", idx, total, url, file_id)
             else:
-                logger.warning("Warmup null file_id (%s/%s): %s", idx, len(media_urls), url)
+                logger.warning("Warmup null file_id (%s/%s): %s", idx, total, url)
+            return file_id
         except Exception:
-            logger.exception("Warmup failed (%s/%s): %s", idx, len(media_urls), url)
-            file_ids.append(None)
-
-    return file_ids
+            logger.exception("Warmup failed (%s/%s): %s", idx, total, url)
+            return None
+    
+    tasks = [
+        warmup_with_logging(idx, url, len(media_urls)) 
+        for idx, url in enumerate(media_urls, start=1)
+    ]
+    
+    file_ids = await asyncio.gather(*tasks, return_exceptions=False)
+    return list(file_ids)
 
 
 async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
@@ -74,22 +82,30 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
         message: Optional[Message] = None
 
         if any(url_lower.endswith(ext) for ext in ['.mp4', '.mov', '.m4v', '.webm', '.avi']):
-            message = await bot.send_video(chat_id=STORAGE_CHANNEL_ID, video=input_file)
+            rate_limiter = get_rate_limiter()
+            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
+                message = await bot.send_video(chat_id=STORAGE_CHANNEL_ID, video=input_file)
             if message.video:
                 return message.video.file_id
 
         elif any(url_lower.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']):
-            message = await bot.send_audio(chat_id=STORAGE_CHANNEL_ID, audio=input_file)
+            rate_limiter = get_rate_limiter()
+            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
+                message = await bot.send_audio(chat_id=STORAGE_CHANNEL_ID, audio=input_file)
             if message.audio:
                 return message.audio.file_id
 
         elif any(url_lower.endswith(ext) for ext in ['.pdf', '.doc', '.docx', '.txt', '.zip', '.rar']):
-            message = await bot.send_document(chat_id=STORAGE_CHANNEL_ID, document=input_file)
+            rate_limiter = get_rate_limiter()
+            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
+                message = await bot.send_document(chat_id=STORAGE_CHANNEL_ID, document=input_file)
             if message.document:
                 return message.document.file_id
 
         else:
-            message = await bot.send_photo(chat_id=STORAGE_CHANNEL_ID, photo=input_file)
+            rate_limiter = get_rate_limiter()
+            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
+                message = await bot.send_photo(chat_id=STORAGE_CHANNEL_ID, photo=input_file)
             if message.photo:
                 return message.photo[-1].file_id
 
