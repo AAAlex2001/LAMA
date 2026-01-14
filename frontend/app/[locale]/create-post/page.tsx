@@ -8,6 +8,7 @@ import { usePostSettings } from '@/components/post-settings/store';
 import RichTextEditor, { RichTextEditorRef } from '@/components/rich-text-editor';
 import InlineButtons, { ButtonRow } from '@/components/inline-buttons';
 import MediaPreview, { type MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -18,6 +19,7 @@ import {
   PaperclipIcon,
 } from '@/components/icons';
 import { handlePublishNow, handleSaveDraft } from './store/actions';
+import { textTemplatesApi } from './store/text-templates-api';
 
 export default function CreatePostPage() {
   const [text, setText] = useState('');
@@ -28,6 +30,8 @@ export default function CreatePostPage() {
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
+  const [showTemplatesModal, setShowTemplatesModal] = useState(false);
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const postSettings = usePostSettings();
   const editorRef = useRef<RichTextEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -169,6 +173,42 @@ export default function CreatePostPage() {
     }
   };
 
+  const handleSaveAsTemplate = async () => {
+    if (!text || text.trim() === '') {
+      alert('Текст пуст. Нечего сохранять в шаблон.');
+      return;
+    }
+
+    const templateName = prompt('Введите название шаблона:');
+    if (!templateName || templateName.trim() === '') {
+      return;
+    }
+
+    setIsSavingTemplate(true);
+    try {
+      const editorDiv = editorRef.current;
+      const formattedContent = editorDiv ? { html: text } : { html: text };
+      
+      await textTemplatesApi.createTemplate({
+        name: templateName.trim(),
+        formatted_content: formattedContent,
+      });
+      
+      alert('Шаблон успешно сохранен!');
+    } catch (error) {
+      console.error('Failed to save template:', error);
+      alert('Ошибка при сохранении шаблона');
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  };
+
+  const handleSelectTemplate = (formattedContent: Record<string, any>) => {
+    if (formattedContent?.html) {
+      setText(formattedContent.html);
+    }
+  };
+
   return (
     <div className={styles.pageWrapper}>
         <div className={styles.mainContent}>
@@ -192,6 +232,7 @@ export default function CreatePostPage() {
             value={text}
             onChange={setText}
             placeholder="Напишите текст публикации..."
+            onSaveAsTemplate={handleSaveAsTemplate}
           />
           <div className={styles.actionsMenu}>
             <div className={styles.actionsRow}>
@@ -234,6 +275,7 @@ export default function CreatePostPage() {
                 showArrow={false}
                 icon={<TemplatesIcon width={24} height={24} />}
                 className={styles.actionButton}
+                onClick={() => setShowTemplatesModal(true)}
               />
               <Button
                 text="Опрос"
@@ -458,6 +500,13 @@ export default function CreatePostPage() {
           </div>
         </div>
       )}
+
+      {/* Text Templates Modal */}
+      <TextTemplatesModal
+        isOpen={showTemplatesModal}
+        onClose={() => setShowTemplatesModal(false)}
+        onSelectTemplate={handleSelectTemplate}
+      />
     </div>
   );
 }

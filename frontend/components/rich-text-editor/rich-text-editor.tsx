@@ -33,6 +33,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   maxLength?: number;
+  onSaveAsTemplate?: () => void;
 }
 
 const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
@@ -40,13 +41,14 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
   onChange,
   placeholder = 'Напишите текст публикации...',
   maxLength = MAX_CHARS,
+  onSaveAsTemplate,
 }, ref) => {
   const [showAiInput, setShowAiInput] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [selectionPosition, setSelectionPosition] = useState({ top: 0, left: 0 });
-  
+  const [showTemplatesMenu, setShowTemplatesMenu] = useState(false);
   const {
     state,
     editorRef,
@@ -434,8 +436,17 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(({
           )}
         </div>
         <div className={styles.charCountWrapper}>
-          <button className={styles.toolButton} type="button" aria-label="Подсчет символов">
-            <TemplatesIcon width={21} height={21} />
+          <button 
+            className={styles.toolButton} 
+            type="button" 
+            aria-label="Сохранить в шаблоны"
+            onClick={() => onSaveAsTemplate?.()}
+            disabled={!onSaveAsTemplate}
+            onMouseEnter={() => setHoveredButton('templates')}
+            onMouseLeave={() => setHoveredButton(null)}
+          >
+            <TemplatesIcon width={21} height={21} color={getIconColor('templates')} />
+            {state.hoveredButton === 'templates' && <Tooltip text="сохранить в шаблоны" />}
           </button>
           <span className={styles.charCount}>{state.charCount}/{maxLength}</span>
         </div>

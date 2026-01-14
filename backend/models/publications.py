@@ -164,3 +164,15 @@ class PublicationNotification(Base):
     
     publication = relationship('Publication', back_populates='notifications')
 
+
+class TextTemplate(Base):
+    __tablename__ = 'text_templates'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    name: Mapped[str] = mapped_column(String(255))
+    formatted_content: Mapped[dict] = mapped_column(JSON)
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    
+    owner = relationship("User", back_populates="text_templates")
+

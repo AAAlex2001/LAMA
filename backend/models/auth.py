@@ -40,6 +40,7 @@ class User(Base):
     bots = relationship("Bot", back_populates="owner")
     channel_groups = relationship("ChannelGroup", back_populates="owner")
     publications = relationship("Publication", back_populates="owner")
+    text_templates = relationship("TextTemplate", back_populates="owner", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User(id={self.id}, role={self.role}, telegram_id={self.telegram_account.telegram_id if self.telegram_account else None})>"

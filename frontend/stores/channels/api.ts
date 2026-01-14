@@ -35,15 +35,10 @@ function parseErrorMessage(detail: unknown): string {
   return 'Ошибка сервера. Попробуйте позже';
 }
 
-// TODO: убрать хардкод токена после настройки авторизации
-const HARDCODED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwidHlwZSI6ImFjY2VzcyIsImV4cCI6MTc2ODI1MzA4MywiaWF0IjoxNzY4MTY2NjgzLCJqdGkiOiJ4bUVlb3dZVzkxZURyMXdCZzhsamFBIn0.Xa6m9r972G_usfLD5S0CxAv1h332aRHhS5htLcgQKyA';
-
 function getAuthHeaders(): HeadersInit {
-  const token = HARDCODED_TOKEN || (
-    typeof window !== 'undefined' 
-      ? localStorage.getItem('lamaplanner_access_token') 
-      : null
-  );
+  const token = typeof window !== 'undefined' 
+    ? localStorage.getItem('lamaplanner_access_token') 
+    : null;
   
   return {
     'Content-Type': 'application/json',
