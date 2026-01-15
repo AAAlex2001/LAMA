@@ -72,63 +72,27 @@ function createThumbnail(file: File): Promise<string> {
 }
 
 function createVideoThumbnail(file: File): Promise<string> {
-  return new Promise((resolve) => {
-    const video = document.createElement('video');
-    const objectUrl = URL.createObjectURL(file);
+  // Видео-кадр превью тяжёлый и фризит UI на больших файлах.
+  // Делаем лёгкий плейсхолдер, одинаково для загрузки и для черновиков.
+  return Promise.resolve('');
+}
 
-    video.onloadeddata = () => {
-      video.currentTime = 0.1;
-    };
+async function createThumbnailFromUrl(url: string): Promise<string> {
+  try {
+    // Используем proxy для обхода CORS
+    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    const proxyUrl = `${baseUrl}/media/proxy?url=${encodeURIComponent(url)}`;
+    
+    const resp = await fetch(proxyUrl);
+    if (!resp.ok) return '';
+    const blob = await resp.blob();
+    if (!blob.type.startsWith('image/')) return '';
 
-    video.onseeked = () => {
-      let width = video.videoWidth;
-      let height = video.videoHeight;
-
-      if (width > height) {
-        if (width > THUMBNAIL_MAX_SIZE) {
-          height = (height * THUMBNAIL_MAX_SIZE) / width;
-          width = THUMBNAIL_MAX_SIZE;
-        }
-      } else {
-        if (height > THUMBNAIL_MAX_SIZE) {
-          width = (width * THUMBNAIL_MAX_SIZE) / height;
-          height = THUMBNAIL_MAX_SIZE;
-        }
-      }
-
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.drawImage(video, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            URL.revokeObjectURL(objectUrl);
-            if (blob) {
-              resolve(URL.createObjectURL(blob));
-            } else {
-              resolve('');
-            }
-          },
-          'image/jpeg',
-          0.7
-        );
-      } else {
-        URL.revokeObjectURL(objectUrl);
-        resolve('');
-      }
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve('');
-    };
-
-    video.src = objectUrl;
-    video.load();
-  });
+    const file = new File([blob], 'draft-image', { type: blob.type });
+    return await createThumbnail(file);
+  } catch {
+    return '';
+  }
 }
 
 interface CreatePostState {
@@ -166,6 +130,7 @@ type CreatePostAction =
   | { type: 'TOGGLE_INLINE_BUTTONS' }
   | { type: 'SET_BUTTON_ROWS'; payload: ButtonRow[] }
   | { type: 'ADD_MEDIA_FILES'; payload: MediaFile[] }
+  | { type: 'SET_MEDIA_PREVIEW_URL'; payload: { id: string; preview_url: string } }
   | { type: 'REMOVE_MEDIA_FILE'; payload: string }
   | { type: 'TOGGLE_MEDIA_BLUR'; payload: string }
   | { type: 'CLEAR_MEDIA_FILES' }
@@ -214,8 +179,25 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
     case 'ADD_MEDIA_FILES':
       return { ...state, mediaFiles: [...state.mediaFiles, ...action.payload] };
 
+    case 'SET_MEDIA_PREVIEW_URL': {
+      const { id, preview_url } = action.payload;
+      return {
+        ...state,
+        mediaFiles: state.mediaFiles.map(f => {
+          if (f.id !== id) return f;
+          if (f.preview_url && f.preview_url.startsWith('blob:')) {
+            URL.revokeObjectURL(f.preview_url);
+          }
+          return { ...f, preview_url };
+        }),
+      };
+    }
+
     case 'REMOVE_MEDIA_FILE': {
       const fileToRemove = state.mediaFiles.find(f => f.id === action.payload);
+      if (fileToRemove?.preview_url?.startsWith('blob:')) {
+        URL.revokeObjectURL(fileToRemove.preview_url);
+      }
       if (fileToRemove?.url.startsWith('blob:')) {
         URL.revokeObjectURL(fileToRemove.url);
       }
@@ -235,6 +217,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
 
     case 'CLEAR_MEDIA_FILES':
       state.mediaFiles.forEach(f => {
+        if (f.preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(f.preview_url);
+        }
         if (f.url.startsWith('blob:')) {
           URL.revokeObjectURL(f.url);
         }
@@ -261,6 +246,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
 
     case 'RESET_FORM':
       state.mediaFiles.forEach(f => {
+        if (f.preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(f.preview_url);
+        }
         if (f.url.startsWith('blob:')) {
           URL.revokeObjectURL(f.url);
         }
@@ -314,30 +302,49 @@ export function useCreatePost() {
 
     const filesToAdd = Array.from(files).slice(0, availableSlots);
 
-    const newMediaFiles = await Promise.all(
-      filesToAdd.map(async (file, index) => {
-        const type = file.type.startsWith('image/') ? 'image'
-                   : file.type.startsWith('video/') ? 'video'
-                   : 'document';
+    // Сначала добавляем элементы (без тяжёлой генерации превью), чтобы UI не фризил.
+    const newMediaFiles: MediaFile[] = filesToAdd.map((file, index) => {
+      const type = file.type.startsWith('image/') ? 'image'
+        : file.type.startsWith('video/') ? 'video'
+          : 'document';
 
-        let thumbnailUrl = '';
-        if (type === 'image') {
-          thumbnailUrl = await createThumbnail(file);
-        } else if (type === 'video') {
-          thumbnailUrl = await createVideoThumbnail(file);
-        }
-
-        return {
-          id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 11)}`,
-          url: thumbnailUrl,
-          type,
-          blur: false,
-          file,
-        } as MediaFile;
-      })
-    );
+      return {
+        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 11)}`,
+        url: '',
+        preview_url: '',
+        type,
+        blur: false,
+        file,
+      } as MediaFile;
+    });
 
     dispatch({ type: 'ADD_MEDIA_FILES', payload: newMediaFiles });
+
+    // Затем по одному генерим превью (те же параметры, что и всегда: 200px, jpeg 0.7)
+    ;(async () => {
+      for (const media of newMediaFiles) {
+        try {
+          const file = media.file;
+          if (!file) continue;
+
+          let preview = '';
+          if (media.type === 'image') {
+            preview = await createThumbnail(file);
+          } else if (media.type === 'video') {
+            preview = await createVideoThumbnail(file);
+          }
+
+          if (preview) {
+            dispatch({ type: 'SET_MEDIA_PREVIEW_URL', payload: { id: media.id, preview_url: preview } });
+          }
+
+          await new Promise<void>(r => requestAnimationFrame(() => r()));
+        } catch {
+          // ignore
+        }
+      }
+    })();
+
     event.target.value = '';
   }, [state.buttonRows.length, state.mediaFiles.length]);
 
@@ -493,6 +500,7 @@ export function useCreatePost() {
             return {
               id: `draft-${Date.now()}-${index}`,
               url: url,
+              preview_url: '',
               type,
               blur: draft.media_blur?.[index] || false,
               telegram_file_id: draft.media_file_ids?.[index] ?? null,
@@ -501,6 +509,22 @@ export function useCreatePost() {
         );
 
         dispatch({ type: 'ADD_MEDIA_FILES', payload: mediaFiles });
+
+        // Делаем такие же сжатые превью, как при загрузке с компа.
+        ;(async () => {
+          for (const media of mediaFiles) {
+            try {
+              if (media.type !== 'image') continue;
+              const preview = await createThumbnailFromUrl(media.url);
+              if (preview) {
+                dispatch({ type: 'SET_MEDIA_PREVIEW_URL', payload: { id: media.id, preview_url: preview } });
+              }
+              await new Promise<void>(r => requestAnimationFrame(() => r()));
+            } catch {
+              // ignore
+            }
+          }
+        })();
       }
 
       if (draft.inline_keyboard?.buttons) {

@@ -8,7 +8,8 @@ import DocumentIcon from '@/components/icons/document-icon';
 
 export interface MediaFile {
   id: string;
-  url: string;  // Preview URL (для отображения, может быть base64)
+  url: string;  // Source URL (для черновиков/готовых публикаций) или пусто для новых файлов
+  preview_url?: string; // Сжатая превьюшка для UI (blob:...), генерится на клиенте
   type: 'image' | 'video' | 'document';
   blur?: boolean;
   file?: File;  // Оригинальный File объект для загрузки на сервер
@@ -34,22 +35,31 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
             </div>
           ) : file.type === 'video' ? (
             <>
-              <img 
-                src={file.url} 
-                alt="Video preview" 
-                className={styles.mediaImage}
-                style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
-              />
+              {file.preview_url ? (
+                <img
+                  src={file.preview_url}
+                  alt="Video preview"
+                  className={styles.mediaImage}
+                  style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+                  loading="lazy"
+                />
+              ) : (
+                <div
+                  className={styles.videoPlaceholder}
+                  style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+                />
+              )}
               <div className={styles.playIcon}>
                 <PlayIcon width={24} height={24} color="#CED2D6" />
               </div>
             </>
           ) : (
             <img 
-              src={file.url} 
+              src={file.preview_url || file.url} 
               alt="Media preview" 
               className={styles.mediaImage}
               style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+              loading="lazy"
             />
           )}
           
