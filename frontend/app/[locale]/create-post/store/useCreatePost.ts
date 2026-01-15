@@ -7,6 +7,7 @@ import type { RichTextEditorRef } from '@/components/rich-text-editor';
 import { usePostSettings } from '@/components/post-settings/store';
 import { handlePublishNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
+import { draftsApi, type Draft } from '@/stores/drafts';
 import type { InlineKeyboard, InlineButton } from './types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
@@ -140,6 +141,7 @@ interface CreatePostState {
   isSavingDraft: boolean;
   isScheduling: boolean;
   showTemplatesModal: boolean;
+  showDraftsModal: boolean;
   isSavingTemplate: boolean;
 }
 
@@ -152,6 +154,7 @@ const initialState: CreatePostState = {
   isPublishing: false,
   isSavingDraft: false,
   isScheduling: false,
+  showDraftsModal: false,
   showTemplatesModal: false,
   isSavingTemplate: false,
 };
@@ -168,6 +171,7 @@ type CreatePostAction =
   | { type: 'CLEAR_MEDIA_FILES' }
   | { type: 'SET_IS_PUBLISHING'; payload: boolean }
   | { type: 'SET_IS_SAVING_DRAFT'; payload: boolean }
+  | { type: 'SET_SHOW_DRAFTS_MODAL'; payload: boolean }
   | { type: 'SET_IS_SCHEDULING'; payload: boolean }
   | { type: 'SET_SHOW_TEMPLATES_MODAL'; payload: boolean }
   | { type: 'SET_IS_SAVING_TEMPLATE'; payload: boolean }
@@ -248,6 +252,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
 
     case 'SET_SHOW_TEMPLATES_MODAL':
       return { ...state, showTemplatesModal: action.payload };
+
+    case 'SET_SHOW_DRAFTS_MODAL':
+      return { ...state, showDraftsModal: action.payload };
 
     case 'SET_IS_SAVING_TEMPLATE':
       return { ...state, isSavingTemplate: action.payload };
@@ -344,6 +351,10 @@ export function useCreatePost() {
 
   const setShowTemplatesModal = useCallback((show: boolean) => {
     dispatch({ type: 'SET_SHOW_TEMPLATES_MODAL', payload: show });
+  }, []);
+
+  const setShowDraftsModal = useCallback((show: boolean) => {
+    dispatch({ type: 'SET_SHOW_DRAFTS_MODAL', payload: show });
   }, []);
 
   const getInlineKeyboard = useCallback((): InlineKeyboard | undefined => {
@@ -459,6 +470,59 @@ export function useCreatePost() {
     }
   }, []);
 
+  const handleSelectDraft = useCallback(async (draft: Draft) => {
+    try {
+      const text = draft.formatted_content?.text || draft.text_content || '';
+      dispatch({ type: 'SET_TEXT', payload: text });
+
+      if (draft.media_urls && draft.media_urls.length > 0) {
+        const mediaFiles: MediaFile[] = await Promise.all(
+          draft.media_urls.map(async (url, index) => {
+            const extension = url.split('.').pop()?.toLowerCase() || '';
+            let type: 'image' | 'video' | 'document' = 'document';
+            
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+              type = 'image';
+            } else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) {
+              type = 'video';
+            }
+
+            return {
+              id: `draft-${Date.now()}-${index}`,
+              url: url,
+              type,
+              blur: draft.media_blur?.[index] || false,
+            } as MediaFile;
+          })
+        );
+
+        dispatch({ type: 'ADD_MEDIA_FILES', payload: mediaFiles });
+      }
+
+      if (draft.inline_keyboard?.buttons) {
+        const buttons = draft.inline_keyboard.buttons as InlineButton[][];
+        const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
+          id: `row-${Date.now()}-${rowIndex}`,
+          buttons: row.map((btn, btnIndex) => ({
+            id: `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
+            text: btn.text,
+            type: btn.url ? 'url' : 'callback',
+            url: btn.url || '',
+            callback_data: btn.callback_data || '',
+          })),
+        }));
+
+        dispatch({ type: 'SET_BUTTON_ROWS', payload: buttonRows });
+        dispatch({ type: 'TOGGLE_INLINE_BUTTONS' });
+      }
+
+      showSuccess('Черновик загружен');
+    } catch (error) {
+      console.error('Failed to load draft:', error);
+      showError('Не удалось загрузить черновик');
+    }
+  }, [showSuccess, showError]);
+
   const openFileDialog = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -484,10 +548,12 @@ export function useCreatePost() {
     handleRemoveMedia,
     handleToggleBlur,
     setShowTemplatesModal,
+    setShowDraftsModal,
     onPublishNow,
     onSaveDraft,
     handleSaveAsTemplate,
     handleSelectTemplate,
+    handleSelectDraft,
     openFileDialog,
   };
 }

@@ -7,6 +7,7 @@ import RichTextEditor from '@/components/rich-text-editor';
 import InlineButtons from '@/components/inline-buttons';
 import MediaPreview from '@/components/rich-text-editor/media-preview/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
+import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -30,6 +31,7 @@ export default function CreatePostPage() {
     isSavingDraft,
     isScheduling,
     showTemplatesModal,
+    showDraftsModal,
 
     // Refs
     editorRef,
@@ -51,10 +53,12 @@ export default function CreatePostPage() {
     handleRemoveMedia,
     handleToggleBlur,
     setShowTemplatesModal,
+    setShowDraftsModal,
     onPublishNow,
     onSaveDraft,
     handleSaveAsTemplate,
     handleSelectTemplate,
+    handleSelectDraft,
     openFileDialog,
   } = useCreatePost();
 
@@ -91,6 +95,7 @@ export default function CreatePostPage() {
                     showArrow={false}
                     icon={<DraftsIcon width={24} height={24} />}
                     className={styles.actionButton}
+                    onClick={() => setShowDraftsModal(true)}
                   />
                   <Button
                     text="Кнопки"
@@ -341,6 +346,12 @@ export default function CreatePostPage() {
         isOpen={showTemplatesModal}
         onClose={() => setShowTemplatesModal(false)}
         onSelectTemplate={handleSelectTemplate}
+      />
+
+      <DraftsModal
+        isOpen={showDraftsModal}
+        onClose={() => setShowDraftsModal(false)}
+        onSelectDraft={handleSelectDraft}
       />
     </div>
   );
