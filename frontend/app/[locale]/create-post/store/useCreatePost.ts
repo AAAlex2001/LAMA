@@ -7,10 +7,9 @@ import type { RichTextEditorRef } from '@/components/rich-text-editor';
 import { usePostSettings } from '@/components/post-settings/store';
 import { handlePublishNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
-import { draftsApi, type Draft } from '@/stores/drafts';
+import { Draft } from '@/stores/drafts';
 import type { InlineKeyboard, InlineButton } from './types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { uploadMediaFiles } from './api';
 
 const THUMBNAIL_MAX_SIZE = 200;
 
@@ -82,7 +81,6 @@ function createVideoThumbnail(file: File): Promise<string> {
     video.playsInline = true;
 
     video.onloadedmetadata = () => {
-      // Берём кадр через 0.1 секунду от начала
       video.currentTime = 0.1;
     };
 
@@ -91,7 +89,6 @@ function createVideoThumbnail(file: File): Promise<string> {
         let width = video.videoWidth;
         let height = video.videoHeight;
 
-        // Resize до 200px как для изображений
         if (width > height) {
           if (width > THUMBNAIL_MAX_SIZE) {
             height = (height * THUMBNAIL_MAX_SIZE) / width;
@@ -140,24 +137,6 @@ function createVideoThumbnail(file: File): Promise<string> {
 
     video.src = objectUrl;
   });
-}
-
-async function createThumbnailFromUrl(url: string): Promise<string> {
-  try {
-    // Используем proxy для обхода CORS
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-    const proxyUrl = `${baseUrl}/media/proxy?url=${encodeURIComponent(url)}`;
-    
-    const resp = await fetch(proxyUrl);
-    if (!resp.ok) return '';
-    const blob = await resp.blob();
-    if (!blob.type.startsWith('image/')) return '';
-
-    const file = new File([blob], 'draft-image', { type: blob.type });
-    return await createThumbnail(file);
-  } catch {
-    return '';
-  }
 }
 
 interface CreatePostState {
@@ -378,7 +357,6 @@ export function useCreatePost() {
 
     const filesToAdd = Array.from(files).slice(0, availableSlots);
 
-    // Сначала добавляем элементы (без тяжёлой генерации превью), чтобы UI не фризил.
     const newMediaFiles: MediaFile[] = filesToAdd.map((file, index) => {
       const type = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('video/') ? 'video'
@@ -396,8 +374,7 @@ export function useCreatePost() {
 
     dispatch({ type: 'ADD_MEDIA_FILES', payload: newMediaFiles });
 
-    // Генерируем локальные превьюшки (быстро, без загрузки на сервер)
-    ;(async () => {
+    (async () => {
       for (const media of newMediaFiles) {
         try {
           const file = media.file;
@@ -416,7 +393,7 @@ export function useCreatePost() {
 
           await new Promise<void>(r => requestAnimationFrame(() => r()));
         } catch {
-          // ignore
+          // Игнорируем ошибки превью
         }
       }
     })();
@@ -557,8 +534,6 @@ export function useCreatePost() {
     try {
       const text = draft.formatted_content?.text || draft.text_content || '';
       dispatch({ type: 'SET_TEXT', payload: text });
-
-      // Чтобы не смешивать медиа из разных черновиков
       dispatch({ type: 'CLEAR_MEDIA_FILES' });
 
       if (draft.media_urls && draft.media_urls.length > 0) {
@@ -572,7 +547,6 @@ export function useCreatePost() {
             type = 'video';
           }
 
-          // Используем готовый thumbnail с бэкенда
           const thumbnailUrl = draft.media_thumbnail_urls?.[index] ?? null;
 
           return {
