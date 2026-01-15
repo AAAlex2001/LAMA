@@ -3,7 +3,7 @@ from typing import Optional, List, Tuple, Dict, Any
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, ChatJoinRequest
+from aiogram.types import Message, ChatJoinRequest
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest, TelegramForbiddenError
 
 from backend.models.bots import (
@@ -22,6 +22,7 @@ from backend.schemas.bots import (
 )
 from backend.services.bot.CRUD_bots import CRUDBotService
 from backend.config import get_bot
+from backend.utils.keyboard import build_keyboard
 
 
 class BotService:
@@ -203,19 +204,7 @@ class BotService:
         try:
             reply_markup = None
             if data.buttons:
-                buttons = []
-                for row in data.buttons.get("buttons", []):
-                    button_row = []
-                    for btn in row:
-                        button_row.append(
-                            InlineKeyboardButton(
-                                text=btn["text"],
-                                url=btn.get("url"),
-                                callback_data=btn.get("callback_data")
-                            )
-                        )
-                    buttons.append(button_row)
-                reply_markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+                reply_markup = build_keyboard(data.buttons)
 
             if data.media_url and data.media_type:
                 if data.media_type == MessageType.PHOTO:

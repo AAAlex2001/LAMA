@@ -13,6 +13,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus
 )
 from backend.models.channels import ChannelGroup as Channel
+from backend.services.publications.telegram_sender import clean_html_for_telegram
 
 
 class SeriesService:
@@ -127,11 +128,13 @@ class SeriesService:
         """Отправить публикацию как ответ на предыдущее сообщение"""
 
         from backend.models.publications import ContentType as DBContentType
+        
+        cleaned_text = clean_html_for_telegram(publication.text_content)
 
         if publication.content_type == DBContentType.TEXT:
             message = await bot.send_message(
                 chat_id=channel.telegram_id,
-                text=publication.text_content,
+                text=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 reply_markup=reply_markup
@@ -142,7 +145,7 @@ class SeriesService:
             message = await bot.send_photo(
                 chat_id=channel.telegram_id,
                 photo=publication.media_urls[0],
-                caption=publication.text_content,
+                caption=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur,
@@ -154,7 +157,7 @@ class SeriesService:
             message = await bot.send_video(
                 chat_id=channel.telegram_id,
                 video=publication.media_urls[0],
-                caption=publication.text_content,
+                caption=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=publication.media_blur,
@@ -166,7 +169,7 @@ class SeriesService:
             message = await bot.send_audio(
                 chat_id=channel.telegram_id,
                 audio=publication.media_urls[0],
-                caption=publication.text_content,
+                caption=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 reply_markup=reply_markup
@@ -177,7 +180,7 @@ class SeriesService:
             message = await bot.send_document(
                 chat_id=channel.telegram_id,
                 document=publication.media_urls[0],
-                caption=publication.text_content,
+                caption=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 reply_markup=reply_markup
@@ -187,7 +190,7 @@ class SeriesService:
         elif publication.content_type == DBContentType.LINK:
             message = await bot.send_message(
                 chat_id=channel.telegram_id,
-                text=publication.text_content,
+                text=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=False,
@@ -207,7 +210,7 @@ class SeriesService:
                         message = await bot.send_video(
                             chat_id=channel.telegram_id,
                             video=single_url,
-                            caption=publication.text_content,
+                            caption=cleaned_text,
                             reply_to_message_id=reply_to_message_id,
                             parse_mode=ParseMode.HTML,
                             has_spoiler=spoiler,
@@ -217,7 +220,7 @@ class SeriesService:
                         message = await bot.send_photo(
                             chat_id=channel.telegram_id,
                             photo=single_url,
-                            caption=publication.text_content,
+                            caption=cleaned_text,
                             reply_to_message_id=reply_to_message_id,
                             parse_mode=ParseMode.HTML,
                             has_spoiler=spoiler,
@@ -228,7 +231,7 @@ class SeriesService:
                 if publication.text_content:
                     text_msg = await bot.send_message(
                         chat_id=channel.telegram_id,
-                        text=publication.text_content,
+                        text=cleaned_text,
                         reply_to_message_id=reply_to_message_id,
                         parse_mode=ParseMode.HTML
                     )
@@ -255,7 +258,7 @@ class SeriesService:
             else:
                 message = await bot.send_message(
                     chat_id=channel.telegram_id,
-                    text=publication.text_content,
+                    text=cleaned_text,
                     reply_to_message_id=reply_to_message_id,
                     parse_mode=ParseMode.HTML,
                     reply_markup=reply_markup

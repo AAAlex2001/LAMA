@@ -49,11 +49,19 @@ def build_keyboard(
             if not isinstance(btn, dict):
                 continue
 
+            text = btn.get("text", "")
+            url = btn.get("url")
+            callback_data = btn.get("callback_data")
+            
+            # Inline кнопки должны иметь url или callback_data
+            if not url and not callback_data:
+                continue
+            
             button_row.append(
                 InlineKeyboardButton(
-                    text=btn.get("text", ""),
-                    url=btn.get("url"),
-                    callback_data=btn.get("callback_data"),
+                    text=text,
+                    url=url,
+                    callback_data=callback_data,
                 )
             )
 

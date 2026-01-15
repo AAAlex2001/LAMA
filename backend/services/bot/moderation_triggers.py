@@ -4,9 +4,10 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from aiogram import Bot
-from aiogram.types import ChatPermissions, Message, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
+from backend.utils.keyboard import build_keyboard
 
 
 class ModerationTriggerService:
@@ -159,20 +160,16 @@ class ModerationTriggerService:
 
             reply_markup = None
             if replied_message_id:
-                reply_markup = InlineKeyboardMarkup(
-                    inline_keyboard=[
-                        [
-                            InlineKeyboardButton(
-                                text="🚫 Забанить",
-                                callback_data=f"admincall_ban_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
-                            ),
-                            InlineKeyboardButton(
-                                text="🗑 Удалить",
-                                callback_data=f"admincall_del_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
-                            ),
-                        ]
-                    ]
-                )
+                reply_markup = build_keyboard([[
+                    {
+                        "text": "🚫 Забанить",
+                        "callback_data": f"admincall_ban_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
+                    },
+                    {
+                        "text": "🗑 Удалить",
+                        "callback_data": f"admincall_del_{message.chat.id}_{replied_user_id or 0}_{replied_message_id}",
+                    },
+                ]])
 
             await telegram_bot.send_message(
                 chat_id=group_owner.id,

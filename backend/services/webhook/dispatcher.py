@@ -14,6 +14,7 @@ from backend.services.webhook.message import MessageHandler
 from backend.services.webhook.join_request import JoinRequestHandler
 from backend.services.webhook.callback import CallbackHandler
 from backend.services.webhook.subscription import SubscriptionHandler
+from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -154,10 +155,9 @@ class WebhookDispatcher:
             if message.from_user and message.from_user.last_name:
                 login_url += f"&last_name={message.from_user.last_name}"
 
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(
-                    text="🔐 Войти в Lama Planner", url=login_url)]
-            ])
+            keyboard = build_keyboard([[
+                {"text": "🔐 Войти в Lama Planner", "url": login_url}
+            ]])
 
             first_name = message.from_user.first_name if message.from_user else "пользователь"
             response_text = (

@@ -1,5 +1,6 @@
 from typing import List, Optional
 import logging
+import re
 
 from aiogram.types import (
     Message, InputMediaPhoto, InputMediaVideo, 
@@ -14,6 +15,49 @@ from backend.utils.keyboard import build_keyboard
 from backend.services.publications.media_warmup import get_file_id_for_media
 
 logger = logging.getLogger(__name__)
+
+
+def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
+    """
+    Очистить HTML от неподдерживаемых Telegram тегов.
+    
+    Telegram поддерживает только:
+    - <b>, <strong> - жирный
+    - <i>, <em> - курсив
+    - <u> - подчеркнутый
+    - <s>, <strike>, <del> - зачеркнутый
+    - <code> - моноширинный код
+    - <pre> - блок кода
+    - <a href=""> - ссылка
+    - <tg-spoiler> - спойлер
+    - <blockquote> - цитата
+    """
+    if not text:
+        return text
+    
+    # Заменяем <br> и <br/> на перенос строки
+    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
+    
+    # Удаляем <div>, заменяя на содержимое с переносами строк
+    text = re.sub(r'<div[^>]*>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'</div>', '', text, flags=re.IGNORECASE)
+    
+    # Удаляем <span> теги (сохраняем содержимое)
+    text = re.sub(r'<span[^>]*>', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'</span>', '', text, flags=re.IGNORECASE)
+    
+    # Удаляем <p> теги
+    text = re.sub(r'<p[^>]*>', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'</p>', '\n', text, flags=re.IGNORECASE)
+    
+    # Удаляем style атрибуты из поддерживаемых тегов
+    text = re.sub(r'<(b|i|u|s|strong|em|strike|del|code|pre|tg-spoiler|blockquote)\s+style="[^"]*"', r'<\1', text, flags=re.IGNORECASE)
+    
+    # Убираем лишние пробелы и переносы строк
+    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)  # Максимум 2 переноса подряд
+    text = text.strip()
+    
+    return text
 
 
 async def send_to_telegram(
@@ -78,7 +122,7 @@ async def send_text(
     """Отправить текстовое сообщение"""
     message = await bot.send_message(
         chat_id=channel.telegram_id,
-        text=publication.text_content,
+        text=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_notification=publication.disable_notification
@@ -116,7 +160,7 @@ async def send_text_with_media(
             message = await bot.send_document(
                 chat_id=channel.telegram_id,
                 document=media_to_send,
-                caption=publication.text_content,
+                caption=clean_html_for_telegram(publication.text_content),
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 disable_notification=publication.disable_notification
@@ -125,7 +169,7 @@ async def send_text_with_media(
             message = await bot.send_video(
                 chat_id=channel.telegram_id,
                 video=media_to_send,
-                caption=publication.text_content,
+                caption=clean_html_for_telegram(publication.text_content),
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
@@ -135,7 +179,7 @@ async def send_text_with_media(
             message = await bot.send_photo(
                 chat_id=channel.telegram_id,
                 photo=media_to_send,
-                caption=publication.text_content,
+                caption=clean_html_for_telegram(publication.text_content),
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
@@ -156,23 +200,24 @@ async def send_text_with_media(
         logger.info(f"Media {i+1}/{len(urls)}: using {'file_id' if file_id else 'URL'} = {media_to_send[:50]}...")
         
         if i == 0 and publication.text_content:
+            cleaned_caption = clean_html_for_telegram(publication.text_content)
             if is_document_url(url):
                 media.append(InputMediaDocument(
                     media=media_to_send,
-                    caption=publication.text_content,
+                    caption=cleaned_caption,
                     parse_mode=ParseMode.HTML
                 ))
             elif is_video_url(url):
                 media.append(InputMediaVideo(
                     media=media_to_send,
-                    caption=publication.text_content,
+                    caption=cleaned_caption,
                     parse_mode=ParseMode.HTML,
                     has_spoiler=file_spoiler
                 ))
             else:
                 media.append(InputMediaPhoto(
                     media=media_to_send,
-                    caption=publication.text_content,
+                    caption=cleaned_caption,
                     parse_mode=ParseMode.HTML,
                     has_spoiler=file_spoiler
                 ))
@@ -203,11 +248,12 @@ async def send_image(
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
     
+    cleaned_caption = clean_html_for_telegram(publication.text_content)
     if file_id and is_document_url(url):
         message = await bot.send_document(
             chat_id=channel.telegram_id,
             document=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             disable_notification=publication.disable_notification
@@ -216,7 +262,7 @@ async def send_image(
         message = await bot.send_photo(
             chat_id=channel.telegram_id,
             photo=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             has_spoiler=publication.media_blur,
@@ -235,12 +281,13 @@ async def send_video(
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
+    cleaned_caption = clean_html_for_telegram(publication.text_content)
     
     if file_id and is_document_url(url):
         message = await bot.send_document(
             chat_id=channel.telegram_id,
             document=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             disable_notification=publication.disable_notification
@@ -249,7 +296,7 @@ async def send_video(
         message = await bot.send_video(
             chat_id=channel.telegram_id,
             video=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             has_spoiler=publication.media_blur,
@@ -268,12 +315,13 @@ async def send_audio(
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
+    cleaned_caption = clean_html_for_telegram(publication.text_content)
     
     if file_id and is_document_url(url):
         message = await bot.send_document(
             chat_id=channel.telegram_id,
             document=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             disable_notification=publication.disable_notification
@@ -282,7 +330,7 @@ async def send_audio(
         message = await bot.send_audio(
             chat_id=channel.telegram_id,
             audio=media_to_send,
-            caption=publication.text_content,
+            caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             disable_notification=publication.disable_notification
@@ -303,7 +351,7 @@ async def send_document(
     message = await bot.send_document(
         chat_id=channel.telegram_id,
         document=media_to_send,
-        caption=publication.text_content,
+        caption=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_notification=publication.disable_notification
@@ -320,7 +368,7 @@ async def send_link(
     """Отправить ссылку с превью"""
     message = await bot.send_message(
         chat_id=channel.telegram_id,
-        text=publication.text_content,
+        text=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=False,

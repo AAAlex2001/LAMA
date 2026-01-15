@@ -329,15 +329,15 @@ async def send_captcha(
         options_list = list(options)
         random.shuffle(options_list)
 
-        buttons = [[
-            InlineKeyboardButton(
-                text=str(opt), callback_data=f"captcha_{pending.id}_{opt}")
-        ] for opt in options_list]
+        buttons_data = [[{
+            "text": str(opt),
+            "callback_data": f"captcha_{pending.id}_{opt}"
+        }] for opt in options_list]
 
         await telegram_bot.send_message(
             chat_id=join_request.from_user.id,
             text=question,
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+            reply_markup=utils_build_keyboard(buttons_data),
         )
         logger.info(f"Captcha sent to {join_request.from_user.id}")
 

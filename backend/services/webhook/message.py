@@ -186,10 +186,10 @@ class MessageHandler:
             options_list = list(options)[:3]
             random.shuffle(options_list)
 
-            buttons = [[
-                InlineKeyboardButton(
-                    text=str(opt), callback_data=f"group_captcha_{pending.id}_{opt}")
-            ] for opt in options_list]
+            buttons_data = [[{
+                "text": str(opt),
+                "callback_data": f"group_captcha_{pending.id}_{opt}"
+            }] for opt in options_list]
 
             timeout_seconds = getattr(
                 self.bot_model, "captcha_timeout_seconds", 10)
@@ -202,7 +202,7 @@ class MessageHandler:
             captcha_message = await telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text=captcha_text,
-                reply_markup=InlineKeyboardMarkup(inline_keyboard=buttons),
+                reply_markup=build_keyboard(buttons_data),
             )
 
             asyncio.create_task(
@@ -342,10 +342,9 @@ class MessageHandler:
             if message.from_user and message.from_user.last_name:
                 login_url += f"&last_name={message.from_user.last_name}"
 
-            keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(
-                    text="🔐 Войти в Lama Planner", url=login_url)]
-            ])
+            keyboard = build_keyboard([[
+                {"text": "🔐 Войти в Lama Planner", "url": login_url}
+            ]])
 
             first_name = message.from_user.first_name if message.from_user else "пользователь"
             response_text = (
