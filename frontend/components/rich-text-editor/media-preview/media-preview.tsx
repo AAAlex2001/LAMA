@@ -28,18 +28,33 @@ interface MediaPreviewProps {
 export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPreviewProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<MediaFile | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string>('');
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [lightboxLoading, setLightboxLoading] = useState(false);
 
   const openLightbox = (file: MediaFile) => {
+    // Для новых файлов создаём blob URL из оригинального File
+    let fullUrl = '';
+    if (file.file) {
+      fullUrl = URL.createObjectURL(file.file);
+    } else {
+      fullUrl = file.url || file.preview_url || file.thumbnail_url || '';
+    }
+    
     setLightboxMedia(file);
+    setLightboxUrl(fullUrl);
     setLightboxOpen(true);
     setLightboxLoading(true);
   };
 
   const closeLightbox = () => {
+    // Очищаем blob URL если был создан для File
+    if (lightboxMedia?.file && lightboxUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(lightboxUrl);
+    }
     setLightboxOpen(false);
     setLightboxMedia(null);
+    setLightboxUrl('');
     setLightboxLoading(false);
   };
 
@@ -47,13 +62,18 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
     setLoadedImages(prev => new Set(prev).add(id));
   };
 
-  // Получить лучший URL для превью
+  // Получить лучший URL для превью (маленькие картинки 82x82)
   const getPreviewUrl = (file: MediaFile): string => {
     return file.thumbnail_url || file.preview_url || file.url || '';
   };
 
-  // Получить URL для полноразмерного просмотра
+  // Получить URL для полноразмерного просмотра в lightbox
   const getFullUrl = (file: MediaFile): string => {
+    // Для новых файлов (ещё не загруженных на сервер) берём blob из File
+    if (file.file) {
+      return URL.createObjectURL(file.file);
+    }
+    // Для загруженных/черновиков используем url с сервера
     return file.url || file.preview_url || file.thumbnail_url || '';
   };
 
@@ -147,7 +167,7 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
       ))}
       </div>
 
-      {lightboxOpen && lightboxMedia && (
+      {lightboxOpen && lightboxMedia && lightboxUrl && (
         <div className={styles.lightbox} onClick={closeLightbox}>
           <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
             <button className={styles.lightboxClose} onClick={closeLightbox}>
@@ -156,7 +176,7 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
             
             {lightboxMedia.type === 'video' ? (
               <video
-                src={getFullUrl(lightboxMedia)}
+                src={lightboxUrl}
                 controls
                 autoPlay
                 className={styles.lightboxMedia}
@@ -170,7 +190,7 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
                   </div>
                 )}
                 <img
-                  src={getFullUrl(lightboxMedia)}
+                  src={lightboxUrl}
                   alt="Full size preview"
                   className={styles.lightboxMedia}
                   style={{ opacity: lightboxLoading ? 0 : 1 }}
