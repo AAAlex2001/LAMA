@@ -343,7 +343,8 @@ async def update_publication_status(
             publication.next_repeat_time = calculate_next_repeat_time_callback(
                 publication.published_time,
                 publication.repeat_interval,
-                publication.repeat_custom_days
+                publication.repeat_custom_days,
+                publication.repeat_custom_hours
             )
             
     else:
@@ -354,7 +355,8 @@ async def update_publication_status(
             publication.next_repeat_time = calculate_next_repeat_time_callback(
                 publication.published_time,
                 publication.repeat_interval,
-                publication.repeat_custom_days
+                publication.repeat_custom_days,
+                publication.repeat_custom_hours
             )
 
 
@@ -410,7 +412,8 @@ async def republish(
         publication.next_repeat_time = calculate_next_repeat_time_callback(
             publication.published_time,
             publication.repeat_interval,
-            publication.repeat_custom_days
+            publication.repeat_custom_days,
+            publication.repeat_custom_hours
         )
 
     await db.commit()

@@ -16,16 +16,12 @@ export function ErrorNotification({
   onClose,
 }: ErrorNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [showCloseButton, setShowCloseButton] = useState(false);
 
   useEffect(() => {
     const showTimer = setTimeout(() => setIsVisible(true), 10);
-    // Показываем крестик после окончания анимации прогресс-бара
-    const showButtonTimer = setTimeout(() => setShowCloseButton(true), duration);
 
     return () => {
       clearTimeout(showTimer);
-      clearTimeout(showButtonTimer);
     };
   }, [duration]);
 
@@ -36,15 +32,13 @@ export function ErrorNotification({
       }`}
       role="alert"
     >
-      {showCloseButton && (
-        <button
-          onClick={onClose}
-          className={styles.closeButton}
-          aria-label="Закрыть уведомление"
-        >
-          <CloseIcon width={16} height={16} color="#721c24" />
-        </button>
-      )}
+      <button
+        onClick={onClose}
+        className={styles.closeButton}
+        aria-label="Закрыть уведомление"
+      >
+        <CloseIcon width={16} height={16} color="#721c24" />
+      </button>
       <div className={styles.errorContent}>
         <div className={styles.errorIcon}>
           <svg

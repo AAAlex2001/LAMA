@@ -22,12 +22,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const showSuccess = useCallback((message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setNotifications(prev => [...prev, { id, type: 'success', message }]);
+    setNotifications([{ id, type: 'success', message }]);
   }, []);
 
   const showError = useCallback((message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setNotifications(prev => [...prev, { id, type: 'error', message }]);
+    setNotifications([{ id, type: 'error', message }]);
   }, []);
 
   const handleClose = useCallback((id: string) => {

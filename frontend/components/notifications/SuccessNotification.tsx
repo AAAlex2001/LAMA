@@ -16,16 +16,12 @@ export function SuccessNotification({
   onClose,
 }: SuccessNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [showCloseButton, setShowCloseButton] = useState(false);
 
   useEffect(() => {
     const showTimer = setTimeout(() => setIsVisible(true), 10);
-    // Показываем крестик после окончания анимации прогресс-бара
-    const showButtonTimer = setTimeout(() => setShowCloseButton(true), duration);
 
     return () => {
       clearTimeout(showTimer);
-      clearTimeout(showButtonTimer);
     };
   }, [duration]);
 
@@ -36,15 +32,13 @@ export function SuccessNotification({
       }`}
       role="status"
     >
-      {showCloseButton && (
-        <button
-          onClick={onClose}
-          className={styles.closeButton}
-          aria-label="Закрыть уведомление"
-        >
-          <CloseIcon width={16} height={16} color="#155724" />
-        </button>
-      )}
+      <button
+        onClick={onClose}
+        className={styles.closeButton}
+        aria-label="Закрыть уведомление"
+      >
+        <CloseIcon width={16} height={16} color="#155724" />
+      </button>
       <div className={styles.successContent}>
         <div className={styles.successIcon}>
           <svg

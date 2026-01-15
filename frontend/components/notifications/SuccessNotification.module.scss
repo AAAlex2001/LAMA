@@ -1,27 +1,28 @@
 .successNotification {
   position: fixed;
-  top: 150px;
+  top: 30px;
+  left: 20px;
   right: 20px;
   min-width: 320px;
   max-width: 450px;
+  margin: 0 auto;
   background: #FFFFFF;
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-  transform: translateX(500px);
+  transform: translateY(-100px);
   opacity: 0;
   transition: transform 0.3s ease, opacity 0.3s ease;
   z-index: 9999;
-  position: relative;
 }
 
 .visible {
-  transform: translateX(0);
+  transform: translateY(0);
   opacity: 1;
 }
 
 .exiting {
-  transform: translateX(500px);
+  transform: translateY(-100px);
   opacity: 0;
 }
 

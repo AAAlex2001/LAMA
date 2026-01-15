@@ -237,7 +237,8 @@ class PublicationService:
 def calculate_next_repeat_time(
     base_time: datetime,
     repeat_interval: DBRepeatInterval,
-    custom_days: Optional[int] = None
+    custom_days: Optional[int] = None,
+    custom_hours: Optional[int] = None
 ) -> Optional[datetime]:
     """Вычислить следующее время повтора"""
     if repeat_interval == DBRepeatInterval.NEVER:
@@ -253,7 +254,10 @@ def calculate_next_repeat_time(
         return base_time + timedelta(days=30)
     elif repeat_interval == DBRepeatInterval.YEARLY:
         return base_time + timedelta(days=365)
-    elif repeat_interval == DBRepeatInterval.CUSTOM and custom_days:
-        return base_time + timedelta(days=custom_days)
+    elif repeat_interval == DBRepeatInterval.CUSTOM:
+        total_days = custom_days or 0
+        total_hours = custom_hours or 0
+        if total_days > 0 or total_hours > 0:
+            return base_time + timedelta(days=total_days, hours=total_hours)
 
     return None

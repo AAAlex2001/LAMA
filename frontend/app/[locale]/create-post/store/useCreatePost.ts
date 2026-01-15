@@ -81,7 +81,7 @@ function createVideoThumbnail(file: File): Promise<string> {
     video.muted = true;
     video.playsInline = true;
 
-    video.onloadeddata = () => {
+    video.onloadedmetadata = () => {
       // Берём кадр через 0.1 секунду от начала
       video.currentTime = 0.1;
     };

@@ -158,7 +158,8 @@ async def process_repeating_publications():
                 publication.next_repeat_time = PublicationService.calculate_next_repeat_time(
                     datetime.now(timezone.utc),
                     publication.repeat_interval,
-                    publication.repeat_custom_days
+                    publication.repeat_custom_days,
+                    publication.repeat_custom_hours
                 )
                 await db.commit()
 
