@@ -55,8 +55,10 @@ async function fetchApi<T>(
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      // FastAPI возвращает ошибки в поле detail
+      const errorMessage = errorData.detail || errorData.message || 'Ошибка при выполнении запроса';
       throw new ApiError(
-        errorData.message || 'Ошибка при выполнении запроса',
+        errorMessage,
         response.status,
         errorData.errors
       );
@@ -134,10 +136,23 @@ export async function createAndPublishPost(
       message: `Пост успешно опубликован!`,
     };
   } catch (error) {
+    // Извлекаем детальное сообщение об ошибке
+    let errorMessage = 'Ошибка при создании/публикации поста';
+    let errorList: string[] = [];
+    
+    if (error instanceof ApiError) {
+      errorMessage = error.message;
+      if (error.errors) {
+        errorList = error.errors;
+      }
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return {
       success: false,
-      message: 'Ошибка при создании/публикации поста',
-      errors: [error instanceof Error ? error.message : 'Unknown error'],
+      message: errorMessage,
+      errors: errorList.length > 0 ? errorList : undefined,
     };
   }
 }

@@ -320,6 +320,11 @@ async def publish_now(
     result = await service.publish_now(publication_id, owner_id=current_user.id)
     logger.info(f"Publish done: {result.success_count}/{result.total_count}")
     
+    if result.total_count > 0 and result.success_count == 0:
+        errors = [r.error for r in result.results if r.error]
+        error_message = "Не удалось опубликовать ни в один канал: " + "; ".join(errors[:3])
+        raise HTTPException(status_code=400, detail=error_message)
+    
     publication = await service.get_publication(publication_id, owner_id=current_user.id)
     return publication
 

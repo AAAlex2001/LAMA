@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "./SuccessNotification.module.scss";
+import CloseIcon from "@/components/icons/close-icon";
 
 type SuccessNotificationProps = {
   message: string;
@@ -15,27 +16,35 @@ export function SuccessNotification({
   onClose,
 }: SuccessNotificationProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [isExiting, setIsExiting] = useState(false);
+  const [showCloseButton, setShowCloseButton] = useState(false);
 
   useEffect(() => {
     const showTimer = setTimeout(() => setIsVisible(true), 10);
-    const hideTimer = setTimeout(() => setIsExiting(true), duration - 300);
-    const removeTimer = setTimeout(() => onClose(), duration);
+    // Показываем крестик после окончания анимации прогресс-бара
+    const showButtonTimer = setTimeout(() => setShowCloseButton(true), duration);
 
     return () => {
       clearTimeout(showTimer);
-      clearTimeout(hideTimer);
-      clearTimeout(removeTimer);
+      clearTimeout(showButtonTimer);
     };
-  }, [duration, onClose]);
+  }, [duration]);
 
   return (
     <div
       className={`${styles.successNotification} ${
         isVisible ? styles.visible : ""
-      } ${isExiting ? styles.exiting : ""}`}
+      }`}
       role="status"
     >
+      {showCloseButton && (
+        <button
+          onClick={onClose}
+          className={styles.closeButton}
+          aria-label="Закрыть уведомление"
+        >
+          <CloseIcon width={16} height={16} color="#155724" />
+        </button>
+      )}
       <div className={styles.successContent}>
         <div className={styles.successIcon}>
           <svg

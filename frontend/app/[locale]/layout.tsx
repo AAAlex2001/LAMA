@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Geist, Geist_Mono } from "next/font/google";
 import "../globals.css";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -72,7 +73,9 @@ export default async function LocaleLayout({ params, children }: Props) {
         className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ fontFamily: "var(--font-inter)" }}
       >
-        {children}
+        <NotificationProvider>
+          {children}
+        </NotificationProvider>
       </body>
     </html>
   );

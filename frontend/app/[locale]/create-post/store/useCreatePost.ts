@@ -8,6 +8,7 @@ import { usePostSettings } from '@/components/post-settings/store';
 import { handlePublishNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
 import type { InlineKeyboard, InlineButton } from './types';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 const THUMBNAIL_MAX_SIZE = 200;
 
@@ -269,6 +270,7 @@ export function useCreatePost() {
   const postSettings = usePostSettings();
   const editorRef = useRef<RichTextEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showSuccess, showError } = useNotifications();
 
   const setText = useCallback((text: string) => {
     dispatch({ type: 'SET_TEXT', payload: text });
@@ -374,24 +376,25 @@ export function useCreatePost() {
       );
 
       if (result.success) {
-        alert(result.message);
+        showSuccess(result.message);
         editorRef.current?.reset();
         postSettings.resetSettings();
         dispatch({ type: 'RESET_FORM' });
         postSettings.loadRecentTags();
       } else {
-        alert(`Ошибка: ${result.message}`);
+        showError(result.message || 'Не удалось опубликовать пост');
         if (result.errors) {
-          console.error(result.errors);
+          console.error('Детали ошибки:', result.errors);
         }
       }
     } catch (error) {
-      alert('Произошла ошибка при публикации');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при публикации';
+      showError(errorMessage);
+      console.error('Ошибка публикации:', error);
     } finally {
       dispatch({ type: 'SET_IS_PUBLISHING', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard]);
+  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError]);
 
   const onSaveDraft = useCallback(async () => {
     dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: true });
@@ -405,21 +408,25 @@ export function useCreatePost() {
       );
 
       if (result.success) {
-        alert(result.message);
+        showSuccess(result.message);
       } else {
-        alert(`Ошибка: ${result.message}`);
+        showError(result.message || 'Не удалось сохранить черновик');
+        if (result.errors) {
+          console.error('Детали ошибки:', result.errors);
+        }
       }
     } catch (error) {
-      alert('Произошла ошибка при сохранении черновика');
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при сохранении';
+      showError(errorMessage);
+      console.error('Ошибка сохранения:', error);
     } finally {
       dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard]);
+  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError]);
 
   const handleSaveAsTemplate = useCallback(async () => {
     if (!state.text || state.text.trim() === '') {
-      alert('Текст пуст. Нечего сохранять в шаблон.');
+      showError('Текст пуст. Нечего сохранять в шаблон.');
       return;
     }
 
@@ -436,14 +443,15 @@ export function useCreatePost() {
         formatted_content: { html: state.text },
       });
 
-      alert('Шаблон успешно сохранен!');
+      showSuccess('Шаблон успешно сохранен!');
     } catch (error) {
-      console.error(error);
-      alert('Ошибка при сохранении шаблона');
+      console.error('Ошибка сохранения шаблона:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка при сохранении шаблона';
+      showError(errorMessage);
     } finally {
       dispatch({ type: 'SET_IS_SAVING_TEMPLATE', payload: false });
     }
-  }, [state.text]);
+  }, [state.text, showSuccess, showError]);
 
   const handleSelectTemplate = useCallback((formattedContent: Record<string, unknown>) => {
     if (formattedContent?.html && typeof formattedContent.html === 'string') {
