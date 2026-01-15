@@ -30,6 +30,7 @@ export interface CreatePostRequest {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
+  media_thumbnail_urls?: (string | null)[];  // URLs сжатых превьюшек
   media_file_ids?: string[];  // Telegram file_ids для быстрой рассылки
   media_blur?: boolean[];  // Array of booleans, one per media file
   inline_keyboard?: InlineKeyboard;

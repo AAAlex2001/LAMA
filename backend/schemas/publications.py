@@ -120,6 +120,7 @@ class PublicationBase(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
+    media_thumbnail_urls: Optional[List[Optional[str]]] = Field(None, description="URLs сжатых превьюшек для UI")
     media_file_ids: Optional[List[Optional[str]]] = Field(None, description="Telegram file_ids для быстрой рассылки")
     media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
@@ -259,6 +260,7 @@ class PublicationResponse(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
+    media_thumbnail_urls: Optional[List[Optional[str]]] = None
     media_file_ids: Optional[List[Optional[str]]] = None
     media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[Dict[str, Any]] = None

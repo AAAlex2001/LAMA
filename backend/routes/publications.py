@@ -41,7 +41,9 @@ async def create_publication(
 ):
     """Создать новую публикацию (черновик)"""
     try:
+        logger.info(f"Creating publication: media_urls={data.media_urls}, media_thumbnail_urls={data.media_thumbnail_urls}")
         publication = await service.create_publication(data, owner_id=current_user.id)
+        logger.info(f"Created publication {publication.id}: media_thumbnail_urls={publication.media_thumbnail_urls}")
         return publication
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

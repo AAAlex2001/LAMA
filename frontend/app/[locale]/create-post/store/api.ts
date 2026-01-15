@@ -175,11 +175,13 @@ export interface UploadedFile {
   type: 'image' | 'video' | 'document';
   original_name: string;
   file_id?: string;  // Telegram file_id после прогрева медиа
+  thumbnailUrl?: string | null;  // URL сжатой превьюшки
 }
 
 export interface UploadMediaResponse {
   files: UploadedFile[];
   file_ids?: string[];  // Telegram file_ids после прогрева медиа
+  thumbnail_urls?: (string | null)[];  // Сжатые превьюшки с бэка
 }
 
 /**
@@ -212,11 +214,13 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
   }
 
   const data = await response.json();
-  // API возвращает {success: true, data: [...], file_ids: [...]}
-  // Возвращаем первый элемент и его file_id
-  const result = data.data[0];
+  // API возвращает {success: true, files: [...], file_ids: [...], thumbnail_urls: [...]}
+  const result = data.files[0];
   if (data.file_ids && data.file_ids.length > 0) {
     result.file_id = data.file_ids[0];
+  }
+  if (data.thumbnail_urls && data.thumbnail_urls.length > 0) {
+    result.thumbnailUrl = data.thumbnail_urls[0];
   }
   return result;
 }
@@ -225,6 +229,17 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
  * Загрузить медиа файлы на сервер (параллельно, каждый отдельным запросом)
  */
 export async function uploadMediaFiles(files: File[]): Promise<UploadMediaResponse> {
+  // Проверяем общий размер файлов
+  const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+  const maxSize = 50 * 1024 * 1024; // 50MB
+  
+  if (totalSize > maxSize) {
+    const sizeMB = (totalSize / (1024 * 1024)).toFixed(1);
+    throw new ApiError(
+      `Общий размер файлов превышает лимит (${sizeMB}MB из 50MB). Удалите или сожмите некоторые файлы.`
+    );
+  }
+  
   // Загружаем все файлы параллельно
   const uploadPromises = files.map(file => uploadSingleFile(file));
   
@@ -246,11 +261,13 @@ export async function uploadMediaFiles(files: File[]): Promise<UploadMediaRespon
     throw new ApiError(`Не удалось загрузить файлы: ${errors.join(', ')}`);
   }
   
-  // Собираем file_ids из загруженных файлов
+  // Собираем file_ids и thumbnail_urls из загруженных файлов
   const fileIds = uploadedFiles.map(f => f.file_id).filter(id => id !== undefined) as string[];
+  const thumbnailUrls = uploadedFiles.map(f => f.thumbnailUrl || null);
   
   return { 
     files: uploadedFiles,
-    file_ids: fileIds.length > 0 ? fileIds : undefined
+    file_ids: fileIds.length > 0 ? fileIds : undefined,
+    thumbnail_urls: thumbnailUrls
   };
 }

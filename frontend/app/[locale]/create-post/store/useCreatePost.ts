@@ -486,45 +486,31 @@ export function useCreatePost() {
       dispatch({ type: 'CLEAR_MEDIA_FILES' });
 
       if (draft.media_urls && draft.media_urls.length > 0) {
-        const mediaFiles: MediaFile[] = await Promise.all(
-          draft.media_urls.map(async (url, index) => {
-            const extension = url.split('.').pop()?.toLowerCase() || '';
-            let type: 'image' | 'video' | 'document' = 'document';
-            
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-              type = 'image';
-            } else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) {
-              type = 'video';
-            }
+        const mediaFiles: MediaFile[] = draft.media_urls.map((url, index) => {
+          const extension = url.split('.').pop()?.toLowerCase() || '';
+          let type: 'image' | 'video' | 'document' = 'document';
+          
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
+            type = 'image';
+          } else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) {
+            type = 'video';
+          }
 
-            return {
-              id: `draft-${Date.now()}-${index}`,
-              url: url,
-              preview_url: '',
-              type,
-              blur: draft.media_blur?.[index] || false,
-              telegram_file_id: draft.media_file_ids?.[index] ?? null,
-            } as MediaFile;
-          })
-        );
+          // Используем готовый thumbnail с бэкенда
+          const thumbnailUrl = draft.media_thumbnail_urls?.[index] ?? null;
+
+          return {
+            id: `draft-${Date.now()}-${index}`,
+            url: url,
+            preview_url: thumbnailUrl || '',
+            thumbnail_url: thumbnailUrl,
+            type,
+            blur: draft.media_blur?.[index] || false,
+            telegram_file_id: draft.media_file_ids?.[index] ?? null,
+          } as MediaFile;
+        });
 
         dispatch({ type: 'ADD_MEDIA_FILES', payload: mediaFiles });
-
-        // Делаем такие же сжатые превью, как при загрузке с компа.
-        ;(async () => {
-          for (const media of mediaFiles) {
-            try {
-              if (media.type !== 'image') continue;
-              const preview = await createThumbnailFromUrl(media.url);
-              if (preview) {
-                dispatch({ type: 'SET_MEDIA_PREVIEW_URL', payload: { id: media.id, preview_url: preview } });
-              }
-              await new Promise<void>(r => requestAnimationFrame(() => r()));
-            } catch {
-              // ignore
-            }
-          }
-        })();
       }
 
       if (draft.inline_keyboard?.buttons) {

@@ -71,16 +71,27 @@ class StorageService:
         size = len(file_content)
         thumbnail_url = None
 
-        if generate_thumbnail and self.is_image(file_ext):
+        logger.info(f"Upload file: {filename}, ext={file_ext}, generate_thumbnail={generate_thumbnail}")
+
+        if generate_thumbnail:
             try:
-                thumbnail_url = await self.generate_and_upload_thumbnail(
-                    file_content, unique_filename, content_type
-                )
+                if self.is_image(file_ext):
+                    logger.info(f"Generating image thumbnail for {filename}")
+                    thumbnail_url = await self.generate_and_upload_thumbnail(
+                        file_content, unique_filename, content_type
+                    )
+                    logger.info(f"Image thumbnail result: {thumbnail_url}")
+                elif self.is_video(file_ext):
+                    logger.info(f"Generating video thumbnail for {filename}")
+                    thumbnail_url = await self.generate_video_thumbnail(
+                        file_content, unique_filename
+                    )
+                    logger.info(f"Video thumbnail result: {thumbnail_url}")
             except Exception as e:
                 logger.warning(f"Failed to generate thumbnail: {e}")
 
         if self.use_cloud:
-            return await self.upload_to_cloud(
+            return await self._upload_to_cloud(
                 file_content, unique_filename, content_type, size, thumbnail_url
             )
         else:
@@ -174,7 +185,7 @@ class StorageService:
                                  [-1] if image.mode in ('RGBA', 'LA') else None)
                 image = background
 
-            image.thumbnail((300, 300), Image.Resampling.LANCZOS)
+            image.thumbnail((150, 150), Image.Resampling.LANCZOS)
             thumb_buffer = BytesIO()
             image.save(thumb_buffer, format='JPEG', quality=85, optimize=True)
             thumb_content = thumb_buffer.getvalue()
@@ -215,6 +226,85 @@ class StorageService:
     def is_image(self, file_ext: str) -> bool:
         """Проверить является ли файл изображением"""
         return file_ext.lower() in {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+
+    def is_video(self, file_ext: str) -> bool:
+        """Проверить является ли файл видео"""
+        return file_ext.lower() in {".mp4", ".mov", ".avi", ".webm"}
+
+    async def generate_video_thumbnail(
+        self,
+        file_content: bytes,
+        filename: str
+    ) -> Optional[str]:
+        """Создать и загрузить миниатюру первого кадра видео"""
+        import tempfile
+        import subprocess
+        import asyncio
+
+        try:
+            # Сохраняем видео во временный файл
+            with tempfile.NamedTemporaryFile(suffix=Path(filename).suffix, delete=False) as tmp_video:
+                tmp_video.write(file_content)
+                tmp_video_path = tmp_video.name
+
+            # Путь для thumbnail
+            thumb_filename = Path(filename).stem + "-thumb.jpg"
+            tmp_thumb_path = tempfile.mktemp(suffix=".jpg")
+
+            # Извлекаем первый кадр через ffmpeg
+            cmd = [
+                "ffmpeg", "-y", "-i", tmp_video_path,
+                "-vf", "scale=150:150:force_original_aspect_ratio=increase,crop=150:150",
+                "-frames:v", "1",
+                "-q:v", "2",
+                tmp_thumb_path
+            ]
+
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL
+            )
+            await process.wait()
+
+            # Удаляем временное видео
+            Path(tmp_video_path).unlink(missing_ok=True)
+
+            if not Path(tmp_thumb_path).exists():
+                logger.warning(f"ffmpeg failed to create thumbnail for {filename}")
+                return None
+
+            # Читаем thumbnail
+            with open(tmp_thumb_path, "rb") as f:
+                thumb_content = f.read()
+            Path(tmp_thumb_path).unlink(missing_ok=True)
+
+            # Загружаем thumbnail
+            if self.use_cloud:
+                s3_key = f"thumbnails/{thumb_filename}"
+                self.s3_client.put_object(
+                    Bucket=self.bucket_name,
+                    Key=s3_key,
+                    Body=thumb_content,
+                    ContentType='image/jpeg',
+                    ACL='public-read'
+                )
+
+                if self.cdn_url:
+                    return f"{self.cdn_url.rstrip('/')}/{s3_key}"
+                endpoint = S3_ENDPOINT_URL or "https://storage.yandexcloud.net"
+                return f"{endpoint.rstrip('/')}/{self.bucket_name}/{s3_key}"
+            else:
+                thumb_dir = Path("uploads/thumbnails")
+                thumb_dir.mkdir(parents=True, exist_ok=True)
+                thumb_path = thumb_dir / thumb_filename
+                with open(thumb_path, "wb") as f:
+                    f.write(thumb_content)
+                return f"/uploads/thumbnails/{thumb_filename}"
+
+        except Exception as e:
+            logger.error(f"Failed to generate video thumbnail: {e}")
+            return None
 
     def get_file_type(self, file_ext: str) -> str:
         """Определить тип файла"""

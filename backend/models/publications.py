@@ -65,6 +65,7 @@ class Publication(Base):
     text_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     formatted_content: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     media_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    media_thumbnail_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     media_file_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     media_blur: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     

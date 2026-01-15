@@ -65,6 +65,7 @@ export async function handlePublishNow(
     let contentType: 'text' | 'text_with_media' = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
+    let mediaThumbnailUrls: (string | null)[] | undefined;
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
@@ -74,6 +75,7 @@ export async function handlePublishNow(
       const filesToUpload = mediaFiles.filter(f => f.file);
       let uploadedUrls: string[] = [];
       let uploadedFileIds: Array<string | undefined> = [];
+      let uploadedThumbnailUrls: Array<string | null> = [];
 
       if (filesToUpload.length > 0) {
         try {
@@ -89,6 +91,7 @@ export async function handlePublishNow(
           });
 
           uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
+          uploadedThumbnailUrls = (uploadResponse.thumbnail_urls || []).map(url => url || null);
           if (uploadedFileIds.length > 0) {
             console.log('✅ Media warmed up! File IDs:', uploadedFileIds);
           }
@@ -100,6 +103,7 @@ export async function handlePublishNow(
 
       const finalUrls: string[] = [];
       const finalFileIds: Array<string | null> = [];
+      const finalThumbnailUrls: Array<string | null> = [];
       let uploadIndex = 0;
 
       for (const f of mediaFiles) {
@@ -108,16 +112,19 @@ export async function handlePublishNow(
           if (url) {
             finalUrls.push(url);
             finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
+            finalThumbnailUrls.push(uploadedThumbnailUrls[uploadIndex] ?? null);
           }
           uploadIndex += 1;
         } else if (f.url) {
           finalUrls.push(f.url);
           finalFileIds.push(f.telegram_file_id ?? null);
+          finalThumbnailUrls.push(f.thumbnail_url ?? null);
         }
       }
 
       mediaUrls = finalUrls;
       mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
+      mediaThumbnailUrls = finalUrls.length > 0 ? finalThumbnailUrls : undefined;
       contentType = 'text_with_media';
     }
 
@@ -133,7 +140,8 @@ export async function handlePublishNow(
       text_content: hasText ? content.text : undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
+      media_thumbnail_urls: mediaThumbnailUrls,
+      media_file_ids: mediaFileIds,
       media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
@@ -192,6 +200,7 @@ export async function handleSaveDraft(
     let contentType: 'text' | 'text_with_media' = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
+    let mediaThumbnailUrls: (string | null)[] | undefined;
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
@@ -201,6 +210,7 @@ export async function handleSaveDraft(
       const filesToUpload = mediaFiles.filter(f => f.file);
       let uploadedUrls: string[] = [];
       let uploadedFileIds: Array<string | undefined> = [];
+      let uploadedThumbnailUrls: Array<string | null> = [];
 
       if (filesToUpload.length > 0) {
         try {
@@ -212,6 +222,7 @@ export async function handleSaveDraft(
             return `${baseUrl}${f.url}`;
           });
           uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
+          uploadedThumbnailUrls = (uploadResponse.thumbnail_urls || []).map(url => url || null);
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
@@ -220,6 +231,7 @@ export async function handleSaveDraft(
 
       const finalUrls: string[] = [];
       const finalFileIds: Array<string | null> = [];
+      const finalThumbnailUrls: Array<string | null> = [];
       let uploadIndex = 0;
 
       for (const f of mediaFiles) {
@@ -228,16 +240,19 @@ export async function handleSaveDraft(
           if (url) {
             finalUrls.push(url);
             finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
+            finalThumbnailUrls.push(uploadedThumbnailUrls[uploadIndex] ?? null);
           }
           uploadIndex += 1;
         } else if (f.url) {
           finalUrls.push(f.url);
           finalFileIds.push(f.telegram_file_id ?? null);
+          finalThumbnailUrls.push(f.thumbnail_url ?? null);
         }
       }
 
       mediaUrls = finalUrls;
       mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
+      mediaThumbnailUrls = finalUrls.length > 0 ? finalThumbnailUrls : undefined;
       contentType = 'text_with_media';
     }
 
@@ -253,7 +268,8 @@ export async function handleSaveDraft(
       text_content: hasText ? content.text : undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
+      media_thumbnail_urls: mediaThumbnailUrls,
+      media_file_ids: mediaFileIds,
       media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,

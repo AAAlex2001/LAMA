@@ -4,6 +4,7 @@ from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
+import logging
 
 from backend.models.publications import (
     Publication, Tag, PublicationSeries,
@@ -19,6 +20,8 @@ from backend.schemas.publications import (
     PublicationStatus, ContentType,
     TextTemplateCreate, TextTemplateUpdate
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CRUDPublicationService:
@@ -40,6 +43,7 @@ class CRUDPublicationService:
             formatted_content=data.formatted_content,
             media_urls=data.media_urls,
             media_file_ids=data.media_file_ids,
+            media_thumbnail_urls=data.media_thumbnail_urls,
             media_blur=data.media_blur,
             inline_keyboard=data.inline_keyboard.model_dump() if data.inline_keyboard else None,
             poll_data=data.poll_data.model_dump() if data.poll_data else None,
@@ -70,9 +74,12 @@ class CRUDPublicationService:
             tags = await self.get_or_create_tags(data.tag_names, data.tag_color)
             publication.tags = tags
 
+        logger.info(f"Before commit: publication.media_thumbnail_urls={publication.media_thumbnail_urls}")
         self.db.add(publication)
         await self.db.commit()
+        logger.info(f"After commit, before refresh: publication.media_thumbnail_urls={publication.media_thumbnail_urls}")
         await self.db.refresh(publication, ['channels', 'tags', 'series'])
+        logger.info(f"After refresh: publication.media_thumbnail_urls={publication.media_thumbnail_urls}")
         for channel in publication.channels:
             await self.db.refresh(channel, ['bot'])
 
