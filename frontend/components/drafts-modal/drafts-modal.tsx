@@ -71,10 +71,20 @@ export default function DraftsModal({
     }
   };
 
-  const handleDraftClick = (draft: Draft) => {
+  const handleDraftClick = async (draft: Draft) => {
     setSelectedDraftId(draft.id);
-    onSelectDraft(draft);
-    onClose();
+    try {
+      // В списке черновиков могут приходить усечённые данные.
+      // Всегда подтягиваем полный объект, чтобы media_urls/keyboard не терялись.
+      const fullDraft = await draftsApi.getDraft(draft.id);
+      onSelectDraft(fullDraft);
+      onClose();
+    } catch (error) {
+      console.error('Failed to load full draft:', error);
+      // Fallback: хотя бы загрузим то, что есть.
+      onSelectDraft(draft);
+      onClose();
+    }
   };
 
   const handleClose = () => {

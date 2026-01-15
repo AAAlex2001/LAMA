@@ -157,6 +157,29 @@ class PublicationBase(BaseModel):
     tag_color: Optional[str] = None
 
     @model_validator(mode="after")
+    def validate_content_payload(cls, values):
+        """Гарантирует, что у публикации есть контент.
+
+        - TEXT: требуется текст
+        - TEXT_WITH_MEDIA: требуется текст или media_urls
+        - IMAGE/VIDEO/AUDIO/DOCUMENT: требуется media_urls
+        """
+        content_type = values.content_type
+        has_text = bool(values.text_content and values.text_content.strip())
+        has_media = bool(values.media_urls and len(values.media_urls) > 0)
+
+        if content_type == ContentType.TEXT and not has_text:
+            raise ValueError('text_content is required for text публикации')
+
+        if content_type == ContentType.TEXT_WITH_MEDIA and not (has_text or has_media):
+            raise ValueError('Для text_with_media требуется text_content или media_urls')
+
+        if content_type in {ContentType.IMAGE, ContentType.VIDEO, ContentType.AUDIO, ContentType.DOCUMENT} and not has_media:
+            raise ValueError(f'media_urls is required for {content_type.value} публикации')
+
+        return values
+
+    @model_validator(mode="after")
     def validate_auto_delete(cls, values):
         hours = values.auto_delete_hours
         seconds = values.auto_delete_delay_seconds
@@ -236,6 +259,7 @@ class PublicationResponse(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[Dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
+    media_file_ids: Optional[List[Optional[str]]] = None
     media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[Dict[str, Any]] = None
     poll_data: Optional[Dict[str, Any]] = None

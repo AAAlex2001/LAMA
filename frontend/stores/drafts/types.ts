@@ -5,6 +5,7 @@ export interface Draft {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
+  media_file_ids?: Array<string | null>;
   media_blur?: boolean[];
   inline_keyboard?: Record<string, any>;
   created_at: string;

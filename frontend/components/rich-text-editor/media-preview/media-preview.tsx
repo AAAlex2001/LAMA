@@ -12,6 +12,7 @@ export interface MediaFile {
   type: 'image' | 'video' | 'document';
   blur?: boolean;
   file?: File;  // Оригинальный File объект для загрузки на сервер
+  telegram_file_id?: string | null; // Прогретый Telegram file_id (для черновиков/повторной отправки)
 }
 
 interface MediaPreviewProps {

@@ -475,6 +475,9 @@ export function useCreatePost() {
       const text = draft.formatted_content?.text || draft.text_content || '';
       dispatch({ type: 'SET_TEXT', payload: text });
 
+      // Чтобы не смешивать медиа из разных черновиков
+      dispatch({ type: 'CLEAR_MEDIA_FILES' });
+
       if (draft.media_urls && draft.media_urls.length > 0) {
         const mediaFiles: MediaFile[] = await Promise.all(
           draft.media_urls.map(async (url, index) => {
@@ -492,6 +495,7 @@ export function useCreatePost() {
               url: url,
               type,
               blur: draft.media_blur?.[index] || false,
+              telegram_file_id: draft.media_file_ids?.[index] ?? null,
             } as MediaFile;
           })
         );

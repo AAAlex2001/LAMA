@@ -68,47 +68,61 @@ export async function handlePublishNow(
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
-    // Если есть медиа файлы - загружаем их на сервер
     if (mediaFiles.length > 0) {
-      const filesToUpload = mediaFiles
-        .filter(f => f.file)
-        .map(f => f.file as File);
-      
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+
+      const filesToUpload = mediaFiles.filter(f => f.file);
+      let uploadedUrls: string[] = [];
+      let uploadedFileIds: Array<string | undefined> = [];
+
       if (filesToUpload.length > 0) {
         try {
           console.log('Uploading files to server...');
-          const uploadResponse = await uploadMediaFiles(filesToUpload);
+          const uploadResponse = await uploadMediaFiles(filesToUpload.map(f => f.file as File));
           console.log('Upload response:', uploadResponse);
-          
-          // Получаем полные URL-ы (добавляем домен только для локальных путей)
-          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
-          mediaUrls = uploadResponse.files.map(f => {
-            // Если URL уже абсолютный (http/https), используем как есть
+
+          uploadedUrls = uploadResponse.files.map(f => {
             if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
               return f.url;
             }
-            // Иначе добавляем baseUrl для локальных файлов
             return `${baseUrl}${f.url}`;
           });
-          
-          mediaFileIds = uploadResponse.file_ids;
-          
-          console.log('Media URLs:', mediaUrls);
-          if (mediaFileIds && mediaFileIds.length > 0) {
-            console.log('✅ Media warmed up! File IDs:', mediaFileIds);
+
+          uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
+          if (uploadedFileIds.length > 0) {
+            console.log('✅ Media warmed up! File IDs:', uploadedFileIds);
           }
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
         }
       }
-      
+
+      const finalUrls: string[] = [];
+      const finalFileIds: Array<string | null> = [];
+      let uploadIndex = 0;
+
+      for (const f of mediaFiles) {
+        if (f.file) {
+          const url = uploadedUrls[uploadIndex];
+          if (url) {
+            finalUrls.push(url);
+            finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
+          }
+          uploadIndex += 1;
+        } else if (f.url) {
+          finalUrls.push(f.url);
+          finalFileIds.push(f.telegram_file_id ?? null);
+        }
+      }
+
+      mediaUrls = finalUrls;
+      mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
       contentType = 'text_with_media';
     }
 
-    // Проверяем, есть ли HTML теги форматирования
-    const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
-    const hasSpoiler = /<\/?tg-spoiler>/i.test(content.text);
+    const hasText = content.text && content.text.trim();
+    const hasFormatting = hasText && /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -116,7 +130,7 @@ export async function handlePublishNow(
 
     const request: CreatePostRequest = {
       content_type: contentType,
-      text_content: content.text || undefined,
+      text_content: hasText ? content.text : undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
@@ -181,38 +195,54 @@ export async function handleSaveDraft(
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
-    // Если есть медиа файлы - загружаем их на сервер
     if (mediaFiles.length > 0) {
-      const filesToUpload = mediaFiles
-        .filter(f => f.file)
-        .map(f => f.file as File);
-      
+      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+
+      const filesToUpload = mediaFiles.filter(f => f.file);
+      let uploadedUrls: string[] = [];
+      let uploadedFileIds: Array<string | undefined> = [];
+
       if (filesToUpload.length > 0) {
         try {
-          const uploadResponse = await uploadMediaFiles(filesToUpload);
-          const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
-          mediaUrls = uploadResponse.files.map(f => {
-            // Если URL уже абсолютный (http/https), используем как есть
+          const uploadResponse = await uploadMediaFiles(filesToUpload.map(f => f.file as File));
+          uploadedUrls = uploadResponse.files.map(f => {
             if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
               return f.url;
             }
-            // Иначе добавляем baseUrl для локальных файлов
             return `${baseUrl}${f.url}`;
           });
-          
-          mediaFileIds = uploadResponse.file_ids;
+          uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
         }
       }
-      
+
+      const finalUrls: string[] = [];
+      const finalFileIds: Array<string | null> = [];
+      let uploadIndex = 0;
+
+      for (const f of mediaFiles) {
+        if (f.file) {
+          const url = uploadedUrls[uploadIndex];
+          if (url) {
+            finalUrls.push(url);
+            finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
+          }
+          uploadIndex += 1;
+        } else if (f.url) {
+          finalUrls.push(f.url);
+          finalFileIds.push(f.telegram_file_id ?? null);
+        }
+      }
+
+      mediaUrls = finalUrls;
+      mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
       contentType = 'text_with_media';
     }
 
-    // Проверяем, есть ли HTML теги форматирования
-    const hasFormatting = /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
-    const hasSpoiler = /<\/?tg-spoiler>/i.test(content.text);
+    const hasText = content.text && content.text.trim();
+    const hasFormatting = hasText && /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -220,7 +250,7 @@ export async function handleSaveDraft(
 
     const request: CreatePostRequest = {
       content_type: contentType,
-      text_content: content.text || undefined,
+      text_content: hasText ? content.text : undefined,
       formatted_content: formattedContent,
       media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       media_file_ids: mediaFileIds,  // Добавляем file_ids для быстрой рассылки
