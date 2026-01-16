@@ -15,7 +15,6 @@ function normalizeForMode(state: QuizFormState, nextMode: QuizFormMode): QuizFor
   if (nextMode !== 'quiz') {
     return { ...state, mode: nextMode, correctAnswerId: null };
   }
-  // quiz
   return { ...state, mode: 'quiz' };
 }
 
