@@ -5,6 +5,7 @@ import styles from './quiz-form.module.scss';
 import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
+import CloseIcon from '@/components/icons/close-icon';
 
 interface QuizAnswer {
   id: string;
@@ -43,6 +44,12 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
     ));
   };
 
+  const removeAnswer = (id: string) => {
+    if (answers.length > 2) {
+      setAnswers(answers.filter(answer => answer.id !== id));
+    }
+  };
+
   const remainingAnswers = 10 - answers.length;
 
   if (!isOpen) return null;
@@ -74,6 +81,10 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
               placeholder="Ответ"
               value={answer.text}
               onChange={(text) => updateAnswer(answer.id, text)}
+              icon={<CloseIcon width={16} height={16} color="#8C8C8C" />}
+              onIconClick={() => removeAnswer(answer.id)}
+              iconDisabled={answers.length <= 2}
+              iconClassName={styles.deleteButton}
             />
           ))}
           

@@ -1,7 +1,7 @@
 .quizForm {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   width: 100%;
 }
 
@@ -55,6 +55,26 @@
   flex-direction: column;
   gap: 6px;
   align-self: stretch;
+}
+
+.deleteButton {
+  width: 24px;
+  height: 24px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+  border-radius: 4px;
+  
+  &:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    opacity: 1;
+    
+    :global(svg path) {
+      stroke: #ef4444;
+    }
+  }
+  
+  &:active:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+  }
 }
 
 .hint {

@@ -17,6 +17,7 @@ interface InputProps {
   onIconClick?: () => void;
   iconDisabled?: boolean;
   variant?: 'default' | 'white';
+  iconClassName?: string;
 }
 
 export default function Input({
@@ -32,6 +33,7 @@ export default function Input({
   onIconClick,
   iconDisabled = false,
   variant = 'default',
+  iconClassName,
 }: InputProps) {
   const id = useId();
 
@@ -60,7 +62,7 @@ export default function Input({
         {icon && (
           <button
             type="button"
-            className={styles.iconButton}
+            className={classNames(styles.iconButton, iconClassName)}
             onClick={onIconClick}
             disabled={iconDisabled || disabled}
           >
