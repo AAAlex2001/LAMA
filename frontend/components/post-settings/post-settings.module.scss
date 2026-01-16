@@ -12,6 +12,12 @@
   background: #FFFFFF;
   border-radius: 12px;
   box-sizing: border-box;
+
+  @media (min-width: 1440px) {
+    max-height: none;
+    overflow-y: visible;
+    height: auto;
+  }
 }
 
 .settingsContent {

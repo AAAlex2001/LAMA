@@ -116,7 +116,7 @@ function QuizFormView({
 export default function QuizForm({ isOpen, state, dispatch }: QuizFormProps) {
   if (!isOpen) return null;
 
-  const remainingAnswers = 10 - state.answers.length;
+  const remainingAnswers = 12 - state.answers.length;
 
   const handlers = {
     setMode: (mode: QuizFormMode) => dispatch({ type: 'SET_MODE', payload: mode }),
