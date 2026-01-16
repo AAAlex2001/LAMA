@@ -4,6 +4,7 @@ import { useState } from 'react';
 import styles from './quiz-form.module.scss';
 import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
+import Button from '@/components/button/button';
 
 interface QuizAnswer {
   id: string;
@@ -76,13 +77,14 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
             />
           ))}
           
-          <button 
-            className={styles.addAnswerButton}
+          <Button
+            text="Добавить ответ"
+            variant="templateCard"
+            showArrow={false}
+            fullWidth
             onClick={addAnswer}
             disabled={answers.length >= 10}
-          >
-            Добавить ответ
-          </button>
+          />
           
           {remainingAnswers > 0 && (
             <div className={styles.hint}>
