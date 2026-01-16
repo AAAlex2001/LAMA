@@ -1,5 +1,3 @@
-// Типы для создания и публикации постов
-
 export type ContentType = 'text' | 'text_with_media' | 'image' | 'video' | 'audio' | 'document' | 'link' | 'poll' | 'quiz';
 export type PublicationStatus = 'draft' | 'scheduled' | 'published' | 'partial_success' | 'failed' | 'deleted';
 export type RepeatInterval = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
@@ -30,16 +28,16 @@ export interface CreatePostRequest {
   text_content?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
-  media_thumbnail_urls?: (string | null)[];  // URLs сжатых превьюшек
-  media_file_ids?: string[];  // Telegram file_ids для быстрой рассылки
-  media_blur?: boolean[];  // Array of booleans, one per media file
+  media_thumbnail_urls?: (string | null)[];
+  media_file_ids?: string[];
+  media_blur?: boolean[];
   inline_keyboard?: InlineKeyboard;
   poll_data?: PollData;
   pin_message?: boolean;
   disable_notification?: boolean;
   auto_delete_hours?: number;
   auto_delete_delay_seconds?: number;
-  scheduled_time?: string; // ISO date string
+  scheduled_time?: string;
   timezone?: string;
   series_id?: number;
   series_order?: number;
@@ -60,7 +58,7 @@ export interface CreatePostResponse {
   postId?: number;
   message?: string;
   errors?: string[];
-  id?: number; // API возвращает id вместо postId
+  id?: number;
 }
 
 export interface PublishPostResponse {

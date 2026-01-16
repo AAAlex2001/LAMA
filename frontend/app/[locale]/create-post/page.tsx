@@ -8,6 +8,7 @@ import InlineButtons from '@/components/inline-buttons';
 import MediaPreview from '@/components/rich-text-editor/media-preview/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
+import QuizForm from '@/components/quiz-form';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -32,6 +33,7 @@ export default function CreatePostPage() {
     isScheduling,
     showTemplatesModal,
     showDraftsModal,
+    showQuizForm,
 
     // Refs
     editorRef,
@@ -54,6 +56,7 @@ export default function CreatePostPage() {
     handleToggleBlur,
     setShowTemplatesModal,
     setShowDraftsModal,
+    setShowQuizForm,
     onPublishNow,
     onSaveDraft,
     handleSaveAsTemplate,
@@ -123,6 +126,8 @@ export default function CreatePostPage() {
                     showArrow={false}
                     icon={<QuizIcon width={24} height={24} />}
                     className={styles.actionButton}
+                    active={showQuizForm}
+                    onClick={() => setShowQuizForm(!showQuizForm)}
                   />
                 </div>
                 <div className={styles.actionsRowCenter}>
@@ -143,6 +148,12 @@ export default function CreatePostPage() {
                   className={styles.inlineButtonsSection}
                 />
               )}
+
+              {/* Quiz Form */}
+              <QuizForm
+                isOpen={showQuizForm}
+                onClose={() => setShowQuizForm(false)}
+              />
 
               <div className={styles.mediaSection}>
                 <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
