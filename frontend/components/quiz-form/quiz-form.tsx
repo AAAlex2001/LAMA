@@ -31,6 +31,16 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
   ]);
   const [multipleChoice, setMultipleChoice] = useState(false);
   const [quizMode, setQuizMode] = useState(false);
+  const [correctAnswerId, setCorrectAnswerId] = useState<string | null>(null);
+  const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([]);
+
+  const toggleAnswerSelection = (id: string) => {
+    setSelectedAnswerIds(prev => 
+      prev.includes(id) 
+        ? prev.filter(answerId => answerId !== id)
+        : [...prev, id]
+    );
+  };
 
   const addAnswer = () => {
     if (answers.length < 10) {
@@ -58,7 +68,7 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
     <div className={styles.quizForm}>
       {/* Заголовок */}
       <div className={styles.header}>
-        <div className={styles.headerLabel}>Новый опрос</div>
+        <div className={styles.headerLabel}>{quizMode ? 'Новая викторина' : 'Новый опрос'}</div>
       </div>
 
       {/* Секция вопроса */}
@@ -85,6 +95,12 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
               onIconClick={() => removeAnswer(answer.id)}
               iconDisabled={answers.length <= 2}
               iconClassName={styles.deleteButton}
+              showRadio={quizMode}
+              radioChecked={correctAnswerId === answer.id}
+              onRadioChange={() => setCorrectAnswerId(answer.id)}
+              showCheckbox={multipleChoice && !quizMode}
+              checkboxChecked={selectedAnswerIds.includes(answer.id)}
+              onCheckboxChange={() => toggleAnswerSelection(answer.id)}
             />
           ))}
           
@@ -112,9 +128,17 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
           <Toggle checked={multipleChoice} onChange={setMultipleChoice} />
         </div>
         
-        <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>Режим викторины</span>
-          <Toggle checked={quizMode} onChange={setQuizMode} />
+        <div className={styles.toggleColumn}>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Режим викторины</span>
+            <Toggle checked={quizMode} onChange={setQuizMode} />
+          </div>
+          
+          {quizMode && (
+            <div className={styles.quizHint}>
+              В викторинах есть правильный вариант ответа, а пользователям недоступна возможность переголосовать
+            </div>
+          )}
         </div>
       </div>
     </div>

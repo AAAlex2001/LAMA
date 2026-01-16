@@ -3,6 +3,7 @@
 import { useId } from 'react';
 import styles from './input.module.scss';
 import classNames from 'classnames';
+import Checkbox from '@/components/checkbox/checkbox';
 
 interface InputProps {
   label?: string;
@@ -18,6 +19,12 @@ interface InputProps {
   iconDisabled?: boolean;
   variant?: 'default' | 'white';
   iconClassName?: string;
+  showRadio?: boolean;
+  radioChecked?: boolean;
+  onRadioChange?: (checked: boolean) => void;
+  showCheckbox?: boolean;
+  checkboxChecked?: boolean;
+  onCheckboxChange?: (checked: boolean) => void;
 }
 
 export default function Input({
@@ -31,6 +38,12 @@ export default function Input({
   className,
   icon,
   onIconClick,
+  showRadio = false,
+  radioChecked = false,
+  onRadioChange,
+  showCheckbox = false,
+  checkboxChecked = false,
+  onCheckboxChange,
   iconDisabled = false,
   variant = 'default',
   iconClassName,
@@ -45,6 +58,23 @@ export default function Input({
         </label>
       )}
       <div className={styles.inputContainer}>
+        {showRadio && onRadioChange && (
+          <div className={styles.radioWrapper}>
+            <Checkbox
+              checked={radioChecked}
+              onChange={onRadioChange}
+              variant="radio"
+            />
+          </div>
+        )}
+        {showCheckbox && onCheckboxChange && (
+          <div className={styles.radioWrapper}>
+            <Checkbox
+              checked={checkboxChecked}
+              onChange={onCheckboxChange}
+            />
+          </div>
+        )}
         <input
           id={id}
           type={type}
@@ -57,6 +87,7 @@ export default function Input({
             [styles.disabled]: disabled,
             [styles.withIcon]: icon,
             [styles.white]: variant === 'white',
+            [styles.withRadio]: showRadio || showCheckbox,
           })}
         />
         {icon && (

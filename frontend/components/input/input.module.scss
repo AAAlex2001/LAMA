@@ -16,6 +16,16 @@
 .inputContainer {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.radioWrapper {
+  position: absolute;
+  left: 16px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
 }
 
 .input {
@@ -68,6 +78,10 @@
 
   &.withIcon {
     padding-right: 44px;
+  }
+
+  &.withRadio {
+    padding-left: 42px;
   }
 
   &.white {
