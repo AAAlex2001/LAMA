@@ -1,6 +1,4 @@
 'use client';
-
-import { useEffect } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
@@ -67,13 +65,6 @@ export default function CreatePostPage() {
     handleSelectDraft,
     openFileDialog,
   } = useCreatePost();
-
-  useEffect(() => {
-    console.log('[CreatePost Page] render state:', {
-      showQuizForm,
-      quizFormState,
-    });
-  }, [showQuizForm, quizFormState]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -164,9 +155,6 @@ export default function CreatePostPage() {
               {/* Quiz Form */}
               <QuizForm
                 isOpen={showQuizForm}
-                onClose={() => {
-                  setShowQuizForm(false);
-                }}
                 state={quizFormState}
                 dispatch={quizFormDispatch}
               />

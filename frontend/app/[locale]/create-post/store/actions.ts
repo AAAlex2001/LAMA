@@ -48,14 +48,6 @@ export async function handlePublishNow(
   pollData?: PollData | null,
   pollFormOpen?: boolean
 ) {
-  console.log('═══════════════════════════════════════════');
-  console.log('[Publish] 🚀 handlePublishNow called');
-  console.log('[Publish] pollFormOpen:', pollFormOpen);
-  console.log('[Publish] pollData:', pollData);
-  console.log('[Publish] content.text length:', content.text?.length);
-  console.log('[Publish] mediaFiles count:', mediaFiles.length);
-  console.log('═══════════════════════════════════════════');
-
   try {
     const plainText = content.text
       .replace(/<br\s*\/?\s*>/gi, '\n')
@@ -68,14 +60,7 @@ export async function handlePublishNow(
     const hasInlineKeyboard = !!(inlineKeyboard && inlineKeyboard.buttons && inlineKeyboard.buttons.length > 0);
     const hasPoll = !!pollData;
 
-    console.log('[Publish] Validation checks:');
-    console.log('  - hasText:', hasText);
-    console.log('  - hasMedia:', hasMedia);
-    console.log('  - hasInlineKeyboard:', hasInlineKeyboard);
-    console.log('  - hasPoll:', hasPoll);
-
     if (pollFormOpen && !hasPoll) {
-      console.error('[Publish] ❌ VALIDATION FAILED: pollFormOpen=true but hasPoll=false');
       throw new Error('Заполните опрос/викторину или выключите её');
     }
 
@@ -111,9 +96,7 @@ export async function handlePublishNow(
 
       if (filesToUpload.length > 0) {
         try {
-          console.log('Uploading files to server...');
           const uploadResponse = await uploadMediaFiles(filesToUpload.map(f => f.file as File));
-          console.log('Upload response:', uploadResponse);
 
           uploadedUrls = uploadResponse.files.map(f => {
             if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
@@ -124,9 +107,6 @@ export async function handlePublishNow(
 
           uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
           uploadedThumbnailUrls = (uploadResponse.thumbnail_urls || []).map(url => url || null);
-          if (uploadedFileIds.length > 0) {
-            console.log('✅ Media warmed up! File IDs:', uploadedFileIds);
-          }
         } catch (error) {
           console.error('Failed to upload media:', error);
           throw new Error('Не удалось загрузить медиа файлы');
@@ -193,11 +173,7 @@ export async function handlePublishNow(
       auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
-    console.log('Request to backend:', request);
-
     const response = await createAndPublishPost(request);
-    
-    console.log('Response from backend:', response);
 
     if (response.success || response.id) {
       return {

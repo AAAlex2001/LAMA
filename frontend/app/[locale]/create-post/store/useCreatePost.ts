@@ -487,13 +487,7 @@ export function useCreatePost() {
   }, [state.buttonRows]);
 
   const onPublishNow = useCallback(async () => {
-    const pollData = selectQuizPollData(state.quizForm) as PollData | null;
-
-    console.log('═══════════════════════════════════════════');
-    console.log('[useCreatePost] onPublishNow called');
-    console.log('[useCreatePost] computed pollData:', pollData);
-    console.log('[useCreatePost] state.showQuizForm:', state.showQuizForm);
-    console.log('═══════════════════════════════════════════');
+    const pollData = selectQuizPollData(state.quizForm);
 
     dispatch({ type: 'SET_IS_PUBLISHING', payload: true });
 
@@ -515,9 +509,6 @@ export function useCreatePost() {
         postSettings.loadRecentTags();
       } else {
         showError(result.message || 'Не удалось опубликовать пост');
-        if (result.errors) {
-          console.error('Детали ошибки:', result.errors);
-        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при публикации';
@@ -543,9 +534,6 @@ export function useCreatePost() {
         showSuccess(result.message);
       } else {
         showError(result.message || 'Не удалось сохранить черновик');
-        if (result.errors) {
-          console.error('Детали ошибки:', result.errors);
-        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при сохранении';

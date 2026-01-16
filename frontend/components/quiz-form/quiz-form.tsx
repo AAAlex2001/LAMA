@@ -9,7 +9,6 @@ import type { QuizFormAction, QuizFormMode, QuizFormState } from './store/types'
 
 interface QuizFormProps {
   isOpen: boolean;
-  onClose: () => void;
   state: QuizFormState;
   dispatch: React.Dispatch<QuizFormAction>;
 }
@@ -85,7 +84,7 @@ function QuizFormView({
 
       <div className={styles.togglesSection}>
         <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>Пользователи могут выбрать несколько вариантов</span>
+          <span className={styles.toggleLabel}>Выбор нескольких ответов</span>
           <Toggle
             checked={isMulti}
             onChange={(checked) => onModeChange(checked ? 'poll_multi' : 'poll_single')}
@@ -114,16 +113,15 @@ function QuizFormView({
   );
 }
 
-export default function QuizForm({ isOpen, onClose, state, dispatch }: QuizFormProps) {
+export default function QuizForm({ isOpen, state, dispatch }: QuizFormProps) {
   if (!isOpen) return null;
 
   const remainingAnswers = 10 - state.answers.length;
 
-  const actions = {
+  const handlers = {
     setMode: (mode: QuizFormMode) => dispatch({ type: 'SET_MODE', payload: mode }),
     setQuestion: (value: string) => dispatch({ type: 'SET_QUESTION', payload: value }),
-    setAnswerText: (id: string, value: string) =>
-      dispatch({ type: 'SET_ANSWER_TEXT', payload: { id, text: value } }),
+    setAnswerText: (id: string, value: string) => dispatch({ type: 'SET_ANSWER_TEXT', payload: { id, text: value } }),
     addAnswer: () => dispatch({ type: 'ADD_ANSWER' }),
     removeAnswer: (id: string) => dispatch({ type: 'REMOVE_ANSWER', payload: { id } }),
     setCorrectAnswer: (id: string | null) => dispatch({ type: 'SET_CORRECT_ANSWER', payload: { id } }),
@@ -133,12 +131,12 @@ export default function QuizForm({ isOpen, onClose, state, dispatch }: QuizFormP
     <QuizFormView
       state={state}
       remainingAnswers={remainingAnswers}
-      onQuestionChange={actions.setQuestion}
-      onAnswerChange={actions.setAnswerText}
-      onAddAnswer={actions.addAnswer}
-      onRemoveAnswer={actions.removeAnswer}
-      onModeChange={actions.setMode}
-      onCorrectAnswerChange={(id) => actions.setCorrectAnswer(id)}
+      onQuestionChange={handlers.setQuestion}
+      onAnswerChange={handlers.setAnswerText}
+      onAddAnswer={handlers.addAnswer}
+      onRemoveAnswer={handlers.removeAnswer}
+      onModeChange={handlers.setMode}
+      onCorrectAnswerChange={(id) => handlers.setCorrectAnswer(id)}
     />
   );
 }
