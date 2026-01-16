@@ -33,6 +33,7 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
   const [quizMode, setQuizMode] = useState(false);
   const [correctAnswerId, setCorrectAnswerId] = useState<string | null>(null);
   const [selectedAnswerIds, setSelectedAnswerIds] = useState<string[]>([]);
+  const [selectedRadioId, setSelectedRadioId] = useState<string | null>(null);
 
   const toggleAnswerSelection = (id: string) => {
     setSelectedAnswerIds(prev => 
@@ -95,10 +96,10 @@ export default function QuizForm({ isOpen, onClose, onSubmit }: QuizFormProps) {
               onIconClick={() => removeAnswer(answer.id)}
               iconDisabled={answers.length <= 2}
               iconClassName={styles.deleteButton}
-              showRadio={quizMode}
-              radioChecked={correctAnswerId === answer.id}
-              onRadioChange={() => setCorrectAnswerId(answer.id)}
-              showCheckbox={multipleChoice && !quizMode}
+              showRadio={!multipleChoice}
+              radioChecked={quizMode ? correctAnswerId === answer.id : selectedRadioId === answer.id}
+              onRadioChange={() => quizMode ? setCorrectAnswerId(answer.id) : setSelectedRadioId(answer.id)}
+              showCheckbox={multipleChoice}
               checkboxChecked={selectedAnswerIds.includes(answer.id)}
               onCheckboxChange={() => toggleAnswerSelection(answer.id)}
             />
