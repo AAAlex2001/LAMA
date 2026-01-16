@@ -272,7 +272,7 @@ class SeriesService:
                 question=poll_data['question'],
                 options=poll_data['options'],
                 is_anonymous=poll_data.get('is_anonymous', True),
-                type='quiz' if publication.content_type == DBContentType.QUIZ else 'regular',
+                type='quiz' if (poll_data.get('is_quiz') or publication.content_type == DBContentType.QUIZ) else 'regular',
                 allows_multiple_answers=poll_data.get(
                     'allows_multiple_answers', False),
                 correct_option_id=poll_data.get('correct_option_id'),

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
@@ -57,6 +58,8 @@ export default function CreatePostPage() {
     setShowTemplatesModal,
     setShowDraftsModal,
     setShowQuizForm,
+    quizFormState,
+    quizFormDispatch,
     onPublishNow,
     onSaveDraft,
     handleSaveAsTemplate,
@@ -64,6 +67,13 @@ export default function CreatePostPage() {
     handleSelectDraft,
     openFileDialog,
   } = useCreatePost();
+
+  useEffect(() => {
+    console.log('[CreatePost Page] render state:', {
+      showQuizForm,
+      quizFormState,
+    });
+  }, [showQuizForm, quizFormState]);
 
   return (
     <div className={styles.pageWrapper}>
@@ -126,8 +136,10 @@ export default function CreatePostPage() {
                     showArrow={false}
                     icon={<QuizIcon width={24} height={24} />}
                     className={styles.actionButton}
-                    active={showQuizForm}
-                    onClick={() => setShowQuizForm(!showQuizForm)}
+                    onClick={() => {
+                      const next = !showQuizForm;
+                      setShowQuizForm(next);
+                    }}
                   />
                 </div>
                 <div className={styles.actionsRowCenter}>
@@ -152,7 +164,11 @@ export default function CreatePostPage() {
               {/* Quiz Form */}
               <QuizForm
                 isOpen={showQuizForm}
-                onClose={() => setShowQuizForm(false)}
+                onClose={() => {
+                  setShowQuizForm(false);
+                }}
+                state={quizFormState}
+                dispatch={quizFormDispatch}
               />
 
               <div className={styles.mediaSection}>

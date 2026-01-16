@@ -74,32 +74,52 @@ async def send_to_telegram(
         keyboard = build_keyboard(publication.inline_keyboard)
     
     content_type = publication.content_type
-    
+    messages: List[Message] = []
+
     if content_type == DBContentType.TEXT:
-        return await send_text(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.TEXT_WITH_MEDIA:
-        return await send_text_with_media(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.IMAGE:
-        return await send_image(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.VIDEO:
-        return await send_video(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.AUDIO:
-        return await send_audio(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.DOCUMENT:
-        return await send_document(bot, channel, publication, keyboard)
-    
-    if content_type == DBContentType.LINK:
-        return await send_link(bot, channel, publication, keyboard)
-    
-    if content_type in [DBContentType.POLL, DBContentType.QUIZ]:
-        return await send_poll(bot, channel, publication, keyboard)
-    
-    raise ValueError(f"Unsupported content type: {content_type}")
+        cleaned = clean_html_for_telegram(publication.text_content)
+        if cleaned:
+            messages = await send_text(bot, channel, publication, keyboard)
+        else:
+            # Если текст пустой, но есть опрос — просто пропускаем текстовое сообщение
+            if not publication.poll_data:
+                raise ValueError('Telegram message text is empty')
+
+    elif content_type == DBContentType.TEXT_WITH_MEDIA:
+        messages = await send_text_with_media(bot, channel, publication, keyboard)
+
+    elif content_type == DBContentType.IMAGE:
+        messages = await send_image(bot, channel, publication, keyboard)
+
+    elif content_type == DBContentType.VIDEO:
+        messages = await send_video(bot, channel, publication, keyboard)
+
+    elif content_type == DBContentType.AUDIO:
+        messages = await send_audio(bot, channel, publication, keyboard)
+
+    elif content_type == DBContentType.DOCUMENT:
+        messages = await send_document(bot, channel, publication, keyboard)
+
+    elif content_type == DBContentType.LINK:
+        cleaned = clean_html_for_telegram(publication.text_content)
+        if cleaned:
+            messages = await send_link(bot, channel, publication, keyboard)
+        else:
+            if not publication.poll_data:
+                raise ValueError('Telegram message text is empty')
+
+    elif content_type in [DBContentType.POLL, DBContentType.QUIZ]:
+        messages = await send_poll(bot, channel, publication, keyboard)
+
+    else:
+        raise ValueError(f"Unsupported content type: {content_type}")
+
+    # Если к обычному посту прикрепили опрос/викторину — отправляем опрос вторым сообщением
+    if publication.poll_data and content_type not in [DBContentType.POLL, DBContentType.QUIZ]:
+        poll_messages = await send_poll(bot, channel, publication, keyboard=None)
+        messages.extend(poll_messages)
+
+    return messages
 
 
 def validate_media_urls(publication: Publication) -> None:
@@ -385,7 +405,7 @@ async def send_poll(
 ) -> List[Message]:
     """Отправить опрос или викторину"""
     poll_data = publication.poll_data
-    is_quiz = publication.content_type == DBContentType.QUIZ
+    is_quiz = bool(poll_data.get('is_quiz')) or publication.content_type == DBContentType.QUIZ
     
     message = await bot.send_poll(
         chat_id=channel.telegram_id,

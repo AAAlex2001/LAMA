@@ -1,4 +1,4 @@
-import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard } from './types';
+import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
 import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
 import { createAndPublishPost, saveDraft, uploadMediaFiles } from './api';
 
@@ -44,10 +44,42 @@ export async function handlePublishNow(
   content: { text: string },
   settings: PostSettingsFromUI,
   mediaFiles: MediaFile[] = [],
-  inlineKeyboard?: InlineKeyboard
+  inlineKeyboard?: InlineKeyboard,
+  pollData?: PollData | null,
+  pollFormOpen?: boolean
 ) {
+  console.log('═══════════════════════════════════════════');
+  console.log('[Publish] 🚀 handlePublishNow called');
+  console.log('[Publish] pollFormOpen:', pollFormOpen);
+  console.log('[Publish] pollData:', pollData);
+  console.log('[Publish] content.text length:', content.text?.length);
+  console.log('[Publish] mediaFiles count:', mediaFiles.length);
+  console.log('═══════════════════════════════════════════');
+
   try {
-    if (!content.text.trim() && mediaFiles.length === 0) {
+    const plainText = content.text
+      .replace(/<br\s*\/?\s*>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+
+    const hasText = plainText.length > 0;
+    const hasMedia = mediaFiles.length > 0;
+    const hasInlineKeyboard = !!(inlineKeyboard && inlineKeyboard.buttons && inlineKeyboard.buttons.length > 0);
+    const hasPoll = !!pollData;
+
+    console.log('[Publish] Validation checks:');
+    console.log('  - hasText:', hasText);
+    console.log('  - hasMedia:', hasMedia);
+    console.log('  - hasInlineKeyboard:', hasInlineKeyboard);
+    console.log('  - hasPoll:', hasPoll);
+
+    if (pollFormOpen && !hasPoll) {
+      console.error('[Publish] ❌ VALIDATION FAILED: pollFormOpen=true but hasPoll=false');
+      throw new Error('Заполните опрос/викторину или выключите её');
+    }
+
+    if (!hasText && !hasMedia && !hasPoll) {
       throw new Error('Текст поста или медиа файлы не могут быть пустыми');
     }
 
@@ -61,15 +93,15 @@ export async function handlePublishNow(
       settings.autoDeleteCustomHours
     );
 
-    // Определяем content_type в зависимости от медиа
-    let contentType: 'text' | 'text_with_media' = 'text';
+    // Определяем content_type
+    let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
     // Собираем массив blur-состояний для каждого файла
     const mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
-    if (mediaFiles.length > 0) {
+    if (hasMedia) {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
 
       const filesToUpload = mediaFiles.filter(f => f.file);
@@ -128,7 +160,11 @@ export async function handlePublishNow(
       contentType = 'text_with_media';
     }
 
-    const hasText = content.text && content.text.trim();
+    // Если контента кроме опроса нет — публикуем как poll/quiz
+    if (!hasText && !hasMedia && hasPoll) {
+      contentType = pollData?.is_quiz ? 'quiz' : 'poll';
+    }
+
     const hasFormatting = hasText && /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
@@ -148,6 +184,7 @@ export async function handlePublishNow(
       disable_notification: !settings.notifySubscribers,
       status: 'draft',
       inline_keyboard: inlineKeyboard,
+      poll_data: hasPoll ? (pollData as PollData) : undefined,
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,

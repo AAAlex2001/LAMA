@@ -8,9 +8,13 @@ import { usePostSettings } from '@/components/post-settings/store';
 import { handlePublishNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
 import { draftsApi, type Draft } from '@/stores/drafts';
-import type { InlineKeyboard, InlineButton } from './types';
+import type { InlineKeyboard, InlineButton, PollData } from './types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { uploadMediaFiles } from './api';
+
+import { initialQuizFormState, quizFormReducer } from '@/components/quiz-form/store/reducer';
+import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
+import type { QuizFormAction, QuizFormState } from '@/components/quiz-form/store/types';
 
 const THUMBNAIL_MAX_SIZE = 200;
 
@@ -173,6 +177,7 @@ interface CreatePostState {
   showDraftsModal: boolean;
   isSavingTemplate: boolean;
   showQuizForm: boolean;
+  quizForm: QuizFormState;
 }
 
 const initialState: CreatePostState = {
@@ -188,6 +193,7 @@ const initialState: CreatePostState = {
   showTemplatesModal: false,
   isSavingTemplate: false,
   showQuizForm: false,
+  quizForm: initialQuizFormState,
 };
 
 type CreatePostAction =
@@ -209,6 +215,7 @@ type CreatePostAction =
   | { type: 'SET_SHOW_TEMPLATES_MODAL'; payload: boolean }
   | { type: 'SET_IS_SAVING_TEMPLATE'; payload: boolean }
   | { type: 'SET_SHOW_QUIZ_FORM'; payload: boolean }
+  | { type: 'QUIZ_FORM'; payload: QuizFormAction }
   | { type: 'RESET_FORM' };
 
 function createPostReducer(state: CreatePostState, action: CreatePostAction): CreatePostState {
@@ -324,7 +331,14 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
       return { ...state, isSavingTemplate: action.payload };
 
     case 'SET_SHOW_QUIZ_FORM':
-      return { ...state, showQuizForm: action.payload };
+      return {
+        ...state,
+        showQuizForm: action.payload,
+        quizForm: action.payload ? state.quizForm : initialQuizFormState,
+      };
+
+    case 'QUIZ_FORM':
+      return { ...state, quizForm: quizFormReducer(state.quizForm, action.payload) };
 
     case 'RESET_FORM':
       state.mediaFiles.forEach(f => {
@@ -348,6 +362,10 @@ export function useCreatePost() {
   const editorRef = useRef<RichTextEditorRef>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError } = useNotifications();
+
+  const quizFormDispatch = useCallback((quizAction: QuizFormAction) => {
+    dispatch({ type: 'QUIZ_FORM', payload: quizAction });
+  }, []);
 
   const setText = useCallback((text: string) => {
     dispatch({ type: 'SET_TEXT', payload: text });
@@ -469,6 +487,14 @@ export function useCreatePost() {
   }, [state.buttonRows]);
 
   const onPublishNow = useCallback(async () => {
+    const pollData = selectQuizPollData(state.quizForm) as PollData | null;
+
+    console.log('═══════════════════════════════════════════');
+    console.log('[useCreatePost] onPublishNow called');
+    console.log('[useCreatePost] computed pollData:', pollData);
+    console.log('[useCreatePost] state.showQuizForm:', state.showQuizForm);
+    console.log('═══════════════════════════════════════════');
+
     dispatch({ type: 'SET_IS_PUBLISHING', payload: true });
 
     try {
@@ -476,7 +502,9 @@ export function useCreatePost() {
         { text: state.text },
         postSettings.getSettingsData(),
         state.mediaFiles,
-        getInlineKeyboard()
+        getInlineKeyboard(),
+        pollData,
+        state.showQuizForm
       );
 
       if (result.success) {
@@ -498,7 +526,7 @@ export function useCreatePost() {
     } finally {
       dispatch({ type: 'SET_IS_PUBLISHING', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError]);
+  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError, state.quizForm, state.showQuizForm]);
 
   const onSaveDraft = useCallback(async () => {
     dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: true });
@@ -639,6 +667,8 @@ export function useCreatePost() {
     postSettings,
     canAddMedia,
     canShowInlineButtons,
+    quizFormState: state.quizForm,
+    quizFormDispatch,
     setText,
     toggleSettings,
     setShowSettings,
