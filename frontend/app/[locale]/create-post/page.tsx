@@ -127,6 +127,7 @@ export default function CreatePostPage() {
                     showArrow={false}
                     icon={<QuizIcon width={24} height={24} />}
                     className={styles.actionButton}
+                    active={showQuizForm}
                     onClick={() => {
                       const next = !showQuizForm;
                       setShowQuizForm(next);
