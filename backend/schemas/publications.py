@@ -48,7 +48,7 @@ class InlineKeyboard(BaseModel):
 
 class PollData(BaseModel):
     question: str
-    options: List[str] = Field(..., min_length=2, max_length=10)
+    options: List[str] = Field(..., min_length=2, max_length=12)
     is_anonymous: bool = True
     allows_multiple_answers: bool = False
     correct_option_id: Optional[int] = None
@@ -127,6 +127,7 @@ class PublicationBase(BaseModel):
     poll_data: Optional[PollData] = None
     pin_message: bool = False
     disable_notification: bool = False
+    disable_web_page_preview: bool = True
     auto_delete_hours: Optional[int] = Field(
         None,
         gt=0,
@@ -212,6 +213,7 @@ class PublicationUpdate(BaseModel):
     poll_data: Optional[PollData] = None
     pin_message: Optional[bool] = None
     disable_notification: Optional[bool] = None
+    disable_web_page_preview: Optional[bool] = None
     auto_delete_hours: Optional[int] = Field(
         None,
         gt=0,
@@ -267,6 +269,7 @@ class PublicationResponse(BaseModel):
     poll_data: Optional[Dict[str, Any]] = None
     pin_message: bool = False
     disable_notification: bool = False
+    disable_web_page_preview: bool = True
     auto_delete_hours: Optional[int] = None
     auto_delete_delay_seconds: Optional[int] = None
     scheduled_time: Optional[datetime] = None

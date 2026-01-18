@@ -150,6 +150,24 @@
   width: 100%;
 }
 
+.linkPreviewToggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.linkPreviewLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
 .actionsMenu {
   display: flex;
   flex-direction: column;

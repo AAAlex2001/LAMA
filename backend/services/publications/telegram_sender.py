@@ -145,7 +145,8 @@ async def send_text(
         text=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
-        disable_notification=publication.disable_notification
+        disable_notification=publication.disable_notification,
+        disable_web_page_preview=publication.disable_web_page_preview
     )
     return [message]
 
@@ -391,7 +392,7 @@ async def send_link(
         text=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
-        disable_web_page_preview=False,
+        disable_web_page_preview=publication.disable_web_page_preview,
         disable_notification=publication.disable_notification
     )
     return [message]

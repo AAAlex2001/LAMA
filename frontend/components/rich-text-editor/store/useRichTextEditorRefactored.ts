@@ -95,6 +95,49 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
 
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
+    
+    // Автоматическое оборачивание URL в <a> теги
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    const walker = document.createTreeWalker(
+      tempDiv,
+      NodeFilter.SHOW_TEXT,
+      null
+    );
+    
+    const textNodes: Text[] = [];
+    let node: Node | null;
+    while ((node = walker.nextNode())) {
+      textNodes.push(node as Text);
+    }
+    
+    textNodes.forEach((textNode) => {
+      const text = textNode.textContent || '';
+      if (urlRegex.test(text)) {
+        const fragment = document.createDocumentFragment();
+        let lastIndex = 0;
+        text.replace(urlRegex, (match, url, offset) => {
+          // Добавляем текст до ссылки
+          if (offset > lastIndex) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
+          }
+          // Создаем ссылку
+          const link = document.createElement('a');
+          link.href = url;
+          link.textContent = url;
+          link.style.color = '#3B82F6';
+          link.style.textDecoration = 'underline';
+          fragment.appendChild(link);
+          lastIndex = offset + match.length;
+          return match;
+        });
+        // Добавляем оставшийся текст
+        if (lastIndex < text.length) {
+          fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+        textNode.parentNode?.replaceChild(fragment, textNode);
+      }
+    });
+    
     const spoilerSpans = tempDiv.querySelectorAll('span[data-spoiler="true"]');
     spoilerSpans.forEach((span) => {
       const spoilerTag = document.createElement('tg-spoiler');

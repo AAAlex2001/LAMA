@@ -35,6 +35,7 @@ export interface CreatePostRequest {
   poll_data?: PollData;
   pin_message?: boolean;
   disable_notification?: boolean;
+  disable_web_page_preview?: boolean;
   auto_delete_hours?: number;
   auto_delete_delay_seconds?: number;
   scheduled_time?: string;

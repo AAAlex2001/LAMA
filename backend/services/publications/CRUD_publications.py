@@ -49,6 +49,7 @@ class CRUDPublicationService:
             poll_data=data.poll_data.model_dump() if data.poll_data else None,
             pin_message=data.pin_message,
             disable_notification=data.disable_notification,
+            disable_web_page_preview=data.disable_web_page_preview,
             auto_delete_hours=data.auto_delete_hours,
             auto_delete_seconds=auto_delete_seconds,
             repeat_interval=DBRepeatInterval[data.repeat_interval.upper()] if isinstance(

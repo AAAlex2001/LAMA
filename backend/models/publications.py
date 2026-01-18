@@ -74,6 +74,7 @@ class Publication(Base):
     
     pin_message: Mapped[bool] = mapped_column(Boolean, default=False)
     disable_notification: Mapped[bool] = mapped_column(Boolean, default=False)
+    disable_web_page_preview: Mapped[bool] = mapped_column(Boolean, default=True)
     auto_delete_hours: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     auto_delete_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     

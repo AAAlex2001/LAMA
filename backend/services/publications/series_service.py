@@ -193,7 +193,7 @@ class SeriesService:
                 text=cleaned_text,
                 reply_to_message_id=reply_to_message_id,
                 parse_mode=ParseMode.HTML,
-                disable_web_page_preview=False,
+                disable_web_page_preview=publication.disable_web_page_preview,
                 reply_markup=reply_markup
             )
             return [message]

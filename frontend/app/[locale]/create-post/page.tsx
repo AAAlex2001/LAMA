@@ -8,6 +8,7 @@ import MediaPreview from '@/components/rich-text-editor/media-preview/media-prev
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
+import Toggle from '@/components/toggle/toggle';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -33,6 +34,7 @@ export default function CreatePostPage() {
     showTemplatesModal,
     showDraftsModal,
     showQuizForm,
+    showLinkPreview,
 
     // Refs
     editorRef,
@@ -56,6 +58,7 @@ export default function CreatePostPage() {
     setShowTemplatesModal,
     setShowDraftsModal,
     setShowQuizForm,
+    setShowLinkPreview,
     quizFormState,
     quizFormDispatch,
     onPublishNow,
@@ -91,6 +94,17 @@ export default function CreatePostPage() {
                 placeholder="Напишите текст публикации..."
                 onSaveAsTemplate={handleSaveAsTemplate}
               />
+
+              {/* Тоглер превью ссылок */}
+              {text && /https?:\/\/[^\s]+/gi.test(text) && (
+                <div className={styles.linkPreviewToggle}>
+                  <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
+                  <Toggle 
+                    checked={showLinkPreview}
+                    onChange={setShowLinkPreview}
+                  />
+                </div>
+              )}
               <div className={styles.actionsMenu}>
                 <div className={styles.actionsRow}>
                   <Button

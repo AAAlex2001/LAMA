@@ -21,7 +21,7 @@ export function selectPollData(state: QuizFormState): PollData | null {
   if (!question) return null;
 
   const filled = selectFilledOptions(state);
-  if (filled.length < 2 || filled.length > 10) return null;
+  if (filled.length < 2 || filled.length > 12) return null;
 
   switch (state.mode) {
     case 'quiz': {

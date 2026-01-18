@@ -178,6 +178,7 @@ interface CreatePostState {
   isSavingTemplate: boolean;
   showQuizForm: boolean;
   quizForm: QuizFormState;
+  showLinkPreview: boolean;
 }
 
 const initialState: CreatePostState = {
@@ -194,6 +195,7 @@ const initialState: CreatePostState = {
   isSavingTemplate: false,
   showQuizForm: false,
   quizForm: initialQuizFormState,
+  showLinkPreview: false,
 };
 
 type CreatePostAction =
@@ -215,6 +217,7 @@ type CreatePostAction =
   | { type: 'SET_SHOW_TEMPLATES_MODAL'; payload: boolean }
   | { type: 'SET_IS_SAVING_TEMPLATE'; payload: boolean }
   | { type: 'SET_SHOW_QUIZ_FORM'; payload: boolean }
+  | { type: 'SET_SHOW_LINK_PREVIEW'; payload: boolean }
   | { type: 'QUIZ_FORM'; payload: QuizFormAction }
   | { type: 'RESET_FORM' };
 
@@ -336,6 +339,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
         showQuizForm: action.payload,
         quizForm: action.payload ? state.quizForm : initialQuizFormState,
       };
+
+    case 'SET_SHOW_LINK_PREVIEW':
+      return { ...state, showLinkPreview: action.payload };
 
     case 'QUIZ_FORM':
       return { ...state, quizForm: quizFormReducer(state.quizForm, action.payload) };
@@ -468,6 +474,10 @@ export function useCreatePost() {
     dispatch({ type: 'SET_SHOW_QUIZ_FORM', payload: show });
   }, []);
 
+  const setShowLinkPreview = useCallback((show: boolean) => {
+    dispatch({ type: 'SET_SHOW_LINK_PREVIEW', payload: show });
+  }, []);
+
   const getInlineKeyboard = useCallback((): InlineKeyboard | undefined => {
     if (state.buttonRows.length === 0) return undefined;
 
@@ -498,7 +508,8 @@ export function useCreatePost() {
         state.mediaFiles,
         getInlineKeyboard(),
         pollData,
-        state.showQuizForm
+        state.showQuizForm,
+        state.showLinkPreview
       );
 
       if (result.success) {
@@ -527,7 +538,8 @@ export function useCreatePost() {
         { text: state.text },
         postSettings.getSettingsData(),
         state.mediaFiles,
-        getInlineKeyboard()
+        getInlineKeyboard(),
+        state.showLinkPreview
       );
 
       if (result.success) {
@@ -668,6 +680,7 @@ export function useCreatePost() {
     setShowTemplatesModal,
     setShowDraftsModal,
     setShowQuizForm,
+    setShowLinkPreview,
     onPublishNow,
     onSaveDraft,
     handleSaveAsTemplate,

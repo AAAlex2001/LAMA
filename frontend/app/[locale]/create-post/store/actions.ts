@@ -46,7 +46,8 @@ export async function handlePublishNow(
   mediaFiles: MediaFile[] = [],
   inlineKeyboard?: InlineKeyboard,
   pollData?: PollData | null,
-  pollFormOpen?: boolean
+  pollFormOpen?: boolean,
+  showLinkPreview?: boolean
 ) {
   try {
     const plainText = content.text
@@ -162,6 +163,7 @@ export async function handlePublishNow(
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       disable_notification: !settings.notifySubscribers,
+      disable_web_page_preview: !showLinkPreview,
       status: 'draft',
       inline_keyboard: inlineKeyboard,
       poll_data: hasPoll ? (pollData as PollData) : undefined,
@@ -202,7 +204,8 @@ export async function handleSaveDraft(
   content: { text: string },
   settings: PostSettingsFromUI,
   mediaFiles: MediaFile[] = [],
-  inlineKeyboard?: InlineKeyboard
+  inlineKeyboard?: InlineKeyboard,
+  showLinkPreview?: boolean
 ) {
   try {
     if (!content.text.trim() && mediaFiles.length === 0) {
@@ -287,6 +290,7 @@ export async function handleSaveDraft(
       channel_ids: settings.channelIds,
       pin_message: settings.pinPost,
       disable_notification: !settings.notifySubscribers,
+      disable_web_page_preview: !showLinkPreview,
       status: 'draft',
       inline_keyboard: inlineKeyboard,
       tag_names: settings.tagName ? [settings.tagName] : undefined,

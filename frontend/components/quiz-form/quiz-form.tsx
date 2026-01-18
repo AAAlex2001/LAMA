@@ -71,7 +71,7 @@ function QuizFormView({
             showArrow={false}
             fullWidth
             onClick={onAddAnswer}
-            disabled={state.answers.length >= 10}
+            disabled={state.answers.length >= 12}
           />
 
           {remainingAnswers > 0 && (

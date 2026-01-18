@@ -33,7 +33,7 @@ export function quizFormReducer(state: QuizFormState, action: QuizFormAction): Q
       };
 
     case 'ADD_ANSWER': {
-      if (state.answers.length >= 10) return state;
+      if (state.answers.length >= 12) return state;
       return { ...state, answers: [...state.answers, createAnswer(Date.now().toString())] };
     }
 
