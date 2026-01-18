@@ -1,4 +1,5 @@
 'use client';
+import { useRef } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
@@ -9,7 +10,7 @@ import TextTemplatesModal from '@/components/text-templates-modal/text-templates
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
-import { hasLink } from '@/components/rich-text-editor/store/utils/linkify';
+import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -70,13 +71,14 @@ export default function CreatePostPage() {
     openFileDialog,
   } = useCreatePost();
 
+  const headerRef = useRef<HTMLDivElement>(null);
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainContent}>
         <div className={styles.editorColumn}>
           <div className={styles.editor}>
-            <div className={styles.header}>
-              <span className={styles.headerTitle}>Новая публикация</span>
+            <div className={styles.header} ref={headerRef}>
               <button
                 className={styles.settingsButton}
                 type="button"
@@ -94,6 +96,7 @@ export default function CreatePostPage() {
                 onChange={setText}
                 placeholder="Напишите текст публикации..."
                 onSaveAsTemplate={handleSaveAsTemplate}
+                headerRef={headerRef}
               />
 
               {text && hasLink(text) && (

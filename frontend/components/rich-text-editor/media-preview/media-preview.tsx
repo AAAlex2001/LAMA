@@ -10,13 +10,13 @@ import Loader from '@/components/loader/loader';
 
 export interface MediaFile {
   id: string;
-  url: string;  // Source URL (для черновиков/готовых публикаций) или пусто для новых файлов
-  preview_url?: string; // Сжатая превьюшка для UI (blob:...), генерится на клиенте
-  thumbnail_url?: string | null; // URL готового thumbnail с бэкенда
+  url: string; 
+  preview_url?: string;
+  thumbnail_url?: string | null;
   type: 'image' | 'video' | 'document';
   blur?: boolean;
-  file?: File;  // Оригинальный File объект для загрузки на сервер
-  telegram_file_id?: string | null; // Прогретый Telegram file_id (для черновиков/повторной отправки)
+  file?: File;
+  telegram_file_id?: string | null;
 }
 
 interface MediaPreviewProps {
@@ -33,7 +33,6 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
   const [lightboxLoading, setLightboxLoading] = useState(false);
 
   const openLightbox = (file: MediaFile) => {
-    // Для новых файлов создаём blob URL из оригинального File
     let fullUrl = '';
     if (file.file) {
       fullUrl = URL.createObjectURL(file.file);
@@ -48,7 +47,6 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
   };
 
   const closeLightbox = () => {
-    // Очищаем blob URL если был создан для File
     if (lightboxMedia?.file && lightboxUrl.startsWith('blob:')) {
       URL.revokeObjectURL(lightboxUrl);
     }
@@ -62,19 +60,8 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
     setLoadedImages(prev => new Set(prev).add(id));
   };
 
-  // Получить лучший URL для превью (маленькие картинки 82x82)
   const getPreviewUrl = (file: MediaFile): string => {
     return file.thumbnail_url || file.preview_url || file.url || '';
-  };
-
-  // Получить URL для полноразмерного просмотра в lightbox
-  const getFullUrl = (file: MediaFile): string => {
-    // Для новых файлов (ещё не загруженных на сервер) берём blob из File
-    if (file.file) {
-      return URL.createObjectURL(file.file);
-    }
-    // Для загруженных/черновиков используем url с сервера
-    return file.url || file.preview_url || file.thumbnail_url || '';
   };
 
   if (files.length === 0) return null;

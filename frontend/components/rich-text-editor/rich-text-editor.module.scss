@@ -22,6 +22,7 @@
   width: 100%;
   flex-grow: 1;
   position: relative;
+  cursor: text;
 }
 
 .editor {
@@ -38,6 +39,16 @@
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;
+
+  :global(.ProseMirror) {
+    outline: none;
+    border: none;
+    
+    &:focus {
+      outline: none;
+      border: none;
+    }
+  }
 
   a {
     color: #3B82F6;
@@ -70,6 +81,14 @@
     padding: 2px 4px;
     border-radius: 3px;
     font-size: 13px;
+  }
+
+  tg-spoiler {
+    background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 50%, #3B82F6 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    border-radius: 2px;
   }
 }
 
@@ -268,5 +287,68 @@
       width: 300px !important;
       height: 300px !important;
     }
+  }
+}
+
+.linkInputWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.linkInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #CED2D6;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #3B82F6;
+  }
+
+  &::placeholder {
+    color: #AEAEB2;
+  }
+}
+
+.linkSubmitButton {
+  padding: 8px 16px;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #2563EB;
+  }
+}
+
+.linkCancelButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #F2F2F7;
   }
 }
