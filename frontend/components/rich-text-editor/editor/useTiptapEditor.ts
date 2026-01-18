@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { useEditor, useEditorState } from '@tiptap/react';
-import { Mark, mergeAttributes, markInputRule, markPasteRule } from '@tiptap/core';
+import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -12,7 +12,6 @@ import type { TextFormat, EditorState } from './types';
 import { isValidUrl } from './link-utils';
 
 function countGraphemes(text: string): number {
-  // Intl.Segmenter correctly counts emoji sequences (ZWJ, skin tones) as 1 grapheme.
   const Segmenter = (Intl as any)?.Segmenter as
     | (new (locales?: string | string[], options?: { granularity: 'grapheme' }) => {
         segment: (input: string) => Iterable<{ segment: string }>;
@@ -26,7 +25,6 @@ function countGraphemes(text: string): number {
     return count;
   }
 
-  // Fallback: counts Unicode code points (handles surrogate pairs, but not ZWJ sequences).
   return Array.from(text).length;
 }
 
@@ -55,7 +53,6 @@ interface UseTiptapEditorOptions {
 
 export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
   const { maxLength = 4096, onUpdate } = options;
-  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -104,18 +101,18 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     },
   });
 
-  // Реактивное состояние редактора
   const editorState = useEditorState({
     editor,
     selector: (ctx): EditorState | null => {
       if (!ctx.editor) return null;
       
       const { from, to } = ctx.editor.state.selection;
+      const text = ctx.editor.getText({ blockSeparator: '\n' });
       
       return {
         html: ctx.editor.getHTML(),
-        text: ctx.editor.getText(),
-        charCount: countGraphemes(ctx.editor.getText()),
+        text,
+        charCount: countGraphemes(text),
         isEmpty: ctx.editor.isEmpty,
         hasSelection: from !== to,
         formats: {
@@ -130,7 +127,6 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     },
   });
 
-  // Применить форматирование
   const toggleFormat = useCallback((format: TextFormat) => {
     if (!editor) return;
     
@@ -163,13 +159,11 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     editor.chain().focus().toggleBlockquote().run();
   }, [editor]);
 
-  // Вставить контент
   const insertContent = useCallback((content: string) => {
     if (!editor) return;
     editor.chain().focus().insertContent(content).run();
   }, [editor]);
 
-  // Установить контент
   const setContent = useCallback((html: string) => {
     if (!editor) return;
     if (html !== editor.getHTML()) {
@@ -177,29 +171,17 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     }
   }, [editor]);
 
-  // Очистить редактор
   const clearContent = useCallback(() => {
     editor?.commands.clearContent(true);
   }, [editor]);
 
-  // Получить цвет иконки
-  const getButtonColor = useCallback((buttonId: string, isActive = false) => {
-    if (isActive || hoveredButton === buttonId) {
-      return '#3B82F6';
-    }
-    return '#383F45';
-  }, [hoveredButton]);
-
   return {
     editor,
     state: editorState,
-    hoveredButton,
-    setHoveredButton,
     toggleFormat,
     toggleBlockquote,
     insertContent,
     setContent,
     clearContent,
-    getButtonColor,
   };
 }
