@@ -163,6 +163,15 @@
   }
 }
 
+.toolButtonDisabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+
+  &:hover {
+    transform: none;
+  }
+}
+
 .aiInputBar {
   width: 100%;
   margin-top: 8px;
@@ -256,6 +265,13 @@
   color: #1a1a1a;
   cursor: pointer;
   border-radius: 6px;
+  blockquote {
+    margin: 8px 0;
+    padding: 6px 10px;
+    border-left: 3px solid #3B82F6;
+    background: rgba(59, 130, 246, 0.06);
+    border-radius: 6px;
+  }
   transition: background 0.2s;
   
   &:hover:not(:disabled) {

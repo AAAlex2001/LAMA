@@ -158,6 +158,11 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     }
   }, [editor]);
 
+  const toggleBlockquote = useCallback(() => {
+    if (!editor) return;
+    editor.chain().focus().toggleBlockquote().run();
+  }, [editor]);
+
   // Вставить контент
   const insertContent = useCallback((content: string) => {
     if (!editor) return;
@@ -191,6 +196,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     hoveredButton,
     setHoveredButton,
     toggleFormat,
+    toggleBlockquote,
     insertContent,
     setContent,
     clearContent,

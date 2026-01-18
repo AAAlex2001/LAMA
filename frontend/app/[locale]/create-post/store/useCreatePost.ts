@@ -531,6 +531,8 @@ export function useCreatePost() {
   }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError, state.quizForm, state.showQuizForm]);
 
   const onSaveDraft = useCallback(async () => {
+    const pollData = selectQuizPollData(state.quizForm);
+
     dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: true });
 
     try {
@@ -539,6 +541,8 @@ export function useCreatePost() {
         postSettings.getSettingsData(),
         state.mediaFiles,
         getInlineKeyboard(),
+        pollData,
+        state.showQuizForm,
         state.showLinkPreview
       );
 
@@ -554,10 +558,11 @@ export function useCreatePost() {
     } finally {
       dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError]);
+  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError, state.quizForm, state.showQuizForm, state.showLinkPreview]);
 
-  const handleSaveAsTemplate = useCallback(async () => {
-    if (!state.text || state.text.trim() === '') {
+  const handleSaveAsTemplate = useCallback(async (selectedHtml?: string) => {
+    const htmlToSave = (selectedHtml && selectedHtml.trim()) ? selectedHtml : state.text;
+    if (!htmlToSave || htmlToSave.trim() === '') {
       showError('Текст пуст. Нечего сохранять в шаблон.');
       return;
     }
@@ -565,14 +570,14 @@ export function useCreatePost() {
     dispatch({ type: 'SET_IS_SAVING_TEMPLATE', payload: true });
 
     try {
-      const plainText = state.text.replace(/<[^>]*>/g, '').trim();
+      const plainText = htmlToSave.replace(/<[^>]*>/g, '').trim();
       const templateName = plainText.length > 50
         ? plainText.substring(0, 50)
         : plainText;
 
       await templatesApi.createTemplate({
         name: templateName,
-        formatted_content: { html: state.text },
+        formatted_content: { html: htmlToSave },
       });
 
       showSuccess('Шаблон успешно сохранен!');
@@ -642,6 +647,82 @@ export function useCreatePost() {
 
         dispatch({ type: 'SET_BUTTON_ROWS', payload: buttonRows });
         dispatch({ type: 'TOGGLE_INLINE_BUTTONS' });
+      }
+
+      // Restore poll/quiz if present
+      if (draft.poll_data) {
+        const pollData = draft.poll_data;
+        const quizMode = pollData.is_quiz ?? false;
+        
+        // Determine mode
+        let mode: 'quiz' | 'poll_single' | 'poll_multi' = 'poll_single';
+        if (quizMode) {
+          mode = 'quiz';
+        } else if (pollData.allows_multiple_answers) {
+          mode = 'poll_multi';
+        }
+
+        // Reset form first
+        dispatch({ 
+          type: 'QUIZ_FORM', 
+          payload: { type: 'RESET' } 
+        });
+
+        // Set mode
+        dispatch({ 
+          type: 'QUIZ_FORM', 
+          payload: { type: 'SET_MODE', payload: mode } 
+        });
+
+        // Set question
+        dispatch({ 
+          type: 'QUIZ_FORM', 
+          payload: { type: 'SET_QUESTION', payload: pollData.question } 
+        });
+
+        // Add answers (need to add enough slots first, starting from 2 default ones)
+        const neededAnswers = pollData.options.length;
+        const currentAnswers = 2; // initial state has 2 answers
+        
+        for (let i = currentAnswers; i < neededAnswers; i++) {
+          dispatch({ 
+            type: 'QUIZ_FORM', 
+            payload: { type: 'ADD_ANSWER' } 
+          });
+        }
+
+        // Now set answer texts by id (after we know the ids from current state)
+        // We need to get the answer ids from the current state after adding
+        // Since we don't have access to intermediate state here, we'll use a workaround:
+        // dispatch all answer updates in sequence
+        setTimeout(() => {
+          const currentAnswers = state.quizForm.answers;
+          pollData.options.forEach((optionText, index) => {
+            if (currentAnswers[index]) {
+              dispatch({ 
+                type: 'QUIZ_FORM', 
+                payload: { 
+                  type: 'SET_ANSWER_TEXT', 
+                  payload: { id: currentAnswers[index].id, text: optionText } 
+                } 
+              });
+            }
+          });
+
+          // Set correct answer for quiz
+          if (quizMode && pollData.correct_option_id !== null && pollData.correct_option_id !== undefined) {
+            const correctAnswerId = currentAnswers[pollData.correct_option_id]?.id;
+            if (correctAnswerId) {
+              dispatch({ 
+                type: 'QUIZ_FORM', 
+                payload: { type: 'SET_CORRECT_ANSWER', payload: { id: correctAnswerId } } 
+              });
+            }
+          }
+        }, 0);
+
+        // Open quiz form
+        dispatch({ type: 'SET_SHOW_QUIZ_FORM', payload: true });
       }
 
       showSuccess('Черновик загружен');

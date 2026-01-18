@@ -4,6 +4,7 @@ import { useEffect, useImperativeHandle, forwardRef, useState, useCallback, useR
 import dynamic from 'next/dynamic';
 import { EditorContent } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
+import { DOMSerializer } from '@tiptap/pm/model';
 
 import styles from './rich-text-editor.module.scss';
 import { useTiptapEditor } from './editor';
@@ -39,7 +40,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   maxLength?: number;
-  onSaveAsTemplate?: () => void;
+  onSaveAsTemplate?: (selectedHtml?: string) => void;
   headerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -61,6 +62,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       hoveredButton,
       setHoveredButton,
       toggleFormat,
+      toggleBlockquote,
       insertContent,
       setContent,
       clearContent,
@@ -126,6 +128,35 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       setSelectionRange({ from, to });
       setShowAiInput(true);
     }, [editor, showAiInput]);
+
+    const getSelectedHtml = useCallback(() => {
+      if (!editor) return '';
+      const { from, to } = editor.state.selection;
+      if (from === to) return '';
+
+      const slice = editor.state.doc.slice(from, to);
+      const serializer = DOMSerializer.fromSchema(editor.state.schema);
+      const fragment = serializer.serializeFragment(slice.content);
+      const container = document.createElement('div');
+      container.appendChild(fragment);
+      return container.innerHTML;
+    }, [editor]);
+
+    const handleSaveSelectionAsTemplateMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor || !onSaveAsTemplate) return;
+      const { from, to } = editor.state.selection;
+      if (from === to) return;
+
+      const html = getSelectedHtml();
+      if (!html || !html.trim()) return;
+      onSaveAsTemplate(html);
+    }, [editor, onSaveAsTemplate, getSelectedHtml]);
+
+    const handleQuoteMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      toggleBlockquote();
+    }, [toggleBlockquote]);
 
     const handleAiSubmit = useCallback(async (prompt: string) => {
       try {
@@ -229,6 +260,9 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const charCount = state?.charCount ?? 0;
     const isEmpty = state?.isEmpty ?? true;
     const isLink = editor?.isActive('link') ?? false;
+    const isQuote = editor?.isActive('blockquote') ?? false;
+    const hasSelection = state?.hasSelection ?? false;
+    const canSaveSelectionAsTemplate = Boolean(onSaveAsTemplate) && hasSelection;
 
     const formatButtons = [
       { id: 'bold', icon: BoldIcon, format: 'bold' as const, label: 'Жирный', tooltip: 'жирный' },
@@ -332,11 +366,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         <div className={styles.textareaFooter}>
           <div className={styles.textareaTools}>
             <button
-              className={`${styles.toolButton} ${showAiInput ? styles.active : ''}`}
               type="button"
               aria-label="AI редактирование"
+              aria-disabled={!showAiInput && !hasSelection}
+              className={`${styles.toolButton} ${showAiInput ? styles.active : ''} ${!showAiInput && !hasSelection ? styles.toolButtonDisabled : ''}`}
               onMouseDown={handleAiButtonMouseDown}
-              disabled={!showAiInput && !state?.hasSelection}
               onMouseEnter={() => setHoveredButton('ai')}
               onMouseLeave={() => setHoveredButton(null)}
             >
@@ -363,10 +397,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               className={`${styles.toolButton} ${styles.desktopOnly}`}
               type="button"
               aria-label="Цитата"
+              onMouseDown={handleQuoteMouseDown}
               onMouseEnter={() => setHoveredButton('quote')}
               onMouseLeave={() => setHoveredButton(null)}
             >
-              <QuoteIcon width={21} height={21} color={getButtonColor('quote')} />
+              <QuoteIcon width={21} height={21} color={getButtonColor('quote', isQuote)} />
               {hoveredButton === 'quote' && <Tooltip text="цитата" />}
             </button>
 
@@ -409,11 +444,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
           <div className={styles.charCountWrapper}>
             <button
-              className={styles.toolButton}
               type="button"
               aria-label="Сохранить в шаблоны"
-              onClick={() => onSaveAsTemplate?.()}
-              disabled={!onSaveAsTemplate}
+              aria-disabled={!canSaveSelectionAsTemplate}
+              className={`${styles.toolButton} ${!canSaveSelectionAsTemplate ? styles.toolButtonDisabled : ''}`}
+              onMouseDown={handleSaveSelectionAsTemplateMouseDown}
               onMouseEnter={() => setHoveredButton('templates')}
               onMouseLeave={() => setHoveredButton(null)}
             >

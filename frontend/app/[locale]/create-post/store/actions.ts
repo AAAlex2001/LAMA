@@ -205,15 +205,31 @@ export async function handleSaveDraft(
   settings: PostSettingsFromUI,
   mediaFiles: MediaFile[] = [],
   inlineKeyboard?: InlineKeyboard,
+  pollData?: PollData | null,
+  pollFormOpen?: boolean,
   showLinkPreview?: boolean
 ) {
   try {
-    if (!content.text.trim() && mediaFiles.length === 0) {
+    const plainText = content.text
+      .replace(/<br\s*\/??\s*>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+
+    const hasText = plainText.length > 0;
+    const hasMedia = mediaFiles.length > 0;
+    const hasPoll = !!pollData;
+
+    if (pollFormOpen && !hasPoll) {
+      throw new Error('Заполните опрос/викторину или выключите её');
+    }
+
+    if (!hasText && !hasMedia && !hasPoll) {
       throw new Error('Текст поста или медиа файлы не могут быть пустыми');
     }
 
-    // Определяем content_type в зависимости от медиа
-    let contentType: 'text' | 'text_with_media' = 'text';
+    // Определяем content_type в зависимости от медиа/опроса
+    let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
@@ -272,7 +288,11 @@ export async function handleSaveDraft(
       contentType = 'text_with_media';
     }
 
-    const hasText = content.text && content.text.trim();
+    // Если контента кроме опроса нет — сохраняем как poll/quiz
+    if (!hasText && !hasMedia && hasPoll) {
+      contentType = pollData?.is_quiz ? 'quiz' : 'poll';
+    }
+
     const hasFormatting = hasText && /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
@@ -293,6 +313,7 @@ export async function handleSaveDraft(
       disable_web_page_preview: !showLinkPreview,
       status: 'draft',
       inline_keyboard: inlineKeyboard,
+      poll_data: hasPoll ? (pollData as PollData) : undefined,
       tag_names: settings.tagName ? [settings.tagName] : undefined,
       tag_color: settings.tagColor || undefined,
       repeat_interval: settings.repeatInterval,
