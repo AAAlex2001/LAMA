@@ -166,7 +166,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         if (!token || !editor || !selectionRange || !selectedText.trim()) return;
 
         const replaceFrom = selectionRange.from;
-        let replaceTo = selectionRange.to;
+        const replaceTo = selectionRange.to;
+        let hasAppliedFirstToken = false;
+        let insertPos = replaceFrom;
+        let accumulated = '';
 
         const response = await fetch(`${API_BASE_URL}/publications/ai/edit-text-stream`, {
           method: 'POST',
@@ -184,40 +187,109 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
         const reader = response.body?.getReader();
         const decoder = new TextDecoder();
-        let result = '';
+        let buffer = '';
+        let streamDone = false;
 
         if (!reader) return;
 
+        const insertDelta = (deltaRaw: string) => {
+          if (!deltaRaw) return;
+
+          // Normalize line endings and avoid leaking CR into the editor.
+          const delta = deltaRaw.replace(/\r\n/g, '\n').replace(/\r/g, '');
+          if (!delta) return;
+
+          const parts = delta.split('\n');
+          const content: Array<{ type: 'text'; text: string } | { type: 'hardBreak' }> = [];
+          for (let i = 0; i < parts.length; i += 1) {
+            const part = parts[i];
+            if (part) content.push({ type: 'text', text: part });
+            if (i !== parts.length - 1) content.push({ type: 'hardBreak' });
+          }
+
+          editor
+            .chain()
+            .focus()
+            .insertContentAt(insertPos, content, { updateSelection: true })
+            .run();
+
+          insertPos = editor.state.selection.to;
+        };
+
+        const handleData = (dataRaw: string) => {
+          const data = dataRaw;
+
+          if (data === '[DONE]') {
+            streamDone = true;
+            return;
+          }
+          if (data.startsWith('[ERROR]')) {
+            throw new Error(data.replace(/^\[ERROR\]\s*/, ''));
+          }
+
+          if (!hasAppliedFirstToken) {
+            // Only delete the original selection once we have at least one token,
+            // so we don't lose user content if the request fails early.
+            editor
+              .chain()
+              .focus()
+              .deleteRange({ from: replaceFrom, to: replaceTo })
+              .setTextSelection(replaceFrom)
+              .run();
+            insertPos = replaceFrom;
+            hasAppliedFirstToken = true;
+          }
+
+          // Support both incremental token streaming and cumulative streaming.
+          let delta = data;
+          if (data.startsWith(accumulated)) {
+            delta = data.slice(accumulated.length);
+            accumulated = data;
+          } else {
+            accumulated += data;
+          }
+
+          insertDelta(delta);
+        };
+
         while (true) {
-          const { done, value: chunk } = await reader.read();
+          const { done, value } = await reader.read();
           if (done) break;
 
-          const chunkText = decoder.decode(chunk);
-          let streamDone = false;
-          for (const line of chunkText.split('\n')) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') {
-                streamDone = true;
-                break;
-              }
-              if (data.startsWith('[ERROR]')) throw new Error(data.slice(8));
-              result += data;
+          buffer += decoder.decode(value, { stream: true });
+
+          while (true) {
+            const newlineIndex = buffer.indexOf('\n');
+            if (newlineIndex === -1) break;
+
+            let line = buffer.slice(0, newlineIndex);
+            buffer = buffer.slice(newlineIndex + 1);
+
+            if (line.endsWith('\r')) line = line.slice(0, -1);
+
+            // Empty line separates SSE events; we don't need it.
+            if (!line) continue;
+
+            if (line.startsWith('data:')) {
+              let data = line.slice(5);
+              if (data.startsWith(' ')) data = data.slice(1);
+              handleData(data);
+              if (streamDone) break;
             }
           }
 
-          // Live update: replace only the originally captured range in-place
-          if (result.length > 0) {
-            const view = editor.view;
-            const schema = view.state.schema;
-            const tr = view.state.tr
-              .replaceWith(replaceFrom, replaceTo, schema.text(result))
-              .setMeta('addToHistory', false);
-            view.dispatch(tr);
-            replaceTo = replaceFrom + result.length;
-          }
-
           if (streamDone) break;
+        }
+
+        // Flush decoder + parse tail (in case stream doesn't end with a newline).
+        buffer += decoder.decode();
+        if (!streamDone && buffer) {
+          const tail = buffer.trimEnd();
+          if (tail.startsWith('data:')) {
+            let data = tail.slice(5);
+            if (data.startsWith(' ')) data = data.slice(1);
+            handleData(data);
+          }
         }
 
         setShowAiInput(false);
