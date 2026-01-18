@@ -598,12 +598,15 @@ export function useCreatePost() {
 
   const handleSelectDraft = useCallback(async (draft: Draft) => {
     try {
+      // Полностью очищаем текущее состояние поста
+      dispatch({ type: 'RESET_FORM' });
+      editorRef.current?.reset();
+
+      // Загружаем текст из черновика
       const text = draft.formatted_content?.text || draft.text_content || '';
       dispatch({ type: 'SET_TEXT', payload: text });
 
-      // Чтобы не смешивать медиа из разных черновиков
-      dispatch({ type: 'CLEAR_MEDIA_FILES' });
-
+      // Загружаем медиа из черновика
       if (draft.media_urls && draft.media_urls.length > 0) {
         const mediaFiles: MediaFile[] = draft.media_urls.map((url, index) => {
           const extension = url.split('.').pop()?.toLowerCase() || '';
