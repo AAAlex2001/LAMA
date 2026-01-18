@@ -1,194 +1,61 @@
-'use client';
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
+import RegisterClient from './RegisterClient';
 
-import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import styles from './register.module.scss';
-import { useRegister } from './store/useRegister';
-import Button from '@/components/button/button';
-import Card from '@/components/card';
-import Input from '@/components/input';
-import { Checkbox } from '@/components/checkbox';
-import { TelegramIcon, BotIcon } from '@/components/icons';
-import { ErrorNotification } from '@/components/notifications/ErrorNotification';
-import { SuccessNotification } from '@/components/notifications/SuccessNotification';
+export const dynamic = 'force-static';
+export const revalidate = false;
 
-export default function RegisterPage() {
-  const { locale } = useParams();
-  const searchParams = useSearchParams();
-  const {
-    state,
-    widgetContainerRef,
-    initTelegramWidget,
-    openBotForLogin,
-    goToStep,
-    setEmail,
-    setPassword,
-    setAgreePersonalData,
-    setAgreeTerms,
-    addEmailToAccount,
-    setError,
-  } = useRegister(locale as string);
+export async function generateStaticParams(): Promise<Array<{ locale: string }>> {
+  return [{ locale: 'ru' }, { locale: 'en' }, { locale: 'sr' }];
+}
 
-  useEffect(() => {
-    initTelegramWidget();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+type Props = {
+  params: Promise<{ locale: string }>;
+};
 
-  useEffect(() => {
-    const step = searchParams.get('step');
-    if (step === '2') {
-      goToStep(2);
-    }
-  }, [searchParams, goToStep]);
+const registerSeo = {
+  ru: {
+    title: 'Регистрация | LAMAplanner',
+    description: 'Регистрация в LAMAplanner: вход через Telegram или Telegram-бота, затем добавление email для резервного доступа.',
+  },
+  en: {
+    title: 'Sign up | LAMAplanner',
+    description: 'Create a LAMAplanner account: sign up via Telegram or Telegram bot, then add email as a backup access method.',
+  },
+  sr: {
+    title: 'Registracija | LAMAplanner',
+    description: 'Registracija u LAMAplanner: prijava preko Telegrama ili Telegram bota, zatim dodavanje email-a kao rezervnog pristupa.',
+  },
+} as const;
 
-  const getSuccessMessage = () => {
-    const displayName = state.user?.telegram_account?.first_name 
-      || state.user?.telegram_account?.username 
-      || state.email
-      || 'пользователь';
-    return `Готово! Привет, ${displayName}. Переходим в сервис...`;
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale } = await params;
+  const data = registerSeo[locale as keyof typeof registerSeo] || registerSeo.ru;
+  const canonical = `https://lamaplanner.com/${locale}/register`;
+
+  return {
+    title: data.title,
+    description: data.description,
+    alternates: {
+      canonical,
+    },
+    openGraph: {
+      title: data.title,
+      description: data.description,
+      url: canonical,
+      siteName: 'LAMAplanner',
+      locale,
+      type: 'website',
+    },
   };
+}
 
-  const renderStep1 = () => (
-    <>
-      <div className={styles.header}>
-        <p className={styles.subtitle}>
-          Авторизуйтесь для управления<br/>Telegram-каналами
-        </p>
-      </div>
-
-      <div className={styles.methodSection}>
-        <span className={styles.methodLabel}>Выберите способ входа</span>
-        
-        <div className={styles.telegramButtons}>
-          <div className={styles.telegramAuthWrapper}>
-            <Button
-              text="Через Telegram"
-              icon={<TelegramIcon />}
-              showArrow={false}
-              onClick={() => {}}
-              fullWidth
-              active={true}
-              className={styles.telegramButton}
-            />
-            <div
-              ref={widgetContainerRef}
-              className={styles.telegramWidgetOverlay}
-            />
-          </div>
-          
-          <Button
-            text="Telegram бот"
-            icon={<BotIcon />}
-            showArrow={false}
-            onClick={openBotForLogin}
-            fullWidth
-            active={true}
-          />
-        </div>
-
-        <div className={styles.actions}>
-          
-          <div className={styles.login}>
-            <span>Уже есть аккаунт?</span>
-            <Link href={`/${locale}/login`}>Войти</Link>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-
-  const renderStep2 = () => (
-    <>
-      <div className={styles.header}>
-        <p className={styles.subtitle}>
-          Добавьте вход по почте — как запасной<br/>способ доступа к аккаунту
-        </p>
-      </div>
-
-      <div className={styles.formSection}>
-        <div className={styles.formFields}>
-          <Input
-            label="Электронная почта"
-            type="email"
-            placeholder="username@example.com"
-            value={state.email}
-            onChange={setEmail}
-          />
-          
-          <Input
-            label="Пароль"
-            type="password"
-            placeholder="••••••••••••••"
-            value={state.password}
-            onChange={setPassword}
-          />
-        </div>
-
-        <div className={styles.checkboxes}>
-          <Checkbox
-            checked={state.agreePersonalData}
-            onChange={setAgreePersonalData}
-            label={
-              <>
-                Соглашаюсь на обработку{' '}
-                <Link href={`/${locale}/privacy`}>персональных данных</Link>
-              </>
-            }
-          />
-          
-          <Checkbox
-            checked={state.agreeTerms}
-            onChange={setAgreeTerms}
-            label={
-              <>
-                Принимаю{' '}
-                <Link href={`/${locale}/terms`}>условия использования</Link>
-              </>
-            }
-          />
-        </div>
-
-        <Button
-          text="Завершить регистрацию"
-          showArrow={false}
-          onClick={addEmailToAccount}
-          active
-          fullWidth
-          loading={state.loading}
-        />
-      </div>
-    </>
-  );
+export default async function RegisterPage({ params }: Props) {
+  const { locale } = await params;
 
   return (
-    <>
-      {state.status === 'error' && state.error && (
-        <ErrorNotification
-          message={state.error}
-          onClose={() => setError(null)}
-        />
-      )}
-      {state.status === 'success' && (
-        <SuccessNotification
-          message={getSuccessMessage()}
-          onClose={() => {}}
-        />
-      )}
-      <main className={styles.main}>
-        <div className={styles.container}>
-          <Link href={`/${locale}`} className={styles.logo} aria-label="LAMAplanner">
-            <span className={styles.logoLama}>LAMA</span>
-            <span className={styles.logoPlanner}>planner</span>
-          </Link>
-
-          <Card title={`Регистрация. Шаг ${state.step} из 2`}>
-            {state.step === 1 ? renderStep1() : renderStep2()}
-          </Card>
-        </div>
-      </main>
-    </>
+    <Suspense fallback={null}>
+      <RegisterClient locale={locale} />
+    </Suspense>
   );
 }
