@@ -8,6 +8,7 @@ import TemplateCardsBlock from "@/components/template-card/template-cards-block"
 import TemplateSubscribe from "@/components/template-subscribe/template-subscribe";
 import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
+import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -123,6 +124,74 @@ async function fetchJson<T>(url: string, fallback: T): Promise<T> {
     return (await res.json()) as T;
   } catch {
     return fallback;
+  }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { locale, templateId } = await params;
+  const raw = String(templateId || '').trim();
+  
+  if (!raw) {
+    return {
+      title: 'Template Not Found',
+      description: 'The requested template could not be found.',
+    };
+  }
+
+  try {
+    const apiBaseUrl = await getApiBaseUrl();
+    
+    const templateContentFallback: TemplatePageContent = {
+      headline: '',
+      lead: '',
+      body: '',
+    };
+
+    const templateContent = await fetchJson<TemplatePageContent>(
+      `${apiBaseUrl}/templates/slug/${encodeURIComponent(raw)}/content?locale=${locale}`,
+      templateContentFallback
+    );
+
+    const title = templateContent?.headline || 'LAMAplanner Template';
+    const description = templateContent?.lead || templateContent?.body?.substring(0, 160) || 'Template for Telegram posting automation';
+    const imageUrl = templateContent?.images?.[0]?.url || '';
+
+    return {
+      title: `${title} | LAMAplanner`,
+      description,
+      alternates: {
+        canonical: `https://lamaplanner.com/${locale}/template/${raw}`,
+      },
+      openGraph: {
+        title: `${title} | LAMAplanner`,
+        description,
+        url: `https://lamaplanner.com/${locale}/template/${raw}`,
+        siteName: 'LAMAplanner',
+        locale: locale,
+        type: 'article',
+        ...(imageUrl && {
+          images: [
+            {
+              url: imageUrl,
+              alt: title,
+            },
+          ],
+        }),
+      },
+      twitter: {
+        card: 'summary_large_card',
+        title: `${title} | LAMAplanner`,
+        description,
+        ...(imageUrl && {
+          images: [imageUrl],
+        }),
+      },
+    };
+  } catch (error) {
+    return {
+      title: 'LAMAplanner Template',
+      description: 'Template for Telegram posting automation',
+    };
   }
 }
 
