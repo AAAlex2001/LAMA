@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useId } from 'react';
+import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./faq.module.scss";
 import Button from "@/components/button/button";
@@ -36,22 +36,20 @@ export default function FAQ({ content }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
 
-  const safe = useMemo(() => {
-    const actions: FAQActions = {
-      primaryText: content?.primaryButtonText,
-      primaryLink: content?.primaryButtonLink,
-      secondaryText: content?.secondaryButtonText,
-      secondaryLink: content?.secondaryButtonLink,
-      helpText: content?.helpText,
-      botLink: content?.botLink,
-    };
+  const actions: FAQActions = {
+    primaryText: content?.primaryButtonText,
+    primaryLink: content?.primaryButtonLink,
+    secondaryText: content?.secondaryButtonText,
+    secondaryLink: content?.secondaryButtonLink,
+    helpText: content?.helpText,
+    botLink: content?.botLink,
+  };
 
-    return {
-      headline: content?.headline || '',
-      faqItems: Array.isArray(content?.faqItems) ? content.faqItems : [],
-      actions,
-    };
-  }, [content]);
+  const safe = {
+    headline: content?.headline || '',
+    faqItems: Array.isArray(content?.faqItems) ? content.faqItems : [],
+    actions,
+  };
 
   const renderText = (text: string) => {
     const parts = text.split(/(```.*?```|``.*?``|`.*?`|@\w+)/);

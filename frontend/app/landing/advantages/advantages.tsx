@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
@@ -33,13 +33,11 @@ interface AdvantagesContent {
 export default function Advantages({ locale, content }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
 
-  const safe = useMemo(() => {
-    return {
-      headline: content?.headline || '',
-      subtitle: content?.subtitle || '',
-      cards: Array.isArray(content?.cards) ? content.cards : [],
-    };
-  }, [content]);
+  const safe = {
+    headline: content?.headline || '',
+    subtitle: content?.subtitle || '',
+    cards: Array.isArray(content?.cards) ? content.cards : [],
+  };
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

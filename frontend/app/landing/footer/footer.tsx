@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import styles from "./footer.module.scss";
 
 interface FooterLink {
@@ -24,15 +23,13 @@ type FooterContent = {
 type Props = { locale: string; content: FooterContent };
 
 export default function Footer({ content }: Props) {
-  const safe = useMemo(() => {
-    return {
-      brandName: content?.brandName || '',
-      copyright: content?.copyright || '',
-      telegramLink: content?.telegramLink || '',
-      instagramLink: content?.instagramLink || '',
-      columns: Array.isArray(content?.columns) ? content.columns : [],
-    };
-  }, [content]);
+  const safe = {
+    brandName: content?.brandName || '',
+    copyright: content?.copyright || '',
+    telegramLink: content?.telegramLink || '',
+    instagramLink: content?.instagramLink || '',
+    columns: Array.isArray(content?.columns) ? content.columns : [],
+  };
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

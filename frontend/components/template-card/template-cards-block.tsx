@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
@@ -23,20 +23,16 @@ type Props = {
 export default function TemplateCardsBlock({ headline, cards }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
 
-  const safe = useMemo(() => {
-    return {
-      headline: String(headline ?? '').trim(),
-      cards: Array.isArray(cards) ? cards : [],
-    };
-  }, [headline, cards]);
+  const safeHeadline = String(headline ?? '').trim();
+  const safeCards = Array.isArray(cards) ? cards : [];
 
-  if (!safe.headline && safe.cards.length === 0) return null;
+  if (!safeHeadline && safeCards.length === 0) return null;
 
   return (
     <section className={styles.section}>
       <div className={styles.container}>
         <div className={styles.topRow}>
-          <div className={styles.headline}>{safe.headline}</div>
+          <div className={styles.headline}>{safeHeadline}</div>
           <Pagination
             onPrev={() => swiperRef.current?.slidePrev()}
             onNext={() => swiperRef.current?.slideNext()}
@@ -53,7 +49,7 @@ export default function TemplateCardsBlock({ headline, cards }: Props) {
             slidesPerView="auto"
             spaceBetween={24}
           >
-            {safe.cards.map((c, idx) => (
+            {safeCards.map((c, idx) => (
               <SwiperSlide key={idx} className={styles.slide}>
                 <TemplateCard
                   title={String(c.title ?? '')}

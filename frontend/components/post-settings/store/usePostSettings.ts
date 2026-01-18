@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useMemo } from 'react';
+import { useReducer, useMemo } from 'react';
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
 import {
@@ -44,7 +44,7 @@ export function usePostSettings() {
   );
 
   // Получить текущие настройки для отправки
-  const getSettingsData = useCallback((): PostSettingsData => {
+  const getSettingsData = (): PostSettingsData => {
     const selectedChannelIds = channels
       .filter((ch) => ch.selected)
       .map((ch) => ch.id);
@@ -62,84 +62,78 @@ export function usePostSettings() {
       autoDeleteCustomDays: state.autoDeleteCustomDays,
       autoDeleteCustomHours: state.autoDeleteCustomHours,
     };
-  }, [channels, state.notifySubscribers, state.pinPost, state.selectedTagColor, state.repeatInterval, state.repeatCustomDays, state.repeatCustomHours, state.autoDeleteInterval, state.autoDeleteCustomDays, state.autoDeleteCustomHours, tagsStore.tagInputValue]);
+  };
 
   // Обработчик изменения канала
-  const handleChannelChange = useCallback(
-    (id: string, checked: boolean) => {
-      const numericId = parseInt(id, 10);
-      if (!isNaN(numericId)) {
-        toggleChannelSelected(numericId);
-      }
-    },
-    [toggleChannelSelected]
-  );
+  const handleChannelChange = (id: string, checked: boolean) => {
+    const numericId = parseInt(id, 10);
+    if (!isNaN(numericId)) {
+      toggleChannelSelected(numericId);
+    }
+  };
 
   // Добавить канал
-  const handleAddChannel = useCallback(
-    async (channelLink: string): Promise<boolean> => {
-      const success = await addChannel(channelLink);
-      if (success) {
-        dispatch({ type: 'SET_SHOW_CREATE_CHANNEL', payload: false });
-      }
-      return success;
-    },
-    [addChannel]
-  );
+  const handleAddChannel = async (channelLink: string): Promise<boolean> => {
+    const success = await addChannel(channelLink);
+    if (success) {
+      dispatch({ type: 'SET_SHOW_CREATE_CHANNEL', payload: false });
+    }
+    return success;
+  };
 
   // Открыть/закрыть модалку добавления канала
-  const openCreateChannel = useCallback(() => {
+  const openCreateChannel = () => {
     dispatch({ type: 'SET_SHOW_CREATE_CHANNEL', payload: true });
-  }, []);
+  };
 
-  const closeCreateChannel = useCallback(() => {
+  const closeCreateChannel = () => {
     dispatch({ type: 'SET_SHOW_CREATE_CHANNEL', payload: false });
-  }, []);
+  };
 
   // Toggle уведомления
-  const handleNotifyChange = useCallback((checked: boolean) => {
+  const handleNotifyChange = (checked: boolean) => {
     dispatch({ type: 'SET_NOTIFY_SUBSCRIBERS', payload: checked });
-  }, []);
+  };
 
   // Toggle закрепления
-  const handlePinChange = useCallback((checked: boolean) => {
+  const handlePinChange = (checked: boolean) => {
     dispatch({ type: 'SET_PIN_POST', payload: checked });
-  }, []);
+  };
 
-  const handleRepeatChange = useCallback((value: RepeatOption) => {
+  const handleRepeatChange = (value: RepeatOption) => {
     dispatch({ type: 'SET_REPEAT_INTERVAL', payload: value });
-  }, []);
+  };
 
-  const handleRepeatCustomDaysChange = useCallback((value: number) => {
+  const handleRepeatCustomDaysChange = (value: number) => {
     dispatch({ type: 'SET_REPEAT_CUSTOM_DAYS', payload: value });
-  }, []);
+  };
 
-  const handleRepeatCustomHoursChange = useCallback((value: number) => {
+  const handleRepeatCustomHoursChange = (value: number) => {
     dispatch({ type: 'SET_REPEAT_CUSTOM_HOURS', payload: value });
-  }, []);
+  };
 
-  const handleAutoDeleteChange = useCallback((value: AutoDeleteOption) => {
+  const handleAutoDeleteChange = (value: AutoDeleteOption) => {
     dispatch({ type: 'SET_AUTO_DELETE_INTERVAL', payload: value });
-  }, []);
+  };
 
-  const handleAutoDeleteCustomDaysChange = useCallback((value: number) => {
+  const handleAutoDeleteCustomDaysChange = (value: number) => {
     dispatch({ type: 'SET_AUTO_DELETE_CUSTOM_DAYS', payload: value });
-  }, []);
+  };
 
-  const handleAutoDeleteCustomHoursChange = useCallback((value: number) => {
+  const handleAutoDeleteCustomHoursChange = (value: number) => {
     dispatch({ type: 'SET_AUTO_DELETE_CUSTOM_HOURS', payload: value });
-  }, []);
+  };
 
-  const handleTagColorChange = useCallback((color: TagColor) => {
+  const handleTagColorChange = (color: TagColor) => {
     dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color });
-  }, []);
+  };
 
   // Сброс настроек
-  const resetSettings = useCallback(() => {
+  const resetSettings = () => {
     dispatch({ type: 'RESET' });
     // Сбрасываем только инпут тега и результаты поиска
     tagsStore.reset();
-  }, [tagsStore]);
+  };
 
   return {
     // State

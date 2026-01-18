@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useRef } from 'react';
+import { useReducer, useRef } from 'react';
 import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { RichTextEditorRef } from '@/components/rich-text-editor';
@@ -369,31 +369,31 @@ export function useCreatePost() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { showSuccess, showError } = useNotifications();
 
-  const quizFormDispatch = useCallback((quizAction: QuizFormAction) => {
+  const quizFormDispatch = (quizAction: QuizFormAction) => {
     dispatch({ type: 'QUIZ_FORM', payload: quizAction });
-  }, []);
+  };
 
-  const setText = useCallback((text: string) => {
+  const setText = (text: string) => {
     dispatch({ type: 'SET_TEXT', payload: text });
-  }, []);
+  };
 
-  const toggleSettings = useCallback(() => {
+  const toggleSettings = () => {
     dispatch({ type: 'TOGGLE_SETTINGS' });
-  }, []);
+  };
 
-  const setShowSettings = useCallback((show: boolean) => {
+  const setShowSettings = (show: boolean) => {
     dispatch({ type: 'SET_SHOW_SETTINGS', payload: show });
-  }, []);
+  };
 
-  const toggleInlineButtons = useCallback(() => {
+  const toggleInlineButtons = () => {
     dispatch({ type: 'TOGGLE_INLINE_BUTTONS' });
-  }, []);
+  };
 
-  const setButtonRows = useCallback((rows: ButtonRow[]) => {
+  const setButtonRows = (rows: ButtonRow[]) => {
     dispatch({ type: 'SET_BUTTON_ROWS', payload: rows });
-  }, []);
+  };
 
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
@@ -452,33 +452,33 @@ export function useCreatePost() {
     })();
 
     event.target.value = '';
-  }, [state.buttonRows.length, state.mediaFiles.length]);
+  };
 
-  const handleRemoveMedia = useCallback((id: string) => {
+  const handleRemoveMedia = (id: string) => {
     dispatch({ type: 'REMOVE_MEDIA_FILE', payload: id });
-  }, []);
+  };
 
-  const handleToggleBlur = useCallback((id: string) => {
+  const handleToggleBlur = (id: string) => {
     dispatch({ type: 'TOGGLE_MEDIA_BLUR', payload: id });
-  }, []);
+  };
 
-  const setShowTemplatesModal = useCallback((show: boolean) => {
+  const setShowTemplatesModal = (show: boolean) => {
     dispatch({ type: 'SET_SHOW_TEMPLATES_MODAL', payload: show });
-  }, []);
+  };
 
-  const setShowDraftsModal = useCallback((show: boolean) => {
+  const setShowDraftsModal = (show: boolean) => {
     dispatch({ type: 'SET_SHOW_DRAFTS_MODAL', payload: show });
-  }, []);
+  };
 
-  const setShowQuizForm = useCallback((show: boolean) => {
+  const setShowQuizForm = (show: boolean) => {
     dispatch({ type: 'SET_SHOW_QUIZ_FORM', payload: show });
-  }, []);
+  };
 
-  const setShowLinkPreview = useCallback((show: boolean) => {
+  const setShowLinkPreview = (show: boolean) => {
     dispatch({ type: 'SET_SHOW_LINK_PREVIEW', payload: show });
-  }, []);
+  };
 
-  const getInlineKeyboard = useCallback((): InlineKeyboard | undefined => {
+  const getInlineKeyboard = (): InlineKeyboard | undefined => {
     if (state.buttonRows.length === 0) return undefined;
 
     const buttons: InlineButton[][] = state.buttonRows.map(row =>
@@ -494,9 +494,9 @@ export function useCreatePost() {
     );
 
     return { buttons };
-  }, [state.buttonRows]);
+  };
 
-  const onPublishNow = useCallback(async () => {
+  const onPublishNow = async () => {
     const pollData = selectQuizPollData(state.quizForm);
 
     dispatch({ type: 'SET_IS_PUBLISHING', payload: true });
@@ -528,9 +528,9 @@ export function useCreatePost() {
     } finally {
       dispatch({ type: 'SET_IS_PUBLISHING', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError, state.quizForm, state.showQuizForm]);
+  };
 
-  const onSaveDraft = useCallback(async () => {
+  const onSaveDraft = async () => {
     const pollData = selectQuizPollData(state.quizForm);
 
     dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: true });
@@ -558,9 +558,9 @@ export function useCreatePost() {
     } finally {
       dispatch({ type: 'SET_IS_SAVING_DRAFT', payload: false });
     }
-  }, [state.text, state.mediaFiles, postSettings, getInlineKeyboard, showSuccess, showError, state.quizForm, state.showQuizForm, state.showLinkPreview]);
+  };
 
-  const handleSaveAsTemplate = useCallback(async (selectedHtml?: string) => {
+  const handleSaveAsTemplate = async (selectedHtml?: string) => {
     const htmlToSave = (selectedHtml && selectedHtml.trim()) ? selectedHtml : state.text;
     if (!htmlToSave || htmlToSave.trim() === '') {
       showError('Текст пуст. Нечего сохранять в шаблон.');
@@ -588,15 +588,15 @@ export function useCreatePost() {
     } finally {
       dispatch({ type: 'SET_IS_SAVING_TEMPLATE', payload: false });
     }
-  }, [state.text, showSuccess, showError]);
+  };
 
-  const handleSelectTemplate = useCallback((formattedContent: Record<string, unknown>) => {
+  const handleSelectTemplate = (formattedContent: Record<string, unknown>) => {
     if (formattedContent?.html && typeof formattedContent.html === 'string') {
       dispatch({ type: 'SET_TEXT', payload: formattedContent.html });
     }
-  }, []);
+  };
 
-  const handleSelectDraft = useCallback(async (draft: Draft) => {
+  const handleSelectDraft = async (draft: Draft) => {
     try {
       // Полностью очищаем текущее состояние поста
       dispatch({ type: 'RESET_FORM' });
@@ -733,11 +733,11 @@ export function useCreatePost() {
       console.error('Failed to load draft:', error);
       showError('Не удалось загрузить черновик');
     }
-  }, [showSuccess, showError]);
+  };
 
-  const openFileDialog = useCallback(() => {
+  const openFileDialog = () => {
     fileInputRef.current?.click();
-  }, []);
+  };
 
   const canAddMedia = state.mediaFiles.length < 10 &&
     !(state.buttonRows.length > 0 && state.mediaFiles.length >= 1);

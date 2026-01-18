@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useCallback, useMemo, useRef } from "react";
+import { useEffect, useReducer, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -64,7 +64,7 @@ export function useLogin(locale: string = 'ru') {
   }, [handleTelegramAuth]);
 
   // Инициализация Telegram Widget
-  const initTelegramWidget = useCallback(() => {
+  const initTelegramWidget = () => {
     if (!widgetContainerRef.current) return;
 
     widgetContainerRef.current.innerHTML = "";
@@ -81,12 +81,12 @@ export function useLogin(locale: string = 'ru') {
     script.setAttribute("data-onauth", "handleTelegramAuth(user)");
 
     widgetContainerRef.current.appendChild(script);
-  }, []);
+  };
 
   // Открытие бота для авторизации
-  const openBotForLogin = useCallback(() => {
+  const openBotForLogin = () => {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`, "_blank");
-  }, []);
+  };
 
   // Обработка авторизации через бота (по URL параметрам)
   useEffect(() => {
@@ -130,7 +130,7 @@ export function useLogin(locale: string = 'ru') {
   }, []);
 
   // Вход по email/password
-  const loginWithEmail = useCallback(async () => {
+  const loginWithEmail = async () => {
     dispatch({ type: "CLEAR_FIELD_ERRORS" });
     dispatch({ type: "CLEAR_NOTIFICATIONS" });
 
@@ -174,28 +174,25 @@ export function useLogin(locale: string = 'ru') {
     dispatch({ type: "SET_ERROR", payload: result.message || "Ошибка входа" });
     dispatch({ type: "SET_LOADING", payload: false });
     return false;
-  }, [state.form, router]);
+  };
 
   // Выход
-  const logout = useCallback(async () => {
+  const logout = async () => {
     await handleLogout();
     dispatch({ type: "SET_USER", payload: null });
     dispatch({ type: "RESET" });
     router.push("/login");
-  }, [router]);
+  };
 
   // Простые действия с формой
-  const actions = useMemo(
-    () => ({
-      setEmail: (v: string) => dispatch({ type: "SET_EMAIL", payload: v }),
-      setPassword: (v: string) => dispatch({ type: "SET_PASSWORD", payload: v }),
-      toggleShowPassword: () => dispatch({ type: "TOGGLE_SHOW_PASSWORD" }),
-      setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
-      clearNotifications: () => dispatch({ type: "CLEAR_NOTIFICATIONS" }),
-      reset: () => dispatch({ type: "RESET" }),
-    }),
-    []
-  );
+  const actions = {
+    setEmail: (v: string) => dispatch({ type: "SET_EMAIL", payload: v }),
+    setPassword: (v: string) => dispatch({ type: "SET_PASSWORD", payload: v }),
+    toggleShowPassword: () => dispatch({ type: "TOGGLE_SHOW_PASSWORD" }),
+    setError: (msg: string | null) => dispatch({ type: "SET_ERROR", payload: msg }),
+    clearNotifications: () => dispatch({ type: "CLEAR_NOTIFICATIONS" }),
+    reset: () => dispatch({ type: "RESET" }),
+  };
 
   return {
     state,

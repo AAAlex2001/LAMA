@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useId } from 'react';
+import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
 import Button from "@/components/button/button";
@@ -27,14 +26,12 @@ export default function Pricing({ locale, content }: Props) {
   const gradientId1440 = useId();
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const safeContent = useMemo(() => {
-    return {
-      headline: content?.headline || '',
-      subtitle: content?.subtitle || '',
-      description: content?.description || '',
-      plans: Array.isArray(content?.plans) ? content.plans : [],
-    };
-  }, [content]);
+  const safeContent = {
+    headline: content?.headline || '',
+    subtitle: content?.subtitle || '',
+    description: content?.description || '',
+    plans: Array.isArray(content?.plans) ? content.plans : [],
+  };
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

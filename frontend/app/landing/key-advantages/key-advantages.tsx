@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./key-advantages.module.scss";
 
@@ -18,12 +17,10 @@ type KeyAdvantagesContent = {
 type Props = { locale: string; content: KeyAdvantagesContent };
 
 export default function KeyAdvantages({ content }: Props) {
-  const safeContent = useMemo(() => {
-    return {
-      headline: content?.headline || '',
-      advantages: Array.isArray(content?.advantages) ? content.advantages : [],
-    };
-  }, [content]);
+  const safeContent = {
+    headline: content?.headline || '',
+    advantages: Array.isArray(content?.advantages) ? content.advantages : [],
+  };
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback, useMemo } from 'react';
+import { useReducer, useMemo } from 'react';
 import {
   type ChannelsState,
   initialChannelsState,
@@ -12,7 +12,7 @@ export function useChannels() {
   const [state, dispatch] = useReducer(channelsReducer, initialChannelsState);
 
   // Загрузка каналов (вызывается при открытии дропдауна)
-  const fetchChannelsList = useCallback(async () => {
+  const fetchChannelsList = async () => {
     // Не загружаем повторно если уже загружены или загрузка идёт
     if (state.channels.length > 0 || state.loading) return;
     
@@ -41,10 +41,10 @@ export function useChannels() {
     }
 
     dispatch({ type: 'SET_LOADING', payload: false });
-  }, [state.page, state.pageSize, state.channels.length, state.loading]);
+  };
 
   // Добавить новый канал
-  const handleAddChannel = useCallback(async (input: string): Promise<boolean> => {
+  const handleAddChannel = async (input: string): Promise<boolean> => {
     dispatch({ type: 'SET_SYNCING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });
 
@@ -60,10 +60,10 @@ export function useChannels() {
     dispatch({ type: 'SET_ERROR', payload: result.message || 'Ошибка' });
     dispatch({ type: 'SET_SYNCING', payload: false });
     return false;
-  }, []);
+  };
 
   // Удалить канал
-  const handleRemoveChannel = useCallback(async (channelId: number): Promise<boolean> => {
+  const handleRemoveChannel = async (channelId: number): Promise<boolean> => {
     dispatch({ type: 'SET_LOADING', payload: true });
 
     const result = await removeChannel(channelId);
@@ -77,17 +77,17 @@ export function useChannels() {
     dispatch({ type: 'SET_ERROR', payload: result.message || 'Ошибка' });
     dispatch({ type: 'SET_LOADING', payload: false });
     return false;
-  }, []);
+  };
 
   // Переключить выбор канала
-  const toggleChannelSelected = useCallback((channelId: number) => {
+  const toggleChannelSelected = (channelId: number) => {
     dispatch({ type: 'TOGGLE_CHANNEL_SELECTED', payload: channelId });
-  }, []);
+  };
 
   // Сбросить ошибку
-  const clearError = useCallback(() => {
+  const clearError = () => {
     dispatch({ type: 'SET_ERROR', payload: null });
-  }, []);
+  };
 
   // Выбранные каналы
   const selectedChannels = useMemo(

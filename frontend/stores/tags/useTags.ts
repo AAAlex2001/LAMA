@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useCallback } from 'react';
+import { useReducer } from 'react';
 import {
   type Tag,
   initialTagsState,
@@ -12,7 +12,7 @@ export function useTags() {
   const [state, dispatch] = useReducer(tagsReducer, initialTagsState);
 
   // Загрузка тегов (недавние/популярные)
-  const loadRecentTags = useCallback(async () => {
+  const loadRecentTags = async () => {
     if (state.recentTags.length > 0 || state.loading) return;
     
     dispatch({ type: 'SET_LOADING', payload: true });
@@ -26,10 +26,10 @@ export function useTags() {
     }
 
     dispatch({ type: 'SET_LOADING', payload: false });
-  }, [state.recentTags.length, state.loading]);
+  };
 
   // Поиск тегов
-  const handleSearchTags = useCallback(async (query: string) => {
+  const handleSearchTags = async (query: string) => {
     if (!query.trim()) {
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
       return;
@@ -46,30 +46,30 @@ export function useTags() {
     }
 
     dispatch({ type: 'SET_SEARCHING', payload: false });
-  }, []);
+  };
 
   // Установить значение инпута тега (ввод вручную или выбор из списка)
-  const setTagInputValue = useCallback((value: string) => {
+  const setTagInputValue = (value: string) => {
     dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: value });
     // Очистить результаты поиска если значение пустое
     if (!value.trim()) {
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
     }
-  }, []);
+  };
 
   // Выбрать тег из списка (заполняет инпут названием тега)
-  const selectTag = useCallback((tag: Tag) => {
+  const selectTag = (tag: Tag) => {
     dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: tag.name });
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
-  }, []);
+  };
 
   // Очистить результаты поиска
-  const clearSearch = useCallback(() => {
+  const clearSearch = () => {
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
-  }, []);
+  };
 
   // Удалить тег
-  const handleDeleteTag = useCallback(async (tagId: number) => {
+  const handleDeleteTag = async (tagId: number) => {
     try {
       await deleteTag(tagId);
       // Удаляем тег из локального состояния
@@ -77,12 +77,12 @@ export function useTags() {
     } catch (error) {
       console.error('Error deleting tag:', error);
     }
-  }, []);
+  };
 
   // Сброс состояния
-  const reset = useCallback(() => {
+  const reset = () => {
     dispatch({ type: 'RESET' });
-  }, []);
+  };
 
   return {
     // State

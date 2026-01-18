@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./hero.module.scss";
 import Button from "@/components/button/button";
@@ -27,16 +26,14 @@ interface HeroContent {
 }
 
 export default function Hero({ locale, content, hideImagesOnMobile = false, variant = 'default' }: Props) {
-  const safeContent = useMemo(() => {
-    return {
-      headline: content?.headline || "",
-      paragraph: content?.paragraph || "",
-      paragraphSecondary: (content as any)?.paragraphSecondary || "",
-      buttonText: content?.buttonText || "",
-      buttonUrl: content?.buttonUrl || "",
-      images: Array.isArray(content?.images) ? content.images : [],
-    };
-  }, [content]);
+  const safeContent = {
+    headline: content?.headline || "",
+    paragraph: content?.paragraph || "",
+    paragraphSecondary: (content as any)?.paragraphSecondary || "",
+    buttonText: content?.buttonText || "",
+    buttonUrl: content?.buttonUrl || "",
+    images: Array.isArray(content?.images) ? content.images : [],
+  };
 
   const renderText = (text: string) => {
     // Парсим текст: ```курсив```, ``жирный``, `градиент`

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useCallback, useMemo, useRef } from 'react';
+import { useEffect, useReducer, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import type { RegisterAction, RegisterState, TelegramWidgetUser } from './types';
@@ -99,7 +99,7 @@ export function useRegister(locale: string = 'ru') {
     };
   }, [onTelegramAuth]);
 
-  const initTelegramWidget = useCallback(() => {
+  const initTelegramWidget = () => {
     if (!widgetContainerRef.current) return;
 
     widgetContainerRef.current.innerHTML = '';
@@ -116,7 +116,7 @@ export function useRegister(locale: string = 'ru') {
     script.setAttribute('data-onauth', 'handleTelegramAuth(user)');
 
     widgetContainerRef.current.appendChild(script);
-  }, []);
+  };
 
   useEffect(() => {
     initTelegramWidget();
@@ -130,11 +130,11 @@ export function useRegister(locale: string = 'ru') {
     }
   }, [searchParams]);
 
-  const openBotForLogin = useCallback(() => {
+  const openBotForLogin = () => {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=register`, '_blank');
-  }, []);
+  };
 
-  const addEmailToAccount = useCallback(async () => {
+  const addEmailToAccount = async () => {
     const { email, password, agreePersonalData, agreeTerms } = state;
 
     if (!email || !password) {
@@ -189,21 +189,18 @@ export function useRegister(locale: string = 'ru') {
     dispatch({ type: 'SET_ERROR', payload: result.message || 'Ошибка добавления email' });
     dispatch({ type: 'SET_LOADING', payload: false });
     return false;
-  }, [state, router, locale]);
+  };
 
-  const actions = useMemo(
-    () => ({
-      setError: (msg: string | null) => dispatch({ type: 'SET_ERROR', payload: msg }),
-      reset: () => dispatch({ type: 'RESET' }),
-      goToStep: (step: 1 | 2) => dispatch({ type: 'SET_STEP', payload: step }),
-      setEmail: (email: string) => dispatch({ type: 'SET_EMAIL', payload: email }),
-      setPassword: (password: string) => dispatch({ type: 'SET_PASSWORD', payload: password }),
-      setAgreePersonalData: (value: boolean) =>
-        dispatch({ type: 'SET_AGREE_PERSONAL_DATA', payload: value }),
-      setAgreeTerms: (value: boolean) => dispatch({ type: 'SET_AGREE_TERMS', payload: value }),
-    }),
-    []
-  );
+  const actions = {
+    setError: (msg: string | null) => dispatch({ type: 'SET_ERROR', payload: msg }),
+    reset: () => dispatch({ type: 'RESET' }),
+    goToStep: (step: 1 | 2) => dispatch({ type: 'SET_STEP', payload: step }),
+    setEmail: (email: string) => dispatch({ type: 'SET_EMAIL', payload: email }),
+    setPassword: (password: string) => dispatch({ type: 'SET_PASSWORD', payload: password }),
+    setAgreePersonalData: (value: boolean) =>
+      dispatch({ type: 'SET_AGREE_PERSONAL_DATA', payload: value }),
+    setAgreeTerms: (value: boolean) => dispatch({ type: 'SET_AGREE_TERMS', payload: value }),
+  };
 
   return {
     state,

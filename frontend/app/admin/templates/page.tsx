@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
 import Button from '@/components/button/button';
 import styles from './templates-admin.module.scss';
@@ -203,7 +203,7 @@ export default function TemplatesAdminPage() {
       .catch(() => setLoading(false));
   }, [locale]);
 
-  const templates = useMemo(() => (Array.isArray(data?.templates) ? data.templates : []), [data]);
+  const templates = Array.isArray(data?.templates) ? data.templates : [];
 
   useEffect(() => {
     if (!selectedSlug && templates.length > 0) {
@@ -212,10 +212,7 @@ export default function TemplatesAdminPage() {
     }
   }, [templates, selectedSlug]);
 
-  const selectedTemplate = useMemo(
-    () => templates.find((t) => (t.slug || '') === selectedSlug) || null,
-    [templates, selectedSlug]
-  );
+  const selectedTemplate = templates.find((t) => (t.slug || '') === selectedSlug) || null;
 
   useEffect(() => {
     if (!selectedSlug) return;

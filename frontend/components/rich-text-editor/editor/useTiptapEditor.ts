@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback } from 'react';
 import { useEditor, useEditorState } from '@tiptap/react';
 import { Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
@@ -148,7 +147,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     },
   });
 
-  const toggleFormat = useCallback((format: TextFormat) => {
+  const toggleFormat = (format: TextFormat) => {
     if (!editor) return;
     
     const chain = editor.chain().focus();
@@ -173,28 +172,28 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
         editor.chain().focus().toggleMark('spoiler').run();
         return;
     }
-  }, [editor]);
+  };
 
-  const toggleBlockquote = useCallback(() => {
+  const toggleBlockquote = () => {
     if (!editor) return;
     editor.chain().focus().toggleBlockquote().run();
-  }, [editor]);
+  };
 
-  const insertContent = useCallback((content: string) => {
+  const insertContent = (content: string) => {
     if (!editor) return;
     editor.chain().focus().insertContent(content).run();
-  }, [editor]);
+  };
 
-  const setContent = useCallback((html: string) => {
+  const setContent = (html: string) => {
     if (!editor) return;
     if (html !== editor.getHTML()) {
       editor.commands.setContent(html);
     }
-  }, [editor]);
+  };
 
-  const clearContent = useCallback(() => {
+  const clearContent = () => {
     editor?.commands.clearContent(true);
-  }, [editor]);
+  };
 
   return {
     editor,
