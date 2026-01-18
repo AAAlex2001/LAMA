@@ -65,3 +65,46 @@ export function unwrapElement(el: Element): void {
 export function createZeroWidthSpace(): Text {
   return document.createTextNode('\u200B');
 }
+
+export function getCaretCharacterOffsetWithin(element: HTMLElement): number | null {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return null;
+  const range = selection.getRangeAt(0);
+  if (!element.contains(range.startContainer)) return null;
+
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(element);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  return preRange.toString().length;
+}
+
+export function setCaretCharacterOffsetWithin(element: HTMLElement, offset: number): void {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(true);
+
+  let remaining = offset;
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const textNode = node as Text;
+    const len = textNode.nodeValue?.length ?? 0;
+    if (remaining <= len) {
+      range.setStart(textNode, remaining);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      return;
+    }
+    remaining -= len;
+  }
+
+  // Если offset больше длины текста — ставим курсор в конец
+  selection.removeAllRanges();
+  range.selectNodeContents(element);
+  range.collapse(false);
+  selection.addRange(range);
+}

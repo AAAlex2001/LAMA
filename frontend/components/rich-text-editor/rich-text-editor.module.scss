@@ -39,6 +39,11 @@
   overflow-wrap: break-word;
   white-space: pre-wrap;
 
+  a {
+    color: #3B82F6;
+    text-decoration: underline;
+  }
+
   &:empty::before {
     content: '';
   }

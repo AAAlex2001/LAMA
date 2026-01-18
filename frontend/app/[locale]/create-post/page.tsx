@@ -9,6 +9,7 @@ import TextTemplatesModal from '@/components/text-templates-modal/text-templates
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
+import { hasLink } from '@/components/rich-text-editor/store/utils/linkify';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -95,8 +96,7 @@ export default function CreatePostPage() {
                 onSaveAsTemplate={handleSaveAsTemplate}
               />
 
-              {/* Тоглер превью ссылок */}
-              {text && /https?:\/\/[^\s]+/gi.test(text) && (
+              {text && hasLink(text) && (
                 <div className={styles.linkPreviewToggle}>
                   <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
                   <Toggle 

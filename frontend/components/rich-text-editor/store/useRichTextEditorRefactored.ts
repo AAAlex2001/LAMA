@@ -7,6 +7,8 @@ import { toggleBasicFormat } from './formatters/basicFormatter';
 import { applySpoilerFormat } from './formatters/spoilerFormatter';
 import { applyCodeFormat } from './formatters/codeFormatter';
 import { isFormatActive, isSpoilerActive, isCodeActive } from './utils/formatDetection';
+import { getCaretCharacterOffsetWithin, setCaretCharacterOffsetWithin } from './utils/dom';
+import { linkifyHtml } from './utils/linkify';
 
 const MAX_CHARS = 4096;
 
@@ -93,51 +95,11 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
     html = html.replace(/<(b|i|u|s|strong|em|strike|del)\s+style="[^"]+"/gi, '<$1');
     html = html.replace(/\s+style=""/gi, '');
 
+    html = linkifyHtml(html);
+
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
-    
-    // Автоматическое оборачивание URL в <a> теги
-    const urlRegex = /(https?:\/\/[^\s<]+)/g;
-    const walker = document.createTreeWalker(
-      tempDiv,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
-    
-    const textNodes: Text[] = [];
-    let node: Node | null;
-    while ((node = walker.nextNode())) {
-      textNodes.push(node as Text);
-    }
-    
-    textNodes.forEach((textNode) => {
-      const text = textNode.textContent || '';
-      if (urlRegex.test(text)) {
-        const fragment = document.createDocumentFragment();
-        let lastIndex = 0;
-        text.replace(urlRegex, (match, url, offset) => {
-          // Добавляем текст до ссылки
-          if (offset > lastIndex) {
-            fragment.appendChild(document.createTextNode(text.substring(lastIndex, offset)));
-          }
-          // Создаем ссылку
-          const link = document.createElement('a');
-          link.href = url;
-          link.textContent = url;
-          link.style.color = '#3B82F6';
-          link.style.textDecoration = 'underline';
-          fragment.appendChild(link);
-          lastIndex = offset + match.length;
-          return match;
-        });
-        // Добавляем оставшийся текст
-        if (lastIndex < text.length) {
-          fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
-        }
-        textNode.parentNode?.replaceChild(fragment, textNode);
-      }
-    });
-    
+
     const spoilerSpans = tempDiv.querySelectorAll('span[data-spoiler="true"]');
     spoilerSpans.forEach((span) => {
       const spoilerTag = document.createElement('tg-spoiler');
@@ -158,6 +120,7 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
     processingRef.current = true;
 
     try {
+      const editorEl = editorRef.current;
       const textContent = editorRef.current.textContent || '';
 
       if (textContent.length > maxLength) {
@@ -173,7 +136,18 @@ export function useRichTextEditor(maxLength: number = MAX_CHARS) {
         dispatch({ type: 'SET_ACTIVE_FORMATS', payload: new Set() });
       }
 
-      const html = normalizeHtml(editorRef.current.innerHTML);
+      const selection = window.getSelection();
+      const caretOffset = selection && selection.rangeCount > 0 && selection.isCollapsed
+        ? getCaretCharacterOffsetWithin(editorEl)
+        : null;
+
+      const html = normalizeHtml(editorEl.innerHTML);
+      if (html !== editorEl.innerHTML) {
+        editorEl.innerHTML = html;
+        if (caretOffset !== null) {
+          setCaretCharacterOffsetWithin(editorEl, caretOffset);
+        }
+      }
 
       isInternalUpdate.current = true;
       dispatch({ type: 'SET_CONTENT', payload: html });

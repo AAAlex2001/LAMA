@@ -146,7 +146,7 @@ export async function handlePublishNow(
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
 
-    const hasFormatting = hasText && /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasFormatting = hasText && /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -273,7 +273,7 @@ export async function handleSaveDraft(
     }
 
     const hasText = content.text && content.text.trim();
-    const hasFormatting = hasText && /<\/?(?:b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasFormatting = hasText && /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
