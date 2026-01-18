@@ -154,9 +154,11 @@ async def process_repeating_publications():
                     logger.warning(f"Failed to republish publication {publication.id}: {result.get('error')}")
             except Exception as e:
                 logger.error(f"Failed to republish publication {publication.id}: {e}")
-                # В случае ошибки всё равно сдвигаем next_repeat_time, чтобы не зациклиться
+                # В случае ошибки сдвигаем next_repeat_time от предыдущего значения, чтобы не зациклиться
+                # и при этом избежать дрейфа времени
+                base_time = publication.next_repeat_time or datetime.now(timezone.utc)
                 publication.next_repeat_time = PublicationService.calculate_next_repeat_time(
-                    datetime.now(timezone.utc),
+                    base_time,
                     publication.repeat_interval,
                     publication.repeat_custom_days,
                     publication.repeat_custom_hours

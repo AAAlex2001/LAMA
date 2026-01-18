@@ -340,8 +340,11 @@ async def update_publication_status(
         publication.published_time = datetime.now(timezone.utc)
         
         if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
+            # Используем scheduled_time как базу для первого расчёта,
+            # чтобы повторы были в точное время (без дрейфа)
+            base_time = publication.scheduled_time or publication.published_time
             publication.next_repeat_time = calculate_next_repeat_time_callback(
-                publication.published_time,
+                base_time,
                 publication.repeat_interval,
                 publication.repeat_custom_days,
                 publication.repeat_custom_hours
@@ -352,8 +355,10 @@ async def update_publication_status(
         publication.published_time = datetime.now(timezone.utc)
         
         if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
+            # Используем scheduled_time как базу для первого расчёта
+            base_time = publication.scheduled_time or publication.published_time
             publication.next_repeat_time = calculate_next_repeat_time_callback(
-                publication.published_time,
+                base_time,
                 publication.repeat_interval,
                 publication.repeat_custom_days,
                 publication.repeat_custom_hours
@@ -409,8 +414,11 @@ async def republish(
 
     if success_count > 0:
         publication.published_time = datetime.now(timezone.utc)
+        # При republish считаем от предыдущего next_repeat_time, чтобы избежать дрейфа времени
+        # Например: если повтор каждый час в 12:00, 13:00, 14:00 — время не должно сдвигаться
+        base_time = publication.next_repeat_time or publication.published_time
         publication.next_repeat_time = calculate_next_repeat_time_callback(
-            publication.published_time,
+            base_time,
             publication.repeat_interval,
             publication.repeat_custom_days,
             publication.repeat_custom_hours
