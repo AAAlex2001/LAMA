@@ -1,0 +1,120 @@
+.bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 6px 8px;
+  gap: 12px;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px 12px 12px 4px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  width: 100%;
+  word-wrap: break-word;
+}
+
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 17px;
+  color: #ced2d6;
+  width: 100%;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+}
+
+.option {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0 0 12px;
+  gap: 10px;
+  width: 100%;
+  border-bottom: 1px solid #f0f4fa;
+
+  &:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+}
+
+.radioButton {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  background: #ffffff;
+  box-shadow: 0px 2px 5px rgba(103, 110, 118, 0.08),
+    0px 0px 0px 1px rgba(103, 110, 118, 0.16),
+    0px 1px 1px rgba(0, 0, 0, 0.12);
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+
+.optionText {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  word-wrap: break-word;
+}
+
+.footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 100%;
+  height: 22px;
+}
+
+.footerText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 17px;
+  text-align: center;
+  color: #ced2d6;
+  width: 100%;
+}
+
+// For poll - different footer style
+.isPoll .footerText {
+  font-size: 14px;
+  color: #383f45;
+}

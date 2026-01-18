@@ -10,7 +10,7 @@ import TextTemplatesModal from '@/components/text-templates-modal/text-templates
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
-import PostPreviewModal from '@/components/post-preview-modal';
+import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
 import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
 import {
   DraftsIcon,
@@ -81,6 +81,37 @@ export default function CreatePostPage() {
   const selectedChannelTitle = `${selectedPrimaryChannel?.label || 'Название канала'}${
     extraSelectedCount > 0 ? ` +${extraSelectedCount}` : ''
   }`;
+
+  // Преобразуем quizFormState в QuizPreviewData
+  const getQuizPreviewData = (): QuizPreviewData | undefined => {
+    const question = quizFormState.question.trim();
+    if (!question) return undefined;
+
+    const filledOptions = quizFormState.answers
+      .map((a) => a.text.trim())
+      .filter((t) => t.length > 0);
+
+    if (filledOptions.length < 2) return undefined;
+
+    const isQuiz = quizFormState.mode === 'quiz';
+    let correctAnswerIndex: number | undefined;
+    if (isQuiz && quizFormState.correctAnswerId) {
+      const idx = quizFormState.answers.findIndex((a) => a.id === quizFormState.correctAnswerId);
+      if (idx >= 0) correctAnswerIndex = idx;
+    }
+
+    return {
+      mode: isQuiz ? 'quiz' : 'poll',
+      question,
+      options: filledOptions,
+      isAnonymous: true,
+      allowsMultipleAnswers: quizFormState.mode === 'poll_multi',
+      correctAnswerIndex,
+    };
+  };
+
+  const quizPreviewData = getQuizPreviewData();
+  const hasContentForPreview = text || mediaFiles.length > 0 || quizPreviewData;
 
   const handleOpenPreview = () => {
     setShowSettings(false);
@@ -335,7 +366,7 @@ export default function CreatePostPage() {
             onCloseCreateChannel={postSettings.closeCreateChannel}
             onPreview={handleOpenPreview}
             onReset={postSettings.resetSettings}
-            previewDisabled={!text && mediaFiles.length === 0}
+            previewDisabled={!hasContentForPreview}
           />
         </div>
       </div>
@@ -386,7 +417,7 @@ export default function CreatePostPage() {
               onCloseCreateChannel={postSettings.closeCreateChannel}
               onPreview={handleOpenPreview}
               onReset={postSettings.resetSettings}
-              previewDisabled={!text && mediaFiles.length === 0}
+              previewDisabled={!hasContentForPreview}
             />
           </div>
         </div>
@@ -400,6 +431,7 @@ export default function CreatePostPage() {
         channelMembersCount={selectedPrimaryChannel?.members_count}
         html={text}
         mediaFiles={mediaFiles}
+        quizData={quizPreviewData}
       />
 
       {/* Text Templates Modal */}
