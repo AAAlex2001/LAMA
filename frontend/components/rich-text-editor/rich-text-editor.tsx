@@ -9,6 +9,8 @@ import styles from './rich-text-editor.module.scss';
 import { useTiptapEditor } from './editor';
 import AiInputBar from '@/components/ai-input-bar';
 import Tooltip from '@/components/tooltip/tooltip';
+import Loader from '@/components/loader/loader';
+import Input from '@/components/input';
 
 import {
   AiEditIcon,
@@ -23,6 +25,7 @@ import {
   UnderlineIcon,
   TemplatesIcon,
   CloseIcon,
+  CheckIcon,
 } from '@/components/icons';
 
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
@@ -49,11 +52,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const [linkUrl, setLinkUrl] = useState('');
     const linkInputRef = useRef<HTMLInputElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
-
-    // Track external value changes
     const lastValue = useRef(value);
 
-    // Editor hook
     const {
       editor,
       state,
@@ -72,7 +72,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       },
     });
 
-    // Sync external value → editor
     useEffect(() => {
       if (editor && value !== lastValue.current) {
         setContent(value);
@@ -80,7 +79,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       }
     }, [value, editor, setContent]);
 
-    // Expose reset method
     useImperativeHandle(ref, () => ({
       reset: () => {
         clearContent();
@@ -183,7 +181,6 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const formats = state?.formats;
     const charCount = state?.charCount ?? 0;
     const isEmpty = state?.isEmpty ?? true;
-    const hasSelection = state?.hasSelection ?? false;
     const isLink = editor?.isActive('link') ?? false;
 
     const formatButtons = [
@@ -196,7 +193,15 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     ];
 
     if (!editor) {
-      return <div className={styles.textareaWrapper}>Загрузка...</div>;
+      return (
+        <div className={styles.textareaWrapper}>
+          <div className={styles.textareaInner}>
+            <div className={styles.loadingOverlay}>
+              <Loader size={20} color="blue" />
+            </div>
+          </div>
+        </div>
+      );
     }
 
     return (
@@ -239,32 +244,37 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
         {showLinkInput && (
           <div className={styles.linkInputWrapper}>
-            <input
-              ref={linkInputRef}
-              type="text"
-              className={styles.linkInput}
-              placeholder="Вставьте ссылку..."
+            <Input
+              inputRef={linkInputRef}
               value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
+              onChange={setLinkUrl}
+              placeholder="Вставьте ссылку..."
+              className={styles.linkInputField}
+              variant="white"
+              icons={[
+                {
+                  icon: <CheckIcon width={16} height={16} color="#8C8C8C" />,
+                  onClick: handleLinkSubmit,
+                  disabled: !linkUrl.trim(),
+                  className: styles.linkApplyIcon,
+                },
+                {
+                  icon: <CloseIcon width={16} height={16} color="#8C8C8C" />,
+                  onClick: () => setShowLinkInput(false),
+                  className: styles.linkCancelIcon,
+                },
+              ]}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleLinkSubmit();
-                if (e.key === 'Escape') setShowLinkInput(false);
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleLinkSubmit();
+                }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  setShowLinkInput(false);
+                }
               }}
             />
-            <button
-              type="button"
-              className={styles.linkSubmitButton}
-              onClick={handleLinkSubmit}
-            >
-              Применить
-            </button>
-            <button
-              type="button"
-              className={styles.linkCancelButton}
-              onClick={() => setShowLinkInput(false)}
-            >
-              <CloseIcon width={16} height={16} color="#383F45" />
-            </button>
           </div>
         )}
 

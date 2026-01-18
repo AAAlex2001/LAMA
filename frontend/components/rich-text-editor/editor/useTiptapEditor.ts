@@ -11,6 +11,25 @@ import CharacterCount from '@tiptap/extension-character-count';
 import type { TextFormat, EditorState } from './types';
 import { isValidUrl } from './link-utils';
 
+function countGraphemes(text: string): number {
+  // Intl.Segmenter correctly counts emoji sequences (ZWJ, skin tones) as 1 grapheme.
+  const Segmenter = (Intl as any)?.Segmenter as
+    | (new (locales?: string | string[], options?: { granularity: 'grapheme' }) => {
+        segment: (input: string) => Iterable<{ segment: string }>;
+      })
+    | undefined;
+
+  if (Segmenter) {
+    const segmenter = new Segmenter(undefined, { granularity: 'grapheme' });
+    let count = 0;
+    for (const _ of segmenter.segment(text)) count += 1;
+    return count;
+  }
+
+  // Fallback: counts Unicode code points (handles surrogate pairs, but not ZWJ sequences).
+  return Array.from(text).length;
+}
+
 const SpoilerMark = Mark.create({
   name: 'spoiler',
   
@@ -96,7 +115,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       return {
         html: ctx.editor.getHTML(),
         text: ctx.editor.getText(),
-        charCount: ctx.editor.storage.characterCount?.characters() ?? 0,
+        charCount: countGraphemes(ctx.editor.getText()),
         isEmpty: ctx.editor.isEmpty,
         hasSelection: from !== to,
         formats: {

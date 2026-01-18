@@ -24,4 +24,5 @@ export { default as TrashIcon } from './trash-icon';
 export { default as SendIcon } from './send-icon';
 export { default as AiLoaderIcon } from './ai-loader-icon';
 export { default as CloseIcon } from './close-icon';
+export { default as CheckIcon } from './check-icon';
 

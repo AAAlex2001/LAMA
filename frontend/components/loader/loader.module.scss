@@ -1,20 +1,25 @@
 .loader {
-  border: 2px solid transparent;
-  border-top-color: currentColor;
+  display: inline-block;
+  box-sizing: border-box;
+  border: var(--loader-border-width, 2px) solid var(--loader-track, rgba(0, 0, 0, 0.15));
+  border-top-color: var(--loader-head, currentColor);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 .blue {
-  border-top-color: #3B82F6;
+  --loader-head: #3B82F6;
+  --loader-track: rgba(59, 130, 246, 0.25);
 }
 
 .white {
-  border-top-color: white;
+  --loader-head: #FFFFFF;
+  --loader-track: rgba(255, 255, 255, 0.35);
 }
 
 .inherit {
-  border-top-color: currentColor;
+  --loader-head: currentColor;
+  --loader-track: rgba(0, 0, 0, 0.15);
 }
 
 @keyframes spin {

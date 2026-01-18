@@ -25,6 +25,15 @@
   cursor: text;
 }
 
+.loadingOverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  pointer-events: none;
+}
+
 .editor {
   width: 100%;
   min-height: 60px;
@@ -299,56 +308,47 @@
   padding: 8px 0;
 }
 
-.linkInput {
+.linkInputField {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #CED2D6;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  outline: none;
-  transition: border-color 0.2s;
-
-  &:focus {
-    border-color: #3B82F6;
-  }
-
-  &::placeholder {
-    color: #AEAEB2;
-  }
+  min-width: 0;
 }
 
-.linkSubmitButton {
-  padding: 8px 16px;
-  background: #3B82F6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #2563EB;
-  }
-}
-
-.linkCancelButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  cursor: pointer;
+.linkCancelIcon {
+  width: 24px;
+  height: 24px;
+  transition: background 0.2s ease, opacity 0.2s ease;
   border-radius: 4px;
-  transition: background 0.2s;
 
-  &:hover {
-    background: #F2F2F7;
+  &:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.1);
+    opacity: 1;
+
+    :global(svg path) {
+      stroke: #ef4444;
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(239, 68, 68, 0.2);
+  }
+}
+
+.linkApplyIcon {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  transition: background 0.2s ease, opacity 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.1);
+    opacity: 1;
+
+    :global(svg polygon) {
+      fill: #22c55e;
+    }
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(34, 197, 94, 0.2);
   }
 }

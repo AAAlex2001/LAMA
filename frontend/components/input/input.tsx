@@ -11,12 +11,21 @@ interface InputProps {
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  inputRef?: React.Ref<HTMLInputElement>;
+  autoFocus?: boolean;
   error?: string | null;
   disabled?: boolean;
   className?: string;
   icon?: React.ReactNode;
   onIconClick?: () => void;
   iconDisabled?: boolean;
+  icons?: Array<{
+    icon: React.ReactNode;
+    onClick?: () => void;
+    disabled?: boolean;
+    className?: string;
+  }>;
   variant?: 'default' | 'white';
   iconClassName?: string;
   showRadio?: boolean;
@@ -33,11 +42,15 @@ export default function Input({
   placeholder,
   value,
   onChange,
+  onKeyDown,
+  inputRef,
+  autoFocus = false,
   error,
   disabled = false,
   className,
   icon,
   onIconClick,
+  icons,
   showRadio = false,
   radioChecked = false,
   onRadioChange,
@@ -81,24 +94,43 @@ export default function Input({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={onKeyDown}
+          ref={inputRef}
+          autoFocus={autoFocus}
           disabled={disabled}
           className={classNames(styles.input, {
             [styles.error]: error,
             [styles.disabled]: disabled,
-            [styles.withIcon]: icon,
+            [styles.withIcon]: icon || (icons && icons.length > 0),
             [styles.white]: variant === 'white',
             [styles.withRadio]: showRadio || showCheckbox,
           })}
         />
-        {icon && (
-          <button
-            type="button"
-            className={classNames(styles.iconButton, iconClassName)}
-            onClick={onIconClick}
-            disabled={iconDisabled || disabled}
-          >
-            {icon}
-          </button>
+        {icons && icons.length > 0 ? (
+          <div className={styles.iconButtons}>
+            {icons.map((item, index) => (
+              <button
+                key={index}
+                type="button"
+                className={classNames(styles.iconButton, item.className)}
+                onClick={item.onClick}
+                disabled={item.disabled || disabled}
+              >
+                {item.icon}
+              </button>
+            ))}
+          </div>
+        ) : (
+          icon && (
+            <button
+              type="button"
+              className={classNames(styles.iconButton, iconClassName)}
+              onClick={onIconClick}
+              disabled={iconDisabled || disabled}
+            >
+              {icon}
+            </button>
+          )
         )}
       </div>
       {error && <span className={styles.errorMessage}>{error}</span>}

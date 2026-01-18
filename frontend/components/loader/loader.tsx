@@ -14,10 +14,15 @@ export default function Loader({
   color = 'inherit',
   className 
 }: LoaderProps) {
+  const borderWidth = Math.max(2, Math.round(size / 10));
   return (
     <span 
       className={classNames(styles.loader, styles[color], className)}
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        ['--loader-border-width' as any]: `${borderWidth}px`,
+      }}
     />
   );
 }
