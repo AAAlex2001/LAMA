@@ -77,7 +77,7 @@
   }
 
   &.withIcon {
-    padding-right: 44px;
+    padding-right: var(--input-icon-padding, 44px);
   }
 
   &.withRadio {
@@ -100,7 +100,10 @@
 }
 
 .iconButton {
-  position: relative;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
   width: 36px;
   height: 36px;
   background: transparent;
@@ -129,6 +132,13 @@
   display: flex;
   align-items: center;
   gap: 4px;
+
+  .iconButton {
+    position: relative;
+    right: auto;
+    top: auto;
+    transform: none;
+  }
 }
 
 .errorMessage {

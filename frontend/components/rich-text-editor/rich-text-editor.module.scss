@@ -37,6 +37,7 @@
 .editor {
   width: 100%;
   min-height: 60px;
+  flex-grow: 1;
   border: none;
   outline: none;
   font-family: 'Inter', sans-serif;
@@ -52,6 +53,8 @@
   :global(.ProseMirror) {
     outline: none;
     border: none;
+    min-height: 100%;
+    width: 100%;
     
     &:focus {
       outline: none;

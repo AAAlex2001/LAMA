@@ -63,6 +63,9 @@ export default function Input({
 }: InputProps) {
   const id = useId();
 
+  const iconCount = icons?.length ? icons.length : icon ? 1 : 0;
+  const iconPadding = iconCount > 0 ? 44 + (iconCount - 1) * 40 : undefined;
+
   return (
     <div className={classNames(styles.inputWrapper, className)}>
       {label && (
@@ -98,6 +101,11 @@ export default function Input({
           ref={inputRef}
           autoFocus={autoFocus}
           disabled={disabled}
+          style={
+            iconPadding
+              ? ({ ['--input-icon-padding' as any]: `${iconPadding}px` } as React.CSSProperties)
+              : undefined
+          }
           className={classNames(styles.input, {
             [styles.error]: error,
             [styles.disabled]: disabled,

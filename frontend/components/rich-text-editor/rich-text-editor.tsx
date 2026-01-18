@@ -48,6 +48,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const [showAiInput, setShowAiInput] = useState(false);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [selectedText, setSelectedText] = useState('');
+    const [selectionRange, setSelectionRange] = useState<{ from: number; to: number } | null>(null);
     const [showLinkInput, setShowLinkInput] = useState(false);
     const [linkUrl, setLinkUrl] = useState('');
     const linkInputRef = useRef<HTMLInputElement>(null);
@@ -91,21 +92,50 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       setShowEmojiPicker(false);
     }, [insertContent]);
 
-    const handleAiButtonClick = useCallback(() => {
-      const selection = window.getSelection();
-      const text = selection?.toString().trim() || '';
-      if (text) {
-        setSelectedText(text);
+    const handleTextareaMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      if (!editor) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Клик/drag по самому тексту (ProseMirror) не трогаем, иначе ломается выделение.
+      // Но клик по "пустоте" (в том числе внутри обёртки EditorContent) должен ставить курсор.
+      const isInsideProseMirror = Boolean(target.closest('.ProseMirror'));
+      if (!isInsideProseMirror) editor.commands.focus('end');
+    }, [editor]);
+
+    const handleAiButtonMouseDown = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor) return;
+
+      // Toggle off
+      if (showAiInput) {
+        setShowAiInput(false);
+        setSelectedText('');
+        setSelectionRange(null);
+        return;
       }
-      setShowAiInput((prev) => !prev);
-    }, []);
+
+      // Open only with a real selection
+      const { from, to } = editor.state.selection;
+      if (from === to) return;
+
+      const text = editor.state.doc.textBetween(from, to, ' ');
+      if (!text.trim()) return;
+
+      setSelectedText(text);
+      setSelectionRange({ from, to });
+      setShowAiInput(true);
+    }, [editor, showAiInput]);
 
     const handleAiSubmit = useCallback(async (prompt: string) => {
       try {
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
         const token = localStorage.getItem('lamaplanner_access_token');
         
-        if (!token || !editor) return;
+        if (!token || !editor || !selectionRange || !selectedText.trim()) return;
+
+        const replaceFrom = selectionRange.from;
+        let replaceTo = selectionRange.to;
 
         const response = await fetch(`${API_BASE_URL}/publications/ai/edit-text-stream`, {
           method: 'POST',
@@ -114,7 +144,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            text: selectedText || value,
+            text: selectedText,
             instruction: prompt,
           }),
         });
@@ -131,24 +161,41 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
           const { done, value: chunk } = await reader.read();
           if (done) break;
 
-          const text = decoder.decode(chunk);
-          for (const line of text.split('\n')) {
+          const chunkText = decoder.decode(chunk);
+          let streamDone = false;
+          for (const line of chunkText.split('\n')) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
-              if (data === '[DONE]') break;
+              if (data === '[DONE]') {
+                streamDone = true;
+                break;
+              }
               if (data.startsWith('[ERROR]')) throw new Error(data.slice(8));
               result += data;
             }
           }
-          editor.commands.setContent(result);
+
+          // Live update: replace only the originally captured range in-place
+          if (result.length > 0) {
+            const view = editor.view;
+            const schema = view.state.schema;
+            const tr = view.state.tr
+              .replaceWith(replaceFrom, replaceTo, schema.text(result))
+              .setMeta('addToHistory', false);
+            view.dispatch(tr);
+            replaceTo = replaceFrom + result.length;
+          }
+
+          if (streamDone) break;
         }
 
         setShowAiInput(false);
         setSelectedText('');
+        setSelectionRange(null);
       } catch (error) {
         console.error('AI edit error:', error);
       }
-    }, [editor, selectedText, value]);
+    }, [editor, selectedText, selectionRange]);
 
     const handleLinkClick = useCallback(() => {
       if (!editor) return;
@@ -206,7 +253,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
     return (
       <div className={styles.textareaWrapper} ref={wrapperRef}>
-        <div className={styles.textareaInner} onClick={() => editor.commands.focus('end')}>
+        <div className={styles.textareaInner} onMouseDown={handleTextareaMouseDown}>
           <EditorContent editor={editor} className={styles.editor} />
           {isEmpty && <div className={styles.placeholder}>{placeholder}</div>}
         </div>
@@ -288,7 +335,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
               className={`${styles.toolButton} ${showAiInput ? styles.active : ''}`}
               type="button"
               aria-label="AI редактирование"
-              onClick={handleAiButtonClick}
+              onMouseDown={handleAiButtonMouseDown}
+              disabled={!showAiInput && !state?.hasSelection}
               onMouseEnter={() => setHoveredButton('ai')}
               onMouseLeave={() => setHoveredButton(null)}
             >
