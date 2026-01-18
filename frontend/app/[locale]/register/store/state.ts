@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useCallback, useRef } from 'react';
+import { useEffect, useReducer, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import type { RegisterAction, RegisterState, TelegramWidgetUser } from './types';
@@ -56,8 +56,8 @@ export function useRegister(locale: string = 'ru') {
   const searchParams = useSearchParams();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
 
-  const onTelegramAuth = useCallback(
-    async (user: TelegramWidgetUser) => {
+  useEffect(() => {
+    const onTelegramAuth = async (user: TelegramWidgetUser) => {
       dispatch({ type: 'SET_STATUS', payload: 'loading' });
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
@@ -87,17 +87,14 @@ export function useRegister(locale: string = 'ru') {
       dispatch({ type: 'SET_ERROR', payload: result.message || 'Ошибка регистрации' });
       dispatch({ type: 'SET_LOADING', payload: false });
       return false;
-    },
-    [router, locale]
-  );
+    };
 
-  useEffect(() => {
     (window as unknown as Record<string, unknown>).handleTelegramAuth = onTelegramAuth;
 
     return () => {
       delete (window as unknown as Record<string, unknown>).handleTelegramAuth;
     };
-  }, [onTelegramAuth]);
+  }, [router, locale]);
 
   const initTelegramWidget = () => {
     if (!widgetContainerRef.current) return;

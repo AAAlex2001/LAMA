@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useReducer, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useReducer, useRef } from 'react';
 
 import RichTextEditorView from './rich-text-editor';
 import { useTiptapEditor } from './editor';
@@ -43,7 +43,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const wrapperRef = useRef<HTMLDivElement>(null);
     const lastValue = useRef(value);
 
-    const { editor, state, toggleFormat, toggleBlockquote, insertContent, setContent, clearContent } = useTiptapEditor({
+    const { editor, state, toggleFormat, insertContent } = useTiptapEditor({
       maxLength,
       onUpdate: (html) => {
         lastValue.current = html;
@@ -53,62 +53,55 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
 
     useEffect(() => {
       if (editor && value !== lastValue.current) {
-        setContent(value);
+        if (value !== editor.getHTML()) {
+          editor.commands.setContent(value);
+        }
         lastValue.current = value;
       }
-    }, [value, editor, setContent]);
+    }, [value, editor]);
 
     useImperativeHandle(
       ref,
       () => ({
         reset: () => {
-          clearContent();
+          editor?.commands.clearContent(true);
           onChange('');
         },
       }),
-      [clearContent, onChange],
+      [editor, onChange],
     );
 
-    const handleTextareaMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!editor) return;
-        focusEditorOnWrapperMouseDown({ editor, target: e.target as HTMLElement | null });
-      },
-      [editor],
-    );
+    const handleTextareaMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!editor) return;
+      focusEditorOnWrapperMouseDown({ editor, target: e.target as HTMLElement | null });
+    };
 
-    const handleAiButtonMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        if (!editor) return;
-        openAiInputFromSelection({ editor, state: uiState, dispatch });
-      },
-      [editor, uiState],
-    );
+    const handleAiButtonMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor) return;
+      openAiInputFromSelection({ editor, state: uiState, dispatch });
+    };
 
-    const handleAiSubmit = useCallback(
-      async (prompt: string) => {
-        if (!editor) return;
-        await submitAiEditFromState({ editor, state: uiState, dispatch, prompt });
-      },
-      [editor, uiState],
-    );
+    const handleAiSubmit = async (prompt: string) => {
+      if (!editor) return;
+      await submitAiEditFromState({ editor, state: uiState, dispatch, prompt });
+    };
 
-    const handleLinkClick = useCallback(() => {
+    const handleLinkClick = () => {
       if (!editor) return;
       openLinkInputFromSelection({ editor, dispatch });
       setTimeout(() => linkInputRef.current?.focus(), 0);
-    }, [editor]);
+    };
 
-    const handleLinkSubmit = useCallback(() => {
+    const handleLinkSubmit = () => {
       if (!editor) return;
       applyLink({ editor, url: uiState.linkUrl, dispatch });
-    }, [editor, uiState.linkUrl]);
+    };
 
-    const handleRemoveLink = useCallback(() => {
+    const handleRemoveLink = () => {
       if (!editor) return;
       removeLink({ editor });
-    }, [editor]);
+    };
 
     const formats = state?.formats;
     const charCount = state?.charCount ?? 0;
@@ -117,39 +110,27 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const isQuote = editor?.isActive('blockquote') ?? false;
     const hasSelection = state?.hasSelection ?? false;
 
-    const handleSaveSelectionAsTemplateMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        if (!editor || !onSaveAsTemplate) return;
-        saveSelectionAsTemplate({ editor, onSaveAsTemplate });
-      },
-      [editor, onSaveAsTemplate],
-    );
+    const handleSaveSelectionAsTemplateMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor || !onSaveAsTemplate) return;
+      saveSelectionAsTemplate({ editor, onSaveAsTemplate });
+    };
 
-    const handleQuoteMouseDown = useCallback(
-      (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        if (!editor) return;
-        if (!hasSelection) return;
-        applyQuoteFromSelection(editor);
-      },
-      [editor, hasSelection],
-    );
+    const handleQuoteMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (!editor) return;
+      if (!hasSelection) return;
+      applyQuoteFromSelection(editor);
+    };
 
-    const handleEmojiClick = useCallback(
-      (emojiData: { emoji: string }) => {
-        handleEmojiSelected({ emoji: emojiData.emoji, insertContent, dispatch });
-      },
-      [insertContent],
-    );
+    const handleEmojiClick = (emojiData: { emoji: string }) => {
+      handleEmojiSelected({ emoji: emojiData.emoji, insertContent, dispatch });
+    };
 
     const hoveredButton = uiState.hoveredButton;
 
-    const getButtonColor = useCallback(
-      (id: NonNullable<typeof hoveredButton>, isActive?: boolean) =>
-        getToolButtonColor({ id, hoveredButton, isActive }),
-      [hoveredButton],
-    );
+    const getButtonColor = (id: NonNullable<typeof hoveredButton>, isActive?: boolean) =>
+      getToolButtonColor({ id, hoveredButton, isActive });
 
     const formatButtons: Array<{
       id: TextFormat;

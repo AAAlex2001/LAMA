@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useCallback, useRef } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -25,9 +25,9 @@ export function useLogin(locale: string = 'ru') {
   const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Telegram Widget авторизация
-  const handleTelegramAuth = useCallback(
-    async (user: TelegramWidgetUser) => {
+  // Регистрация глобального обработчика для Telegram Widget
+  useEffect(() => {
+    const handleTelegramAuth = async (user: TelegramWidgetUser) => {
       dispatch({ type: "SET_STATUS", payload: "loading" });
       dispatch({ type: "SET_LOADING", payload: true });
       dispatch({ type: "CLEAR_NOTIFICATIONS" });
@@ -50,18 +50,14 @@ export function useLogin(locale: string = 'ru') {
       dispatch({ type: "SET_ERROR", payload: result.message || "Ошибка входа" });
       dispatch({ type: "SET_LOADING", payload: false });
       return false;
-    },
-    [router]
-  );
+    };
 
-  // Регистрация глобального обработчика для Telegram Widget
-  useEffect(() => {
     (window as unknown as Record<string, unknown>).handleTelegramAuth = handleTelegramAuth;
 
     return () => {
       delete (window as unknown as Record<string, unknown>).handleTelegramAuth;
     };
-  }, [handleTelegramAuth]);
+  }, [router, locale]);
 
   // Инициализация Telegram Widget
   const initTelegramWidget = () => {
@@ -198,7 +194,6 @@ export function useLogin(locale: string = 'ru') {
     state,
     widgetContainerRef,
     initTelegramWidget,
-    handleTelegramAuth,
     openBotForLogin,
     loginWithEmail,
     logout,

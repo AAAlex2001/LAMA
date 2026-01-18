@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import styles from './time-duration-picker.module.scss';
 
 interface TimeDurationPickerProps {
@@ -29,67 +29,32 @@ export default function TimeDurationPicker({
     return val.toString().padStart(2, '0');
   };
 
-  const clampDays = useCallback((val: number): number => {
+  const clampDays = (val: number): number => {
     if (val < 0) return maxDays;
     if (val > maxDays) return 0;
     return val;
-  }, [maxDays]);
+  };
 
-  const clampHours = useCallback((val: number): number => {
+  const clampHours = (val: number): number => {
     if (val < 0) return 23;
     if (val > 23) return 0;
     return val;
-  }, []);
+  };
 
-  const handleWheel = useCallback((e: WheelEvent, type: 'days' | 'hours') => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 1 : -1;
-    
-    if (type === 'days') {
-      onDaysChange(clampDays(days + delta));
-    } else {
-      onHoursChange(clampHours(hours + delta));
-    }
-  }, [days, hours, onDaysChange, onHoursChange, clampDays, clampHours]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent, type: 'days' | 'hours') => {
+  const handleMouseDown = (e: React.MouseEvent, type: 'days' | 'hours') => {
     isDragging.current = type;
     startY.current = e.clientY;
     startValue.current = type === 'days' ? days : hours;
     document.body.style.userSelect = 'none';
-  }, [days, hours]);
+  };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging.current) return;
-    
-    const deltaY = startY.current - e.clientY;
-    const steps = Math.round(deltaY / 24);
-    
-    if (isDragging.current === 'days') {
-      const newValue = clampDays(startValue.current + steps);
-      if (newValue !== days) {
-        onDaysChange(newValue);
-      }
-    } else {
-      const newValue = clampHours(startValue.current + steps);
-      if (newValue !== hours) {
-        onHoursChange(newValue);
-      }
-    }
-  }, [days, hours, onDaysChange, onHoursChange, clampDays, clampHours]);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = null;
-    document.body.style.userSelect = '';
-  }, []);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent, type: 'days' | 'hours') => {
+  const handleTouchStart = (e: React.TouchEvent, type: 'days' | 'hours') => {
     isDragging.current = type;
     startY.current = e.touches[0].clientY;
     startValue.current = type === 'days' ? days : hours;
-  }, [days, hours]);
+  };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging.current) return;
     
     const deltaY = startY.current - e.touches[0].clientY;
@@ -106,18 +71,51 @@ export default function TimeDurationPicker({
         onHoursChange(newValue);
       }
     }
-  }, [days, hours, onDaysChange, onHoursChange, clampDays, clampHours]);
+  };
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = () => {
     isDragging.current = null;
-  }, []);
+  };
 
   useEffect(() => {
     const daysEl = daysRef.current;
     const hoursEl = hoursRef.current;
 
-    const handleDaysWheel = (e: WheelEvent) => handleWheel(e, 'days');
-    const handleHoursWheel = (e: WheelEvent) => handleWheel(e, 'hours');
+    const handleDaysWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 1 : -1;
+      onDaysChange(clampDays(days + delta));
+    };
+
+    const handleHoursWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 1 : -1;
+      onHoursChange(clampHours(hours + delta));
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+
+      const deltaY = startY.current - e.clientY;
+      const steps = Math.round(deltaY / 24);
+
+      if (isDragging.current === 'days') {
+        const newValue = clampDays(startValue.current + steps);
+        if (newValue !== days) {
+          onDaysChange(newValue);
+        }
+      } else {
+        const newValue = clampHours(startValue.current + steps);
+        if (newValue !== hours) {
+          onHoursChange(newValue);
+        }
+      }
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = null;
+      document.body.style.userSelect = '';
+    };
 
     daysEl?.addEventListener('wheel', handleDaysWheel, { passive: false });
     hoursEl?.addEventListener('wheel', handleHoursWheel, { passive: false });
@@ -130,7 +128,7 @@ export default function TimeDurationPicker({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleWheel, handleMouseMove, handleMouseUp]);
+  }, [days, hours, onDaysChange, onHoursChange, maxDays]);
 
   const prevDays = clampDays(days - 1);
   const nextDays = clampDays(days + 1);

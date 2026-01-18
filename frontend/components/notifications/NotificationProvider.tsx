@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 import { ErrorNotification } from './ErrorNotification';
 import { SuccessNotification } from './SuccessNotification';
 
@@ -20,19 +20,19 @@ const NotificationContext = createContext<NotificationContextType | null>(null);
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const showSuccess = useCallback((message: string) => {
+  const showSuccess = (message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setNotifications([{ id, type: 'success', message }]);
-  }, []);
+  };
 
-  const showError = useCallback((message: string) => {
+  const showError = (message: string) => {
     const id = `${Date.now()}-${Math.random()}`;
     setNotifications([{ id, type: 'error', message }]);
-  }, []);
+  };
 
-  const handleClose = useCallback((id: string) => {
+  const handleClose = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
-  }, []);
+  };
 
   return (
     <NotificationContext.Provider value={{ showSuccess, showError }}>

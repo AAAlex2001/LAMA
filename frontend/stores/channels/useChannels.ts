@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useMemo } from 'react';
+import { useReducer } from 'react';
 import {
   type ChannelsState,
   initialChannelsState,
@@ -90,10 +90,7 @@ export function useChannels() {
   };
 
   // Выбранные каналы
-  const selectedChannels = useMemo(
-    () => state.channels.filter((ch) => ch.selected),
-    [state.channels]
-  );
+  const selectedChannels = state.channels.filter((ch) => ch.selected);
 
   const selectedCount = selectedChannels.length;
 

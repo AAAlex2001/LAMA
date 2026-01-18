@@ -1,6 +1,6 @@
 'use client';
 
-import { useReducer, useMemo } from 'react';
+import { useReducer } from 'react';
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
 import {
@@ -31,17 +31,13 @@ export function usePostSettings() {
   const tagsStore = useTags();
 
   // Преобразуем каналы в формат для Dropdown
-  const channelOptions: ChannelOption[] = useMemo(
-    () =>
-      channels.map((ch) => ({
-        id: String(ch.id),
-        label: ch.title,
-        checked: ch.selected,
-        members_count: ch.members_count,
-        photo_url: ch.photo_url,
-      })),
-    [channels]
-  );
+  const channelOptions: ChannelOption[] = channels.map((ch) => ({
+    id: String(ch.id),
+    label: ch.title,
+    checked: ch.selected,
+    members_count: ch.members_count,
+    photo_url: ch.photo_url,
+  }));
 
   // Получить текущие настройки для отправки
   const getSettingsData = (): PostSettingsData => {

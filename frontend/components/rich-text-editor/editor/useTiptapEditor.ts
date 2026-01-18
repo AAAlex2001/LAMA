@@ -174,34 +174,15 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     }
   };
 
-  const toggleBlockquote = () => {
-    if (!editor) return;
-    editor.chain().focus().toggleBlockquote().run();
-  };
-
   const insertContent = (content: string) => {
     if (!editor) return;
     editor.chain().focus().insertContent(content).run();
-  };
-
-  const setContent = (html: string) => {
-    if (!editor) return;
-    if (html !== editor.getHTML()) {
-      editor.commands.setContent(html);
-    }
-  };
-
-  const clearContent = () => {
-    editor?.commands.clearContent(true);
   };
 
   return {
     editor,
     state: editorState,
     toggleFormat,
-    toggleBlockquote,
     insertContent,
-    setContent,
-    clearContent,
   };
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import styles from './drum-picker.module.scss';
 
 interface DrumPickerProps {
@@ -27,49 +27,26 @@ export default function DrumPicker({
     return val.toString().padStart(2, '0');
   };
 
-  const clampValue = useCallback((val: number): number => {
+  const clampValue = (val: number): number => {
     if (val < min) return max;
     if (val > max) return min;
     return val;
-  }, [min, max]);
+  };
 
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 1 : -1;
-    onChange(clampValue(value + delta));
-  }, [value, onChange, clampValue]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent) => {
     isDragging.current = true;
     startY.current = e.clientY;
     startValue.current = value;
     document.body.style.userSelect = 'none';
-  }, [value]);
+  };
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isDragging.current) return;
-    
-    const deltaY = startY.current - e.clientY;
-    const steps = Math.round(deltaY / 24); // 24px per step
-    const newValue = clampValue(startValue.current + steps);
-    
-    if (newValue !== value) {
-      onChange(newValue);
-    }
-  }, [value, onChange, clampValue]);
-
-  const handleMouseUp = useCallback(() => {
-    isDragging.current = false;
-    document.body.style.userSelect = '';
-  }, []);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = (e: React.TouchEvent) => {
     isDragging.current = true;
     startY.current = e.touches[0].clientY;
     startValue.current = value;
-  }, [value]);
+  };
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+  const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging.current) return;
     
     const deltaY = startY.current - e.touches[0].clientY;
@@ -79,15 +56,38 @@ export default function DrumPicker({
     if (newValue !== value) {
       onChange(newValue);
     }
-  }, [value, onChange, clampValue]);
+  };
 
-  const handleTouchEnd = useCallback(() => {
+  const handleTouchEnd = () => {
     isDragging.current = false;
-  }, []);
+  };
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? 1 : -1;
+      onChange(clampValue(value + delta));
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging.current) return;
+
+      const deltaY = startY.current - e.clientY;
+      const steps = Math.round(deltaY / 24); // 24px per step
+      const newValue = clampValue(startValue.current + steps);
+
+      if (newValue !== value) {
+        onChange(newValue);
+      }
+    };
+
+    const handleMouseUp = () => {
+      isDragging.current = false;
+      document.body.style.userSelect = '';
+    };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     document.addEventListener('mousemove', handleMouseMove);
@@ -98,7 +98,7 @@ export default function DrumPicker({
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [handleWheel, handleMouseMove, handleMouseUp]);
+  }, [value, onChange, min, max]);
 
   const prevValue = clampValue(value - 1);
   const nextValue = clampValue(value + 1);
