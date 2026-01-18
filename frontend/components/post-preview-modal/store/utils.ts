@@ -122,3 +122,71 @@ export function revokeObjectUrls(urls: Map<string, string>): void {
     }
   }
 }
+
+/**
+ * Извлекает содержимое blockquote и pre/code из HTML и возвращает отдельно с сохранением порядка
+ * Возвращает массив элементов с типом ('text' | 'blockquote' | 'code') и содержимым
+ */
+export interface HtmlPart {
+  type: 'text' | 'blockquote' | 'code';
+  content: string;
+  language?: string; // для code блоков
+}
+
+export function extractBlockquotes(html: string): { mainHtml: string; blockquotes: string[]; parts: HtmlPart[] } {
+  if (!html) return { mainHtml: '', blockquotes: [], parts: [] };
+
+  const parts: HtmlPart[] = [];
+  const blockquotes: string[] = [];
+  
+  // Комбинированный regex для blockquote и pre/code блоков
+  // Ищем: <blockquote>...</blockquote> или <pre><code>...</code></pre> или <pre>...</pre>
+  const combinedRegex = /<blockquote[^>]*>([\s\S]*?)<\/blockquote>|<pre[^>]*>(?:<code[^>]*(?:\s+class="language-(\w+)")?[^>]*>)?([\s\S]*?)(?:<\/code>)?<\/pre>/gi;
+  
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = combinedRegex.exec(html)) !== null) {
+    // Текст до найденного блока
+    const textBefore = html.slice(lastIndex, match.index).trim();
+    if (textBefore) {
+      parts.push({ type: 'text', content: textBefore });
+    }
+    
+    if (match[1] !== undefined) {
+      // Это blockquote
+      const blockquoteContent = match[1].trim();
+      if (blockquoteContent) {
+        parts.push({ type: 'blockquote', content: blockquoteContent });
+        blockquotes.push(blockquoteContent);
+      }
+    } else if (match[3] !== undefined) {
+      // Это pre/code блок
+      const codeContent = match[3].trim();
+      const language = match[2] || undefined;
+      if (codeContent) {
+        // Декодируем HTML entities
+        const decoded = codeContent
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'");
+        parts.push({ type: 'code', content: decoded, language });
+      }
+    }
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Текст после последнего блока
+  const textAfter = html.slice(lastIndex).trim();
+  if (textAfter) {
+    parts.push({ type: 'text', content: textAfter });
+  }
+  
+  // mainHtml для обратной совместимости
+  const mainHtml = html.replace(combinedRegex, '').trim();
+  
+  return { mainHtml, blockquotes, parts };
+}

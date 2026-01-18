@@ -205,6 +205,10 @@
   margin: 0;
 }
 
+.blockquoteContainer {
+  padding: 8px 8px 0 8px;
+}
+
 .html :global(tg-spoiler),
 .html :global(span.spoiler),
 .html :global(span[data-spoiler]) {

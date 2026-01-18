@@ -9,12 +9,16 @@ import { CloseIcon } from '@/components/icons';
 import { MediaPreview } from './media-preview';
 import { DocumentsPreview } from './documents-preview';
 import { QuizPreview } from './quiz-preview';
+import { BlockquotePreview } from './blockquote-preview';
+import { CodePreview } from './code-preview';
 import {
   type QuizPreviewData,
+  type HtmlPart,
   normalizeMaybeUrl,
   formatMembersCount,
   extractDocuments,
   extractVisualMedia,
+  extractBlockquotes,
   createObjectUrls,
   revokeObjectUrls,
 } from './store';
@@ -52,6 +56,10 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   const objectUrls = createObjectUrls(mediaFiles);
   const visualMediaItems = extractVisualMedia(mediaFiles, objectUrls);
   const documentItems = extractDocuments(mediaFiles);
+  
+  // Извлекаем blockquote из HTML с сохранением порядка
+  const { parts } = extractBlockquotes(html);
+  const hasContent = visualMediaItems.length > 0 || parts.length > 0;
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -114,17 +122,37 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
             {/* Message Area */}
             <div className={styles.messageArea}>
               {/* Main bubble with media and text */}
-              {(visualMediaItems.length > 0 || html) && (
+              {(visualMediaItems.length > 0 || hasContent) && (
                 <div className={styles.bubble}>
                   <MediaPreview items={visualMediaItems} />
-                  {html && (
-                    <div className={styles.textBlock}>
-                      <div
-                        className={styles.html}
-                        dangerouslySetInnerHTML={{ __html: html }}
-                      />
-                    </div>
-                  )}
+                  {/* Рендерим части в правильном порядке */}
+                  {parts.map((part, index) => {
+                    if (part.type === 'text') {
+                      return (
+                        <div key={index} className={styles.textBlock}>
+                          <div
+                            className={styles.html}
+                            dangerouslySetInnerHTML={{ __html: part.content }}
+                          />
+                        </div>
+                      );
+                    }
+                    if (part.type === 'blockquote') {
+                      return (
+                        <div key={index} className={styles.blockquoteContainer}>
+                          <BlockquotePreview html={part.content} />
+                        </div>
+                      );
+                    }
+                    if (part.type === 'code') {
+                      return (
+                        <div key={index} className={styles.blockquoteContainer}>
+                          <CodePreview language={part.language} code={part.content} />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
               )}
 
