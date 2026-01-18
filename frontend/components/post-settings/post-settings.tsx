@@ -65,6 +65,7 @@ interface PostSettingsProps {
   // Actions
   onPreview?: () => void;
   onReset?: () => void;
+  previewDisabled?: boolean;
 }
 
 export default function PostSettings({
@@ -110,6 +111,7 @@ export default function PostSettings({
   onCloseCreateChannel,
   onPreview,
   onReset,
+  previewDisabled,
 }: PostSettingsProps) {
   return (
     <>
@@ -190,6 +192,7 @@ export default function PostSettings({
           active
           fullWidth
           onClick={onPreview}
+          disabled={previewDisabled}
         />
         <Button
           text="Сбросить настройки"

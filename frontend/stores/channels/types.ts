@@ -8,6 +8,8 @@ export interface Channel {
   username?: string;
   description?: string;
   invite_link?: string;
+  members_count?: number;
+  photo_url?: string;
   is_active: boolean;
   selected?: boolean; // для UI
 }

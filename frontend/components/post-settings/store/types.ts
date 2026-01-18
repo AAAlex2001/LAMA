@@ -4,6 +4,8 @@ export interface ChannelOption {
   id: string;
   label: string;
   checked?: boolean;
+  members_count?: number;
+  photo_url?: string;
 }
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';

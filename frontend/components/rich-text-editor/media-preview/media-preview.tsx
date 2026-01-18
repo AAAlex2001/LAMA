@@ -39,6 +39,8 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
     } else {
       fullUrl = file.url || file.preview_url || file.thumbnail_url || '';
     }
+
+    if (!fullUrl) return;
     
     setLightboxMedia(file);
     setLightboxUrl(fullUrl);
@@ -116,17 +118,24 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
                   <Loader size={24} />
                 </div>
               )}
-              <img 
-                src={getPreviewUrl(file)} 
-                alt="Media preview" 
-                className={styles.mediaImage}
-                style={{ 
-                  filter: file.blur ? 'blur(20px)' : 'none',
-                  opacity: loadedImages.has(file.id) ? 1 : 0
-                }}
-                onLoad={() => handleImageLoaded(file.id)}
-                onError={() => handleImageLoaded(file.id)}
-              />
+              {getPreviewUrl(file) ? (
+                <img
+                  src={getPreviewUrl(file)}
+                  alt="Media preview"
+                  className={styles.mediaImage}
+                  style={{
+                    filter: file.blur ? 'blur(20px)' : 'none',
+                    opacity: loadedImages.has(file.id) ? 1 : 0,
+                  }}
+                  onLoad={() => handleImageLoaded(file.id)}
+                  onError={() => handleImageLoaded(file.id)}
+                />
+              ) : (
+                <div
+                  className={styles.videoPlaceholder}
+                  style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+                />
+              )}
             </>
           )}
             </div>

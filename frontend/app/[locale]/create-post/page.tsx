@@ -1,5 +1,5 @@
 'use client';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
@@ -10,6 +10,7 @@ import TextTemplatesModal from '@/components/text-templates-modal/text-templates
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
+import PostPreviewModal from '@/components/post-preview-modal';
 import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
 import {
   DraftsIcon,
@@ -23,6 +24,8 @@ import {
 import { useCreatePost } from './store/useCreatePost';
 
 export default function CreatePostPage() {
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
   const {
     // State
     text,
@@ -72,6 +75,17 @@ export default function CreatePostPage() {
   } = useCreatePost();
 
   const headerRef = useRef<HTMLDivElement>(null);
+
+  const selectedPrimaryChannel = postSettings.channelOptions.find((c) => c.checked);
+  const extraSelectedCount = Math.max(0, postSettings.selectedCount - 1);
+  const selectedChannelTitle = `${selectedPrimaryChannel?.label || 'Название канала'}${
+    extraSelectedCount > 0 ? ` +${extraSelectedCount}` : ''
+  }`;
+
+  const handleOpenPreview = () => {
+    setShowSettings(false);
+    setShowPreviewModal(true);
+  };
 
   return (
     <div className={styles.pageWrapper}>
@@ -319,7 +333,9 @@ export default function CreatePostPage() {
             showCreateChannel={postSettings.showCreateChannel}
             onAddChannel={postSettings.handleAddChannel}
             onCloseCreateChannel={postSettings.closeCreateChannel}
+            onPreview={handleOpenPreview}
             onReset={postSettings.resetSettings}
+            previewDisabled={!text && mediaFiles.length === 0}
           />
         </div>
       </div>
@@ -368,11 +384,23 @@ export default function CreatePostPage() {
               showCreateChannel={postSettings.showCreateChannel}
               onAddChannel={postSettings.handleAddChannel}
               onCloseCreateChannel={postSettings.closeCreateChannel}
+              onPreview={handleOpenPreview}
               onReset={postSettings.resetSettings}
+              previewDisabled={!text && mediaFiles.length === 0}
             />
           </div>
         </div>
       )}
+
+      <PostPreviewModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+        channelTitle={selectedChannelTitle}
+        channelPhotoUrl={selectedPrimaryChannel?.photo_url}
+        channelMembersCount={selectedPrimaryChannel?.members_count}
+        html={text}
+        mediaFiles={mediaFiles}
+      />
 
       {/* Text Templates Modal */}
       <TextTemplatesModal

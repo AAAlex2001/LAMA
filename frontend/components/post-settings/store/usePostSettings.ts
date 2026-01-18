@@ -37,6 +37,8 @@ export function usePostSettings() {
         id: String(ch.id),
         label: ch.title,
         checked: ch.selected,
+        members_count: ch.members_count,
+        photo_url: ch.photo_url,
       })),
     [channels]
   );
