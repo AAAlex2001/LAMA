@@ -9,7 +9,6 @@ import styles from './rich-text-editor.module.scss';
 import type { TextFormat } from './editor';
 import AiInputBar from '@/components/ai-input-bar';
 import Tooltip from '@/components/tooltip/tooltip';
-import Loader from '@/components/loader/loader';
 import Input from '@/components/input';
 
 import type { RichTextEditorState, RichTextEditorHoveredButton } from './store';
@@ -104,13 +103,7 @@ export default function RichTextEditorView(props: RichTextEditorViewProps) {
     return (
       <div className={styles.textareaWrapper} ref={wrapperRef}>
         <div className={styles.textareaInner} onMouseDown={onTextareaMouseDown}>
-          {!editor ? (
-            <div className={styles.loadingOverlay}>
-              <Loader size={20} color="blue" />
-            </div>
-          ) : (
-            <EditorContent editor={editor} className={styles.editor} />
-          )}
+          {editor && <EditorContent editor={editor} className={styles.editor} />}
           {isEmpty && <div className={styles.placeholder}>{placeholder}</div>}
         </div>
 
@@ -155,6 +148,15 @@ export default function RichTextEditorView(props: RichTextEditorViewProps) {
               }}
             >
               <LinkIcon width={18} height={18} color={isLink ? '#3B82F6' : '#383F45'} />
+            </button>
+
+            <button
+              className={styles.floatingButton}
+              type="button"
+              aria-label="Цитата"
+              onMouseDown={onQuoteMouseDown}
+            >
+              <QuoteIcon width={18} height={18} color={isQuote ? '#3B82F6' : '#383F45'} />
             </button>
           </div>
         )}

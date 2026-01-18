@@ -7,6 +7,7 @@ import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 
 import type { TextFormat, EditorState } from './types';
 import { isValidUrl } from './link-utils';
@@ -26,6 +27,26 @@ function countGraphemes(text: string): number {
   }
 
   return Array.from(text).length;
+}
+
+function getTextForCount(doc: ProseMirrorNode): string {
+  const blocks: string[] = [];
+
+  for (let i = 0; i < doc.childCount; i += 1) {
+    const node = doc.child(i);
+    if (node.type.name === 'blockquote') {
+      const inner: string[] = [];
+      for (let j = 0; j < node.childCount; j += 1) {
+        const child = node.child(j);
+        inner.push(child.textContent);
+      }
+      blocks.push(inner.join('\n'));
+    } else {
+      blocks.push(node.textContent);
+    }
+  }
+
+  return blocks.join('\n');
 }
 
 const SpoilerMark = Mark.create({
@@ -107,7 +128,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       if (!ctx.editor) return null;
       
       const { from, to } = ctx.editor.state.selection;
-      const text = ctx.editor.getText({ blockSeparator: '\n' });
+      const text = getTextForCount(ctx.editor.state.doc);
       
       return {
         html: ctx.editor.getHTML(),
