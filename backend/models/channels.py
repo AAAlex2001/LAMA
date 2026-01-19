@@ -254,6 +254,7 @@ class BackupJob(Base):
     __tablename__ = "backup_jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
     source_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
     target_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
     
