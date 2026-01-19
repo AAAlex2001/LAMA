@@ -190,7 +190,7 @@ export default function Pricing({ locale, content }: Props) {
               <div className={styles.cardButton}>
                 <Button
                   text={plan.buttonText || "Выбрать план"}
-                  href={plan.buttonUrl || `/${locale}/login`}
+                  href={plan.buttonUrl || `/${locale}/maintenance`}
                   fullWidth
                   active={index === 1}
                 />

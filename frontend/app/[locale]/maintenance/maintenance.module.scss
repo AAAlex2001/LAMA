@@ -1,0 +1,65 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+  padding: 20px;
+}
+
+.content {
+  max-width: 780px;
+  text-align: center;
+  color: white;
+}
+
+.logoContainer {
+  margin-bottom: 40px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+  color: white;
+  
+  .lama {
+    font-weight: 700;
+  }
+  
+  @media (min-width: 769px) {
+    font-size: 36px;
+  }
+}
+
+.description {
+  font-size: 16px;
+  line-height: 20px;
+  margin-bottom: 40px;
+  opacity: 1;
+  font-weight: 600;
+  
+  @media (min-width: 769px) {
+    font-size: 20px;
+    line-height: 24px;
+  }
+}
+
+.buttonContainer {
+  margin-bottom: 20px;
+  max-width: 769px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.footer {
+  font-size: 14px;
+  line-height: 17px;
+  opacity: 1;
+  font-weight: 600;
+  
+  @media (min-width: 769px) {
+    font-size: 16px;
+    line-height: 19px;
+  }
+}

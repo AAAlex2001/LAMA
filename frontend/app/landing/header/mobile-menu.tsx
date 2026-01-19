@@ -100,7 +100,7 @@ export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps)
         <div className={styles.actions}>
           <Button 
             text="Зарегистрироваться" 
-            href={`/${locale}/login`}
+            href={`/${locale}/maintenance`}
             showArrow={false}
             className={styles.loginButton}
             fullWidth={true}

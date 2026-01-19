@@ -168,7 +168,7 @@ export default function Users({ locale, content }: Props) {
           <p className={styles.textLine_1}>{renderText(safeContent.textLine_1)}</p>
           <Button
             text={safeContent.buttonText || "Начать бесплатно"}
-            href={safeContent.buttonUrl || `/${locale}/login`}
+            href={safeContent.buttonUrl || `/${locale}/maintenance`}
             active={true}
           />
         </motion.div>

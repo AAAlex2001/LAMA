@@ -122,7 +122,7 @@ export default function Header({ locale: localeProp }: Props) {
             <div className={styles.loginButtonSmall}>
               <Button 
                 text="Войти" 
-                href={`/${locale}/login`} 
+                href={`/${locale}/maintenance`} 
                 showArrow={false}
                 size="small"
               />
@@ -130,7 +130,7 @@ export default function Header({ locale: localeProp }: Props) {
             <div className={styles.loginButtonMedium}>
               <Button 
                 text="Войти" 
-                href={`/${locale}/login`} 
+                href={`/${locale}/maintenance`} 
                 showArrow={false}
                 size="medium"
               />

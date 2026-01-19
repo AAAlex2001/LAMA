@@ -87,7 +87,7 @@ export default function Hero({ locale, content, hideImagesOnMobile = false, vari
           <div className={styles.buttonContainer}>
             <Button
               text={safeContent.buttonText}
-              href={safeContent.buttonUrl || `/${locale}/login`}
+              href={safeContent.buttonUrl || `/${locale}/maintenance`}
             />
           </div>
         </motion.div>
