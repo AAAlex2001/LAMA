@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import logging
 
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func, case
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 import pytz
@@ -48,43 +48,37 @@ async def process_auto_delete():
     async with AsyncSessionLocal() as db:
         now = datetime.now(timezone.utc)
 
+        delete_delay = case(
+            (Publication.auto_delete_seconds.isnot(None), Publication.auto_delete_seconds),
+            else_=Publication.auto_delete_hours * 3600
+        )
+        
         query = select(Publication).where(
             Publication.status == DBPublicationStatus.PUBLISHED,
             Publication.published_time.isnot(None),
             or_(
-            Publication.auto_delete_hours.isnot(None),
+                Publication.auto_delete_hours.isnot(None),
                 Publication.auto_delete_seconds.isnot(None)
-            )
-        )
+            ),
+            Publication.published_time + func.make_interval(secs=delete_delay) <= now
+        ).limit(50)
+        
         result = await db.execute(query)
         publications = result.scalars().all()
+        
+        logger.info(f"Found {len(publications)} publications to auto-delete")
 
         for publication in publications:
-            if not publication.published_time:
-                continue
-
-            delete_delay_seconds = None
-            if publication.auto_delete_seconds:
-                delete_delay_seconds = publication.auto_delete_seconds
-            elif publication.auto_delete_hours:
-                delete_delay_seconds = publication.auto_delete_hours * 3600
-
-            if delete_delay_seconds is None:
-                continue
-
-            delete_time = publication.published_time + timedelta(seconds=delete_delay_seconds)
-
-            if now >= delete_time:
-                service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-                try:
-                    await service.delete_telegram_messages(publication.id)
-                except Exception as e:
-                    await service.create_notification(
-                        publication.id,
-                        "error",
-                        f"Failed to auto-delete publication: {str(e)}",
-                        {"error": str(e)}
-                    )
+            service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
+            try:
+                await service.delete_telegram_messages(publication.id)
+            except Exception as e:
+                await service.create_notification(
+                    publication.id,
+                    "error",
+                    f"Failed to auto-delete publication: {str(e)}",
+                    {"error": str(e)}
+                )
 
 
 async def process_scheduled_triggers():
@@ -128,16 +122,12 @@ async def process_repeating_publications():
     async with AsyncSessionLocal() as db:
         now = datetime.now(timezone.utc)
         
-        # Выбираем публикации, у которых:
-        # 1. Статус PUBLISHED или PARTIAL_SUCCESS (уже были опубликованы)
-        # 2. repeat_interval != NEVER
-        # 3. next_repeat_time <= now (пора повторять)
         query = select(Publication).where(
             Publication.status.in_([DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]),
             Publication.repeat_interval != DBRepeatInterval.NEVER,
             Publication.next_repeat_time.isnot(None),
             Publication.next_repeat_time <= now
-        ).limit(50)  # Ограничение для предотвращения перегрузки
+        ).limit(50)
         
         result = await db.execute(query)
         publications = result.scalars().all()
@@ -154,8 +144,6 @@ async def process_repeating_publications():
                     logger.warning(f"Failed to republish publication {publication.id}: {result.get('error')}")
             except Exception as e:
                 logger.error(f"Failed to republish publication {publication.id}: {e}")
-                # В случае ошибки сдвигаем next_repeat_time от предыдущего значения, чтобы не зациклиться
-                # и при этом избежать дрейфа времени
                 base_time = publication.next_repeat_time or datetime.now(timezone.utc)
                 publication.next_repeat_time = PublicationService.calculate_next_repeat_time(
                     base_time,
@@ -177,9 +165,9 @@ def start_scheduler():
     
     scheduler.add_job(
         process_auto_delete,
-        trigger=IntervalTrigger(minutes=5),
+        trigger=IntervalTrigger(seconds=30),
         id="process_auto_delete",
-        name="Process auto-delete every 5 minutes",
+        name="Process auto-delete every 30 seconds",
         replace_existing=True
     )
     
@@ -217,9 +205,9 @@ def start_scheduler():
 
     scheduler.add_job(
         process_repeating_publications,
-        trigger=IntervalTrigger(minutes=1),
+        trigger=IntervalTrigger(seconds=30),
         id="process_repeating_publications",
-        name="Process repeating publications (DAILY, WEEKLY, etc.) every 1 minute",
+        name="Process repeating publications (DAILY, WEEKLY, etc.) every 30 seconds",
         replace_existing=True
     )
 
