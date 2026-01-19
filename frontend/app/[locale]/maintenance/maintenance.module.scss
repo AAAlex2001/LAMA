@@ -22,9 +22,16 @@
   font-weight: 600;
   margin: 0;
   color: white;
+  text-decoration: none;
+  display: inline-block;
+  transition: opacity 0.2s;
   
   .lama {
     font-weight: 700;
+  }
+  
+  &:hover {
+    opacity: 0.8;
   }
   
   @media (min-width: 769px) {

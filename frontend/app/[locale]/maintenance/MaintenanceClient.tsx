@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Button from '@/components/button/button';
 import { TelegramIcon } from '@/components/icons';
 import styles from './maintenance.module.scss';
@@ -33,9 +34,9 @@ export default function MaintenanceClient({ locale }: MaintenanceClientProps) {
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.logoContainer}>
-          <h1 className={styles.logo}>
+          <Link href={`/${locale}`} className={styles.logo}>
             <span className={styles.lama}>LAMA</span>planner
-          </h1>
+          </Link>
         </div>
         
         <p className={styles.description}>{text.title}</p>

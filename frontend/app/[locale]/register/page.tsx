@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import RegisterClient from './RegisterClient';
 
@@ -28,6 +29,11 @@ const registerSeo = {
   },
 } as const;
 
+export default async function RegisterPage({ params }: Props) {
+  const { locale } = await params;
+  redirect(`/${locale}/maintenance`);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const data = registerSeo[locale as keyof typeof registerSeo] || registerSeo.ru;
@@ -52,10 +58,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RegisterPage({ params }: Props) {
   const { locale } = await params;
-
-  return (
-    <Suspense fallback={null}>
-      <RegisterClient locale={locale} />
-    </Suspense>
-  );
+  redirect(`/${locale}/maintenance`);
 }

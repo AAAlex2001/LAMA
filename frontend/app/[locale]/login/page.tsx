@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.scss';
 import { useLogin } from './store';
@@ -14,6 +14,13 @@ import { SuccessNotification } from '@/components/notifications/SuccessNotificat
 
 export default function LoginPage() {
   const { locale } = useParams<{ locale: string }>();
+  const router = useRouter();
+
+  useEffect(() => {
+    router.push(`/${locale}/maintenance`);
+  }, [locale, router]);
+
+  return null;
   const {
     state,
     widgetContainerRef,
