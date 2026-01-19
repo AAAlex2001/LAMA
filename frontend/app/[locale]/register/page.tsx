@@ -29,11 +29,6 @@ const registerSeo = {
   },
 } as const;
 
-export default async function RegisterPage({ params }: Props) {
-  const { locale } = await params;
-  redirect(`/${locale}/maintenance`);
-}
-
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale } = await params;
   const data = registerSeo[locale as keyof typeof registerSeo] || registerSeo.ru;
