@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 from datetime import datetime, timezone
 
-# Настройка логирования для всех модулей backend
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -16,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from backend.database import init_db, close_db, AsyncSessionLocal
 from backend.config import close_bot, TELEGRAM_BOT_TOKEN
-from backend.scheduler import start_scheduler, stop_scheduler, scheduler
+from backend.models import load_models
 from backend.routes.publications import router as publications_router
 from backend.routes.channels import router as channels_router
 from backend.routes.bots import router as bots_router
@@ -26,16 +25,13 @@ from backend.routes.landing import router as landing_router
 from backend.routes.upload import router as upload_router
 from backend.routes.media_upload import router as media_upload_router
 from backend.routes.media_proxy import router as media_proxy_router
-# Импорт моделей для регистрации в SQLAlchemy
-from backend.models import landing as landing_models  # noqa: F401
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_models()
     await init_db()
-    start_scheduler()
     yield
-    stop_scheduler()
     await close_db()
     await close_bot()
 
@@ -47,8 +43,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-
-# Middleware
 app.add_middleware(ProxyHeadersMiddleware, trusted_hosts=["*"])
 app.add_middleware(
     CORSMiddleware,
@@ -71,7 +65,6 @@ app.include_router(upload_router, prefix=api_prefix)
 app.include_router(media_upload_router, prefix=api_prefix)
 app.include_router(media_proxy_router, prefix=f"{api_prefix}/media", tags=["media"])
 
-# Статические файлы (загруженные картинки)
 upload_dir = Path("uploads/landing")
 upload_dir.mkdir(parents=True, exist_ok=True)
 publications_upload_dir = Path("uploads/publications")
@@ -90,13 +83,12 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint with real database connection test"""
+    """Проверка работоспособности API, БД и Redis."""
     from sqlalchemy import text
 
     db_status = "unknown"
     db_error = None
 
-    # Проверка подключения к БД
     try:
         async with AsyncSessionLocal() as session:
             await session.execute(text("SELECT 1"))
@@ -105,16 +97,26 @@ async def health_check():
         db_status = "disconnected"
         db_error = str(e)
 
-    # Проверка планировщика
-    scheduler_status = "running" if scheduler.running else "stopped"
+    redis_url = os.getenv("REDIS_URL")
+    redis_status = "not_configured" if not redis_url else "unknown"
+    if redis_url:
+        try:
+            from redis.asyncio import Redis
 
-    # Проверка бота
+            client = Redis.from_url(redis_url)
+            await client.ping()
+            await client.aclose()
+            redis_status = "connected"
+        except Exception as e:
+            redis_status = f"disconnected: {e}"
+
     bot_status = "configured" if TELEGRAM_BOT_TOKEN else "not_configured"
 
     health_status = {
-        "status": "healthy" if db_status == "connected" and scheduler_status == "running" else "unhealthy",
+        "status": "healthy" if db_status == "connected" else "unhealthy",
         "database": db_status,
-        "scheduler": scheduler_status,
+        "queue": "celery",
+        "redis": redis_status,
         "bot": bot_status,
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
