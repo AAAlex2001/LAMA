@@ -3,13 +3,16 @@
 """
 import asyncio
 import logging
+import os
 from typing import Optional, Dict, Any
 
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from aiogram import Bot
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import TELEGRAM_BOT_TOKEN
 from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
 from backend.services.bot import BotCommandService, CaptchaService
 from backend.services.bot.auto_reply import AutoReplyService
@@ -17,7 +20,7 @@ from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.services.bot.triggers import TriggerService
 from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.webhook.welcome import WelcomeHandler
-from backend.models.bots import Bot as BotModel, TriggerType, MessageType, CaptchaMode
+from backend.models.bots import Bot as BotModel, TriggerType, MessageType, CaptchaMode, PendingApproval
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 from backend.utils import build_keyboard
 
@@ -228,9 +231,6 @@ class MessageHandler:
         pending_id: int,
         timeout_seconds: int
     ) -> None:
-        from sqlalchemy import select
-        from backend.models.bots import PendingApproval
-
         await asyncio.sleep(timeout_seconds + 1)
 
         try:
@@ -325,10 +325,6 @@ class MessageHandler:
         command_text = text_content.split()[0]
         user_id = message.from_user.id if message.from_user else 0
         if command_text.lower() == "/start":
-            from backend.config import TELEGRAM_BOT_TOKEN
-            from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-            import os
-
             # Получаем URL фронтенда
             frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
 

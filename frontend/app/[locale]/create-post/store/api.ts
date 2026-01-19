@@ -133,7 +133,7 @@ export async function createAndPublishPost(
       success: true,
       postId: postId,
       id: postId,
-      message: `Пост успешно опубликован!`,
+      message: `OK — публикация поставлена в очередь`,
     };
   } catch (error) {
     // Извлекаем детальное сообщение об ошибке

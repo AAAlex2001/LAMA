@@ -4,6 +4,9 @@
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.models.bots import Bot as BotModel, BotStatus
+from backend.models.channels import ChannelGroup
+from backend.models.publications import Publication, PublicationStatus
 from backend.models.auth import UserSession
 
 
@@ -15,10 +18,6 @@ class StatsService:
 
     async def get_user_stats(self, user_id: int) -> dict:
         """Получить статистику пользователя"""
-        from backend.models.bots import Bot as BotModel, BotStatus
-        from backend.models.channels import ChannelGroup
-        from backend.models.publications import Publication, PublicationStatus
-
         total_bots_query = select(func.count()).where(
             BotModel.owner_id == user_id)
         total_bots_result = await self.db.execute(total_bots_query)

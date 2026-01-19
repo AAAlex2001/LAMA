@@ -3,10 +3,13 @@
 """
 import asyncio
 import logging
+import os
 
+from aiogram import Bot
 from aiogram.types import Update, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import TELEGRAM_BOT_TOKEN
 from backend.database import AsyncSessionLocal
 from backend.services.webhook.base import get_master_bot_model, get_bot_by_chat_id
 from backend.services.webhook.moderation import ModerationHandler
@@ -130,11 +133,6 @@ class WebhookDispatcher:
     @staticmethod
     async def handle_auth_command(db: AsyncSession, message: Message) -> None:
         """Обработка команды /start для авторизации"""
-        from backend.config import TELEGRAM_BOT_TOKEN
-        from aiogram import Bot
-        from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-        import os
-
         user_id = message.from_user.id if message.from_user else 0
         if not user_id:
             return

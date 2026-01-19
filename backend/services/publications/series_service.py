@@ -10,10 +10,12 @@ from aiogram.enums import ParseMode
 
 from backend.models.publications import (
     Publication, PublicationSeries, TelegramMessage,
-    PublicationStatus as DBPublicationStatus
+    PublicationStatus as DBPublicationStatus,
+    ContentType as DBContentType,
 )
 from backend.models.channels import ChannelGroup as Channel
-from backend.services.publications.telegram_sender import clean_html_for_telegram
+from backend.services.publications.telegram_sender import clean_html_for_telegram, send_to_telegram
+from backend.utils.keyboard import build_keyboard
 
 
 class SeriesService:
@@ -126,8 +128,6 @@ class SeriesService:
         reply_markup=None
     ) -> List[Message]:
         """Отправить публикацию как ответ на предыдущее сообщение"""
-
-        from backend.models.publications import ContentType as DBContentType
         
         cleaned_text = clean_html_for_telegram(publication.text_content)
 
@@ -318,9 +318,7 @@ class SeriesService:
 
                 reply_markup = None
                 if publication.inline_keyboard:
-                    from backend.services.publications.publications import PublicationService
-                    reply_markup = PublicationService(
-                        self.db).build_inline_keyboard(publication.inline_keyboard)
+                    reply_markup = build_keyboard(publication.inline_keyboard)
 
                 if reply_to_id and series.reply_to_previous:
                     sent_messages = await self.send_as_reply(
@@ -331,9 +329,7 @@ class SeriesService:
                         reply_markup=reply_markup
                     )
                 else:
-                    from backend.services.publications.publications import PublicationService
-                    pub_service = PublicationService(self.db)
-                    sent_messages = await pub_service.send_to_telegram(publication, channel, bot)
+                    sent_messages = await send_to_telegram(publication, channel, bot)
 
                 message_ids = []
                 for msg in sent_messages:

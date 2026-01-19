@@ -180,7 +180,7 @@ export async function handlePublishNow(
     if (response.success || response.id) {
       return {
         success: true,
-        message: 'Пост успешно опубликован!',
+        message: 'OK — публикация поставлена в очередь',
         postId: response.postId || response.id,
       };
     } else {

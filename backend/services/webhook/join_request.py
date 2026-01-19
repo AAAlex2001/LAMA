@@ -13,7 +13,7 @@ from backend.services.bot import BotService, CaptchaService
 from backend.services.bot.triggers import TriggerService
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType, ApprovalMode, CaptchaMode
-from backend.models.channels import ChatInviteLink
+from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.webhook.base import get_bot_session
 from backend.utils.keyboard import build_keyboard
 
@@ -221,7 +221,6 @@ class JoinRequestHandler:
         """Обновить member_count для всех invite links чата"""
         try:
             # Находим канал
-            from backend.models.channels import ChannelGroup
             query = select(ChannelGroup).where(
                 ChannelGroup.telegram_id == chat_id)
             result = await self.db.execute(query)

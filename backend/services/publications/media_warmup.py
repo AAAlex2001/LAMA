@@ -15,7 +15,7 @@ from backend.services.rate_limiter import get_rate_limiter
 
 logger = logging.getLogger(__name__)
 
-STORAGE_CHANNEL_ID = 874275963
+STORAGE_CHANNEL_IDS = [874275963, 850249529]
 MAX_IMAGE_DIMENSION = 8000
 MAX_IMAGE_PIXELS = 10_000_000
 
@@ -35,7 +35,7 @@ async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[s
     
     async def warmup_with_logging(idx: int, url: str, total: int) -> Optional[str]:
         try:
-            file_id = await warmup_single_media(bot, url)
+            file_id = await warmup_single_media(bot, url, idx=idx)
             if file_id:
                 logger.info("Warmup ok (%s/%s): %s -> %s", idx, total, url, file_id)
             else:
@@ -54,7 +54,7 @@ async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[s
     return list(file_ids)
 
 
-async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
+async def warmup_single_media(bot: Bot, media_url: str, idx: Optional[int] = None) -> Optional[str]:
     """
     Прогревает один медиа файл.
     
@@ -65,6 +65,14 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
     Returns:
         file_id или None
     """
+    if not STORAGE_CHANNEL_IDS:
+        raise RuntimeError("No STORAGE_CHANNEL_IDS configured")
+
+    if isinstance(idx, int) and idx > 0:
+        storage_channel_id = STORAGE_CHANNEL_IDS[(idx - 1) % len(STORAGE_CHANNEL_IDS)]
+    else:
+        storage_channel_id = STORAGE_CHANNEL_IDS[0]
+
     url_lower = media_url.lower()
 
     try:
@@ -85,29 +93,29 @@ async def warmup_single_media(bot: Bot, media_url: str) -> Optional[str]:
 
         if any(url_lower.endswith(ext) for ext in ['.mp4', '.mov', '.m4v', '.webm', '.avi']):
             rate_limiter = get_rate_limiter()
-            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
-                message = await bot.send_video(chat_id=STORAGE_CHANNEL_ID, video=input_file)
+            async with rate_limiter.limit(chat_id=storage_channel_id):
+                message = await bot.send_video(chat_id=storage_channel_id, video=input_file)
             if message.video:
                 return message.video.file_id
 
         elif any(url_lower.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']):
             rate_limiter = get_rate_limiter()
-            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
-                message = await bot.send_audio(chat_id=STORAGE_CHANNEL_ID, audio=input_file)
+            async with rate_limiter.limit(chat_id=storage_channel_id):
+                message = await bot.send_audio(chat_id=storage_channel_id, audio=input_file)
             if message.audio:
                 return message.audio.file_id
 
         elif any(url_lower.endswith(ext) for ext in ['.pdf', '.doc', '.docx', '.txt', '.zip', '.rar']):
             rate_limiter = get_rate_limiter()
-            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
-                message = await bot.send_document(chat_id=STORAGE_CHANNEL_ID, document=input_file)
+            async with rate_limiter.limit(chat_id=storage_channel_id):
+                message = await bot.send_document(chat_id=storage_channel_id, document=input_file)
             if message.document:
                 return message.document.file_id
 
         else:
             rate_limiter = get_rate_limiter()
-            async with rate_limiter.limit(chat_id=STORAGE_CHANNEL_ID):
-                message = await bot.send_photo(chat_id=STORAGE_CHANNEL_ID, photo=input_file)
+            async with rate_limiter.limit(chat_id=storage_channel_id):
+                message = await bot.send_photo(chat_id=storage_channel_id, photo=input_file)
             if message.photo:
                 return message.photo[-1].file_id
 

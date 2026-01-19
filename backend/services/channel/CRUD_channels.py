@@ -18,6 +18,7 @@ from backend.schemas.channels import (
 )
 
 from backend.models.bots import Bot as BotModel
+from backend.services.bot.bots import BotService
 
 
 class CRUDChannelService:
@@ -186,7 +187,6 @@ class CRUDChannelService:
 
         # Если передан token, создаём/находим бота
         if token and not bot_id:
-            from backend.services.bot.bots import BotService
             bot_service = BotService(self.db)
             bot_model = await bot_service.sync_bot_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id

@@ -14,6 +14,7 @@ from backend.services.channel import ChannelService
 from backend.services.publications.CRUD_publications import CRUDPublicationService
 from backend.services.publications.ai_service import AIService
 from backend.services.publications import publisher, message_editor
+from backend.services.publications.series_service import SeriesService
 from backend.services.telegram_client import RateLimitedBot
 from backend.config import get_bot
 
@@ -131,7 +132,6 @@ class PublicationService:
 
         if publication.series_id and publication.series:
             if publication.series.reply_to_previous:
-                from backend.services.publications.series_service import SeriesService
                 series_service = SeriesService(self.db)
                 bot = self.get_master_bot()
                 series_result = await series_service.publish_series_post(publication, bot)

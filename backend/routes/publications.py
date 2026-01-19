@@ -16,6 +16,8 @@ from backend.schemas.publications import (
     TextTemplateCreate, TextTemplateUpdate, TextTemplateResponse, TextTemplateListResponse,
 )
 from backend.models.publications import Tag, publication_tags
+from backend.models.publications import PublicationSeries
+from backend.celery.tasks import publish_publication
 from backend.services.publications import PublicationService
 from backend.database import get_db, AsyncSessionLocal
 from backend.config import OPENAI_API_KEY
@@ -239,8 +241,6 @@ async def update_series(
     service: PublicationService = Depends(get_publication_service)
 ):
     """Обновить серию публикаций"""
-    from backend.models.publications import PublicationSeries
-    from sqlalchemy import select
     result = await db.execute(select(PublicationSeries).where(PublicationSeries.id == series_id))
     series = result.scalar_one_or_none()
     if not series:
@@ -308,7 +308,7 @@ async def delete_publication(
         raise HTTPException(status_code=404, detail="Publication not found")
 
 
-@router.post("/{publication_id}/publish", response_model=PublicationResponse)
+@router.post("/{publication_id}/publish", response_model=PublicationResponse, status_code=202)
 async def publish_now(
     publication_id: int,
     service: PublicationService = Depends(get_publication_service),
@@ -318,14 +318,12 @@ async def publish_now(
     publication = await service.get_publication(publication_id, owner_id=current_user.id)
     if not publication:
         raise HTTPException(status_code=404, detail="Publication not found")
+
+    if not publication.channels:
+        raise HTTPException(status_code=400, detail="No channels selected")
     
-    result = await service.publish_now(publication_id, owner_id=current_user.id)
-    logger.info(f"Publish done: {result.success_count}/{result.total_count}")
-    
-    if result.total_count > 0 and result.success_count == 0:
-        errors = [r.error for r in result.results if r.error]
-        error_message = "Не удалось опубликовать ни в один канал: " + "; ".join(errors[:3])
-        raise HTTPException(status_code=400, detail=error_message)
+    publish_publication.apply_async(args=[publication_id], queue="high")
+    logger.info("Publish queued (publication_id=%s)", publication_id)
     
     publication = await service.get_publication(publication_id, owner_id=current_user.id)
     return publication

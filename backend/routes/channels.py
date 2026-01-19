@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from backend.database import get_db
@@ -12,6 +13,7 @@ from backend.services.channel import (
 from backend.services.channel.invite_links import InviteLinkService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
+from backend.models.channels import BackupJob
 from backend.schemas.channels import (
     ChannelGroupCreate, ChannelGroupUpdate, ChannelGroupResponse, ChannelGroupListResponse,
     SyncChannelRequest, SyncChannelResponse, ChannelTelegramUpdate, ChannelPermissionsUpdate,
@@ -510,9 +512,6 @@ async def get_backup_job(
     current_user: User = Depends(get_current_user)
 ):
     """Получить информацию о задаче бекапа"""
-    from sqlalchemy import select
-    from backend.models.channels import BackupJob
-    
     query = select(BackupJob).where(
         BackupJob.id == job_id,
         BackupJob.owner_id == current_user.id

@@ -13,6 +13,7 @@ from backend.services.bot.triggers import TriggerService
 from backend.services.bot.recurring_messages import RecurringMessageService
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
+from backend.models.bots import CaptchaMode
 from backend.schemas.bots import (
     BotCreate,
     BotUpdate,
@@ -229,7 +230,6 @@ async def get_welcome_settings(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    from backend.models.bots import CaptchaMode
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
         welcome_message=bot.welcome_message,
@@ -255,7 +255,6 @@ async def update_welcome_settings(
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
 
-    from backend.models.bots import CaptchaMode
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
         welcome_message=bot.welcome_message,

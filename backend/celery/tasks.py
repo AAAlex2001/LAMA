@@ -17,6 +17,11 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
+from backend.services.bot.recurring_messages import RecurringMessageService
+from backend.services.bot.triggers import TriggerService
+from backend.services.publications import PublicationService
+from backend.tasks.bot_polling import process_bot_updates as polling_process_bot_updates
+from backend.tasks.channel_backup import process_instant_backups as channel_process_instant_backups
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +47,6 @@ def publish_publication(publication_id: int) -> str:
 async def publish_publication_async(publication_id: int) -> str:
     """Async-реализация публикации одной записи."""
 
-    from backend.services.publications import PublicationService
-
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.publish_now(publication_id)
@@ -60,8 +63,6 @@ def delete_publication_messages(publication_id: int) -> str:
 async def delete_publication_messages_async(publication_id: int) -> str:
     """Async-реализация удаления Telegram-сообщений публикации."""
 
-    from backend.services.publications import PublicationService
-
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.delete_telegram_messages(publication_id)
@@ -77,8 +78,6 @@ def republish_publication(publication_id: int) -> str:
 
 async def republish_publication_async(publication_id: int) -> str:
     """Async-реализация переопубликации."""
-
-    from backend.services.publications import PublicationService
 
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
@@ -164,8 +163,6 @@ def process_scheduled_triggers() -> str:
 async def process_scheduled_triggers_async() -> str:
     """Async-реализация выполнения задач триггеров."""
 
-    from backend.services.bot.triggers import TriggerService
-
     async with AsyncSessionLocal() as db:
         service = TriggerService(db)
         telegram_bot = get_bot()
@@ -187,8 +184,6 @@ def process_recurring_messages() -> str:
 
 async def process_recurring_messages_async() -> str:
     """Async-реализация отправки повторяющихся сообщений."""
-
-    from backend.services.bot.recurring_messages import RecurringMessageService
 
     async with AsyncSessionLocal() as db:
         service = RecurringMessageService(db)
@@ -245,9 +240,7 @@ def process_bot_updates() -> str:
 async def process_bot_updates_async() -> str:
     """Async-реализация обработки обновлений ботов."""
 
-    from backend.tasks.bot_polling import process_bot_updates as polling
-
-    await polling()
+    await polling_process_bot_updates()
     return "bot_updates_ok"
 
 
@@ -261,7 +254,5 @@ def process_instant_backups() -> str:
 async def process_instant_backups_async() -> str:
     """Async-реализация мгновенных бекапов."""
 
-    from backend.tasks.channel_backup import process_instant_backups as task
-
-    await task()
+    await channel_process_instant_backups()
     return "instant_backups_ok"
