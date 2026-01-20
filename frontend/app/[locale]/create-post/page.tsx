@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+
+import { useRef, useState } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
 import RichTextEditor from '@/components/rich-text-editor';
 import InlineButtons from '@/components/inline-buttons';
-import MediaPreview from '@/components/rich-text-editor/media-preview/media-preview';
+import MediaPreview from '@/components/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import QuizForm from '@/components/quiz-form';
@@ -23,10 +24,18 @@ import {
   SettingsIcon,
   PaperclipIcon,
 } from '@/components/icons';
-import { useCreatePost, type CreatePostSnapshot } from './store/useCreatePost';
-import { revokeMediaObjectUrls } from './store/mediaObjectUrls';
 
-const EMPTY_POST_SNAPSHOT: CreatePostSnapshot = {
+// Контексты
+import { useRichTextEditor } from '@/components/rich-text-editor';
+import { useMediaPreview } from '@/components/media-preview';
+import { useInlineButtons } from '@/components/inline-buttons';
+import { useQuizForm } from '@/components/quiz-form';
+import { useDrafts } from '@/components/drafts-modal';
+import { useTemplates } from '@/components/text-templates-modal';
+import { usePostSettingsContext } from '@/components/post-settings/store';
+import { useCreatePostContext, type PostSnapshot } from './store/CreatePostContext';
+
+const EMPTY_POST_SNAPSHOT: PostSnapshot = {
   text: '',
   showInlineButtons: false,
   buttonRows: [],
@@ -36,178 +45,126 @@ const EMPTY_POST_SNAPSHOT: CreatePostSnapshot = {
   showLinkPreview: false,
 };
 
-export default function CreatePostPage() {
+function CreatePostPageContent() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
+  const [postSnapshots, setPostSnapshots] = useState<PostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
+  const [activePostIndex, setActivePostIndex] = useState(0);
+  
+  const headerRef = useRef<HTMLDivElement>(null);
+  
+  // Контексты компонентов
+  const richTextEditor = useRichTextEditor();
+  const mediaPreview = useMediaPreview();
+  const inlineButtons = useInlineButtons();
+  const quizForm = useQuizForm();
+  const drafts = useDrafts();
+  const templates = useTemplates();
+  const postSettings = usePostSettingsContext();
+  
+  // Главный контекст создания поста
   const {
-    // State
-    text,
-    showSettings,
-    showInlineButtons,
-    buttonRows,
-    mediaFiles,
     isPublishing,
     isSavingDraft,
     isScheduling,
-    showTemplatesModal,
-    showDraftsModal,
-    showQuizForm,
     showLinkPreview,
-
-    // Refs
-    editorRef,
-    fileInputRef,
-
-    // Post Settings
-    postSettings,
-
-    // Computed
-    canAddMedia,
-    canShowInlineButtons,
-
-    // Actions
-    setText,
-    setShowSettings,
-    toggleInlineButtons,
-    setButtonRows,
-    handleFileUpload,
-    handleRemoveMedia,
-    handleToggleBlur,
-    setShowTemplatesModal,
-    setShowDraftsModal,
-    setShowQuizForm,
     setShowLinkPreview,
-    quizFormState,
-    quizFormDispatch,
-    onPublishNow,
-    onPublishSeriesNow,
-    onSaveDraft,
-    handleSaveAsTemplate,
-    handleSelectTemplate,
-    handleSelectDraft,
+    showMobileSettings,
+    setShowMobileSettings,
+    fileInputRef,
     openFileDialog,
+    handleFileUpload,
+    publishNow,
+    publishSeriesNow,
+    saveDraft,
+    saveAsTemplate,
     getSnapshot,
     loadSnapshot,
     resetForm,
-  } = useCreatePost();
-
-  const [postSnapshots, setPostSnapshots] = useState<CreatePostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
-  const [activePostIndex, setActivePostIndex] = useState(0);
-
-  const postSnapshotsRef = useRef(postSnapshots);
-  const currentMediaRef = useRef(mediaFiles);
-
-  useEffect(() => {
-    postSnapshotsRef.current = postSnapshots;
-  }, [postSnapshots]);
-
-  useEffect(() => {
-    currentMediaRef.current = mediaFiles;
-  }, [mediaFiles]);
-
-  useEffect(() => {
-    return () => {
-      for (const snapshot of postSnapshotsRef.current) {
-        revokeMediaObjectUrls(snapshot.mediaFiles);
-      }
-      revokeMediaObjectUrls(currentMediaRef.current);
-    };
-  }, []);
-
-  const headerRef = useRef<HTMLDivElement>(null);
-
+    handleSelectTemplate,
+    handleSelectDraft,
+    canAddMedia,
+    canShowInlineButtons,
+    hasContentForPreview,
+  } = useCreatePostContext();
+  
+  // Channel info for preview
   const selectedPrimaryChannel = postSettings.channelOptions.find((c) => c.checked);
   const extraSelectedCount = Math.max(0, postSettings.selectedCount - 1);
   const selectedChannelTitle = `${selectedPrimaryChannel?.label || 'Название канала'}${
     extraSelectedCount > 0 ? ` +${extraSelectedCount}` : ''
   }`;
-
-  // Преобразуем quizFormState в QuizPreviewData
+  
+  // Quiz preview data
   const getQuizPreviewData = (): QuizPreviewData | undefined => {
-    const question = quizFormState.question.trim();
-    if (!question) return undefined;
-
-    const filledOptions = quizFormState.answers
-      .map((a) => a.text.trim())
-      .filter((t) => t.length > 0);
-
-    if (filledOptions.length < 2) return undefined;
-
-    const isQuiz = quizFormState.mode === 'quiz';
-    let correctAnswerIndex: number | undefined;
-    if (isQuiz && quizFormState.correctAnswerId) {
-      const idx = quizFormState.answers.findIndex((a) => a.id === quizFormState.correctAnswerId);
-      if (idx >= 0) correctAnswerIndex = idx;
-    }
-
+    const pollData = quizForm.getPollData();
+    if (!pollData) return undefined;
+    
     return {
-      mode: isQuiz ? 'quiz' : 'poll',
-      question,
-      options: filledOptions,
+      mode: pollData.is_quiz ? 'quiz' : 'poll',
+      question: pollData.question,
+      options: pollData.options,
       isAnonymous: true,
-      allowsMultipleAnswers: quizFormState.mode === 'poll_multi',
-      correctAnswerIndex,
+      allowsMultipleAnswers: pollData.allows_multiple_answers || false,
+      correctAnswerIndex: pollData.correct_option_id,
     };
   };
-
+  
   const quizPreviewData = getQuizPreviewData();
-  const hasContentForPreview = text || mediaFiles.length > 0 || quizPreviewData;
-
+  
   const handleOpenPreview = () => {
-    setShowSettings(false);
+    setShowMobileSettings(false);
     setShowPreviewModal(true);
   };
-
+  
   const handleAddSeries = () => {
     const currentSnapshot = getSnapshot();
     const nextIndex = postSnapshots.length;
-
+    
     setPostSnapshots((prev) => {
       const next = [...prev];
       next[activePostIndex] = currentSnapshot;
       next.push(EMPTY_POST_SNAPSHOT);
       return next;
     });
-
+    
     setActivePostIndex(nextIndex);
-    resetForm({ preserveMediaUrls: true });
+    resetForm();
   };
-
+  
   const handlePublishClick = async () => {
     if (postSnapshots.length <= 1) {
-      await onPublishNow();
+      await publishNow();
       return;
     }
-
+    
     const currentSnapshot = getSnapshot();
-    const snapshotsForPublish = postSnapshots.map((p, idx) => (idx === activePostIndex ? currentSnapshot : p));
-
-    const result = await onPublishSeriesNow(snapshotsForPublish);
+    const snapshotsForPublish = postSnapshots.map((p, idx) => 
+      idx === activePostIndex ? currentSnapshot : p
+    );
+    
+    const result = await publishSeriesNow(snapshotsForPublish);
     if (result?.success) {
-      for (const snapshot of snapshotsForPublish) {
-        revokeMediaObjectUrls(snapshot.mediaFiles);
-      }
       setPostSnapshots([EMPTY_POST_SNAPSHOT]);
       setActivePostIndex(0);
     }
   };
-
+  
   const handleSelectPost = (index: number) => {
     if (index === activePostIndex) return;
-
+    
     const currentSnapshot = getSnapshot();
     const targetSnapshot = postSnapshots[index] ?? EMPTY_POST_SNAPSHOT;
-
+    
     setPostSnapshots((prev) => {
       const next = [...prev];
       next[activePostIndex] = currentSnapshot;
       return next;
     });
-
+    
     setActivePostIndex(index);
     loadSnapshot(targetSnapshot);
   };
-
+  
   const editorBlock = (
     <div className={styles.editor}>
       <div className={styles.header} ref={headerRef}>
@@ -215,28 +172,29 @@ export default function CreatePostPage() {
           className={styles.settingsButton}
           type="button"
           aria-label="Настройки"
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => setShowMobileSettings(!showMobileSettings)}
         >
           <SettingsIcon width={24} height={24} />
         </button>
       </div>
-
+      
       <div className={styles.content}>
         <RichTextEditor
-          ref={editorRef}
-          value={text}
-          onChange={setText}
+          ref={richTextEditor.editorRef}
+          value={richTextEditor.text}
+          onChange={richTextEditor.setText}
           placeholder="Напишите текст публикации..."
-          onSaveAsTemplate={handleSaveAsTemplate}
+          onSaveAsTemplate={saveAsTemplate}
           headerRef={headerRef}
         />
-
-        {text && hasLink(text) && (
+        
+        {richTextEditor.text && hasLink(richTextEditor.text) && (
           <div className={styles.linkPreviewToggle}>
             <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
             <Toggle checked={showLinkPreview} onChange={setShowLinkPreview} />
           </div>
         )}
+        
         <div className={styles.actionsMenu}>
           <div className={styles.actionsRow}>
             <Button
@@ -245,7 +203,7 @@ export default function CreatePostPage() {
               showArrow={false}
               icon={<DraftsIcon width={24} height={24} />}
               className={styles.actionButton}
-              onClick={() => setShowDraftsModal(true)}
+              onClick={drafts.open}
             />
             <Button
               text="Кнопки"
@@ -253,9 +211,9 @@ export default function CreatePostPage() {
               showArrow={false}
               icon={<InlineButtonIcon width={24} height={24} />}
               className={styles.actionButton}
-              active={showInlineButtons}
+              active={inlineButtons.isOpen}
               disabled={!canShowInlineButtons}
-              onClick={toggleInlineButtons}
+              onClick={inlineButtons.toggle}
             />
           </div>
           <div className={styles.actionsRow}>
@@ -265,7 +223,7 @@ export default function CreatePostPage() {
               showArrow={false}
               icon={<TemplatesIcon width={24} height={24} />}
               className={styles.actionButton}
-              onClick={() => setShowTemplatesModal(true)}
+              onClick={templates.open}
             />
             <Button
               text="Опрос"
@@ -273,11 +231,8 @@ export default function CreatePostPage() {
               showArrow={false}
               icon={<QuizIcon width={24} height={24} />}
               className={styles.actionButton}
-              active={showQuizForm}
-              onClick={() => {
-                const next = !showQuizForm;
-                setShowQuizForm(next);
-              }}
+              active={quizForm.isOpen}
+              onClick={quizForm.toggle}
             />
           </div>
           <div className={styles.actionsRowCenter}>
@@ -290,20 +245,14 @@ export default function CreatePostPage() {
             />
           </div>
         </div>
-
-        {showInlineButtons && (
-          <InlineButtons
-            rows={buttonRows}
-            onChange={setButtonRows}
-            className={styles.inlineButtonsSection}
-          />
-        )}
-
-        <QuizForm isOpen={showQuizForm} state={quizFormState} dispatch={quizFormDispatch} />
-
+        
+        <InlineButtons className={styles.inlineButtonsSection} />
+        
+        <QuizForm />
+        
         <div className={styles.mediaSection}>
           <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
-
+          
           <input
             ref={fileInputRef}
             type="file"
@@ -312,10 +261,10 @@ export default function CreatePostPage() {
             onChange={handleFileUpload}
             style={{ display: 'none' }}
           />
-
+          
           <div className={styles.mediaMobile}>
-            <MediaPreview files={mediaFiles} onRemove={handleRemoveMedia} onToggleBlur={handleToggleBlur} />
-
+            <MediaPreview />
+            
             <Button
               text="Прикрепить файл"
               variant="templateCard"
@@ -326,8 +275,9 @@ export default function CreatePostPage() {
               onClick={openFileDialog}
             />
           </div>
+          
           <div className={styles.mediaDropzone}>
-            {mediaFiles.length === 0 ? (
+            {mediaPreview.files.length === 0 ? (
               <>
                 <span className={styles.dropzoneText}>
                   Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
@@ -343,7 +293,7 @@ export default function CreatePostPage() {
               </>
             ) : (
               <div className={styles.mediaDropzoneContent}>
-                <MediaPreview files={mediaFiles} onRemove={handleRemoveMedia} onToggleBlur={handleToggleBlur} />
+                <MediaPreview />
                 <Button
                   text="Прикрепить файл"
                   variant="templateCard"
@@ -357,12 +307,13 @@ export default function CreatePostPage() {
           </div>
         </div>
       </div>
+      
       <div className={styles.footerButtons}>
         <Button
           text="Сохранить в черновики"
           showArrow={false}
           className={styles.saveDraftBtn}
-          onClick={onSaveDraft}
+          onClick={saveDraft}
           loading={isSavingDraft}
           disabled={isSavingDraft}
         />
@@ -387,7 +338,7 @@ export default function CreatePostPage() {
       </div>
     </div>
   );
-
+  
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainContent}>
@@ -408,7 +359,7 @@ export default function CreatePostPage() {
           ) : (
             editorBlock
           )}
-
+          
           <Button
             text="Добавить серию постов"
             showArrow={false}
@@ -416,130 +367,53 @@ export default function CreatePostPage() {
             onClick={handleAddSeries}
           />
         </div>
-
+        
         <div className={styles.settingsPanelDesktop}>
           <PostSettings
-            channelOptions={postSettings.channelOptions}
-            channelsLoading={postSettings.channelsLoading}
-            channelsSyncing={postSettings.channelsSyncing}
-            selectedCount={postSettings.selectedCount}
-            totalChannels={postSettings.totalChannels}
-            onFetchChannels={postSettings.fetchChannels}
-            onChannelChange={postSettings.handleChannelChange}
-            onAddChannelClick={postSettings.openCreateChannel}
-            recentTags={postSettings.recentTags}
-            searchResults={postSettings.searchResults}
-            tagInputValue={postSettings.tagInputValue}
-            tagsLoading={postSettings.tagsLoading}
-            tagsSearching={postSettings.tagsSearching}
-            onLoadRecentTags={postSettings.loadRecentTags}
-            onSearchTags={postSettings.searchTags}
-            onTagInputChange={postSettings.setTagInputValue}
-            onSelectTag={postSettings.selectTag}
-            onDeleteTag={postSettings.deleteTag}
-            selectedTagColor={postSettings.selectedTagColor}
-            onTagColorChange={postSettings.handleTagColorChange}
-            repeatInterval={postSettings.repeatInterval}
-            onRepeatChange={postSettings.handleRepeatChange}
-            repeatCustomDays={postSettings.repeatCustomDays}
-            repeatCustomHours={postSettings.repeatCustomHours}
-            onRepeatCustomDaysChange={postSettings.handleRepeatCustomDaysChange}
-            onRepeatCustomHoursChange={postSettings.handleRepeatCustomHoursChange}
-            autoDeleteInterval={postSettings.autoDeleteInterval}
-            onAutoDeleteChange={postSettings.handleAutoDeleteChange}
-            autoDeleteCustomDays={postSettings.autoDeleteCustomDays}
-            autoDeleteCustomHours={postSettings.autoDeleteCustomHours}
-            onAutoDeleteCustomDaysChange={postSettings.handleAutoDeleteCustomDaysChange}
-            onAutoDeleteCustomHoursChange={postSettings.handleAutoDeleteCustomHoursChange}
-            notifySubscribers={postSettings.notifySubscribers}
-            onNotifyChange={postSettings.handleNotifyChange}
-            pinPost={postSettings.pinPost}
-            onPinChange={postSettings.handlePinChange}
-            showCreateChannel={postSettings.showCreateChannel}
-            onAddChannel={postSettings.handleAddChannel}
-            onCloseCreateChannel={postSettings.closeCreateChannel}
             onPreview={handleOpenPreview}
-            onReset={postSettings.resetSettings}
             previewDisabled={!hasContentForPreview}
           />
         </div>
       </div>
-
+      
       {/* Mobile Settings Modal */}
-      {showSettings && (
-        <div className={styles.settingsModalOverlay} onClick={() => setShowSettings(false)}>
+      {showMobileSettings && (
+        <div className={styles.settingsModalOverlay} onClick={() => setShowMobileSettings(false)}>
           <div className={styles.settingsModal} onClick={(e) => e.stopPropagation()}>
             <PostSettings
-              channelOptions={postSettings.channelOptions}
-              channelsLoading={postSettings.channelsLoading}
-              channelsSyncing={postSettings.channelsSyncing}
-              selectedCount={postSettings.selectedCount}
-              totalChannels={postSettings.totalChannels}
-              onFetchChannels={postSettings.fetchChannels}
-              onChannelChange={postSettings.handleChannelChange}
-              onAddChannelClick={postSettings.openCreateChannel}
-              recentTags={postSettings.recentTags}
-              searchResults={postSettings.searchResults}
-              tagInputValue={postSettings.tagInputValue}
-              tagsLoading={postSettings.tagsLoading}
-              tagsSearching={postSettings.tagsSearching}
-              onLoadRecentTags={postSettings.loadRecentTags}
-              onSearchTags={postSettings.searchTags}
-              onTagInputChange={postSettings.setTagInputValue}
-              onSelectTag={postSettings.selectTag}
-              onDeleteTag={postSettings.deleteTag}
-              selectedTagColor={postSettings.selectedTagColor}
-              onTagColorChange={postSettings.handleTagColorChange}
-              repeatInterval={postSettings.repeatInterval}
-              onRepeatChange={postSettings.handleRepeatChange}
-              repeatCustomDays={postSettings.repeatCustomDays}
-              repeatCustomHours={postSettings.repeatCustomHours}
-              onRepeatCustomDaysChange={postSettings.handleRepeatCustomDaysChange}
-              onRepeatCustomHoursChange={postSettings.handleRepeatCustomHoursChange}
-              autoDeleteInterval={postSettings.autoDeleteInterval}
-              onAutoDeleteChange={postSettings.handleAutoDeleteChange}
-              autoDeleteCustomDays={postSettings.autoDeleteCustomDays}
-              autoDeleteCustomHours={postSettings.autoDeleteCustomHours}
-              onAutoDeleteCustomDaysChange={postSettings.handleAutoDeleteCustomDaysChange}
-              onAutoDeleteCustomHoursChange={postSettings.handleAutoDeleteCustomHoursChange}
-              notifySubscribers={postSettings.notifySubscribers}
-              onNotifyChange={postSettings.handleNotifyChange}
-              pinPost={postSettings.pinPost}
-              onPinChange={postSettings.handlePinChange}
-              showCreateChannel={postSettings.showCreateChannel}
-              onAddChannel={postSettings.handleAddChannel}
-              onCloseCreateChannel={postSettings.closeCreateChannel}
               onPreview={handleOpenPreview}
-              onReset={postSettings.resetSettings}
               previewDisabled={!hasContentForPreview}
             />
           </div>
         </div>
       )}
-
+      
       <PostPreviewModal
         isOpen={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
         channelTitle={selectedChannelTitle}
         channelPhotoUrl={selectedPrimaryChannel?.photo_url}
         channelMembersCount={selectedPrimaryChannel?.members_count}
-        html={text}
-        mediaFiles={mediaFiles}
+        html={richTextEditor.text}
+        mediaFiles={mediaPreview.files}
         quizData={quizPreviewData}
       />
-
+      
       {/* Text Templates Modal */}
-      <TextTemplatesModal
-        isOpen={showTemplatesModal}
-        onClose={() => setShowTemplatesModal(false)}
-        onSelectTemplate={handleSelectTemplate}
-      />
-
-      <DraftsModal
-        isOpen={showDraftsModal}
-        onClose={() => setShowDraftsModal(false)}
-        onSelectDraft={handleSelectDraft}
-      />
+      <TextTemplatesModal onSelectTemplate={handleSelectTemplate} />
+      
+      <DraftsModal onSelectDraft={handleSelectDraft} />
     </div>
+  );
+}
+
+// Экспортируем обёрнутую страницу
+import { CreatePostProvider } from './store/CreatePostContext';
+
+export default function CreatePostPage() {
+  return (
+    <CreatePostProvider>
+      <CreatePostPageContent />
+    </CreatePostProvider>
   );
 }

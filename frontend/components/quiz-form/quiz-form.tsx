@@ -5,13 +5,8 @@ import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CloseIcon from '@/components/icons/close-icon';
-import type { QuizFormAction, QuizFormMode, QuizFormState } from './store/types';
-
-interface QuizFormProps {
-  isOpen: boolean;
-  state: QuizFormState;
-  dispatch: React.Dispatch<QuizFormAction>;
-}
+import type { QuizFormMode, QuizFormState } from './store/types';
+import { useQuizForm } from './QuizFormContext';
 
 function QuizFormView({
   state,
@@ -113,30 +108,32 @@ function QuizFormView({
   );
 }
 
-export default function QuizForm({ isOpen, state, dispatch }: QuizFormProps) {
+export default function QuizForm() {
+  const {
+    isOpen,
+    state,
+    setMode,
+    setQuestion,
+    setAnswerText,
+    addAnswer,
+    removeAnswer,
+    setCorrectAnswer,
+  } = useQuizForm();
+
   if (!isOpen) return null;
 
   const remainingAnswers = 12 - state.answers.length;
-
-  const handlers = {
-    setMode: (mode: QuizFormMode) => dispatch({ type: 'SET_MODE', payload: mode }),
-    setQuestion: (value: string) => dispatch({ type: 'SET_QUESTION', payload: value }),
-    setAnswerText: (id: string, value: string) => dispatch({ type: 'SET_ANSWER_TEXT', payload: { id, text: value } }),
-    addAnswer: () => dispatch({ type: 'ADD_ANSWER' }),
-    removeAnswer: (id: string) => dispatch({ type: 'REMOVE_ANSWER', payload: { id } }),
-    setCorrectAnswer: (id: string | null) => dispatch({ type: 'SET_CORRECT_ANSWER', payload: { id } }),
-  };
 
   return (
     <QuizFormView
       state={state}
       remainingAnswers={remainingAnswers}
-      onQuestionChange={handlers.setQuestion}
-      onAnswerChange={handlers.setAnswerText}
-      onAddAnswer={handlers.addAnswer}
-      onRemoveAnswer={handlers.removeAnswer}
-      onModeChange={handlers.setMode}
-      onCorrectAnswerChange={(id) => handlers.setCorrectAnswer(id)}
+      onQuestionChange={setQuestion}
+      onAnswerChange={setAnswerText}
+      onAddAnswer={addAnswer}
+      onRemoveAnswer={removeAnswer}
+      onModeChange={setMode}
+      onCorrectAnswerChange={setCorrectAnswer}
     />
   );
 }

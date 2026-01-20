@@ -1,76 +1,45 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './text-templates-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import TrashIcon from '@/components/icons/trash-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import { templatesApi, type TextTemplate } from '@/stores/templates';
+import { useTemplates } from './TemplatesContext';
 
 interface TextTemplatesModalProps {
-  isOpen: boolean;
-  onClose: () => void;
   onSelectTemplate: (formattedContent: Record<string, any>) => void;
 }
 
-export default function TextTemplatesModal({
-  isOpen,
-  onClose,
-  onSelectTemplate,
-}: TextTemplatesModalProps) {
-  const [templates, setTemplates] = useState<TextTemplate[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
+export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesModalProps) {
+  const {
+    templates,
+    isOpen,
+    isLoading,
+    searchQuery,
+    selectedTemplateId,
+    setSearchQuery,
+    deleteTemplate,
+    selectTemplate,
+    close,
+  } = useTemplates();
+
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadTemplates();
-    }
-  }, [isOpen, searchQuery]);
-
-  const loadTemplates = async () => {
-    setIsLoading(true);
-    try {
-      const response = await templatesApi.getTemplates(searchQuery || undefined);
-      setTemplates(response.items);
-    } catch (error) {
-      console.error('Failed to load templates:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // Сразу удаляем из UI
-    setTemplates(prev => prev.filter(t => t.id !== id));
-    if (selectedTemplateId === id) {
-      setSelectedTemplateId(null);
-    }
-
-    // Затем отправляем запрос на сервер
-    try {
-      await templatesApi.deleteTemplate(id);
-    } catch (error) {
-      console.error('Failed to delete template:', error);
-      // В случае ошибки можно перезагрузить список
-      loadTemplates();
-    }
+    await deleteTemplate(id);
   };
 
-  const handleTemplateClick = (template: TextTemplate) => {
-    setSelectedTemplateId(template.id);
+  const handleTemplateClick = (template: { id: number; formatted_content: Record<string, any> }) => {
+    selectTemplate(template.id);
     onSelectTemplate(template.formatted_content);
-    onClose();
+    close();
   };
 
   const handleClose = () => {
-    setSearchQuery('');
-    onClose();
+    close();
   };
 
   if (!isOpen) return null;

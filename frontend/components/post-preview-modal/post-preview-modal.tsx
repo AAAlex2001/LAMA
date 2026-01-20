@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import styles from './post-preview-modal.module.scss';
-import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 import { CloseIcon } from '@/components/icons';
 
 import { MediaPreview } from './media-preview';

@@ -2,6 +2,9 @@
 export { usePostSettings } from './usePostSettings';
 export type { PostSettingsStore } from './usePostSettings';
 
+// Context
+export { PostSettingsProvider, usePostSettingsContext } from './PostSettingsContext';
+
 // Types
 export type {
   ChannelOption,
@@ -10,3 +13,4 @@ export type {
   PostSettingsAction,
 } from './types';
 export { initialPostSettingsState, postSettingsReducer } from './types';
+

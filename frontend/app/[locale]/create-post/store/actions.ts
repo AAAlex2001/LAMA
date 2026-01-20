@@ -1,5 +1,5 @@
 import type { CreatePostRequest, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
-import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 import { createAndPublishPost, createSeries, saveDraft } from './api';
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { QuizFormState } from '@/components/quiz-form/store/types';

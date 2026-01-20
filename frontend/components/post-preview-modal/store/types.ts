@@ -1,4 +1,4 @@
-import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 
 // Quiz/Poll preview data
 export interface QuizPreviewData {

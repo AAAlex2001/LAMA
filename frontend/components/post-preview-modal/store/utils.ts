@@ -1,4 +1,4 @@
-import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 import type { DocumentPreviewItem, MediaPreviewItem } from './types';
 
 export type MediaRun =

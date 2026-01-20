@@ -6,6 +6,7 @@ import Input from '@/components/input';
 import Button from '@/components/button/button';
 import { PlusIcon } from '@/components/icons';
 import Dropdown, { ButtonTypeOption } from '@/components/dropdown/dropdown';
+import { useInlineButtons } from './InlineButtonsContext';
 
 export type ButtonType = 'url' | 'callback' | 'hidden_text';
 
@@ -24,107 +25,14 @@ export interface ButtonRow {
 }
 
 interface InlineButtonsProps {
-  rows: ButtonRow[];
-  onChange: (rows: ButtonRow[]) => void;
   className?: string;
 }
 
-export default function InlineButtons({ rows, onChange, className }: InlineButtonsProps) {
+export default function InlineButtons({ className }: InlineButtonsProps) {
+  const { rows, isOpen, addColumn, addRow, updateButton, deleteButton } = useInlineButtons();
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
-  const addColumn = () => {
-    if (rows.length === 0) {
-      onChange([{
-        id: `row-${Date.now()}`,
-        buttons: [{
-          id: `btn-${Date.now()}`,
-          text: '',
-          type: 'url',
-          url: '',
-        }],
-      }]);
-    } else {
-      const maxButtons = Math.max(...rows.map(r => r.buttons.length));
-      const rowToAddIndex = rows.findIndex(r => r.buttons.length < maxButtons);
-      
-      if (rowToAddIndex !== -1) {
-        const newRows = rows.map((row, idx) => {
-          if (idx === rowToAddIndex) {
-            return {
-              ...row,
-              buttons: [...row.buttons, {
-                id: `btn-${Date.now()}`,
-                text: '',
-                type: 'url' as ButtonType,
-                url: '',
-              }],
-            };
-          }
-          return row;
-        });
-        onChange(newRows);
-      } else {
-        const newRows = rows.map((row, idx) => {
-          if (idx === 0) {
-            return {
-              ...row,
-              buttons: [...row.buttons, {
-                id: `btn-${Date.now()}`,
-                text: '',
-                type: 'url' as ButtonType,
-                url: '',
-              }],
-            };
-          }
-          return row;
-        });
-        onChange(newRows);
-      }
-    }
-  };
 
-  const addRow = () => {
-    onChange([...rows, {
-      id: `row-${Date.now()}`,
-      buttons: [{
-        id: `btn-${Date.now()}`,
-        text: '',
-        type: 'url' as ButtonType,
-        url: '',
-      }],
-    }]);
-  };
-
-  const updateButton = (rowIndex: number, btnIndex: number, updates: Partial<InlineButton>) => {
-    const newRows = rows.map((row, rIdx) => {
-      if (rIdx === rowIndex) {
-        return {
-          ...row,
-          buttons: row.buttons.map((btn, bIdx) => {
-            if (bIdx === btnIndex) {
-              return { ...btn, ...updates };
-            }
-            return btn;
-          }),
-        };
-      }
-      return row;
-    });
-    onChange(newRows);
-  };
-
-  const deleteButton = (rowIndex: number, btnIndex: number) => {
-    const newRows = rows.map((row, rIdx) => {
-      if (rIdx === rowIndex) {
-        const newButtons = row.buttons.filter((_, bIdx) => bIdx !== btnIndex);
-        return {
-          ...row,
-          buttons: newButtons,
-        };
-      }
-      return row;
-    }).filter(row => row.buttons.length > 0);
-    onChange(newRows);
-  };
+  if (!isOpen) return null;
 
   const allButtons: { rowIndex: number; btnIndex: number; button: InlineButton; number: number }[] = [];
   let buttonCounter = 1;

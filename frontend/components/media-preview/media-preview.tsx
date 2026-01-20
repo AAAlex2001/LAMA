@@ -7,25 +7,11 @@ import CloseIcon from '@/components/icons/close-icon';
 import PlayIcon from '@/components/icons/play-icon';
 import DocumentIcon from '@/components/icons/document-icon';
 import Loader from '@/components/loader/loader';
+import { useMediaPreview, type MediaFile } from './MediaPreviewContext';
 
-export interface MediaFile {
-  id: string;
-  url: string; 
-  preview_url?: string;
-  thumbnail_url?: string | null;
-  type: 'image' | 'video' | 'document';
-  blur?: boolean;
-  file?: File;
-  telegram_file_id?: string | null;
-}
-
-interface MediaPreviewProps {
-  files: MediaFile[];
-  onRemove: (id: string) => void;
-  onToggleBlur: (id: string) => void;
-}
-
-export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPreviewProps) {
+export default function MediaPreview() {
+  const { files, removeFile, toggleBlur } = useMediaPreview();
+  
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<MediaFile | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string>('');
@@ -79,88 +65,88 @@ export default function MediaPreview({ files, onRemove, onToggleBlur }: MediaPre
               style={{ cursor: file.type !== 'document' ? 'pointer' : 'default' }}
             >
               {file.type === 'document' ? (
-            <div className={styles.documentIcon}>
-              <DocumentIcon width={32} height={32} color="#CED2D6" />
-            </div>
-          ) : file.type === 'video' ? (
-            <>
-              {!loadedImages.has(file.id) && (
-                <div className={styles.loaderOverlay}>
-                  <Loader size={24} />
+                <div className={styles.documentIcon}>
+                  <DocumentIcon width={32} height={32} color="#CED2D6" />
                 </div>
-              )}
-              {getPreviewUrl(file) ? (
-                <img
-                  src={getPreviewUrl(file)}
-                  alt="Video preview"
-                  className={styles.mediaImage}
-                  style={{ 
-                    filter: file.blur ? 'blur(20px)' : 'none',
-                    opacity: loadedImages.has(file.id) ? 1 : 0
-                  }}
-                  onLoad={() => handleImageLoaded(file.id)}
-                  onError={() => handleImageLoaded(file.id)}
-                />
+              ) : file.type === 'video' ? (
+                <>
+                  {!loadedImages.has(file.id) && (
+                    <div className={styles.loaderOverlay}>
+                      <Loader size={24} />
+                    </div>
+                  )}
+                  {getPreviewUrl(file) ? (
+                    <img
+                      src={getPreviewUrl(file)}
+                      alt="Video preview"
+                      className={styles.mediaImage}
+                      style={{ 
+                        filter: file.blur ? 'blur(20px)' : 'none',
+                        opacity: loadedImages.has(file.id) ? 1 : 0
+                      }}
+                      onLoad={() => handleImageLoaded(file.id)}
+                      onError={() => handleImageLoaded(file.id)}
+                    />
+                  ) : (
+                    <div
+                      className={styles.videoPlaceholder}
+                      style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+                    />
+                  )}
+                  <div className={styles.playIcon}>
+                    <PlayIcon width={24} height={24} color="#CED2D6" />
+                  </div>
+                </>
               ) : (
-                <div
-                  className={styles.videoPlaceholder}
-                  style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
-                />
+                <>
+                  {!loadedImages.has(file.id) && (
+                    <div className={styles.loaderOverlay}>
+                      <Loader size={24} />
+                    </div>
+                  )}
+                  {getPreviewUrl(file) ? (
+                    <img
+                      src={getPreviewUrl(file)}
+                      alt="Media preview"
+                      className={styles.mediaImage}
+                      style={{
+                        filter: file.blur ? 'blur(20px)' : 'none',
+                        opacity: loadedImages.has(file.id) ? 1 : 0,
+                      }}
+                      onLoad={() => handleImageLoaded(file.id)}
+                      onError={() => handleImageLoaded(file.id)}
+                    />
+                  ) : (
+                    <div
+                      className={styles.videoPlaceholder}
+                      style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
+                    />
+                  )}
+                </>
               )}
-              <div className={styles.playIcon}>
-                <PlayIcon width={24} height={24} color="#CED2D6" />
-              </div>
-            </>
-          ) : (
-            <>
-              {!loadedImages.has(file.id) && (
-                <div className={styles.loaderOverlay}>
-                  <Loader size={24} />
-                </div>
-              )}
-              {getPreviewUrl(file) ? (
-                <img
-                  src={getPreviewUrl(file)}
-                  alt="Media preview"
-                  className={styles.mediaImage}
-                  style={{
-                    filter: file.blur ? 'blur(20px)' : 'none',
-                    opacity: loadedImages.has(file.id) ? 1 : 0,
-                  }}
-                  onLoad={() => handleImageLoaded(file.id)}
-                  onError={() => handleImageLoaded(file.id)}
-                />
-              ) : (
-                <div
-                  className={styles.videoPlaceholder}
-                  style={{ filter: file.blur ? 'blur(20px)' : 'none' }}
-                />
-              )}
-            </>
-          )}
             </div>
           
-          <div className={styles.mediaControls}>
-            <button
-              className={`${styles.controlButton} ${file.blur ? styles.active : ''}`}
-              onClick={() => onToggleBlur(file.id)}
-              aria-label="Размыть медиа"
-              type="button"
-            >
-              <BlurIcon width={16} height={16} color="#383F45" />
-            </button>
-            
-            <button
-              className={styles.controlButton}
-              onClick={() => onRemove(file.id)}
-              aria-label="Удалить медиа"
-              type="button"
-            >
-              <CloseIcon width={16} height={16} color="#383F45" />
-            </button>
+            <div className={styles.mediaControls}>
+              <button
+                className={`${styles.controlButton} ${file.blur ? styles.active : ''}`}
+                onClick={() => toggleBlur(file.id)}
+                aria-label="Размыть медиа"
+                type="button"
+              >
+                <BlurIcon width={16} height={16} color="#383F45" />
+              </button>
+              
+              <button
+                className={styles.controlButton}
+                onClick={() => removeFile(file.id)}
+                aria-label="Удалить медиа"
+                type="button"
+              >
+                <CloseIcon width={16} height={16} color="#383F45" />
+              </button>
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
       </div>
 
       {lightboxOpen && lightboxMedia && lightboxUrl && (

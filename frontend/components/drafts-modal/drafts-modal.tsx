@@ -1,103 +1,59 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import styles from './drafts-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import TrashIcon from '@/components/icons/trash-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import { draftsApi, type Draft } from '@/stores/drafts';
+import { useDrafts } from './DraftsContext';
+import type { Draft } from '@/stores/drafts';
 
 interface DraftsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
   onSelectDraft: (draft: Draft) => void;
 }
 
-export default function DraftsModal({
-  isOpen,
-  onClose,
-  onSelectDraft,
-}: DraftsModalProps) {
-  const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
+export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
+  const {
+    isOpen,
+    isLoading,
+    searchQuery,
+    selectedDraftId,
+    filteredDrafts,
+    setSearchQuery,
+    deleteDraft,
+    selectDraft,
+    getDraft,
+    close,
+  } = useDrafts();
+
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      loadDrafts();
-    }
-  }, [isOpen]);
-
-  // Фильтрация черновиков по поиску
-  const filteredDrafts = drafts.filter(draft => {
-    if (!searchQuery) return true;
-    const text = draft.text_content || '';
-    const formattedText = draft.formatted_content?.text || '';
-    return text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           formattedText.toLowerCase().includes(searchQuery.toLowerCase());
-  });
-
-  const loadDrafts = async () => {
-    setIsLoading(true);
-    try {
-      const response = await draftsApi.getDrafts();
-      setDrafts(response.items);
-    } catch (error) {
-      console.error('Failed to load drafts:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-
-    // Сразу удаляем из UI
-    setDrafts(prev => prev.filter(d => d.id !== id));
-    if (selectedDraftId === id) {
-      setSelectedDraftId(null);
-    }
-
-    // Затем отправляем запрос на сервер
-    try {
-      await draftsApi.deleteDraft(id);
-    } catch (error) {
-      console.error('Failed to delete draft:', error);
-      // В случае ошибки перезагружаем список
-      loadDrafts();
-    }
+    await deleteDraft(id);
   };
 
   const handleDraftClick = async (draft: Draft) => {
-    setSelectedDraftId(draft.id);
+    selectDraft(draft.id);
     try {
-      // В списке черновиков могут приходить усечённые данные.
-      // Всегда подтягиваем полный объект, чтобы media_urls/keyboard не терялись.
-      const fullDraft = await draftsApi.getDraft(draft.id);
+      const fullDraft = await getDraft(draft.id);
       onSelectDraft(fullDraft);
-      onClose();
+      close();
     } catch (error) {
       console.error('Failed to load full draft:', error);
-      // Fallback: хотя бы загрузим то, что есть.
       onSelectDraft(draft);
-      onClose();
+      close();
     }
   };
 
   const handleClose = () => {
-    setSearchQuery('');
-    onClose();
+    close();
   };
 
-  // Функция для получения превью текста черновика
   const getDraftPreview = (draft: Draft): string => {
     const text = draft.formatted_content?.text || draft.text_content || '';
-    // Убираем HTML теги для превью
     const plainText = text.replace(/<[^>]*>/g, '');
-    // Обрезаем до 80 символов
     return plainText.length > 80 ? plainText.substring(0, 80) + '...' : plainText;
   };
 
