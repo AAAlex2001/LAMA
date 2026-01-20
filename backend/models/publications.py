@@ -92,6 +92,7 @@ class Publication(Base):
     
     series_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('publication_series.id', ondelete='SET NULL'), nullable=True)
     series_order: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    reply_to_post_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('publications.id', ondelete='SET NULL'), nullable=True)
     
     ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

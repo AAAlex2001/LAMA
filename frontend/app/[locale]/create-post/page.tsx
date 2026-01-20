@@ -9,6 +9,7 @@ import InlineButtons from '@/components/inline-buttons';
 import MediaPreview from '@/components/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
+import ReplyToPostModal from '@/components/reply-to-post-modal/reply-to-post-modal';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
 import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
@@ -32,6 +33,7 @@ import { useInlineButtons } from '@/components/inline-buttons';
 import { useQuizForm } from '@/components/quiz-form';
 import { useDrafts } from '@/components/drafts-modal';
 import { useTemplates } from '@/components/text-templates-modal';
+import { useReplyToPost } from '@/components/reply-to-post-modal';
 import { usePostSettingsContext } from '@/components/post-settings/store';
 import { useCreatePostContext, type PostSnapshot } from './store/CreatePostContext';
 
@@ -59,6 +61,7 @@ function CreatePostPageContent() {
   const quizForm = useQuizForm();
   const drafts = useDrafts();
   const templates = useTemplates();
+  const replyToPosts = useReplyToPost();
   const postSettings = usePostSettingsContext();
   
   // Главный контекст создания поста
@@ -82,6 +85,7 @@ function CreatePostPageContent() {
     resetForm,
     handleSelectTemplate,
     handleSelectDraft,
+    handleSelectPost: handleSelectPostFromContext,
     canAddMedia,
     canShowInlineButtons,
     hasContentForPreview,
@@ -242,6 +246,7 @@ function CreatePostPageContent() {
               showArrow={false}
               icon={<ReplyIcon width={24} height={24} />}
               className={styles.actionButtonCenter}
+              onClick={replyToPosts.open}
             />
           </div>
         </div>
@@ -403,6 +408,8 @@ function CreatePostPageContent() {
       <TextTemplatesModal onSelectTemplate={handleSelectTemplate} />
       
       <DraftsModal onSelectDraft={handleSelectDraft} />
+      
+      <ReplyToPostModal />
     </div>
   );
 }

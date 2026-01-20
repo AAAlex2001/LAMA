@@ -128,6 +128,7 @@ class PublicationBase(BaseModel):
     pin_message: bool = False
     disable_notification: bool = False
     disable_web_page_preview: bool = True
+    reply_to_post_id: Optional[int] = Field(None, description="ID публикации, на которую отвечаем")
     auto_delete_hours: Optional[int] = Field(
         None,
         gt=0,
@@ -239,6 +240,7 @@ class PublicationUpdate(BaseModel):
     timezone: Optional[str] = None
     series_id: Optional[int] = None
     series_order: Optional[int] = None
+    reply_to_post_id: Optional[int] = None
     status: Optional[PublicationStatus] = None
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
@@ -276,6 +278,7 @@ class PublicationResponse(BaseModel):
     timezone: str = "UTC"
     series_id: Optional[int] = None
     series_order: Optional[int] = None
+    reply_to_post_id: Optional[int] = None
     ai_generated: bool
     ai_prompt: Optional[str] = None
     published_time: Optional[datetime] = None

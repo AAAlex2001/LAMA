@@ -63,7 +63,8 @@ def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
 async def send_to_telegram(
     publication: Publication,
     channel: Channel,
-    bot: RateLimitedBot
+    bot: RateLimitedBot,
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить публикацию в Telegram канал"""
     
@@ -79,37 +80,37 @@ async def send_to_telegram(
     if content_type == DBContentType.TEXT:
         cleaned = clean_html_for_telegram(publication.text_content)
         if cleaned:
-            messages = await send_text(bot, channel, publication, keyboard)
+            messages = await send_text(bot, channel, publication, keyboard, reply_to_message_id)
         else:
             # Если текст пустой, но есть опрос — просто пропускаем текстовое сообщение
             if not publication.poll_data:
                 raise ValueError('Telegram message text is empty')
 
     elif content_type == DBContentType.TEXT_WITH_MEDIA:
-        messages = await send_text_with_media(bot, channel, publication, keyboard)
+        messages = await send_text_with_media(bot, channel, publication, keyboard, reply_to_message_id)
 
     elif content_type == DBContentType.IMAGE:
-        messages = await send_image(bot, channel, publication, keyboard)
+        messages = await send_image(bot, channel, publication, keyboard, reply_to_message_id)
 
     elif content_type == DBContentType.VIDEO:
-        messages = await send_video(bot, channel, publication, keyboard)
+        messages = await send_video(bot, channel, publication, keyboard, reply_to_message_id)
 
     elif content_type == DBContentType.AUDIO:
-        messages = await send_audio(bot, channel, publication, keyboard)
+        messages = await send_audio(bot, channel, publication, keyboard, reply_to_message_id)
 
     elif content_type == DBContentType.DOCUMENT:
-        messages = await send_document(bot, channel, publication, keyboard)
+        messages = await send_document(bot, channel, publication, keyboard, reply_to_message_id)
 
     elif content_type == DBContentType.LINK:
         cleaned = clean_html_for_telegram(publication.text_content)
         if cleaned:
-            messages = await send_link(bot, channel, publication, keyboard)
+            messages = await send_link(bot, channel, publication, keyboard, reply_to_message_id)
         else:
             if not publication.poll_data:
                 raise ValueError('Telegram message text is empty')
 
     elif content_type in [DBContentType.POLL, DBContentType.QUIZ]:
-        messages = await send_poll(bot, channel, publication, keyboard)
+        messages = await send_poll(bot, channel, publication, keyboard, reply_to_message_id)
 
     else:
         raise ValueError(f"Unsupported content type: {content_type}")
@@ -137,7 +138,8 @@ async def send_text(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить текстовое сообщение"""
     message = await bot.send_message(
@@ -146,7 +148,8 @@ async def send_text(
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_notification=publication.disable_notification,
-        disable_web_page_preview=publication.disable_web_page_preview
+        disable_web_page_preview=publication.disable_web_page_preview,
+        reply_to_message_id=reply_to_message_id
     )
     return [message]
 
@@ -155,11 +158,12 @@ async def send_text_with_media(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить текст с медиа"""
     if not publication.media_urls or len(publication.media_urls) == 0:
-        return await send_text(bot, channel, publication, keyboard)
+        return await send_text(bot, channel, publication, keyboard, reply_to_message_id)
     
     blur_list = publication.media_blur or []
     
@@ -184,7 +188,8 @@ async def send_text_with_media(
                 caption=clean_html_for_telegram(publication.text_content),
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
-                disable_notification=publication.disable_notification
+                disable_notification=publication.disable_notification,
+                reply_to_message_id=reply_to_message_id
             )
         elif is_video:
             message = await bot.send_video(
@@ -194,7 +199,8 @@ async def send_text_with_media(
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
-                disable_notification=publication.disable_notification
+                disable_notification=publication.disable_notification,
+                reply_to_message_id=reply_to_message_id
             )
         else:
             message = await bot.send_photo(
@@ -204,7 +210,8 @@ async def send_text_with_media(
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
-                disable_notification=publication.disable_notification
+                disable_notification=publication.disable_notification,
+                reply_to_message_id=reply_to_message_id
             )
         return [message]
     
@@ -262,7 +269,8 @@ async def send_text_with_media(
     messages = await bot.send_media_group(
         chat_id=channel.telegram_id,
         media=media,
-        disable_notification=publication.disable_notification
+        disable_notification=publication.disable_notification,
+        reply_to_message_id=reply_to_message_id
     )
     return list(messages)
 
@@ -271,7 +279,8 @@ async def send_image(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить фото"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
@@ -286,7 +295,8 @@ async def send_image(
             caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     else:
         message = await bot.send_photo(
@@ -296,7 +306,8 @@ async def send_image(
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             has_spoiler=publication.media_blur,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     return [message]
 
@@ -305,7 +316,8 @@ async def send_video(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить видео"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
@@ -320,7 +332,8 @@ async def send_video(
             caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     else:
         message = await bot.send_video(
@@ -330,7 +343,8 @@ async def send_video(
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
             has_spoiler=publication.media_blur,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     return [message]
 
@@ -339,7 +353,8 @@ async def send_audio(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить аудио"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
@@ -354,7 +369,8 @@ async def send_audio(
             caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     else:
         message = await bot.send_audio(
@@ -363,7 +379,8 @@ async def send_audio(
             caption=cleaned_caption,
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML,
-            disable_notification=publication.disable_notification
+            disable_notification=publication.disable_notification,
+            reply_to_message_id=reply_to_message_id
         )
     return [message]
 
@@ -372,7 +389,8 @@ async def send_document(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить документ"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
@@ -384,7 +402,8 @@ async def send_document(
         caption=clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
-        disable_notification=publication.disable_notification
+        disable_notification=publication.disable_notification,
+        reply_to_message_id=reply_to_message_id
     )
     return [message]
 
@@ -393,7 +412,8 @@ async def send_link(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить ссылку с превью"""
     message = await bot.send_message(
@@ -402,7 +422,8 @@ async def send_link(
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=publication.disable_web_page_preview,
-        disable_notification=publication.disable_notification
+        disable_notification=publication.disable_notification,
+        reply_to_message_id=reply_to_message_id
     )
     return [message]
 
@@ -411,7 +432,8 @@ async def send_poll(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
-    keyboard: Optional[InlineKeyboardMarkup]
+    keyboard: Optional[InlineKeyboardMarkup],
+    reply_to_message_id: Optional[int] = None
 ) -> List[Message]:
     """Отправить опрос или викторину"""
     poll_data = publication.poll_data
@@ -427,7 +449,8 @@ async def send_poll(
         correct_option_id=poll_data.get('correct_option_id'),
         explanation=poll_data.get('explanation'),
         reply_markup=keyboard,
-        disable_notification=publication.disable_notification
+        disable_notification=publication.disable_notification,
+        reply_to_message_id=reply_to_message_id
     )
     return [message]
 

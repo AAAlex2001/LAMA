@@ -152,9 +152,28 @@ async def send_to_channel_with_retry(
 ) -> ChannelPublishResult:
     """Отправить в канал с повторными попытками"""
     
+    # Получаем reply_to_message_id если нужно ответить на другой пост
+    reply_to_message_id = None
+    if publication.reply_to_post_id:
+        from sqlalchemy import select
+        from backend.database import AsyncSessionLocal
+        
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(TelegramMessage.telegram_message_id)
+                .where(
+                    TelegramMessage.publication_id == publication.reply_to_post_id,
+                    TelegramMessage.channel_id == channel.id
+                )
+                .limit(1)
+            )
+            telegram_msg = result.scalar_one_or_none()
+            if telegram_msg:
+                reply_to_message_id = telegram_msg
+    
     for attempt in range(MAX_RETRY_ATTEMPTS):
         try:
-            sent_messages = await send_to_telegram(publication, channel, bot)
+            sent_messages = await send_to_telegram(publication, channel, bot, reply_to_message_id)
             
             message_ids = [msg.message_id for msg in sent_messages]
             telegram_messages_data = [

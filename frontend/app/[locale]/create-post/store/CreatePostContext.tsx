@@ -10,12 +10,14 @@ import { MediaPreviewProvider, useMediaPreview } from '@/components/media-previe
 import { RichTextEditorProvider, useRichTextEditor } from '@/components/rich-text-editor';
 import { DraftsProvider, useDrafts } from '@/components/drafts-modal';
 import { TemplatesProvider, useTemplates } from '@/components/text-templates-modal';
+import { ReplyToPostProvider, useReplyToPost } from '@/components/reply-to-post-modal';
 import { PostSettingsProvider, usePostSettingsContext } from '@/components/post-settings/store';
 
 // Импортируем API и хелперы
 import { handlePublishNow, handlePublishSeriesNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
 import type { Draft } from '@/stores/drafts';
+import type { Post } from '@/stores/posts';
 import type { InlineKeyboard, InlineButton } from './types';
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { MediaFile } from '@/components/media-preview';
@@ -66,6 +68,7 @@ interface CreatePostContextValue {
   // Draft/Template handlers
   handleSelectTemplate: (formattedContent: Record<string, unknown>) => void;
   handleSelectDraft: (draft: Draft) => void;
+  handleSelectPost: (post: Post) => void;
   
   // Computed
   canAddMedia: boolean;
@@ -87,6 +90,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   const postSettings = usePostSettingsContext();
   const drafts = useDrafts();
   const templates = useTemplates();
+  const replyToPosts = useReplyToPost();
   
   // Локальный state
   const [isPublishing, setIsPublishing] = useState(false);
@@ -170,6 +174,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   // Publish now
   const publishNow = async () => {
     const pollData = quizForm.getPollData();
+    const replyToPostId = replyToPosts.replyToPost?.id;
     
     setIsPublishing(true);
     
@@ -181,12 +186,15 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         getInlineKeyboard(),
         pollData,
         quizForm.isOpen,
-        showLinkPreview
+        showLinkPreview,
+        undefined,
+        replyToPostId
       );
       
       if (result.success) {
         showSuccess(result.message);
         resetForm();
+        replyToPosts.clearReplyToPost();
         postSettings.resetSettings();
         postSettings.loadRecentTags();
       } else {
@@ -347,11 +355,9 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     try {
       resetForm();
       
-      // Load text
       const text = draft.formatted_content?.text || draft.text_content || '';
       richTextEditor.setText(text);
       
-      // Load media
       if (draft.media_urls && draft.media_urls.length > 0) {
         const files: MediaFile[] = draft.media_urls.map((url, index) => {
           const extension = url.split('.').pop()?.toLowerCase() || '';
@@ -376,7 +382,6 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         mediaPreview.addFiles(files);
       }
       
-      // Load inline buttons
       if (draft.inline_keyboard?.buttons) {
         const buttons = draft.inline_keyboard.buttons as InlineButton[][];
         const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
@@ -394,7 +399,6 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         inlineButtons.open();
       }
       
-      // Load poll/quiz
       if (draft.poll_data) {
         quizForm.open();
         quizForm.setQuestion(draft.poll_data.question);
@@ -406,13 +410,78 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         } else {
           quizForm.setMode('poll_single');
         }
-        
-        // TODO: restore answers
       }
       
       showSuccess('Черновик загружен');
     } catch (error) {
       showError('Не удалось загрузить черновик');
+    }
+  };
+  
+  const handleSelectPost = async (post: Post) => {
+    try {
+      resetForm();
+      
+      const text = post.formatted_content?.text || post.text_content || '';
+      richTextEditor.setText(text);
+      
+      if (post.media_urls && post.media_urls.length > 0) {
+        const files: MediaFile[] = post.media_urls.map((url, index) => {
+          const extension = url.split('.').pop()?.toLowerCase() || '';
+          let type: 'image' | 'video' | 'document' = 'document';
+          
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) type = 'image';
+          else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) type = 'video';
+          
+          const thumbnailUrl = post.media_thumbnail_urls?.[index] ?? null;
+          
+          return {
+            id: `post-${Date.now()}-${index}`,
+            url,
+            preview_url: thumbnailUrl || '',
+            thumbnail_url: thumbnailUrl,
+            type,
+            blur: post.media_blur?.[index] || false,
+            telegram_file_id: post.media_file_ids?.[index] ?? null,
+          } as MediaFile;
+        });
+        
+        mediaPreview.addFiles(files);
+      }
+      
+      if (post.inline_keyboard?.buttons) {
+        const buttons = post.inline_keyboard.buttons as InlineButton[][];
+        const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
+          id: `row-${Date.now()}-${rowIndex}`,
+          buttons: row.map((btn, btnIndex) => ({
+            id: `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
+            text: btn.text,
+            type: btn.url ? 'url' : 'callback',
+            url: btn.url || '',
+            callback_data: btn.callback_data || '',
+          })),
+        }));
+        
+        inlineButtons.setRows(buttonRows);
+        inlineButtons.open();
+      }
+      
+      if (post.poll_data) {
+        quizForm.open();
+        quizForm.setQuestion(post.poll_data.question);
+        
+        if (post.poll_data.is_quiz) {
+          quizForm.setMode('quiz');
+        } else if (post.poll_data.allows_multiple_answers) {
+          quizForm.setMode('poll_multi');
+        } else {
+          quizForm.setMode('poll_single');
+        }
+      }
+      
+      showSuccess('Пост загружен для ответа');
+    } catch (error) {
+      showError('Не удалось загрузить пост');
     }
   };
   
@@ -437,6 +506,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     resetForm,
     handleSelectTemplate,
     handleSelectDraft,
+    handleSelectPost,
     canAddMedia,
     canShowInlineButtons,
     hasContentForPreview,
@@ -455,7 +525,9 @@ export function CreatePostProvider({ children }: { children: ReactNode }) {
             <QuizFormProvider>
               <DraftsProvider>
                 <TemplatesProvider>
-                  <CreatePostInner>{children}</CreatePostInner>
+                  <ReplyToPostProvider>
+                    <CreatePostInner>{children}</CreatePostInner>
+                  </ReplyToPostProvider>
                 </TemplatesProvider>
               </DraftsProvider>
             </QuizFormProvider>

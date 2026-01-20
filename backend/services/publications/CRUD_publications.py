@@ -60,6 +60,7 @@ class CRUDPublicationService:
             timezone=data.timezone,
             series_id=data.series_id,
             series_order=data.series_order,
+            reply_to_post_id=data.reply_to_post_id,
             ai_generated=bool(data.ai_prompt),
             ai_prompt=data.ai_prompt
         )

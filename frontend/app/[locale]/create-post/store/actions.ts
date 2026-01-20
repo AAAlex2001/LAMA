@@ -51,7 +51,8 @@ export async function handlePublishNow(
   pollData?: PollData | null,
   pollFormOpen?: boolean,
   showLinkPreview?: boolean,
-  series?: { seriesId: number; seriesOrder: number }
+  series?: { seriesId: number; seriesOrder: number },
+  replyToPostId?: number
 ) {
   try {
     const plainText = extractPlainTextFromHtml(content.text);
@@ -127,6 +128,7 @@ export async function handlePublishNow(
       series_id: series?.seriesId,
       series_order: series?.seriesOrder,
       auto_delete_delay_seconds: autoDeleteSeconds,
+      reply_to_post_id: replyToPostId,
     };
 
     const response = await createAndPublishPost(request);
