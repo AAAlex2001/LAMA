@@ -48,19 +48,23 @@ export function useTags() {
     dispatch({ type: 'SET_SEARCHING', payload: false });
   };
 
-  // Установить значение инпута тега (ввод вручную или выбор из списка)
-  const setTagInputValue = (value: string) => {
-    dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: value });
+  // Установить поисковый запрос
+  const setSearchQuery = (value: string) => {
+    dispatch({ type: 'SET_SEARCH_QUERY', payload: value });
     // Очистить результаты поиска если значение пустое
     if (!value.trim()) {
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
     }
   };
 
-  // Выбрать тег из списка (заполняет инпут названием тега)
+  // Выбрать тег из списка
   const selectTag = (tag: Tag) => {
-    dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: tag.name });
+    console.log('🎯 selectTag вызван:', tag);
+    dispatch({ type: 'SET_SELECTED_TAG_NAME', payload: tag.name });
+    dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: tag.color || '#FAC7C7' });
+    dispatch({ type: 'SET_SEARCH_QUERY', payload: '' });
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
+    console.log('✅ selectTag завершен, имя:', tag.name, 'цвет:', tag.color || '#FAC7C7');
   };
 
   // Очистить результаты поиска
@@ -91,13 +95,19 @@ export function useTags() {
     searching: state.searching,
     error: state.error,
     searchResults: state.searchResults,
+    searchQuery: state.searchQuery,
     tagInputValue: state.tagInputValue,
+    selectedTagName: state.selectedTagName,
+    selectedTagColor: state.selectedTagColor,
 
     // Actions
     loadRecentTags,
     searchTags: handleSearchTags,
-    setTagInputValue,
+    setSearchQuery,
+    setTagInputValue: (value: string) => dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: value }),
     selectTag,
+    setSelectedTagName: (name: string) => dispatch({ type: 'SET_SELECTED_TAG_NAME', payload: name }),
+    setSelectedTagColor: (color: string) => dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color }),
     clearSearch,
     deleteTag: handleDeleteTag,
     reset,

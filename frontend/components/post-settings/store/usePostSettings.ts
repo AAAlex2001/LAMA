@@ -45,12 +45,23 @@ export function usePostSettings() {
       .filter((ch) => ch.selected)
       .map((ch) => ch.id);
 
+    // tagInputValue - это название нового тега (ввод), selectedTagName - выбранный из списка
+    // Приоритет: если введен новый тег - используем его, иначе выбранный
+    const tagName = tagsStore.tagInputValue?.trim() || tagsStore.selectedTagName?.trim() || null;
+
+    console.log('🏷️ Получение настроек тега:', {
+      tagInputValue: tagsStore.tagInputValue,
+      selectedTagName: tagsStore.selectedTagName,
+      resultTagName: tagName,
+      selectedTagColor: tagsStore.selectedTagColor,
+    });
+
     return {
       channelIds: selectedChannelIds,
       notifySubscribers: state.notifySubscribers,
       pinPost: state.pinPost,
-      tagName: tagsStore.tagInputValue.trim() || null,
-      tagColor: tagsStore.tagInputValue.trim() ? state.selectedTagColor : null,
+      tagName: tagName,
+      tagColor: tagName ? tagsStore.selectedTagColor : null,
       repeatInterval: state.repeatInterval,
       repeatCustomDays: state.repeatCustomDays,
       repeatCustomHours: state.repeatCustomHours,
@@ -121,7 +132,7 @@ export function usePostSettings() {
   };
 
   const handleTagColorChange = (color: TagColor) => {
-    dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color });
+    tagsStore.setSelectedTagColor(color);
   };
 
   // Сброс настроек
@@ -142,7 +153,7 @@ export function usePostSettings() {
     autoDeleteInterval: state.autoDeleteInterval,
     autoDeleteCustomDays: state.autoDeleteCustomDays,
     autoDeleteCustomHours: state.autoDeleteCustomHours,
-    selectedTagColor: state.selectedTagColor,
+    selectedTagColor: tagsStore.selectedTagColor,
 
     // Channels
     channelOptions,
@@ -152,16 +163,20 @@ export function usePostSettings() {
     totalChannels: channels.length,
 
     // Tags (проброс из tags store)
-    recentTags: tagsStore.recentTags,
-    tagsLoading: tagsStore.loading,
-    tagsSearching: tagsStore.searching,
-    searchResults: tagsStore.searchResults,
-    tagInputValue: tagsStore.tagInputValue,
-    loadRecentTags: tagsStore.loadRecentTags,
-    searchTags: tagsStore.searchTags,
-    setTagInputValue: tagsStore.setTagInputValue,
-    selectTag: tagsStore.selectTag,
-    deleteTag: tagsStore.deleteTag,
+      recentTags: tagsStore.recentTags,
+      tagsLoading: tagsStore.loading,
+      tagsSearching: tagsStore.searching,
+      searchResults: tagsStore.searchResults,
+      searchQuery: tagsStore.searchQuery,
+      tagInputValue: tagsStore.tagInputValue,
+      selectedTagName: tagsStore.selectedTagName,
+      loadRecentTags: tagsStore.loadRecentTags,
+      searchTags: tagsStore.searchTags,
+      setSearchQuery: tagsStore.setSearchQuery,
+      setTagInputValue: tagsStore.setTagInputValue,
+      setSelectedTagName: tagsStore.setSelectedTagName,
+      selectTag: tagsStore.selectTag,
+      deleteTag: tagsStore.deleteTag,
     clearSearch: tagsStore.clearSearch,
 
     // Actions

@@ -30,11 +30,14 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
     // Tags
     recentTags,
     searchResults,
+    searchQuery,
     tagInputValue,
+    selectedTagName,
     tagsLoading,
     tagsSearching,
     loadRecentTags,
     searchTags,
+    setSearchQuery,
     setTagInputValue,
     selectTag,
     deleteTag,
@@ -91,6 +94,7 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
               recentTags={recentTags}
               searchResults={searchResults}
               tagInputValue={tagInputValue}
+              selectedTagName={selectedTagName}
               tagsLoading={tagsLoading}
               tagsSearching={tagsSearching}
               onLoadRecentTags={loadRecentTags}

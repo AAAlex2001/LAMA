@@ -48,6 +48,7 @@ interface DropdownProps {
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
   tagInputValue?: string;
+  selectedTagName?: string;
   onTagInputChange?: (value: string) => void;
   onSelectTag?: (tag: ApiTag) => void;
   onSearchTags?: (query: string) => void;
@@ -91,6 +92,7 @@ export default function Dropdown({
   recentTags = [],
   searchResults = [],
   tagInputValue = '',
+  selectedTagName = '',
   onTagInputChange,
   onSelectTag,
   onSearchTags,
@@ -143,8 +145,11 @@ export default function Dropdown({
   };
 
   const handleSelectTag = (tag: ApiTag) => {
+    console.log('🎯 Dropdown handleSelectTag вызван:', tag);
     onTagInputChange?.(tag.name);
+    console.log('📝 Вызов onSelectTag:', tag);
     onSelectTag?.(tag);
+    console.log('✅ onSelectTag вызван');
     setTagSearchQuery('');
   };
 
@@ -253,7 +258,7 @@ export default function Dropdown({
                     key={tag.id}
                     type="button"
                     className={classNames(styles.tagPreviewItem, {
-                      [styles.tagSelected]: tagInputValue === tag.name,
+                      [styles.tagSelected]: selectedTagName === tag.name,
                     })}
                     style={{ backgroundColor: tag.color || '#FAC7C7' }}
                     onClick={() => handleSelectTag(tag)}
