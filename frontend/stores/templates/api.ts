@@ -45,8 +45,10 @@ async function fetchApi<T>(
 }
 
 export const templatesApi = {
-  async getTemplates(search?: string): Promise<TextTemplateListResponse> {
+  async getTemplates(page = 1, pageSize = 20, search?: string): Promise<TextTemplateListResponse> {
     const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('page_size', pageSize.toString());
     if (search) params.append('search', search);
     
     return fetchApi<TextTemplateListResponse>(

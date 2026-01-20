@@ -32,6 +32,13 @@ export function quizFormReducer(state: QuizFormState, action: QuizFormAction): Q
         answers: state.answers.map(a => (a.id === action.payload.id ? { ...a, text: action.payload.text } : a)),
       };
 
+    case 'SET_ANSWERS':
+      return {
+        ...state,
+        answers: action.payload,
+        correctAnswerId: null,
+      };
+
     case 'ADD_ANSWER': {
       if (state.answers.length >= 12) return state;
       return { ...state, answers: [...state.answers, createAnswer(Date.now().toString())] };

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useReducer, useState, type ReactNode } from 'react';
 import { quizFormReducer, initialQuizFormState } from './store/reducer';
 import { selectPollData } from './store/selectors';
-import type { QuizFormState, QuizFormMode } from './store/types';
+import type { QuizFormState, QuizFormMode, QuizAnswer } from './store/types';
 import type { PollData } from './store/selectors';
 
 interface QuizFormContextValue {
@@ -15,6 +15,7 @@ interface QuizFormContextValue {
   setMode: (mode: QuizFormMode) => void;
   setQuestion: (question: string) => void;
   setAnswerText: (id: string, text: string) => void;
+  setAnswers: (answers: QuizAnswer[]) => void;
   addAnswer: () => void;
   removeAnswer: (id: string) => void;
   setCorrectAnswer: (id: string | null) => void;
@@ -53,6 +54,10 @@ export function QuizFormProvider({ children, initialOpen = false }: QuizFormProv
     dispatch({ type: 'SET_ANSWER_TEXT', payload: { id, text } });
   };
 
+  const setAnswers = (answers: QuizAnswer[]) => {
+    dispatch({ type: 'SET_ANSWERS', payload: answers });
+  };
+
   const addAnswer = () => {
     dispatch({ type: 'ADD_ANSWER' });
   };
@@ -88,6 +93,7 @@ export function QuizFormProvider({ children, initialOpen = false }: QuizFormProv
     setMode,
     setQuestion,
     setAnswerText,
+    setAnswers,
     addAnswer,
     removeAnswer,
     setCorrectAnswer,

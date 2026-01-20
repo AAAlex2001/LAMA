@@ -7,6 +7,8 @@ interface ReplyToPostContextValue {
   posts: Post[];
   isOpen: boolean;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
   searchQuery: string;
   selectedPostId: number | null;
   replyToPost: Post | null;
@@ -15,6 +17,7 @@ interface ReplyToPostContextValue {
   
   setSearchQuery: (query: string) => void;
   loadPosts: () => Promise<void>;
+  loadMorePosts: () => Promise<void>;
   selectPost: (id: number | null) => void;
   setReplyToPost: (post: Post | null) => void;
   clearReplyToPost: () => void;
@@ -35,6 +38,9 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [replyToPost, setReplyToPost] = useState<Post | null>(null);
@@ -60,13 +66,32 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
 
   const loadPosts = async () => {
     setIsLoading(true);
+    setCurrentPage(1);
     try {
-      const response = await postsApi.getPosts();
+      const response = await postsApi.getPosts(1, 20);
       setPosts(response.items);
+      setHasMore(response.items.length === 20);
     } catch (error) {
       console.error('Failed to load posts:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMorePosts = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const response = await postsApi.getPosts(nextPage, 20);
+      setPosts(prev => [...prev, ...response.items]);
+      setCurrentPage(nextPage);
+      setHasMore(response.items.length === 20);
+    } catch (error) {
+      console.error('Failed to load more posts:', error);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -91,6 +116,8 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
     setIsOpen(false);
     setSearchQuery('');
     setSelectedPostId(null);
+    setCurrentPage(1);
+    setHasMore(true);
   };
   
   const toggle = () => setIsOpen(prev => !prev);
@@ -99,12 +126,15 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
     posts,
     isOpen,
     isLoading,
+    isLoadingMore,
+    hasMore,
     searchQuery,
     selectedPostId,
     replyToPost,
     filteredPosts,
     setSearchQuery,
     loadPosts,
+    loadMorePosts,
     selectPost,
     setReplyToPost,
     clearReplyToPost,

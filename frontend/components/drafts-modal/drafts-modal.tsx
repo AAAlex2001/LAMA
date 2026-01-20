@@ -15,8 +15,11 @@ interface DraftsModalProps {
 
 export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
   const {
+    drafts,
     isOpen,
     isLoading,
+    isLoadingMore,
+    hasMore,
     searchQuery,
     selectedDraftId,
     filteredDrafts,
@@ -24,10 +27,20 @@ export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
     deleteDraft,
     selectDraft,
     getDraft,
+    loadMoreDrafts,
     close,
   } = useDrafts();
 
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
+    
+    if (scrolledToBottom && hasMore && !isLoadingMore && !searchQuery) {
+      loadMoreDrafts();
+    }
+  };
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,8 +85,8 @@ export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
 
         <h2 className={styles.modalTitle}>Черновики</h2>
 
-        <div className={styles.draftsList}>
-          {isLoading ? (
+        <div className={styles.draftsList} onScroll={handleScroll}>
+          {isLoading || (drafts.length === 0 && !searchQuery) ? (
             <div className={styles.emptyState}>
               <Loader size={24} color="blue" />
             </div>
@@ -82,44 +95,52 @@ export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
               {searchQuery ? 'Черновики не найдены' : 'У вас пока нет черновиков'}
             </div>
           ) : (
-            filteredDrafts.map((draft) => (
-              <div
-                key={draft.id}
-                className={styles.draftItem}
-                onClick={() => handleDraftClick(draft)}
-              >
-                <Checkbox
-                  variant="radio"
-                  checked={selectedDraftId === draft.id}
-                  onChange={() => handleDraftClick(draft)}
-                />
-                <div className={styles.draftContent}>
-                  <span className={styles.draftText}>{getDraftPreview(draft)}</span>
-                  {draft.media_urls && draft.media_urls.length > 0 && (
-                    <span className={styles.mediaIndicator}>
-                      📎 {draft.media_urls.length} {draft.media_urls.length === 1 ? 'файл' : 'файла'}
-                    </span>
-                  )}
+            <>
+              {filteredDrafts.map((draft) => (
+                <div
+                  key={draft.id}
+                  className={styles.draftItem}
+                  onClick={() => handleDraftClick(draft)}
+                >
+                  <Checkbox
+                    variant="radio"
+                    checked={selectedDraftId === draft.id}
+                    onChange={() => handleDraftClick(draft)}
+                  />
+                  <div className={styles.draftContent}>
+                    <span className={styles.draftText}>{getDraftPreview(draft)}</span>
+                    {draft.media_urls && draft.media_urls.length > 0 && (
+                      <span className={styles.mediaIndicator}>
+                        📎 {draft.media_urls.length} {draft.media_urls.length === 1 ? 'файл' : 'файла'}
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.deleteButtonWrapper}>
+                    <button
+                      className={styles.deleteButton}
+                      onClick={(e) => handleDelete(draft.id, e)}
+                      onMouseEnter={() => setHoveredDeleteId(draft.id)}
+                      onMouseLeave={() => setHoveredDeleteId(null)}
+                    >
+                      <TrashIcon 
+                        width={16} 
+                        height={16} 
+                        color={hoveredDeleteId === draft.id ? '#EF4444' : '#B0B4B8'} 
+                      />
+                    </button>
+                    {hoveredDeleteId === draft.id && (
+                      <div className={styles.deleteTooltip}>удалить черновик?</div>
+                    )}
+                  </div>
                 </div>
-                <div className={styles.deleteButtonWrapper}>
-                  <button
-                    className={styles.deleteButton}
-                    onClick={(e) => handleDelete(draft.id, e)}
-                    onMouseEnter={() => setHoveredDeleteId(draft.id)}
-                    onMouseLeave={() => setHoveredDeleteId(null)}
-                  >
-                    <TrashIcon 
-                      width={16} 
-                      height={16} 
-                      color={hoveredDeleteId === draft.id ? '#EF4444' : '#B0B4B8'} 
-                    />
-                  </button>
-                  {hoveredDeleteId === draft.id && (
-                    <div className={styles.deleteTooltip}>удалить черновик?</div>
-                  )}
+              ))}
+              
+              {isLoadingMore && (
+                <div className={styles.loadingMore}>
+                  <Loader size={20} color="blue" />
                 </div>
-              </div>
-            ))
+              )}
+            </>
           )}
         </div>
       </div>

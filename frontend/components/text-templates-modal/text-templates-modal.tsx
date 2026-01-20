@@ -17,15 +17,27 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
     templates,
     isOpen,
     isLoading,
+    isLoadingMore,
+    hasMore,
     searchQuery,
     selectedTemplateId,
     setSearchQuery,
     deleteTemplate,
     selectTemplate,
+    loadMoreTemplates,
     close,
   } = useTemplates();
 
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
+    
+    if (scrolledToBottom && hasMore && !isLoadingMore && !searchQuery) {
+      loadMoreTemplates();
+    }
+  };
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -57,8 +69,8 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
 
         <h2 className={styles.modalTitle}>Шаблоны текста</h2>
 
-        <div className={styles.templatesList}>
-          {isLoading ? (
+        <div className={styles.templatesList} onScroll={handleScroll}>
+          {isLoading || (templates.length === 0 && !searchQuery) ? (
             <div className={styles.emptyState}>
               <Loader size={24} color="blue" />
             </div>
@@ -67,37 +79,45 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
               {searchQuery ? 'Шаблоны не найдены' : 'У вас пока нет шаблонов'}
             </div>
           ) : (
-            templates.map((template) => (
-              <div
-                key={template.id}
-                className={styles.templateItem}
-                onClick={() => handleTemplateClick(template)}
-              >
-                <Checkbox
-                  variant="radio"
-                  checked={selectedTemplateId === template.id}
-                  onChange={() => handleTemplateClick(template)}
-                />
-                <span className={styles.templateName}>{template.name}</span>
-                <div className={styles.deleteButtonWrapper}>
-                  <button
-                    className={styles.deleteButton}
-                    onClick={(e) => handleDelete(template.id, e)}
-                    onMouseEnter={() => setHoveredDeleteId(template.id)}
-                    onMouseLeave={() => setHoveredDeleteId(null)}
-                  >
-                    <TrashIcon 
-                      width={16} 
-                      height={16} 
-                      color={hoveredDeleteId === template.id ? '#EF4444' : '#B0B4B8'} 
-                    />
-                  </button>
-                  {hoveredDeleteId === template.id && (
-                    <div className={styles.deleteTooltip}>удалить шаблон?</div>
-                  )}
+            <>
+              {templates.map((template) => (
+                <div
+                  key={template.id}
+                  className={styles.templateItem}
+                  onClick={() => handleTemplateClick(template)}
+                >
+                  <Checkbox
+                    variant="radio"
+                    checked={selectedTemplateId === template.id}
+                    onChange={() => handleTemplateClick(template)}
+                  />
+                  <span className={styles.templateName}>{template.name}</span>
+                  <div className={styles.deleteButtonWrapper}>
+                    <button
+                      className={styles.deleteButton}
+                      onClick={(e) => handleDelete(template.id, e)}
+                      onMouseEnter={() => setHoveredDeleteId(template.id)}
+                      onMouseLeave={() => setHoveredDeleteId(null)}
+                    >
+                      <TrashIcon 
+                        width={16} 
+                        height={16} 
+                        color={hoveredDeleteId === template.id ? '#EF4444' : '#B0B4B8'} 
+                      />
+                    </button>
+                    {hoveredDeleteId === template.id && (
+                      <div className={styles.deleteTooltip}>удалить шаблон?</div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))
+              ))}
+              
+              {isLoadingMore && (
+                <div className={styles.loadingMore}>
+                  <Loader size={20} color="blue" />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

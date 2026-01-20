@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import styles from './reply-to-post-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import Loader from '@/components/loader';
@@ -12,6 +13,8 @@ export default function ReplyToPostModal() {
     posts,
     isOpen,
     isLoading,
+    isLoadingMore,
+    hasMore,
     searchQuery,
     selectedPostId,
     filteredPosts,
@@ -19,8 +22,20 @@ export default function ReplyToPostModal() {
     selectPost,
     setReplyToPost,
     getPost,
+    loadMorePosts,
     close,
   } = useReplyToPost();
+
+  const postsListRef = useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
+    
+    if (scrolledToBottom && hasMore && !isLoadingMore && !searchQuery) {
+      loadMorePosts();
+    }
+  };
 
   const handlePostClick = async (post: Post) => {
     selectPost(post.id);
@@ -70,7 +85,7 @@ export default function ReplyToPostModal() {
 
         <h2 className={styles.modalTitle}>Название выбранного канала</h2>
 
-        <div className={styles.postsList}>
+        <div className={styles.postsList} ref={postsListRef} onScroll={handleScroll}>
           {isLoading || (posts.length === 0 && !searchQuery) ? (
             <div className={styles.emptyState}>
               <Loader size={24} color="blue" />
@@ -80,22 +95,30 @@ export default function ReplyToPostModal() {
               {searchQuery ? 'Посты не найдены' : 'У вас пока нет опубликованных постов'}
             </div>
           ) : (
-            filteredPosts.map((post) => (
-              <div
-                key={post.id}
-                className={styles.postItem}
-                onClick={() => handlePostClick(post)}
-              >
-                <Checkbox
-                  variant="radio"
-                  checked={selectedPostId === post.id}
-                  onChange={() => handlePostClick(post)}
-                />
-                <span className={styles.postTime}>{formatTime(post.created_at)}</span>
-                <span className={styles.postDate}>{formatDate(post.created_at)}</span>
-                <span className={styles.postText}>{getPostPreview(post)}</span>
-              </div>
-            ))
+            <>
+              {filteredPosts.map((post) => (
+                <div
+                  key={post.id}
+                  className={styles.postItem}
+                  onClick={() => handlePostClick(post)}
+                >
+                  <Checkbox
+                    variant="radio"
+                    checked={selectedPostId === post.id}
+                    onChange={() => handlePostClick(post)}
+                  />
+                  <span className={styles.postTime}>{formatTime(post.created_at)}</span>
+                  <span className={styles.postDate}>{formatDate(post.created_at)}</span>
+                  <span className={styles.postText}>{getPostPreview(post)}</span>
+                </div>
+              ))}
+              
+              {isLoadingMore && (
+                <div className={styles.loadingMore}>
+                  <Loader size={20} color="blue" />
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

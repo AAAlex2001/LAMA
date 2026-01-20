@@ -327,9 +327,14 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     
     mediaPreview.setFiles(snapshot.mediaFiles);
     
-    if (snapshot.showQuizForm) {
+    if (snapshot.showQuizForm && snapshot.quizForm) {
       quizForm.open();
-      // TODO: restore quiz state
+      quizForm.setQuestion(snapshot.quizForm.question);
+      quizForm.setMode(snapshot.quizForm.mode);
+      quizForm.setAnswers(snapshot.quizForm.answers);
+      if (snapshot.quizForm.correctAnswerId) {
+        quizForm.setCorrectAnswer(snapshot.quizForm.correctAnswerId);
+      }
     } else {
       quizForm.close();
     }
@@ -403,6 +408,24 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         quizForm.open();
         quizForm.setQuestion(draft.poll_data.question);
         
+        // Восстанавливаем варианты ответов
+        if (draft.poll_data.options && draft.poll_data.options.length > 0) {
+          const answers = draft.poll_data.options.map((text: string, index: number) => ({
+            id: `restored-${Date.now()}-${index}`,
+            text,
+          }));
+          quizForm.setAnswers(answers);
+          
+          // Для викторины восстанавливаем правильный ответ
+          if (draft.poll_data.is_quiz && draft.poll_data.correct_option_id !== undefined && draft.poll_data.correct_option_id !== null) {
+            const correctOptionIndex = draft.poll_data.correct_option_id as number;
+            const correctAnswerId = answers[correctOptionIndex]?.id;
+            if (correctAnswerId) {
+              quizForm.setCorrectAnswer(correctAnswerId);
+            }
+          }
+        }
+        
         if (draft.poll_data.is_quiz) {
           quizForm.setMode('quiz');
         } else if (draft.poll_data.allows_multiple_answers) {
@@ -469,6 +492,24 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       if (post.poll_data) {
         quizForm.open();
         quizForm.setQuestion(post.poll_data.question);
+        
+        // Восстанавливаем варианты ответов
+        if (post.poll_data.options && post.poll_data.options.length > 0) {
+          const answers = post.poll_data.options.map((text: string, index: number) => ({
+            id: `restored-${Date.now()}-${index}`,
+            text,
+          }));
+          quizForm.setAnswers(answers);
+          
+          // Для викторины восстанавливаем правильный ответ
+          if (post.poll_data.is_quiz && post.poll_data.correct_option_id !== undefined && post.poll_data.correct_option_id !== null) {
+            const correctOptionIndex = post.poll_data.correct_option_id as number;
+            const correctAnswerId = answers[correctOptionIndex]?.id;
+            if (correctAnswerId) {
+              quizForm.setCorrectAnswer(correctAnswerId);
+            }
+          }
+        }
         
         if (post.poll_data.is_quiz) {
           quizForm.setMode('quiz');

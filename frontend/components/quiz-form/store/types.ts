@@ -16,6 +16,7 @@ export type QuizFormAction =
   | { type: 'SET_MODE'; payload: QuizFormMode }
   | { type: 'SET_QUESTION'; payload: string }
   | { type: 'SET_ANSWER_TEXT'; payload: { id: string; text: string } }
+  | { type: 'SET_ANSWERS'; payload: QuizAnswer[] }
   | { type: 'ADD_ANSWER' }
   | { type: 'REMOVE_ANSWER'; payload: { id: string } }
   | { type: 'SET_CORRECT_ANSWER'; payload: { id: string | null } }

@@ -8,6 +8,8 @@ interface TemplatesContextValue {
   templates: TextTemplate[];
   isOpen: boolean;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
   isSaving: boolean;
   searchQuery: string;
   selectedTemplateId: number | null;
@@ -15,6 +17,7 @@ interface TemplatesContextValue {
   // Actions
   setSearchQuery: (query: string) => void;
   loadTemplates: () => Promise<void>;
+  loadMoreTemplates: () => Promise<void>;
   createTemplate: (data: CreateTextTemplateRequest) => Promise<TextTemplate>;
   deleteTemplate: (id: number) => Promise<void>;
   selectTemplate: (id: number | null) => void;
@@ -35,26 +38,41 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
   const [templates, setTemplates] = useState<TextTemplate[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
 
-  // Загружаем шаблоны при открытии или изменении поиска
-  useEffect(() => {
-    if (isOpen) {
-      loadTemplates();
-    }
-  }, [isOpen, searchQuery]);
-
   const loadTemplates = async () => {
     setIsLoading(true);
+    setCurrentPage(1);
     try {
-      const response = await templatesApi.getTemplates(searchQuery || undefined);
+      const response = await templatesApi.getTemplates(1, 20, searchQuery || undefined);
       setTemplates(response.items);
+      setHasMore(response.items.length === 20);
     } catch (error) {
       console.error('Failed to load templates:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadMoreTemplates = async () => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      const nextPage = currentPage + 1;
+      const response = await templatesApi.getTemplates(nextPage, 20, searchQuery || undefined);
+      setTemplates(prev => [...prev, ...response.items]);
+      setCurrentPage(nextPage);
+      setHasMore(response.items.length === 20);
+    } catch (error) {
+      console.error('Failed to load more templates:', error);
+    } finally {
+      setIsLoadingMore(false);
     }
   };
 
@@ -91,12 +109,17 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
   };
 
   // Toggle visibility
-  const open = () => setIsOpen(true);
+  const open = async () => {
+    setIsOpen(true);
+    await loadTemplates();
+  };
   
   const close = () => {
     setIsOpen(false);
     setSearchQuery('');
     setSelectedTemplateId(null);
+    setCurrentPage(1);
+    setHasMore(true);
   };
   
   const toggle = () => {
@@ -111,11 +134,14 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
     templates,
     isOpen,
     isLoading,
+    isLoadingMore,
+    hasMore,
     isSaving,
     searchQuery,
     selectedTemplateId,
     setSearchQuery,
     loadTemplates,
+    loadMoreTemplates,
     createTemplate,
     deleteTemplate,
     selectTemplate,
