@@ -358,8 +358,10 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   // Handle select draft
   const handleSelectDraft = async (draft: Draft) => {
     try {
-      resetForm();
       
+      mediaPreview.clearFiles();
+      inlineButtons.close();
+      quizForm.close();
       const text = draft.formatted_content?.text || draft.text_content || '';
       richTextEditor.setText(text);
       
@@ -407,16 +409,14 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       if (draft.poll_data) {
         quizForm.open();
         quizForm.setQuestion(draft.poll_data.question);
-        
-        // Восстанавливаем варианты ответов
+
         if (draft.poll_data.options && draft.poll_data.options.length > 0) {
           const answers = draft.poll_data.options.map((text: string, index: number) => ({
             id: `restored-${Date.now()}-${index}`,
             text,
           }));
           quizForm.setAnswers(answers);
-          
-          // Для викторины восстанавливаем правильный ответ
+
           if (draft.poll_data.is_quiz && draft.poll_data.correct_option_id !== undefined && draft.poll_data.correct_option_id !== null) {
             const correctOptionIndex = draft.poll_data.correct_option_id as number;
             const correctAnswerId = answers[correctOptionIndex]?.id;
@@ -443,8 +443,6 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   
   const handleSelectPost = async (post: Post) => {
     try {
-      resetForm();
-      
       const text = post.formatted_content?.text || post.text_content || '';
       richTextEditor.setText(text);
       
@@ -492,16 +490,14 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       if (post.poll_data) {
         quizForm.open();
         quizForm.setQuestion(post.poll_data.question);
-        
-        // Восстанавливаем варианты ответов
+
         if (post.poll_data.options && post.poll_data.options.length > 0) {
           const answers = post.poll_data.options.map((text: string, index: number) => ({
             id: `restored-${Date.now()}-${index}`,
             text,
           }));
           quizForm.setAnswers(answers);
-          
-          // Для викторины восстанавливаем правильный ответ
+
           if (post.poll_data.is_quiz && post.poll_data.correct_option_id !== undefined && post.poll_data.correct_option_id !== null) {
             const correctOptionIndex = post.poll_data.correct_option_id as number;
             const correctAnswerId = answers[correctOptionIndex]?.id;
