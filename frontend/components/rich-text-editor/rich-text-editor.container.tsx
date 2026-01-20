@@ -62,7 +62,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         if (!value) {
           editor.commands.clearContent(false);
         } else {
-          editor.commands.setContent(value, false);
+          editor.commands.setContent(value, { emitUpdate: false });
         }
       }
 
