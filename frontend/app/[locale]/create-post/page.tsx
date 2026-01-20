@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
@@ -24,6 +24,7 @@ import {
   PaperclipIcon,
 } from '@/components/icons';
 import { useCreatePost, type CreatePostSnapshot } from './store/useCreatePost';
+import { revokeMediaObjectUrls } from './store/mediaObjectUrls';
 
 const EMPTY_POST_SNAPSHOT: CreatePostSnapshot = {
   text: '',
@@ -92,6 +93,26 @@ export default function CreatePostPage() {
 
   const [postSnapshots, setPostSnapshots] = useState<CreatePostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
   const [activePostIndex, setActivePostIndex] = useState(0);
+
+  const postSnapshotsRef = useRef(postSnapshots);
+  const currentMediaRef = useRef(mediaFiles);
+
+  useEffect(() => {
+    postSnapshotsRef.current = postSnapshots;
+  }, [postSnapshots]);
+
+  useEffect(() => {
+    currentMediaRef.current = mediaFiles;
+  }, [mediaFiles]);
+
+  useEffect(() => {
+    return () => {
+      for (const snapshot of postSnapshotsRef.current) {
+        revokeMediaObjectUrls(snapshot.mediaFiles);
+      }
+      revokeMediaObjectUrls(currentMediaRef.current);
+    };
+  }, []);
 
   const headerRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +184,9 @@ export default function CreatePostPage() {
 
     const result = await onPublishSeriesNow(snapshotsForPublish);
     if (result?.success) {
+      for (const snapshot of snapshotsForPublish) {
+        revokeMediaObjectUrls(snapshot.mediaFiles);
+      }
       setPostSnapshots([EMPTY_POST_SNAPSHOT]);
       setActivePostIndex(0);
     }

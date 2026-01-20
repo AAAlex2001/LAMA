@@ -4,6 +4,7 @@ import { createAndPublishPost, createSeries, saveDraft, uploadMediaFiles } from 
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
+import { extractPlainTextFromHtml, hasSupportedFormatting } from './text';
 
 export interface SeriesPostInput {
   text: string;
@@ -64,11 +65,7 @@ export async function handlePublishNow(
   series?: { seriesId: number; seriesOrder: number }
 ) {
   try {
-    const plainText = content.text
-      .replace(/<br\s*\/?\s*>/gi, '\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .trim();
+    const plainText = extractPlainTextFromHtml(content.text);
 
     const hasText = plainText.length > 0;
     const hasMedia = mediaFiles.length > 0;
@@ -160,7 +157,7 @@ export async function handlePublishNow(
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
 
-    const hasFormatting = hasText && /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasFormatting = hasText && hasSupportedFormatting(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
@@ -256,11 +253,7 @@ export async function handlePublishSeriesNow(
     const pollData = p.showQuizForm && p.quizForm ? selectQuizPollData(p.quizForm) : null;
 
     // Более понятная ошибка для серии: показываем номер поста, который считается пустым.
-    const plainText = (p.text || '')
-      .replace(/<br\s*\/?\s*>/gi, '\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .trim();
+    const plainText = extractPlainTextFromHtml(p.text || '');
     const hasText = plainText.length > 0;
     const hasMedia = media.length > 0;
     const hasPoll = !!pollData;
@@ -315,11 +308,7 @@ export async function handleSaveDraft(
   showLinkPreview?: boolean
 ) {
   try {
-    const plainText = content.text
-      .replace(/<br\s*\/??\s*>/gi, '\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ')
-      .trim();
+    const plainText = extractPlainTextFromHtml(content.text);
 
     const hasText = plainText.length > 0;
     const hasMedia = mediaFiles.length > 0;
@@ -398,7 +387,7 @@ export async function handleSaveDraft(
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
 
-    const hasFormatting = hasText && /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(content.text);
+    const hasFormatting = hasText && hasSupportedFormatting(content.text);
     const formattedContent = hasFormatting ? {
       text: content.text,
       parse_mode: 'HTML'
