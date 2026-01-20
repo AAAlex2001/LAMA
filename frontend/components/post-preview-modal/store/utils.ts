@@ -1,6 +1,10 @@
 import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
 import type { DocumentPreviewItem, MediaPreviewItem } from './types';
 
+export type MediaRun =
+  | { kind: 'visual'; items: MediaPreviewItem[] }
+  | { kind: 'document'; items: DocumentPreviewItem[] };
+
 /**
  * Нормализует URL (относительный -> абсолютный)
  */
@@ -97,6 +101,55 @@ export function extractVisualMedia(
       thumbnailUrl: m.thumbnail_url || undefined,
       blur: m.blur,
     }));
+}
+
+/**
+ * Группирует медиа в последовательные "прогоны" (visual/document), сохраняя порядок.
+ * Нужен для предпросмотра, чтобы он повторял порядок отправки в Telegram.
+ */
+export function createMediaRuns(
+  mediaFiles: MediaFile[],
+  objectUrls: Map<string, string>
+): MediaRun[] {
+  const runs: MediaRun[] = [];
+
+  const pushRun = (run: MediaRun | null) => {
+    if (!run) return;
+    if (run.kind === 'visual' && run.items.length === 0) return;
+    if (run.kind === 'document' && run.items.length === 0) return;
+    runs.push(run);
+  };
+
+  let current: MediaRun | null = null;
+
+  for (const m of mediaFiles) {
+    const kind: MediaRun['kind'] = (m.type === 'image' || m.type === 'video') ? 'visual' : 'document';
+
+    if (!current || current.kind !== kind) {
+      pushRun(current);
+      current = kind === 'visual' ? { kind: 'visual', items: [] } : { kind: 'document', items: [] };
+    }
+
+    if (kind === 'visual') {
+      (current as { kind: 'visual'; items: MediaPreviewItem[] }).items.push({
+        id: m.id,
+        type: m.type as 'image' | 'video',
+        url: objectUrls.get(m.id) || getPreviewUrl(m),
+        thumbnailUrl: m.thumbnail_url || undefined,
+        blur: m.blur,
+      });
+    } else {
+      (current as { kind: 'document'; items: DocumentPreviewItem[] }).items.push({
+        id: m.id,
+        name: getDocumentName(m),
+        size: formatBytes(m.file?.size),
+        url: m.url,
+      });
+    }
+  }
+
+  pushRun(current);
+  return runs;
 }
 
 /**

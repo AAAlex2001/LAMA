@@ -6,14 +6,17 @@ import DocumentIcon from '@/components/icons/document-icon';
 
 export interface DocumentsPreviewProps {
   items: DocumentPreviewItem[];
+  showTitle?: boolean;
 }
 
-export default function DocumentsPreview({ items }: DocumentsPreviewProps) {
+export default function DocumentsPreview({ items, showTitle = true }: DocumentsPreviewProps) {
   if (items.length === 0) return null;
 
   return (
     <div className={styles.container}>
-      <div className={styles.title}>Прикрепленные файлы ({items.length})</div>
+      {showTitle && (
+        <div className={styles.title}>Прикрепленные файлы ({items.length})</div>
+      )}
       <div className={styles.list}>
         {items.map((doc) => (
           <div key={doc.id} className={styles.row}>

@@ -16,8 +16,7 @@ import {
   type HtmlPart,
   normalizeMaybeUrl,
   formatMembersCount,
-  extractDocuments,
-  extractVisualMedia,
+  createMediaRuns,
   extractBlockquotes,
   createObjectUrls,
   revokeObjectUrls,
@@ -54,12 +53,15 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   const channelMembersLabel = formatMembersCount(channelMembersCount);
   
   const objectUrls = createObjectUrls(mediaFiles);
-  const visualMediaItems = extractVisualMedia(mediaFiles, objectUrls);
-  const documentItems = extractDocuments(mediaFiles);
+  const firstIsDocument = mediaFiles[0]?.type === 'document';
+  const headMedia = firstIsDocument ? mediaFiles.slice(0, 1) : mediaFiles;
+  const tailMedia = firstIsDocument ? mediaFiles.slice(1) : [];
+  const headRuns = createMediaRuns(headMedia, objectUrls);
+  const tailRuns = createMediaRuns(tailMedia, objectUrls);
   
   // Извлекаем blockquote из HTML с сохранением порядка
   const { parts } = extractBlockquotes(html);
-  const hasContent = visualMediaItems.length > 0 || parts.length > 0;
+  const hasContent = headRuns.length > 0 || parts.length > 0 || tailRuns.length > 0;
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -122,9 +124,15 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
             {/* Message Area */}
             <div className={styles.messageArea}>
               {/* Main bubble with media and text */}
-              {(visualMediaItems.length > 0 || hasContent) && (
+              {hasContent && (
                 <div className={styles.bubble}>
-                  <MediaPreview items={visualMediaItems} />
+                  {headRuns.map((run, idx) =>
+                    run.kind === 'visual' ? (
+                      <MediaPreview key={`head-visual-${idx}`} items={run.items} />
+                    ) : (
+                      <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
+                    )
+                  )}
                   {/* Рендерим части в правильном порядке */}
                   {parts.map((part, index) => {
                     if (part.type === 'text') {
@@ -153,14 +161,19 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                     }
                     return null;
                   })}
+
+                  {tailRuns.map((run, idx) =>
+                    run.kind === 'visual' ? (
+                      <MediaPreview key={`tail-visual-${idx}`} items={run.items} />
+                    ) : (
+                      <DocumentsPreview key={`tail-doc-${idx}`} items={run.items} showTitle={false} />
+                    )
+                  )}
                 </div>
               )}
 
               {/* Quiz/Poll */}
               {quizData && <QuizPreview data={quizData} />}
-
-              {/* Documents */}
-              <DocumentsPreview items={documentItems} />
             </div>
 
             <div />
