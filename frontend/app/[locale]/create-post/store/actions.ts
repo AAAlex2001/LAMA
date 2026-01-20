@@ -255,6 +255,25 @@ export async function handlePublishSeriesNow(
     const inlineKeyboard = toInlineKeyboard(p.buttonRows, p.showInlineButtons);
     const pollData = p.showQuizForm && p.quizForm ? selectQuizPollData(p.quizForm) : null;
 
+    // Более понятная ошибка для серии: показываем номер поста, который считается пустым.
+    const plainText = (p.text || '')
+      .replace(/<br\s*\/?\s*>/gi, '\n')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+    const hasText = plainText.length > 0;
+    const hasMedia = media.length > 0;
+    const hasPoll = !!pollData;
+
+    if (!hasText && !hasMedia && !hasPoll) {
+      results.push({
+        index: i,
+        ok: false,
+        message: `Пост ${i + 1}: текст или медиа не могут быть пустыми`,
+      });
+      break;
+    }
+
     const res = await handlePublishNow(
       { text: p.text },
       settings,
@@ -269,7 +288,7 @@ export async function handlePublishSeriesNow(
     results.push({
       index: i,
       ok: !!res.success,
-      message: res.message,
+      message: res.success ? res.message : `Пост ${i + 1}: ${res.message}`,
       postId: (res as any).postId || (res as any).id,
     });
 

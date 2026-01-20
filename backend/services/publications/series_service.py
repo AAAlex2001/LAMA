@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.sql import nullslast
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,7 @@ from backend.models.publications import (
 from backend.models.channels import ChannelGroup as Channel
 from backend.services.publications.telegram_sender import clean_html_for_telegram, send_to_telegram
 from backend.utils.keyboard import build_keyboard
+from backend.schemas.publications import PublishResult, ChannelPublishResult
 
 
 class SeriesService:
@@ -293,7 +294,7 @@ class SeriesService:
         self,
         publication: Publication,
         bot: Bot
-    ) -> Dict[str, Any]:
+    ) -> PublishResult:
         """
         Опубликовать пост из серии.
         Если series.reply_to_previous=True и есть предыдущий пост, отправит как ответ.
@@ -308,7 +309,7 @@ class SeriesService:
         if not series:
             raise ValueError("Series not found")
 
-        results = []
+        results: List[ChannelPublishResult] = []
 
         for channel in publication.channels:
             try:
@@ -349,23 +350,28 @@ class SeriesService:
 
                 channel_name = getattr(channel, "title", getattr(
                     channel, "name", str(channel.telegram_id)))
-                results.append({
-                    "channel": channel_name,
-                    "success": True,
-                    "message_ids": message_ids,
-                    "replied_to": reply_to_id
-                })
+                results.append(
+                    ChannelPublishResult(
+                        channel=channel_name,
+                        success=True,
+                        message_ids=message_ids,
+                        replied_to=reply_to_id,
+                    )
+                )
 
             except Exception as e:
                 channel_name = getattr(channel, "title", getattr(
                     channel, "name", str(channel.telegram_id)))
-                results.append({
-                    "channel": channel_name,
-                    "success": False,
-                    "error": str(e)
-                })
+                results.append(
+                    ChannelPublishResult(
+                        channel=channel_name,
+                        success=False,
+                        error=str(e),
+                        replied_to=reply_to_id,
+                    )
+                )
 
-        success_count = sum(1 for r in results if r.get("success"))
+        success_count = sum(1 for r in results if r.success)
 
         if success_count > 0:
             publication.status = DBPublicationStatus.PUBLISHED
@@ -375,9 +381,10 @@ class SeriesService:
             publication.status = DBPublicationStatus.FAILED
             await self.db.commit()
 
-        return {
-            "success": success_count > 0,
-            "results": results,
-            "success_count": success_count,
-            "total_count": len(results)
-        }
+        return PublishResult(
+            success=success_count > 0,
+            results=results,
+            success_count=success_count,
+            total_count=len(results),
+            publication_id=publication.id,
+        )

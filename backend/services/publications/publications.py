@@ -135,16 +135,6 @@ class PublicationService:
                 series_service = SeriesService(self.db)
                 bot = self.get_master_bot()
                 series_result = await series_service.publish_series_post(publication, bot)
-                
-                if isinstance(series_result, dict):
-                    return PublishResult(
-                        success=series_result.get("success", False),
-                        results=series_result.get("results", []),
-                        success_count=series_result.get("success_count", 0),
-                        total_count=series_result.get("total_count", 0),
-                        publication_id=publication.id,
-                        error=series_result.get("error")
-                    )
                 return series_result
 
         return await publisher.publish_to_channels(

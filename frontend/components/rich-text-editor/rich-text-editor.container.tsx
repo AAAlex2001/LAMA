@@ -46,25 +46,34 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const { editor, state, toggleFormat, insertContent } = useTiptapEditor({
       maxLength,
       onUpdate: (html) => {
-        lastValue.current = html;
-        onChange(html);
+        const normalized = editor?.isEmpty ? '' : html;
+        lastValue.current = normalized;
+        onChange(normalized);
       },
     });
 
     useEffect(() => {
-      if (editor && value !== lastValue.current) {
-        if (value !== editor.getHTML()) {
-          editor.commands.setContent(value);
+      if (!editor) return;
+
+      const currentHtml = editor.getHTML();
+      const normalizedCurrent = editor.isEmpty ? '' : currentHtml;
+
+      if (value !== normalizedCurrent) {
+        if (!value) {
+          editor.commands.clearContent(false);
+        } else {
+          editor.commands.setContent(value, false);
         }
-        lastValue.current = value;
       }
+
+      lastValue.current = value;
     }, [value, editor]);
 
     useImperativeHandle(
       ref,
       () => ({
         reset: () => {
-          editor?.commands.clearContent(true);
+          editor?.commands.clearContent(false);
           onChange('');
         },
       }),

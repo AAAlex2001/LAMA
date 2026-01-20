@@ -366,6 +366,7 @@ class ChannelPublishResult(BaseModel):
     success: bool
     error: Optional[str] = None
     message_ids: Optional[List[int]] = None
+    replied_to: Optional[int] = None
     telegram_messages_data: Optional[List[Dict[str, Any]]] = None
     sent_messages: Optional[Any] = None
     channel_obj: Optional[Any] = None

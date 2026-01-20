@@ -208,54 +208,100 @@ async def send_text_with_media(
             )
         return [message]
     
-    media = []
     urls = publication.media_urls[:10]
-    
     logger.info(f"Preparing media_group: {len(urls)} files, file_ids={publication.media_file_ids}")
-    
-    for i, url in enumerate(urls):
-        file_id = get_file_id_for_media(publication.media_file_ids, i)
-        media_to_send = file_id if file_id else url
-        file_spoiler = get_spoiler(blur_list, i)
-        
-        logger.info(f"Media {i+1}/{len(urls)}: using {'file_id' if file_id else 'URL'} = {media_to_send[:50]}...")
-        
-        if i == 0 and publication.text_content:
-            cleaned_caption = clean_html_for_telegram(publication.text_content)
-            if is_document_url(url):
-                media.append(InputMediaDocument(
-                    media=media_to_send,
-                    caption=cleaned_caption,
-                    parse_mode=ParseMode.HTML
-                ))
-            elif is_video_url(url):
-                media.append(InputMediaVideo(
-                    media=media_to_send,
-                    caption=cleaned_caption,
-                    parse_mode=ParseMode.HTML,
-                    has_spoiler=file_spoiler
-                ))
+
+    indexed_urls = list(enumerate(urls))
+    visual_items = [(i, url) for i, url in indexed_urls if not is_document_url(url) and not is_audio_url(url)]
+    document_items = [(i, url) for i, url in indexed_urls if is_document_url(url) or is_audio_url(url)]
+
+    messages: List[Message] = []
+
+    if visual_items:
+        media: list = []
+        caption_applied = False
+        for i, url in visual_items:
+            file_id = get_file_id_for_media(publication.media_file_ids, i)
+            media_to_send = file_id if file_id else url
+            file_spoiler = get_spoiler(blur_list, i)
+
+            logger.info(
+                f"Visual media idx={i}: using {'file_id' if file_id else 'URL'} = {str(media_to_send)[:50]}..."
+            )
+
+            should_add_caption = (not caption_applied) and bool(publication.text_content)
+            caption_text = clean_html_for_telegram(publication.text_content) if should_add_caption else None
+            if should_add_caption:
+                caption_applied = True
+
+            if is_video_url(url):
+                if caption_text is not None:
+                    media.append(
+                        InputMediaVideo(
+                            media=media_to_send,
+                            caption=caption_text,
+                            parse_mode=ParseMode.HTML,
+                            has_spoiler=file_spoiler,
+                        )
+                    )
+                else:
+                    media.append(InputMediaVideo(media=media_to_send, has_spoiler=file_spoiler))
             else:
-                media.append(InputMediaPhoto(
-                    media=media_to_send,
-                    caption=cleaned_caption,
-                    parse_mode=ParseMode.HTML,
-                    has_spoiler=file_spoiler
-                ))
-        else:
-            if is_document_url(url):
-                media.append(InputMediaDocument(media=media_to_send))
-            elif is_video_url(url):
-                media.append(InputMediaVideo(media=media_to_send, has_spoiler=file_spoiler))
+                if caption_text is not None:
+                    media.append(
+                        InputMediaPhoto(
+                            media=media_to_send,
+                            caption=caption_text,
+                            parse_mode=ParseMode.HTML,
+                            has_spoiler=file_spoiler,
+                        )
+                    )
+                else:
+                    media.append(InputMediaPhoto(media=media_to_send, has_spoiler=file_spoiler))
+
+        sent = await bot.send_media_group(
+            chat_id=channel.telegram_id,
+            media=media,
+            disable_notification=publication.disable_notification
+        )
+        messages.extend(list(sent))
+
+    else:
+        cleaned_text = clean_html_for_telegram(publication.text_content)
+        if cleaned_text:
+            text_msg = await bot.send_message(
+                chat_id=channel.telegram_id,
+                text=cleaned_text,
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML,
+                disable_notification=publication.disable_notification,
+                disable_web_page_preview=publication.disable_web_page_preview,
+            )
+            messages.append(text_msg)
+
+    if document_items:
+        doc_media: list = []
+        for i, url in document_items:
+            file_id = get_file_id_for_media(publication.media_file_ids, i)
+            media_to_send = file_id if file_id else url
+
+            logger.info(
+                f"Document media idx={i}: using {'file_id' if file_id else 'URL'} = {str(media_to_send)[:50]}..."
+            )
+
+            if is_audio_url(url):
+                doc_media.append(InputMediaAudio(media=media_to_send))
             else:
-                media.append(InputMediaPhoto(media=media_to_send, has_spoiler=file_spoiler))
-    
-    messages = await bot.send_media_group(
-        chat_id=channel.telegram_id,
-        media=media,
-        disable_notification=publication.disable_notification
-    )
-    return list(messages)
+                doc_media.append(InputMediaDocument(media=media_to_send))
+
+        sent_docs = await bot.send_media_group(
+            chat_id=channel.telegram_id,
+            media=doc_media,
+            disable_notification=publication.disable_notification
+        )
+        messages.extend(list(sent_docs))
+
+    return messages
 
 
 async def send_image(
