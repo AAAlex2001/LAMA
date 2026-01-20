@@ -1,10 +1,13 @@
-import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
+import type { CreatePostRequest, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
 import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
-import { createAndPublishPost, createSeries, saveDraft, uploadMediaFiles } from './api';
+import { createAndPublishPost, createSeries, saveDraft } from './api';
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
 import { extractPlainTextFromHtml, hasSupportedFormatting } from './text';
+import { prepareMediaPayload } from './mediaPayload';
+import { buildBaseCreatePostRequest } from './createPostRequest';
+import type { PostSettingsFromUI } from './uiTypes';
 
 export interface SeriesPostInput {
   text: string;
@@ -14,20 +17,6 @@ export interface SeriesPostInput {
   showQuizForm?: boolean;
   quizForm?: QuizFormState;
   showLinkPreview?: boolean;
-}
-
-interface PostSettingsFromUI {
-  channelIds: number[];
-  notifySubscribers: boolean;
-  pinPost: boolean;
-  tagName: string | null;
-  tagColor: string | null;
-  repeatInterval: RepeatInterval;
-  repeatCustomDays: number;
-  repeatCustomHours: number;
-  autoDeleteInterval: AutoDeleteInterval;
-  autoDeleteCustomDays: number;
-  autoDeleteCustomHours: number;
 }
 
 // Конвертация AutoDeleteInterval в секунды
@@ -96,59 +85,15 @@ export async function handlePublishNow(
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
     // Собираем массив blur-состояний для каждого файла
-    const mediaBlurArray = mediaFiles.map(f => f.blur || false);
+    let mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
     if (hasMedia) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+      const prepared = await prepareMediaPayload(mediaFiles);
 
-      const filesToUpload = mediaFiles.filter(f => f.file);
-      let uploadedUrls: string[] = [];
-      let uploadedFileIds: Array<string | undefined> = [];
-      let uploadedThumbnailUrls: Array<string | null> = [];
-
-      if (filesToUpload.length > 0) {
-        try {
-          const uploadResponse = await uploadMediaFiles(filesToUpload.map(f => f.file as File));
-
-          uploadedUrls = uploadResponse.files.map(f => {
-            if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
-              return f.url;
-            }
-            return `${baseUrl}${f.url}`;
-          });
-
-          uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
-          uploadedThumbnailUrls = (uploadResponse.thumbnail_urls || []).map(url => url || null);
-        } catch (error) {
-          console.error('Failed to upload media:', error);
-          throw new Error('Не удалось загрузить медиа файлы');
-        }
-      }
-
-      const finalUrls: string[] = [];
-      const finalFileIds: Array<string | null> = [];
-      const finalThumbnailUrls: Array<string | null> = [];
-      let uploadIndex = 0;
-
-      for (const f of mediaFiles) {
-        if (f.file) {
-          const url = uploadedUrls[uploadIndex];
-          if (url) {
-            finalUrls.push(url);
-            finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
-            finalThumbnailUrls.push(uploadedThumbnailUrls[uploadIndex] ?? null);
-          }
-          uploadIndex += 1;
-        } else if (f.url) {
-          finalUrls.push(f.url);
-          finalFileIds.push(f.telegram_file_id ?? null);
-          finalThumbnailUrls.push(f.thumbnail_url ?? null);
-        }
-      }
-
-      mediaUrls = finalUrls;
-      mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
-      mediaThumbnailUrls = finalUrls.length > 0 ? finalThumbnailUrls : undefined;
+      mediaUrls = prepared.mediaUrls;
+      mediaFileIds = prepared.mediaFileIds;
+      mediaThumbnailUrls = prepared.mediaThumbnailUrls;
+      mediaBlurArray = prepared.mediaBlurArray;
       contentType = 'text_with_media';
     }
 
@@ -164,27 +109,23 @@ export async function handlePublishNow(
     } : undefined;
 
     const request: CreatePostRequest = {
-      content_type: contentType,
-      text_content: hasText ? content.text : undefined,
-      formatted_content: formattedContent,
-      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      media_thumbnail_urls: mediaThumbnailUrls,
-      media_file_ids: mediaFileIds,
-      media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
-      channel_ids: settings.channelIds,
-      pin_message: settings.pinPost,
-      disable_notification: !settings.notifySubscribers,
-      disable_web_page_preview: !showLinkPreview,
+      ...buildBaseCreatePostRequest({
+        contentType,
+        text: content.text,
+        hasText,
+        formattedContent,
+        mediaUrls,
+        mediaThumbnailUrls,
+        mediaFileIds,
+        mediaBlurArray,
+        inlineKeyboard,
+        pollData: hasPoll ? pollData : undefined,
+        showLinkPreview,
+        status: 'draft',
+        settings,
+      }),
       series_id: series?.seriesId,
       series_order: series?.seriesOrder,
-      status: 'draft',
-      inline_keyboard: inlineKeyboard,
-      poll_data: hasPoll ? (pollData as PollData) : undefined,
-      tag_names: settings.tagName ? [settings.tagName] : undefined,
-      tag_color: settings.tagColor || undefined,
-      repeat_interval: settings.repeatInterval,
-      repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
-      repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
       auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
@@ -328,57 +269,15 @@ export async function handleSaveDraft(
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
     // Собираем массив blur-состояний для каждого файла
-    const mediaBlurArray = mediaFiles.map(f => f.blur || false);
+    let mediaBlurArray = mediaFiles.map(f => f.blur || false);
     
     if (mediaFiles.length > 0) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '') || 'http://localhost:8000';
+      const prepared = await prepareMediaPayload(mediaFiles);
 
-      const filesToUpload = mediaFiles.filter(f => f.file);
-      let uploadedUrls: string[] = [];
-      let uploadedFileIds: Array<string | undefined> = [];
-      let uploadedThumbnailUrls: Array<string | null> = [];
-
-      if (filesToUpload.length > 0) {
-        try {
-          const uploadResponse = await uploadMediaFiles(filesToUpload.map(f => f.file as File));
-          uploadedUrls = uploadResponse.files.map(f => {
-            if (f.url.startsWith('http://') || f.url.startsWith('https://')) {
-              return f.url;
-            }
-            return `${baseUrl}${f.url}`;
-          });
-          uploadedFileIds = (uploadResponse.file_ids || []).map(id => id || undefined);
-          uploadedThumbnailUrls = (uploadResponse.thumbnail_urls || []).map(url => url || null);
-        } catch (error) {
-          console.error('Failed to upload media:', error);
-          throw new Error('Не удалось загрузить медиа файлы');
-        }
-      }
-
-      const finalUrls: string[] = [];
-      const finalFileIds: Array<string | null> = [];
-      const finalThumbnailUrls: Array<string | null> = [];
-      let uploadIndex = 0;
-
-      for (const f of mediaFiles) {
-        if (f.file) {
-          const url = uploadedUrls[uploadIndex];
-          if (url) {
-            finalUrls.push(url);
-            finalFileIds.push(uploadedFileIds[uploadIndex] ?? null);
-            finalThumbnailUrls.push(uploadedThumbnailUrls[uploadIndex] ?? null);
-          }
-          uploadIndex += 1;
-        } else if (f.url) {
-          finalUrls.push(f.url);
-          finalFileIds.push(f.telegram_file_id ?? null);
-          finalThumbnailUrls.push(f.thumbnail_url ?? null);
-        }
-      }
-
-      mediaUrls = finalUrls;
-      mediaFileIds = finalUrls.length > 0 ? (finalFileIds as unknown as string[]) : undefined;
-      mediaThumbnailUrls = finalUrls.length > 0 ? finalThumbnailUrls : undefined;
+      mediaUrls = prepared.mediaUrls;
+      mediaFileIds = prepared.mediaFileIds;
+      mediaThumbnailUrls = prepared.mediaThumbnailUrls;
+      mediaBlurArray = prepared.mediaBlurArray;
       contentType = 'text_with_media';
     }
 
@@ -394,25 +293,21 @@ export async function handleSaveDraft(
     } : undefined;
 
     const request: CreatePostRequest = {
-      content_type: contentType,
-      text_content: hasText ? content.text : undefined,
-      formatted_content: formattedContent,
-      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
-      media_thumbnail_urls: mediaThumbnailUrls,
-      media_file_ids: mediaFileIds,
-      media_blur: mediaUrls.length > 0 ? mediaBlurArray : undefined,
-      channel_ids: settings.channelIds,
-      pin_message: settings.pinPost,
-      disable_notification: !settings.notifySubscribers,
-      disable_web_page_preview: !showLinkPreview,
-      status: 'draft',
-      inline_keyboard: inlineKeyboard,
-      poll_data: hasPoll ? (pollData as PollData) : undefined,
-      tag_names: settings.tagName ? [settings.tagName] : undefined,
-      tag_color: settings.tagColor || undefined,
-      repeat_interval: settings.repeatInterval,
-      repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
-      repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
+      ...buildBaseCreatePostRequest({
+        contentType,
+        text: content.text,
+        hasText,
+        formattedContent,
+        mediaUrls,
+        mediaThumbnailUrls,
+        mediaFileIds,
+        mediaBlurArray,
+        inlineKeyboard,
+        pollData: hasPoll ? pollData : undefined,
+        showLinkPreview,
+        status: 'draft',
+        settings,
+      }),
       auto_delete_interval: settings.autoDeleteInterval,
     };
 
