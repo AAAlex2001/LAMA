@@ -12,6 +12,8 @@ import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
 import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
 import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
+import PostAccordion from '@/components/post-accordion/post-accordion';
+import { initialQuizFormState } from '@/components/quiz-form/store/reducer';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -21,7 +23,17 @@ import {
   SettingsIcon,
   PaperclipIcon,
 } from '@/components/icons';
-import { useCreatePost } from './store/useCreatePost';
+import { useCreatePost, type CreatePostSnapshot } from './store/useCreatePost';
+
+const EMPTY_POST_SNAPSHOT: CreatePostSnapshot = {
+  text: '',
+  showInlineButtons: false,
+  buttonRows: [],
+  mediaFiles: [],
+  showQuizForm: false,
+  quizForm: initialQuizFormState,
+  showLinkPreview: false,
+};
 
 export default function CreatePostPage() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -67,12 +79,19 @@ export default function CreatePostPage() {
     quizFormState,
     quizFormDispatch,
     onPublishNow,
+    onPublishSeriesNow,
     onSaveDraft,
     handleSaveAsTemplate,
     handleSelectTemplate,
     handleSelectDraft,
     openFileDialog,
+    getSnapshot,
+    loadSnapshot,
+    resetForm,
   } = useCreatePost();
+
+  const [postSnapshots, setPostSnapshots] = useState<CreatePostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
+  const [activePostIndex, setActivePostIndex] = useState(0);
 
   const headerRef = useRef<HTMLDivElement>(null);
 
@@ -118,208 +137,259 @@ export default function CreatePostPage() {
     setShowPreviewModal(true);
   };
 
+  const handleAddSeries = () => {
+    const currentSnapshot = getSnapshot();
+    const nextIndex = postSnapshots.length;
+
+    setPostSnapshots((prev) => {
+      const next = [...prev];
+      next[activePostIndex] = currentSnapshot;
+      next.push(EMPTY_POST_SNAPSHOT);
+      return next;
+    });
+
+    setActivePostIndex(nextIndex);
+    resetForm({ preserveMediaUrls: true });
+  };
+
+  const handlePublishClick = async () => {
+    if (postSnapshots.length <= 1) {
+      await onPublishNow();
+      return;
+    }
+
+    const currentSnapshot = getSnapshot();
+    const snapshotsForPublish = postSnapshots.map((p, idx) => (idx === activePostIndex ? currentSnapshot : p));
+
+    const result = await onPublishSeriesNow(snapshotsForPublish);
+    if (result?.success) {
+      setPostSnapshots([EMPTY_POST_SNAPSHOT]);
+      setActivePostIndex(0);
+    }
+  };
+
+  const handleSelectPost = (index: number) => {
+    if (index === activePostIndex) return;
+
+    const currentSnapshot = getSnapshot();
+    const targetSnapshot = postSnapshots[index] ?? EMPTY_POST_SNAPSHOT;
+
+    setPostSnapshots((prev) => {
+      const next = [...prev];
+      next[activePostIndex] = currentSnapshot;
+      return next;
+    });
+
+    setActivePostIndex(index);
+    loadSnapshot(targetSnapshot);
+  };
+
+  const editorBlock = (
+    <div className={styles.editor}>
+      <div className={styles.header} ref={headerRef}>
+        <button
+          className={styles.settingsButton}
+          type="button"
+          aria-label="Настройки"
+          onClick={() => setShowSettings(!showSettings)}
+        >
+          <SettingsIcon width={24} height={24} />
+        </button>
+      </div>
+
+      <div className={styles.content}>
+        <RichTextEditor
+          ref={editorRef}
+          value={text}
+          onChange={setText}
+          placeholder="Напишите текст публикации..."
+          onSaveAsTemplate={handleSaveAsTemplate}
+          headerRef={headerRef}
+        />
+
+        {text && hasLink(text) && (
+          <div className={styles.linkPreviewToggle}>
+            <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
+            <Toggle checked={showLinkPreview} onChange={setShowLinkPreview} />
+          </div>
+        )}
+        <div className={styles.actionsMenu}>
+          <div className={styles.actionsRow}>
+            <Button
+              text="Черновики"
+              variant="templateCard"
+              showArrow={false}
+              icon={<DraftsIcon width={24} height={24} />}
+              className={styles.actionButton}
+              onClick={() => setShowDraftsModal(true)}
+            />
+            <Button
+              text="Кнопки"
+              variant="templateCard"
+              showArrow={false}
+              icon={<InlineButtonIcon width={24} height={24} />}
+              className={styles.actionButton}
+              active={showInlineButtons}
+              disabled={!canShowInlineButtons}
+              onClick={toggleInlineButtons}
+            />
+          </div>
+          <div className={styles.actionsRow}>
+            <Button
+              text="Шаблоны"
+              variant="templateCard"
+              showArrow={false}
+              icon={<TemplatesIcon width={24} height={24} />}
+              className={styles.actionButton}
+              onClick={() => setShowTemplatesModal(true)}
+            />
+            <Button
+              text="Опрос"
+              variant="templateCard"
+              showArrow={false}
+              icon={<QuizIcon width={24} height={24} />}
+              className={styles.actionButton}
+              active={showQuizForm}
+              onClick={() => {
+                const next = !showQuizForm;
+                setShowQuizForm(next);
+              }}
+            />
+          </div>
+          <div className={styles.actionsRowCenter}>
+            <Button
+              text="Ответ на свой пост"
+              variant="templateCard"
+              showArrow={false}
+              icon={<ReplyIcon width={24} height={24} />}
+              className={styles.actionButtonCenter}
+            />
+          </div>
+        </div>
+
+        {showInlineButtons && (
+          <InlineButtons
+            rows={buttonRows}
+            onChange={setButtonRows}
+            className={styles.inlineButtonsSection}
+          />
+        )}
+
+        <QuizForm isOpen={showQuizForm} state={quizFormState} dispatch={quizFormDispatch} />
+
+        <div className={styles.mediaSection}>
+          <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+          />
+
+          <div className={styles.mediaMobile}>
+            <MediaPreview files={mediaFiles} onRemove={handleRemoveMedia} onToggleBlur={handleToggleBlur} />
+
+            <Button
+              text="Прикрепить файл"
+              variant="templateCard"
+              showArrow={false}
+              icon={<PaperclipIcon width={24} height={24} />}
+              fullWidth
+              disabled={!canAddMedia}
+              onClick={openFileDialog}
+            />
+          </div>
+          <div className={styles.mediaDropzone}>
+            {mediaFiles.length === 0 ? (
+              <>
+                <span className={styles.dropzoneText}>
+                  Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
+                </span>
+                <Button
+                  text="Прикрепить файл"
+                  variant="templateCard"
+                  showArrow={false}
+                  icon={<PaperclipIcon width={24} height={24} />}
+                  disabled={!canAddMedia}
+                  onClick={openFileDialog}
+                />
+              </>
+            ) : (
+              <div className={styles.mediaDropzoneContent}>
+                <MediaPreview files={mediaFiles} onRemove={handleRemoveMedia} onToggleBlur={handleToggleBlur} />
+                <Button
+                  text="Прикрепить файл"
+                  variant="templateCard"
+                  showArrow={false}
+                  icon={<PaperclipIcon width={24} height={24} />}
+                  disabled={!canAddMedia}
+                  onClick={openFileDialog}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className={styles.footerButtons}>
+        <Button
+          text="Сохранить в черновики"
+          showArrow={false}
+          className={styles.saveDraftBtn}
+          onClick={onSaveDraft}
+          loading={isSavingDraft}
+          disabled={isSavingDraft}
+        />
+        <div className={styles.publishRow}>
+          <Button
+            text="Опубликовать сейчас"
+            showArrow={false}
+            className={styles.publishNowBtn}
+            onClick={handlePublishClick}
+            loading={isPublishing}
+            disabled={isPublishing}
+          />
+          <Button
+            text="Запланировать"
+            showArrow={false}
+            active
+            loading={isScheduling}
+            disabled={isScheduling}
+            className={styles.scheduleBtn}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainContent}>
         <div className={styles.editorColumn}>
-          <div className={styles.editor}>
-            <div className={styles.header} ref={headerRef}>
-              <button
-                className={styles.settingsButton}
-                type="button"
-                aria-label="Настройки"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                <SettingsIcon width={24} height={24} />
-              </button>
+          {postSnapshots.length > 1 ? (
+            <div className={styles.seriesList}>
+              {postSnapshots.map((_, index) => (
+                <PostAccordion
+                  key={`post-${index + 1}`}
+                  title={`Пост ${index + 1}`}
+                  isOpen={index === activePostIndex}
+                  onToggle={() => handleSelectPost(index)}
+                >
+                  {index === activePostIndex ? editorBlock : null}
+                </PostAccordion>
+              ))}
             </div>
-
-            <div className={styles.content}>
-              <RichTextEditor
-                ref={editorRef}
-                value={text}
-                onChange={setText}
-                placeholder="Напишите текст публикации..."
-                onSaveAsTemplate={handleSaveAsTemplate}
-                headerRef={headerRef}
-              />
-
-              {text && hasLink(text) && (
-                <div className={styles.linkPreviewToggle}>
-                  <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
-                  <Toggle 
-                    checked={showLinkPreview}
-                    onChange={setShowLinkPreview}
-                  />
-                </div>
-              )}
-              <div className={styles.actionsMenu}>
-                <div className={styles.actionsRow}>
-                  <Button
-                    text="Черновики"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<DraftsIcon width={24} height={24} />}
-                    className={styles.actionButton}
-                    onClick={() => setShowDraftsModal(true)}
-                  />
-                  <Button
-                    text="Кнопки"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<InlineButtonIcon width={24} height={24} />}
-                    className={styles.actionButton}
-                    active={showInlineButtons}
-                    disabled={!canShowInlineButtons}
-                    onClick={toggleInlineButtons}
-                  />
-                </div>
-                <div className={styles.actionsRow}>
-                  <Button
-                    text="Шаблоны"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<TemplatesIcon width={24} height={24} />}
-                    className={styles.actionButton}
-                    onClick={() => setShowTemplatesModal(true)}
-                  />
-                  <Button
-                    text="Опрос"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<QuizIcon width={24} height={24} />}
-                    className={styles.actionButton}
-                    active={showQuizForm}
-                    onClick={() => {
-                      const next = !showQuizForm;
-                      setShowQuizForm(next);
-                    }}
-                  />
-                </div>
-                <div className={styles.actionsRowCenter}>
-                  <Button
-                    text="Ответ на свой пост"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<ReplyIcon width={24} height={24} />}
-                    className={styles.actionButtonCenter}
-                  />
-                </div>
-              </div>
-
-              {showInlineButtons && (
-                <InlineButtons
-                  rows={buttonRows}
-                  onChange={setButtonRows}
-                  className={styles.inlineButtonsSection}
-                />
-              )}
-
-              {/* Quiz Form */}
-              <QuizForm
-                isOpen={showQuizForm}
-                state={quizFormState}
-                dispatch={quizFormDispatch}
-              />
-
-              <div className={styles.mediaSection}>
-                <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-
-                <div className={styles.mediaMobile}>
-                  <MediaPreview
-                    files={mediaFiles}
-                    onRemove={handleRemoveMedia}
-                    onToggleBlur={handleToggleBlur}
-                  />
-
-                  <Button
-                    text="Прикрепить файл"
-                    variant="templateCard"
-                    showArrow={false}
-                    icon={<PaperclipIcon width={24} height={24} />}
-                    fullWidth
-                    disabled={!canAddMedia}
-                    onClick={openFileDialog}
-                  />
-                </div>
-                <div className={styles.mediaDropzone}>
-                  {mediaFiles.length === 0 ? (
-                    <>
-                      <span className={styles.dropzoneText}>
-                        Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-                      </span>
-                      <Button
-                        text="Прикрепить файл"
-                        variant="templateCard"
-                        showArrow={false}
-                        icon={<PaperclipIcon width={24} height={24} />}
-                        disabled={!canAddMedia}
-                        onClick={openFileDialog}
-                      />
-                    </>
-                  ) : (
-                    <div className={styles.mediaDropzoneContent}>
-                      <MediaPreview
-                        files={mediaFiles}
-                        onRemove={handleRemoveMedia}
-                        onToggleBlur={handleToggleBlur}
-                      />
-                      <Button
-                        text="Прикрепить файл"
-                        variant="templateCard"
-                        showArrow={false}
-                        icon={<PaperclipIcon width={24} height={24} />}
-                        disabled={!canAddMedia}
-                        onClick={openFileDialog}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div className={styles.footerButtons}>
-              <Button
-                text="Сохранить в черновики"
-                showArrow={false}
-                className={styles.saveDraftBtn}
-                onClick={onSaveDraft}
-                loading={isSavingDraft}
-                disabled={isSavingDraft}
-              />
-              <div className={styles.publishRow}>
-                <Button
-                  text="Опубликовать сейчас"
-                  showArrow={false}
-                  className={styles.publishNowBtn}
-                  onClick={onPublishNow}
-                  loading={isPublishing}
-                  disabled={isPublishing}
-                />
-                <Button
-                  text="Запланировать"
-                  showArrow={false}
-                  active
-                  loading={isScheduling}
-                  disabled={isScheduling}
-                  className={styles.scheduleBtn}
-                />
-              </div>
-            </div>
-          </div>
+          ) : (
+            editorBlock
+          )}
 
           <Button
             text="Добавить серию постов"
             showArrow={false}
             className={styles.addSeriesBtn}
+            onClick={handleAddSeries}
           />
         </div>
 

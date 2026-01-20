@@ -6,6 +6,20 @@ import type {
   PublishPostResponse,
 } from './types';
 
+export interface CreateSeriesRequest {
+  name: string;
+  description?: string | null;
+  reply_to_previous?: boolean;
+}
+
+export interface CreateSeriesResponse {
+  id: number;
+  name: string;
+  description?: string | null;
+  reply_to_previous: boolean;
+  created_at: string;
+}
+
 // Базовый URL API (можно вынести в .env)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
@@ -93,6 +107,16 @@ export async function publishPost(
 ): Promise<PublishPostResponse> {
   return fetchApi<PublishPostResponse>(`/publications/${postId}/publish`, {
     method: 'POST',
+  });
+}
+
+/**
+ * Создать серию публикаций
+ */
+export async function createSeries(data: CreateSeriesRequest): Promise<CreateSeriesResponse> {
+  return fetchApi<CreateSeriesResponse>('/publications/series', {
+    method: 'POST',
+    body: JSON.stringify(data),
   });
 }
 

@@ -1,5 +1,6 @@
 from typing import Optional, List, Dict, Any
 from sqlalchemy import select
+from sqlalchemy.sql import nullslast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
@@ -76,11 +77,12 @@ class SeriesService:
         series_id: int,
         channel_id: int
     ) -> Optional[Publication]:
-        """Получить корневую (первую) опубликованную публикацию серии для канала.
+        """Получить последнюю опубликованную публикацию серии в канале.
 
-        Важно: все последующие посты серии будут отвечать именно на неё,
-        чтобы получилась ветка с одним "родителем".
+        Используется для reply-chain: каждый следующий пост серии отвечает на
+        последний опубликованный пост этой серии в конкретном канале.
         """
+
         query = (
             select(Publication)
             .where(
@@ -88,14 +90,15 @@ class SeriesService:
                 Publication.status == DBPublicationStatus.PUBLISHED,
             )
             .options(
-                selectinload(Publication.telegram_messages).selectinload(
-                    TelegramMessage.channel
-                )
+                selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel)
             )
-            .order_by(Publication.series_order.asc())
-        )
-        query = query.join(Publication.telegram_messages).where(
-            TelegramMessage.channel_id == channel_id
+            .join(Publication.telegram_messages)
+            .where(TelegramMessage.channel_id == channel_id)
+            .order_by(
+                nullslast(Publication.series_order.desc()),
+                nullslast(Publication.published_time.desc()),
+                Publication.id.desc(),
+            )
         )
 
         result = await self.db.execute(query)
@@ -106,7 +109,8 @@ class SeriesService:
         series_id: int,
         channel_id: int
     ) -> Optional[int]:
-        """Получить message_id корневого поста серии в канале для reply"""
+        """Получить telegram_message_id для reply (последний пост серии в канале)."""
+
         root_pub = await self.get_root_published_in_series(series_id, channel_id)
 
         if not root_pub or not root_pub.telegram_messages:

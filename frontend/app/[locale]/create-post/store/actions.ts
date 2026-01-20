@@ -1,6 +1,19 @@
 import type { CreatePostRequest, RepeatInterval, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
 import type { MediaFile } from '@/components/rich-text-editor/media-preview/media-preview';
-import { createAndPublishPost, saveDraft, uploadMediaFiles } from './api';
+import { createAndPublishPost, createSeries, saveDraft, uploadMediaFiles } from './api';
+import type { ButtonRow } from '@/components/inline-buttons';
+import type { QuizFormState } from '@/components/quiz-form/store/types';
+import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
+
+export interface SeriesPostInput {
+  text: string;
+  mediaFiles?: MediaFile[];
+  buttonRows?: ButtonRow[];
+  showInlineButtons?: boolean;
+  showQuizForm?: boolean;
+  quizForm?: QuizFormState;
+  showLinkPreview?: boolean;
+}
 
 interface PostSettingsFromUI {
   channelIds: number[];
@@ -47,7 +60,8 @@ export async function handlePublishNow(
   inlineKeyboard?: InlineKeyboard,
   pollData?: PollData | null,
   pollFormOpen?: boolean,
-  showLinkPreview?: boolean
+  showLinkPreview?: boolean,
+  series?: { seriesId: number; seriesOrder: number }
 ) {
   try {
     const plainText = content.text
@@ -164,6 +178,8 @@ export async function handlePublishNow(
       pin_message: settings.pinPost,
       disable_notification: !settings.notifySubscribers,
       disable_web_page_preview: !showLinkPreview,
+      series_id: series?.seriesId,
+      series_order: series?.seriesOrder,
       status: 'draft',
       inline_keyboard: inlineKeyboard,
       poll_data: hasPoll ? (pollData as PollData) : undefined,
@@ -198,6 +214,76 @@ export async function handlePublishNow(
       message: error instanceof Error ? error.message : 'Неизвестная ошибка',
     };
   }
+}
+
+function toInlineKeyboard(buttonRows?: ButtonRow[], showInlineButtons?: boolean): InlineKeyboard | undefined {
+  if (!showInlineButtons) return undefined;
+  if (!buttonRows || buttonRows.length === 0) return undefined;
+
+  const buttons = buttonRows
+    .map(row =>
+      row.buttons
+        .filter(btn => btn.text && btn.text.trim().length > 0)
+        .map(btn => {
+          const button: any = { text: btn.text };
+          if (btn.type === 'url' && btn.url) button.url = btn.url;
+          if (btn.type === 'callback' && btn.callback_data) button.callback_data = btn.callback_data;
+          return button;
+        })
+    )
+    .filter(row => row.length > 0);
+
+  return buttons.length > 0 ? { buttons } : undefined;
+}
+
+export async function handlePublishSeriesNow(
+  posts: SeriesPostInput[],
+  settings: PostSettingsFromUI,
+  options?: { name?: string; description?: string | null; replyToPrevious?: boolean }
+) {
+  const name = options?.name || `Серия ${new Date().toLocaleString()}`;
+  const description = options?.description ?? null;
+  const replyToPrevious = options?.replyToPrevious ?? true;
+
+  const series = await createSeries({ name, description, reply_to_previous: replyToPrevious });
+
+  const results: Array<{ index: number; ok: boolean; message?: string; postId?: number }> = [];
+
+  for (let i = 0; i < posts.length; i += 1) {
+    const p = posts[i];
+    const media = p.mediaFiles || [];
+    const inlineKeyboard = toInlineKeyboard(p.buttonRows, p.showInlineButtons);
+    const pollData = p.showQuizForm && p.quizForm ? selectQuizPollData(p.quizForm) : null;
+
+    const res = await handlePublishNow(
+      { text: p.text },
+      settings,
+      media,
+      inlineKeyboard,
+      pollData,
+      p.showQuizForm,
+      p.showLinkPreview,
+      { seriesId: series.id, seriesOrder: i + 1 }
+    );
+
+    results.push({
+      index: i,
+      ok: !!res.success,
+      message: res.message,
+      postId: (res as any).postId || (res as any).id,
+    });
+
+    if (!res.success) break;
+  }
+
+  const ok = results.length === posts.length && results.every(r => r.ok);
+
+  return {
+    success: ok,
+    seriesId: series.id,
+    results,
+    message: ok ? 'OK — серия поставлена в очередь' : (results.find(r => !r.ok)?.message || 'Не удалось опубликовать серию'),
+  };
 }
 
 export async function handleSaveDraft(

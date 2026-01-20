@@ -5,7 +5,7 @@ import type { MediaFile } from '@/components/rich-text-editor/media-preview/medi
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { RichTextEditorRef } from '@/components/rich-text-editor';
 import { usePostSettings } from '@/components/post-settings/store';
-import { handlePublishNow, handleSaveDraft } from './actions';
+import { handlePublishNow, handlePublishSeriesNow, handleSaveDraft } from './actions';
 import { templatesApi } from '@/stores/templates';
 import { draftsApi, type Draft } from '@/stores/drafts';
 import type { InlineKeyboard, InlineButton, PollData } from './types';
@@ -181,6 +181,11 @@ interface CreatePostState {
   showLinkPreview: boolean;
 }
 
+export type CreatePostSnapshot = Pick<
+  CreatePostState,
+  'text' | 'showInlineButtons' | 'buttonRows' | 'mediaFiles' | 'showQuizForm' | 'quizForm' | 'showLinkPreview'
+>;
+
 const initialState: CreatePostState = {
   text: '',
   showSettings: false,
@@ -203,6 +208,7 @@ type CreatePostAction =
   | { type: 'TOGGLE_SETTINGS' }
   | { type: 'SET_SHOW_SETTINGS'; payload: boolean }
   | { type: 'TOGGLE_INLINE_BUTTONS' }
+  | { type: 'SET_SHOW_INLINE_BUTTONS'; payload: boolean }
   | { type: 'SET_BUTTON_ROWS'; payload: ButtonRow[] }
   | { type: 'ADD_MEDIA_FILES'; payload: MediaFile[] }
   | { type: 'SET_MEDIA_PREVIEW_URL'; payload: { id: string; preview_url: string } }
@@ -218,8 +224,10 @@ type CreatePostAction =
   | { type: 'SET_IS_SAVING_TEMPLATE'; payload: boolean }
   | { type: 'SET_SHOW_QUIZ_FORM'; payload: boolean }
   | { type: 'SET_SHOW_LINK_PREVIEW'; payload: boolean }
+  | { type: 'SET_QUIZ_FORM_STATE'; payload: QuizFormState }
   | { type: 'QUIZ_FORM'; payload: QuizFormAction }
-  | { type: 'RESET_FORM' };
+  | { type: 'RESET_FORM' }
+  | { type: 'RESET_FORM_PRESERVE_MEDIA_URLS' };
 
 function createPostReducer(state: CreatePostState, action: CreatePostAction): CreatePostState {
   switch (action.type) {
@@ -250,6 +258,25 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
         };
       }
       return { ...state, showInlineButtons: shouldShow };
+    }
+
+    case 'SET_SHOW_INLINE_BUTTONS': {
+      if (action.payload && state.buttonRows.length === 0) {
+        return {
+          ...state,
+          showInlineButtons: true,
+          buttonRows: [{
+            id: `row-${Date.now()}`,
+            buttons: [{
+              id: `btn-${Date.now()}`,
+              text: '',
+              type: 'url',
+              url: '',
+            }],
+          }],
+        };
+      }
+      return { ...state, showInlineButtons: action.payload };
     }
 
     case 'SET_BUTTON_ROWS':
@@ -343,6 +370,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
     case 'SET_SHOW_LINK_PREVIEW':
       return { ...state, showLinkPreview: action.payload };
 
+    case 'SET_QUIZ_FORM_STATE':
+      return { ...state, quizForm: action.payload };
+
     case 'QUIZ_FORM':
       return { ...state, quizForm: quizFormReducer(state.quizForm, action.payload) };
 
@@ -355,6 +385,9 @@ function createPostReducer(state: CreatePostState, action: CreatePostAction): Cr
           URL.revokeObjectURL(f.url);
         }
       });
+      return initialState;
+
+    case 'RESET_FORM_PRESERVE_MEDIA_URLS':
       return initialState;
 
     default:
@@ -391,6 +424,41 @@ export function useCreatePost() {
 
   const setButtonRows = (rows: ButtonRow[]) => {
     dispatch({ type: 'SET_BUTTON_ROWS', payload: rows });
+  };
+
+  const getSnapshot = (): CreatePostSnapshot => ({
+    text: state.text,
+    showInlineButtons: state.showInlineButtons,
+    buttonRows: state.buttonRows,
+    mediaFiles: state.mediaFiles,
+    showQuizForm: state.showQuizForm,
+    quizForm: state.quizForm,
+    showLinkPreview: state.showLinkPreview,
+  });
+
+  const resetForm = (options?: { preserveMediaUrls?: boolean }) => {
+    const preserveMediaUrls = options?.preserveMediaUrls ?? false;
+    editorRef.current?.reset();
+    dispatch({ type: preserveMediaUrls ? 'RESET_FORM_PRESERVE_MEDIA_URLS' : 'RESET_FORM' });
+  };
+
+  const loadSnapshot = (snapshot: CreatePostSnapshot) => {
+    resetForm({ preserveMediaUrls: true });
+
+    dispatch({ type: 'SET_TEXT', payload: snapshot.text });
+    dispatch({ type: 'SET_SHOW_LINK_PREVIEW', payload: snapshot.showLinkPreview });
+
+    dispatch({ type: 'SET_BUTTON_ROWS', payload: snapshot.buttonRows });
+    dispatch({ type: 'SET_SHOW_INLINE_BUTTONS', payload: snapshot.showInlineButtons });
+
+    if (snapshot.mediaFiles.length > 0) {
+      dispatch({ type: 'ADD_MEDIA_FILES', payload: snapshot.mediaFiles });
+    }
+
+    dispatch({ type: 'SET_SHOW_QUIZ_FORM', payload: snapshot.showQuizForm });
+    if (snapshot.showQuizForm) {
+      dispatch({ type: 'SET_QUIZ_FORM_STATE', payload: snapshot.quizForm });
+    }
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -525,6 +593,44 @@ export function useCreatePost() {
       const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при публикации';
       showError(errorMessage);
       console.error('Ошибка публикации:', error);
+    } finally {
+      dispatch({ type: 'SET_IS_PUBLISHING', payload: false });
+    }
+  };
+
+  const onPublishSeriesNow = async (posts: CreatePostSnapshot[]) => {
+    dispatch({ type: 'SET_IS_PUBLISHING', payload: true });
+
+    try {
+      const result = await handlePublishSeriesNow(
+        posts.map(p => ({
+          text: p.text,
+          mediaFiles: p.mediaFiles,
+          buttonRows: p.buttonRows,
+          showInlineButtons: p.showInlineButtons,
+          showQuizForm: p.showQuizForm,
+          quizForm: p.quizForm,
+          showLinkPreview: p.showLinkPreview,
+        })),
+        postSettings.getSettingsData(),
+        { replyToPrevious: true }
+      );
+
+      if (result.success) {
+        showSuccess(result.message || 'Серия поставлена в очередь');
+        editorRef.current?.reset();
+        postSettings.resetSettings();
+        dispatch({ type: 'RESET_FORM' });
+        postSettings.loadRecentTags();
+      } else {
+        showError(result.message || 'Не удалось опубликовать серию');
+      }
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка при публикации серии';
+      showError(errorMessage);
+      console.error('Ошибка публикации серии:', error);
+      return { success: false, message: errorMessage };
     } finally {
       dispatch({ type: 'SET_IS_PUBLISHING', payload: false });
     }
@@ -758,6 +864,9 @@ export function useCreatePost() {
     setShowSettings,
     toggleInlineButtons,
     setButtonRows,
+    getSnapshot,
+    loadSnapshot,
+    resetForm,
     handleFileUpload,
     handleRemoveMedia,
     handleToggleBlur,
@@ -766,6 +875,7 @@ export function useCreatePost() {
     setShowQuizForm,
     setShowLinkPreview,
     onPublishNow,
+    onPublishSeriesNow,
     onSaveDraft,
     handleSaveAsTemplate,
     handleSelectTemplate,
