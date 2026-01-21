@@ -34,6 +34,7 @@ export interface CreatePostRequest {
   disable_notification?: boolean;
   disable_web_page_preview?: boolean;
   status?: PublicationStatus;
+  scheduled_time?: string;
   inline_keyboard?: InlineKeyboard;
   poll_data?: PollData;
   tag_names?: string[];

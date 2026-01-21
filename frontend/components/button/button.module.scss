@@ -49,20 +49,38 @@
   &.active {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
     border-color: transparent;
+    position: relative;
+    z-index: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 10px;
+      z-index: -1;
+    }
 
     .buttonText {
       background: none;
       -webkit-background-clip: unset;
       background-clip: unset;
       color: white;
+      position: relative;
+      z-index: 1;
     }
 
     svg path {
       stroke: white;
     }
 
-    &:hover {
-      background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    &:hover::before {
+      opacity: 1;
     }
   }
 }
@@ -93,6 +111,42 @@
 
     .buttonText {
       color: #383F45;
+    }
+  }
+
+  &.active {
+    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    position: relative;
+    z-index: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      border-radius: 10px;
+      z-index: -1;
+    }
+
+    .buttonText {
+      color: white;
+      position: relative;
+      z-index: 1;
+    }
+
+    &:hover::before {
+      opacity: 1;
+    }
+
+    &:hover {
+      .buttonText {
+        color: white;
+      }
     }
   }
 }

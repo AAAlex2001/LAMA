@@ -38,7 +38,7 @@ class CRUDPublicationService:
         publication = Publication(
             owner_id=owner_id,
             content_type=DBContentType[data.content_type.value.upper()],
-            status=DBPublicationStatus.DRAFT,
+            status=DBPublicationStatus[data.status.value.upper()] if data.status else DBPublicationStatus.DRAFT,
             text_content=data.text_content,
             formatted_content=data.formatted_content,
             media_urls=data.media_urls,

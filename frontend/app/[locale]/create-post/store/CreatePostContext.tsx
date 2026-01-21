@@ -11,10 +11,11 @@ import { RichTextEditorProvider, useRichTextEditor } from '@/components/rich-tex
 import { DraftsProvider, useDrafts } from '@/components/drafts-modal';
 import { TemplatesProvider, useTemplates } from '@/components/text-templates-modal';
 import { ReplyToPostProvider, useReplyToPost } from '@/components/reply-to-post-modal';
+import { DatePickerProvider } from '@/components/date-picker';
 import { PostSettingsProvider, usePostSettingsContext } from '@/components/post-settings/store';
 
 // Импортируем API и хелперы
-import { handlePublishNow, handlePublishSeriesNow, handleSaveDraft } from './actions';
+import { handlePublishNow, handlePublishSeriesNow, handleSaveDraft, handleSchedulePost } from './actions';
 import { templatesApi } from '@/stores/templates';
 import type { Draft } from '@/stores/drafts';
 import type { Post } from '@/stores/posts';
@@ -59,6 +60,7 @@ interface CreatePostContextValue {
   publishSeriesNow: (snapshots: PostSnapshot[]) => Promise<{ success: boolean; message?: string }>;
   saveDraft: () => Promise<void>;
   saveAsTemplate: (selectedHtml?: string) => Promise<void>;
+  schedulePost: (scheduledDate: Date) => Promise<void>;
   
   // Snapshot helpers
   getSnapshot: () => PostSnapshot;
@@ -272,6 +274,53 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       showError(errorMessage);
     } finally {
       setIsSavingDraft(false);
+    }
+  };
+  
+  // Schedule post
+  const schedulePost = async (scheduledDate: Date) => {
+    const pollData = quizForm.getPollData();
+    const replyToPostId = replyToPosts.replyToPost?.id;
+    
+    setIsScheduling(true);
+    
+    try {
+      const result = await handleSchedulePost(
+        { text: richTextEditor.text },
+        postSettings.getSettingsData(),
+        scheduledDate,
+        mediaPreview.files,
+        getInlineKeyboard(),
+        pollData,
+        quizForm.isOpen,
+        showLinkPreview,
+        replyToPostId
+      );
+      
+      if (result.success) {
+        const formattedDate = scheduledDate.toLocaleDateString('ru-RU', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric' 
+        });
+        const formattedTime = scheduledDate.toLocaleTimeString('ru-RU', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+        
+        showSuccess(`Пост успешно запланирован и отправится ${formattedDate} в ${formattedTime}`);
+        resetForm();
+        replyToPosts.clearReplyToPost();
+        postSettings.resetSettings();
+        postSettings.loadRecentTags();
+      } else {
+        showError(result.message || 'Не удалось запланировать пост');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+      showError(errorMessage);
+    } finally {
+      setIsScheduling(false);
     }
   };
   
@@ -538,6 +587,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     publishSeriesNow,
     saveDraft,
     saveAsTemplate,
+    schedulePost,
     getSnapshot,
     loadSnapshot,
     resetForm,
@@ -552,6 +602,12 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   return <CreatePostContext.Provider value={value}>{children}</CreatePostContext.Provider>;
 }
 
+// Обертка для DatePicker с передачей schedulePost
+function DatePickerWrapper({ children }: { children: ReactNode }) {
+  const { schedulePost } = useCreatePostContext();
+  return <DatePickerProvider onSchedule={schedulePost}>{children}</DatePickerProvider>;
+}
+
 // Главный провайдер который оборачивает все остальные
 export function CreatePostProvider({ children }: { children: ReactNode }) {
   return (
@@ -563,7 +619,9 @@ export function CreatePostProvider({ children }: { children: ReactNode }) {
               <DraftsProvider>
                 <TemplatesProvider>
                   <ReplyToPostProvider>
-                    <CreatePostInner>{children}</CreatePostInner>
+                    <CreatePostInner>
+                      <DatePickerWrapper>{children}</DatePickerWrapper>
+                    </CreatePostInner>
                   </ReplyToPostProvider>
                 </TemplatesProvider>
               </DraftsProvider>

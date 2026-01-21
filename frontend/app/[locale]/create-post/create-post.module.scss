@@ -391,6 +391,29 @@
   }
 }
 
+.scheduleBtnWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 0;
+  min-width: 0;
+
+  @media (min-width: 1440px) {
+    flex: 0 0 auto;
+  }
+}
+
+.selectedDate {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  line-height: 16px;
+  color: #383F45;
+  text-align: center;
+  padding: 4px 8px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 6px;
+}
+
  .headerTag {
   display: flex;
   flex-direction: column;
