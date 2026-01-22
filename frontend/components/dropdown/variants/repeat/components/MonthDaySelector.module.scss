@@ -1,0 +1,96 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px 0 0 0;
+  width: 100%;
+}
+
+.label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.calendar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.calendarRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  width: 100%;
+}
+
+.calendarDay {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 8px;
+
+  flex: 1;
+  height: 32px;
+  min-width: 32px;
+
+  background: transparent;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #858585;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.calendarDaySelected {
+  background: #3B82F6;
+  font-weight: 600;
+  color: #FFFFFF;
+
+  &:hover {
+    background: #2563EB;
+  }
+}
+
+.calendarDayEmpty {
+  flex: 1;
+  height: 32px;
+}
+
+/*
+  НЕ дублируем стили существующего DayPicker'а.
+  Используйте этот wrapper вокруг "уже нашего" day picker компонента.
+*/
+.dayPickerWrapper {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* (удалено) Day Picker styles (для "В следующие дни") */
+/* (удалено) .dayPicker, .dayPickerRow, .dayPickerRowSelected, .dayPickerItem,
+             .dayPickerNumber, .dayPickerNumberSelected, .dayPickerWeekday, .dayPickerWeekdaySelected */
+
+/* (удалено) Radio button styles */
+/* (удалено) .radioButton, .radioButtonSelected */

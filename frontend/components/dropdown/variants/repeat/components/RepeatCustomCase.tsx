@@ -4,6 +4,8 @@ import { useState } from 'react';
 import styles from '../repeat.module.scss';
 import IntervalSelector, { type IntervalType } from './IntervalSelector';
 import IntervalValuePicker from './IntervalValuePicker';
+import WeekdaySelector from './WeekdaySelector';
+import MonthDaySelector from './MonthDaySelector';
 
 interface RepeatCustomCaseProps {
   onBack: () => void;
@@ -21,6 +23,8 @@ function pluralize(n: number, one: string, few: string, many: string): string {
 export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
   const [intervalType, setIntervalType] = useState<IntervalType>('days');
   const [intervalValue, setIntervalValue] = useState(1);
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
+  const [selectedMonthDays, setSelectedMonthDays] = useState<number[]>([]);
 
   const getIntervalLabel = (type: IntervalType, value: number): string => {
     switch (type) {
@@ -68,6 +72,20 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
         onChange={setIntervalValue}
         label={getIntervalLabel(intervalType, intervalValue)}
       />
+
+      {intervalType === 'weeks' && (
+        <WeekdaySelector
+          selectedDays={selectedWeekdays}
+          onChange={setSelectedWeekdays}
+        />
+      )}
+
+      {intervalType === 'months' && (
+        <MonthDaySelector
+          selectedDays={selectedMonthDays}
+          onChange={setSelectedMonthDays}
+        />
+      )}
     </div>
   );
 }
