@@ -73,7 +73,7 @@ class CRUDPublicationService:
             publication.channels = channels
 
         if data.tag_names:
-            tags = await self.get_or_create_tags(data.tag_names, data.tag_color)
+            tags = await self.get_or_create_tags(data.tag_names, data.tag_color, owner_id=owner_id)
             publication.tags = tags
 
         logger.info(f"Before commit: publication.media_thumbnail_urls={publication.media_thumbnail_urls}")
@@ -180,7 +180,7 @@ class CRUDPublicationService:
             publication.channels = channels
 
         if 'tag_names' in update_data:
-            tags = await self.get_or_create_tags(update_data.pop('tag_names'), update_data.get('tag_color'))
+            tags = await self.get_or_create_tags(update_data.pop('tag_names'), update_data.get('tag_color'), owner_id=owner_id)
             publication.tags = tags
 
         if 'inline_keyboard' in update_data:
@@ -252,11 +252,13 @@ class CRUDPublicationService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None) -> List[Tag]:
+    async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None, owner_id: Optional[int] = None) -> List[Tag]:
         """Получить или создать теги"""
         from datetime import datetime, timezone
 
         query = select(Tag).where(Tag.name.in_(tag_names))
+        if owner_id is not None:
+            query = query.where(Tag.owner_id == owner_id)
         result = await self.db.execute(query)
         existing_tags = {tag.name: tag for tag in result.scalars().all()}
 
@@ -272,7 +274,7 @@ class CRUDPublicationService:
                 tag.last_used_at = now
                 tags.append(tag)
             else:
-                new_tag = Tag(name=name, color=tag_color, last_used_at=now)
+                new_tag = Tag(name=name, color=tag_color, last_used_at=now, owner_id=owner_id)
                 new_tags.append(new_tag)
                 tags.append(new_tag)
 

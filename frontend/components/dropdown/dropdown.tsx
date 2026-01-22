@@ -21,7 +21,6 @@ import type {
   ButtonTypeOption,
 } from './types';
 
-// Re-export types for backward compatibility
 export type { RepeatOption, AutoDeleteOption, TagColor, ButtonTypeOption };
 export { TAG_COLORS } from './types';
 
@@ -38,7 +37,6 @@ interface DropdownProps {
   addNewLabel?: string;
   className?: string;
   variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete' | 'button-type';
-  // Tags props
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
   tagInputValue?: string;
@@ -52,24 +50,20 @@ interface DropdownProps {
   tagsSearching?: boolean;
   selectedTagColor?: TagColor;
   onTagColorChange?: (color: TagColor) => void;
-  // Repeat props
   repeatValue?: RepeatOption;
   onRepeatChange?: (value: RepeatOption) => void;
   repeatCustomDays?: number;
   repeatCustomHours?: number;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
-  // Auto-delete props
   autoDeleteValue?: AutoDeleteOption;
   onAutoDeleteChange?: (value: AutoDeleteOption) => void;
   autoDeleteCustomDays?: number;
   autoDeleteCustomHours?: number;
   onAutoDeleteCustomDaysChange?: (value: number) => void;
   onAutoDeleteCustomHoursChange?: (value: number) => void;
-  // Common props
   onOpen?: () => void;
   loading?: boolean;
-  // Button type props
   buttonTypeValue?: ButtonTypeOption;
   onButtonTypeChange?: (value: ButtonTypeOption) => void;
 }
@@ -130,7 +124,6 @@ export default function Dropdown({
         onLoadRecentTags?.();
       }
     } else {
-      // Reset view mode when closing
       setRepeatViewMode('list');
     }
   };

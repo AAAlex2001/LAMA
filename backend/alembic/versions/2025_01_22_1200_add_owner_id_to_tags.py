@@ -1,7 +1,7 @@
 """add owner_id to tags
 
-Revision ID: 2025_01_22_1200
-Revises: 
+Revision ID: 022_add_owner_id_to_tags
+Revises: 021_add_reply_to_post_id
 Create Date: 2025-01-22 12:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '2025_01_22_1200_add_owner_id_to_tags'
+revision: str = '022_add_owner_id_to_tags'
 down_revision: Union[str, None] = '021_add_reply_to_post_id'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
