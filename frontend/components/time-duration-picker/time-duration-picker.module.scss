@@ -4,10 +4,10 @@
   justify-content: center;
   align-items: center;
   padding: 0;
-  gap: 4px;
   width: 100%;
-  background: #FFFFFF;
-  border-radius: 11px;
+  max-width: 288px;
+  background: transparent;
+  gap: 4px;
 }
 
 .labelsRow {
@@ -15,32 +15,55 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 0 60px;
-  gap: 45px;
   width: 100%;
-  box-sizing: border-box;
+  gap: 8px;
 }
 
 .label {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 400;
-  font-size: 16px;
-  line-height: 19px;
+  font-size: 12px;
+  line-height: 16px;
   text-align: center;
-  color: #D1D1D6;
+  color: #858585;
   flex: 1;
 }
 
-.valuesRow {
+.labelSpacer {
+  width: 16px;
+}
+
+.columnsWrapper {
   display: flex;
   flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 96px;
+  position: relative;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 0 60px;
-  gap: 45px;
-  width: 100%;
-  box-sizing: border-box;
+  flex: 1;
+  height: 100%;
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+  gap: 8px;
+}
+
+.separatorColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  gap: 8px;
 }
 
 .inactiveValue {
@@ -51,30 +74,24 @@
   line-height: 24px;
   text-align: center;
   color: #D1D1D6;
-  flex: 1;
+  min-width: 32px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.activeRow {
+.separator {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: #D1D1D6;
+  height: 24px;
   display: flex;
-  flex-direction: row;
-  justify-content: center;
   align-items: center;
-  padding: 0 60px;
-  gap: 45px;
-  width: 100%;
-  background: #EBF5FF;
-  border-radius: 8px;
-  box-sizing: border-box;
-}
-
-.activeValueWrapper {
-  flex: 1;
-  display: flex;
   justify-content: center;
-  align-items: center;
-  cursor: ns-resize;
-  user-select: none;
-  touch-action: none;
 }
 
 .activeValue {
@@ -85,4 +102,49 @@
   line-height: 24px;
   text-align: center;
   color: #454545;
+  min-width: 32px;
+  height: 32px;
+  background: #EBF5FF;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+
+  span {
+    cursor: pointer;
+  }
+}
+
+.activeSeparator {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  color: #454545;
+  height: 32px;
+  display: flex;
+  align-items: center;
+}
+
+.input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
+  color: #454545;
+  outline: none;
+  padding: 0;
+
+  &:focus {
+    outline: 2px solid #3B82F6;
+    border-radius: 8px;
+  }
 }

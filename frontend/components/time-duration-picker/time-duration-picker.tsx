@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import styles from './time-duration-picker.module.scss';
 
 interface TimeDurationPickerProps {
@@ -25,6 +25,12 @@ export default function TimeDurationPicker({
   const startY = useRef(0);
   const startValue = useRef(0);
 
+  // Input editing state
+  const [isEditingDays, setIsEditingDays] = useState(false);
+  const [isEditingHours, setIsEditingHours] = useState(false);
+  const [inputDays, setInputDays] = useState('');
+  const [inputHours, setInputHours] = useState('');
+
   const formatValue = (val: number): string => {
     return val.toString().padStart(2, '0');
   };
@@ -39,6 +45,60 @@ export default function TimeDurationPicker({
     if (val < 0) return 23;
     if (val > 23) return 0;
     return val;
+  };
+
+  // Days input handlers
+  const handleDaysClick = () => {
+    setInputDays(formatValue(days));
+    setIsEditingDays(true);
+  };
+
+  const handleDaysInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 3);
+    setInputDays(value);
+  };
+
+  const handleDaysInputBlur = () => {
+    const parsed = parseInt(inputDays, 10);
+    if (!isNaN(parsed)) {
+      onDaysChange(Math.min(Math.max(0, parsed), maxDays));
+    }
+    setIsEditingDays(false);
+  };
+
+  const handleDaysInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleDaysInputBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditingDays(false);
+    }
+  };
+
+  // Hours input handlers
+  const handleHoursClick = () => {
+    setInputHours(formatValue(hours));
+    setIsEditingHours(true);
+  };
+
+  const handleHoursInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 2);
+    setInputHours(value);
+  };
+
+  const handleHoursInputBlur = () => {
+    const parsed = parseInt(inputHours, 10);
+    if (!isNaN(parsed)) {
+      onHoursChange(Math.min(Math.max(0, parsed), 23));
+    }
+    setIsEditingHours(false);
+  };
+
+  const handleHoursInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleHoursInputBlur();
+    } else if (e.key === 'Escape') {
+      setIsEditingHours(false);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent, type: 'days' | 'hours') => {
@@ -140,43 +200,79 @@ export default function TimeDurationPicker({
       {/* Labels row */}
       <div className={styles.labelsRow}>
         <span className={styles.label}>дней</span>
+        <span className={styles.labelSpacer} />
         <span className={styles.label}>часов</span>
       </div>
 
-      {/* Previous values row */}
-      <div className={styles.valuesRow}>
-        <span className={styles.inactiveValue}>{formatValue(prevDays)}</span>
-        <span className={styles.inactiveValue}>{formatValue(prevHours)}</span>
-      </div>
-
-      {/* Active values row with blue background */}
-      <div className={styles.activeRow}>
+      <div className={styles.columnsWrapper}>
+        {/* Days column */}
         <div
           ref={daysRef}
-          className={styles.activeValueWrapper}
+          className={styles.column}
           onMouseDown={(e) => handleMouseDown(e, 'days')}
           onTouchStart={(e) => handleTouchStart(e, 'days')}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <span className={styles.activeValue}>{formatValue(days)}</span>
+          <span className={styles.inactiveValue}>{formatValue(prevDays)}</span>
+          
+          <div className={styles.activeValue}>
+            {isEditingDays ? (
+              <input
+                type="text"
+                value={inputDays}
+                onChange={handleDaysInputChange}
+                onBlur={handleDaysInputBlur}
+                onKeyDown={handleDaysInputKeyDown}
+                className={styles.input}
+                autoFocus
+                maxLength={3}
+              />
+            ) : (
+              <span onClick={handleDaysClick}>{formatValue(days)}</span>
+            )}
+          </div>
+          
+          <span className={styles.inactiveValue}>{formatValue(nextDays)}</span>
         </div>
+
+        {/* Separator column */}
+        <div className={styles.separatorColumn}>
+          <span className={styles.separator}>:</span>
+          <span className={styles.activeSeparator}>:</span>
+          <span className={styles.separator}>:</span>
+        </div>
+
+        {/* Hours column */}
         <div
           ref={hoursRef}
-          className={styles.activeValueWrapper}
+          className={styles.column}
           onMouseDown={(e) => handleMouseDown(e, 'hours')}
           onTouchStart={(e) => handleTouchStart(e, 'hours')}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
-          <span className={styles.activeValue}>{formatValue(hours)}</span>
+          <span className={styles.inactiveValue}>{formatValue(prevHours)}</span>
+          
+          <div className={styles.activeValue}>
+            {isEditingHours ? (
+              <input
+                type="text"
+                value={inputHours}
+                onChange={handleHoursInputChange}
+                onBlur={handleHoursInputBlur}
+                onKeyDown={handleHoursInputKeyDown}
+                className={styles.input}
+                autoFocus
+                maxLength={2}
+              />
+            ) : (
+              <span onClick={handleHoursClick}>{formatValue(hours)}</span>
+            )}
+          </div>
+          
+          <span className={styles.inactiveValue}>{formatValue(nextHours)}</span>
         </div>
-      </div>
-
-      {/* Next values row */}
-      <div className={styles.valuesRow}>
-        <span className={styles.inactiveValue}>{formatValue(nextDays)}</span>
-        <span className={styles.inactiveValue}>{formatValue(nextHours)}</span>
       </div>
     </div>
   );

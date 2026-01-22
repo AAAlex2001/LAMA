@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column
+from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column, Index
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
@@ -132,13 +132,18 @@ class PublicationSeries(Base):
 
 class Tag(Base):
     __tablename__ = 'tags'
+    __table_args__ = (
+        Index('ix_tags_owner_name', 'owner_id', 'name', unique=True),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    name: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    owner_id: Mapped[int] = mapped_column(Integer, ForeignKey('users.id', ondelete='CASCADE'), index=True)
+    name: Mapped[str] = mapped_column(String(100), index=True)
     color: Mapped[Optional[str]] = mapped_column(String(7), nullable=True)
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     last_used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
+    owner = relationship('User', back_populates='tags')
     publications = relationship('Publication', secondary=publication_tags, back_populates='tags')
 
 

@@ -412,6 +412,7 @@ async def list_tags(
     """
     tags_query = (
         select(Tag)
+        .where(Tag.owner_id == current_user.id)
         .order_by(Tag.last_used_at.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
@@ -420,7 +421,7 @@ async def list_tags(
     result = await db.execute(tags_query)
     tags = list(result.scalars().all())
     
-    total_query = select(func.count(Tag.id))
+    total_query = select(func.count(Tag.id)).where(Tag.owner_id == current_user.id)
     total_result = await db.execute(total_query)
     total = total_result.scalar() or 0
     
@@ -440,6 +441,7 @@ async def search_tags(
     """Поиск тегов по имени"""
     query = (
         select(Tag)
+        .where(Tag.owner_id == current_user.id)
         .where(Tag.name.ilike(f"%{q}%"))
         .order_by(Tag.name)
         .limit(limit)
@@ -461,14 +463,17 @@ async def create_tag(
     current_user: User = Depends(get_current_user)
 ):
     """Создать новый тег"""
-    existing_query = select(Tag).where(Tag.name == data.name)
+    existing_query = select(Tag).where(
+        Tag.owner_id == current_user.id,
+        Tag.name == data.name
+    )
     existing_result = await db.execute(existing_query)
     existing_tag = existing_result.scalar_one_or_none()
     
     if existing_tag:
         return existing_tag
     
-    tag = Tag(name=data.name)
+    tag = Tag(name=data.name, owner_id=current_user.id)
     db.add(tag)
     await db.commit()
     await db.refresh(tag)
@@ -483,7 +488,10 @@ async def delete_tag(
     current_user: User = Depends(get_current_user)
 ):
     """Удалить тег"""
-    query = select(Tag).where(Tag.id == tag_id)
+    query = select(Tag).where(
+        Tag.id == tag_id,
+        Tag.owner_id == current_user.id
+    )
     result = await db.execute(query)
     tag = result.scalar_one_or_none()
     

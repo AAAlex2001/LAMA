@@ -1,0 +1,34 @@
+.deleteLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #383f45;
+}
+
+.optionsList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+}
+
+.optionRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
+.optionLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}

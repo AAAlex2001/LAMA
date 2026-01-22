@@ -1,0 +1,196 @@
+.repeatList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+}
+
+.repeatRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
+.optionLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+// Daily case styles
+.repeatDaily {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  position: relative;
+}
+
+.repeatDailyTopRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0 8px;
+  gap: 16px;
+  width: 100%;
+}
+
+.repeatDailySelector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+}
+
+.repeatDailySelectorText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.repeatDailyRow {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  gap: 5px;
+  width: 100%;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.repeatDailyRowLabel {
+  flex: 1 1 auto;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  text-align: left;
+}
+
+.repeatDailyRowValue {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.repeatDailyRowValueText {
+  white-space: nowrap;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+// Publish time selector dropdown
+.publishTimeWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.publishTimeDropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  gap: 0;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.publishTimeOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
+// Time picker container
+.timePickerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  margin-top: 12px;
+}
+
+// Repeat end selector
+.repeatEndWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.repeatEndDropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  gap: 0;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.repeatEndOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
+// Date picker container
+.datePickerContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  margin-top: 12px;
+  overflow: hidden;
+}
