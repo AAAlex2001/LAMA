@@ -15,10 +15,6 @@ interface RepeatDailyCaseProps {
   onRepeatEndTypeChange: (value: 'never' | 'date') => void;
   repeatEndDate: Date | null;
   onRepeatEndDateChange: (date: Date) => void;
-  repeatEndHours: number;
-  repeatEndMinutes: number;
-  onRepeatEndHoursChange: (hours: number) => void;
-  onRepeatEndMinutesChange: (minutes: number) => void;
 }
 
 export default function RepeatDailyCase({ 
@@ -31,10 +27,6 @@ export default function RepeatDailyCase({
   onRepeatEndTypeChange,
   repeatEndDate,
   onRepeatEndDateChange,
-  repeatEndHours,
-  repeatEndMinutes,
-  onRepeatEndHoursChange,
-  onRepeatEndMinutesChange,
 }: RepeatDailyCaseProps) {
   const [publishTimeType, setPublishTimeType] = useState<'from_publish' | 'exact_time'>('from_publish');
 
@@ -60,10 +52,6 @@ export default function RepeatDailyCase({
         onChange={onRepeatEndTypeChange}
         endDate={repeatEndDate}
         onEndDateChange={onRepeatEndDateChange}
-        endHours={repeatEndHours}
-        endMinutes={repeatEndMinutes}
-        onEndHoursChange={onRepeatEndHoursChange}
-        onEndMinutesChange={onRepeatEndMinutesChange}
       />
     </div>
   );

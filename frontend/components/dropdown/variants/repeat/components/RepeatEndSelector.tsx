@@ -5,7 +5,6 @@ import styles from '../repeat.module.scss';
 import Checkbox from '@/components/checkbox/checkbox';
 import { ChevronDownIcon } from '@/components/icons';
 import DatePicker from '@/components/date-picker/date-picker';
-import TimePicker from '@/components/time-picker/time-picker';
 
 type RepeatEndType = 'never' | 'date';
 
@@ -14,10 +13,6 @@ interface RepeatEndSelectorProps {
   onChange: (value: RepeatEndType) => void;
   endDate: Date | null;
   onEndDateChange: (date: Date) => void;
-  endHours: number;
-  endMinutes: number;
-  onEndHoursChange: (hours: number) => void;
-  onEndMinutesChange: (minutes: number) => void;
 }
 
 export default function RepeatEndSelector({ 
@@ -25,10 +20,6 @@ export default function RepeatEndSelector({
   onChange,
   endDate,
   onEndDateChange,
-  endHours,
-  endMinutes,
-  onEndHoursChange,
-  onEndMinutesChange,
 }: RepeatEndSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -81,14 +72,6 @@ export default function RepeatEndSelector({
             value={endDate || new Date()}
             onChange={onEndDateChange}
           />
-          <div className={styles.timePickerContainer}>
-            <TimePicker
-              hours={endHours}
-              minutes={endMinutes}
-              onHoursChange={onEndHoursChange}
-              onMinutesChange={onEndMinutesChange}
-            />
-          </div>
         </div>
       )}
     </div>

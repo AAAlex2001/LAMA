@@ -37,8 +37,6 @@ export default function RepeatContent({
   // Local state for repeat end
   const [repeatEndType, setRepeatEndType] = useState<'never' | 'date'>('never');
   const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
-  const [repeatEndHours, setRepeatEndHours] = useState(12);
-  const [repeatEndMinutes, setRepeatEndMinutes] = useState(0);
 
   const handleHoursChange = (hours: number) => {
     setLocalHours(hours);
@@ -68,10 +66,6 @@ export default function RepeatContent({
         onRepeatEndTypeChange={setRepeatEndType}
         repeatEndDate={repeatEndDate}
         onRepeatEndDateChange={setRepeatEndDate}
-        repeatEndHours={repeatEndHours}
-        repeatEndMinutes={repeatEndMinutes}
-        onRepeatEndHoursChange={setRepeatEndHours}
-        onRepeatEndMinutesChange={setRepeatEndMinutes}
       />
     );
   }
