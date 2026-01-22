@@ -1,0 +1,149 @@
+// Interval Value Picker - time picker for interval selection
+.container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 4px;
+
+  width: 100%;
+  height: 103px;
+
+  background: #FFFFFF;
+  border-radius: 11px;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 45px;
+
+  width: 100%;
+  height: 24px;
+
+  border-radius: 12px;
+}
+
+.rowActive {
+  background: #EBF5FF;
+  border-radius: 8px;
+}
+
+.column {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 4px;
+
+  width: 61.5px;
+  height: 24px;
+
+  flex: none;
+  flex-grow: 1;
+}
+
+.columnInactive {
+  flex-direction: column;
+  align-items: center;
+}
+
+.valueActive {
+  width: 38px;
+  height: 24px;
+
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+
+  color: #454545;
+
+  flex: none;
+  flex-grow: 0;
+  cursor: pointer;
+}
+
+.valueInactive {
+  width: 37px;
+  height: 24px;
+
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+
+  color: #D1D1D6;
+
+  flex: none;
+  flex-grow: 0;
+}
+
+.labelActive {
+  width: 39px;
+  height: 19px;
+
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  justify-content: center;
+
+  color: #454545;
+
+  flex: none;
+  flex-grow: 0;
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.input {
+  width: 38px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  text-align: center;
+  color: #454545;
+  outline: none;
+  padding: 0;
+
+  &:focus {
+    outline: 2px solid #3B82F6;
+    border-radius: 4px;
+  }
+}
+
+// Scrollable area
+.scrollArea {
+  width: 100%;
+  height: 100%;
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
+}

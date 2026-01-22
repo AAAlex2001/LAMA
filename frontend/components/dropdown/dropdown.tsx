@@ -212,7 +212,7 @@ export default function Dropdown({
       <div className={styles.header} onClick={handleToggle}>
         <span className={styles.label}>{label}</span>
         <div className={styles.headerRight}>
-          {variant === 'repeat' && isOpen && repeatViewMode === 'daily' && (
+          {variant === 'repeat' && isOpen && (repeatViewMode === 'daily' || repeatViewMode === 'custom') && (
             <div onClick={(e) => e.stopPropagation()}>
               <Button
                 text="Назад"

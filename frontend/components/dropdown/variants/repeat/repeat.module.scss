@@ -15,6 +15,10 @@
   width: 100%;
 }
 
+.repeatRowLast {
+  padding: 8px 0 12px;
+}
+
 .optionLabel {
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -22,6 +26,23 @@
   font-size: 14px;
   line-height: 17px;
   color: #383f45;
+}
+
+// Настроить button
+.customButton {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0 8px 32px;
+  gap: 16px;
+  width: 100%;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
 }
 
 // Daily case styles
@@ -193,4 +214,189 @@
   width: 100%;
   margin-top: 12px;
   overflow: hidden;
+}
+
+// Custom case styles
+.repeatCustom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  gap: 0;
+}
+
+.repeatCustomHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 100%;
+}
+
+.repeatCustomTitle {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  color: #383f45;
+}
+
+.repeatCustomContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+  gap: 0;
+}
+
+.repeatCustomRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
+.repeatCustomLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.repeatCustomValue {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.repeatCustomValueText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.repeatCustomDropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 0;
+  width: 100%;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.repeatCustomDropdownOption {
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.repeatCustomIntervalRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.repeatCustomIntervalText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.repeatCustomIntervalValue {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.repeatCustomIntervalValueActive {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #3B82F6;
+}
+
+.repeatCustomBackRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 8px 0 0;
+  width: 100%;
+  border-top: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+// Interval Selector
+.intervalSelectorWrapper {
+  position: relative;
+}
+
+.intervalDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  gap: 0;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 180px;
+}
+
+.intervalOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
 }

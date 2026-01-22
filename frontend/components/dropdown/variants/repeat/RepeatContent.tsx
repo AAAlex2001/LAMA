@@ -4,8 +4,9 @@ import { useState } from 'react';
 import type { RepeatContentProps } from '../../types';
 import RepeatDefaultCase from './components/RepeatDefaultCase';
 import RepeatDailyCase from './components/RepeatDailyCase';
+import RepeatCustomCase from './components/RepeatCustomCase';
 
-export type RepeatViewMode = 'list' | 'daily';
+export type RepeatViewMode = 'list' | 'daily' | 'custom';
 
 interface RepeatContentPropsExtended extends RepeatContentProps {
   viewMode: RepeatViewMode;
@@ -18,11 +19,7 @@ interface RepeatContentPropsExtended extends RepeatContentProps {
 
 export default function RepeatContent({
   repeatValue,
-  repeatCustomDays,
-  repeatCustomHours,
   onRepeatChange,
-  onRepeatCustomDaysChange,
-  onRepeatCustomHoursChange,
   viewMode,
   onViewModeChange,
   publishHours = 12,
@@ -70,19 +67,20 @@ export default function RepeatContent({
     );
   }
 
+  if (viewMode === 'custom') {
+    return <RepeatCustomCase onBack={handleBack} />;
+  }
+
   return (
     <RepeatDefaultCase
       repeatValue={repeatValue}
-      repeatCustomDays={repeatCustomDays}
-      repeatCustomHours={repeatCustomHours}
       onRepeatChange={(value) => {
         onRepeatChange?.(value);
         if (value === 'daily') {
           onViewModeChange('daily');
         }
       }}
-      onRepeatCustomDaysChange={onRepeatCustomDaysChange}
-      onRepeatCustomHoursChange={onRepeatCustomHoursChange}
+      onCustomClick={() => onViewModeChange('custom')}
     />
   );
 }
