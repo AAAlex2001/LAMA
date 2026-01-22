@@ -1,0 +1,207 @@
+.datePicker {
+  background: transparent;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 20px;
+  width: 288px;
+
+  :global(.react-calendar) {
+    width: 100%;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+  }
+
+  :global(.react-calendar__navigation) {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+    gap: 29px;
+    height: 20px;
+    margin-bottom: 20px;
+
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      min-width: 20px;
+      height: 20px;
+
+      &:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+
+      &:hover:not(:disabled) {
+        opacity: 0.7;
+      }
+    }
+  }
+
+  :global(.react-calendar__navigation__label) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    gap: 4px;
+    height: 20px;
+    flex-grow: 1;
+    justify-content: center;
+    pointer-events: none;
+
+    span {
+      font-family: 'Inter', sans-serif;
+      font-style: normal;
+      font-weight: 500;
+      font-size: 14px;
+      line-height: 20px;
+      color: #383F45;
+    }
+  }
+
+  .chevron {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      transition: transform 0.2s;
+    }
+  }
+
+  :global(.react-calendar__navigation__prev-button) .chevron svg {
+    transform: rotate(90deg);
+  }
+
+  :global(.react-calendar__navigation__next-button) .chevron svg {
+    transform: rotate(-90deg);
+  }
+
+  :global(.react-calendar__month-view__weekdays) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0;
+    height: 32px;
+    margin-bottom: 4px;
+    width: 256px;
+    gap: 0;
+
+    abbr {
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      font-style: normal;
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 16px;
+      text-align: center;
+      color: #383F45;
+    }
+  }
+
+  :global(.react-calendar__month-view__weekdays__weekday) {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 2px;
+    flex: 1 1 0;
+    min-width: 0;
+
+    &:nth-child(6),
+    &:nth-child(7) {
+      abbr {
+        color: #F36A6A;
+      }
+    }
+  }
+
+  :global(.react-calendar__month-view__days) {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    row-gap: 4px;
+    column-gap: 0;
+    width: 256px;
+    padding: 0;
+  }
+
+  :global(.react-calendar__month-view__days__day) {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding: 8px;
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 50px;
+    transition: background 0.2s;
+    box-sizing: border-box;
+
+    abbr {
+      font-family: 'Inter', sans-serif;
+      font-style: normal;
+      font-weight: 400;
+      font-size: 12px;
+      line-height: 16px;
+      text-align: center;
+      color: #383F45;
+      text-decoration: none;
+    }
+
+    &:hover:not(:disabled) {
+      background: rgba(59, 130, 246, 0.1);
+      
+      abbr {
+        color: #383F45;
+      }
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  :global(.react-calendar__month-view__days__day--weekend) {
+    abbr {
+      color: #383F45;
+    }
+  }
+
+  :global(.react-calendar__month-view__days__day--neighboringMonth) {
+    display: none;
+  }
+
+  :global(.react-calendar__tile--active) {
+    background: #3B82F6;
+
+    abbr {
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    &:hover {
+      background: #2F67C3;
+    }
+  }
+
+  :global(.react-calendar__tile--now):not(:global(.react-calendar__tile--active)) {
+    background: transparent;
+    
+    abbr {
+      font-weight: 600;
+      color: #383F45;
+    }
+  }
+}

@@ -135,48 +135,35 @@ export async function createAndPublishPost(
     
     if (!postId) {
       return {
-        success: false,
+        id: 0,
+        status: 'failed',
         message: 'Не удалось создать пост - отсутствует ID',
-        errors: ['No post ID in response'],
       };
     }
 
     const publishedPost = await publishPost(postId);
 
-    if (!publishedPost || publishedPost.status === 'failed') {
-      return {
-        success: false,
-        postId: postId,
-        id: postId,
-        message: `Не удалось опубликовать`,
-        errors: ['Публикация не удалась'],
-      };
-    }
-
+    // Backend возвращает объект публикации, а не объект с полем success
+    // Если publish не выбросил ошибку, значит публикация успешна
     return {
-      success: true,
-      postId: postId,
       id: postId,
-      message: `OK — публикация поставлена в очередь`,
+      status: 'published',
+      message: 'OK — публикация поставлена в очередь',
     };
   } catch (error) {
     // Извлекаем детальное сообщение об ошибке
     let errorMessage = 'Ошибка при создании/публикации поста';
-    let errorList: string[] = [];
     
     if (error instanceof ApiError) {
       errorMessage = error.message;
-      if (error.errors) {
-        errorList = error.errors;
-      }
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
     
     return {
-      success: false,
+      id: 0,
+      status: 'failed',
       message: errorMessage,
-      errors: errorList.length > 0 ? errorList : undefined,
     };
   }
 }
@@ -191,6 +178,48 @@ export async function saveDraft(
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+/**
+ * Создать и запланировать пост на определенное время
+ */
+export async function createAndSchedulePost(
+  data: CreatePostRequest
+): Promise<CreatePostResponse> {
+  try {
+    // Создаём пост со статусом 'scheduled'
+    const createResponse: any = await createPost(data);
+    
+    const postId = createResponse.id || createResponse.postId;
+    
+    if (!postId) {
+      return {
+        id: 0,
+        status: 'failed',
+        message: 'Не удалось создать пост - отсутствует ID',
+      };
+    }
+
+    return {
+      id: postId,
+      status: 'scheduled',
+      message: 'Пост успешно запланирован',
+    };
+  } catch (error) {
+    let errorMessage = 'Ошибка при планировании поста';
+    
+    if (error instanceof ApiError) {
+      errorMessage = error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      id: 0,
+      status: 'failed',
+      message: errorMessage,
+    };
+  }
 }
 
 export interface UploadedFile {

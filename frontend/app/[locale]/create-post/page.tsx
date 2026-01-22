@@ -10,12 +10,15 @@ import MediaPreview from '@/components/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import ReplyToPostModal from '@/components/reply-to-post-modal/reply-to-post-modal';
+import { DatePickerModal } from '@/components/date-picker';
 import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
+import Dropdown from '@/components/dropdown/dropdown';
 import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
 import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
 import PostAccordion from '@/components/post-accordion/post-accordion';
 import { initialQuizFormState } from '@/components/quiz-form/store/reducer';
+import { useTokenFromUrl } from './hooks/useTokenFromUrl';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -24,6 +27,7 @@ import {
   ReplyIcon,
   SettingsIcon,
   PaperclipIcon,
+  CloseIcon,
 } from '@/components/icons';
 
 // Контексты
@@ -34,6 +38,7 @@ import { useQuizForm } from '@/components/quiz-form';
 import { useDrafts } from '@/components/drafts-modal';
 import { useTemplates } from '@/components/text-templates-modal';
 import { useReplyToPost } from '@/components/reply-to-post-modal';
+import { useDatePicker } from '@/components/date-picker';
 import { usePostSettingsContext } from '@/components/post-settings/store';
 import { useCreatePostContext, type PostSnapshot } from './store/CreatePostContext';
 
@@ -48,9 +53,13 @@ const EMPTY_POST_SNAPSHOT: PostSnapshot = {
 };
 
 function CreatePostPageContent() {
+  // Автоматически сохраняем токен из URL если он есть
+  useTokenFromUrl();
+  
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [postSnapshots, setPostSnapshots] = useState<PostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
   const [activePostIndex, setActivePostIndex] = useState(0);
+  // selected tag is read from postSettings.selectedTagName
   
   const headerRef = useRef<HTMLDivElement>(null);
   
@@ -62,6 +71,7 @@ function CreatePostPageContent() {
   const drafts = useDrafts();
   const templates = useTemplates();
   const replyToPosts = useReplyToPost();
+  const datePicker = useDatePicker();
   const postSettings = usePostSettingsContext();
   
   // Главный контекст создания поста
@@ -114,6 +124,12 @@ function CreatePostPageContent() {
   };
   
   const quizPreviewData = getQuizPreviewData();
+
+  // tag selection handled in PostSettings store (postSettings.selectedTagName)
+  
+  const handleRemoveTag = () => {
+    postSettings.setSelectedTagName('');
+  };
   
   const handleOpenPreview = () => {
     setShowMobileSettings(false);
@@ -172,6 +188,24 @@ function CreatePostPageContent() {
   const editorBlock = (
     <div className={styles.editor}>
       <div className={styles.header} ref={headerRef}>
+        <div className={styles.headerTag}>
+          {postSettings.selectedTagName ? (
+            <div
+              className={styles.headerTagButton}
+              style={{ backgroundColor: postSettings.selectedTagColor}}
+            >
+              <span className={styles.headerTagText}>{postSettings.selectedTagName}</span>
+              <button
+                type="button"
+                className={styles.headerTagClose}
+                onClick={handleRemoveTag}
+                aria-label="Удалить тег"
+              >
+                <CloseIcon width={12} height={12} color="#000000" />
+              </button>
+            </div>
+          ) : null}
+        </div>
         <button
           className={styles.settingsButton}
           type="button"
@@ -338,6 +372,7 @@ function CreatePostPageContent() {
             loading={isScheduling}
             disabled={isScheduling}
             className={styles.scheduleBtn}
+            onClick={() => datePicker.open()}
           />
         </div>
       </div>
@@ -410,6 +445,8 @@ function CreatePostPageContent() {
       <DraftsModal onSelectDraft={handleSelectDraft} />
       
       <ReplyToPostModal />
+      
+      <DatePickerModal />
     </div>
   );
 }

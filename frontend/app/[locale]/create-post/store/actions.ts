@@ -1,6 +1,6 @@
-import type { CreatePostRequest, AutoDeleteInterval, InlineKeyboard, PollData, ContentType } from './types';
+import type { CreatePostRequest, InlineKeyboard, PollData, ContentType } from './types';
 import type { MediaFile } from '@/components/media-preview';
-import { createAndPublishPost, createSeries, saveDraft } from './api';
+import { createAndPublishPost, createSeries, saveDraft, createAndSchedulePost } from './api';
 import type { ButtonRow } from '@/components/inline-buttons';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
@@ -8,6 +8,7 @@ import { extractPlainTextFromHtml, hasSupportedFormatting } from './text';
 import { prepareMediaPayload } from './mediaPayload';
 import { buildBaseCreatePostRequest } from './createPostRequest';
 import type { PostSettingsFromUI } from './uiTypes';
+import type { AutoDeleteOption } from '@/components/post-settings/store/types';
 
 export interface SeriesPostInput {
   text: string;
@@ -19,9 +20,9 @@ export interface SeriesPostInput {
   showLinkPreview?: boolean;
 }
 
-// Конвертация AutoDeleteInterval в секунды
+// Конвертация AutoDeleteOption в секунды
 function convertAutoDeleteToSeconds(
-  interval: AutoDeleteInterval, 
+  interval: AutoDeleteOption, 
   customDays: number = 0, 
   customHours: number = 0
 ): number | undefined {
@@ -131,19 +132,24 @@ export async function handlePublishNow(
       reply_to_post_id: replyToPostId,
     };
 
+    console.log('📤 Отправка запроса на публикацию:', {
+      tag_names: request.tag_names,
+      tag_color: request.tag_color,
+      settings: settings,
+    });
+
     const response = await createAndPublishPost(request);
 
-    if (response.success || response.id) {
+    if (response.id) {
       return {
         success: true,
-        message: 'OK — публикация поставлена в очередь',
-        postId: response.postId || response.id,
+        message: response.message || 'OK — публикация поставлена в очередь',
+        postId: response.id,
       };
     } else {
       return {
         success: false,
         message: response.message || 'Не удалось опубликовать пост',
-        errors: response.errors,
       };
     }
   } catch (error) {
@@ -294,6 +300,13 @@ export async function handleSaveDraft(
       parse_mode: 'HTML'
     } : undefined;
 
+    // Конвертируем auto_delete настройки в секунды
+    const autoDeleteSeconds = convertAutoDeleteToSeconds(
+      settings.autoDeleteInterval,
+      settings.autoDeleteCustomDays,
+      settings.autoDeleteCustomHours
+    );
+
     const request: CreatePostRequest = {
       ...buildBaseCreatePostRequest({
         contentType,
@@ -310,26 +323,141 @@ export async function handleSaveDraft(
         status: 'draft',
         settings,
       }),
-      auto_delete_interval: settings.autoDeleteInterval,
+      auto_delete_delay_seconds: autoDeleteSeconds,
     };
 
     const response = await saveDraft(request);
 
-    if (response.success || response.id) {
+    if (response.id) {
       return {
         success: true,
-        message: 'Черновик сохранён!',
-        postId: response.postId || response.id,
+        message: response.message || 'Черновик сохранён!',
+        postId: response.id,
       };
     } else {
       return {
         success: false,
         message: response.message || 'Не удалось сохранить черновик',
-        errors: response.errors,
       };
     }
   } catch (error) {
     console.error('Ошибка при сохранении черновика:', error);
+    
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Неизвестная ошибка',
+    };
+  }
+}
+
+export async function handleSchedulePost(
+  content: { text: string },
+  settings: PostSettingsFromUI,
+  scheduledDate: Date,
+  mediaFiles: MediaFile[] = [],
+  inlineKeyboard?: InlineKeyboard,
+  pollData?: PollData | null,
+  pollFormOpen?: boolean,
+  showLinkPreview?: boolean,
+  replyToPostId?: number
+) {
+  try {
+    const plainText = extractPlainTextFromHtml(content.text);
+
+    const hasText = plainText.length > 0;
+    const hasMedia = mediaFiles.length > 0;
+    const hasInlineKeyboard = !!(inlineKeyboard && inlineKeyboard.buttons && inlineKeyboard.buttons.length > 0);
+    const hasPoll = !!pollData;
+
+    if (pollFormOpen && !hasPoll) {
+      throw new Error('Заполните опрос/викторину или выключите её');
+    }
+
+    if (!hasText && !hasMedia && !hasPoll) {
+      throw new Error('Текст поста или медиа файлы не могут быть пустыми');
+    }
+
+    if (settings.channelIds.length === 0) {
+      throw new Error('Выберите хотя бы один канал для публикации');
+    }
+
+    const autoDeleteSeconds = convertAutoDeleteToSeconds(
+      settings.autoDeleteInterval,
+      settings.autoDeleteCustomDays,
+      settings.autoDeleteCustomHours
+    );
+
+    // Определяем content_type
+    let contentType: ContentType = 'text';
+    let mediaUrls: string[] = [];
+    let mediaFileIds: string[] | undefined;
+    let mediaThumbnailUrls: (string | null)[] | undefined;
+    let mediaBlurArray = mediaFiles.map(f => f.blur || false);
+    
+    if (hasMedia) {
+      const prepared = await prepareMediaPayload(mediaFiles);
+
+      mediaUrls = prepared.mediaUrls;
+      mediaFileIds = prepared.mediaFileIds;
+      mediaThumbnailUrls = prepared.mediaThumbnailUrls;
+      mediaBlurArray = prepared.mediaBlurArray;
+      contentType = 'text_with_media';
+    }
+
+    // Если контента кроме опроса нет — публикуем как poll/quiz
+    if (!hasText && !hasMedia && hasPoll) {
+      contentType = pollData?.is_quiz ? 'quiz' : 'poll';
+    }
+
+    const hasFormatting = hasText && hasSupportedFormatting(content.text);
+    const formattedContent = hasFormatting ? {
+      text: content.text,
+      parse_mode: 'HTML'
+    } : undefined;
+
+    const request: CreatePostRequest = {
+      ...buildBaseCreatePostRequest({
+        contentType,
+        text: content.text,
+        hasText,
+        formattedContent,
+        mediaUrls,
+        mediaThumbnailUrls,
+        mediaFileIds,
+        mediaBlurArray,
+        inlineKeyboard,
+        pollData: hasPoll ? pollData : undefined,
+        showLinkPreview,
+        status: 'scheduled',
+        settings,
+      }),
+      scheduled_time: scheduledDate.toISOString(),
+      auto_delete_delay_seconds: autoDeleteSeconds,
+      reply_to_post_id: replyToPostId,
+    };
+
+    console.log('📅 Отправка запроса на планирование:', {
+      scheduled_time: request.scheduled_time,
+      tag_names: request.tag_names,
+      settings: settings,
+    });
+
+    const response = await createAndSchedulePost(request);
+
+    if (response.id) {
+      return {
+        success: true,
+        message: response.message || 'Пост успешно запланирован',
+        postId: response.id,
+      };
+    } else {
+      return {
+        success: false,
+        message: response.message || 'Не удалось запланировать пост',
+      };
+    }
+  } catch (error) {
+    console.error('Ошибка при планировании поста:', error);
     
     return {
       success: false,

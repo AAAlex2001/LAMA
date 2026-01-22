@@ -82,6 +82,9 @@ class WebhookDispatcher:
                     if command == "/start":
                         await WebhookDispatcher.handle_auth_command(db, update.message)
                         return
+                    if command == "/guest":
+                        await WebhookDispatcher.handle_guest_command(db, update.message)
+                        return
 
                 # Определяем chat_id для поиска правильного бота
                 chat_id = None
@@ -176,6 +179,74 @@ class WebhookDispatcher:
             await bot.send_message(
                 chat_id=message.chat.id,
                 text="❌ Ошибка при отправке ссылки. Попробуйте позже.",
+                reply_to_message_id=message.message_id
+            )
+
+    @staticmethod
+    async def handle_guest_command(db: AsyncSession, message: Message) -> None:
+        """Обработка команды /guest для гостевого доступа к созданию постов"""
+        user_id = message.from_user.id if message.from_user else 0
+        if not user_id:
+            return
+
+        bot = Bot(token=TELEGRAM_BOT_TOKEN)
+
+        try:
+            import aiohttp
+            
+            # Получаем URL бэкенда и фронтенда
+            api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000/api")
+            frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
+            
+            # Формируем данные для запроса токена
+            user_data = {
+                "telegram_id": user_id,
+                "username": message.from_user.username if message.from_user else None,
+                "first_name": message.from_user.first_name if message.from_user else None,
+                "last_name": message.from_user.last_name if message.from_user else None,
+            }
+            
+            # Запрашиваем токен
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{api_base_url}/auth/bot-guest-token",
+                    json=user_data
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        access_token = data.get("access_token")
+                        
+                        if access_token:
+                            # Формируем ссылку с токеном
+                            create_post_link = f"{frontend_url}/ru/create-post?token={access_token}"
+                            
+                            first_name = message.from_user.first_name if message.from_user else "пользователь"
+                            
+                            response_text = (
+                                f"✍️ <b>Привет, {first_name}!</b>\n\n"
+                                f"Создайте пост через веб-интерфейс:\n\n"
+                                f"🔗 {create_post_link}\n\n"
+                                f"⏱ Ссылка действительна 24 часа"
+                            )
+                            
+                            await bot.send_message(
+                                chat_id=message.chat.id,
+                                text=response_text,
+                                parse_mode="HTML",
+                                disable_web_page_preview=True,
+                                reply_to_message_id=message.message_id
+                            )
+                        else:
+                            raise Exception("No access token in response")
+                    else:
+                        error_text = await response.text()
+                        raise Exception(f"API returned {response.status}: {error_text}")
+                        
+        except Exception as e:
+            logger.error(f"Guest command error: {e}", exc_info=True)
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text="❌ Ошибка при создании ссылки. Попробуйте позже.",
                 reply_to_message_id=message.message_id
             )
         finally:

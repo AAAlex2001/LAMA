@@ -155,6 +155,45 @@ async def login_with_bot(
         raise HTTPException(status_code=500, detail=f"Bot login failed: {str(e)}")
 
 
+@router.post("/bot-guest-token", response_model=AuthResponse)
+async def create_guest_token_for_bot(
+    login_data: BotLoginRequest,
+    request: Request,
+    service: AuthService = Depends(get_auth_service)
+):
+    """
+    Создать временный токен для гостевого доступа из бота
+    
+    Бот вызывает этот эндпоинт с telegram_id пользователя,
+    создаётся временный токен на 24 часа для создания постов.
+    """
+    try:
+        user_agent = request.headers.get("user-agent")
+        ip_address = request.client.host if request.client else None
+        
+        # Создаем или получаем пользователя
+        user, access_token, refresh_token = await service.authenticate_bot_user_direct(
+            telegram_id=login_data.telegram_id,
+            username=login_data.username,
+            first_name=login_data.first_name,
+            last_name=login_data.last_name,
+            photo_url=login_data.photo_url,
+            user_agent=user_agent,
+            ip_address=ip_address
+        )
+        
+        return AuthResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            expires_in=service.access_token_expire_minutes * 60,
+            user=user,
+            registration_completed=False  # Это гостевой доступ
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Guest token creation failed: {str(e)}")
+
+
 # ============================================================================
 # Регистрация и вход по Email
 # ============================================================================
