@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from '../repeat.module.scss';
 import IntervalSelector, { type IntervalType } from './IntervalSelector';
 import IntervalValuePicker from './IntervalValuePicker';
 import WeekdaySelector from './WeekdaySelector';
-import MonthDaySelector from './MonthDaySelector';
+import MonthSelector from './MonthSelector';
+import { DatePicker } from '@/components/date-picker';
+import Toggle from '@/components/toggle/toggle';
 
 interface RepeatCustomCaseProps {
   onBack: () => void;
@@ -24,7 +26,16 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
   const [intervalType, setIntervalType] = useState<IntervalType>('days');
   const [intervalValue, setIntervalValue] = useState(1);
   const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
-  const [selectedMonthDays, setSelectedMonthDays] = useState<number[]>([]);
+  const [selectedMonthDate, setSelectedMonthDate] = useState<Date>(new Date());
+  const [selectedYearMonth, setSelectedYearMonth] = useState(new Date().getMonth());
+  const [showYearDays, setShowYearDays] = useState(false);
+  const [selectedYearDate, setSelectedYearDate] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const now = new Date();
+    const newDate = new Date(now.getFullYear(), selectedYearMonth, 1);
+    setSelectedYearDate(newDate);
+  }, [selectedYearMonth]);
 
   const getIntervalLabel = (type: IntervalType, value: number): string => {
     switch (type) {
@@ -81,10 +92,29 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
       )}
 
       {intervalType === 'months' && (
-        <MonthDaySelector
-          selectedDays={selectedMonthDays}
-          onChange={setSelectedMonthDays}
+        <DatePicker
+          value={selectedMonthDate}
+          onChange={setSelectedMonthDate}
         />
+      )}
+
+      {intervalType === 'years' && (
+        <>
+          <MonthSelector
+            selectedMonth={selectedYearMonth}
+            onChange={setSelectedYearMonth}
+          />
+          <div className={styles.yearDaysToggle}>
+            <span className={styles.yearDaysLabel}>Дни недели</span>
+            <Toggle checked={showYearDays} onChange={setShowYearDays} />
+          </div>
+          {showYearDays && (
+            <DatePicker
+              value={selectedYearDate}
+              onChange={setSelectedYearDate}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -400,3 +400,21 @@
   gap: 16px;
   width: 100%;
 }
+
+.yearDaysToggle {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.yearDaysLabel {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}

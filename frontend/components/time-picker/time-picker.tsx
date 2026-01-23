@@ -51,7 +51,7 @@ export default function TimePicker({
           max={23}
         />
         <div className={styles.separatorColumn}>
-          <span className={styles.separator}>:</span>
+          <span className={styles.separator}>&nbsp;</span>
           <span className={styles.activeSeparator}>:</span>
           <span className={styles.separator}>:</span>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
 import ChevronDownIcon from '@/components/icons/chevron-down-icon';
 import styles from './date-picker.module.scss';
@@ -20,11 +20,19 @@ export default function DatePicker({
   className 
 }: DatePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(value || new Date());
+  const [activeStartDate, setActiveStartDate] = useState<Date>(value || new Date());
 
-  const handleDateChange = (value: any) => {
-    if (value instanceof Date) {
+  useEffect(() => {
+    if (value) {
       setSelectedDate(value);
-      onChange?.(value);
+      setActiveStartDate(value);
+    }
+  }, [value]);
+
+  const handleDateChange = (newValue: any) => {
+    if (newValue instanceof Date) {
+      setSelectedDate(newValue);
+      onChange?.(newValue);
     }
   };
 
@@ -56,6 +64,10 @@ export default function DatePicker({
       <Calendar
         onChange={handleDateChange}
         value={selectedDate}
+        activeStartDate={activeStartDate}
+        onActiveStartDateChange={({ activeStartDate: newDate }) => {
+          if (newDate) setActiveStartDate(newDate);
+        }}
         locale={locale}
         minDate={today}
         formatShortWeekday={(locale, date) => {

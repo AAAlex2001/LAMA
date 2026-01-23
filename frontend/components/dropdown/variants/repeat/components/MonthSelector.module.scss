@@ -1,0 +1,61 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 12px 16px;
+  gap: 20px;
+  width: 100%;
+  background: #FFFFFF;
+  box-shadow: 0px 0px 14px rgba(0, 0, 0, 0.07);
+  border-radius: 11px;
+}
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.month {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 8px;
+  gap: 8px;
+  flex: 1;
+  height: 32px;
+  background: transparent;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #858585;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.selected {
+  background: #3B82F6;
+  font-weight: 600;
+  color: #FFFFFF;
+
+  &:hover {
+    background: #2563EB;
+  }
+}
