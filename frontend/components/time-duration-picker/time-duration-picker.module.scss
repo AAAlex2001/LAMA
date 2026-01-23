@@ -1,18 +1,14 @@
 .container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 0;
   width: 100%;
   max-width: 288px;
-  background: transparent;
   gap: 4px;
 }
 
 .labelsRow {
   display: flex;
-  flex-direction: row;
   justify-content: center;
   align-items: center;
   width: 100%;
@@ -21,7 +17,6 @@
 
 .label {
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 400;
   font-size: 12px;
   line-height: 16px;
@@ -36,25 +31,10 @@
 
 .columnsWrapper {
   display: flex;
-  flex-direction: row;
   align-items: center;
   gap: 8px;
   width: 100%;
   height: 96px;
-  position: relative;
-}
-
-.column {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  height: 100%;
-  cursor: ns-resize;
-  user-select: none;
-  touch-action: none;
-  gap: 8px;
 }
 
 .separatorColumn {
@@ -66,24 +46,8 @@
   gap: 8px;
 }
 
-.inactiveValue {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 24px;
-  text-align: center;
-  color: #D1D1D6;
-  min-width: 32px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .separator {
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 400;
   font-size: 16px;
   line-height: 24px;
@@ -92,33 +56,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-}
-
-.activeValue {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  text-align: center;
-  color: #454545;
-  min-width: 32px;
-  height: 32px;
-  background: #EBF5FF;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-
-  span {
-    cursor: pointer;
-  }
 }
 
 .activeSeparator {
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 600;
   font-size: 16px;
   line-height: 24px;
@@ -126,25 +67,4 @@
   height: 32px;
   display: flex;
   align-items: center;
-}
-
-.input {
-  width: 100%;
-  height: 100%;
-  border: none;
-  background: transparent;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 24px;
-  text-align: center;
-  color: #454545;
-  outline: none;
-  padding: 0;
-
-  &:focus {
-    outline: 2px solid #3B82F6;
-    border-radius: 8px;
-  }
 }

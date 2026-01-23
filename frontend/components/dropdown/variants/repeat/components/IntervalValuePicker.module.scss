@@ -1,17 +1,16 @@
-// Interval Value Picker - time picker for interval selection
 .container {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 0px;
   gap: 4px;
-
   width: 100%;
   height: 103px;
-
   background: #FFFFFF;
   border-radius: 11px;
+  cursor: ns-resize;
+  user-select: none;
+  touch-action: none;
 }
 
 .row {
@@ -19,12 +18,9 @@
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 0px;
   gap: 45px;
-
   width: 100%;
   height: 24px;
-
   border-radius: 12px;
 }
 
@@ -33,85 +29,58 @@
   border-radius: 8px;
 }
 
-.column {
+.cell {
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
-  padding: 0px;
+  align-items: center;
   gap: 4px;
-
   width: 61.5px;
   height: 24px;
-
-  flex: none;
-  flex-grow: 1;
+  flex: 1;
 }
 
-.columnInactive {
-  flex-direction: column;
-  align-items: center;
-}
-
-.valueActive {
+.active {
   width: 38px;
   height: 24px;
-
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 600;
   font-size: 16px;
   line-height: 19px;
   display: flex;
   align-items: center;
-  text-align: center;
   justify-content: center;
-
+  text-align: center;
   color: #454545;
-
-  flex: none;
-  flex-grow: 0;
   cursor: pointer;
 }
 
-.valueInactive {
+.inactive {
   width: 37px;
   height: 24px;
-
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 400;
   font-size: 16px;
   line-height: 19px;
   display: flex;
   align-items: center;
-  text-align: center;
   justify-content: center;
-
+  text-align: center;
   color: #D1D1D6;
-
-  flex: none;
-  flex-grow: 0;
 }
 
-.labelActive {
+.label {
   width: 39px;
   height: 19px;
-
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 600;
   font-size: 16px;
   line-height: 19px;
   display: flex;
   align-items: center;
-  text-align: center;
   justify-content: center;
-
+  text-align: center;
   color: #454545;
-
-  flex: none;
-  flex-grow: 0;
 }
 
 .hidden {
@@ -124,7 +93,6 @@
   border: none;
   background: transparent;
   font-family: 'Inter', sans-serif;
-  font-style: normal;
   font-weight: 600;
   font-size: 16px;
   line-height: 19px;
@@ -137,13 +105,4 @@
     outline: 2px solid #3B82F6;
     border-radius: 4px;
   }
-}
-
-// Scrollable area
-.scrollArea {
-  width: 100%;
-  height: 100%;
-  cursor: ns-resize;
-  user-select: none;
-  touch-action: none;
 }

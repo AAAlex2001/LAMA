@@ -1,27 +1,31 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import styles from './IntervalValuePicker.module.scss';
+import styles from './wheel-picker.module.scss';
 
-interface IntervalValuePickerProps {
+interface WheelPickerProps {
   value: number;
   onChange: (value: number) => void;
-  label: string;
+  min?: number;
   max?: number;
 }
 
-export default function IntervalValuePicker({
+export default function WheelPicker({
   value,
   onChange,
-  label,
+  min = 0,
   max = 99,
-}: IntervalValuePickerProps) {
+}: WheelPickerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
-  const containerRef = useRef<HTMLDivElement>(null);
+  const columnRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ startY: 0, startValue: 0, isDragging: false });
 
-  const clamp = (v: number) => Math.max(1, Math.min(max, v));
+  const format = (v: number) => v.toString().padStart(2, '0');
+  const clamp = (v: number) => Math.max(min, Math.min(max, v));
+
+  const prev = value > min ? value - 1 : null;
+  const next = value < max ? value + 1 : null;
 
   function handleWheel(e: React.WheelEvent) {
     e.preventDefault();
@@ -34,7 +38,7 @@ export default function IntervalValuePicker({
 
     function onMove(ev: MouseEvent) {
       if (!dragRef.current.isDragging) return;
-      const steps = Math.round((dragRef.current.startY - ev.clientY) / 24);
+      const steps = Math.round((dragRef.current.startY - ev.clientY) / 20);
       onChange(clamp(dragRef.current.startValue + steps));
     }
 
@@ -54,7 +58,7 @@ export default function IntervalValuePicker({
 
   function handleTouchMove(e: React.TouchEvent) {
     if (!dragRef.current.isDragging) return;
-    const steps = Math.round((dragRef.current.startY - e.touches[0].clientY) / 24);
+    const steps = Math.round((dragRef.current.startY - e.touches[0].clientY) / 20);
     onChange(clamp(dragRef.current.startValue + steps));
   }
 
@@ -68,7 +72,7 @@ export default function IntervalValuePicker({
   }
 
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setInputValue(e.target.value.replace(/\D/g, '').slice(0, 2));
+    setInputValue(e.target.value.replace(/\D/g, ''));
   }
 
   function handleInputBlur() {
@@ -83,75 +87,47 @@ export default function IntervalValuePicker({
   }
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el = columnRef.current;
     if (!el) return;
     const prevent = (e: WheelEvent) => e.preventDefault();
     el.addEventListener('wheel', prevent, { passive: false });
     return () => el.removeEventListener('wheel', prevent);
   }, []);
 
-  const prevValue = value > 1 ? value - 1 : null;
-  const nextValue = value < max ? value + 1 : null;
-  const nextValue2 = value + 2 <= max ? value + 2 : null;
-
   return (
     <div
-      ref={containerRef}
-      className={styles.container}
+      ref={columnRef}
+      className={styles.column}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
-      <div className={styles.row}>
-        <div className={styles.cell}>
-          <span className={`${styles.inactive} ${prevValue === null ? styles.hidden : ''}`}>
-            {prevValue ?? ''}
-          </span>
-        </div>
-        <div className={styles.cell} />
+      <span className={`${styles.inactive} ${prev === null ? styles.hidden : ''}`}>
+        {prev !== null ? format(prev) : '00'}
+      </span>
+
+      <div className={styles.active}>
+        {isEditing ? (
+          <input
+            type="text"
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            className={styles.input}
+            autoFocus
+            maxLength={2}
+          />
+        ) : (
+          <span onClick={handleClick}>{format(value)}</span>
+        )}
       </div>
 
-      <div className={`${styles.row} ${styles.rowActive}`}>
-        <div className={styles.cell}>
-          {isEditing ? (
-            <input
-              type="text"
-              value={inputValue}
-              onChange={handleInputChange}
-              onBlur={handleInputBlur}
-              onKeyDown={handleInputKeyDown}
-              className={styles.input}
-              autoFocus
-              maxLength={2}
-            />
-          ) : (
-            <span className={styles.active} onClick={handleClick}>{value}</span>
-          )}
-        </div>
-        <div className={styles.cell}>
-          <span className={styles.label}>{label}</span>
-        </div>
-      </div>
-
-      <div className={styles.row}>
-        <div className={styles.cell}>
-          <span className={`${styles.inactive} ${nextValue === null ? styles.hidden : ''}`}>
-            {nextValue ?? ''}
-          </span>
-        </div>
-        <div className={styles.cell} />
-      </div>
-
-      <div className={styles.row}>
-        <div className={styles.cell}>
-          <span className={`${styles.inactive} ${nextValue2 === null ? styles.hidden : ''}`}>
-            {nextValue2 ?? ''}
-          </span>
-        </div>
-        <div className={styles.cell} />
-      </div>
+      <span className={`${styles.inactive} ${next === null ? styles.hidden : ''}`}>
+        {next !== null ? format(next) : '00'}
+      </span>
     </div>
   );
 }
