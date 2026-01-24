@@ -21,6 +21,8 @@ export interface PostSettingsData {
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+   repeatEndType: 'never' | 'date';
+   repeatEndDate: Date | null;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -33,6 +35,8 @@ export interface PostSettingsState {
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+   repeatEndType: 'never' | 'date';
+   repeatEndDate: Date | null;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -45,6 +49,8 @@ export type PostSettingsAction =
   | { type: 'SET_REPEAT_INTERVAL'; payload: RepeatOption }
   | { type: 'SET_REPEAT_CUSTOM_DAYS'; payload: number }
   | { type: 'SET_REPEAT_CUSTOM_HOURS'; payload: number }
+  | { type: 'SET_REPEAT_END_TYPE'; payload: 'never' | 'date' }
+  | { type: 'SET_REPEAT_END_DATE'; payload: Date | null }
   | { type: 'SET_AUTO_DELETE_INTERVAL'; payload: AutoDeleteOption }
   | { type: 'SET_AUTO_DELETE_CUSTOM_DAYS'; payload: number }
   | { type: 'SET_AUTO_DELETE_CUSTOM_HOURS'; payload: number }
@@ -57,6 +63,8 @@ export const initialPostSettingsState: PostSettingsState = {
   repeatInterval: 'never',
   repeatCustomDays: 0,
   repeatCustomHours: 0,
+  repeatEndType: 'never',
+  repeatEndDate: null,
   autoDeleteInterval: 'never',
   autoDeleteCustomDays: 0,
   autoDeleteCustomHours: 0,
@@ -79,6 +87,10 @@ export function postSettingsReducer(
       return { ...state, repeatCustomDays: action.payload };
     case 'SET_REPEAT_CUSTOM_HOURS':
       return { ...state, repeatCustomHours: action.payload };
+    case 'SET_REPEAT_END_TYPE':
+      return { ...state, repeatEndType: action.payload };
+    case 'SET_REPEAT_END_DATE':
+      return { ...state, repeatEndDate: action.payload };
     case 'SET_AUTO_DELETE_INTERVAL':
       return { ...state, autoDeleteInterval: action.payload };
     case 'SET_AUTO_DELETE_CUSTOM_DAYS':

@@ -56,6 +56,7 @@ class CRUDPublicationService:
                 data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
             repeat_custom_days=data.repeat_custom_days,
             repeat_custom_hours=data.repeat_custom_hours,
+            repeat_end_time=data.repeat_end_time,
             scheduled_time=data.scheduled_time,
             timezone=data.timezone,
             series_id=data.series_id,

@@ -15,6 +15,10 @@ interface RepeatContentPropsExtended extends RepeatContentProps {
   publishMinutes?: number;
   onPublishHoursChange?: (hours: number) => void;
   onPublishMinutesChange?: (minutes: number) => void;
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: Date | null;
+  onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
+  onRepeatEndDateChange?: (value: Date | null) => void;
 }
 
 export default function RepeatContent({
@@ -26,14 +30,14 @@ export default function RepeatContent({
   publishMinutes = 0,
   onPublishHoursChange,
   onPublishMinutesChange,
+  repeatEndType,
+  repeatEndDate,
+  onRepeatEndTypeChange,
+  onRepeatEndDateChange,
 }: RepeatContentPropsExtended) {
   // Local state for hours/minutes if not controlled externally
   const [localHours, setLocalHours] = useState(publishHours);
   const [localMinutes, setLocalMinutes] = useState(publishMinutes);
-  
-  // Local state for repeat end
-  const [repeatEndType, setRepeatEndType] = useState<'never' | 'date'>('never');
-  const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
 
   const handleHoursChange = (hours: number) => {
     setLocalHours(hours);
@@ -60,9 +64,13 @@ export default function RepeatContent({
         onPublishHoursChange={handleHoursChange}
         onPublishMinutesChange={handleMinutesChange}
         repeatEndType={repeatEndType}
-        onRepeatEndTypeChange={setRepeatEndType}
+        onRepeatEndTypeChange={(value) => {
+          onRepeatEndTypeChange?.(value);
+        }}
         repeatEndDate={repeatEndDate}
-        onRepeatEndDateChange={setRepeatEndDate}
+        onRepeatEndDateChange={(date) => {
+          onRepeatEndDateChange?.(date);
+        }}
       />
     );
   }

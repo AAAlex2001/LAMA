@@ -7,6 +7,7 @@ from enum import Enum
 class PublicationStatus(str, Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
+    PUBLISHING = "publishing"
     PUBLISHED = "published"
     PARTIAL_SUCCESS = "partial_success"
     FAILED = "failed"
@@ -150,6 +151,10 @@ class PublicationBase(BaseModel):
         ge=0,
         description="Custom repeat interval in hours (only used when repeat_interval is custom)"
     )
+    repeat_end_time: Optional[datetime] = Field(
+        None,
+        description="Дата/время, после которого повторы прекращаются (включительно)"
+    )
     scheduled_time: Optional[datetime] = None
     timezone: str = "UTC"
     series_id: Optional[int] = None
@@ -188,6 +193,14 @@ class PublicationBase(BaseModel):
         seconds = values.auto_delete_delay_seconds
         if hours is not None and seconds is not None:
             raise ValueError('Provide either auto_delete_hours or auto_delete_delay_seconds, not both')
+        return values
+
+    @model_validator(mode="after")
+    def validate_repeat_end_time(cls, values):
+        end_time = values.repeat_end_time
+        scheduled_time = values.scheduled_time
+        if end_time and scheduled_time and end_time < scheduled_time:
+            raise ValueError('repeat_end_time cannot be earlier than scheduled_time')
         return values
 
     @validator('poll_data')
@@ -236,6 +249,7 @@ class PublicationUpdate(BaseModel):
         ge=0,
         description="Custom repeat interval in hours (only used when repeat_interval is CUSTOM)"
     )
+    repeat_end_time: Optional[datetime] = None
     scheduled_time: Optional[datetime] = None
     timezone: Optional[str] = None
     series_id: Optional[int] = None
@@ -252,6 +266,14 @@ class PublicationUpdate(BaseModel):
         seconds = values.auto_delete_delay_seconds
         if hours is not None and seconds is not None:
             raise ValueError('Provide either auto_delete_hours or auto_delete_delay_seconds, not both')
+        return values
+
+    @model_validator(mode="after")
+    def validate_repeat_end_time(cls, values):
+        end_time = values.repeat_end_time
+        scheduled_time = values.scheduled_time
+        if end_time and scheduled_time and end_time < scheduled_time:
+            raise ValueError('repeat_end_time cannot be earlier than scheduled_time')
         return values
 
 
@@ -286,6 +308,7 @@ class PublicationResponse(BaseModel):
     repeat_custom_days: Optional[int] = None
     repeat_custom_hours: Optional[int] = None
     next_repeat_time: Optional[datetime] = None
+    repeat_end_time: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
     channels: List[ChannelResponse] = []

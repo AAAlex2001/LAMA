@@ -42,6 +42,7 @@ export interface CreatePostRequest {
   repeat_interval?: string;
   repeat_custom_days?: number;
   repeat_custom_hours?: number;
+  repeat_end_time?: string;
   series_id?: number;
   series_order?: number;
   auto_delete_delay_seconds?: number;

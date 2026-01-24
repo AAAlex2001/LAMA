@@ -65,6 +65,8 @@ export function usePostSettings() {
       repeatInterval: state.repeatInterval,
       repeatCustomDays: state.repeatCustomDays,
       repeatCustomHours: state.repeatCustomHours,
+      repeatEndType: state.repeatEndType,
+      repeatEndDate: state.repeatEndDate,
       autoDeleteInterval: state.autoDeleteInterval,
       autoDeleteCustomDays: state.autoDeleteCustomDays,
       autoDeleteCustomHours: state.autoDeleteCustomHours,
@@ -119,6 +121,17 @@ export function usePostSettings() {
     dispatch({ type: 'SET_REPEAT_CUSTOM_HOURS', payload: value });
   };
 
+  const handleRepeatEndTypeChange = (value: 'never' | 'date') => {
+    dispatch({ type: 'SET_REPEAT_END_TYPE', payload: value });
+    if (value === 'never') {
+      dispatch({ type: 'SET_REPEAT_END_DATE', payload: null });
+    }
+  };
+
+  const handleRepeatEndDateChange = (value: Date | null) => {
+    dispatch({ type: 'SET_REPEAT_END_DATE', payload: value });
+  };
+
   const handleAutoDeleteChange = (value: AutoDeleteOption) => {
     dispatch({ type: 'SET_AUTO_DELETE_INTERVAL', payload: value });
   };
@@ -150,6 +163,8 @@ export function usePostSettings() {
     repeatInterval: state.repeatInterval,
     repeatCustomDays: state.repeatCustomDays,
     repeatCustomHours: state.repeatCustomHours,
+    repeatEndType: state.repeatEndType,
+    repeatEndDate: state.repeatEndDate,
     autoDeleteInterval: state.autoDeleteInterval,
     autoDeleteCustomDays: state.autoDeleteCustomDays,
     autoDeleteCustomHours: state.autoDeleteCustomHours,
@@ -190,6 +205,8 @@ export function usePostSettings() {
     handleRepeatChange,
     handleRepeatCustomDaysChange,
     handleRepeatCustomHoursChange,
+    handleRepeatEndTypeChange,
+    handleRepeatEndDateChange,
     handleAutoDeleteChange,
     handleAutoDeleteCustomDaysChange,
     handleAutoDeleteCustomHoursChange,

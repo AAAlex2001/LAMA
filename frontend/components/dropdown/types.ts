@@ -54,9 +54,13 @@ export interface RepeatContentProps {
   repeatValue: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+   repeatEndType: 'never' | 'date';
+   repeatEndDate: Date | null;
   onRepeatChange?: (value: RepeatOption) => void;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
+   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
+   onRepeatEndDateChange?: (value: Date | null) => void;
 }
 
 export interface AutoDeleteContentProps {

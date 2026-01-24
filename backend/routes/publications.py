@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 from backend.schemas.publications import (
@@ -15,10 +15,11 @@ from backend.schemas.publications import (
     TagCreate, TagResponse, TagListResponse,
     TextTemplateCreate, TextTemplateUpdate, TextTemplateResponse, TextTemplateListResponse,
 )
-from backend.models.publications import Tag, publication_tags
+from backend.models.publications import Tag, publication_tags, PublicationStatus as DBPublicationStatus, RepeatInterval as DBRepeatInterval
 from backend.models.publications import PublicationSeries
 from backend.celery.tasks import publish_publication
 from backend.services.publications import PublicationService
+from backend.services.publications.publications import calculate_next_repeat_time
 from backend.database import get_db, AsyncSessionLocal
 from backend.config import OPENAI_API_KEY
 from backend.routes.auth import get_current_user
@@ -322,10 +323,23 @@ async def publish_now(
     if not publication.channels:
         raise HTTPException(status_code=400, detail="No channels selected")
     
+    publication.status = DBPublicationStatus.PUBLISHED
+    publication.published_time = datetime.now(timezone.utc)
+    if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
+        base_time = publication.scheduled_time or publication.published_time
+        publication.next_repeat_time = calculate_next_repeat_time(
+            base_time,
+            publication.repeat_interval,
+            publication.repeat_custom_days,
+            publication.repeat_custom_hours,
+            publication.repeat_end_time
+        )
+    await service.db.commit()
+    
     publish_publication.apply_async(args=[publication_id], queue="high")
     logger.info("Publish queued (publication_id=%s)", publication_id)
     
-    publication = await service.get_publication(publication_id, owner_id=current_user.id)
+    await service.db.refresh(publication)
     return publication
 
 

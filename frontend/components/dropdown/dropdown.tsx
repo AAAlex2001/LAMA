@@ -56,6 +56,10 @@ interface DropdownProps {
   repeatCustomHours?: number;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
+  repeatEndType?: 'never' | 'date';
+  repeatEndDate?: Date | null;
+  onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
+  onRepeatEndDateChange?: (value: Date | null) => void;
   autoDeleteValue?: AutoDeleteOption;
   onAutoDeleteChange?: (value: AutoDeleteOption) => void;
   autoDeleteCustomDays?: number;
@@ -100,6 +104,10 @@ export default function Dropdown({
   repeatCustomHours = 0,
   onRepeatCustomDaysChange,
   onRepeatCustomHoursChange,
+  repeatEndType = 'never',
+  repeatEndDate = null,
+  onRepeatEndTypeChange,
+  onRepeatEndDateChange,
   autoDeleteValue = 'never',
   onAutoDeleteChange,
   autoDeleteCustomDays = 0,
@@ -171,9 +179,13 @@ export default function Dropdown({
             repeatValue={repeatValue}
             repeatCustomDays={repeatCustomDays}
             repeatCustomHours={repeatCustomHours}
+            repeatEndType={repeatEndType}
+            repeatEndDate={repeatEndDate}
             onRepeatChange={onRepeatChange}
             onRepeatCustomDaysChange={onRepeatCustomDaysChange}
             onRepeatCustomHoursChange={onRepeatCustomHoursChange}
+            onRepeatEndTypeChange={onRepeatEndTypeChange}
+            onRepeatEndDateChange={onRepeatEndDateChange}
             viewMode={repeatViewMode}
             onViewModeChange={setRepeatViewMode}
           />

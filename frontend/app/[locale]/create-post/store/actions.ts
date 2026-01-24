@@ -75,6 +75,13 @@ export async function handlePublishNow(
       throw new Error('Выберите хотя бы один канал для публикации');
     }
 
+    // Валидация: документы нельзя смешивать с фото/видео
+    const hasDocuments = mediaFiles.some(f => f.type === 'document');
+    const hasPhotosOrVideos = mediaFiles.some(f => f.type === 'image' || f.type === 'video');
+    if (hasDocuments && hasPhotosOrVideos) {
+      throw new Error('Нельзя прикреплять документы вместе с фото или видео');
+    }
+
     const autoDeleteSeconds = convertAutoDeleteToSeconds(
       settings.autoDeleteInterval,
       settings.autoDeleteCustomDays,
@@ -126,6 +133,8 @@ export async function handlePublishNow(
         status: 'draft',
         settings,
       }),
+      // При публикации сейчас ставим scheduled_time = текущее время, чтобы повторы работали корректно
+      scheduled_time: new Date().toISOString(),
       series_id: series?.seriesId,
       series_order: series?.seriesOrder,
       auto_delete_delay_seconds: autoDeleteSeconds,
@@ -133,6 +142,9 @@ export async function handlePublishNow(
     };
 
     console.log('📤 Отправка запроса на публикацию:', {
+      scheduled_time: request.scheduled_time,
+      repeat_interval: request.repeat_interval,
+      repeat_end_time: request.repeat_end_time,
       tag_names: request.tag_names,
       tag_color: request.tag_color,
       settings: settings,
@@ -438,6 +450,8 @@ export async function handleSchedulePost(
 
     console.log('📅 Отправка запроса на планирование:', {
       scheduled_time: request.scheduled_time,
+      repeat_end_time: request.repeat_end_time,
+      repeat_interval: request.repeat_interval,
       tag_names: request.tag_names,
       settings: settings,
     });

@@ -50,6 +50,9 @@ export function buildBaseCreatePostRequest(options: {
     tag_names: settings.tagName ? [settings.tagName] : undefined,
     tag_color: settings.tagColor || undefined,
     repeat_interval: settings.repeatInterval,
+    repeat_end_time: settings.repeatEndType === 'date' && settings.repeatEndDate
+      ? settings.repeatEndDate.toISOString()
+      : undefined,
     repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
     repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
   };

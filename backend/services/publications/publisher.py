@@ -71,6 +71,7 @@ async def publish_to_channels(
         calculate_next_repeat_time_callback
     )
 
+    db.add(publication)  # Явно добавляем чтобы SQLAlchemy отследил изменения
     await db.commit()
     await db.refresh(publication)
 
@@ -366,7 +367,8 @@ async def update_publication_status(
                 base_time,
                 publication.repeat_interval,
                 publication.repeat_custom_days,
-                publication.repeat_custom_hours
+                publication.repeat_custom_hours,
+                publication.repeat_end_time
             )
             
     else:
@@ -380,7 +382,8 @@ async def update_publication_status(
                 base_time,
                 publication.repeat_interval,
                 publication.repeat_custom_days,
-                publication.repeat_custom_hours
+                publication.repeat_custom_hours,
+                publication.repeat_end_time
             )
 
 
@@ -440,7 +443,8 @@ async def republish(
             base_time,
             publication.repeat_interval,
             publication.repeat_custom_days,
-            publication.repeat_custom_hours
+            publication.repeat_custom_hours,
+            publication.repeat_end_time
         )
 
     await db.commit()

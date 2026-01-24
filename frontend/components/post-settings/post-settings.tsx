@@ -48,6 +48,10 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
     handleRepeatChange,
     repeatCustomDays,
     repeatCustomHours,
+    repeatEndType,
+    repeatEndDate,
+    handleRepeatEndTypeChange,
+    handleRepeatEndDateChange,
     handleRepeatCustomDaysChange,
     handleRepeatCustomHoursChange,
     // Auto-delete
@@ -124,8 +128,12 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
               onRepeatChange={handleRepeatChange}
               repeatCustomDays={repeatCustomDays}
               repeatCustomHours={repeatCustomHours}
+              repeatEndType={repeatEndType}
+              repeatEndDate={repeatEndDate}
               onRepeatCustomDaysChange={handleRepeatCustomDaysChange}
               onRepeatCustomHoursChange={handleRepeatCustomHoursChange}
+              onRepeatEndTypeChange={handleRepeatEndTypeChange}
+              onRepeatEndDateChange={handleRepeatEndDateChange}
             />
 
             <div className={styles.toggleRow}>

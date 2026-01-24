@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 import pytz
+from dateutil.relativedelta import relativedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -228,26 +229,37 @@ def calculate_next_repeat_time(
     base_time: datetime,
     repeat_interval: DBRepeatInterval,
     custom_days: Optional[int] = None,
-    custom_hours: Optional[int] = None
+    custom_hours: Optional[int] = None,
+    repeat_end_time: Optional[datetime] = None
 ) -> Optional[datetime]:
     """Вычислить следующее время повтора"""
     if repeat_interval == DBRepeatInterval.NEVER:
         return None
 
+    next_time: Optional[datetime] = None
+
     if repeat_interval == DBRepeatInterval.DAILY:
-        return base_time + timedelta(days=1)
+        next_time = base_time + relativedelta(days=1)
     elif repeat_interval == DBRepeatInterval.WEEKLY:
-        return base_time + timedelta(weeks=1)
+        next_time = base_time + relativedelta(weeks=1)
     elif repeat_interval == DBRepeatInterval.BIWEEKLY:
-        return base_time + timedelta(weeks=2)
+        next_time = base_time + relativedelta(weeks=2)
     elif repeat_interval == DBRepeatInterval.MONTHLY:
-        return base_time + timedelta(days=30)
+        # Календарное прибавление месяца без дрейфа по времени суток
+        next_time = base_time + relativedelta(months=1)
     elif repeat_interval == DBRepeatInterval.YEARLY:
-        return base_time + timedelta(days=365)
+        next_time = base_time + relativedelta(years=1)
     elif repeat_interval == DBRepeatInterval.CUSTOM:
         total_days = custom_days or 0
         total_hours = custom_hours or 0
-        if total_days > 0 or total_hours > 0:
-            return base_time + timedelta(days=total_days, hours=total_hours)
+        if total_days == 0 and total_hours == 0:
+            return None
+        next_time = base_time + relativedelta(days=total_days, hours=total_hours)
 
-    return None
+    if next_time is None:
+        return None
+
+    if repeat_end_time and next_time > repeat_end_time:
+        return None
+
+    return next_time
