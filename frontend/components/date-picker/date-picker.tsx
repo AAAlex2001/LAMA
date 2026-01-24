@@ -11,13 +11,17 @@ interface DatePickerProps {
   onChange?: (date: Date) => void;
   locale?: string;
   className?: string;
+  selectedDates?: number[];
+  disableNavigation?: boolean;
 }
 
 export default function DatePicker({ 
   value, 
   onChange, 
   locale = 'ru',
-  className 
+  className,
+  selectedDates = [],
+  disableNavigation = false
 }: DatePickerProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(value || new Date());
   const [activeStartDate, setActiveStartDate] = useState<Date>(value || new Date());
@@ -34,6 +38,13 @@ export default function DatePicker({
       setSelectedDate(newValue);
       onChange?.(newValue);
     }
+  };
+
+  const getTileClassName = (date: Date) => {
+    if (selectedDates && selectedDates.length > 0 && selectedDates.includes(date.getDate())) {
+      return 'react-calendar__tile--selected';
+    }
+    return '';
   };
 
   const monthNames: Record<string, string[]> = {
@@ -70,6 +81,7 @@ export default function DatePicker({
         }}
         locale={locale}
         minDate={today}
+        tileClassName={({ date }) => getTileClassName(date)}
         formatShortWeekday={(locale, date) => {
           const dayIndex = (date.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
           return getWeekDay(locale || 'ru', dayIndex);
@@ -79,16 +91,16 @@ export default function DatePicker({
           const year = date.getFullYear();
           return getMonthName(locale || 'ru', monthIndex, year);
         }}
-        prevLabel={
+        prevLabel={disableNavigation ? null : (
           <div className={styles.chevron}>
             <ChevronDownIcon width={20} height={20} color="#383F45" />
           </div>
-        }
-        nextLabel={
+        )}
+        nextLabel={disableNavigation ? null : (
           <div className={styles.chevron}>
             <ChevronDownIcon width={20} height={20} color="#383F45" />
           </div>
-        }
+        )}
         prev2Label={null}
         next2Label={null}
         showNeighboringMonth={false}

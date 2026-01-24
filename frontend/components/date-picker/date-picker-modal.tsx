@@ -30,6 +30,7 @@ export default function DatePickerModal() {
           value={selectedDate || undefined}
           onChange={handleDateChange}
           locale="ru"
+          selectedDates={selectedDate ? [selectedDate.getDate()] : []}
         />
         <TimePicker
           hours={hours}

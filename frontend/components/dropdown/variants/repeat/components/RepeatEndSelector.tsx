@@ -71,6 +71,7 @@ export default function RepeatEndSelector({
           <DatePicker
             value={endDate || undefined}
             onChange={onEndDateChange}
+            selectedDates={endDate ? [endDate.getDate()] : []}
           />
         </div>
       )}
