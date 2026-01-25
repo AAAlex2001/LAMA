@@ -87,6 +87,24 @@ type FooterContent = {
   columns: Array<{ title: string; links: Array<{ text: string; href: string }> }>;
 };
 
+type HeaderContent = {
+  brandPrefix: string;
+  brandSuffix: string;
+  toolsLabel: string;
+  toolsOrder?: number;
+  loginText: string;
+  loginHref: string;
+  registerText: string;
+  registerHref: string;
+  telegramText: string;
+  telegramHref: string;
+  navLinks: Array<{ text: string; href: string; order?: number }>;
+};
+
+type ToolsContent = {
+  items: Array<{ title: string; description?: string | null; href: string; order?: number }>;
+};
+
 async function getApiBaseUrl(): Promise<string> {
   const envBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '/api').replace(/\/+$/, '');
   if (/^https?:\/\//i.test(envBase)) return envBase;
@@ -115,6 +133,16 @@ async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   }
 }
 
+async function fetchJsonOptional<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export default async function LocalePage({ params }: Props) {
   const { locale } = await params;
 
@@ -134,8 +162,7 @@ export default async function LocalePage({ params }: Props) {
   const pricingFallback: PricingContent = { headline: '', subtitle: '', description: '', plans: [] };
   const faqFallback: FAQContent = { headline: '', faqItems: [] };
   const footerFallback: FooterContent = { brandName: '', copyright: '', telegramLink: '', instagramLink: '', columns: [] };
-
-  const [hero, advantages, users, keyAdvantages, pricing, faq, footer] = await Promise.all([
+  const [hero, advantages, users, keyAdvantages, pricing, faq, footer, header, tools] = await Promise.all([
     fetchJson<HeroContent>(`${apiBaseUrl}/hero?locale=${locale}`, heroFallback),
     fetchJson<AdvantagesContent>(`${apiBaseUrl}/advantages?locale=${locale}`, advantagesFallback),
     fetchJson<UsersContent>(`${apiBaseUrl}/users?locale=${locale}`, usersFallback),
@@ -143,11 +170,13 @@ export default async function LocalePage({ params }: Props) {
     fetchJson<PricingContent>(`${apiBaseUrl}/pricing?locale=${locale}`, pricingFallback),
     fetchJson<FAQContent>(`${apiBaseUrl}/faq?locale=${locale}`, faqFallback),
     fetchJson<FooterContent>(`${apiBaseUrl}/footer?locale=${locale}`, footerFallback),
+    fetchJsonOptional<HeaderContent>(`${apiBaseUrl}/header?locale=${locale}`),
+    fetchJsonOptional<ToolsContent>(`${apiBaseUrl}/tools?locale=${locale}`),
   ]);
 
   return (
     <main>
-      <Header locale={locale} />
+      <Header locale={locale} content={header || undefined} toolsItems={tools?.items} />
       <Hero locale={locale} content={hero} />
       <div id="advantages">
         <Advantages locale={locale} content={advantages} />

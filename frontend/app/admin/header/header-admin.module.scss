@@ -1,0 +1,148 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  background: #f6f7fb;
+}
+
+.container {
+  flex: 1;
+  padding: 32px 40px 80px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.localeSelector {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.message {
+  margin-bottom: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e8f7ee;
+  color: #0f5c2f;
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: 24px;
+}
+
+.section {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+
+  span {
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr auto;
+  gap: 12px;
+
+  input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+.rowColumn {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+
+  input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+.rowTools {
+  display: grid;
+  grid-template-columns: 120px 1.2fr 1.6fr 1fr auto;
+  gap: 12px;
+
+  input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+}
+
+.addButton {
+  align-self: flex-start;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px dashed #94a3b8;
+  background: #f8fafc;
+  cursor: pointer;
+}
+
+.removeButton {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff1f2;
+  color: #be123c;
+  cursor: pointer;
+}
+
+.actions {
+  margin-top: 24px;
+}
+
+.saveButton {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: none;
+  background: #2563eb;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.loading {
+  padding: 40px;
+}

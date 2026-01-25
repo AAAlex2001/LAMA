@@ -115,6 +115,37 @@ class FooterContentRequest(BaseModel):
     columns: List[FooterColumn]
 
 
+class HeaderNavLink(BaseModel):
+    text: str
+    href: str
+    order: Optional[int] = None
+
+
+class ToolsItem(BaseModel):
+    title: str
+    description: Optional[str] = None
+    href: str
+    order: Optional[int] = None
+
+
+class HeaderContentRequest(BaseModel):
+    brandPrefix: str
+    brandSuffix: str
+    toolsLabel: str
+    toolsOrder: Optional[int] = None
+    loginText: str
+    loginHref: str
+    registerText: str
+    registerHref: str
+    telegramText: str
+    telegramHref: str
+    navLinks: List[HeaderNavLink]
+
+
+class ToolsContentRequest(BaseModel):
+    items: List[ToolsItem]
+
+
 class TemplateBlockAdvantage(BaseModel):
     text: str
 

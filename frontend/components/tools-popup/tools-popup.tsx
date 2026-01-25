@@ -8,47 +8,10 @@ interface ToolsPopupProps {
   onClose: () => void;
   anchorElement?: HTMLElement | null;
   variant?: 'header' | 'mobile';
+  items?: Array<{ title: string; description?: string | null; href: string; order?: number }>;
 }
 
-const toolsItems = [
-  {
-    title: 'Новая публикация',
-    description: 'Быстрый переход к созданию поста',
-    href: '/publications/new'
-  },
-  {
-    title: 'Календарь',
-    description: 'Визуальный контент-план с запланированными публикациями',
-    href: '/calendar'
-  },
-  {
-    title: 'Заметки',
-    description: 'Хранение идей, черновиков и материалов для постов',
-    href: '/notes'
-  },
-  {
-    title: 'Каналы/группы',
-    description: 'Список подключённых Telegram-каналов и чатов',
-    href: '/channels'
-  },
-  {
-    title: 'Боты',
-    description: 'Управление приветственными ботами и автоматизацией',
-    href: '/bots'
-  },
-  {
-    title: 'Inbox',
-    description: 'Входящие сообщения и обратная связь от пользователей',
-    href: '/inbox'
-  },
-  {
-    title: 'Парсер',
-    description: 'Сбор контента и аналитики из внешних источников',
-    href: '/parser'
-  }
-];
-
-export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = 'header' }: ToolsPopupProps) {
+export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = 'header', items }: ToolsPopupProps) {
   const popupRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,10 +40,16 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
 
   const variantClass = variant === 'mobile' ? styles.mobile : undefined;
 
+  const list = items && items.length > 0
+    ? [...items].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER))
+    : [];
+
+  if (list.length === 0) return null;
+
   return (
     <div className={[styles.popup, variantClass].filter(Boolean).join(' ')} ref={popupRef}>
       <div className={styles.content}>
-        {toolsItems.map((item, index) => (
+        {list.map((item, index) => (
           <a 
             key={index} 
             href={item.href} 
@@ -88,7 +57,7 @@ export default function ToolsPopup({ isOpen, onClose, anchorElement, variant = '
             onClick={onClose}
           >
             <div className={styles.title}>{item.title}</div>
-            <div className={styles.description}>{item.description}</div>
+            {item.description && <div className={styles.description}>{item.description}</div>}
           </a>
         ))}
       </div>

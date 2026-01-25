@@ -11,9 +11,23 @@ type Locale = 'ru' | 'sr' | 'en';
 
 type Props = {
   locale: string;
+  content?: {
+    brandPrefix?: string;
+    brandSuffix?: string;
+    toolsLabel?: string;
+    toolsOrder?: number;
+    loginText?: string;
+    loginHref?: string;
+    navLinks?: Array<{ text: string; href: string; order?: number }>;
+    registerText?: string;
+    registerHref?: string;
+    telegramText?: string;
+    telegramHref?: string;
+  };
+  toolsItems?: Array<{ title: string; description?: string | null; href: string; order?: number }>;
 };
 
-export default function Header({ locale: localeProp }: Props) {
+export default function Header({ locale: localeProp, content, toolsItems }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const locale = (localeProp as Locale) || 'ru';
@@ -24,6 +38,28 @@ export default function Header({ locale: localeProp }: Props) {
   const lastScrollY = useRef(0);
   const toolsRef = useRef<HTMLAnchorElement>(null);
   const langRef = useRef<HTMLDivElement>(null);
+
+  const navLinks = content?.navLinks ?? [];
+  const brandPrefix = content?.brandPrefix ?? '';
+  const brandSuffix = content?.brandSuffix ?? '';
+  const toolsLabel = content?.toolsLabel ?? '';
+  const loginText = content?.loginText ?? '';
+  const loginHref = content?.loginHref ?? '';
+  const toolsOrder = content?.toolsOrder;
+  const hasTools = Boolean(toolsLabel && toolsItems && toolsItems.length > 0);
+  const sortedNavLinks = [...navLinks].sort(
+    (a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+  );
+  const navItems = [
+    ...sortedNavLinks.map((link, index) => ({ type: 'link' as const, order: link.order, index, link })),
+    ...(hasTools ? [{ type: 'tools' as const, order: toolsOrder }] : []),
+  ].sort((a, b) => {
+    const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    if (a.type === 'link' && b.type === 'link') return a.index - b.index;
+    return a.type === 'tools' ? 1 : -1;
+  });
 
   const localeLabels = {
     ru: { code: 'RU', name: 'RU Русский' },
@@ -68,33 +104,43 @@ export default function Header({ locale: localeProp }: Props) {
           <div className={styles.brand}>
             <a href={`/${locale}`} className={styles.brandName}>
               <h1>
-                <span className={styles.lama}>LAMA</span>planner
+                <span className={styles.lama}>{brandPrefix}</span>{brandSuffix}
               </h1>
             </a>
           </div>
 
           <nav className={styles.nav}>
-            <a href="/about" className={styles.navLink}>О проекте</a>
-            <div className={styles.navLinkWrapper}>
-              <a 
-                ref={toolsRef}
-                href="#" 
-                className={styles.navLink}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsToolsOpen(!isToolsOpen);
-                }}
-              >
-                Инструменты
-              </a>
-              <ToolsPopup 
-                isOpen={isToolsOpen} 
-                onClose={() => setIsToolsOpen(false)}
-                anchorElement={toolsRef.current}
-              />
-            </div>
-            <a href="/pricing" className={styles.navLink}>Тарифы</a>
-            <a href="/knowledge-base" className={styles.navLink}>База знаний</a>
+            {navItems.map((item, index) => {
+              if (item.type === 'link') {
+                return (
+                  <a key={`link-${index}`} href={item.link.href} className={styles.navLink}>
+                    {item.link.text}
+                  </a>
+                );
+              }
+
+              return (
+                <div key="tools" className={styles.navLinkWrapper}>
+                  <a 
+                    ref={toolsRef}
+                    href="#" 
+                    className={styles.navLink}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setIsToolsOpen(!isToolsOpen);
+                    }}
+                  >
+                    {toolsLabel}
+                  </a>
+                  <ToolsPopup 
+                    isOpen={isToolsOpen} 
+                    onClose={() => setIsToolsOpen(false)}
+                    anchorElement={toolsRef.current}
+                    items={toolsItems}
+                  />
+                </div>
+              );
+            })}
           </nav>
 
           <div className={styles.right}>
@@ -121,16 +167,16 @@ export default function Header({ locale: localeProp }: Props) {
             </div>
             <div className={styles.loginButtonSmall}>
               <Button 
-                text="Войти" 
-                href={`/${locale}/maintenance`} 
+                text={loginText} 
+                href={loginHref} 
                 showArrow={false}
                 size="small"
               />
             </div>
             <div className={styles.loginButtonMedium}>
               <Button 
-                text="Войти" 
-                href={`/${locale}/maintenance`} 
+                text={loginText} 
+                href={loginHref} 
                 showArrow={false}
                 size="medium"
               />
@@ -147,7 +193,13 @@ export default function Header({ locale: localeProp }: Props) {
           </div>
         </div>
       </header>
-      <MobileMenu isOpen={isMenuOpen} onClose={() => setIsMenuOpen(false)} locale={locale} />
+      <MobileMenu
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        locale={locale}
+        headerContent={content}
+        toolsItems={toolsItems?.map((item) => ({ title: item.title, href: item.href }))}
+      />
     </>
   );
 }

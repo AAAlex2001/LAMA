@@ -8,19 +8,23 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   locale: string;
+  headerContent?: {
+    brandPrefix?: string;
+    brandSuffix?: string;
+    toolsLabel?: string;
+    toolsOrder?: number;
+    loginText?: string;
+    loginHref?: string;
+    registerText?: string;
+    registerHref?: string;
+    telegramText?: string;
+    telegramHref?: string;
+    navLinks?: Array<{ text: string; href: string; order?: number }>;
+  };
+  toolsItems?: Array<{ title: string; href: string; order?: number }>; // mobile uses title only
 }
 
-const toolsItems = [
-  { title: 'Новая публикация', href: '/publications/new' },
-  { title: 'Календарь', href: '/calendar' },
-  { title: 'Заметки', href: '/notes' },
-  { title: 'Каналы/группы', href: '/channels' },
-  { title: 'Боты', href: '/bots' },
-  { title: 'Inbox', href: '/inbox' },
-  { title: 'Парсер', href: '/parser' }
-];
-
-export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps) {
+export default function MobileMenu({ isOpen, onClose, locale, headerContent, toolsItems: toolsItemsProp }: MobileMenuProps) {
   const [isClosing, setIsClosing] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
 
@@ -33,6 +37,34 @@ export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps)
   };
 
   if (!isOpen) return null;
+
+  const navLinks = headerContent?.navLinks ?? [];
+  const toolsLabel = headerContent?.toolsLabel ?? '';
+  const toolsList = toolsItemsProp ?? [];
+  const brandPrefix = headerContent?.brandPrefix ?? '';
+  const brandSuffix = headerContent?.brandSuffix ?? '';
+  const registerText = headerContent?.registerText ?? '';
+  const registerHref = headerContent?.registerHref ?? '';
+  const telegramText = headerContent?.telegramText ?? '';
+  const telegramHref = headerContent?.telegramHref ?? '';
+  const toolsOrder = headerContent?.toolsOrder;
+  const hasTools = Boolean(toolsLabel && toolsList.length > 0);
+  const sortedNavLinks = [...navLinks].sort(
+    (a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+  );
+  const sortedToolsList = [...toolsList].sort(
+    (a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+  );
+  const navItems = [
+    ...sortedNavLinks.map((link, index) => ({ type: 'link' as const, order: link.order, index, link })),
+    ...(hasTools ? [{ type: 'tools' as const, order: toolsOrder }] : []),
+  ].sort((a, b) => {
+    const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
+    const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
+    if (orderA !== orderB) return orderA - orderB;
+    if (a.type === 'link' && b.type === 'link') return a.index - b.index;
+    return a.type === 'tools' ? 1 : -1;
+  });
 
   return (
     <div 
@@ -47,7 +79,7 @@ export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps)
           <div className={styles.brand}>
             <a href={`/${locale}`} className={styles.brandName}>
               <h1>
-                <span className={styles.lama}>LAMA</span>planner
+                <span className={styles.lama}>{brandPrefix}</span>{brandSuffix}
               </h1>
             </a>
           </div>
@@ -59,56 +91,63 @@ export default function MobileMenu({ isOpen, onClose, locale }: MobileMenuProps)
         </div>
 
         <nav className={styles.nav}>
-          <a href="/about" className={styles.navLink} onClick={handleClose}>О проекте</a>
-          
-          <div className={styles.toolsAccordion}>
-            <button 
-              className={`${styles.navLink} ${styles.toolsToggle} ${isToolsOpen ? styles.toolsToggleOpen : ''}`}
-              onClick={() => setIsToolsOpen(!isToolsOpen)}
-            >
-              Инструменты
-              <svg 
-                className={styles.chevron} 
-                width="16" 
-                height="16" 
-                viewBox="0 0 16 16" 
-                fill="none" 
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-            
-            <div className={`${styles.toolsList} ${isToolsOpen ? styles.toolsListOpen : ''}`}>
-              {toolsItems.map((item, index) => (
-                <a 
-                  key={index} 
-                  href={item.href} 
-                  className={styles.toolsItem}
-                  onClick={handleClose}
-                >
-                  {item.title}
+          {navItems.map((item, index) => {
+            if (item.type === 'link') {
+              return (
+                <a key={`link-${index}`} href={item.link.href} className={styles.navLink} onClick={handleClose}>
+                  {item.link.text}
                 </a>
-              ))}
-            </div>
-          </div>
-          
-          <a href="/pricing" className={styles.navLink} onClick={handleClose}>Тарифы</a>
-          <a href="/knowledge-base" className={styles.navLink} onClick={handleClose}>База знаний</a>
+              );
+            }
+
+            return (
+              <div key="tools" className={styles.toolsAccordion}>
+                <button 
+                  className={`${styles.navLink} ${styles.toolsToggle} ${isToolsOpen ? styles.toolsToggleOpen : ''}`}
+                  onClick={() => setIsToolsOpen(!isToolsOpen)}
+                >
+                  {toolsLabel}
+                  <svg 
+                    className={styles.chevron} 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 16 16" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M4 6L8 10L12 6" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </button>
+                
+                <div className={`${styles.toolsList} ${isToolsOpen ? styles.toolsListOpen : ''}`}>
+                  {sortedToolsList.map((tool, toolIndex) => (
+                    <a 
+                      key={toolIndex} 
+                      href={tool.href} 
+                      className={styles.toolsItem}
+                      onClick={handleClose}
+                    >
+                      {tool.title}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </nav>
 
         <div className={styles.actions}>
           <Button 
-            text="Зарегистрироваться" 
-            href={`/${locale}/maintenance`}
+            text={registerText} 
+            href={registerHref}
             showArrow={false}
             className={styles.loginButton}
             fullWidth={true}
             onClick={handleClose}
           />
           <Button 
-            text="Telegram канал" 
-            href="/telegram-channel" 
+            text={telegramText} 
+            href={telegramHref} 
             showArrow={false}
             className={styles.telegramButton}
             fullWidth={true}

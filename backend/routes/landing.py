@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.models.landing import Locale
-from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer, templates
+from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer, templates, header, tools
 from backend.schemas.landing import (
     HeroContentRequest,
     AdvantagesContentRequest,
@@ -16,6 +16,8 @@ from backend.schemas.landing import (
     UsersContentRequest,
     LamaContentRequest,
     FooterContentRequest,
+    HeaderContentRequest,
+    ToolsContentRequest,
     TemplateContentRequest,
     CreateTemplateRequest,
     UpdateTemplateRequest,
@@ -42,6 +44,66 @@ async def get_hero_content(
     """Получить контент для секции Hero"""
     parsed_locale = parse_locale(locale)
     return await hero.get_hero_content(db, locale=parsed_locale.value)
+
+
+@router.get("/header")
+async def get_header_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
+    """Получить контент для Header"""
+    parsed_locale = parse_locale(locale)
+    return await header.get_header_content(db, locale=parsed_locale.value)
+
+
+@router.put("/header")
+async def save_header_content(
+    data: HeaderContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
+    """Сохранить контент для Header"""
+    parsed_locale = parse_locale(locale)
+    return await header.save_header_content(
+        db,
+        brand_prefix=data.brandPrefix,
+        brand_suffix=data.brandSuffix,
+        tools_label=data.toolsLabel,
+        tools_order=data.toolsOrder,
+        login_text=data.loginText,
+        login_href=data.loginHref,
+        register_text=data.registerText,
+        register_href=data.registerHref,
+        telegram_text=data.telegramText,
+        telegram_href=data.telegramHref,
+        nav_links=[link.dict() for link in data.navLinks],
+        locale=parsed_locale.value,
+    )
+
+
+@router.get("/tools")
+async def get_tools_content(
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
+    """Получить контент для Tools"""
+    parsed_locale = parse_locale(locale)
+    return await tools.get_tools_content(db, locale=parsed_locale.value)
+
+
+@router.put("/tools")
+async def save_tools_content(
+    data: ToolsContentRequest,
+    db: AsyncSession = Depends(get_db),
+    locale: str = Query(default="ru", description="Локаль контента")
+):
+    """Сохранить контент для Tools"""
+    parsed_locale = parse_locale(locale)
+    return await tools.save_tools_content(
+        db,
+        items=[item.dict() for item in data.items],
+        locale=parsed_locale.value,
+    )
 
 
 @router.put("/hero")
