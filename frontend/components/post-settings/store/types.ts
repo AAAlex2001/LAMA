@@ -9,6 +9,7 @@ export interface ChannelOption {
 }
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
 
@@ -21,6 +22,12 @@ export interface PostSettingsData {
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+  repeatCustomUnit: RepeatCustomUnit;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
    repeatEndType: 'never' | 'date';
    repeatEndDate: Date | null;
   autoDeleteInterval: AutoDeleteOption;
@@ -35,6 +42,12 @@ export interface PostSettingsState {
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+  repeatCustomUnit: RepeatCustomUnit;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
    repeatEndType: 'never' | 'date';
    repeatEndDate: Date | null;
   autoDeleteInterval: AutoDeleteOption;
@@ -49,6 +62,12 @@ export type PostSettingsAction =
   | { type: 'SET_REPEAT_INTERVAL'; payload: RepeatOption }
   | { type: 'SET_REPEAT_CUSTOM_DAYS'; payload: number }
   | { type: 'SET_REPEAT_CUSTOM_HOURS'; payload: number }
+  | { type: 'SET_REPEAT_CUSTOM_UNIT'; payload: RepeatCustomUnit }
+  | { type: 'SET_REPEAT_CUSTOM_VALUE'; payload: number }
+  | { type: 'SET_REPEAT_WEEKDAYS'; payload: number[] }
+  | { type: 'SET_REPEAT_MONTH_DAYS'; payload: number[] }
+  | { type: 'SET_REPEAT_YEAR_MONTH'; payload: number }
+  | { type: 'SET_REPEAT_YEAR_DAYS'; payload: number[] }
   | { type: 'SET_REPEAT_END_TYPE'; payload: 'never' | 'date' }
   | { type: 'SET_REPEAT_END_DATE'; payload: Date | null }
   | { type: 'SET_AUTO_DELETE_INTERVAL'; payload: AutoDeleteOption }
@@ -63,6 +82,12 @@ export const initialPostSettingsState: PostSettingsState = {
   repeatInterval: 'never',
   repeatCustomDays: 0,
   repeatCustomHours: 0,
+  repeatCustomUnit: 'days',
+  repeatCustomValue: 1,
+  repeatWeekdays: [],
+  repeatMonthDays: [new Date().getDate()],
+  repeatYearMonth: new Date().getMonth(),
+  repeatYearDays: [new Date().getDate()],
   repeatEndType: 'never',
   repeatEndDate: null,
   autoDeleteInterval: 'never',
@@ -87,6 +112,18 @@ export function postSettingsReducer(
       return { ...state, repeatCustomDays: action.payload };
     case 'SET_REPEAT_CUSTOM_HOURS':
       return { ...state, repeatCustomHours: action.payload };
+    case 'SET_REPEAT_CUSTOM_UNIT':
+      return { ...state, repeatCustomUnit: action.payload };
+    case 'SET_REPEAT_CUSTOM_VALUE':
+      return { ...state, repeatCustomValue: action.payload };
+    case 'SET_REPEAT_WEEKDAYS':
+      return { ...state, repeatWeekdays: action.payload };
+    case 'SET_REPEAT_MONTH_DAYS':
+      return { ...state, repeatMonthDays: action.payload };
+    case 'SET_REPEAT_YEAR_MONTH':
+      return { ...state, repeatYearMonth: action.payload };
+    case 'SET_REPEAT_YEAR_DAYS':
+      return { ...state, repeatYearDays: action.payload };
     case 'SET_REPEAT_END_TYPE':
       return { ...state, repeatEndType: action.payload };
     case 'SET_REPEAT_END_DATE':

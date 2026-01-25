@@ -42,6 +42,12 @@ export interface CreatePostRequest {
   repeat_interval?: string;
   repeat_custom_days?: number;
   repeat_custom_hours?: number;
+  repeat_custom_unit?: 'days' | 'weeks' | 'months' | 'years';
+  repeat_custom_value?: number;
+  repeat_weekdays?: number[];
+  repeat_month_days?: number[];
+  repeat_year_month?: number;
+  repeat_year_days?: number[];
   repeat_end_time?: string;
   series_id?: number;
   series_order?: number;

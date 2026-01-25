@@ -37,6 +37,13 @@ class RepeatInterval(str, Enum):
     CUSTOM = "custom"
 
 
+class RepeatCustomUnit(str, Enum):
+    DAYS = "days"
+    WEEKS = "weeks"
+    MONTHS = "months"
+    YEARS = "years"
+
+
 class InlineButton(BaseModel):
     text: str
     url: Optional[str] = None
@@ -151,6 +158,33 @@ class PublicationBase(BaseModel):
         ge=0,
         description="Custom repeat interval in hours (only used when repeat_interval is custom)"
     )
+    repeat_custom_unit: Optional[RepeatCustomUnit] = Field(
+        None,
+        description="Custom repeat unit (days/weeks/months/years)"
+    )
+    repeat_custom_value: Optional[int] = Field(
+        None,
+        ge=1,
+        description="Custom repeat value for the selected unit"
+    )
+    repeat_weekdays: Optional[List[int]] = Field(
+        None,
+        description="Weekdays for weekly custom repeat (0=Sunday, 1=Monday, ... 6=Saturday)"
+    )
+    repeat_month_days: Optional[List[int]] = Field(
+        None,
+        description="Days of month for monthly custom repeat (1-31)"
+    )
+    repeat_year_month: Optional[int] = Field(
+        None,
+        ge=1,
+        le=12,
+        description="Month for yearly custom repeat (1-12)"
+    )
+    repeat_year_days: Optional[List[int]] = Field(
+        None,
+        description="Days of month for yearly custom repeat (1-31)"
+    )
     repeat_end_time: Optional[datetime] = Field(
         None,
         description="Дата/время, после которого повторы прекращаются (включительно)"
@@ -212,6 +246,26 @@ class PublicationBase(BaseModel):
                 raise ValueError('correct_option_id is required for quizzes')
         return v
 
+    @validator('repeat_weekdays')
+    def validate_repeat_weekdays(cls, v):
+        if v is None:
+            return v
+        unique = sorted(set(v))
+        for day in unique:
+            if day < 0 or day > 6:
+                raise ValueError('repeat_weekdays must be in range 0..6')
+        return unique
+
+    @validator('repeat_month_days', 'repeat_year_days')
+    def validate_repeat_month_days(cls, v):
+        if v is None:
+            return v
+        unique = sorted(set(v))
+        for day in unique:
+            if day < 1 or day > 31:
+                raise ValueError('repeat month/day values must be in range 1..31')
+        return unique
+
 
 class PublicationCreate(PublicationBase):
     status: PublicationStatus = PublicationStatus.DRAFT
@@ -249,6 +303,12 @@ class PublicationUpdate(BaseModel):
         ge=0,
         description="Custom repeat interval in hours (only used when repeat_interval is CUSTOM)"
     )
+    repeat_custom_unit: Optional[RepeatCustomUnit] = None
+    repeat_custom_value: Optional[int] = Field(None, ge=1)
+    repeat_weekdays: Optional[List[int]] = None
+    repeat_month_days: Optional[List[int]] = None
+    repeat_year_month: Optional[int] = Field(None, ge=1, le=12)
+    repeat_year_days: Optional[List[int]] = None
     repeat_end_time: Optional[datetime] = None
     scheduled_time: Optional[datetime] = None
     timezone: Optional[str] = None
@@ -275,6 +335,26 @@ class PublicationUpdate(BaseModel):
         if end_time and scheduled_time and end_time < scheduled_time:
             raise ValueError('repeat_end_time cannot be earlier than scheduled_time')
         return values
+
+    @validator('repeat_weekdays')
+    def validate_repeat_weekdays(cls, v):
+        if v is None:
+            return v
+        unique = sorted(set(v))
+        for day in unique:
+            if day < 0 or day > 6:
+                raise ValueError('repeat_weekdays must be in range 0..6')
+        return unique
+
+    @validator('repeat_month_days', 'repeat_year_days')
+    def validate_repeat_month_days(cls, v):
+        if v is None:
+            return v
+        unique = sorted(set(v))
+        for day in unique:
+            if day < 1 or day > 31:
+                raise ValueError('repeat month/day values must be in range 1..31')
+        return unique
 
 
 class PublicationResponse(BaseModel):
@@ -307,6 +387,12 @@ class PublicationResponse(BaseModel):
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     repeat_custom_days: Optional[int] = None
     repeat_custom_hours: Optional[int] = None
+    repeat_custom_unit: Optional[RepeatCustomUnit] = None
+    repeat_custom_value: Optional[int] = None
+    repeat_weekdays: Optional[List[int]] = None
+    repeat_month_days: Optional[List[int]] = None
+    repeat_year_month: Optional[int] = None
+    repeat_year_days: Optional[List[int]] = None
     next_repeat_time: Optional[datetime] = None
     repeat_end_time: Optional[datetime] = None
     created_at: datetime

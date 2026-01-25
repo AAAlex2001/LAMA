@@ -23,7 +23,23 @@ interface RepeatContentPropsExtended extends RepeatContentProps {
 
 export default function RepeatContent({
   repeatValue,
+  repeatCustomDays,
+  repeatCustomHours,
+  repeatCustomUnit,
+  repeatCustomValue,
+  repeatWeekdays,
+  repeatMonthDays,
+  repeatYearMonth,
+  repeatYearDays,
   onRepeatChange,
+  onRepeatCustomDaysChange,
+  onRepeatCustomHoursChange,
+  onRepeatCustomUnitChange,
+  onRepeatCustomValueChange,
+  onRepeatWeekdaysChange,
+  onRepeatMonthDaysChange,
+  onRepeatYearMonthChange,
+  onRepeatYearDaysChange,
   viewMode,
   onViewModeChange,
   publishHours = 12,
@@ -76,7 +92,32 @@ export default function RepeatContent({
   }
 
   if (viewMode === 'custom') {
-    return <RepeatCustomCase onBack={handleBack} />;
+    return (
+      <RepeatCustomCase
+        onBack={handleBack}
+        repeatCustomDays={repeatCustomDays}
+        repeatCustomHours={repeatCustomHours}
+        repeatCustomUnit={repeatCustomUnit}
+        repeatCustomValue={repeatCustomValue}
+        repeatWeekdays={repeatWeekdays}
+        repeatMonthDays={repeatMonthDays}
+        repeatYearMonth={repeatYearMonth}
+        repeatYearDays={repeatYearDays}
+        onRepeatChange={onRepeatChange}
+        onRepeatCustomDaysChange={onRepeatCustomDaysChange}
+        onRepeatCustomHoursChange={onRepeatCustomHoursChange}
+        onRepeatCustomUnitChange={onRepeatCustomUnitChange}
+        onRepeatCustomValueChange={onRepeatCustomValueChange}
+        onRepeatWeekdaysChange={onRepeatWeekdaysChange}
+        onRepeatMonthDaysChange={onRepeatMonthDaysChange}
+        onRepeatYearMonthChange={onRepeatYearMonthChange}
+        onRepeatYearDaysChange={onRepeatYearDaysChange}
+        repeatEndType={repeatEndType}
+        repeatEndDate={repeatEndDate}
+        onRepeatEndTypeChange={onRepeatEndTypeChange}
+        onRepeatEndDateChange={onRepeatEndDateChange}
+      />
+    );
   }
 
   return (
@@ -88,7 +129,10 @@ export default function RepeatContent({
           onViewModeChange('daily');
         }
       }}
-      onCustomClick={() => onViewModeChange('custom')}
+      onCustomClick={() => {
+        onRepeatChange?.('custom');
+        onViewModeChange('custom');
+      }}
     />
   );
 }

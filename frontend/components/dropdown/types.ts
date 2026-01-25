@@ -54,11 +54,23 @@ export interface RepeatContentProps {
   repeatValue: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+  repeatCustomUnit: 'days' | 'weeks' | 'months' | 'years';
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
    repeatEndType: 'never' | 'date';
    repeatEndDate: Date | null;
   onRepeatChange?: (value: RepeatOption) => void;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
+  onRepeatCustomUnitChange?: (value: 'days' | 'weeks' | 'months' | 'years') => void;
+  onRepeatCustomValueChange?: (value: number) => void;
+  onRepeatWeekdaysChange?: (value: number[]) => void;
+  onRepeatMonthDaysChange?: (value: number[]) => void;
+  onRepeatYearMonthChange?: (value: number) => void;
+  onRepeatYearDaysChange?: (value: number[]) => void;
    onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
    onRepeatEndDateChange?: (value: Date | null) => void;
 }

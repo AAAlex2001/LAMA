@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import calendar
 from typing import Optional, List, Dict
 import pytz
 from dateutil.relativedelta import relativedelta
@@ -230,7 +231,13 @@ def calculate_next_repeat_time(
     repeat_interval: DBRepeatInterval,
     custom_days: Optional[int] = None,
     custom_hours: Optional[int] = None,
-    repeat_end_time: Optional[datetime] = None
+    repeat_end_time: Optional[datetime] = None,
+    custom_unit: Optional[str] = None,
+    custom_value: Optional[int] = None,
+    repeat_weekdays: Optional[List[int]] = None,
+    repeat_month_days: Optional[List[int]] = None,
+    repeat_year_month: Optional[int] = None,
+    repeat_year_days: Optional[List[int]] = None
 ) -> Optional[datetime]:
     """Вычислить следующее время повтора"""
     if repeat_interval == DBRepeatInterval.NEVER:
@@ -250,11 +257,71 @@ def calculate_next_repeat_time(
     elif repeat_interval == DBRepeatInterval.YEARLY:
         next_time = base_time + relativedelta(years=1)
     elif repeat_interval == DBRepeatInterval.CUSTOM:
-        total_days = custom_days or 0
-        total_hours = custom_hours or 0
-        if total_days == 0 and total_hours == 0:
-            return None
-        next_time = base_time + relativedelta(days=total_days, hours=total_hours)
+        if custom_unit and custom_value and custom_value > 0:
+            unit = custom_unit
+
+            if unit == "days":
+                next_time = base_time + relativedelta(days=custom_value)
+
+            elif unit == "weeks":
+                allowed_weekdays = repeat_weekdays or ([0] if base_time.weekday() == 6 else [base_time.weekday() + 1])
+                # UI: Sunday=0, Monday=1... Saturday=6 -> map to Python weekday (Mon=0..Sun=6)
+                normalized_weekdays = []
+                for day in allowed_weekdays:
+                    if day == 0:
+                        normalized_weekdays.append(6)
+                    else:
+                        normalized_weekdays.append(day - 1)
+                normalized_weekdays = sorted(set(normalized_weekdays))
+
+                base_date = base_time.date()
+                base_week_start = base_date - timedelta(days=base_date.weekday())
+                max_days = custom_value * 7 * 2
+                for offset in range(1, max_days + 1):
+                    candidate_date = base_date + timedelta(days=offset)
+                    weeks_since_base = ((candidate_date - base_week_start).days) // 7
+                    if weeks_since_base % custom_value != 0:
+                        continue
+                    if candidate_date.weekday() not in normalized_weekdays:
+                        continue
+                    next_time = base_time.replace(
+                        year=candidate_date.year,
+                        month=candidate_date.month,
+                        day=candidate_date.day,
+                    )
+                    break
+
+            elif unit == "months":
+                days = sorted(set(repeat_month_days or [base_time.day]))
+                candidate = base_time + relativedelta(months=custom_value)
+                for _ in range(24):
+                    last_day = calendar.monthrange(candidate.year, candidate.month)[1]
+                    valid_days = [d for d in days if d <= last_day]
+                    if valid_days:
+                        day = valid_days[0]
+                        next_time = candidate.replace(day=day)
+                        break
+                    candidate = candidate + relativedelta(months=custom_value)
+
+            elif unit == "years":
+                days = sorted(set(repeat_year_days or [base_time.day]))
+                month = repeat_year_month or base_time.month
+                candidate_year = base_time.year + custom_value
+                for _ in range(24):
+                    last_day = calendar.monthrange(candidate_year, month)[1]
+                    valid_days = [d for d in days if d <= last_day]
+                    if valid_days:
+                        day = valid_days[0]
+                        next_time = base_time.replace(year=candidate_year, month=month, day=day)
+                        break
+                    candidate_year += custom_value
+
+        else:
+            total_days = custom_days or 0
+            total_hours = custom_hours or 0
+            if total_days == 0 and total_hours == 0:
+                return None
+            next_time = base_time + relativedelta(days=total_days, hours=total_hours)
 
     if next_time is None:
         return None

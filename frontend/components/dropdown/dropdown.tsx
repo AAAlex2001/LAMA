@@ -54,8 +54,20 @@ interface DropdownProps {
   onRepeatChange?: (value: RepeatOption) => void;
   repeatCustomDays?: number;
   repeatCustomHours?: number;
+  repeatCustomUnit?: 'days' | 'weeks' | 'months' | 'years';
+  repeatCustomValue?: number;
+  repeatWeekdays?: number[];
+  repeatMonthDays?: number[];
+  repeatYearMonth?: number;
+  repeatYearDays?: number[];
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
+  onRepeatCustomUnitChange?: (value: 'days' | 'weeks' | 'months' | 'years') => void;
+  onRepeatCustomValueChange?: (value: number) => void;
+  onRepeatWeekdaysChange?: (value: number[]) => void;
+  onRepeatMonthDaysChange?: (value: number[]) => void;
+  onRepeatYearMonthChange?: (value: number) => void;
+  onRepeatYearDaysChange?: (value: number[]) => void;
   repeatEndType?: 'never' | 'date';
   repeatEndDate?: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
@@ -102,8 +114,20 @@ export default function Dropdown({
   onRepeatChange,
   repeatCustomDays = 0,
   repeatCustomHours = 0,
+  repeatCustomUnit = 'days',
+  repeatCustomValue = 1,
+  repeatWeekdays = [],
+  repeatMonthDays = [],
+  repeatYearMonth = 0,
+  repeatYearDays = [],
   onRepeatCustomDaysChange,
   onRepeatCustomHoursChange,
+  onRepeatCustomUnitChange,
+  onRepeatCustomValueChange,
+  onRepeatWeekdaysChange,
+  onRepeatMonthDaysChange,
+  onRepeatYearMonthChange,
+  onRepeatYearDaysChange,
   repeatEndType = 'never',
   repeatEndDate = null,
   onRepeatEndTypeChange,
@@ -179,11 +203,23 @@ export default function Dropdown({
             repeatValue={repeatValue}
             repeatCustomDays={repeatCustomDays}
             repeatCustomHours={repeatCustomHours}
+            repeatCustomUnit={repeatCustomUnit}
+            repeatCustomValue={repeatCustomValue}
+            repeatWeekdays={repeatWeekdays}
+            repeatMonthDays={repeatMonthDays}
+            repeatYearMonth={repeatYearMonth}
+            repeatYearDays={repeatYearDays}
             repeatEndType={repeatEndType}
             repeatEndDate={repeatEndDate}
             onRepeatChange={onRepeatChange}
             onRepeatCustomDaysChange={onRepeatCustomDaysChange}
             onRepeatCustomHoursChange={onRepeatCustomHoursChange}
+            onRepeatCustomUnitChange={onRepeatCustomUnitChange}
+            onRepeatCustomValueChange={onRepeatCustomValueChange}
+            onRepeatWeekdaysChange={onRepeatWeekdaysChange}
+            onRepeatMonthDaysChange={onRepeatMonthDaysChange}
+            onRepeatYearMonthChange={onRepeatYearMonthChange}
+            onRepeatYearDaysChange={onRepeatYearDaysChange}
             onRepeatEndTypeChange={onRepeatEndTypeChange}
             onRepeatEndDateChange={onRepeatEndDateChange}
             viewMode={repeatViewMode}

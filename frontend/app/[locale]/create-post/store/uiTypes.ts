@@ -10,6 +10,12 @@ export interface PostSettingsFromUI {
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;
+  repeatCustomUnit: 'days' | 'weeks' | 'months' | 'years';
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
   autoDeleteInterval: AutoDeleteOption;

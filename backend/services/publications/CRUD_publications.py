@@ -56,6 +56,12 @@ class CRUDPublicationService:
                 data.repeat_interval, str) else DBRepeatInterval[data.repeat_interval.name],
             repeat_custom_days=data.repeat_custom_days,
             repeat_custom_hours=data.repeat_custom_hours,
+            repeat_custom_unit=data.repeat_custom_unit.value if data.repeat_custom_unit else None,
+            repeat_custom_value=data.repeat_custom_value,
+            repeat_weekdays=data.repeat_weekdays,
+            repeat_month_days=data.repeat_month_days,
+            repeat_year_month=data.repeat_year_month,
+            repeat_year_days=data.repeat_year_days,
             repeat_end_time=data.repeat_end_time,
             scheduled_time=data.scheduled_time,
             timezone=data.timezone,
@@ -220,6 +226,10 @@ class CRUDPublicationService:
 
         if 'status' in update_data:
             update_data['status'] = DBPublicationStatus[update_data['status'].value.upper()]
+
+        if 'repeat_custom_unit' in update_data:
+            unit_value = update_data['repeat_custom_unit']
+            update_data['repeat_custom_unit'] = unit_value.value if hasattr(unit_value, 'value') else unit_value
 
         for key, value in update_data.items():
             setattr(publication, key, value)

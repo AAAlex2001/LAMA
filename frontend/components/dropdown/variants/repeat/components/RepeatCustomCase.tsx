@@ -9,9 +9,30 @@ import MonthSelector from './MonthSelector';
 import MonthDatePicker from '@/components/month-date-picker';
 import { DatePicker } from '@/components/date-picker';
 import Toggle from '@/components/toggle/toggle';
+import RepeatEndSelector from './RepeatEndSelector';
 
 interface RepeatCustomCaseProps {
   onBack: () => void;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
+  repeatCustomUnit: IntervalType;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
+  onRepeatCustomDaysChange?: (value: number) => void;
+  onRepeatCustomHoursChange?: (value: number) => void;
+  onRepeatCustomUnitChange?: (value: IntervalType) => void;
+  onRepeatCustomValueChange?: (value: number) => void;
+  onRepeatWeekdaysChange?: (value: number[]) => void;
+  onRepeatMonthDaysChange?: (value: number[]) => void;
+  onRepeatYearMonthChange?: (value: number) => void;
+  onRepeatYearDaysChange?: (value: number[]) => void;
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: Date | null;
+  onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
+  onRepeatEndDateChange?: (value: Date | null) => void;
 }
 
 function pluralize(n: number, one: string, few: string, many: string): string {
@@ -23,14 +44,75 @@ function pluralize(n: number, one: string, few: string, many: string): string {
   return many;
 }
 
-export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
-  const [intervalType, setIntervalType] = useState<IntervalType>('days');
-  const [intervalValue, setIntervalValue] = useState(1);
-  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>([]);
-  const [selectedMonthDates, setSelectedMonthDates] = useState<number[]>([new Date().getDate()]);
-  const [selectedYearMonth, setSelectedYearMonth] = useState(new Date().getMonth());
+export default function RepeatCustomCase({
+  onBack,
+  repeatCustomDays,
+  repeatCustomHours,
+  repeatCustomUnit,
+  repeatCustomValue,
+  repeatWeekdays,
+  repeatMonthDays,
+  repeatYearMonth,
+  repeatYearDays,
+  onRepeatCustomDaysChange,
+  onRepeatCustomHoursChange,
+  onRepeatCustomUnitChange,
+  onRepeatCustomValueChange,
+  onRepeatWeekdaysChange,
+  onRepeatMonthDaysChange,
+  onRepeatYearMonthChange,
+  onRepeatYearDaysChange,
+  repeatEndType,
+  repeatEndDate,
+  onRepeatEndTypeChange,
+  onRepeatEndDateChange,
+}: RepeatCustomCaseProps) {
+  const [intervalType, setIntervalType] = useState<IntervalType>(repeatCustomUnit || 'days');
+  const [intervalValue, setIntervalValue] = useState(() => (repeatCustomValue > 0 ? repeatCustomValue : 1));
+  const [selectedWeekdays, setSelectedWeekdays] = useState<number[]>(repeatWeekdays || []);
+  const [selectedMonthDates, setSelectedMonthDates] = useState<number[]>(repeatMonthDays?.length ? repeatMonthDays : [new Date().getDate()]);
+  const [selectedYearMonth, setSelectedYearMonth] = useState(repeatYearMonth ?? new Date().getMonth());
   const [showYearDays, setShowYearDays] = useState(false);
-  const [selectedYearDates, setSelectedYearDates] = useState<number[]>([new Date().getDate()]);
+  const [selectedYearDates, setSelectedYearDates] = useState<number[]>(repeatYearDays?.length ? repeatYearDays : [new Date().getDate()]);
+
+  const updateCustomInterval = (type: IntervalType, value: number) => {
+    const normalizedValue = Math.max(1, value);
+    let customDays = 0;
+
+    switch (type) {
+      case 'days':
+        customDays = normalizedValue;
+        break;
+      case 'weeks':
+        customDays = normalizedValue * 7;
+        break;
+      case 'months':
+        customDays = normalizedValue * 30;
+        break;
+      case 'years':
+        customDays = normalizedValue * 365;
+        break;
+      default:
+        customDays = normalizedValue;
+    }
+
+    onRepeatCustomUnitChange?.(type);
+    onRepeatCustomValueChange?.(normalizedValue);
+    onRepeatCustomDaysChange?.(customDays);
+    if (repeatCustomHours !== 0) {
+      onRepeatCustomHoursChange?.(0);
+    }
+  };
+
+  const handleIntervalTypeChange = (type: IntervalType) => {
+    setIntervalType(type);
+    updateCustomInterval(type, intervalValue);
+  };
+
+  const handleIntervalValueChange = (value: number) => {
+    setIntervalValue(value);
+    updateCustomInterval(intervalType, value);
+  };
 
   useEffect(() => {
     const now = new Date();
@@ -98,7 +180,7 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
   const formatMonthsDescription = (): string => {
     if (selectedMonthDates.length === 0) return '';
     
-    const days = selectedMonthDates.sort((a, b) => a - b).join(', ');
+    const days = [...selectedMonthDates].sort((a, b) => a - b).join(', ');
     
     if (intervalValue === 1) {
       return `Каждый месяц ${days} числа`;
@@ -116,12 +198,11 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
 
   const toggleMonthDate = (date: number | Date) => {
     const day = typeof date === 'number' ? date : date.getDate();
-    setSelectedMonthDates(prev => {
-      if (prev.includes(day)) {
-        return prev.filter(d => d !== day);
-      }
-      return [...prev, day];
-    });
+    const next = selectedMonthDates.includes(day)
+      ? selectedMonthDates.filter(d => d !== day)
+      : [...selectedMonthDates, day];
+    setSelectedMonthDates(next);
+    onRepeatMonthDaysChange?.(next);
   };
 
   const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -129,7 +210,7 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
   const formatYearsDescription = (): string => {
     if (selectedYearDates.length === 0) return '';
     
-    const days = selectedYearDates.sort((a, b) => a - b).join(', ');
+    const days = [...selectedYearDates].sort((a, b) => a - b).join(', ');
     const monthName = monthNames[selectedYearMonth];
     
     if (intervalValue === 1) {
@@ -148,12 +229,11 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
 
   const toggleYearDate = (date: Date) => {
     const day = date.getDate();
-    setSelectedYearDates(prev => {
-      if (prev.includes(day)) {
-        return prev.filter(d => d !== day);
-      }
-      return [...prev, day];
-    });
+    const next = selectedYearDates.includes(day)
+      ? selectedYearDates.filter(d => d !== day)
+      : [...selectedYearDates, day];
+    setSelectedYearDates(next);
+    onRepeatYearDaysChange?.(next);
   };
 
   return (
@@ -188,7 +268,7 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
         </div>
       )}
 
-      <IntervalSelector value={intervalType} onChange={setIntervalType} />
+      <IntervalSelector value={intervalType} onChange={handleIntervalTypeChange} />
 
       <div className={styles.repeatCustomIntervalRow}>
         <span className={styles.repeatCustomIntervalText}>{getEveryLabel(intervalType, intervalValue)}</span>
@@ -199,14 +279,17 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
 
       <IntervalValuePicker
         value={intervalValue}
-        onChange={setIntervalValue}
+        onChange={handleIntervalValueChange}
         label={getIntervalLabel(intervalType, intervalValue)}
       />
 
       {intervalType === 'weeks' && (
         <WeekdaySelector
           selectedDays={selectedWeekdays}
-          onChange={setSelectedWeekdays}
+          onChange={(days) => {
+            setSelectedWeekdays(days);
+            onRepeatWeekdaysChange?.(days);
+          }}
         />
       )}
 
@@ -221,7 +304,10 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
         <>
           <MonthSelector
             selectedMonth={selectedYearMonth}
-            onChange={setSelectedYearMonth}
+            onChange={(month) => {
+              setSelectedYearMonth(month);
+              onRepeatYearMonthChange?.(month);
+            }}
           />
           <div className={styles.yearDaysToggle}>
             <span className={styles.yearDaysLabel}>Дни недели</span>
@@ -237,6 +323,13 @@ export default function RepeatCustomCase({ onBack }: RepeatCustomCaseProps) {
           )}
         </>
       )}
+
+      <RepeatEndSelector
+        value={repeatEndType}
+        onChange={(value) => onRepeatEndTypeChange?.(value)}
+        endDate={repeatEndDate}
+        onEndDateChange={(date) => onRepeatEndDateChange?.(date)}
+      />
     </div>
   );
 }

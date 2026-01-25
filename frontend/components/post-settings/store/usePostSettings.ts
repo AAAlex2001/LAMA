@@ -7,6 +7,7 @@ import {
   type ChannelOption,
   type PostSettingsData,
   type RepeatOption,
+  type RepeatCustomUnit,
   type AutoDeleteOption,
   type TagColor,
   initialPostSettingsState,
@@ -65,6 +66,12 @@ export function usePostSettings() {
       repeatInterval: state.repeatInterval,
       repeatCustomDays: state.repeatCustomDays,
       repeatCustomHours: state.repeatCustomHours,
+      repeatCustomUnit: state.repeatCustomUnit,
+      repeatCustomValue: state.repeatCustomValue,
+      repeatWeekdays: state.repeatWeekdays,
+      repeatMonthDays: state.repeatMonthDays,
+      repeatYearMonth: state.repeatYearMonth,
+      repeatYearDays: state.repeatYearDays,
       repeatEndType: state.repeatEndType,
       repeatEndDate: state.repeatEndDate,
       autoDeleteInterval: state.autoDeleteInterval,
@@ -121,6 +128,30 @@ export function usePostSettings() {
     dispatch({ type: 'SET_REPEAT_CUSTOM_HOURS', payload: value });
   };
 
+  const handleRepeatCustomUnitChange = (value: RepeatCustomUnit) => {
+    dispatch({ type: 'SET_REPEAT_CUSTOM_UNIT', payload: value });
+  };
+
+  const handleRepeatCustomValueChange = (value: number) => {
+    dispatch({ type: 'SET_REPEAT_CUSTOM_VALUE', payload: value });
+  };
+
+  const handleRepeatWeekdaysChange = (value: number[]) => {
+    dispatch({ type: 'SET_REPEAT_WEEKDAYS', payload: value });
+  };
+
+  const handleRepeatMonthDaysChange = (value: number[]) => {
+    dispatch({ type: 'SET_REPEAT_MONTH_DAYS', payload: value });
+  };
+
+  const handleRepeatYearMonthChange = (value: number) => {
+    dispatch({ type: 'SET_REPEAT_YEAR_MONTH', payload: value });
+  };
+
+  const handleRepeatYearDaysChange = (value: number[]) => {
+    dispatch({ type: 'SET_REPEAT_YEAR_DAYS', payload: value });
+  };
+
   const handleRepeatEndTypeChange = (value: 'never' | 'date') => {
     dispatch({ type: 'SET_REPEAT_END_TYPE', payload: value });
     if (value === 'never') {
@@ -163,6 +194,12 @@ export function usePostSettings() {
     repeatInterval: state.repeatInterval,
     repeatCustomDays: state.repeatCustomDays,
     repeatCustomHours: state.repeatCustomHours,
+    repeatCustomUnit: state.repeatCustomUnit,
+    repeatCustomValue: state.repeatCustomValue,
+    repeatWeekdays: state.repeatWeekdays,
+    repeatMonthDays: state.repeatMonthDays,
+    repeatYearMonth: state.repeatYearMonth,
+    repeatYearDays: state.repeatYearDays,
     repeatEndType: state.repeatEndType,
     repeatEndDate: state.repeatEndDate,
     autoDeleteInterval: state.autoDeleteInterval,
@@ -205,6 +242,12 @@ export function usePostSettings() {
     handleRepeatChange,
     handleRepeatCustomDaysChange,
     handleRepeatCustomHoursChange,
+    handleRepeatCustomUnitChange,
+    handleRepeatCustomValueChange,
+    handleRepeatWeekdaysChange,
+    handleRepeatMonthDaysChange,
+    handleRepeatYearMonthChange,
+    handleRepeatYearDaysChange,
     handleRepeatEndTypeChange,
     handleRepeatEndDateChange,
     handleAutoDeleteChange,

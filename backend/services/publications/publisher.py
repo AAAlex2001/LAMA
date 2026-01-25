@@ -368,7 +368,13 @@ async def update_publication_status(
                 publication.repeat_interval,
                 publication.repeat_custom_days,
                 publication.repeat_custom_hours,
-                publication.repeat_end_time
+                publication.repeat_end_time,
+                publication.repeat_custom_unit,
+                publication.repeat_custom_value,
+                publication.repeat_weekdays,
+                publication.repeat_month_days,
+                publication.repeat_year_month,
+                publication.repeat_year_days
             )
             
     else:
@@ -383,7 +389,13 @@ async def update_publication_status(
                 publication.repeat_interval,
                 publication.repeat_custom_days,
                 publication.repeat_custom_hours,
-                publication.repeat_end_time
+                publication.repeat_end_time,
+                publication.repeat_custom_unit,
+                publication.repeat_custom_value,
+                publication.repeat_weekdays,
+                publication.repeat_month_days,
+                publication.repeat_year_month,
+                publication.repeat_year_days
             )
 
 
@@ -444,7 +456,13 @@ async def republish(
             publication.repeat_interval,
             publication.repeat_custom_days,
             publication.repeat_custom_hours,
-            publication.repeat_end_time
+            publication.repeat_end_time,
+            publication.repeat_custom_unit,
+            publication.repeat_custom_value,
+            publication.repeat_weekdays,
+            publication.repeat_month_days,
+            publication.repeat_year_month,
+            publication.repeat_year_days
         )
 
     await db.commit()

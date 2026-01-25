@@ -55,5 +55,11 @@ export function buildBaseCreatePostRequest(options: {
       : undefined,
     repeat_custom_days: settings.repeatInterval === 'custom' ? settings.repeatCustomDays : undefined,
     repeat_custom_hours: settings.repeatInterval === 'custom' ? settings.repeatCustomHours : undefined,
+    repeat_custom_unit: settings.repeatInterval === 'custom' ? settings.repeatCustomUnit : undefined,
+    repeat_custom_value: settings.repeatInterval === 'custom' ? settings.repeatCustomValue : undefined,
+    repeat_weekdays: settings.repeatInterval === 'custom' ? settings.repeatWeekdays : undefined,
+    repeat_month_days: settings.repeatInterval === 'custom' ? settings.repeatMonthDays : undefined,
+    repeat_year_month: settings.repeatInterval === 'custom' ? settings.repeatYearMonth + 1 : undefined,
+    repeat_year_days: settings.repeatInterval === 'custom' ? settings.repeatYearDays : undefined,
   };
 }

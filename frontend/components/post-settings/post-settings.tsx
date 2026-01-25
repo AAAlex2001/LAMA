@@ -48,12 +48,24 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
     handleRepeatChange,
     repeatCustomDays,
     repeatCustomHours,
+    repeatCustomUnit,
+    repeatCustomValue,
+    repeatWeekdays,
+    repeatMonthDays,
+    repeatYearMonth,
+    repeatYearDays,
     repeatEndType,
     repeatEndDate,
     handleRepeatEndTypeChange,
     handleRepeatEndDateChange,
     handleRepeatCustomDaysChange,
     handleRepeatCustomHoursChange,
+    handleRepeatCustomUnitChange,
+    handleRepeatCustomValueChange,
+    handleRepeatWeekdaysChange,
+    handleRepeatMonthDaysChange,
+    handleRepeatYearMonthChange,
+    handleRepeatYearDaysChange,
     // Auto-delete
     autoDeleteInterval,
     handleAutoDeleteChange,
@@ -128,10 +140,22 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
               onRepeatChange={handleRepeatChange}
               repeatCustomDays={repeatCustomDays}
               repeatCustomHours={repeatCustomHours}
+              repeatCustomUnit={repeatCustomUnit}
+              repeatCustomValue={repeatCustomValue}
+              repeatWeekdays={repeatWeekdays}
+              repeatMonthDays={repeatMonthDays}
+              repeatYearMonth={repeatYearMonth}
+              repeatYearDays={repeatYearDays}
               repeatEndType={repeatEndType}
               repeatEndDate={repeatEndDate}
               onRepeatCustomDaysChange={handleRepeatCustomDaysChange}
               onRepeatCustomHoursChange={handleRepeatCustomHoursChange}
+              onRepeatCustomUnitChange={handleRepeatCustomUnitChange}
+              onRepeatCustomValueChange={handleRepeatCustomValueChange}
+              onRepeatWeekdaysChange={handleRepeatWeekdaysChange}
+              onRepeatMonthDaysChange={handleRepeatMonthDaysChange}
+              onRepeatYearMonthChange={handleRepeatYearMonthChange}
+              onRepeatYearDaysChange={handleRepeatYearDaysChange}
               onRepeatEndTypeChange={handleRepeatEndTypeChange}
               onRepeatEndDateChange={handleRepeatEndDateChange}
             />
