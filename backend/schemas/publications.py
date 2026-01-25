@@ -433,7 +433,7 @@ class AIEditRequest(BaseModel):
 
 
 class AIEditTextRequest(BaseModel):
-    text: str = Field(..., min_length=1, max_length=4096)
+    text: str = Field(..., min_length=0, max_length=20000)
     instruction: str = Field(..., min_length=1, max_length=500)
 
 

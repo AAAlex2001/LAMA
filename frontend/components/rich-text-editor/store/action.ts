@@ -37,12 +37,21 @@ export function openAiInputFromSelection(params: {
   }
 
   const { from, to } = editor.state.selection;
-  if (from === to) return;
+  const hasSelection = from !== to;
+  const fullFrom = 0;
+  const fullTo = editor.state.doc.content.size;
 
-  const text = editor.state.doc.textBetween(from, to, ' ');
-  if (!text.trim()) return;
+  if (hasSelection) {
+    const text = editor.state.doc.textBetween(from, to, ' ');
+    if (!text.trim()) return;
+    dispatch({ type: 'SET_SELECTED_TEXT', payload: text });
+    dispatch({ type: 'SET_SELECTION_RANGE', payload: { from, to } });
+    dispatch({ type: 'SET_SHOW_AI_INPUT', payload: true });
+    return;
+  }
 
-  dispatch({ type: 'SET_SELECTED_TEXT', payload: text });
+  const fullText = editor.state.doc.textBetween(fullFrom, fullTo, ' ');
+  dispatch({ type: 'SET_SELECTED_TEXT', payload: fullText });
   dispatch({ type: 'SET_SELECTION_RANGE', payload: { from, to } });
   dispatch({ type: 'SET_SHOW_AI_INPUT', payload: true });
 }
@@ -283,27 +292,24 @@ export async function streamAiReplaceSelection(params: {
 
   const replaceFrom = selectionRange.from;
   const replaceTo = selectionRange.to;
+  const insertOnly = replaceFrom === replaceTo;
   let hasAppliedFirstToken = false;
   let insertPos = replaceFrom;
   let accumulated = '';
   let streamDone = false;
+  let trailingHardBreaks = 0;
 
   const insertDelta = (deltaRaw: string) => {
     if (!deltaRaw) return;
-    const delta = deltaRaw.replace(/\r\n/g, '\n').replace(/\r/g, '');
+    const delta = deltaRaw.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ');
     if (!delta) return;
 
-    const parts = delta.split('\n');
-    const content: Array<{ type: 'text'; text: string } | { type: 'hardBreak' }> = [];
-
-    for (let i = 0; i < parts.length; i += 1) {
-      const part = parts[i];
-      if (part) content.push({ type: 'text', text: part });
-      if (i !== parts.length - 1) content.push({ type: 'hardBreak' });
-    }
+    const content: Array<{ type: 'text'; text: string }> = [{ type: 'text', text: delta }];
 
     editor.chain().focus().insertContentAt(insertPos, content, { updateSelection: true }).run();
     insertPos = editor.state.selection.to;
+
+    trailingHardBreaks = 0;
   };
 
   const handleData = (data: string) => {
@@ -316,7 +322,11 @@ export async function streamAiReplaceSelection(params: {
     }
 
     if (!hasAppliedFirstToken) {
-      editor.chain().focus().deleteRange({ from: replaceFrom, to: replaceTo }).setTextSelection(replaceFrom).run();
+      if (!insertOnly) {
+        editor.chain().focus().deleteRange({ from: replaceFrom, to: replaceTo }).setTextSelection(replaceFrom).run();
+      } else {
+        editor.chain().focus().setTextSelection(replaceFrom).run();
+      }
       insertPos = replaceFrom;
       hasAppliedFirstToken = true;
     }
@@ -356,6 +366,17 @@ export async function streamAiReplaceSelection(params: {
     handleData(data);
   }
 
+  if (trailingHardBreaks > 0) {
+    let removed = 0;
+    while (removed < trailingHardBreaks && insertPos > 0) {
+      const node = editor.state.doc.nodeAt(insertPos - 1);
+      if (!node || node.type.name !== 'hardBreak') break;
+      editor.chain().focus().deleteRange({ from: insertPos - 1, to: insertPos }).run();
+      insertPos -= 1;
+      removed += 1;
+    }
+  }
+
   onDone();
 }
 
@@ -368,12 +389,22 @@ export async function submitAiEditFromState(params: {
   try {
     const token = getAccessToken();
     if (!token) return;
-    if (!params.state.selectionRange || !params.state.selectedText.trim()) return;
+    const docSize = params.editor.state.doc.content.size;
+    const selection = params.editor.state.selection;
+    const fallbackRange = docSize > 0
+      ? { from: 0, to: docSize }
+      : { from: selection.from, to: selection.to };
+    const selectionRange = params.state.selectionRange || fallbackRange;
+    const selectionText = params.state.selectedText?.trim()
+      ? params.state.selectedText
+      : params.editor.state.doc.textBetween(0, docSize, ' ');
+
+    params.dispatch({ type: 'SET_SELECTION_RANGE', payload: null });
 
     await streamAiReplaceSelection({
       editor: params.editor,
-      selectionRange: params.state.selectionRange,
-      selectedText: params.state.selectedText,
+      selectionRange,
+      selectedText: selectionText,
       prompt: params.prompt,
       apiBaseUrl: getApiBaseUrl(),
       token,

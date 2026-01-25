@@ -1,12 +1,14 @@
 'use client';
 
 import { useEditor, useEditorState } from '@tiptap/react';
-import { Mark, mergeAttributes } from '@tiptap/core';
+import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
-import CharacterCount from '@tiptap/extension-character-count';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
+import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import type { SelectionRange } from '../store/types';
 
 import type { TextFormat, EditorState } from './types';
 import { isValidUrl } from './link-utils';
@@ -71,8 +73,94 @@ interface UseTiptapEditorOptions {
   onUpdate?: (html: string) => void;
 }
 
+const aiSelectionKey = new PluginKey<{ range: SelectionRange | null; enabled: boolean }>('aiSelectionHighlight');
+
+function getOverflowDecorations(doc: ProseMirrorNode, limit: number) {
+  if (!limit || limit < 1) return DecorationSet.empty;
+
+  const decorations: Decoration[] = [];
+  let count = 0;
+  let seenTextBlock = false;
+
+  doc.descendants((node, pos) => {
+    if (node.isTextblock) {
+      if (seenTextBlock) count += 1;
+      seenTextBlock = true;
+    }
+    if (!node.isText || !node.text) return;
+
+    const text = node.text;
+    const graphemes = Array.from(text);
+    const nodeCount = graphemes.length;
+
+    if (count >= limit) {
+      decorations.push(Decoration.inline(pos, pos + text.length, { style: 'color: #EF4444;' }));
+      count += nodeCount;
+      return;
+    }
+
+    if (count + nodeCount <= limit) {
+      count += nodeCount;
+      return;
+    }
+
+    const overflowStartIndex = limit - count;
+    const before = graphemes.slice(0, overflowStartIndex).join('');
+    const startPos = pos + before.length;
+    decorations.push(Decoration.inline(startPos, pos + text.length, { style: 'color: #EF4444;' }));
+    count += nodeCount;
+  });
+
+  return DecorationSet.create(doc, decorations);
+}
+
 export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
   const { maxLength = 4096, onUpdate } = options;
+
+  const OverLimitHighlight = Extension.create({
+    name: 'overLimitHighlight',
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          props: {
+            decorations(state) {
+              return getOverflowDecorations(state.doc, maxLength);
+            },
+          },
+        }),
+      ];
+    },
+  });
+
+  const AiSelectionHighlight = Extension.create({
+    name: 'aiSelectionHighlight',
+    addProseMirrorPlugins() {
+      return [
+        new Plugin({
+          key: aiSelectionKey,
+          state: {
+            init: () => ({ range: null, enabled: false }),
+            apply(tr, prev) {
+              const meta = tr.getMeta(aiSelectionKey);
+              if (meta) return meta;
+              return prev;
+            },
+          },
+          props: {
+            decorations(state) {
+              const meta = aiSelectionKey.getState(state);
+              if (!meta?.enabled || !meta.range) return null;
+              const { from, to } = meta.range;
+              if (from === to) return null;
+              return DecorationSet.create(state.doc, [
+                Decoration.inline(from, to, { class: 'aiHighlight' }),
+              ]);
+            },
+          },
+        }),
+      ];
+    },
+  });
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -80,6 +168,8 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       StarterKit,
       Underline,
       SpoilerMark,
+      OverLimitHighlight,
+      AiSelectionHighlight,
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -110,10 +200,6 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
             return false;
           }
         },
-      }),
-      CharacterCount.configure({
-        limit: maxLength,
-        mode: 'textSize',
       }),
     ],
     onUpdate: ({ editor }) => {
@@ -184,5 +270,9 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     state: editorState,
     toggleFormat,
     insertContent,
+    setAiHighlight: (range: SelectionRange | null, enabled: boolean) => {
+      if (!editor) return;
+      editor.view.dispatch(editor.state.tr.setMeta(aiSelectionKey, { range, enabled }));
+    },
   };
 }

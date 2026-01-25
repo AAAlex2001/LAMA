@@ -71,6 +71,10 @@ export async function handlePublishNow(
       throw new Error('Текст поста или медиа файлы не могут быть пустыми');
     }
 
+    if (hasText && plainText.length > 4096) {
+      throw new Error('Превышен лимит 4096 символов');
+    }
+
     if (settings.channelIds.length === 0) {
       throw new Error('Выберите хотя бы один канал для публикации');
     }
@@ -283,6 +287,10 @@ export async function handleSaveDraft(
       throw new Error('Текст поста или медиа файлы не могут быть пустыми');
     }
 
+    if (hasText && plainText.length > 4096) {
+      throw new Error('Превышен лимит 4096 символов');
+    }
+
     // Определяем content_type в зависимости от медиа/опроса
     let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
@@ -387,6 +395,10 @@ export async function handleSchedulePost(
 
     if (!hasText && !hasMedia && !hasPoll) {
       throw new Error('Текст поста или медиа файлы не могут быть пустыми');
+    }
+
+    if (hasText && plainText.length > 4096) {
+      throw new Error('Превышен лимит 4096 символов');
     }
 
     if (settings.channelIds.length === 0) {

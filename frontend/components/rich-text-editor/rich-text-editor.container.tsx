@@ -43,7 +43,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     const wrapperRef = useRef<HTMLDivElement>(null);
     const lastValue = useRef(value);
 
-    const { editor, state, toggleFormat, insertContent } = useTiptapEditor({
+    const { editor, state, toggleFormat, insertContent, setAiHighlight } = useTiptapEditor({
       maxLength,
       onUpdate: (html) => {
         const normalized = editor?.isEmpty ? '' : html;
@@ -51,6 +51,10 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         onChange(normalized);
       },
     });
+
+    useEffect(() => {
+      setAiHighlight(uiState.selectionRange, uiState.showAiInput);
+    }, [setAiHighlight, uiState.selectionRange, uiState.showAiInput]);
 
     useEffect(() => {
       if (!editor) return;

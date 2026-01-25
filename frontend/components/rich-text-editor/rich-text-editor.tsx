@@ -206,8 +206,8 @@ export default function RichTextEditorView(props: RichTextEditorViewProps) {
             <button
               type="button"
               aria-label="AI редактирование"
-              aria-disabled={!showAiInput && !hasSelection}
-              className={`${styles.toolButton} ${showAiInput ? styles.active : ''} ${!showAiInput && !hasSelection ? styles.toolButtonDisabled : ''}`}
+              aria-disabled={false}
+              className={`${styles.toolButton} ${showAiInput ? styles.active : ''}`}
               onMouseDown={onAiButtonMouseDown}
               onMouseEnter={() => onHover('ai')}
               onMouseLeave={() => onHover(null)}
@@ -337,7 +337,9 @@ export default function RichTextEditorView(props: RichTextEditorViewProps) {
               <TemplatesIcon width={21} height={21} color={getButtonColor('templates')} />
               {hoveredButton === 'templates' && <Tooltip text="сохранить в шаблоны" />}
             </button>
-            <span className={styles.charCount}>{charCount}/{maxLength}</span>
+            <span className={`${styles.charCount} ${charCount > maxLength ? styles.charCountOver : ''}`}>
+              {charCount}/{maxLength}
+            </span>
           </div>
         </div>
       </div>
