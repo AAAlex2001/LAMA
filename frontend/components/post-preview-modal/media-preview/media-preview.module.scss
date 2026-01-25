@@ -7,7 +7,8 @@
 
 .singleItem {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: auto;
+  height: 202px;
   position: relative;
   background: #f8faff;
 }
@@ -39,9 +40,39 @@
   gap: 2px;
 }
 
+.videoWithPhotos {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+}
+
+.videoColumn {
+  height: 100%;
+}
+
+.videoColumnItem {
+  height: 100%;
+}
+
+.photoColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.photoTile {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+}
+
 .main {
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: auto;
+  height: 202px;
   position: relative;
   background: #f8faff;
 }

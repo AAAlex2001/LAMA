@@ -73,6 +73,30 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     );
   }
 
+  const isVideoFirst = items[0]?.type === 'video';
+  const rightItems = items.slice(1);
+  const isVideoWithPhotosColumn =
+    isVideoFirst &&
+    rightItems.length > 0 &&
+    rightItems.length <= 4;
+
+  if (isVideoWithPhotosColumn) {
+    return (
+      <div className={styles.videoWithPhotos}>
+        <div className={styles.videoColumn}>
+          {renderTile(items[0], styles.videoColumnItem, 'big')}
+        </div>
+        <div className={`${styles.photoColumn} ${styles[`photoCount${rightItems.length}`]}`}>
+          {rightItems.map((item) => (
+            <div key={item.id} className={styles.photoTile}>
+              {renderTile(item, undefined, 'small')}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // 2 медиа — два квадрата рядом
   if (items.length === 2) {
     if (!items[0].url || !items[1].url) return null;

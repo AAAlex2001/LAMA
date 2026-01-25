@@ -11,6 +11,7 @@ import { DocumentsPreview } from './documents-preview';
 import { QuizPreview } from './quiz-preview';
 import { BlockquotePreview } from './blockquote-preview';
 import { CodePreview } from './code-preview';
+import InlineKeyboardPreview, { type InlineKeyboardPreviewData } from './inline-keyboard-preview/inline-keyboard-preview';
 import {
   type QuizPreviewData,
   type HtmlPart,
@@ -32,6 +33,7 @@ export interface PostPreviewModalProps {
   html: string;
   mediaFiles: MediaFile[];
   quizData?: QuizPreviewData;
+  inlineKeyboard?: InlineKeyboardPreviewData;
 }
 
 export default function PostPreviewModal(props: PostPreviewModalProps) {
@@ -45,6 +47,7 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
     html,
     mediaFiles,
     quizData,
+    inlineKeyboard,
   } = props;
 
   const [avatarBroken, setAvatarBroken] = useState(false);
@@ -171,6 +174,10 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                   )}
                 </div>
               )}
+
+              {inlineKeyboard && inlineKeyboard.buttons?.length ? (
+                <InlineKeyboardPreview keyboard={inlineKeyboard} />
+              ) : null}
 
               {/* Quiz/Poll */}
               {quizData && <QuizPreview data={quizData} />}

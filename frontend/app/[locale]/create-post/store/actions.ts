@@ -5,6 +5,7 @@ import type { ButtonRow } from '@/components/inline-buttons';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 import { selectPollData as selectQuizPollData } from '@/components/quiz-form/store/selectors';
 import { extractPlainTextFromHtml, hasSupportedFormatting } from './text';
+import { isValidUrl } from '@/components/rich-text-editor/editor/link-utils';
 import { prepareMediaPayload } from './mediaPayload';
 import { buildBaseCreatePostRequest } from './createPostRequest';
 import type { PostSettingsFromUI } from './uiTypes';
@@ -18,6 +19,17 @@ export interface SeriesPostInput {
   showQuizForm?: boolean;
   quizForm?: QuizFormState;
   showLinkPreview?: boolean;
+}
+
+function validateInlineKeyboardUrls(inlineKeyboard?: InlineKeyboard): void {
+  if (!inlineKeyboard?.buttons?.length) return;
+  for (const row of inlineKeyboard.buttons) {
+    for (const btn of row) {
+      if (btn.url && !isValidUrl(btn.url)) {
+        throw new Error('Некорректный URL в кнопке');
+      }
+    }
+  }
 }
 
 // Конвертация AutoDeleteOption в секунды
@@ -78,6 +90,8 @@ export async function handlePublishNow(
     if (settings.channelIds.length === 0) {
       throw new Error('Выберите хотя бы один канал для публикации');
     }
+
+    validateInlineKeyboardUrls(inlineKeyboard);
 
     // Валидация: документы нельзя смешивать с фото/видео
     const hasDocuments = mediaFiles.some(f => f.type === 'document');
@@ -409,6 +423,8 @@ export async function handleSchedulePost(
     if (settings.channelIds.length === 0) {
       throw new Error('Выберите хотя бы один канал для публикации');
     }
+
+    validateInlineKeyboardUrls(inlineKeyboard);
 
     const autoDeleteSeconds = convertAutoDeleteToSeconds(
       settings.autoDeleteInterval,

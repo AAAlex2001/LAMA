@@ -127,6 +127,19 @@ function CreatePostPageContent() {
   
   const quizPreviewData = getQuizPreviewData();
 
+  const inlineKeyboardPreview = (() => {
+    if (!inlineButtons.isOpen || inlineButtons.rows.length === 0) return undefined;
+    const buttons = inlineButtons.rows
+      .map(row =>
+        row.buttons
+          .filter(btn => btn.text && btn.text.trim().length > 0)
+          .map(btn => ({ text: btn.text, type: btn.type }))
+      )
+      .filter(row => row.length > 0);
+
+    return buttons.length > 0 ? { buttons } : undefined;
+  })();
+
   // tag selection handled in PostSettings store (postSettings.selectedTagName)
   
   const handleRemoveTag = () => {
@@ -445,6 +458,7 @@ function CreatePostPageContent() {
         html={richTextEditor.text}
         mediaFiles={mediaPreview.files}
         quizData={quizPreviewData}
+        inlineKeyboard={inlineKeyboardPreview}
       />
       
       {/* Text Templates Modal */}
