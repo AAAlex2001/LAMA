@@ -10,13 +10,15 @@ import Loader from '@/components/loader/loader';
 import { useMediaPreview, type MediaFile } from './MediaPreviewContext';
 
 export default function MediaPreview() {
-  const { files, removeFile, toggleBlur } = useMediaPreview();
+  const { files, removeFile, toggleBlur, moveFile } = useMediaPreview();
   
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxMedia, setLightboxMedia] = useState<MediaFile | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string>('');
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
   const [lightboxLoading, setLightboxLoading] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const openLightbox = (file: MediaFile) => {
     let fullUrl = '';
@@ -58,7 +60,36 @@ export default function MediaPreview() {
     <>
       <div className={styles.mediaGrid}>
         {files.map((file) => (
-          <div key={file.id} className={styles.mediaItem}>
+          <div
+            key={file.id}
+            className={`${styles.mediaItem} ${draggingId === file.id ? styles.dragging : ''} ${dragOverId === file.id ? styles.dragOver : ''}`}
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', file.id);
+              setDraggingId(file.id);
+            }}
+            onDragEnd={() => {
+              setDraggingId(null);
+              setDragOverId(null);
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (dragOverId !== file.id) setDragOverId(file.id);
+            }}
+            onDragLeave={() => {
+              if (dragOverId === file.id) setDragOverId(null);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const sourceId = e.dataTransfer.getData('text/plain');
+              if (sourceId) {
+                moveFile(sourceId, file.id);
+              }
+              setDraggingId(null);
+              setDragOverId(null);
+            }}
+          >
             <div 
               className={styles.mediaContent}
               onClick={() => file.type !== 'document' && openLightbox(file)}

@@ -14,6 +14,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: grab;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+.dragOver {
+  box-shadow: 0 0 0 2px #3B82F6 inset;
 }
 
 .mediaImage {

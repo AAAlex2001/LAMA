@@ -20,6 +20,7 @@ interface MediaPreviewContextValue {
   // Actions
   addFiles: (files: MediaFile[]) => void;
   removeFile: (id: string) => void;
+  moveFile: (sourceId: string, targetId: string) => void;
   toggleBlur: (id: string) => void;
   setPreviewUrl: (id: string, previewUrl: string) => void;
   setThumbnailUrl: (id: string, thumbnailUrl: string | null) => void;
@@ -58,6 +59,20 @@ export function MediaPreviewProvider({ children, maxFiles = 10 }: MediaPreviewPr
         URL.revokeObjectURL(file.url);
       }
       return prev.filter(f => f.id !== id);
+    });
+  };
+
+  const moveFile = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    setFilesState(prev => {
+      const sourceIndex = prev.findIndex(f => f.id === sourceId);
+      const targetIndex = prev.findIndex(f => f.id === targetId);
+      if (sourceIndex === -1 || targetIndex === -1) return prev;
+
+      const next = [...prev];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      return next;
     });
   };
 
@@ -101,6 +116,7 @@ export function MediaPreviewProvider({ children, maxFiles = 10 }: MediaPreviewPr
     files,
     addFiles,
     removeFile,
+    moveFile,
     toggleBlur,
     setPreviewUrl,
     setThumbnailUrl,
