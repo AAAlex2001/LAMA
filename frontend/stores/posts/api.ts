@@ -40,11 +40,14 @@ async function fetchApi<T>(
 }
 
 export const postsApi = {
-  async getPosts(page = 1, pageSize = 50, status = 'published'): Promise<PostListResponse> {
+  async getPosts(page = 1, pageSize = 50, status = 'published', channelId?: number): Promise<PostListResponse> {
     const params = new URLSearchParams();
     params.append('page', page.toString());
     params.append('page_size', pageSize.toString());
     params.append('status', status);
+    if (channelId) {
+      params.append('channel_id', channelId.toString());
+    }
     
     return fetchApi<PostListResponse>(
       `${ENDPOINTS.posts}?${params}`

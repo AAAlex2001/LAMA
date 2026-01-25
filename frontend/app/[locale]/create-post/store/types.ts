@@ -1,7 +1,12 @@
+export type InlineButtonType = 'url' | 'callback' | 'hidden_text';
+
 export interface InlineButton {
+  id?: string;
+  type?: InlineButtonType;
   text: string;
   url?: string;
   callback_data?: string;
+  hidden_text?: string;
 }
 
 export interface InlineKeyboard {

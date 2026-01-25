@@ -21,6 +21,7 @@ export { default as StrikethroughIcon } from './strikethrough-icon';
 export { default as UnderlineIcon } from './underline-icon';
 export { default as PlusIcon } from './plus-icon';
 export { default as TrashIcon } from './trash-icon';
+export { default as EditNameIcon } from './edit-name-icon';
 export { default as SendIcon } from './send-icon';
 export { default as AiLoaderIcon } from './ai-loader-icon';
 export { default as CloseIcon } from './close-icon';

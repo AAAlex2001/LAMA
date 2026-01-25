@@ -129,7 +129,7 @@ export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
                       />
                     </button>
                     {hoveredDeleteId === draft.id && (
-                      <div className={styles.deleteTooltip}>удалить черновик?</div>
+                      <div className={styles.deleteTooltip}>удалить?</div>
                     )}
                   </div>
                 </div>

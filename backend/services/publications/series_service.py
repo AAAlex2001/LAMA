@@ -1,3 +1,4 @@
+from backend.services.publications.telegram_sender import clean_html_for_telegram, send_to_telegram, prepare_inline_keyboard_data
 from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.sql import nullslast
@@ -15,7 +16,6 @@ from backend.models.publications import (
     ContentType as DBContentType,
 )
 from backend.models.channels import ChannelGroup as Channel
-from backend.services.publications.telegram_sender import clean_html_for_telegram, send_to_telegram
 from backend.utils.keyboard import build_keyboard
 from backend.schemas.publications import PublishResult, ChannelPublishResult
 
@@ -323,7 +323,8 @@ class SeriesService:
 
                 reply_markup = None
                 if publication.inline_keyboard:
-                    reply_markup = build_keyboard(publication.inline_keyboard)
+                    prepared_keyboard = prepare_inline_keyboard_data(publication)
+                    reply_markup = build_keyboard(prepared_keyboard) if prepared_keyboard else None
 
                 if reply_to_id and series.reply_to_previous:
                     sent_messages = await self.send_as_reply(
@@ -335,7 +336,6 @@ class SeriesService:
                     )
                 else:
                     sent_messages = await send_to_telegram(publication, channel, bot)
-
                 message_ids = []
                 for msg in sent_messages:
                     message_ids.append(msg.message_id)

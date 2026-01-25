@@ -142,35 +142,30 @@
 }
 
 .deleteTooltip {
-  display: none;
+  position: absolute;
+  right: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #CBDBFF;
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
   
-  @media (min-width: 1440px) {
-    display: block;
+  &::after {
+    content: '';
     position: absolute;
-    right: calc(100% + 8px);
+    right: -4px;
     top: 50%;
-    transform: translateY(-50%);
+    transform: translateY(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
     background: #CBDBFF;
-    color: #000000;
-    padding: 4px 8px;
-    border-radius: 5px;
-    font-size: 12px;
-    line-height: 16px;
-    font-weight: 500;
-    white-space: nowrap;
-    pointer-events: none;
-    z-index: 1000;
-    
-    &::after {
-      content: '';
-      position: absolute;
-      right: -4px;
-      top: 50%;
-      transform: translateY(-50%) rotate(45deg);
-      width: 8px;
-      height: 8px;
-      background: #CBDBFF;
-    }
   }
 }
 

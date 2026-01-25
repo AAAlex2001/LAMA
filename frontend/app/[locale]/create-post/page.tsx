@@ -15,7 +15,7 @@ import QuizForm from '@/components/quiz-form';
 import Toggle from '@/components/toggle/toggle';
 import Dropdown from '@/components/dropdown/dropdown';
 import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
-import { hasLink } from '@/components/rich-text-editor/editor/link-utils';
+import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-utils';
 import PostAccordion from '@/components/post-accordion/post-accordion';
 import { initialQuizFormState } from '@/components/quiz-form/store/reducer';
 import { useTokenFromUrl } from './hooks/useTokenFromUrl';
@@ -102,11 +102,13 @@ function CreatePostPageContent() {
   } = useCreatePostContext();
   
   // Channel info for preview
-  const selectedPrimaryChannel = postSettings.channelOptions.find((c) => c.checked);
+  const selectedChannels = postSettings.channelOptions.filter((c) => c.checked);
+  const selectedPrimaryChannel = selectedChannels[0];
   const extraSelectedCount = Math.max(0, postSettings.selectedCount - 1);
   const selectedChannelTitle = `${selectedPrimaryChannel?.label || 'Название канала'}${
     extraSelectedCount > 0 ? ` +${extraSelectedCount}` : ''
   }`;
+  const canReplyToPost = selectedChannels.length === 1;
   
   // Quiz preview data
   const getQuizPreviewData = (): QuizPreviewData | undefined => {
@@ -226,7 +228,7 @@ function CreatePostPageContent() {
           headerRef={headerRef}
         />
         
-        {richTextEditor.text && hasLink(richTextEditor.text) && (
+        {richTextEditor.text && hasPlainUrlLikeText(richTextEditor.text) && (
           <div className={styles.linkPreviewToggle}>
             <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
             <Toggle checked={showLinkPreview} onChange={setShowLinkPreview} />
@@ -280,7 +282,13 @@ function CreatePostPageContent() {
               showArrow={false}
               icon={<ReplyIcon width={24} height={24} />}
               className={styles.actionButtonCenter}
-              onClick={replyToPosts.open}
+              disabled={!canReplyToPost}
+              onClick={() => {
+                if (!canReplyToPost) return;
+                const channelId = Number(selectedPrimaryChannel?.id);
+                if (!Number.isFinite(channelId)) return;
+                replyToPosts.open(channelId);
+              }}
             />
           </div>
         </div>

@@ -10,7 +10,7 @@ interface RichTextEditorContextValue {
   uiState: RichTextEditorState;
   
   // Refs
-  editorRef: RefObject<{ reset: () => void } | null>;
+  editorRef: RefObject<{ reset: () => void; insertHtml: (html: string) => void } | null>;
   
   // Actions
   setText: (text: string) => void;
@@ -32,7 +32,7 @@ interface RichTextEditorProviderProps {
 export function RichTextEditorProvider({ children, initialText = '' }: RichTextEditorProviderProps) {
   const [text, setText] = useState(initialText);
   const [uiState, dispatch] = useReducer(richTextEditorReducer, initialRichTextEditorState);
-  const editorRef = useRef<{ reset: () => void } | null>(null);
+  const editorRef = useRef<{ reset: () => void; insertHtml: (html: string) => void } | null>(null);
 
   const setHoveredButton = (button: RichTextEditorHoveredButton) => {
     dispatch({ type: 'SET_HOVERED_BUTTON', payload: button });

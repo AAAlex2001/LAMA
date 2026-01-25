@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { templatesApi, type TextTemplate, type CreateTextTemplateRequest } from '@/stores/templates';
+import { templatesApi, type TextTemplate, type CreateTextTemplateRequest, type UpdateTextTemplateRequest } from '@/stores/templates';
 
 interface TemplatesContextValue {
   // State
@@ -19,6 +19,7 @@ interface TemplatesContextValue {
   loadTemplates: () => Promise<void>;
   loadMoreTemplates: () => Promise<void>;
   createTemplate: (data: CreateTextTemplateRequest) => Promise<TextTemplate>;
+  updateTemplate: (id: number, data: UpdateTextTemplateRequest) => Promise<TextTemplate>;
   deleteTemplate: (id: number) => Promise<void>;
   selectTemplate: (id: number | null) => void;
   
@@ -104,6 +105,15 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
     }
   };
 
+  const updateTemplate = async (
+    id: number,
+    data: UpdateTextTemplateRequest
+  ): Promise<TextTemplate> => {
+    const updated = await templatesApi.updateTemplate(id, data);
+    setTemplates(prev => prev.map(t => (t.id === id ? updated : t)));
+    return updated;
+  };
+
   const selectTemplate = (id: number | null) => {
     setSelectedTemplateId(id);
   };
@@ -143,6 +153,7 @@ export function TemplatesProvider({ children }: TemplatesProviderProps) {
     loadTemplates,
     loadMoreTemplates,
     createTemplate,
+    updateTemplate,
     deleteTemplate,
     selectTemplate,
     open,

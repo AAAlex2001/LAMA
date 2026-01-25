@@ -20,7 +20,7 @@ import { templatesApi } from '@/stores/templates';
 import type { Draft } from '@/stores/drafts';
 import type { Post } from '@/stores/posts';
 import type { InlineKeyboard, InlineButton } from './types';
-import type { ButtonRow } from '@/components/inline-buttons';
+import type { ButtonRow, ButtonType } from '@/components/inline-buttons';
 import type { MediaFile } from '@/components/media-preview';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 
@@ -163,11 +163,16 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       row.buttons
         .filter(btn => btn.text && btn.text.trim().length > 0)
         .map(btn => {
-          const button: InlineButton = { text: btn.text };
-          if (btn.type === 'url' && btn.url) button.url = btn.url;
-          if (btn.type === 'callback' && btn.callback_data) button.callback_data = btn.callback_data;
+          const resolvedType = btn.type || (btn.hidden_text ? 'hidden_text' : btn.url ? 'url' : btn.callback_data ? 'callback' : undefined);
+          const button: InlineButton = { text: btn.text, type: resolvedType };
+          if (btn.id) button.id = btn.id;
+          if (resolvedType === 'url' && btn.url) button.url = btn.url;
+          if (resolvedType === 'callback' && btn.callback_data) button.callback_data = btn.callback_data;
+          if (resolvedType === 'hidden_text') button.hidden_text = btn.hidden_text ?? '';
+          if (!button.url && !button.callback_data && !button.hidden_text && resolvedType !== 'hidden_text') return null;
           return button;
         })
+        .filter(Boolean) as InlineButton[]
     ).filter(row => row.length > 0);
     
     return buttons.length > 0 ? { buttons } : undefined;
@@ -400,7 +405,11 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   // Handle select template
   const handleSelectTemplate = (formattedContent: Record<string, unknown>) => {
     if (formattedContent?.html && typeof formattedContent.html === 'string') {
-      richTextEditor.setText(formattedContent.html);
+      if (richTextEditor.editorRef.current?.insertHtml) {
+        richTextEditor.editorRef.current.insertHtml(formattedContent.html);
+      } else {
+        richTextEditor.setText(formattedContent.html);
+      }
     }
   };
   
@@ -443,11 +452,12 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
           id: `row-${Date.now()}-${rowIndex}`,
           buttons: row.map((btn, btnIndex) => ({
-            id: `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
+            id: btn.id || `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
             text: btn.text,
-            type: btn.url ? 'url' : 'callback',
+            type: (btn.type as ButtonType) || (btn.hidden_text ? 'hidden_text' : btn.url ? 'url' : 'callback'),
             url: btn.url || '',
             callback_data: btn.callback_data || '',
+            hidden_text: btn.hidden_text || '',
           })),
         }));
         
@@ -524,11 +534,12 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
           id: `row-${Date.now()}-${rowIndex}`,
           buttons: row.map((btn, btnIndex) => ({
-            id: `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
+            id: btn.id || `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
             text: btn.text,
-            type: btn.url ? 'url' : 'callback',
+            type: (btn.type as ButtonType) || (btn.hidden_text ? 'hidden_text' : btn.url ? 'url' : 'callback'),
             url: btn.url || '',
             callback_data: btn.callback_data || '',
+            hidden_text: btn.hidden_text || '',
           })),
         }));
         

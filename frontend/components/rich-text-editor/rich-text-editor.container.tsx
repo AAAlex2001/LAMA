@@ -25,6 +25,7 @@ import {
 
 export interface RichTextEditorRef {
   reset: () => void;
+  insertHtml: (html: string) => void;
 }
 
 interface RichTextEditorProps {
@@ -79,6 +80,11 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         reset: () => {
           editor?.commands.clearContent(false);
           onChange('');
+        },
+        insertHtml: (html: string) => {
+          if (!editor) return;
+          if (!html) return;
+          editor.chain().focus().insertContent(html).run();
         },
       }),
       [editor, onChange],

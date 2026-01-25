@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.bot import CaptchaService
 from backend.services.bot.triggers import TriggerService
 from backend.models.bots import Bot as BotModel, PendingApproval, TriggerType
+from backend.models.publications import Publication
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 
 from backend.services.webhook.welcome import WelcomeHandler
@@ -38,6 +39,8 @@ class CallbackHandler:
             await self.process_group_captcha(callback_query)
         elif callback_data.startswith("admincall_"):
             await self.process_admin_call_action(callback_query)
+        elif callback_data.startswith("hidden_text:"):
+            await self.process_hidden_text(callback_query)
 
     async def process_admin_call_action(self, callback_query: CallbackQuery) -> None:
         """Обработка админских действий (бан/удаление сообщения)."""
@@ -169,6 +172,84 @@ class CallbackHandler:
             else:
                 await self.answer_callback(telegram_bot, callback_query.id, "❌ Неправильный ответ.", True)
                 await self.fire_captcha_trigger(telegram_bot, user_id, chat_id, TriggerType.CAPTCHA_FAILED, pending_id, 'group', user_answer)
+
+    async def process_hidden_text(self, callback_query: CallbackQuery) -> None:
+        """Показать скрытый текст подписчику."""
+        callback_data = callback_query.data or ""
+        parts = callback_data.split(":")
+
+        if len(parts) < 3:
+            return
+
+        try:
+            publication_id = int(parts[1])
+        except ValueError:
+            return
+
+        button_id = ":".join(parts[2:])
+
+        user_id = callback_query.from_user.id if callback_query.from_user else None
+        chat_id = callback_query.message.chat.id if callback_query.message else None
+        if not user_id or not chat_id:
+            return
+
+        result = await self.db.execute(select(Publication).where(Publication.id == publication_id))
+        publication = result.scalar_one_or_none()
+        if not publication or not publication.inline_keyboard:
+            return
+
+        hidden_text = self._find_hidden_text(publication.inline_keyboard, button_id)
+        if not hidden_text:
+            return
+
+        async with get_bot_session() as telegram_bot:
+            is_subscriber = await self._is_subscriber(telegram_bot, chat_id, user_id)
+            if not is_subscriber:
+                await self.answer_callback(
+                    telegram_bot,
+                    callback_query.id,
+                    "❌ Доступно только подписчикам.",
+                    True,
+                )
+                return
+
+            await self.answer_callback(telegram_bot, callback_query.id, hidden_text, True)
+
+    @staticmethod
+    def _find_hidden_text(inline_keyboard, button_id: str) -> Optional[str]:
+        if not inline_keyboard:
+            return None
+
+        if isinstance(inline_keyboard, dict):
+            rows = inline_keyboard.get("buttons", [])
+        elif isinstance(inline_keyboard, list):
+            rows = inline_keyboard
+        else:
+            return None
+
+        for row_idx, row in enumerate(rows):
+            if not isinstance(row, list):
+                continue
+            for btn_idx, btn in enumerate(row):
+                if not isinstance(btn, dict):
+                    continue
+                stored_id = btn.get("id")
+                fallback_id = f"{row_idx}-{btn_idx}"
+                if stored_id == button_id or (not stored_id and button_id == fallback_id):
+                    return btn.get("hidden_text")
+
+        return None
+
+    @staticmethod
+    async def _is_subscriber(bot, chat_id: int, user_id: int) -> bool:
+        try:
+            member = await asyncio.wait_for(
+                bot.get_chat_member(chat_id, user_id),
+                timeout=TELEGRAM_API_TIMEOUT,
+            )
+            return member.status in ("member", "administrator", "creator")
+        except (TelegramAPIError, asyncio.TimeoutError):
+            return False
 
     async def answer_callback(self, bot, callback_id: str, text: str, show_alert: bool = False) -> None:
         """Ответить на callback query. Игнорирует ошибки истекшего query."""

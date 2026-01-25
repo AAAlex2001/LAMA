@@ -44,10 +44,19 @@ class RepeatCustomUnit(str, Enum):
     YEARS = "years"
 
 
+class InlineButtonType(str, Enum):
+    URL = "url"
+    CALLBACK = "callback"
+    HIDDEN_TEXT = "hidden_text"
+
+
 class InlineButton(BaseModel):
+    id: Optional[str] = None
+    type: Optional[InlineButtonType] = None
     text: str
     url: Optional[str] = None
     callback_data: Optional[str] = None
+    hidden_text: Optional[str] = None
 
 
 class InlineKeyboard(BaseModel):

@@ -187,11 +187,16 @@ function toInlineKeyboard(buttonRows?: ButtonRow[], showInlineButtons?: boolean)
       row.buttons
         .filter(btn => btn.text && btn.text.trim().length > 0)
         .map(btn => {
-          const button: any = { text: btn.text };
-          if (btn.type === 'url' && btn.url) button.url = btn.url;
-          if (btn.type === 'callback' && btn.callback_data) button.callback_data = btn.callback_data;
+          const resolvedType = btn.type || (btn.hidden_text ? 'hidden_text' : btn.url ? 'url' : btn.callback_data ? 'callback' : undefined);
+          const button: any = { text: btn.text, type: resolvedType };
+          if (btn.id) button.id = btn.id;
+          if (resolvedType === 'url' && btn.url) button.url = btn.url;
+          if (resolvedType === 'callback' && btn.callback_data) button.callback_data = btn.callback_data;
+          if (resolvedType === 'hidden_text') button.hidden_text = btn.hidden_text ?? '';
+          if (!button.url && !button.callback_data && !button.hidden_text && resolvedType !== 'hidden_text') return null;
           return button;
         })
+        .filter(Boolean)
     )
     .filter(row => row.length > 0);
 

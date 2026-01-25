@@ -12,18 +12,20 @@ interface ReplyToPostContextValue {
   searchQuery: string;
   selectedPostId: number | null;
   replyToPost: Post | null;
+  selectedChannelId: number | null;
   
   filteredPosts: Post[];
   
   setSearchQuery: (query: string) => void;
-  loadPosts: () => Promise<void>;
+  setSelectedChannelId: (id: number | null) => void;
+  loadPosts: (channelId?: number | null) => Promise<void>;
   loadMorePosts: () => Promise<void>;
   selectPost: (id: number | null) => void;
   setReplyToPost: (post: Post | null) => void;
   clearReplyToPost: () => void;
   getPost: (id: number) => Promise<Post>;
   
-  open: () => void;
+  open: (channelId?: number | null) => void;
   close: () => void;
   toggle: () => void;
 }
@@ -44,6 +46,7 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
   const [replyToPost, setReplyToPost] = useState<Post | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
 
   const filteredPosts = posts.filter(post => {
     if (!searchQuery) return true;
@@ -64,11 +67,12 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
            formattedText.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  const loadPosts = async () => {
+  const loadPosts = async (channelId?: number | null) => {
     setIsLoading(true);
     setCurrentPage(1);
     try {
-      const response = await postsApi.getPosts(1, 20);
+      const effectiveChannelId = channelId ?? selectedChannelId;
+      const response = await postsApi.getPosts(1, 20, 'published', effectiveChannelId ?? undefined);
       setPosts(response.items);
       setHasMore(response.items.length === 20);
     } catch (error) {
@@ -84,7 +88,7 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
     setIsLoadingMore(true);
     try {
       const nextPage = currentPage + 1;
-      const response = await postsApi.getPosts(nextPage, 20);
+      const response = await postsApi.getPosts(nextPage, 20, 'published', selectedChannelId ?? undefined);
       setPosts(prev => [...prev, ...response.items]);
       setCurrentPage(nextPage);
       setHasMore(response.items.length === 20);
@@ -107,9 +111,12 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
     setReplyToPost(null);
   };
 
-  const open = async () => {
+  const open = async (channelId?: number | null) => {
     setIsOpen(true);
-    await loadPosts();
+    if (channelId !== undefined) {
+      setSelectedChannelId(channelId);
+    }
+    await loadPosts(channelId);
   };
   
   const close = () => {
@@ -131,8 +138,10 @@ export function ReplyToPostProvider({ children }: ReplyToPostProviderProps) {
     searchQuery,
     selectedPostId,
     replyToPost,
+    selectedChannelId,
     filteredPosts,
     setSearchQuery,
+    setSelectedChannelId,
     loadPosts,
     loadMorePosts,
     selectPost,
