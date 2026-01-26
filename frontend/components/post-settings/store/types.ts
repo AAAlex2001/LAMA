@@ -18,7 +18,7 @@ export interface PostSettingsData {
   notifySubscribers: boolean;
   pinPost: boolean;
   tagName: string | null;
-  tagColor: string | null;
+  tagColor: TagColor | null;
   repeatInterval: RepeatOption;
   repeatCustomDays: number;
   repeatCustomHours: number;

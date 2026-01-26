@@ -1,5 +1,7 @@
 // Типы для работы с тегами
 
+import type { TagColor } from '@/components/dropdown/types';
+
 export interface Tag {
   id: number;
   name: string;
@@ -21,7 +23,7 @@ export interface TagsState {
   searchQuery: string;      // Поисковый запрос (поиск по существующим тегам)
   tagInputValue: string;    // Ввод названия нового тега
   selectedTagName: string;  // Выбранный тег для отображения в хедере
-  selectedTagColor: string;
+  selectedTagColor: TagColor;
 }
 
 export type TagsAction =
@@ -33,7 +35,7 @@ export type TagsAction =
   | { type: 'SET_SEARCH_QUERY'; payload: string }
   | { type: 'SET_TAG_INPUT_VALUE'; payload: string }
   | { type: 'SET_SELECTED_TAG_NAME'; payload: string }
-  | { type: 'SET_SELECTED_TAG_COLOR'; payload: string }
+  | { type: 'SET_SELECTED_TAG_COLOR'; payload: TagColor }
   | { type: 'REMOVE_TAG'; payload: number }
   | { type: 'RESET' };
 

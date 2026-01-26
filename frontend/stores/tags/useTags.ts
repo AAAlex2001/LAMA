@@ -6,10 +6,18 @@ import {
   initialTagsState,
   tagsReducer,
 } from './types';
+import { TAG_COLORS, type TagColor } from '@/components/dropdown/types';
 import { fetchTags, searchTags, deleteTag } from './api';
 
 export function useTags() {
   const [state, dispatch] = useReducer(tagsReducer, initialTagsState);
+
+  const normalizeTagColor = (color?: string): TagColor => {
+    if (color && TAG_COLORS.includes(color as TagColor)) {
+      return color as TagColor;
+    }
+    return '#FAC7C7';
+  };
 
   // Загрузка тегов (недавние/популярные)
   const loadRecentTags = async () => {
@@ -61,7 +69,7 @@ export function useTags() {
   const selectTag = (tag: Tag) => {
     console.log('🎯 selectTag вызван:', tag);
     dispatch({ type: 'SET_SELECTED_TAG_NAME', payload: tag.name });
-    dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: tag.color || '#FAC7C7' });
+    dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: normalizeTagColor(tag.color) });
     dispatch({ type: 'SET_SEARCH_QUERY', payload: '' });
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
     console.log('✅ selectTag завершен, имя:', tag.name, 'цвет:', tag.color || '#FAC7C7');
@@ -107,7 +115,7 @@ export function useTags() {
     setTagInputValue: (value: string) => dispatch({ type: 'SET_TAG_INPUT_VALUE', payload: value }),
     selectTag,
     setSelectedTagName: (name: string) => dispatch({ type: 'SET_SELECTED_TAG_NAME', payload: name }),
-    setSelectedTagColor: (color: string) => dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color }),
+    setSelectedTagColor: (color: TagColor) => dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: color }),
     clearSearch,
     deleteTag: handleDeleteTag,
     reset,

@@ -103,7 +103,6 @@ export default function RepeatContent({
         repeatMonthDays={repeatMonthDays}
         repeatYearMonth={repeatYearMonth}
         repeatYearDays={repeatYearDays}
-        onRepeatChange={onRepeatChange}
         onRepeatCustomDaysChange={onRepeatCustomDaysChange}
         onRepeatCustomHoursChange={onRepeatCustomHoursChange}
         onRepeatCustomUnitChange={onRepeatCustomUnitChange}
