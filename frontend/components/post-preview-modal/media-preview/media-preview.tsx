@@ -78,7 +78,7 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
   const isVideoWithPhotosColumn =
     isVideoFirst &&
     rightItems.length > 0 &&
-    rightItems.length <= 4;
+    rightItems.length <= 3;
 
   if (isVideoWithPhotosColumn) {
     return (
