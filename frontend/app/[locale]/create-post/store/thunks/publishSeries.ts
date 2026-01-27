@@ -16,8 +16,7 @@ export const publishSeries = createAsyncThunk(
   async (channelIds: number[], { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState;
     const { series, settings, editor, media, inlineButtons, quiz } = state;
-    
-    // Собираем актуальный snapshot из текущего состояния редактора
+
     const currentSnapshot = {
       text: editor.text,
       mediaFiles: media.files,
@@ -30,8 +29,7 @@ export const publishSeries = createAsyncThunk(
       quizCorrectAnswerId: quiz.correctAnswerId,
       showLinkPreview: editor.showLinkPreview,
     };
-    
-    // Обновляем активный snapshot актуальными данными
+
     const snapshots = [...series.snapshots];
     snapshots[series.activeIndex] = currentSnapshot;
     
@@ -69,7 +67,6 @@ export const publishSeries = createAsyncThunk(
     dispatch(setIsPublishing(true));
     
     try {
-      // 1. Создаём серию на бэкенде
       const seriesResponse = await apiRequest<SeriesResponse>('/publications/series', {
         method: 'POST',
         body: JSON.stringify({
@@ -79,8 +76,7 @@ export const publishSeries = createAsyncThunk(
       });
       
       const seriesId = seriesResponse.id;
-      
-      // 2. Создаём и публикуем посты по очереди
+
       for (let i = 0; i < snapshots.length; i++) {
         const snapshot = snapshots[i];
         const pollData = snapshot.quizOpen ? {

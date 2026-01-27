@@ -124,7 +124,6 @@ function CreatePostPageContent() {
     (quizOpen && quizQuestion.trim().length > 0) ||
     (inlineButtonsOpen && buttonRows.length > 0);
 
-  // Map quizMode to preview mode: 'poll_single' and 'poll_multi' -> 'poll', 'quiz' -> 'quiz'
   const quizPreviewMode = quizMode === 'quiz' ? 'quiz' : 'poll';
   
   const quizPreviewData = quizOpen && quizQuestion.trim() ? {
@@ -152,17 +151,14 @@ function CreatePostPageContent() {
     photo_url: ch.photo_url,
   }));
 
-  // Sync replyToPost from context to Redux
   useEffect(() => {
     dispatch(settingsSlice.setReplyToPostId(replyToPostContext.replyToPost?.id ?? null));
   }, [dispatch, replyToPostContext.replyToPost]);
 
-  // Ensure channels are loaded for preview/header info
   useEffect(() => {
     channelsStore.fetchChannels();
   }, [channelsStore]);
 
-  // Handlers
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
@@ -198,7 +194,6 @@ function CreatePostPageContent() {
   }, [channelsStore, dispatch]);
 
   const handleSelectTag = useCallback((tag: { name: string; color: string }) => {
-    // Приводим к Tag типу для slice (требует id и created_at)
     dispatch(settingsSlice.selectTag({ ...tag, id: 0, created_at: '' }));
   }, [dispatch]);
 
@@ -246,8 +241,7 @@ function CreatePostPageContent() {
     quizCorrectAnswerId,
     showLinkPreview,
   });
-
-  // Post Settings Props
+  
   const postSettingsProps = {
     channelOptions,
     channelsLoading: channelsStore.loading,

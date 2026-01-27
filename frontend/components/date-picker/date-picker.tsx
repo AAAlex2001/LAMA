@@ -83,7 +83,7 @@ export default function DatePicker({
         minDate={today}
         tileClassName={({ date }) => getTileClassName(date)}
         formatShortWeekday={(locale, date) => {
-          const dayIndex = (date.getDay() + 6) % 7; // Convert Sunday=0 to Monday=0
+          const dayIndex = (date.getDay() + 6) % 7;
           return getWeekDay(locale || 'ru', dayIndex);
         }}
         formatMonthYear={(locale, date) => {

@@ -4,7 +4,6 @@ import { useState } from 'react';
 import styles from './create-channel.module.scss';
 import classNames from 'classnames';
 import Button from '@/components/button/button';
-import Input from '@/components/input';
 
 interface CreateChannelProps {
   className?: string;
@@ -22,7 +21,6 @@ const INSTRUCTIONS = [
 export default function CreateChannel({
   className,
   onSubmit,
-  onCancel,
   loading = false,
 }: CreateChannelProps) {
   const [channelLink, setChannelLink] = useState('');

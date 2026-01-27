@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 import { draftsApi, type Draft } from '@/stores/drafts';
 
 interface DraftsContextValue {
@@ -46,11 +46,9 @@ export function DraftsProvider({ children }: DraftsProviderProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
 
-  // Фильтрация черновиков по поиску
   const filteredDrafts = drafts.filter(draft => {
     if (!searchQuery) return true;
-    
-    // Поиск по дате
+
     const date = new Date(draft.created_at);
     const formattedDate = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
     const formattedDateFull = date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -58,8 +56,7 @@ export function DraftsProvider({ children }: DraftsProviderProps) {
     if (formattedDate.includes(searchQuery) || formattedDateFull.includes(searchQuery)) {
       return true;
     }
-    
-    // Поиск по тексту
+
     const text = draft.text_content || '';
     const formattedText = draft.formatted_content?.text || '';
     return text.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,13 +95,11 @@ export function DraftsProvider({ children }: DraftsProviderProps) {
   };
 
   const deleteDraft = async (id: number) => {
-    // Сразу удаляем из UI
     setDrafts(prev => prev.filter(d => d.id !== id));
     if (selectedDraftId === id) {
       setSelectedDraftId(null);
     }
 
-    // Затем отправляем запрос на сервер
     try {
       await draftsApi.deleteDraft(id);
     } catch (error) {
