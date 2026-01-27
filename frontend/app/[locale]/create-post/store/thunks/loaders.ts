@@ -3,7 +3,7 @@ import type { AppDispatch } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
 import type { MediaFile, ButtonRow, QuizAnswer, ChannelsResponse, Channel, TagsResponse, Draft, InlineButton } from '../types';
 import { setText } from '../slices/editor';
-import { setFiles, clearFiles } from '../slices/media';
+import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
 
@@ -49,18 +49,66 @@ export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
       const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
       const thumbUrl = draft.media_thumbnail_urls?.[index];
       const fullThumb = thumbUrl ? (thumbUrl.startsWith('http') ? thumbUrl : `${baseUrl}${thumbUrl}`) : null;
-      const isVideo = url.includes('/videos/') || url.endsWith('.mp4') || url.endsWith('.mov');
+      const lowerUrl = url.toLowerCase();
+      const isVideo = lowerUrl.includes('/videos/') || lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.mkv');
+      const isDocument =
+        lowerUrl.endsWith('.pdf') ||
+        lowerUrl.endsWith('.doc') ||
+        lowerUrl.endsWith('.docx') ||
+        lowerUrl.endsWith('.txt') ||
+        lowerUrl.endsWith('.xls') ||
+        lowerUrl.endsWith('.xlsx') ||
+        lowerUrl.endsWith('.ppt') ||
+        lowerUrl.endsWith('.pptx') ||
+        lowerUrl.endsWith('.rtf') ||
+        lowerUrl.endsWith('.csv');
+
       return {
         id: `media-${Date.now()}-${index}`,
         url: fullUrl,
-        preview_url: fullUrl,
+        preview_url: isVideo ? (fullThumb || '') : isDocument ? undefined : fullUrl,
         thumbnail_url: fullThumb,
-        type: isVideo ? 'video' : 'image',
+        type: isDocument ? 'document' : isVideo ? 'video' : 'image',
         blur: draft.media_blur?.[index] || false,
         telegram_file_id: draft.media_file_ids?.[index] || null,
       } as MediaFile;
     });
     dispatch(setFiles(mediaFiles));
+
+    const docsToMeasure = mediaFiles.filter(m => m.type === 'document' && !m.size && m.url);
+    if (docsToMeasure.length > 0) {
+      const fetchContentLength = async (url: string): Promise<number | null> => {
+        try {
+          const head = await fetch(url, { method: 'HEAD' });
+          const length = head.headers.get('content-length');
+          if (length) return Number(length);
+        } catch {
+          // fall through
+        }
+        try {
+          const range = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
+          const contentRange = range.headers.get('content-range');
+          if (contentRange) {
+            const total = contentRange.split('/')[1];
+            if (total) return Number(total);
+          }
+          const length = range.headers.get('content-length');
+          if (length) return Number(length);
+        } catch {
+          // ignore
+        }
+        return null;
+      };
+
+      void Promise.all(
+        docsToMeasure.map(async (doc) => {
+          const size = await fetchContentLength(doc.url as string);
+          if (size) {
+            dispatch(updateFile({ id: doc.id, updates: { size } }));
+          }
+        })
+      );
+    }
   } else {
     dispatch(clearFiles());
   }

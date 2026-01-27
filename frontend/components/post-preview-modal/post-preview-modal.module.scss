@@ -122,6 +122,13 @@
   min-width: 0;
 }
 
+.channelTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .channelTitle {
   font-family: 'Inter', sans-serif;
   font-weight: 400;
@@ -131,6 +138,15 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.channelExtra {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 17px;
+  color: #ced2d6;
+  flex-shrink: 0;
 }
 
 .channelSub {

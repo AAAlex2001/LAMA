@@ -111,7 +111,8 @@ function CreatePostPageContent() {
   const selectedChannels = channelsStore.channels.filter(c => c.selected);
   const selectedCount = selectedChannels.length;
   const canReplyToPost = selectedCount === 1;
-  const primaryChannel = selectedCount === 1 ? selectedChannels[0] : undefined;
+  const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;
+  const channelExtraCount = selectedCount > 1 ? `+${selectedCount - 1}` : undefined;
   
   const hasContentForPreview = 
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
@@ -152,6 +153,11 @@ function CreatePostPageContent() {
     dispatch(settingsSlice.setReplyToPostId(replyToPostContext.replyToPost?.id ?? null));
   }, [dispatch, replyToPostContext.replyToPost]);
 
+  // Ensure channels are loaded for preview/header info
+  useEffect(() => {
+    channelsStore.fetchChannels();
+  }, [channelsStore]);
+
   // Handlers
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -163,7 +169,8 @@ function CreatePostPageContent() {
         id: crypto.randomUUID(),
         type,
         file,
-        preview_url: type !== 'document' ? URL.createObjectURL(file) : undefined,
+        preview_url: type === 'image' ? URL.createObjectURL(file) : undefined,
+        size: file.size,
         blur: false,
       };
     });
@@ -389,7 +396,7 @@ function CreatePostPageContent() {
         </div>
       )}
 
-      <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as MediaPreviewFile[]} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
+      <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelExtraCount={channelExtraCount} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as MediaPreviewFile[]} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
       <TextTemplatesModal onSelectTemplate={(formattedContent) => { dispatch(editorSlice.setText(formattedContent?.html || formattedContent?.text || '')); }} />
       <DraftsModal onSelectDraft={(draft) => { loadDraftIntoStore(draft, dispatch); }} />
       <ReplyToPostModal />

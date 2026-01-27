@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import styles from './media-preview.module.scss';
 import BlurIcon from '@/components/icons/blur-icon';
 import CloseIcon from '@/components/icons/close-icon';
@@ -16,6 +16,7 @@ export interface MediaFile {
   preview_url?: string;
   thumbnail_url?: string;
   blur?: boolean;
+  size?: number;
 }
 
 interface MediaPreviewProps {
@@ -42,6 +43,12 @@ export default function MediaPreview({
   if (files.length === 0) return null;
 
   const getPreviewUrl = (file: MediaFile): string => {
+    if (file.type === 'video') {
+      const preview = file.thumbnail_url || file.preview_url || '';
+      const lower = preview.toLowerCase();
+      const isVideoUrl = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm') || lower.endsWith('.avi') || lower.endsWith('.mkv');
+      return isVideoUrl ? '' : preview;
+    }
     return file.thumbnail_url || file.preview_url || file.url || '';
   };
 
@@ -243,6 +250,19 @@ interface VideoPreviewProps {
 }
 
 function VideoPreview({ file, previewUrl, isLoaded, onLoad }: VideoPreviewProps) {
+  const videoSrc = useMemo(() => {
+    if (file.file) return URL.createObjectURL(file.file);
+    return file.url || file.preview_url || '';
+  }, [file.file, file.url, file.preview_url]);
+
+  useEffect(() => {
+    return () => {
+      if (videoSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(videoSrc);
+      }
+    };
+  }, [videoSrc]);
+
   return (
     <>
       {!isLoaded && (
@@ -260,6 +280,20 @@ function VideoPreview({ file, previewUrl, isLoaded, onLoad }: VideoPreviewProps)
             opacity: isLoaded ? 1 : 0,
           }}
           onLoad={onLoad}
+          onError={onLoad}
+        />
+      ) : videoSrc ? (
+        <video
+          src={videoSrc}
+          className={styles.mediaImage}
+          preload="metadata"
+          muted
+          playsInline
+          style={{
+            filter: file.blur ? 'blur(20px)' : 'none',
+            opacity: isLoaded ? 1 : 0,
+          }}
+          onLoadedData={onLoad}
           onError={onLoad}
         />
       ) : (

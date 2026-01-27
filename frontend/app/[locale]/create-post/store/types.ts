@@ -35,6 +35,7 @@ export interface MediaFile {
   blur?: boolean;
   file?: File;
   telegram_file_id?: string | null;
+  size?: number;
 }
 
 export interface QuizAnswer {

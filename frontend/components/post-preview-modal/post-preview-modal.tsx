@@ -27,6 +27,7 @@ export interface PostPreviewModalProps {
   onClose: () => void;
   channelTitle?: string;
   channelSubtitle?: string;
+  channelExtraCount?: string;
   channelPhotoUrl?: string;
   channelMembersCount?: number;
   html: string;
@@ -41,6 +42,7 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
     onClose,
     channelTitle,
     channelSubtitle,
+    channelExtraCount,
     channelPhotoUrl,
     channelMembersCount,
     html,
@@ -110,8 +112,13 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                 )}
               </div>
               <div className={styles.channelMeta}>
-                <div className={styles.channelTitle}>
-                  {channelTitle || 'Название канала'}
+                <div className={styles.channelTitleRow}>
+                  <div className={styles.channelTitle}>
+                    {channelTitle || 'Название канала'}
+                  </div>
+                  {channelExtraCount && (
+                    <div className={styles.channelExtra}>{channelExtraCount}</div>
+                  )}
                 </div>
                 <div className={styles.channelSub}>
                   {channelSubtitle || channelMembersLabel}

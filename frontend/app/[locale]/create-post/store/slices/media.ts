@@ -25,6 +25,13 @@ const mediaSlice = createSlice({
     setFiles(state, action: PayloadAction<MediaFile[]>) {
       state.files = action.payload;
     },
+    updateFile(state, action: PayloadAction<{ id: string; updates: Partial<MediaFile> }>) {
+      const { id, updates } = action.payload;
+      const file = state.files.find(f => f.id === id);
+      if (file) {
+        Object.assign(file, updates);
+      }
+    },
     moveFile(state, action: PayloadAction<{ sourceId: string; targetId: string }>) {
       const { sourceId, targetId } = action.payload;
       if (sourceId === targetId) return;
@@ -46,5 +53,5 @@ const mediaSlice = createSlice({
   },
 });
 
-export const { addFiles, removeFile, setFiles, moveFile, toggleBlur, clearFiles } = mediaSlice.actions;
+export const { addFiles, removeFile, setFiles, updateFile, moveFile, toggleBlur, clearFiles } = mediaSlice.actions;
 export default mediaSlice.reducer;

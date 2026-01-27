@@ -80,7 +80,7 @@ export function extractDocuments(mediaFiles: MediaFile[]): DocumentPreviewItem[]
     .map((m) => ({
       id: m.id,
       name: getDocumentName(m),
-      size: formatBytes(m.file?.size),
+      size: formatBytes(m.size ?? m.file?.size),
       url: m.url,
     }));
 }
@@ -142,7 +142,7 @@ export function createMediaRuns(
       (current as { kind: 'document'; items: DocumentPreviewItem[] }).items.push({
         id: m.id,
         name: getDocumentName(m),
-        size: formatBytes(m.file?.size),
+        size: formatBytes(m.size ?? m.file?.size),
         url: m.url,
       });
     }
