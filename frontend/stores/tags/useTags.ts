@@ -19,8 +19,9 @@ export function useTags() {
     return '#FAC7C7';
   };
 
-  const loadRecentTags = async () => {
-    if (state.recentTags.length > 0 || state.loading) return;
+  const loadRecentTags = async (force = false) => {
+    if (state.loading) return;
+    if (!force && state.recentTags.length > 0) return;
     
     dispatch({ type: 'SET_LOADING', payload: true });
     dispatch({ type: 'SET_ERROR', payload: null });

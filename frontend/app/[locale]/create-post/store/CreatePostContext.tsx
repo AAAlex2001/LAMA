@@ -203,7 +203,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         resetForm();
         replyToPosts.clearReplyToPost();
         postSettings.resetSettings();
-        postSettings.loadRecentTags();
+        postSettings.loadRecentTags(true);
       } else {
         showError(result.message || 'Не удалось опубликовать пост');
       }
@@ -238,7 +238,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         showSuccess(result.message || 'Серия поставлена в очередь');
         resetForm();
         postSettings.resetSettings();
-        postSettings.loadRecentTags();
+        postSettings.loadRecentTags(true);
       } else {
         showError(result.message || 'Не удалось опубликовать серию');
       }
@@ -317,7 +317,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         resetForm();
         replyToPosts.clearReplyToPost();
         postSettings.resetSettings();
-        postSettings.loadRecentTags();
+        postSettings.loadRecentTags(true);
       } else {
         showError(result.message || 'Не удалось запланировать пост');
       }

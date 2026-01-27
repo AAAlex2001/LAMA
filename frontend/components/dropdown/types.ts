@@ -41,7 +41,7 @@ export interface TagsContentProps {
   onTagInputChange?: (value: string) => void;
   onSelectTag?: (tag: ApiTag) => void;
   onSearchTags?: (query: string) => void;
-  onLoadRecentTags?: () => void;
+  onLoadRecentTags?: (force?: boolean) => void;
   onDeleteTag?: (tagId: number) => void;
   onTagColorChange?: (color: TagColor) => void;
 }
