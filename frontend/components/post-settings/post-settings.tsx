@@ -5,83 +5,168 @@ import Dropdown from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CreateChannel from '@/components/create-channel/create-channel';
-import { usePostSettingsContext } from './store/PostSettingsContext';
+
+export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
+export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
+export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
+
+export interface ChannelOption {
+  id: string;
+  label: string;
+  checked?: boolean;
+  members_count?: number;
+  photo_url?: string;
+}
+
+export interface Tag {
+  name: string;
+  color: string;
+}
 
 interface PostSettingsProps {
   className?: string;
   onPreview?: () => void;
   previewDisabled?: boolean;
+
+  // Channels
+  channelOptions: ChannelOption[];
+  channelsLoading: boolean;
+  channelsSyncing: boolean;
+  selectedCount: number;
+  totalChannels: number;
+  showCreateChannel: boolean;
+  onFetchChannels: () => void;
+  onChannelChange: (id: string, checked: boolean) => void;
+  onAddChannel: (link: string) => Promise<boolean>;
+  onOpenCreateChannel: () => void;
+  onCloseCreateChannel: () => void;
+
+  // Tags
+  recentTags: Tag[];
+  searchResults: Tag[];
+  tagInputValue: string;
+  selectedTagName: string;
+  selectedTagColor: TagColor;
+  tagsLoading: boolean;
+  tagsSearching: boolean;
+  onLoadRecentTags: () => void;
+  onSearchTags: (query: string) => void;
+  onTagInputChange: (value: string) => void;
+  onSelectTag: (tag: Tag) => void;
+  onDeleteTag: (name: string) => void;
+  onTagColorChange: (color: TagColor) => void;
+
+  // Repeat
+  repeatInterval: RepeatOption;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
+  repeatCustomUnit: RepeatCustomUnit;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: Date | null;
+  onRepeatChange: (value: RepeatOption) => void;
+  onRepeatCustomDaysChange: (value: number) => void;
+  onRepeatCustomHoursChange: (value: number) => void;
+  onRepeatCustomUnitChange: (value: RepeatCustomUnit) => void;
+  onRepeatCustomValueChange: (value: number) => void;
+  onRepeatWeekdaysChange: (value: number[]) => void;
+  onRepeatMonthDaysChange: (value: number[]) => void;
+  onRepeatYearMonthChange: (value: number) => void;
+  onRepeatYearDaysChange: (value: number[]) => void;
+  onRepeatEndTypeChange: (value: 'never' | 'date') => void;
+  onRepeatEndDateChange: (value: Date | null) => void;
+
+  // Auto-delete
+  autoDeleteInterval: AutoDeleteOption;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
+  onAutoDeleteChange: (value: AutoDeleteOption) => void;
+  onAutoDeleteCustomDaysChange: (value: number) => void;
+  onAutoDeleteCustomHoursChange: (value: number) => void;
+
+  // Toggles
+  notifySubscribers: boolean;
+  pinPost: boolean;
+  onNotifyChange: (checked: boolean) => void;
+  onPinChange: (checked: boolean) => void;
+
+  // Reset
+  onReset: () => void;
 }
 
-export default function PostSettings({ className, onPreview, previewDisabled }: PostSettingsProps) {
-  const {
-    // Channels
-    channelOptions,
-    channelsLoading,
-    channelsSyncing,
-    selectedCount,
-    totalChannels,
-    fetchChannels,
-    handleChannelChange,
-    handleAddChannel,
-    openCreateChannel,
-    closeCreateChannel,
-    showCreateChannel,
-    // Tags
-    recentTags,
-    searchResults,
-    searchQuery,
-    tagInputValue,
-    selectedTagName,
-    tagsLoading,
-    tagsSearching,
-    loadRecentTags,
-    searchTags,
-    setSearchQuery,
-    setTagInputValue,
-    selectTag,
-    deleteTag,
-    selectedTagColor,
-    handleTagColorChange,
-    // Repeat
-    repeatInterval,
-    handleRepeatChange,
-    repeatCustomDays,
-    repeatCustomHours,
-    repeatCustomUnit,
-    repeatCustomValue,
-    repeatWeekdays,
-    repeatMonthDays,
-    repeatYearMonth,
-    repeatYearDays,
-    repeatEndType,
-    repeatEndDate,
-    handleRepeatEndTypeChange,
-    handleRepeatEndDateChange,
-    handleRepeatCustomDaysChange,
-    handleRepeatCustomHoursChange,
-    handleRepeatCustomUnitChange,
-    handleRepeatCustomValueChange,
-    handleRepeatWeekdaysChange,
-    handleRepeatMonthDaysChange,
-    handleRepeatYearMonthChange,
-    handleRepeatYearDaysChange,
-    // Auto-delete
-    autoDeleteInterval,
-    handleAutoDeleteChange,
-    autoDeleteCustomDays,
-    autoDeleteCustomHours,
-    handleAutoDeleteCustomDaysChange,
-    handleAutoDeleteCustomHoursChange,
-    // Toggles
-    notifySubscribers,
-    handleNotifyChange,
-    pinPost,
-    handlePinChange,
-    // Reset
-    resetSettings,
-  } = usePostSettingsContext();
+export default function PostSettings({
+  className,
+  onPreview,
+  previewDisabled,
 
+  channelOptions,
+  channelsLoading,
+  channelsSyncing,
+  selectedCount,
+  totalChannels,
+  showCreateChannel,
+  onFetchChannels,
+  onChannelChange,
+  onAddChannel,
+  onOpenCreateChannel,
+  onCloseCreateChannel,
+
+  recentTags,
+  searchResults,
+  tagInputValue,
+  selectedTagName,
+  selectedTagColor,
+  tagsLoading,
+  tagsSearching,
+  onLoadRecentTags,
+  onSearchTags,
+  onTagInputChange,
+  onSelectTag,
+  onDeleteTag,
+  onTagColorChange,
+
+  repeatInterval,
+  repeatCustomDays,
+  repeatCustomHours,
+  repeatCustomUnit,
+  repeatCustomValue,
+  repeatWeekdays,
+  repeatMonthDays,
+  repeatYearMonth,
+  repeatYearDays,
+  repeatEndType,
+  repeatEndDate,
+  onRepeatChange,
+  onRepeatCustomDaysChange,
+  onRepeatCustomHoursChange,
+  onRepeatCustomUnitChange,
+  onRepeatCustomValueChange,
+  onRepeatWeekdaysChange,
+  onRepeatMonthDaysChange,
+  onRepeatYearMonthChange,
+  onRepeatYearDaysChange,
+  onRepeatEndTypeChange,
+  onRepeatEndDateChange,
+
+  autoDeleteInterval,
+  autoDeleteCustomDays,
+  autoDeleteCustomHours,
+  onAutoDeleteChange,
+  onAutoDeleteCustomDaysChange,
+  onAutoDeleteCustomHoursChange,
+
+  notifySubscribers,
+  pinPost,
+  onNotifyChange,
+  onPinChange,
+
+  onReset,
+}: PostSettingsProps) {
   return (
     <>
       <div className={`${styles.postSettings} ${className || ''}`}>
@@ -89,21 +174,23 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
           <div className={styles.title}>Настройки публикации</div>
 
           <div className={styles.settingsList}>
+            {/* Каналы */}
             <Dropdown
               label="Каналы и чаты для постинга"
               options={channelOptions}
               showSearch
               showCheckboxes
-              onOptionChange={handleChannelChange}
-              onAddNew={openCreateChannel}
+              onOptionChange={onChannelChange}
+              onAddNew={onOpenCreateChannel}
               addNewLabel="Подключить новый"
               selectedCount={selectedCount}
               totalCount={totalChannels}
               variant="channels"
-              onOpen={fetchChannels}
+              onOpen={onFetchChannels}
               loading={channelsLoading}
             />
 
+            {/* Теги */}
             <Dropdown
               label="Тег поста"
               variant="tags"
@@ -113,31 +200,33 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
               selectedTagName={selectedTagName}
               tagsLoading={tagsLoading}
               tagsSearching={tagsSearching}
-              onLoadRecentTags={loadRecentTags}
-              onSearchTags={searchTags}
-              onTagInputChange={setTagInputValue}
-              onSelectTag={selectTag}
-              onDeleteTag={deleteTag}
+              onLoadRecentTags={onLoadRecentTags}
+              onSearchTags={onSearchTags}
+              onTagInputChange={onTagInputChange}
+              onSelectTag={onSelectTag}
+              onDeleteTag={onDeleteTag}
               selectedTagColor={selectedTagColor}
-              onTagColorChange={handleTagColorChange}
+              onTagColorChange={onTagColorChange}
             />
 
+            {/* Автоудаление */}
             <Dropdown
               label="Автоудаление поста"
               variant="auto-delete"
               autoDeleteValue={autoDeleteInterval}
-              onAutoDeleteChange={handleAutoDeleteChange}
+              onAutoDeleteChange={onAutoDeleteChange}
               autoDeleteCustomDays={autoDeleteCustomDays}
               autoDeleteCustomHours={autoDeleteCustomHours}
-              onAutoDeleteCustomDaysChange={handleAutoDeleteCustomDaysChange}
-              onAutoDeleteCustomHoursChange={handleAutoDeleteCustomHoursChange}
+              onAutoDeleteCustomDaysChange={onAutoDeleteCustomDaysChange}
+              onAutoDeleteCustomHoursChange={onAutoDeleteCustomHoursChange}
             />
 
+            {/* Повтор */}
             <Dropdown
               label="Повтор"
               variant="repeat"
               repeatValue={repeatInterval}
-              onRepeatChange={handleRepeatChange}
+              onRepeatChange={onRepeatChange}
               repeatCustomDays={repeatCustomDays}
               repeatCustomHours={repeatCustomHours}
               repeatCustomUnit={repeatCustomUnit}
@@ -148,30 +237,33 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
               repeatYearDays={repeatYearDays}
               repeatEndType={repeatEndType}
               repeatEndDate={repeatEndDate}
-              onRepeatCustomDaysChange={handleRepeatCustomDaysChange}
-              onRepeatCustomHoursChange={handleRepeatCustomHoursChange}
-              onRepeatCustomUnitChange={handleRepeatCustomUnitChange}
-              onRepeatCustomValueChange={handleRepeatCustomValueChange}
-              onRepeatWeekdaysChange={handleRepeatWeekdaysChange}
-              onRepeatMonthDaysChange={handleRepeatMonthDaysChange}
-              onRepeatYearMonthChange={handleRepeatYearMonthChange}
-              onRepeatYearDaysChange={handleRepeatYearDaysChange}
-              onRepeatEndTypeChange={handleRepeatEndTypeChange}
-              onRepeatEndDateChange={handleRepeatEndDateChange}
+              onRepeatCustomDaysChange={onRepeatCustomDaysChange}
+              onRepeatCustomHoursChange={onRepeatCustomHoursChange}
+              onRepeatCustomUnitChange={onRepeatCustomUnitChange}
+              onRepeatCustomValueChange={onRepeatCustomValueChange}
+              onRepeatWeekdaysChange={onRepeatWeekdaysChange}
+              onRepeatMonthDaysChange={onRepeatMonthDaysChange}
+              onRepeatYearMonthChange={onRepeatYearMonthChange}
+              onRepeatYearDaysChange={onRepeatYearDaysChange}
+              onRepeatEndTypeChange={onRepeatEndTypeChange}
+              onRepeatEndDateChange={onRepeatEndDateChange}
             />
 
+            {/* Уведомления */}
             <div className={styles.toggleRow}>
               <span className={styles.toggleLabel}>Уведомлять подписчиков</span>
-              <Toggle checked={notifySubscribers} onChange={handleNotifyChange} />
+              <Toggle checked={notifySubscribers} onChange={onNotifyChange} />
             </div>
 
+            {/* Закрепление */}
             <div className={styles.toggleRow}>
               <span className={styles.toggleLabel}>Закрепить пост после публикации</span>
-              <Toggle checked={pinPost} onChange={handlePinChange} />
+              <Toggle checked={pinPost} onChange={onPinChange} />
             </div>
           </div>
         </div>
 
+        {/* Кнопки */}
         <Button
           text="Предпросмотр поста"
           showArrow={false}
@@ -185,17 +277,17 @@ export default function PostSettings({ className, onPreview, previewDisabled }: 
           showArrow={false}
           fullWidth
           variant="templateCard"
-          onClick={resetSettings}
-          disabled
+          onClick={onReset}
         />
       </div>
 
+      {/* Модалка добавления канала */}
       {showCreateChannel && (
-        <div className={styles.modalOverlay} onClick={closeCreateChannel}>
-          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.modalOverlay} onClick={onCloseCreateChannel}>
+          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
             <CreateChannel
-              onSubmit={handleAddChannel}
-              onCancel={closeCreateChannel}
+              onSubmit={onAddChannel}
+              onCancel={onCloseCreateChannel}
               loading={channelsSyncing}
             />
           </div>

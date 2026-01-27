@@ -6,7 +6,6 @@ import Input from '@/components/input';
 import Button from '@/components/button/button';
 import { PlusIcon } from '@/components/icons';
 import Dropdown, { ButtonTypeOption } from '@/components/dropdown/dropdown';
-import { useInlineButtons } from './InlineButtonsContext';
 
 export type ButtonType = 'url' | 'callback' | 'hidden_text';
 
@@ -26,59 +25,86 @@ export interface ButtonRow {
 
 interface InlineButtonsProps {
   className?: string;
+  isOpen: boolean;
+  rows: ButtonRow[];
+  onAddRow: () => void;
+  onAddColumn: (rowId: string) => void;
+  onUpdateButton: (rowId: string, buttonId: string, updates: Partial<InlineButton>) => void;
+  onDeleteButton: (rowId: string, buttonId: string) => void;
 }
 
-export default function InlineButtons({ className }: InlineButtonsProps) {
-  const { rows, isOpen, addColumn, addRow, updateButton, deleteButton } = useInlineButtons();
+export default function InlineButtons({
+  className,
+  isOpen,
+  rows,
+  onAddRow,
+  onAddColumn,
+  onUpdateButton,
+  onDeleteButton,
+}: InlineButtonsProps) {
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const allButtons: { rowIndex: number; btnIndex: number; button: InlineButton; number: number }[] = [];
-  let buttonCounter = 1;
-  rows.forEach((row, rowIndex) => {
-    row.buttons.forEach((button, btnIndex) => {
-      allButtons.push({ rowIndex, btnIndex, button, number: buttonCounter });
-      buttonCounter++;
-    });
-  });
+  // Собираем все кнопки с их номерами
+  const allButtons: Array<{
+    rowId: string;
+    button: InlineButton;
+    number: number;
+  }> = [];
 
-  const getButtonNumber = (rowIndex: number, btnIndex: number) => {
-    const found = allButtons.find(b => b.rowIndex === rowIndex && b.btnIndex === btnIndex);
-    return found?.number || 1;
+  let counter = 1;
+  for (const row of rows) {
+    for (const button of row.buttons) {
+      allButtons.push({ rowId: row.id, button, number: counter });
+      counter++;
+    }
+  }
+
+  const getButtonNumber = (buttonId: string): number => {
+    const found = allButtons.find(b => b.button.id === buttonId);
+    return found?.number ?? 1;
+  };
+
+  const handleAddColumn = () => {
+    if (rows.length > 0) {
+      onAddColumn(rows[rows.length - 1].id);
+    }
   };
 
   return (
     <div className={`${styles.container} ${className || ''}`}>
+      {/* Сетка кнопок */}
       <div className={styles.tableContainer}>
         <div className={styles.tableTop}>
-          <button type="button" className={styles.addColumnButton} onClick={addColumn}>
+          <button type="button" className={styles.addColumnButton} onClick={handleAddColumn}>
             <PlusIcon width={16} height={16} />
             <span>Столбец</span>
           </button>
         </div>
-        
+
         <div className={styles.tableBody}>
           <div className={styles.tableLeft}>
-            <button type="button" className={styles.addRowButton} onClick={addRow}>
+            <button type="button" className={styles.addRowButton} onClick={onAddRow}>
               <PlusIcon width={16} height={16} />
               <span>Ряд</span>
             </button>
           </div>
-          
+
           <div className={styles.buttonsGrid}>
-            {rows.map((row, rowIndex) => (
+            {rows.map(row => (
               <div key={row.id} className={styles.buttonRow}>
-                {row.buttons.map((button, btnIndex) => {
-                  const btnNumber = getButtonNumber(rowIndex, btnIndex);
+                {row.buttons.map(button => {
+                  const btnNumber = getButtonNumber(button.id);
                   const isHovered = hoveredButton === button.id;
+
                   return (
                     <Button
                       key={button.id}
                       text={isHovered ? 'Удалить' : `Кнопка ${btnNumber}`}
                       variant="inlineButton"
                       showArrow={false}
-                      onClick={() => deleteButton(rowIndex, btnIndex)}
+                      onClick={() => onDeleteButton(row.id, button.id)}
                       hovered={isHovered}
                       onMouseEnter={() => setHoveredButton(button.id)}
                       onMouseLeave={() => setHoveredButton(null)}
@@ -91,77 +117,101 @@ export default function InlineButtons({ className }: InlineButtonsProps) {
         </div>
       </div>
 
+      {/* Редакторы кнопок */}
       <div className={styles.editors}>
-        {allButtons.map(({ rowIndex, btnIndex, button }) => {
-          const btnNumber = getButtonNumber(rowIndex, btnIndex);
-          
-          const getPlaceholder = () => {
-            switch (button.type) {
-              case 'url': return 'Введите URL';
-              case 'hidden_text': return 'Введите скрытый текст';
-              case 'callback': return 'Введите callback data';
-            }
-          };
+        {allButtons.map(({ rowId, button, number }) => (
+          <ButtonEditor
+            key={button.id}
+            rowId={rowId}
+            button={button}
+            number={number}
+            onUpdate={onUpdateButton}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          const getSecondFieldValue = () => {
-            switch (button.type) {
-              case 'url': return button.url || '';
-              case 'hidden_text': return button.hidden_text || '';
-              case 'callback': return button.callback_data || '';
-            }
-          };
+interface ButtonEditorProps {
+  rowId: string;
+  button: InlineButton;
+  number: number;
+  onUpdate: (rowId: string, buttonId: string, updates: Partial<InlineButton>) => void;
+}
 
-          const handleSecondFieldChange = (value: string) => {
-            switch (button.type) {
-              case 'url':
-                updateButton(rowIndex, btnIndex, { url: value });
-                break;
-              case 'hidden_text':
-                updateButton(rowIndex, btnIndex, { hidden_text: value });
-                break;
-              case 'callback':
-                updateButton(rowIndex, btnIndex, { callback_data: value });
-                break;
-            }
-          };
-          
-          return (
-            <div key={button.id} className={styles.editor}>
-              <div className={styles.editorHeader}>
-                <span className={styles.buttonLabel}>Кнопка {btnNumber}</span>
-                <Dropdown
-                  variant="button-type"
-                  label="Тип кнопки"
-                  buttonTypeValue={button.type as ButtonTypeOption}
-                  onButtonTypeChange={(value: ButtonTypeOption) => {
-                    updateButton(rowIndex, btnIndex, { 
-                      type: value as ButtonType,
-                      url: value === 'url' ? button.url : undefined,
-                      hidden_text: value === 'hidden_text' ? button.hidden_text : undefined,
-                      callback_data: value === 'callback' ? button.callback_data : undefined,
-                    });
-                  }}
-                  className={styles.typeDropdown}
-                />
-              </div>
-              
-              <div className={styles.editorFields}>
-                <Input
-                  value={button.text}
-                  onChange={(value) => updateButton(rowIndex, btnIndex, { text: value })}
-                  placeholder="Текст кнопки"
-                  className={styles.fieldInput}
-                />
-                <Input
-                  value={getSecondFieldValue()}
-                  onChange={handleSecondFieldChange}
-                  placeholder={getPlaceholder()}
-                  className={styles.fieldInput}
-                />
-              </div>
-            </div>
-          );
-        })}
+function ButtonEditor({ rowId, button, number, onUpdate }: ButtonEditorProps) {
+  const getPlaceholder = (): string => {
+    switch (button.type) {
+      case 'url':
+        return 'Введите URL';
+      case 'hidden_text':
+        return 'Введите скрытый текст';
+      case 'callback':
+        return 'Введите callback data';
+    }
+  };
+
+  const getSecondFieldValue = (): string => {
+    switch (button.type) {
+      case 'url':
+        return button.url || '';
+      case 'hidden_text':
+        return button.hidden_text || '';
+      case 'callback':
+        return button.callback_data || '';
+    }
+  };
+
+  const handleSecondFieldChange = (value: string) => {
+    switch (button.type) {
+      case 'url':
+        onUpdate(rowId, button.id, { url: value });
+        break;
+      case 'hidden_text':
+        onUpdate(rowId, button.id, { hidden_text: value });
+        break;
+      case 'callback':
+        onUpdate(rowId, button.id, { callback_data: value });
+        break;
+    }
+  };
+
+  const handleTypeChange = (newType: ButtonTypeOption) => {
+    onUpdate(rowId, button.id, {
+      type: newType as ButtonType,
+      url: newType === 'url' ? button.url : undefined,
+      hidden_text: newType === 'hidden_text' ? button.hidden_text : undefined,
+      callback_data: newType === 'callback' ? button.callback_data : undefined,
+    });
+  };
+
+  return (
+    <div className={styles.editor}>
+      <div className={styles.editorHeader}>
+        <span className={styles.buttonLabel}>Кнопка {number}</span>
+        <Dropdown
+          variant="button-type"
+          label="Тип кнопки"
+          buttonTypeValue={button.type as ButtonTypeOption}
+          onButtonTypeChange={handleTypeChange}
+          className={styles.typeDropdown}
+        />
+      </div>
+
+      <div className={styles.editorFields}>
+        <Input
+          value={button.text}
+          onChange={value => onUpdate(rowId, button.id, { text: value })}
+          placeholder="Текст кнопки"
+          className={styles.fieldInput}
+        />
+        <Input
+          value={getSecondFieldValue()}
+          onChange={handleSecondFieldChange}
+          placeholder={getPlaceholder()}
+          className={styles.fieldInput}
+        />
       </div>
     </div>
   );

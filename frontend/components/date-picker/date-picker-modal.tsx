@@ -6,8 +6,12 @@ import styles from './date-picker-modal.module.scss';
 import { useDatePicker } from './DatePickerContext';
 import Button from '../button/button';
 
-export default function DatePickerModal() {
-  const { isOpen, selectedDate, setSelectedDate, hours, minutes, setHours, setMinutes, schedulePost, close } = useDatePicker();
+interface DatePickerModalProps {
+  onSchedule?: (scheduledDate: Date) => void | Promise<void>;
+}
+
+export default function DatePickerModal({ onSchedule }: DatePickerModalProps) {
+  const { isOpen, selectedDate, setSelectedDate, hours, minutes, setHours, setMinutes, close } = useDatePicker();
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
@@ -17,8 +21,15 @@ export default function DatePickerModal() {
     close();
   };
 
-  const handleSchedule = () => {
-    schedulePost();
+  const handleSchedule = async () => {
+    if (!selectedDate) return;
+    const scheduledDateTime = new Date(selectedDate);
+    scheduledDateTime.setHours(hours, minutes, 0, 0);
+    setSelectedDate(scheduledDateTime);
+    if (onSchedule) {
+      await onSchedule(scheduledDateTime);
+    }
+    close();
   };
 
   if (!isOpen) return null;

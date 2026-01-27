@@ -3,30 +3,25 @@
 import React, { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface DatePickerContextValue {
-  // State
   selectedDate: Date | null;
   isOpen: boolean;
   hours: number;
   minutes: number;
-  
-  // Actions
   setSelectedDate: (date: Date | null) => void;
   setHours: (hours: number) => void;
   setMinutes: (minutes: number) => void;
   open: () => void;
   close: () => void;
   toggle: () => void;
-  schedulePost: () => void;
 }
 
 const DatePickerContext = createContext<DatePickerContextValue | null>(null);
 
 interface DatePickerProviderProps {
   children: ReactNode;
-  onSchedule?: (scheduledDate: Date) => void | Promise<void>;
 }
 
-export function DatePickerProvider({ children, onSchedule }: DatePickerProviderProps) {
+export function DatePickerProvider({ children }: DatePickerProviderProps) {
   const now = new Date();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -51,20 +46,6 @@ export function DatePickerProvider({ children, onSchedule }: DatePickerProviderP
     setIsOpen(!isOpen);
   };
 
-  const schedulePost = async () => {
-    if (selectedDate) {
-      const scheduledDateTime = new Date(selectedDate);
-      scheduledDateTime.setHours(hours, minutes, 0, 0);
-      setSelectedDate(scheduledDateTime);
-      
-      if (onSchedule) {
-        await onSchedule(scheduledDateTime);
-      }
-      
-      close();
-    }
-  };
-
   const value: DatePickerContextValue = {
     selectedDate,
     isOpen,
@@ -76,7 +57,6 @@ export function DatePickerProvider({ children, onSchedule }: DatePickerProviderP
     open,
     close,
     toggle,
-    schedulePost,
   };
 
   return (

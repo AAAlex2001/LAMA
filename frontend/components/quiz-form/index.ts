@@ -1,4 +1,2 @@
 export { default } from './quiz-form';
-export { QuizFormProvider, useQuizForm } from './QuizFormContext';
-export type { PollData } from './store/selectors';
-
+export type { QuizMode, QuizAnswer } from './quiz-form';

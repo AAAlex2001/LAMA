@@ -1,17 +1,40 @@
 export type InlineButtonType = 'url' | 'callback' | 'hidden_text';
 
 export interface InlineButton {
-  id?: string;
-  type?: InlineButtonType;
+  id: string;
   text: string;
+  type: InlineButtonType;
   url?: string;
   callback_data?: string;
   hidden_text?: string;
 }
 
+export interface ButtonRow {
+  id: string;
+  buttons: InlineButton[];
+}
+
 export interface InlineKeyboard {
   buttons: InlineButton[][];
 }
+
+export interface MediaFile {
+  id: string;
+  url?: string;
+  preview_url?: string;
+  thumbnail_url?: string | null;
+  type: 'image' | 'video' | 'document';
+  blur?: boolean;
+  file?: File;
+  telegram_file_id?: string | null;
+}
+
+export interface QuizAnswer {
+  id: string;
+  text: string;
+}
+
+export type QuizMode = 'poll_single' | 'poll_multi' | 'quiz';
 
 export interface PollData {
   question: string;
@@ -21,6 +44,40 @@ export interface PollData {
   correct_option_id?: number | null;
   explanation?: string | null;
   is_quiz?: boolean;
+}
+
+export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
+
+export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
+export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
+export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
+
+export interface ChannelOption {
+  id: string;
+  label: string;
+  checked?: boolean;
+  members_count?: number;
+  photo_url?: string;
+}
+
+export interface Tag {
+  id: number;
+  name: string;
+  color?: string;
+  created_at: string;
+}
+
+export interface PostSnapshot {
+  text: string;
+  mediaFiles: MediaFile[];
+  inlineButtonsOpen: boolean;
+  buttonRows: ButtonRow[];
+  quizOpen: boolean;
+  quizMode: QuizMode;
+  quizQuestion: string;
+  quizAnswers: QuizAnswer[];
+  quizCorrectAnswerId: string | null;
+  showLinkPreview: boolean;
 }
 
 export type ContentType = 'text' | 'text_with_media' | 'poll' | 'quiz';
@@ -47,7 +104,7 @@ export interface CreatePostRequest {
   repeat_interval?: string;
   repeat_custom_days?: number;
   repeat_custom_hours?: number;
-  repeat_custom_unit?: 'days' | 'weeks' | 'months' | 'years';
+  repeat_custom_unit?: RepeatCustomUnit;
   repeat_custom_value?: number;
   repeat_weekdays?: number[];
   repeat_month_days?: number[];
@@ -64,10 +121,4 @@ export interface CreatePostResponse {
   id: number;
   status: string;
   message?: string;
-}
-
-export interface PublishPostResponse {
-  success: boolean;
-  message: string;
-  publication_id?: number;
 }

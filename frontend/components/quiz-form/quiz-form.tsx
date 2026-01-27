@@ -5,57 +5,92 @@ import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import CloseIcon from '@/components/icons/close-icon';
-import type { QuizFormMode, QuizFormState } from './store/types';
-import { useQuizForm } from './QuizFormContext';
 
-function QuizFormView({
-  state,
-  remainingAnswers,
+export type QuizMode = 'poll_single' | 'poll_multi' | 'quiz';
+
+export interface QuizAnswer {
+  id: string;
+  text: string;
+}
+
+interface QuizFormProps {
+  isOpen: boolean;
+  mode: QuizMode;
+  question: string;
+  answers: QuizAnswer[];
+  correctAnswerId: string | null;
+  onModeChange: (mode: QuizMode) => void;
+  onQuestionChange: (value: string) => void;
+  onAnswerChange: (id: string, text: string) => void;
+  onAddAnswer: () => void;
+  onRemoveAnswer: (id: string) => void;
+  onCorrectAnswerChange: (id: string) => void;
+}
+
+export default function QuizForm({
+  isOpen,
+  mode,
+  question,
+  answers,
+  correctAnswerId,
+  onModeChange,
   onQuestionChange,
   onAnswerChange,
   onAddAnswer,
   onRemoveAnswer,
-  onModeChange,
   onCorrectAnswerChange,
-}: {
-  state: QuizFormState;
-  remainingAnswers: number;
-  onQuestionChange: (value: string) => void;
-  onAnswerChange: (id: string, value: string) => void;
-  onAddAnswer: () => void;
-  onRemoveAnswer: (id: string) => void;
-  onModeChange: (mode: QuizFormMode) => void;
-  onCorrectAnswerChange: (id: string) => void;
-}) {
-  const isQuiz = state.mode === 'quiz';
-  const isMulti = state.mode === 'poll_multi';
+}: QuizFormProps) {
+  if (!isOpen) return null;
+
+  const isQuiz = mode === 'quiz';
+  const isMulti = mode === 'poll_multi';
+  const remainingAnswers = 12 - answers.length;
+  const canRemoveAnswer = answers.length > 2;
+  const canAddAnswer = answers.length < 12;
+
+  const title = isQuiz ? 'Новая викторина' : 'Новый опрос';
+
+  const handleMultiToggle = (checked: boolean) => {
+    onModeChange(checked ? 'poll_multi' : 'poll_single');
+  };
+
+  const handleQuizToggle = (checked: boolean) => {
+    onModeChange(checked ? 'quiz' : 'poll_single');
+  };
 
   return (
     <div className={styles.quizForm}>
+      {/* Заголовок */}
       <div className={styles.header}>
-        <div className={styles.headerLabel}>{isQuiz ? 'Новая викторина' : 'Новый опрос'}</div>
+        <div className={styles.headerLabel}>{title}</div>
       </div>
 
+      {/* Вопрос */}
       <div className={styles.questionSection}>
-        <Input placeholder="Задайте вопрос" value={state.question} onChange={onQuestionChange} />
+        <Input
+          placeholder="Задайте вопрос"
+          value={question}
+          onChange={onQuestionChange}
+        />
       </div>
 
+      {/* Варианты ответа */}
       <div className={styles.answersSection}>
         <div className={styles.answersLabel}>Варианты ответа</div>
 
         <div className={styles.answersList}>
-          {state.answers.map((answer) => (
+          {answers.map(answer => (
             <Input
               key={answer.id}
               placeholder="Ответ"
               value={answer.text}
-              onChange={(text) => onAnswerChange(answer.id, text)}
+              onChange={text => onAnswerChange(answer.id, text)}
               icon={<CloseIcon width={16} height={16} color="#8C8C8C" />}
               onIconClick={() => onRemoveAnswer(answer.id)}
-              iconDisabled={state.answers.length <= 2}
+              iconDisabled={!canRemoveAnswer}
               iconClassName={styles.deleteButton}
               showRadio={isQuiz}
-              radioChecked={state.correctAnswerId === answer.id}
+              radioChecked={correctAnswerId === answer.id}
               onRadioChange={() => onCorrectAnswerChange(answer.id)}
             />
           ))}
@@ -66,23 +101,25 @@ function QuizFormView({
             showArrow={false}
             fullWidth
             onClick={onAddAnswer}
-            disabled={state.answers.length >= 12}
+            disabled={!canAddAnswer}
           />
 
           {remainingAnswers > 0 && (
             <div className={styles.hint}>
-              Можно добавить ещё {remainingAnswers} {remainingAnswers === 1 ? 'вариант' : 'вариантов'} ответа
+              Можно добавить ещё {remainingAnswers}{' '}
+              {remainingAnswers === 1 ? 'вариант' : 'вариантов'} ответа
             </div>
           )}
         </div>
       </div>
 
+      {/* Переключатели */}
       <div className={styles.togglesSection}>
         <div className={styles.toggleRow}>
           <span className={styles.toggleLabel}>Выбор нескольких ответов</span>
           <Toggle
             checked={isMulti}
-            onChange={(checked) => onModeChange(checked ? 'poll_multi' : 'poll_single')}
+            onChange={handleMultiToggle}
             disabled={isQuiz}
           />
         </div>
@@ -92,48 +129,19 @@ function QuizFormView({
             <span className={styles.toggleLabel}>Режим викторины</span>
             <Toggle
               checked={isQuiz}
-              onChange={(checked) => onModeChange(checked ? 'quiz' : 'poll_single')}
+              onChange={handleQuizToggle}
               disabled={isMulti}
             />
           </div>
 
           {isQuiz && (
             <div className={styles.quizHint}>
-              В викторинах есть правильный вариант ответа, а пользователям недоступна возможность переголосовать
+              В викторинах есть правильный вариант ответа, а пользователям
+              недоступна возможность переголосовать
             </div>
           )}
         </div>
       </div>
     </div>
-  );
-}
-
-export default function QuizForm() {
-  const {
-    isOpen,
-    state,
-    setMode,
-    setQuestion,
-    setAnswerText,
-    addAnswer,
-    removeAnswer,
-    setCorrectAnswer,
-  } = useQuizForm();
-
-  if (!isOpen) return null;
-
-  const remainingAnswers = 12 - state.answers.length;
-
-  return (
-    <QuizFormView
-      state={state}
-      remainingAnswers={remainingAnswers}
-      onQuestionChange={setQuestion}
-      onAnswerChange={setAnswerText}
-      onAddAnswer={addAnswer}
-      onRemoveAnswer={removeAnswer}
-      onModeChange={setMode}
-      onCorrectAnswerChange={setCorrectAnswer}
-    />
   );
 }

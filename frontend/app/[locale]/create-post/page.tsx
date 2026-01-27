@@ -1,24 +1,22 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import styles from './create-post.module.scss';
+
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
-import RichTextEditor from '@/components/rich-text-editor';
-import InlineButtons from '@/components/inline-buttons';
-import MediaPreview from '@/components/media-preview';
+import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
+import InlineButtons from '@/components/inline-buttons/inline-buttons';
+import MediaPreview from '@/components/media-preview/media-preview';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import ReplyToPostModal from '@/components/reply-to-post-modal/reply-to-post-modal';
 import { DatePickerModal } from '@/components/date-picker';
-import QuizForm from '@/components/quiz-form';
+import QuizForm from '@/components/quiz-form/quiz-form';
 import Toggle from '@/components/toggle/toggle';
-import Dropdown from '@/components/dropdown/dropdown';
-import PostPreviewModal, { type QuizPreviewData } from '@/components/post-preview-modal';
-import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-utils';
+import PostPreviewModal from '@/components/post-preview-modal';
 import PostAccordion from '@/components/post-accordion/post-accordion';
-import { initialQuizFormState } from '@/components/quiz-form/store/reducer';
-import { useTokenFromUrl } from './hooks/useTokenFromUrl';
+import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-utils';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -30,451 +28,365 @@ import {
   CloseIcon,
 } from '@/components/icons';
 
-// Контексты
-import { useRichTextEditor } from '@/components/rich-text-editor';
-import { useMediaPreview } from '@/components/media-preview';
-import { useInlineButtons } from '@/components/inline-buttons';
-import { useQuizForm } from '@/components/quiz-form';
+import { CreatePostProvider } from './store/provider';
+import { useAppDispatch, useAppSelector } from './store';
+import * as editorSlice from './store/slices/editor';
+import * as mediaSlice from './store/slices/media';
+import * as inlineButtonsSlice from './store/slices/inlineButtons';
+import * as quizSlice from './store/slices/quiz';
+import * as settingsSlice from './store/slices/settings';
+import * as uiSlice from './store/slices/ui';
+import * as seriesSlice from './store/slices/series';
+import { publishNow, saveDraft, schedulePost } from './store/thunks';
+
+import { useChannels } from '@/stores/channels';
+import { useTags } from '@/stores/tags';
+import { useReplyToPost } from '@/components/reply-to-post-modal';
 import { useDrafts } from '@/components/drafts-modal';
 import { useTemplates } from '@/components/text-templates-modal';
-import { useReplyToPost } from '@/components/reply-to-post-modal';
-import { useDatePicker } from '@/components/date-picker';
-import { usePostSettingsContext } from '@/components/post-settings/store';
-import { useCreatePostContext, type PostSnapshot } from './store/CreatePostContext';
 
-const EMPTY_POST_SNAPSHOT: PostSnapshot = {
-  text: '',
-  showInlineButtons: false,
-  buttonRows: [],
-  mediaFiles: [],
-  showQuizForm: false,
-  quizForm: initialQuizFormState,
-  showLinkPreview: false,
-};
+import type { MediaFile } from '@/components/media-preview/media-preview';
+import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
+import type { ButtonRow, InlineButton } from '@/components/inline-buttons/inline-buttons';
 
 function CreatePostPageContent() {
-  // Автоматически сохраняем токен из URL если он есть
-  useTokenFromUrl();
-  
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [postSnapshots, setPostSnapshots] = useState<PostSnapshot[]>([EMPTY_POST_SNAPSHOT]);
-  const [activePostIndex, setActivePostIndex] = useState(0);
-  // selected tag is read from postSettings.selectedTagName
-  
+  const dispatch = useAppDispatch();
   const headerRef = useRef<HTMLDivElement>(null);
-  
-  // Контексты компонентов
-  const richTextEditor = useRichTextEditor();
-  const mediaPreview = useMediaPreview();
-  const inlineButtons = useInlineButtons();
-  const quizForm = useQuizForm();
-  const drafts = useDrafts();
-  const templates = useTemplates();
-  const replyToPosts = useReplyToPost();
-  const datePicker = useDatePicker();
-  const postSettings = usePostSettingsContext();
-  
-  // Главный контекст создания поста
-  const {
-    isPublishing,
-    isSavingDraft,
-    isScheduling,
-    showLinkPreview,
-    setShowLinkPreview,
-    showMobileSettings,
-    setShowMobileSettings,
-    fileInputRef,
-    openFileDialog,
-    handleFileUpload,
-    publishNow,
-    publishSeriesNow,
-    saveDraft,
-    saveAsTemplate,
-    getSnapshot,
-    loadSnapshot,
-    resetForm,
-    handleSelectTemplate,
-    handleSelectDraft,
-    handleSelectPost: handleSelectPostFromContext,
-    canAddMedia,
-    canShowInlineButtons,
-    hasContentForPreview,
-  } = useCreatePostContext();
-  
-  // Channel info for preview
-  const selectedChannels = postSettings.channelOptions.filter((c) => c.checked);
-  const selectedPrimaryChannel = selectedChannels[0];
-  const extraSelectedCount = Math.max(0, postSettings.selectedCount - 1);
-  const selectedChannelTitle = `${selectedPrimaryChannel?.label || 'Название канала'}${
-    extraSelectedCount > 0 ? ` +${extraSelectedCount}` : ''
-  }`;
-  const canReplyToPost = selectedChannels.length === 1;
-  
-  // Quiz preview data
-  const getQuizPreviewData = (): QuizPreviewData | undefined => {
-    const pollData = quizForm.getPollData();
-    if (!pollData) return undefined;
-    
-    return {
-      mode: pollData.is_quiz ? 'quiz' : 'poll',
-      question: pollData.question,
-      options: pollData.options,
-      isAnonymous: true,
-      allowsMultipleAnswers: pollData.allows_multiple_answers || false,
-      correctAnswerIndex: pollData.correct_option_id,
-    };
-  };
-  
-  const quizPreviewData = getQuizPreviewData();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<any>(null);
 
-  const inlineKeyboardPreview = (() => {
-    if (!inlineButtons.isOpen || inlineButtons.rows.length === 0) return undefined;
-    const buttons = inlineButtons.rows
-      .map(row =>
-        row.buttons
-          .filter(btn => btn.text && btn.text.trim().length > 0)
-          .map(btn => ({ text: btn.text, type: btn.type }))
-      )
-      .filter(row => row.length > 0);
+  // Redux State
+  const text = useAppSelector(state => state.editor.text);
+  const showLinkPreview = useAppSelector(state => state.editor.showLinkPreview);
+  const mediaFiles = useAppSelector(state => state.media.files);
+  const inlineButtonsOpen = useAppSelector(state => state.inlineButtons.isOpen);
+  const buttonRows = useAppSelector(state => state.inlineButtons.rows);
+  const quizOpen = useAppSelector(state => state.quiz.isOpen);
+  const quizMode = useAppSelector(state => state.quiz.mode);
+  const quizQuestion = useAppSelector(state => state.quiz.question);
+  const quizAnswers = useAppSelector(state => state.quiz.answers);
+  const quizCorrectAnswerId = useAppSelector(state => state.quiz.correctAnswerId);
+  const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
+  const selectedTagColor = useAppSelector(state => state.settings.selectedTagColor);
+  const notifySubscribers = useAppSelector(state => state.settings.notifySubscribers);
+  const pinPost = useAppSelector(state => state.settings.pinPost);
+  const showCreateChannel = useAppSelector(state => state.settings.showCreateChannel);
+  const repeatInterval = useAppSelector(state => state.settings.repeatInterval);
+  const repeatCustomDays = useAppSelector(state => state.settings.repeatCustomDays);
+  const repeatCustomHours = useAppSelector(state => state.settings.repeatCustomHours);
+  const repeatCustomUnit = useAppSelector(state => state.settings.repeatCustomUnit);
+  const repeatCustomValue = useAppSelector(state => state.settings.repeatCustomValue);
+  const repeatWeekdays = useAppSelector(state => state.settings.repeatWeekdays);
+  const repeatMonthDays = useAppSelector(state => state.settings.repeatMonthDays);
+  const repeatYearMonth = useAppSelector(state => state.settings.repeatYearMonth);
+  const repeatYearDays = useAppSelector(state => state.settings.repeatYearDays);
+  const repeatEndType = useAppSelector(state => state.settings.repeatEndType);
+  const repeatEndDate = useAppSelector(state => state.settings.repeatEndDate);
+  const autoDeleteInterval = useAppSelector(state => state.settings.autoDeleteInterval);
+  const autoDeleteCustomDays = useAppSelector(state => state.settings.autoDeleteCustomDays);
+  const autoDeleteCustomHours = useAppSelector(state => state.settings.autoDeleteCustomHours);
+  const showPreviewModal = useAppSelector(state => state.ui.showPreviewModal);
+  const showMobileSettings = useAppSelector(state => state.ui.showMobileSettings);
+  const isPublishing = useAppSelector(state => state.ui.isPublishing);
+  const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
+  const isScheduling = useAppSelector(state => state.ui.isScheduling);
+  const snapshots = useAppSelector(state => state.series.snapshots);
+  const activeIndex = useAppSelector(state => state.series.activeIndex);
 
-    return buttons.length > 0 ? { buttons } : undefined;
-  })();
+  // Zustand Stores
+  const channelsStore = useChannels();
+  const tagsStore = useTags();
+  
+  // Context hooks for modals
+  const replyToPostContext = useReplyToPost();
+  const draftsContext = useDrafts();
+  const templatesContext = useTemplates();
 
-  // tag selection handled in PostSettings store (postSettings.selectedTagName)
+  // Computed
+  const canAddMedia = buttonRows.length > 0 ? mediaFiles.length < 1 : mediaFiles.length < 10;
+  const canShowInlineButtons = mediaFiles.length <= 1;
+  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const selectedCount = selectedChannels.length;
+  const canReplyToPost = selectedCount === 1;
+  const primaryChannel = selectedCount === 1 ? selectedChannels[0] : undefined;
   
-  const handleRemoveTag = () => {
-    postSettings.setSelectedTagName('');
-  };
-  
-  const handleOpenPreview = () => {
-    setShowMobileSettings(false);
-    setShowPreviewModal(true);
-  };
-  
-  const handleAddSeries = () => {
-    const currentSnapshot = getSnapshot();
-    const nextIndex = postSnapshots.length;
-    
-    setPostSnapshots((prev) => {
-      const next = [...prev];
-      next[activePostIndex] = currentSnapshot;
-      next.push(EMPTY_POST_SNAPSHOT);
-      return next;
+  const hasContentForPreview = 
+    text.replace(/<[^>]*>/g, '').trim().length > 0 ||
+    mediaFiles.length > 0 ||
+    (quizOpen && quizQuestion.trim().length > 0) ||
+    (inlineButtonsOpen && buttonRows.length > 0);
+
+  const quizPreviewData = quizOpen && quizQuestion.trim() ? {
+    mode: quizMode,
+    question: quizQuestion,
+    options: quizAnswers.map(a => a.text),
+    isAnonymous: true,
+    allowsMultipleAnswers: quizMode === 'poll_multi',
+    correctAnswerIndex: quizMode === 'quiz' && quizCorrectAnswerId
+      ? quizAnswers.findIndex(a => a.id === quizCorrectAnswerId)
+      : undefined,
+  } : undefined;
+
+  const inlineKeyboardPreview = inlineButtonsOpen && buttonRows.length > 0 ? {
+    buttons: buttonRows
+      .map(row => row.buttons.filter(btn => btn.text.trim()).map(btn => ({ text: btn.text, type: btn.type })))
+      .filter(row => row.length > 0),
+  } : undefined;
+
+  const channelOptions = channelsStore.channels.map(ch => ({
+    id: String(ch.id),
+    label: ch.title,
+    checked: ch.selected,
+    members_count: ch.members_count,
+    photo_url: ch.photo_url,
+  }));
+
+  // Sync replyToPost from context to Redux
+  useEffect(() => {
+    dispatch(settingsSlice.setReplyToPostId(replyToPostContext.replyToPost?.id ?? null));
+  }, [dispatch, replyToPostContext.replyToPost]);
+
+  // Handlers
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    const newFiles: MediaFile[] = Array.from(files).map(file => {
+      const type = file.type.startsWith('video/') ? 'video' 
+        : file.type.startsWith('image/') ? 'image' : 'document';
+      return {
+        id: crypto.randomUUID(),
+        type,
+        file,
+        preview_url: type !== 'document' ? URL.createObjectURL(file) : undefined,
+        blur: false,
+      };
     });
-    
-    setActivePostIndex(nextIndex);
-    resetForm();
-  };
-  
-  const handlePublishClick = async () => {
-    if (postSnapshots.length <= 1) {
-      await publishNow();
-      return;
+    dispatch(mediaSlice.addFiles(newFiles as any));
+    e.target.value = '';
+  }, [dispatch]);
+
+  const handleMoveMedia = useCallback((fromId: string, toId: string) => {
+    dispatch(mediaSlice.moveFile({ sourceId: fromId, targetId: toId }));
+  }, [dispatch]);
+
+  const handleChannelChange = useCallback((id: string) => {
+    const numericId = parseInt(id, 10);
+    if (!isNaN(numericId)) channelsStore.toggleChannelSelected(numericId);
+  }, [channelsStore]);
+
+  const handleAddChannel = useCallback(async (link: string) => {
+    const success = await channelsStore.addChannel(link);
+    if (success) dispatch(settingsSlice.setShowCreateChannel(false));
+    return success;
+  }, [channelsStore, dispatch]);
+
+  const handleSelectTag = useCallback((tag: { name: string; color: string }) => {
+    dispatch(settingsSlice.selectTag(tag as any));
+  }, [dispatch]);
+
+  const handleSelectPostSnapshot = useCallback((index: number) => {
+    const currentSnapshot = { text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview };
+    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+    dispatch(seriesSlice.setActiveIndex(index));
+    const snapshot = snapshots[index];
+    if (snapshot) {
+      dispatch(editorSlice.setText(snapshot.text));
+      dispatch(mediaSlice.setFiles(snapshot.mediaFiles));
+      dispatch(inlineButtonsSlice.setRows(snapshot.buttonRows));
+      if (snapshot.quizOpen) {
+        dispatch(quizSlice.openQuiz());
+      } else {
+        dispatch(quizSlice.closeQuiz());
+      }
+      dispatch(quizSlice.setMode(snapshot.quizMode));
+      dispatch(quizSlice.setQuestion(snapshot.quizQuestion));
+      dispatch(quizSlice.setAnswers(snapshot.quizAnswers));
+      dispatch(editorSlice.setShowLinkPreview(snapshot.showLinkPreview));
     }
-    
-    const currentSnapshot = getSnapshot();
-    const snapshotsForPublish = postSnapshots.map((p, idx) => 
-      idx === activePostIndex ? currentSnapshot : p
-    );
-    
-    const result = await publishSeriesNow(snapshotsForPublish);
-    if (result?.success) {
-      setPostSnapshots([EMPTY_POST_SNAPSHOT]);
-      setActivePostIndex(0);
-    }
+  }, [dispatch, activeIndex, snapshots, text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview]);
+
+  const handleAddSeries = useCallback(() => {
+    const currentSnapshot = { text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview };
+    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+    dispatch(seriesSlice.addPost());
+  }, [dispatch, text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview]);
+
+  // Post Settings Props
+  const postSettingsProps = {
+    channelOptions,
+    channelsLoading: channelsStore.loading,
+    channelsSyncing: channelsStore.syncing,
+    selectedCount,
+    totalChannels: channelsStore.channels.length,
+    showCreateChannel,
+    onFetchChannels: channelsStore.fetchChannels,
+    onChannelChange: handleChannelChange,
+    onAddChannel: handleAddChannel,
+    onOpenCreateChannel: () => dispatch(settingsSlice.setShowCreateChannel(true)),
+    onCloseCreateChannel: () => dispatch(settingsSlice.setShowCreateChannel(false)),
+    recentTags: tagsStore.recentTags,
+    searchResults: tagsStore.searchResults,
+    tagInputValue: tagsStore.tagInputValue,
+    selectedTagName,
+    selectedTagColor: selectedTagColor as any,
+    tagsLoading: tagsStore.loading,
+    tagsSearching: tagsStore.searching,
+    onLoadRecentTags: tagsStore.loadRecentTags,
+    onSearchTags: tagsStore.searchTags,
+    onTagInputChange: tagsStore.setTagInputValue,
+    onSelectTag: handleSelectTag,
+    onDeleteTag: tagsStore.deleteTag,
+    onTagColorChange: (color: any) => dispatch(settingsSlice.setSelectedTagColor(color)),
+    repeatInterval: repeatInterval as any,
+    repeatCustomDays,
+    repeatCustomHours,
+    repeatCustomUnit: repeatCustomUnit as any,
+    repeatCustomValue,
+    repeatWeekdays,
+    repeatMonthDays,
+    repeatYearMonth,
+    repeatYearDays,
+    repeatEndType,
+    repeatEndDate: repeatEndDate ? new Date(repeatEndDate) : null,
+    onRepeatChange: (v: any) => dispatch(settingsSlice.setRepeatInterval(v)),
+    onRepeatCustomDaysChange: (v: number) => dispatch(settingsSlice.setRepeatCustomDays(v)),
+    onRepeatCustomHoursChange: (v: number) => dispatch(settingsSlice.setRepeatCustomHours(v)),
+    onRepeatCustomUnitChange: (v: any) => dispatch(settingsSlice.setRepeatCustomUnit(v)),
+    onRepeatCustomValueChange: (v: number) => dispatch(settingsSlice.setRepeatCustomValue(v)),
+    onRepeatWeekdaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatWeekdays(v)),
+    onRepeatMonthDaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatMonthDays(v)),
+    onRepeatYearMonthChange: (v: number) => dispatch(settingsSlice.setRepeatYearMonth(v)),
+    onRepeatYearDaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatYearDays(v)),
+    onRepeatEndTypeChange: (v: 'never' | 'date') => dispatch(settingsSlice.setRepeatEndType(v)),
+    onRepeatEndDateChange: (v: Date | null) => dispatch(settingsSlice.setRepeatEndDate(v?.toISOString() ?? null)),
+    autoDeleteInterval: autoDeleteInterval as any,
+    autoDeleteCustomDays,
+    autoDeleteCustomHours,
+    onAutoDeleteChange: (v: any) => dispatch(settingsSlice.setAutoDeleteInterval(v)),
+    onAutoDeleteCustomDaysChange: (v: number) => dispatch(settingsSlice.setAutoDeleteCustomDays(v)),
+    onAutoDeleteCustomHoursChange: (v: number) => dispatch(settingsSlice.setAutoDeleteCustomHours(v)),
+    notifySubscribers,
+    pinPost,
+    onNotifyChange: (v: boolean) => dispatch(settingsSlice.setNotifySubscribers(v)),
+    onPinChange: (v: boolean) => dispatch(settingsSlice.setPinPost(v)),
+    onReset: () => { dispatch(settingsSlice.resetSettings()); tagsStore.reset(); },
   };
-  
-  const handleSelectPost = (index: number) => {
-    if (index === activePostIndex) return;
-    
-    const currentSnapshot = getSnapshot();
-    const targetSnapshot = postSnapshots[index] ?? EMPTY_POST_SNAPSHOT;
-    
-    setPostSnapshots((prev) => {
-      const next = [...prev];
-      next[activePostIndex] = currentSnapshot;
-      return next;
-    });
-    
-    setActivePostIndex(index);
-    loadSnapshot(targetSnapshot);
-  };
-  
+
   const editorBlock = (
     <div className={styles.editor}>
       <div className={styles.header} ref={headerRef}>
         <div className={styles.headerTag}>
-          {postSettings.selectedTagName ? (
-            <div
-              className={styles.headerTagButton}
-              style={{ backgroundColor: postSettings.selectedTagColor}}
-            >
-              <span className={styles.headerTagText}>{postSettings.selectedTagName}</span>
-              <button
-                type="button"
-                className={styles.headerTagClose}
-                onClick={handleRemoveTag}
-                aria-label="Удалить тег"
-              >
+          {selectedTagName && (
+            <div className={styles.headerTagButton} style={{ backgroundColor: selectedTagColor }}>
+              <span className={styles.headerTagText}>{selectedTagName}</span>
+              <button type="button" className={styles.headerTagClose} onClick={() => dispatch(settingsSlice.clearTag())} aria-label="Удалить тег">
                 <CloseIcon width={12} height={12} color="#000000" />
               </button>
             </div>
-          ) : null}
+          )}
         </div>
-        <button
-          className={styles.settingsButton}
-          type="button"
-          aria-label="Настройки"
-          onClick={() => setShowMobileSettings(!showMobileSettings)}
-        >
+        <button className={styles.settingsButton} type="button" aria-label="Настройки" onClick={() => dispatch(uiSlice.setShowMobileSettings(!showMobileSettings))}>
           <SettingsIcon width={24} height={24} />
         </button>
       </div>
-      
+
       <div className={styles.content}>
-        <RichTextEditor
-          ref={richTextEditor.editorRef}
-          value={richTextEditor.text}
-          onChange={richTextEditor.setText}
-          placeholder="Напишите текст публикации..."
-          onSaveAsTemplate={saveAsTemplate}
-          headerRef={headerRef}
-        />
-        
-        {richTextEditor.text && hasPlainUrlLikeText(richTextEditor.text) && (
+        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." onSaveAsTemplate={() => {}} headerRef={headerRef} />
+
+        {text && hasPlainUrlLikeText(text) && (
           <div className={styles.linkPreviewToggle}>
             <span className={styles.linkPreviewLabel}>Показать превью ссылки</span>
-            <Toggle checked={showLinkPreview} onChange={setShowLinkPreview} />
+            <Toggle checked={showLinkPreview} onChange={(v) => dispatch(editorSlice.setShowLinkPreview(v))} />
           </div>
         )}
-        
+
         <div className={styles.actionsMenu}>
           <div className={styles.actionsRow}>
-            <Button
-              text="Черновики"
-              variant="templateCard"
-              showArrow={false}
-              icon={<DraftsIcon width={24} height={24} />}
-              className={styles.actionButton}
-              onClick={drafts.open}
-            />
-            <Button
-              text="Кнопки"
-              variant="templateCard"
-              showArrow={false}
-              icon={<InlineButtonIcon width={24} height={24} />}
-              className={styles.actionButton}
-              active={inlineButtons.isOpen}
-              disabled={!canShowInlineButtons}
-              onClick={inlineButtons.toggle}
-            />
+            <Button text="Черновики" variant="templateCard" showArrow={false} icon={<DraftsIcon width={24} height={24} />} className={styles.actionButton} onClick={() => draftsContext.open()} />
+            <Button text="Кнопки" variant="templateCard" showArrow={false} icon={<InlineButtonIcon width={24} height={24} />} className={styles.actionButton} active={inlineButtonsOpen} disabled={!canShowInlineButtons} onClick={() => dispatch(inlineButtonsSlice.toggle())} />
           </div>
           <div className={styles.actionsRow}>
-            <Button
-              text="Шаблоны"
-              variant="templateCard"
-              showArrow={false}
-              icon={<TemplatesIcon width={24} height={24} />}
-              className={styles.actionButton}
-              onClick={templates.open}
-            />
-            <Button
-              text="Опрос"
-              variant="templateCard"
-              showArrow={false}
-              icon={<QuizIcon width={24} height={24} />}
-              className={styles.actionButton}
-              active={quizForm.isOpen}
-              onClick={quizForm.toggle}
-            />
+            <Button text="Шаблоны" variant="templateCard" showArrow={false} icon={<TemplatesIcon width={24} height={24} />} className={styles.actionButton} onClick={() => templatesContext.open()} />
+            <Button text="Опрос" variant="templateCard" showArrow={false} icon={<QuizIcon width={24} height={24} />} className={styles.actionButton} active={quizOpen} onClick={() => dispatch(quizSlice.setOpen(!quizOpen))} />
           </div>
           <div className={styles.actionsRowCenter}>
-            <Button
-              text="Ответ на свой пост"
-              variant="templateCard"
-              showArrow={false}
-              icon={<ReplyIcon width={24} height={24} />}
-              className={styles.actionButtonCenter}
-              disabled={!canReplyToPost}
-              onClick={() => {
-                if (!canReplyToPost) return;
-                const channelId = Number(selectedPrimaryChannel?.id);
-                if (!Number.isFinite(channelId)) return;
-                replyToPosts.open(channelId);
-              }}
-            />
+            <Button text="Ответ на свой пост" variant="templateCard" showArrow={false} icon={<ReplyIcon width={24} height={24} />} className={styles.actionButtonCenter} disabled={!canReplyToPost} onClick={() => { if (primaryChannel) { replyToPostContext.open(primaryChannel.id); }}} />
           </div>
         </div>
-        
-        <InlineButtons className={styles.inlineButtonsSection} />
-        
-        <QuizForm />
-        
+
+        <InlineButtons className={styles.inlineButtonsSection} isOpen={inlineButtonsOpen} rows={buttonRows as ButtonRow[]} onAddRow={() => dispatch(inlineButtonsSlice.addRow())} onAddColumn={(rowId) => dispatch(inlineButtonsSlice.addColumn(rowId))} onUpdateButton={(rowId, buttonId, updates) => dispatch(inlineButtonsSlice.updateButton({ rowId, buttonId, updates }))} onDeleteButton={(rowId, buttonId) => dispatch(inlineButtonsSlice.deleteButton({ rowId, buttonId }))} />
+
+        <QuizForm isOpen={quizOpen} mode={quizMode as QuizMode} question={quizQuestion} answers={quizAnswers as QuizAnswer[]} correctAnswerId={quizCorrectAnswerId} onModeChange={(mode) => dispatch(quizSlice.setMode(mode))} onQuestionChange={(v) => dispatch(quizSlice.setQuestion(v))} onAnswerChange={(id, text) => dispatch(quizSlice.updateAnswer({ id, text }))} onAddAnswer={() => dispatch(quizSlice.addAnswer())} onRemoveAnswer={(id) => dispatch(quizSlice.removeAnswer(id))} onCorrectAnswerChange={(id) => dispatch(quizSlice.setCorrectAnswer(id))} />
+
         <div className={styles.mediaSection}>
           <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
-          
+          <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt" onChange={handleFileUpload} style={{ display: 'none' }} />
           <div className={styles.mediaMobile}>
-            <MediaPreview />
-            
-            <Button
-              text="Прикрепить файл"
-              variant="templateCard"
-              showArrow={false}
-              icon={<PaperclipIcon width={24} height={24} />}
-              fullWidth
-              disabled={!canAddMedia}
-              onClick={openFileDialog}
-            />
+            <MediaPreview files={mediaFiles as MediaFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
+            <Button text="Прикрепить файл" variant="templateCard" showArrow={false} icon={<PaperclipIcon width={24} height={24} />} fullWidth disabled={!canAddMedia} onClick={() => fileInputRef.current?.click()} />
           </div>
-          
           <div className={styles.mediaDropzone}>
-            {mediaPreview.files.length === 0 ? (
+            {mediaFiles.length === 0 ? (
               <>
-                <span className={styles.dropzoneText}>
-                  Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-                </span>
-                <Button
-                  text="Прикрепить файл"
-                  variant="templateCard"
-                  showArrow={false}
-                  icon={<PaperclipIcon width={24} height={24} />}
-                  disabled={!canAddMedia}
-                  onClick={openFileDialog}
-                />
+                <span className={styles.dropzoneText}>Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»</span>
+                <Button text="Прикрепить файл" variant="templateCard" showArrow={false} icon={<PaperclipIcon width={24} height={24} />} disabled={!canAddMedia} onClick={() => fileInputRef.current?.click()} />
               </>
             ) : (
               <div className={styles.mediaDropzoneContent}>
-                <MediaPreview />
-                <Button
-                  text="Прикрепить файл"
-                  variant="templateCard"
-                  showArrow={false}
-                  icon={<PaperclipIcon width={24} height={24} />}
-                  disabled={!canAddMedia}
-                  onClick={openFileDialog}
-                />
+                <MediaPreview files={mediaFiles as MediaFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
+                <Button text="Прикрепить файл" variant="templateCard" showArrow={false} icon={<PaperclipIcon width={24} height={24} />} disabled={!canAddMedia} onClick={() => fileInputRef.current?.click()} />
               </div>
             )}
           </div>
         </div>
       </div>
-      
+
       <div className={styles.footerButtons}>
-        <Button
-          text="Сохранить в черновики"
-          showArrow={false}
-          className={styles.saveDraftBtn}
-          onClick={saveDraft}
-          loading={isSavingDraft}
-          disabled={isSavingDraft}
-        />
+        <Button text="Сохранить в черновики" showArrow={false} className={styles.saveDraftBtn} onClick={() => dispatch(saveDraft(selectedChannels.map(c => c.id)))} loading={isSavingDraft} disabled={isSavingDraft} />
         <div className={styles.publishRow}>
-          <Button
-            text="Опубликовать сейчас"
-            showArrow={false}
-            className={styles.publishNowBtn}
-            onClick={handlePublishClick}
-            loading={isPublishing}
-            disabled={isPublishing}
-          />
-          <Button
-            text="Запланировать"
-            showArrow={false}
-            active
-            loading={isScheduling}
-            disabled={isScheduling}
-            className={styles.scheduleBtn}
-            onClick={() => datePicker.open()}
-          />
+          <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => dispatch(publishNow(selectedChannels.map(c => c.id)))} loading={isPublishing} disabled={isPublishing} />
+          <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => dispatch(uiSlice.setShowDatePickerModal(true))} />
         </div>
       </div>
     </div>
   );
-  
+
   return (
     <div className={styles.pageWrapper}>
       <div className={styles.mainContent}>
         <div className={styles.editorColumn}>
-          {postSnapshots.length > 1 ? (
+          {snapshots.length > 1 ? (
             <div className={styles.seriesList}>
-              {postSnapshots.map((_, index) => (
-                <PostAccordion
-                  key={`post-${index + 1}`}
-                  title={`Пост ${index + 1}`}
-                  isOpen={index === activePostIndex}
-                  onToggle={() => handleSelectPost(index)}
-                >
-                  {index === activePostIndex ? editorBlock : null}
+              {snapshots.map((_, index) => (
+                <PostAccordion key={`post-${index + 1}`} title={`Пост ${index + 1}`} isOpen={index === activeIndex} onToggle={() => handleSelectPostSnapshot(index)}>
+                  {index === activeIndex ? editorBlock : null}
                 </PostAccordion>
               ))}
             </div>
-          ) : (
-            editorBlock
-          )}
-          
-          <Button
-            text="Добавить серию постов"
-            showArrow={false}
-            className={styles.addSeriesBtn}
-            onClick={handleAddSeries}
-          />
+          ) : editorBlock}
+          <Button text="Добавить серию постов" showArrow={false} className={styles.addSeriesBtn} onClick={handleAddSeries} />
         </div>
-        
         <div className={styles.settingsPanelDesktop}>
-          <PostSettings
-            onPreview={handleOpenPreview}
-            previewDisabled={!hasContentForPreview}
-          />
+          <PostSettings onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))} previewDisabled={!hasContentForPreview} {...postSettingsProps} />
         </div>
       </div>
-      
-      {/* Mobile Settings Modal */}
+
       {showMobileSettings && (
-        <div className={styles.settingsModalOverlay} onClick={() => setShowMobileSettings(false)}>
-          <div className={styles.settingsModal} onClick={(e) => e.stopPropagation()}>
-            <PostSettings
-              onPreview={handleOpenPreview}
-              previewDisabled={!hasContentForPreview}
-            />
+        <div className={styles.settingsModalOverlay} onClick={() => dispatch(uiSlice.setShowMobileSettings(false))}>
+          <div className={styles.settingsModal} onClick={e => e.stopPropagation()}>
+            <PostSettings onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))} previewDisabled={!hasContentForPreview} {...postSettingsProps} />
           </div>
         </div>
       )}
-      
-      <PostPreviewModal
-        isOpen={showPreviewModal}
-        onClose={() => setShowPreviewModal(false)}
-        channelTitle={selectedChannelTitle}
-        channelPhotoUrl={selectedPrimaryChannel?.photo_url}
-        channelMembersCount={selectedPrimaryChannel?.members_count}
-        html={richTextEditor.text}
-        mediaFiles={mediaPreview.files}
-        quizData={quizPreviewData}
-        inlineKeyboard={inlineKeyboardPreview}
-      />
-      
-      {/* Text Templates Modal */}
-      <TextTemplatesModal onSelectTemplate={handleSelectTemplate} />
-      
-      <DraftsModal onSelectDraft={handleSelectDraft} />
-      
+
+      <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as any} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
+      <TextTemplatesModal onSelectTemplate={(t) => { dispatch(editorSlice.setText(t.text || '')); templatesContext.close(); }} />
+      <DraftsModal onSelectDraft={(d) => { dispatch(editorSlice.setText(d.text || '')); draftsContext.close(); }} />
       <ReplyToPostModal />
-      
-      <DatePickerModal />
+      <DatePickerModal onSchedule={(date) => dispatch(schedulePost({ channelIds: selectedChannels.map(c => c.id), scheduledDate: date }))} />
     </div>
   );
 }
-
-// Экспортируем обёрнутую страницу
-import { CreatePostProvider } from './store/CreatePostContext';
 
 export default function CreatePostPage() {
   return (
