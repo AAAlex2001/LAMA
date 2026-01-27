@@ -1,16 +1,16 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState } from './index';
-import type { CreatePostRequest, InlineKeyboard, PollData, PostSnapshot } from './types';
-import { selectPollData } from './slices/quiz';
+import type { CreatePostRequest, InlineKeyboard, PollData, PostSnapshot, MediaFile, ButtonRow, QuizAnswer } from './types';
+import { selectPollData, setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz } from './slices/quiz';
 import {
   setIsPublishing,
   setIsSavingDraft,
   setIsScheduling,
   setIsSavingTemplate,
 } from './slices/ui';
-import { resetEditor } from './slices/editor';
-import { clearFiles } from './slices/media';
-import { resetInlineButtons } from './slices/inlineButtons';
+import { resetEditor, setText } from './slices/editor';
+import { clearFiles, setFiles } from './slices/media';
+import { resetInlineButtons, setRows, openInlineButtons } from './slices/inlineButtons';
 import { resetQuiz } from './slices/quiz';
 import { resetSettings } from './slices/settings';
 import { resetSeries } from './slices/series';
@@ -429,3 +429,82 @@ export const loadRecentTags = createAsyncThunk(
     }
   }
 );
+
+// Функция для загрузки данных черновика в стор
+export function loadDraftIntoStore(draft: any, dispatch: any) {
+  const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api').replace('/api', '');
+  
+  // 1. Загружаем текст (поле может быть html или text)
+  const textContent = draft.formatted_content?.html || draft.formatted_content?.text || draft.text_content || '';
+  dispatch(setText(textContent));
+  
+  // 2. Загружаем медиа файлы
+  if (draft.media_urls && draft.media_urls.length > 0) {
+    const mediaFiles: MediaFile[] = draft.media_urls.map((url: string, index: number) => {
+      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+      const thumbnailUrl = draft.media_thumbnail_urls?.[index];
+      const fullThumbnail = thumbnailUrl ? (thumbnailUrl.startsWith('http') ? thumbnailUrl : `${baseUrl}${thumbnailUrl}`) : null;
+      const isVideo = url.includes('/videos/') || url.endsWith('.mp4') || url.endsWith('.mov');
+      const isDocument = url.includes('/documents/');
+      
+      return {
+        id: `media-${Date.now()}-${index}`,
+        url: fullUrl,
+        preview_url: fullUrl,
+        thumbnail_url: fullThumbnail,
+        type: isVideo ? 'video' : isDocument ? 'document' : 'image',
+        blur: draft.media_blur?.[index] || false,
+        telegram_file_id: draft.media_file_ids?.[index] || null,
+      } as MediaFile;
+    });
+    dispatch(setFiles(mediaFiles));
+  } else {
+    dispatch(clearFiles());
+  }
+  
+  // 3. Загружаем inline кнопки
+  if (draft.inline_keyboard?.buttons && draft.inline_keyboard.buttons.length > 0) {
+    const rows: ButtonRow[] = draft.inline_keyboard.buttons.map((row: any[], rowIndex: number) => ({
+      id: `row-${Date.now()}-${rowIndex}`,
+      buttons: row.map((btn: any, btnIndex: number) => ({
+        id: `btn-${Date.now()}-${rowIndex}-${btnIndex}`,
+        text: btn.text || '',
+        type: btn.type || 'url',
+        url: btn.url || '',
+        callback_data: btn.callback_data || '',
+        hidden_text: btn.hidden_text || '',
+      })),
+    }));
+    dispatch(setRows(rows));
+    dispatch(openInlineButtons());
+  } else {
+    dispatch(resetInlineButtons());
+  }
+  
+  // 4. Загружаем опрос/викторину
+  if (draft.poll_data) {
+    const pollData = draft.poll_data;
+    dispatch(setQuestion(pollData.question || ''));
+    
+    const answers: QuizAnswer[] = (pollData.options || []).map((opt: string, index: number) => ({
+      id: `ans-${Date.now()}-${index}`,
+      text: opt,
+    }));
+    dispatch(setAnswers(answers));
+    
+    if (pollData.is_quiz) {
+      dispatch(setMode('quiz'));
+      if (pollData.correct_option_id !== null && pollData.correct_option_id !== undefined && answers[pollData.correct_option_id]) {
+        dispatch(setCorrectAnswer(answers[pollData.correct_option_id].id));
+      }
+    } else if (pollData.allows_multiple_answers) {
+      dispatch(setMode('poll_multi'));
+    } else {
+      dispatch(setMode('poll_single'));
+    }
+    
+    dispatch(openQuiz());
+  } else {
+    dispatch(resetQuiz());
+  }
+}

@@ -37,7 +37,7 @@ import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
 import * as seriesSlice from './store/slices/series';
-import { publishNow, saveDraft, schedulePost } from './store/thunks';
+import { publishNow, saveDraft, schedulePost, loadDraftIntoStore } from './store/thunks';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
@@ -380,8 +380,8 @@ function CreatePostPageContent() {
       )}
 
       <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as any} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
-      <TextTemplatesModal onSelectTemplate={(t) => { dispatch(editorSlice.setText(t.text || '')); templatesContext.close(); }} />
-      <DraftsModal onSelectDraft={(d) => { dispatch(editorSlice.setText(d.text || '')); draftsContext.close(); }} />
+      <TextTemplatesModal onSelectTemplate={(formattedContent) => { dispatch(editorSlice.setText(formattedContent?.html || formattedContent?.text || '')); }} />
+      <DraftsModal onSelectDraft={(draft) => { loadDraftIntoStore(draft, dispatch); }} />
       <ReplyToPostModal />
       <DatePickerModal onSchedule={(date) => dispatch(schedulePost({ channelIds: selectedChannels.map(c => c.id), scheduledDate: date }))} />
     </div>
