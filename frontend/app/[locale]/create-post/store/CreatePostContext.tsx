@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useState, useRef, type ReactNode } from 'react';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
-// Импортируем провайдеры компонентов
 import { QuizFormProvider, useQuizForm } from '@/components/quiz-form';
 import { InlineButtonsProvider, useInlineButtons } from '@/components/inline-buttons';
 import { MediaPreviewProvider, useMediaPreview } from '@/components/media-preview';
@@ -14,7 +13,6 @@ import { ReplyToPostProvider, useReplyToPost } from '@/components/reply-to-post-
 import { DatePickerProvider } from '@/components/date-picker';
 import { PostSettingsProvider, usePostSettingsContext } from '@/components/post-settings/store';
 
-// Импортируем API и хелперы
 import { handlePublishNow, handlePublishSeriesNow, handleSaveDraft, handleSchedulePost } from './actions';
 import { templatesApi } from '@/stores/templates';
 import type { Draft } from '@/stores/drafts';
@@ -24,7 +22,6 @@ import type { ButtonRow, ButtonType } from '@/components/inline-buttons';
 import type { MediaFile } from '@/components/media-preview';
 import type { QuizFormState } from '@/components/quiz-form/store/types';
 
-// Snapshot для серии постов
 export interface PostSnapshot {
   text: string;
   showInlineButtons: boolean;
@@ -36,43 +33,28 @@ export interface PostSnapshot {
 }
 
 interface CreatePostContextValue {
-  // Publishing state
   isPublishing: boolean;
   isSavingDraft: boolean;
   isScheduling: boolean;
   isSavingTemplate: boolean;
-  
-  // Link preview
   showLinkPreview: boolean;
   setShowLinkPreview: (show: boolean) => void;
-  
-  // Mobile settings
   showMobileSettings: boolean;
   setShowMobileSettings: (show: boolean) => void;
-  
-  // File input ref
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   openFileDialog: () => void;
   handleFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  
-  // Actions
   publishNow: () => Promise<void>;
   publishSeriesNow: (snapshots: PostSnapshot[]) => Promise<{ success: boolean; message?: string }>;
   saveDraft: () => Promise<void>;
   saveAsTemplate: (selectedHtml?: string) => Promise<void>;
   schedulePost: (scheduledDate: Date) => Promise<void>;
-  
-  // Snapshot helpers
   getSnapshot: () => PostSnapshot;
   loadSnapshot: (snapshot: PostSnapshot) => void;
   resetForm: () => void;
-  
-  // Draft/Template handlers
   handleSelectTemplate: (formattedContent: Record<string, unknown>) => void;
   handleSelectDraft: (draft: Draft) => void;
   handleSelectPost: (post: Post) => void;
-  
-  // Computed
   canAddMedia: boolean;
   canShowInlineButtons: boolean;
   hasContentForPreview: boolean;
@@ -80,11 +62,9 @@ interface CreatePostContextValue {
 
 const CreatePostContext = createContext<CreatePostContextValue | null>(null);
 
-// Внутренний компонент который использует все хуки
 function CreatePostInner({ children }: { children: ReactNode }) {
   const { showSuccess, showError } = useNotifications();
-  
-  // Получаем данные из всех контекстов
+
   const richTextEditor = useRichTextEditor();
   const mediaPreview = useMediaPreview();
   const inlineButtons = useInlineButtons();
@@ -93,54 +73,51 @@ function CreatePostInner({ children }: { children: ReactNode }) {
   const drafts = useDrafts();
   const templates = useTemplates();
   const replyToPosts = useReplyToPost();
-  
-  // Локальный state
+
   const [isPublishing, setIsPublishing] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isScheduling, setIsScheduling] = useState(false);
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
   const [showLinkPreview, setShowLinkPreview] = useState(false);
   const [showMobileSettings, setShowMobileSettings] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // Computed values
+
   const canAddMedia = mediaPreview.files.length < 10 &&
     !(inlineButtons.rows.length > 0 && mediaPreview.files.length >= 1);
-  
+
   const canShowInlineButtons = mediaPreview.files.length <= 1;
-  
+
   const hasContentForPreview = Boolean(
-    richTextEditor.text || 
-    mediaPreview.files.length > 0 || 
+    richTextEditor.text ||
+    mediaPreview.files.length > 0 ||
     (quizForm.isOpen && quizForm.getPollData())
   );
-  
-  // File upload
+
   const openFileDialog = () => {
     fileInputRef.current?.click();
   };
-  
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
-    
+
     const maxFiles = inlineButtons.rows.length > 0 ? 1 : 10;
     const currentCount = mediaPreview.files.length;
     const availableSlots = maxFiles - currentCount;
-    
+
     if (availableSlots <= 0) {
       event.target.value = '';
       return;
     }
-    
+
     const filesToAdd = Array.from(files).slice(0, availableSlots);
-    
+
     const newMediaFiles: MediaFile[] = filesToAdd.map((file, index) => {
       const type = file.type.startsWith('image/') ? 'image'
         : file.type.startsWith('video/') ? 'video'
         : 'document';
-      
+
       return {
         id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2, 11)}`,
         url: URL.createObjectURL(file),
@@ -150,15 +127,14 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         file,
       } as MediaFile;
     });
-    
+
     mediaPreview.addFiles(newMediaFiles);
     event.target.value = '';
   };
-  
-  // Build inline keyboard from buttonRows
+
   const getInlineKeyboard = (): InlineKeyboard | undefined => {
     if (!inlineButtons.isOpen || inlineButtons.rows.length === 0) return undefined;
-    
+
     const buttons: InlineButton[][] = inlineButtons.rows.map(row =>
       row.buttons
         .filter(btn => btn.text && btn.text.trim().length > 0)
@@ -174,17 +150,16 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         })
         .filter(Boolean) as InlineButton[]
     ).filter(row => row.length > 0);
-    
+
     return buttons.length > 0 ? { buttons } : undefined;
   };
-  
-  // Publish now
+
   const publishNow = async () => {
     const pollData = quizForm.getPollData();
     const replyToPostId = replyToPosts.replyToPost?.id;
-    
+
     setIsPublishing(true);
-    
+
     try {
       const result = await handlePublishNow(
         { text: richTextEditor.text },
@@ -197,7 +172,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         undefined,
         replyToPostId
       );
-      
+
       if (result.success) {
         showSuccess(result.message);
         resetForm();
@@ -214,11 +189,10 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       setIsPublishing(false);
     }
   };
-  
-  // Publish series
+
   const publishSeriesNow = async (snapshots: PostSnapshot[]) => {
     setIsPublishing(true);
-    
+
     try {
       const result = await handlePublishSeriesNow(
         snapshots.map(p => ({
@@ -233,7 +207,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         postSettings.getSettingsData(),
         { replyToPrevious: true }
       );
-      
+
       if (result.success) {
         showSuccess(result.message || 'Серия поставлена в очередь');
         resetForm();
@@ -251,13 +225,12 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       setIsPublishing(false);
     }
   };
-  
-  // Save draft
+
   const saveDraft = async () => {
     const pollData = quizForm.getPollData();
-    
+
     setIsSavingDraft(true);
-    
+
     try {
       const result = await handleSaveDraft(
         { text: richTextEditor.text },
@@ -268,27 +241,26 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         quizForm.isOpen,
         showLinkPreview
       );
-      
+
       if (result.success) {
         showSuccess(result.message);
       } else {
         showError(result.message || 'Не удалось сохранить черновик');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       showError(errorMessage);
     } finally {
       setIsSavingDraft(false);
     }
   };
-  
-  // Schedule post
+
   const schedulePost = async (scheduledDate: Date) => {
     const pollData = quizForm.getPollData();
     const replyToPostId = replyToPosts.replyToPost?.id;
-    
+
     setIsScheduling(true);
-    
+
     try {
       const result = await handleSchedulePost(
         { text: richTextEditor.text },
@@ -301,18 +273,18 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         showLinkPreview,
         replyToPostId
       );
-      
+
       if (result.success) {
-        const formattedDate = scheduledDate.toLocaleDateString('ru-RU', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric' 
+        const formattedDate = scheduledDate.toLocaleDateString('ru-RU', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric'
         });
-        const formattedTime = scheduledDate.toLocaleTimeString('ru-RU', { 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        const formattedTime = scheduledDate.toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit'
         });
-        
+
         showSuccess(`Пост успешно запланирован и отправится ${formattedDate} в ${formattedTime}`);
         resetForm();
         replyToPosts.clearReplyToPost();
@@ -322,32 +294,31 @@ function CreatePostInner({ children }: { children: ReactNode }) {
         showError(result.message || 'Не удалось запланировать пост');
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Произошла неизвестная ошибка';
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       showError(errorMessage);
     } finally {
       setIsScheduling(false);
     }
   };
-  
-  // Save as template
+
   const saveAsTemplate = async (selectedHtml?: string) => {
     const htmlToSave = (selectedHtml && selectedHtml.trim()) ? selectedHtml : richTextEditor.text;
     if (!htmlToSave || htmlToSave.trim() === '') {
       showError('Текст пуст. Нечего сохранять в шаблон.');
       return;
     }
-    
+
     setIsSavingTemplate(true);
-    
+
     try {
       const plainText = htmlToSave.replace(/<[^>]*>/g, '').trim();
       const templateName = plainText.length > 50 ? plainText.substring(0, 50) : plainText;
-      
+
       await templatesApi.createTemplate({
         name: templateName,
         formatted_content: { html: htmlToSave },
       });
-      
+
       showSuccess('Шаблон успешно сохранен!');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
@@ -356,8 +327,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       setIsSavingTemplate(false);
     }
   };
-  
-  // Snapshot functions
+
   const getSnapshot = (): PostSnapshot => ({
     text: richTextEditor.text,
     showInlineButtons: inlineButtons.isOpen,
@@ -367,20 +337,20 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     quizForm: quizForm.state,
     showLinkPreview,
   });
-  
+
   const loadSnapshot = (snapshot: PostSnapshot) => {
     richTextEditor.setText(snapshot.text);
     setShowLinkPreview(snapshot.showLinkPreview);
-    
+
     if (snapshot.showInlineButtons) {
       inlineButtons.setRows(snapshot.buttonRows);
       if (!inlineButtons.isOpen) inlineButtons.open();
     } else {
       inlineButtons.close();
     }
-    
+
     mediaPreview.setFiles(snapshot.mediaFiles);
-    
+
     if (snapshot.showQuizForm && snapshot.quizForm) {
       quizForm.open();
       quizForm.setQuestion(snapshot.quizForm.question);
@@ -393,7 +363,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       quizForm.close();
     }
   };
-  
+
   const resetForm = () => {
     richTextEditor.reset();
     mediaPreview.clearFiles();
@@ -401,8 +371,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     quizForm.close();
     setShowLinkPreview(false);
   };
-  
-  // Handle select template
+
   const handleSelectTemplate = (formattedContent: Record<string, unknown>) => {
     if (formattedContent?.html && typeof formattedContent.html === 'string') {
       if (richTextEditor.editorRef.current?.insertHtml) {
@@ -412,27 +381,25 @@ function CreatePostInner({ children }: { children: ReactNode }) {
       }
     }
   };
-  
-  // Handle select draft
+
   const handleSelectDraft = async (draft: Draft) => {
     try {
-      
       mediaPreview.clearFiles();
       inlineButtons.close();
       quizForm.close();
       const text = draft.formatted_content?.text || draft.text_content || '';
       richTextEditor.setText(text);
-      
+
       if (draft.media_urls && draft.media_urls.length > 0) {
         const files: MediaFile[] = draft.media_urls.map((url, index) => {
           const extension = url.split('.').pop()?.toLowerCase() || '';
           let type: 'image' | 'video' | 'document' = 'document';
-          
+
           if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) type = 'image';
           else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) type = 'video';
-          
+
           const thumbnailUrl = draft.media_thumbnail_urls?.[index] ?? null;
-          
+
           return {
             id: `draft-${Date.now()}-${index}`,
             url,
@@ -443,10 +410,10 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             telegram_file_id: draft.media_file_ids?.[index] ?? null,
           } as MediaFile;
         });
-        
+
         mediaPreview.addFiles(files);
       }
-      
+
       if (draft.inline_keyboard?.buttons) {
         const buttons = draft.inline_keyboard.buttons as InlineButton[][];
         const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
@@ -460,11 +427,11 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             hidden_text: btn.hidden_text || '',
           })),
         }));
-        
+
         inlineButtons.setRows(buttonRows);
         inlineButtons.open();
       }
-      
+
       if (draft.poll_data) {
         quizForm.open();
         quizForm.setQuestion(draft.poll_data.question);
@@ -484,7 +451,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             }
           }
         }
-        
+
         if (draft.poll_data.is_quiz) {
           quizForm.setMode('quiz');
         } else if (draft.poll_data.allows_multiple_answers) {
@@ -493,28 +460,28 @@ function CreatePostInner({ children }: { children: ReactNode }) {
           quizForm.setMode('poll_single');
         }
       }
-      
+
       showSuccess('Черновик загружен');
     } catch (error) {
       showError('Не удалось загрузить черновик');
     }
   };
-  
+
   const handleSelectPost = async (post: Post) => {
     try {
       const text = post.formatted_content?.text || post.text_content || '';
       richTextEditor.setText(text);
-      
+
       if (post.media_urls && post.media_urls.length > 0) {
         const files: MediaFile[] = post.media_urls.map((url, index) => {
           const extension = url.split('.').pop()?.toLowerCase() || '';
           let type: 'image' | 'video' | 'document' = 'document';
-          
+
           if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) type = 'image';
           else if (['mp4', 'avi', 'mov', 'webm'].includes(extension)) type = 'video';
-          
+
           const thumbnailUrl = post.media_thumbnail_urls?.[index] ?? null;
-          
+
           return {
             id: `post-${Date.now()}-${index}`,
             url,
@@ -525,10 +492,10 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             telegram_file_id: post.media_file_ids?.[index] ?? null,
           } as MediaFile;
         });
-        
+
         mediaPreview.addFiles(files);
       }
-      
+
       if (post.inline_keyboard?.buttons) {
         const buttons = post.inline_keyboard.buttons as InlineButton[][];
         const buttonRows: ButtonRow[] = buttons.map((row, rowIndex) => ({
@@ -542,11 +509,11 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             hidden_text: btn.hidden_text || '',
           })),
         }));
-        
+
         inlineButtons.setRows(buttonRows);
         inlineButtons.open();
       }
-      
+
       if (post.poll_data) {
         quizForm.open();
         quizForm.setQuestion(post.poll_data.question);
@@ -566,7 +533,7 @@ function CreatePostInner({ children }: { children: ReactNode }) {
             }
           }
         }
-        
+
         if (post.poll_data.is_quiz) {
           quizForm.setMode('quiz');
         } else if (post.poll_data.allows_multiple_answers) {
@@ -575,13 +542,13 @@ function CreatePostInner({ children }: { children: ReactNode }) {
           quizForm.setMode('poll_single');
         }
       }
-      
+
       showSuccess('Пост загружен для ответа');
     } catch (error) {
       showError('Не удалось загрузить пост');
     }
   };
-  
+
   const value: CreatePostContextValue = {
     isPublishing,
     isSavingDraft,
@@ -609,17 +576,15 @@ function CreatePostInner({ children }: { children: ReactNode }) {
     canShowInlineButtons,
     hasContentForPreview,
   };
-  
+
   return <CreatePostContext.Provider value={value}>{children}</CreatePostContext.Provider>;
 }
 
-// Обертка для DatePicker с передачей schedulePost
 function DatePickerWrapper({ children }: { children: ReactNode }) {
   const { schedulePost } = useCreatePostContext();
   return <DatePickerProvider onSchedule={schedulePost}>{children}</DatePickerProvider>;
 }
 
-// Главный провайдер который оборачивает все остальные
 export function CreatePostProvider({ children }: { children: ReactNode }) {
   return (
     <PostSettingsProvider>

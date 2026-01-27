@@ -1,5 +1,3 @@
-// API клиент для работы с постами
-
 import type {
   CreatePostRequest,
   CreatePostResponse,
@@ -20,7 +18,6 @@ export interface CreateSeriesResponse {
   created_at: string;
 }
 
-// Базовый URL API (можно вынести в .env)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 
 class ApiError extends Error {
@@ -35,8 +32,8 @@ class ApiError extends Error {
 }
 
 function getAuthToken(): string | null {
-  return typeof window !== 'undefined' 
-    ? localStorage.getItem('lamaplanner_access_token') 
+  return typeof window !== 'undefined'
+    ? localStorage.getItem('lamaplanner_access_token')
     : null;
 }
 
@@ -45,13 +42,13 @@ async function fetchApi<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const defaultHeaders: HeadersInit = {
     'Content-Type': 'application/json',
   };
 
   const token = getAuthToken();
-    
+
   if (token) {
     defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
@@ -66,10 +63,9 @@ async function fetchApi<T>(
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      // FastAPI возвращает ошибки в поле detail
       const errorMessage = errorData.detail || errorData.message || 'Ошибка при выполнении запроса';
       throw new ApiError(
         errorMessage,
@@ -87,9 +83,6 @@ async function fetchApi<T>(
   }
 }
 
-/**
- * Создать новый пост
- */
 export async function createPost(
   data: CreatePostRequest
 ): Promise<CreatePostResponse> {
@@ -99,9 +92,6 @@ export async function createPost(
   });
 }
 
-/**
- * Опубликовать пост в каналы
- */
 export async function publishPost(
   postId: number
 ): Promise<PublishPostResponse> {
@@ -110,9 +100,6 @@ export async function publishPost(
   });
 }
 
-/**
- * Создать серию публикаций
- */
 export async function createSeries(data: CreateSeriesRequest): Promise<CreateSeriesResponse> {
   return fetchApi<CreateSeriesResponse>('/publications/series', {
     method: 'POST',
@@ -120,19 +107,14 @@ export async function createSeries(data: CreateSeriesRequest): Promise<CreateSer
   });
 }
 
-/**
- * Создать и сразу опубликовать пост
- */
 export async function createAndPublishPost(
   data: CreatePostRequest
 ): Promise<CreatePostResponse> {
   try {
-    // Сначала создаём пост
     const createResponse: any = await createPost(data);
-    
-    // Бэкенд возвращает объект с id, а не success/postId
+
     const postId = createResponse.id || createResponse.postId;
-    
+
     if (!postId) {
       return {
         id: 0,
@@ -143,23 +125,20 @@ export async function createAndPublishPost(
 
     const publishedPost = await publishPost(postId);
 
-    // Backend возвращает объект публикации, а не объект с полем success
-    // Если publish не выбросил ошибку, значит публикация успешна
     return {
       id: postId,
       status: 'published',
       message: 'OK — публикация поставлена в очередь',
     };
   } catch (error) {
-    // Извлекаем детальное сообщение об ошибке
     let errorMessage = 'Ошибка при создании/публикации поста';
-    
+
     if (error instanceof ApiError) {
       errorMessage = error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    
+
     return {
       id: 0,
       status: 'failed',
@@ -168,9 +147,6 @@ export async function createAndPublishPost(
   }
 }
 
-/**
- * Сохранить пост в черновики
- */
 export async function saveDraft(
   data: CreatePostRequest
 ): Promise<CreatePostResponse> {
@@ -180,18 +156,14 @@ export async function saveDraft(
   });
 }
 
-/**
- * Создать и запланировать пост на определенное время
- */
 export async function createAndSchedulePost(
   data: CreatePostRequest
 ): Promise<CreatePostResponse> {
   try {
-    // Создаём пост со статусом 'scheduled'
     const createResponse: any = await createPost(data);
-    
+
     const postId = createResponse.id || createResponse.postId;
-    
+
     if (!postId) {
       return {
         id: 0,
@@ -207,13 +179,13 @@ export async function createAndSchedulePost(
     };
   } catch (error) {
     let errorMessage = 'Ошибка при планировании поста';
-    
+
     if (error instanceof ApiError) {
       errorMessage = error.message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }
-    
+
     return {
       id: 0,
       status: 'failed',
@@ -227,22 +199,19 @@ export interface UploadedFile {
   filename: string;
   type: 'image' | 'video' | 'document';
   original_name: string;
-  file_id?: string;  // Telegram file_id после прогрева медиа
-  thumbnailUrl?: string | null;  // URL сжатой превьюшки
+  file_id?: string;
+  thumbnailUrl?: string | null;
 }
 
 export interface UploadMediaResponse {
   files: UploadedFile[];
-  file_ids?: string[];  // Telegram file_ids после прогрева медиа
-  thumbnail_urls?: (string | null)[];  // Сжатые превьюшки с бэка
+  file_ids?: string[];
+  thumbnail_urls?: (string | null)[];
 }
 
-/**
- * Загрузить один медиа файл на сервер
- */
 async function uploadSingleFile(file: File): Promise<UploadedFile> {
   const url = `${API_BASE_URL}/upload-media`;
-  
+
   const formData = new FormData();
   formData.append('files', file);
 
@@ -267,7 +236,6 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
   }
 
   const data = await response.json();
-  // API возвращает {success: true, files: [...], file_ids: [...], thumbnail_urls: [...]}
   const result = data.files[0];
   if (data.file_ids && data.file_ids.length > 0) {
     result.file_id = data.file_ids[0];
@@ -278,29 +246,24 @@ async function uploadSingleFile(file: File): Promise<UploadedFile> {
   return result;
 }
 
-/**
- * Загрузить медиа файлы на сервер (параллельно, каждый отдельным запросом)
- */
 export async function uploadMediaFiles(files: File[]): Promise<UploadMediaResponse> {
-  // Проверяем общий размер файлов
   const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-  const maxSize = 50 * 1024 * 1024; // 50MB
-  
+  const maxSize = 50 * 1024 * 1024;
+
   if (totalSize > maxSize) {
     const sizeMB = (totalSize / (1024 * 1024)).toFixed(1);
     throw new ApiError(
       `Общий размер файлов превышает лимит (${sizeMB}MB из 50MB). Удалите или сожмите некоторые файлы.`
     );
   }
-  
-  // Загружаем все файлы параллельно
+
   const uploadPromises = files.map(file => uploadSingleFile(file));
-  
+
   const results = await Promise.allSettled(uploadPromises);
-  
+
   const uploadedFiles: UploadedFile[] = [];
   const errors: string[] = [];
-  
+
   results.forEach((result, index) => {
     if (result.status === 'fulfilled') {
       uploadedFiles.push(result.value);
@@ -309,16 +272,15 @@ export async function uploadMediaFiles(files: File[]): Promise<UploadMediaRespon
       console.error(`Failed to upload ${files[index].name}:`, result.reason);
     }
   });
-  
+
   if (uploadedFiles.length === 0 && errors.length > 0) {
     throw new ApiError(`Не удалось загрузить файлы: ${errors.join(', ')}`);
   }
-  
-  // Собираем file_ids и thumbnail_urls из загруженных файлов
+
   const fileIds = uploadedFiles.map(f => f.file_id).filter(id => id !== undefined) as string[];
   const thumbnailUrls = uploadedFiles.map(f => f.thumbnailUrl || null);
-  
-  return { 
+
+  return {
     files: uploadedFiles,
     file_ids: fileIds.length > 0 ? fileIds : undefined,
     thumbnail_urls: thumbnailUrls

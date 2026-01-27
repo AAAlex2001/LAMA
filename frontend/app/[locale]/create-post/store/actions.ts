@@ -32,23 +32,21 @@ function validateInlineKeyboardUrls(inlineKeyboard?: InlineKeyboard): void {
   }
 }
 
-// Конвертация AutoDeleteOption в секунды
 function convertAutoDeleteToSeconds(
-  interval: AutoDeleteOption, 
-  customDays: number = 0, 
+  interval: AutoDeleteOption,
+  customDays: number = 0,
   customHours: number = 0
 ): number | undefined {
   switch (interval) {
     case 'never':
       return undefined;
     case '24h':
-      return 24 * 60 * 60; // 86400 секунд
+      return 24 * 60 * 60;
     case '48h':
-      return 48 * 60 * 60; // 172800 секунд
+      return 48 * 60 * 60;
     case '72h':
-      return 72 * 60 * 60; // 259200 секунд
+      return 72 * 60 * 60;
     case 'custom':
-      // Преобразуем дни и часы в секунды
       const totalSeconds = (customDays * 24 * 60 * 60) + (customHours * 60 * 60);
       return totalSeconds > 0 ? totalSeconds : undefined;
     default:
@@ -93,7 +91,6 @@ export async function handlePublishNow(
 
     validateInlineKeyboardUrls(inlineKeyboard);
 
-    // Валидация: документы нельзя смешивать с фото/видео
     const hasDocuments = mediaFiles.some(f => f.type === 'document');
     const hasPhotosOrVideos = mediaFiles.some(f => f.type === 'image' || f.type === 'video');
     if (hasDocuments && hasPhotosOrVideos) {
@@ -106,14 +103,12 @@ export async function handlePublishNow(
       settings.autoDeleteCustomHours
     );
 
-    // Определяем content_type
     let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
-    // Собираем массив blur-состояний для каждого файла
     let mediaBlurArray = mediaFiles.map(f => f.blur || false);
-    
+
     if (hasMedia) {
       const prepared = await prepareMediaPayload(mediaFiles);
 
@@ -124,7 +119,6 @@ export async function handlePublishNow(
       contentType = 'text_with_media';
     }
 
-    // Если контента кроме опроса нет — публикуем как poll/quiz
     if (!hasText && !hasMedia && hasPoll) {
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
@@ -151,7 +145,6 @@ export async function handlePublishNow(
         status: 'draft',
         settings,
       }),
-      // При публикации сейчас ставим scheduled_time = текущее время, чтобы повторы работали корректно
       scheduled_time: new Date().toISOString(),
       series_id: series?.seriesId,
       series_order: series?.seriesOrder,
@@ -184,7 +177,7 @@ export async function handlePublishNow(
     }
   } catch (error) {
     console.error('Ошибка при публикации поста:', error);
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Неизвестная ошибка',
@@ -236,7 +229,6 @@ export async function handlePublishSeriesNow(
     const inlineKeyboard = toInlineKeyboard(p.buttonRows, p.showInlineButtons);
     const pollData = p.showQuizForm && p.quizForm ? selectQuizPollData(p.quizForm) : null;
 
-    // Более понятная ошибка для серии: показываем номер поста, который считается пустым.
     const plainText = extractPlainTextFromHtml(p.text || '');
     const hasText = plainText.length > 0;
     const hasMedia = media.length > 0;
@@ -310,14 +302,12 @@ export async function handleSaveDraft(
       throw new Error('Превышен лимит 4096 символов');
     }
 
-    // Определяем content_type в зависимости от медиа/опроса
     let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
-    // Собираем массив blur-состояний для каждого файла
     let mediaBlurArray = mediaFiles.map(f => f.blur || false);
-    
+
     if (mediaFiles.length > 0) {
       const prepared = await prepareMediaPayload(mediaFiles);
 
@@ -328,7 +318,6 @@ export async function handleSaveDraft(
       contentType = 'text_with_media';
     }
 
-    // Если контента кроме опроса нет — сохраняем как poll/quiz
     if (!hasText && !hasMedia && hasPoll) {
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
@@ -339,7 +328,6 @@ export async function handleSaveDraft(
       parse_mode: 'HTML'
     } : undefined;
 
-    // Конвертируем auto_delete настройки в секунды
     const autoDeleteSeconds = convertAutoDeleteToSeconds(
       settings.autoDeleteInterval,
       settings.autoDeleteCustomDays,
@@ -381,7 +369,7 @@ export async function handleSaveDraft(
     }
   } catch (error) {
     console.error('Ошибка при сохранении черновика:', error);
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Неизвестная ошибка',
@@ -432,13 +420,12 @@ export async function handleSchedulePost(
       settings.autoDeleteCustomHours
     );
 
-    // Определяем content_type
     let contentType: ContentType = 'text';
     let mediaUrls: string[] = [];
     let mediaFileIds: string[] | undefined;
     let mediaThumbnailUrls: (string | null)[] | undefined;
     let mediaBlurArray = mediaFiles.map(f => f.blur || false);
-    
+
     if (hasMedia) {
       const prepared = await prepareMediaPayload(mediaFiles);
 
@@ -449,7 +436,6 @@ export async function handleSchedulePost(
       contentType = 'text_with_media';
     }
 
-    // Если контента кроме опроса нет — публикуем как poll/quiz
     if (!hasText && !hasMedia && hasPoll) {
       contentType = pollData?.is_quiz ? 'quiz' : 'poll';
     }
@@ -505,7 +491,7 @@ export async function handleSchedulePost(
     }
   } catch (error) {
     console.error('Ошибка при планировании поста:', error);
-    
+
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Неизвестная ошибка',

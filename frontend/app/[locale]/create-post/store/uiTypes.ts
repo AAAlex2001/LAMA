@@ -1,4 +1,3 @@
-// UI типы для настроек постов
 import type { RepeatOption, AutoDeleteOption } from '@/components/post-settings/store/types';
 
 export interface PostSettingsFromUI {
