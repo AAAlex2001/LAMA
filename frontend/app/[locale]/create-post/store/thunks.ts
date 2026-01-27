@@ -64,7 +64,14 @@ async function uploadMediaFile(file: File) {
   }
   
   const data = await response.json();
-  return data.files[0];
+  const result = data.files[0];
+  if (data.file_ids && data.file_ids.length > 0) {
+    result.file_id = data.file_ids[0];
+  }
+  if (data.thumbnail_urls && data.thumbnail_urls.length > 0) {
+    result.thumbnailUrl = data.thumbnail_urls[0];
+  }
+  return result;
 }
 
 function extractPlainText(html: string): string {
@@ -189,7 +196,7 @@ function buildCreatePostRequest(
     formatted_content: hasFormatting ? { text: editor.text, parse_mode: 'HTML' } : undefined,
     media_urls: mediaPayload.mediaUrls.length > 0 ? mediaPayload.mediaUrls : undefined,
     media_thumbnail_urls: mediaPayload.mediaThumbnailUrls,
-    media_file_ids: mediaPayload.mediaFileIds?.filter((id): id is string => id !== null),
+    media_file_ids: mediaPayload.mediaFileIds ?? undefined,
     media_blur: mediaPayload.mediaUrls.length > 0 ? mediaPayload.mediaBlurArray : undefined,
     channel_ids: channelIds,
     pin_message: settings.pinPost,

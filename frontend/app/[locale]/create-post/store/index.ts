@@ -19,6 +19,13 @@ export const createPostStore = configureStore({
     ui: uiReducer,
     series: seriesReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['media/addFiles', 'media/setFiles'],
+        ignoredPaths: ['media.files'],
+      },
+    }),
   devTools: process.env.NODE_ENV !== 'production',
 });
 
