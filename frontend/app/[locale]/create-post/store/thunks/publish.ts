@@ -10,7 +10,7 @@ import { resetQuiz } from '../slices/quiz';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
 import { apiRequest } from './api';
-import { prepareMediaPayload, buildCreatePostRequest, validatePost } from './utils';
+import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
 
 export const publishNow = createAsyncThunk(
   'createPost/publishNow',
@@ -21,6 +21,12 @@ export const publishNow = createAsyncThunk(
     
     const error = validatePost(editor.text, media.files.length, pollData, channelIds);
     if (error) return rejectWithValue(error);
+    const mediaError = validateTelegramMediaRules(editor.text, media.files, pollData);
+    if (mediaError) return rejectWithValue(mediaError);
+    const buttonsError = validateInlineButtons(inlineButtons.rows, inlineButtons.isOpen);
+    if (buttonsError) return rejectWithValue(buttonsError);
+    const quizError = validateQuizState(quiz.isOpen, quiz.mode, quiz.question, quiz.answers, quiz.correctAnswerId);
+    if (quizError) return rejectWithValue(quizError);
     
     dispatch(setIsPublishing(true));
     

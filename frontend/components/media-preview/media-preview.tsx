@@ -44,10 +44,7 @@ export default function MediaPreview({
 
   const getPreviewUrl = (file: MediaFile): string => {
     if (file.type === 'video') {
-      const preview = file.thumbnail_url || file.preview_url || '';
-      const lower = preview.toLowerCase();
-      const isVideoUrl = lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.webm') || lower.endsWith('.avi') || lower.endsWith('.mkv');
-      return isVideoUrl ? '' : preview;
+      return file.thumbnail_url || '';
     }
     return file.thumbnail_url || file.preview_url || file.url || '';
   };

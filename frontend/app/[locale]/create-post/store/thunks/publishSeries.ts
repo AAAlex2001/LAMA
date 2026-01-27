@@ -9,7 +9,7 @@ import { resetQuiz } from '../slices/quiz';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
 import { apiRequest } from './api';
-import { prepareMediaPayload, buildCreatePostRequest } from './utils';
+import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
 
 export const publishSeries = createAsyncThunk(
   'createPost/publishSeries',
@@ -37,6 +37,34 @@ export const publishSeries = createAsyncThunk(
     
     if (snapshots.length < 2) return rejectWithValue('Серия должна содержать минимум 2 поста');
     if (channelIds.length === 0) return rejectWithValue('Выберите хотя бы один канал');
+
+    for (let i = 0; i < snapshots.length; i++) {
+      const snapshot = snapshots[i];
+      const pollData = snapshot.quizOpen ? {
+        question: snapshot.quizQuestion,
+        options: snapshot.quizAnswers.map(a => a.text).filter(t => t.trim()),
+        is_quiz: snapshot.quizMode === 'quiz',
+        allows_multiple_answers: snapshot.quizMode === 'poll_multi',
+        correct_option_id: snapshot.quizMode === 'quiz'
+          ? snapshot.quizAnswers.findIndex(a => a.id === snapshot.quizCorrectAnswerId)
+          : null,
+      } : null;
+
+      const error = validatePost(snapshot.text, snapshot.mediaFiles?.length || 0, pollData, channelIds);
+      if (error) return rejectWithValue(`Пост ${i + 1}: ${error}`);
+      const mediaError = validateTelegramMediaRules(snapshot.text, snapshot.mediaFiles || [], pollData);
+      if (mediaError) return rejectWithValue(`Пост ${i + 1}: ${mediaError}`);
+      const buttonsError = validateInlineButtons(snapshot.buttonRows || [], snapshot.inlineButtonsOpen);
+      if (buttonsError) return rejectWithValue(`Пост ${i + 1}: ${buttonsError}`);
+      const quizError = validateQuizState(
+        snapshot.quizOpen,
+        snapshot.quizMode,
+        snapshot.quizQuestion,
+        snapshot.quizAnswers,
+        snapshot.quizCorrectAnswerId
+      );
+      if (quizError) return rejectWithValue(`Пост ${i + 1}: ${quizError}`);
+    }
     
     dispatch(setIsPublishing(true));
     

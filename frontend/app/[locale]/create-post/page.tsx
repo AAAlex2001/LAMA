@@ -37,7 +37,9 @@ import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
 import * as seriesSlice from './store/slices/series';
-import { publishNow, publishSeries, saveDraft, schedulePost, loadDraftIntoStore } from './store/thunks';
+import { saveDraft, loadDraftIntoStore } from './store/thunks';
+import { selectPollData } from './store/slices/quiz';
+import { usePublishHandlers } from './hooks/usePublishHandlers';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
@@ -63,11 +65,12 @@ function CreatePostPageContent() {
   const mediaFiles = useAppSelector(state => state.media.files);
   const inlineButtonsOpen = useAppSelector(state => state.inlineButtons.isOpen);
   const buttonRows = useAppSelector(state => state.inlineButtons.rows);
-  const quizOpen = useAppSelector(state => state.quiz.isOpen);
-  const quizMode = useAppSelector(state => state.quiz.mode);
-  const quizQuestion = useAppSelector(state => state.quiz.question);
-  const quizAnswers = useAppSelector(state => state.quiz.answers);
-  const quizCorrectAnswerId = useAppSelector(state => state.quiz.correctAnswerId);
+  const quizState = useAppSelector(state => state.quiz);
+  const quizOpen = quizState.isOpen;
+  const quizMode = quizState.mode;
+  const quizQuestion = quizState.question;
+  const quizAnswers = quizState.answers;
+  const quizCorrectAnswerId = quizState.correctAnswerId;
   const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
   const selectedTagColor = useAppSelector(state => state.settings.selectedTagColor);
   const notifySubscribers = useAppSelector(state => state.settings.notifySubscribers);
@@ -94,6 +97,7 @@ function CreatePostPageContent() {
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
   const snapshots = useAppSelector(state => state.series.snapshots);
   const activeIndex = useAppSelector(state => state.series.activeIndex);
+  const pollData = selectPollData(quizState);
 
   // Zustand Stores
   const channelsStore = useChannels();
@@ -224,6 +228,24 @@ function CreatePostPageContent() {
     dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
     dispatch(seriesSlice.addPost());
   }, [dispatch, text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview]);
+
+  const { handlePublishNow, handlePublishSeries, handleSchedule } = usePublishHandlers({
+    dispatch,
+    selectedChannels,
+    text,
+    mediaFiles,
+    pollData,
+    snapshots,
+    activeIndex,
+    inlineButtonsOpen,
+    buttonRows,
+    quizOpen,
+    quizMode,
+    quizQuestion,
+    quizAnswers,
+    quizCorrectAnswerId,
+    showLinkPreview,
+  });
 
   // Post Settings Props
   const postSettingsProps = {
@@ -361,7 +383,7 @@ function CreatePostPageContent() {
       <div className={styles.footerButtons}>
         <Button text="Сохранить в черновики" showArrow={false} className={styles.saveDraftBtn} onClick={() => dispatch(saveDraft(selectedChannels.map(c => c.id)))} loading={isSavingDraft} disabled={isSavingDraft} />
         <div className={styles.publishRow}>
-          <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => dispatch(snapshots.length > 1 ? publishSeries(selectedChannels.map(c => c.id)) : publishNow(selectedChannels.map(c => c.id)))} loading={isPublishing} disabled={isPublishing} />
+          <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => { snapshots.length > 1 ? handlePublishSeries() : handlePublishNow(); }} loading={isPublishing} disabled={isPublishing} />
           <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => datePickerContext.open()} />
         </div>
       </div>
@@ -400,7 +422,7 @@ function CreatePostPageContent() {
       <TextTemplatesModal onSelectTemplate={(formattedContent) => { dispatch(editorSlice.setText(formattedContent?.html || formattedContent?.text || '')); }} />
       <DraftsModal onSelectDraft={(draft) => { loadDraftIntoStore(draft, dispatch); }} />
       <ReplyToPostModal />
-      <DatePickerModal onSchedule={(date) => { dispatch(schedulePost({ channelIds: selectedChannels.map(c => c.id), scheduledDate: date })); }} />
+      <DatePickerModal onSchedule={handleSchedule} />
     </div>
   );
 }

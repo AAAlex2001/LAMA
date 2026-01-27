@@ -1,5 +1,5 @@
 import type { RootState } from '../index';
-import type { InlineKeyboard, CreatePostRequest, PollData, MediaFile, ButtonRow, SettingsState, UploadedFile } from '../types';
+import type { InlineKeyboard, CreatePostRequest, PollData, MediaFile, ButtonRow, SettingsState, UploadedFile, QuizAnswer, QuizMode } from '../types';
 import { uploadMediaFile, API_BASE_URL } from './api';
 
 export function extractPlainText(html: string): string {
@@ -117,5 +117,85 @@ export function validatePost(text: string, filesCount: number, pollData: PollDat
   if (!plainText && filesCount === 0 && !pollData) return 'Текст поста или медиа не могут быть пустыми';
   if (plainText.length > 4096) return 'Превышен лимит 4096 символов';
   if (channelIds.length === 0) return 'Выберите хотя бы один канал';
+  return null;
+}
+
+export function validateTelegramMediaRules(text: string, files: MediaFile[], pollData: PollData | null): string | null {
+  const hasText = extractPlainText(text).length > 0;
+  const hasMedia = files.length > 0;
+  const hasPoll = !!pollData;
+
+  if (hasPoll && (hasText || hasMedia)) {
+    return 'Опросы нельзя публиковать вместе с текстом или медиа';
+  }
+
+  const hasDocuments = files.some(f => f.type === 'document');
+  const hasVisual = files.some(f => f.type === 'image' || f.type === 'video');
+  if (hasDocuments && hasVisual) {
+    return 'Документы нельзя публиковать вместе с фото или видео (ограничение Telegram)';
+  }
+
+  if (hasMedia) {
+    const totalBytes = files.reduce((sum, f) => sum + (f.size ?? f.file?.size ?? 0), 0);
+    if (totalBytes > 50 * 1024 * 1024) {
+      return 'Суммарный размер медиа не должен превышать 50 МБ (ограничение Telegram)';
+    }
+  }
+
+  return null;
+}
+
+export function validateInlineButtons(rows: ButtonRow[], isOpen: boolean): string | null {
+  if (!isOpen) return null;
+  const allButtons = rows.flatMap(r => r.buttons);
+  if (allButtons.length === 0) return 'Добавьте хотя бы одну кнопку';
+
+  for (const btn of allButtons) {
+    const text = btn.text?.trim() || '';
+    if (!text) return 'Заполните текст кнопки';
+
+    if (btn.type === 'url') {
+      const url = btn.url?.trim() || '';
+      if (!url) return 'Заполните ссылку для кнопки';
+    }
+
+    if (btn.type === 'callback') {
+      const data = btn.callback_data?.trim() || '';
+      if (!data) return 'Заполните callback для кнопки';
+      if (data.length > 64) return 'Callback для кнопки не должен превышать 64 символа';
+    }
+
+    if (btn.type === 'hidden_text') {
+      const hidden = btn.hidden_text?.trim() || '';
+      if (!hidden) return 'Заполните скрытый текст для кнопки';
+    }
+  }
+
+  return null;
+}
+
+export function validateQuizState(
+  isOpen: boolean,
+  mode: QuizMode,
+  question: string,
+  answers: QuizAnswer[],
+  correctAnswerId: string | null
+): string | null {
+  if (!isOpen) return null;
+  const q = question.trim();
+  if (!q) return 'Заполните вопрос опроса';
+
+  const options = answers.map(a => a.text.trim()).filter(Boolean);
+  if (options.length < 2) return 'Добавьте минимум 2 варианта ответа';
+  if (options.length > 10) return 'В опросе максимум 10 вариантов ответа';
+
+  if (mode === 'quiz') {
+    if (!correctAnswerId) return 'Выберите правильный ответ для квиза';
+    const correctIndex = answers.findIndex(a => a.id === correctAnswerId);
+    if (correctIndex < 0 || !answers[correctIndex]?.text.trim()) {
+      return 'Правильный ответ должен быть заполнен';
+    }
+  }
+
   return null;
 }
