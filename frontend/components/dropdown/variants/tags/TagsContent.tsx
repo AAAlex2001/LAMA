@@ -38,7 +38,6 @@ export default function TagsContent({
 
   return (
     <>
-      {/* Инпут для ввода названия тега */}
       <div className={styles.tagInputWrapper}>
         <Input
           placeholder="Введите название тега"
@@ -46,8 +45,6 @@ export default function TagsContent({
           onChange={(value) => onTagInputChange?.(value)}
         />
       </div>
-
-      {/* Выбор цвета тега */}
       <div className={styles.colorPickerSection}>
         <span className={styles.colorPickerLabel}>Выберите цвет тега</span>
         <div className={styles.colorButtons}>
@@ -65,7 +62,6 @@ export default function TagsContent({
         </div>
       </div>
 
-      {/* Недавние теги */}
       {recentTags.length > 0 && (
         <>
           <span className={styles.recentTagsLabel}>Недавние теги</span>
@@ -100,21 +96,18 @@ export default function TagsContent({
         </>
       )}
 
-      {/* Лоадер при загрузке тегов */}
       {tagsLoading && (
         <div className={styles.loadingContainer}>
           <Loader size={24} color="blue" />
         </div>
       )}
 
-      {/* Поиск по тегам */}
       <SearchBar
         placeholder="Поиск по тегам"
         value={tagSearchQuery}
         onChange={handleTagSearch}
       />
 
-      {/* Результаты поиска */}
       {tagSearchQuery && searchResults.length > 0 && (
         <div className={styles.searchResults}>
           {searchResults.map((tag) => (

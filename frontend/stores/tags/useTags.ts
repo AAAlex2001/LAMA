@@ -19,7 +19,6 @@ export function useTags() {
     return '#FAC7C7';
   };
 
-  // Загрузка тегов (недавние/популярные)
   const loadRecentTags = async () => {
     if (state.recentTags.length > 0 || state.loading) return;
     
@@ -36,7 +35,6 @@ export function useTags() {
     dispatch({ type: 'SET_LOADING', payload: false });
   };
 
-  // Поиск тегов
   const handleSearchTags = async (query: string) => {
     if (!query.trim()) {
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
@@ -56,48 +54,38 @@ export function useTags() {
     dispatch({ type: 'SET_SEARCHING', payload: false });
   };
 
-  // Установить поисковый запрос
   const setSearchQuery = (value: string) => {
     dispatch({ type: 'SET_SEARCH_QUERY', payload: value });
-    // Очистить результаты поиска если значение пустое
     if (!value.trim()) {
       dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
     }
   };
 
-  // Выбрать тег из списка
   const selectTag = (tag: Tag) => {
-    console.log('🎯 selectTag вызван:', tag);
     dispatch({ type: 'SET_SELECTED_TAG_NAME', payload: tag.name });
     dispatch({ type: 'SET_SELECTED_TAG_COLOR', payload: normalizeTagColor(tag.color) });
     dispatch({ type: 'SET_SEARCH_QUERY', payload: '' });
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
-    console.log('✅ selectTag завершен, имя:', tag.name, 'цвет:', tag.color || '#FAC7C7');
   };
 
-  // Очистить результаты поиска
   const clearSearch = () => {
     dispatch({ type: 'SET_SEARCH_RESULTS', payload: [] });
   };
 
-  // Удалить тег
   const handleDeleteTag = async (tagId: number) => {
     try {
       await deleteTag(tagId);
-      // Удаляем тег из локального состояния
       dispatch({ type: 'REMOVE_TAG', payload: tagId });
     } catch (error) {
       console.error('Error deleting tag:', error);
     }
   };
 
-  // Сброс состояния
   const reset = () => {
     dispatch({ type: 'RESET' });
   };
 
   return {
-    // State
     recentTags: state.recentTags,
     loading: state.loading,
     searching: state.searching,
@@ -108,7 +96,6 @@ export function useTags() {
     selectedTagName: state.selectedTagName,
     selectedTagColor: state.selectedTagColor,
 
-    // Actions
     loadRecentTags,
     searchTags: handleSearchTags,
     setSearchQuery,

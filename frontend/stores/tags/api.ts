@@ -54,7 +54,6 @@ async function fetchApi<T>(
       );
     }
 
-    // Для DELETE возвращаем null
     if (response.status === 204) {
       return null as T;
     }
@@ -68,9 +67,7 @@ async function fetchApi<T>(
   }
 }
 
-/**
- * Получить список тегов (недавние/популярные)
- */
+
 export async function fetchTags(
   page: number = 1,
   pageSize: number = 20
@@ -83,9 +80,7 @@ export async function fetchTags(
   return fetchApi<TagListResponse>(`${ENDPOINTS.tags}/?${params}`);
 }
 
-/**
- * Поиск тегов по имени
- */
+
 export async function searchTags(
   query: string,
   limit: number = 10
@@ -98,9 +93,6 @@ export async function searchTags(
   return fetchApi<TagListResponse>(`${ENDPOINTS.search}?${params}`);
 }
 
-/**
- * Создать новый тег
- */
 export async function createTag(name: string): Promise<Tag> {
   return fetchApi<Tag>(`${ENDPOINTS.tags}/`, {
     method: 'POST',
@@ -108,9 +100,6 @@ export async function createTag(name: string): Promise<Tag> {
   });
 }
 
-/**
- * Удалить тег
- */
 export async function deleteTag(tagId: number): Promise<void> {
   await fetchApi<void>(`${ENDPOINTS.tags}/${tagId}`, {
     method: 'DELETE',

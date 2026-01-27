@@ -14,7 +14,6 @@ import { CodePreview } from './code-preview';
 import InlineKeyboardPreview, { type InlineKeyboardPreviewData } from './inline-keyboard-preview/inline-keyboard-preview';
 import {
   type QuizPreviewData,
-  type HtmlPart,
   normalizeMaybeUrl,
   formatMembersCount,
   createMediaRuns,
@@ -61,17 +60,14 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   const tailMedia = firstIsDocument ? mediaFiles.slice(1) : [];
   const headRuns = createMediaRuns(headMedia, objectUrls);
   const tailRuns = createMediaRuns(tailMedia, objectUrls);
-  
-  // Извлекаем blockquote из HTML с сохранением порядка
+
   const { parts } = extractBlockquotes(html);
   const hasContent = headRuns.length > 0 || parts.length > 0 || tailRuns.length > 0;
 
-  // Cleanup blob URLs on unmount
   useEffect(() => {
     return () => revokeObjectUrls(objectUrls);
   }, [objectUrls]);
 
-  // Escape key handler
   useEffect(() => {
     if (!isOpen) return;
 
@@ -102,7 +98,6 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
 
         <div className={styles.previewFrame}>
           <div className={styles.chat}>
-            {/* Channel Header */}
             <div className={styles.chatHeader}>
               <div className={styles.avatar}>
                 {avatarSrc && (
@@ -124,9 +119,7 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
               </div>
             </div>
 
-            {/* Message Area */}
             <div className={styles.messageArea}>
-              {/* Main bubble with media and text */}
               {hasContent && (
                 <div className={styles.bubble}>
                   {headRuns.map((run, idx) =>
@@ -136,7 +129,6 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                       <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
                     )
                   )}
-                  {/* Рендерим части в правильном порядке */}
                   {parts.map((part, index) => {
                     if (part.type === 'text') {
                       return (
@@ -179,7 +171,6 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                 <InlineKeyboardPreview keyboard={inlineKeyboard} />
               ) : null}
 
-              {/* Quiz/Poll */}
               {quizData && <QuizPreview data={quizData} />}
             </div>
 

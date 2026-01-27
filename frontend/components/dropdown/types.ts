@@ -1,5 +1,3 @@
-// Общие типы для dropdown компонентов
-
 export interface DropdownOption {
   id: string;
   label: string;
@@ -19,8 +17,6 @@ export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1'
 export type ButtonTypeOption = 'url' | 'hidden_text' | 'callback';
 
 export const TAG_COLORS: TagColor[] = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'];
-
-// Props для каждого варианта контента
 export interface ChannelsContentProps {
   options: DropdownOption[];
   showSearch: boolean;
@@ -60,8 +56,8 @@ export interface RepeatContentProps {
   repeatMonthDays: number[];
   repeatYearMonth: number;
   repeatYearDays: number[];
-   repeatEndType: 'never' | 'date';
-   repeatEndDate: Date | null;
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: Date | null;
   onRepeatChange?: (value: RepeatOption) => void;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
