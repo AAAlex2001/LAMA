@@ -44,6 +44,7 @@ import { useTags } from '@/stores/tags';
 import { useReplyToPost } from '@/components/reply-to-post-modal';
 import { useDrafts } from '@/components/drafts-modal';
 import { useTemplates } from '@/components/text-templates-modal';
+import { useDatePicker } from '@/components/date-picker';
 
 import type { MediaFile } from '@/components/media-preview/media-preview';
 import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
@@ -101,6 +102,7 @@ function CreatePostPageContent() {
   const replyToPostContext = useReplyToPost();
   const draftsContext = useDrafts();
   const templatesContext = useTemplates();
+  const datePickerContext = useDatePicker();
 
   // Computed
   const canAddMedia = buttonRows.length > 0 ? mediaFiles.length < 1 : mediaFiles.length < 10;
@@ -345,7 +347,7 @@ function CreatePostPageContent() {
         <Button text="Сохранить в черновики" showArrow={false} className={styles.saveDraftBtn} onClick={() => dispatch(saveDraft(selectedChannels.map(c => c.id)))} loading={isSavingDraft} disabled={isSavingDraft} />
         <div className={styles.publishRow}>
           <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => dispatch(publishNow(selectedChannels.map(c => c.id)))} loading={isPublishing} disabled={isPublishing} />
-          <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => dispatch(uiSlice.setShowDatePickerModal(true))} />
+          <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => datePickerContext.open()} />
         </div>
       </div>
     </div>
