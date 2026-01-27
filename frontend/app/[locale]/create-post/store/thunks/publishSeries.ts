@@ -1,0 +1,99 @@
+import { createAsyncThunk } from '@reduxjs/toolkit';
+import type { RootState } from '../index';
+import type { CreatePostRequest, SeriesResponse, PublicationResponse } from '../types';
+import { setIsPublishing, resetUi } from '../slices/ui';
+import { resetEditor } from '../slices/editor';
+import { clearFiles } from '../slices/media';
+import { resetInlineButtons } from '../slices/inlineButtons';
+import { resetQuiz } from '../slices/quiz';
+import { resetSettings } from '../slices/settings';
+import { resetSeries } from '../slices/series';
+import { apiRequest } from './api';
+import { prepareMediaPayload, buildCreatePostRequest } from './utils';
+
+export const publishSeries = createAsyncThunk(
+  'createPost/publishSeries',
+  async (channelIds: number[], { getState, dispatch, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const { series, settings, editor, media, inlineButtons, quiz } = state;
+    
+    // Собираем актуальный snapshot из текущего состояния редактора
+    const currentSnapshot = {
+      text: editor.text,
+      mediaFiles: media.files,
+      inlineButtonsOpen: inlineButtons.isOpen,
+      buttonRows: inlineButtons.rows,
+      quizOpen: quiz.isOpen,
+      quizMode: quiz.mode,
+      quizQuestion: quiz.question,
+      quizAnswers: quiz.answers,
+      quizCorrectAnswerId: quiz.correctAnswerId,
+      showLinkPreview: editor.showLinkPreview,
+    };
+    
+    // Обновляем активный snapshot актуальными данными
+    const snapshots = [...series.snapshots];
+    snapshots[series.activeIndex] = currentSnapshot;
+    
+    if (snapshots.length < 2) return rejectWithValue('Серия должна содержать минимум 2 поста');
+    if (channelIds.length === 0) return rejectWithValue('Выберите хотя бы один канал');
+    
+    dispatch(setIsPublishing(true));
+    
+    try {
+      // 1. Создаём серию на бэкенде
+      const seriesResponse = await apiRequest<SeriesResponse>('/publications/series', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: `Серия ${new Date().toLocaleString('ru-RU')}`,
+          reply_to_previous: true,
+        }),
+      });
+      
+      const seriesId = seriesResponse.id;
+      
+      // 2. Создаём и публикуем посты по очереди
+      for (let i = 0; i < snapshots.length; i++) {
+        const snapshot = snapshots[i];
+        const pollData = snapshot.quizOpen ? {
+          question: snapshot.quizQuestion,
+          options: snapshot.quizAnswers.map(a => a.text).filter(t => t.trim()),
+          is_quiz: snapshot.quizMode === 'quiz',
+          allows_multiple_answers: snapshot.quizMode === 'poll_multi',
+          correct_option_id: snapshot.quizMode === 'quiz' 
+            ? snapshot.quizAnswers.findIndex(a => a.id === snapshot.quizCorrectAnswerId)
+            : null,
+        } : null;
+        
+        const mediaPayload = await prepareMediaPayload(snapshot.mediaFiles || []);
+        const request: CreatePostRequest = {
+          ...buildCreatePostRequest(
+            snapshot.text, snapshot.showLinkPreview, settings,
+            snapshot.buttonRows || [], mediaPayload, pollData, channelIds
+          ),
+          series_id: seriesId,
+          series_order: i,
+        };
+        
+        const pub = await apiRequest<PublicationResponse>('/publications', {
+          method: 'POST', body: JSON.stringify(request),
+        });
+        
+        await apiRequest(`/publications/${pub.id}/publish`, { method: 'POST' });
+      }
+      
+      dispatch(resetEditor());
+      dispatch(clearFiles());
+      dispatch(resetInlineButtons());
+      dispatch(resetQuiz());
+      dispatch(resetSettings());
+      dispatch(resetSeries());
+      dispatch(resetUi());
+      return { success: true, message: `Серия из ${snapshots.length} постов опубликована` };
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Неизвестная ошибка');
+    } finally {
+      dispatch(setIsPublishing(false));
+    }
+  }
+);

@@ -37,7 +37,7 @@ import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
 import * as seriesSlice from './store/slices/series';
-import { publishNow, saveDraft, schedulePost, loadDraftIntoStore } from './store/thunks';
+import { publishNow, publishSeries, saveDraft, schedulePost, loadDraftIntoStore } from './store/thunks';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
@@ -46,9 +46,10 @@ import { useDrafts } from '@/components/drafts-modal';
 import { useTemplates } from '@/components/text-templates-modal';
 import { useDatePicker } from '@/components/date-picker';
 
-import type { MediaFile } from '@/components/media-preview/media-preview';
+import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
 import type { ButtonRow, InlineButton } from '@/components/inline-buttons/inline-buttons';
+import type { MediaFile, RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from './store/types';
 
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
@@ -118,8 +119,11 @@ function CreatePostPageContent() {
     (quizOpen && quizQuestion.trim().length > 0) ||
     (inlineButtonsOpen && buttonRows.length > 0);
 
+  // Map quizMode to preview mode: 'poll_single' and 'poll_multi' -> 'poll', 'quiz' -> 'quiz'
+  const quizPreviewMode = quizMode === 'quiz' ? 'quiz' : 'poll';
+  
   const quizPreviewData = quizOpen && quizQuestion.trim() ? {
-    mode: quizMode,
+    mode: quizPreviewMode as 'quiz' | 'poll',
     question: quizQuestion,
     options: quizAnswers.map(a => a.text),
     isAnonymous: true,
@@ -163,7 +167,7 @@ function CreatePostPageContent() {
         blur: false,
       };
     });
-    dispatch(mediaSlice.addFiles(newFiles as any));
+    dispatch(mediaSlice.addFiles(newFiles));
     e.target.value = '';
   }, [dispatch]);
 
@@ -183,7 +187,8 @@ function CreatePostPageContent() {
   }, [channelsStore, dispatch]);
 
   const handleSelectTag = useCallback((tag: { name: string; color: string }) => {
-    dispatch(settingsSlice.selectTag(tag as any));
+    // Приводим к Tag типу для slice (требует id и created_at)
+    dispatch(settingsSlice.selectTag({ ...tag, id: 0, created_at: '' }));
   }, [dispatch]);
 
   const handleSelectPostSnapshot = useCallback((index: number) => {
@@ -226,23 +231,26 @@ function CreatePostPageContent() {
     onAddChannel: handleAddChannel,
     onOpenCreateChannel: () => dispatch(settingsSlice.setShowCreateChannel(true)),
     onCloseCreateChannel: () => dispatch(settingsSlice.setShowCreateChannel(false)),
-    recentTags: tagsStore.recentTags,
-    searchResults: tagsStore.searchResults,
+    recentTags: tagsStore.recentTags.map(tag => ({ ...tag, color: tag.color || '#808080' })),
+    searchResults: tagsStore.searchResults.map(tag => ({ ...tag, color: tag.color || '#808080' })),
     tagInputValue: tagsStore.tagInputValue,
     selectedTagName,
-    selectedTagColor: selectedTagColor as any,
+    selectedTagColor,
     tagsLoading: tagsStore.loading,
     tagsSearching: tagsStore.searching,
     onLoadRecentTags: tagsStore.loadRecentTags,
     onSearchTags: tagsStore.searchTags,
     onTagInputChange: tagsStore.setTagInputValue,
     onSelectTag: handleSelectTag,
-    onDeleteTag: tagsStore.deleteTag,
-    onTagColorChange: (color: any) => dispatch(settingsSlice.setSelectedTagColor(color)),
-    repeatInterval: repeatInterval as any,
+    onDeleteTag: (name: string) => {
+      const tag = tagsStore.recentTags.find(t => t.name === name);
+      if (tag) tagsStore.deleteTag(tag.id);
+    },
+    onTagColorChange: (color: TagColor) => dispatch(settingsSlice.setSelectedTagColor(color)),
+    repeatInterval,
     repeatCustomDays,
     repeatCustomHours,
-    repeatCustomUnit: repeatCustomUnit as any,
+    repeatCustomUnit,
     repeatCustomValue,
     repeatWeekdays,
     repeatMonthDays,
@@ -250,10 +258,10 @@ function CreatePostPageContent() {
     repeatYearDays,
     repeatEndType,
     repeatEndDate: repeatEndDate ? new Date(repeatEndDate) : null,
-    onRepeatChange: (v: any) => dispatch(settingsSlice.setRepeatInterval(v)),
+    onRepeatChange: (v: RepeatOption) => dispatch(settingsSlice.setRepeatInterval(v)),
     onRepeatCustomDaysChange: (v: number) => dispatch(settingsSlice.setRepeatCustomDays(v)),
     onRepeatCustomHoursChange: (v: number) => dispatch(settingsSlice.setRepeatCustomHours(v)),
-    onRepeatCustomUnitChange: (v: any) => dispatch(settingsSlice.setRepeatCustomUnit(v)),
+    onRepeatCustomUnitChange: (v: RepeatCustomUnit) => dispatch(settingsSlice.setRepeatCustomUnit(v)),
     onRepeatCustomValueChange: (v: number) => dispatch(settingsSlice.setRepeatCustomValue(v)),
     onRepeatWeekdaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatWeekdays(v)),
     onRepeatMonthDaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatMonthDays(v)),
@@ -261,10 +269,10 @@ function CreatePostPageContent() {
     onRepeatYearDaysChange: (v: number[]) => dispatch(settingsSlice.setRepeatYearDays(v)),
     onRepeatEndTypeChange: (v: 'never' | 'date') => dispatch(settingsSlice.setRepeatEndType(v)),
     onRepeatEndDateChange: (v: Date | null) => dispatch(settingsSlice.setRepeatEndDate(v?.toISOString() ?? null)),
-    autoDeleteInterval: autoDeleteInterval as any,
+    autoDeleteInterval,
     autoDeleteCustomDays,
     autoDeleteCustomHours,
-    onAutoDeleteChange: (v: any) => dispatch(settingsSlice.setAutoDeleteInterval(v)),
+    onAutoDeleteChange: (v: AutoDeleteOption) => dispatch(settingsSlice.setAutoDeleteInterval(v)),
     onAutoDeleteCustomDaysChange: (v: number) => dispatch(settingsSlice.setAutoDeleteCustomDays(v)),
     onAutoDeleteCustomHoursChange: (v: number) => dispatch(settingsSlice.setAutoDeleteCustomHours(v)),
     notifySubscribers,
@@ -324,7 +332,7 @@ function CreatePostPageContent() {
           <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
           <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.txt" onChange={handleFileUpload} style={{ display: 'none' }} />
           <div className={styles.mediaMobile}>
-            <MediaPreview files={mediaFiles as MediaFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
+            <MediaPreview files={mediaFiles as MediaPreviewFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
             <Button text="Прикрепить файл" variant="templateCard" showArrow={false} icon={<PaperclipIcon width={24} height={24} />} fullWidth disabled={!canAddMedia} onClick={() => fileInputRef.current?.click()} />
           </div>
           <div className={styles.mediaDropzone}>
@@ -335,7 +343,7 @@ function CreatePostPageContent() {
               </>
             ) : (
               <div className={styles.mediaDropzoneContent}>
-                <MediaPreview files={mediaFiles as MediaFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
+                <MediaPreview files={mediaFiles as MediaPreviewFile[]} onRemove={(id) => dispatch(mediaSlice.removeFile(id))} onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))} onMove={handleMoveMedia} />
                 <Button text="Прикрепить файл" variant="templateCard" showArrow={false} icon={<PaperclipIcon width={24} height={24} />} disabled={!canAddMedia} onClick={() => fileInputRef.current?.click()} />
               </div>
             )}
@@ -346,7 +354,7 @@ function CreatePostPageContent() {
       <div className={styles.footerButtons}>
         <Button text="Сохранить в черновики" showArrow={false} className={styles.saveDraftBtn} onClick={() => dispatch(saveDraft(selectedChannels.map(c => c.id)))} loading={isSavingDraft} disabled={isSavingDraft} />
         <div className={styles.publishRow}>
-          <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => dispatch(publishNow(selectedChannels.map(c => c.id)))} loading={isPublishing} disabled={isPublishing} />
+          <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => dispatch(snapshots.length > 1 ? publishSeries(selectedChannels.map(c => c.id)) : publishNow(selectedChannels.map(c => c.id)))} loading={isPublishing} disabled={isPublishing} />
           <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => datePickerContext.open()} />
         </div>
       </div>
@@ -381,11 +389,11 @@ function CreatePostPageContent() {
         </div>
       )}
 
-      <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as any} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
+      <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as MediaPreviewFile[]} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
       <TextTemplatesModal onSelectTemplate={(formattedContent) => { dispatch(editorSlice.setText(formattedContent?.html || formattedContent?.text || '')); }} />
       <DraftsModal onSelectDraft={(draft) => { loadDraftIntoStore(draft, dispatch); }} />
       <ReplyToPostModal />
-      <DatePickerModal onSchedule={(date) => dispatch(schedulePost({ channelIds: selectedChannels.map(c => c.id), scheduledDate: date }))} />
+      <DatePickerModal onSchedule={(date) => { dispatch(schedulePost({ channelIds: selectedChannels.map(c => c.id), scheduledDate: date })); }} />
     </div>
   );
 }

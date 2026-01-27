@@ -11,6 +11,7 @@ import * as uiSlice from './slices/ui';
 import * as seriesSlice from './slices/series';
 import {
   publishNow,
+  publishSeries,
   saveDraft,
   schedulePost,
   saveAsTemplate,
@@ -144,8 +145,13 @@ export function useCreatePost() {
     [dispatch, activeIndex, currentSnapshot]
   );
 
-  const doPublishNow = useCallback(() => dispatch(publishNow()), [dispatch]);
-  const doSaveDraft = useCallback(() => dispatch(saveDraft()), [dispatch]);
+  const doPublishNow = useCallback(
+    (channelIds: number[]) => isSeriesMode 
+      ? dispatch(publishSeries(channelIds)) 
+      : dispatch(publishNow(channelIds)),
+    [dispatch, isSeriesMode]
+  );
+  const doSaveDraft = useCallback((channelIds: number[]) => dispatch(saveDraft(channelIds)), [dispatch]);
   const doSchedulePost = useCallback((date: Date) => dispatch(schedulePost(date.toISOString())), [dispatch]);
   const doSaveAsTemplate = useCallback(() => dispatch(saveAsTemplate()), [dispatch]);
   const doLoadChannels = useCallback((token: string) => dispatch(loadChannels(token)), [dispatch]);

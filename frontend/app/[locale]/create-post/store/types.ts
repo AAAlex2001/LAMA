@@ -14,8 +14,16 @@ export interface ButtonRow {
   buttons: InlineButton[];
 }
 
+export interface InlineKeyboardButton {
+  text: string;
+  type: InlineButtonType;
+  url?: string;
+  callback_data?: string;
+  hidden_text?: string;
+}
+
 export interface InlineKeyboard {
-  buttons: InlineButton[][];
+  buttons: InlineKeyboardButton[][];
 }
 
 export interface MediaFile {
@@ -89,7 +97,7 @@ export interface CreatePostRequest {
   formatted_content?: Record<string, any>;
   media_urls?: string[];
   media_thumbnail_urls?: Array<string | null>;
-  media_file_ids?: string[];
+  media_file_ids?: Array<string | null>;
   media_blur?: boolean[];
   channel_ids: number[];
   pin_message?: boolean;
@@ -121,4 +129,65 @@ export interface CreatePostResponse {
   id: number;
   status: string;
   message?: string;
+}
+
+export interface SeriesResponse {
+  id: number;
+  name: string;
+}
+
+export interface PublicationResponse {
+  id: number;
+  status: string;
+}
+
+export interface ChannelsResponse {
+  items?: Channel[];
+}
+
+export interface Channel {
+  id: number;
+  title: string;
+  selected?: boolean;
+  members_count?: number;
+  photo_url?: string;
+}
+
+export interface TagsResponse {
+  items?: Tag[];
+}
+
+export interface UploadedFile {
+  url: string;
+  file_id?: string;
+  thumbnailUrl?: string;
+}
+
+export interface SettingsState {
+  pinPost: boolean;
+  notifySubscribers: boolean;
+  autoDeleteInterval: AutoDeleteOption;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
+  selectedTagName: string | null;
+  selectedTagColor: string | null;
+  repeatInterval: RepeatOption;
+  replyToPostId: number | null;
+}
+
+export interface Draft {
+  formatted_content?: { html?: string; text?: string };
+  text_content?: string;
+  media_urls?: string[];
+  media_thumbnail_urls?: (string | null)[];
+  media_blur?: boolean[];
+  media_file_ids?: (string | null)[];
+  inline_keyboard?: { buttons: InlineButton[][] };
+  poll_data?: {
+    question: string;
+    options: string[];
+    is_quiz: boolean;
+    allows_multiple_answers: boolean;
+    correct_option_id?: number | null;
+  };
 }
