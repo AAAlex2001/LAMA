@@ -13,76 +13,15 @@ import { AutoDeleteContent } from './variants/auto-delete';
 import { ButtonTypeContent } from './variants/button-type';
 
 import type {
-  DropdownOption,
-  ApiTag,
   RepeatOption,
   AutoDeleteOption,
   TagColor,
   ButtonTypeOption,
+  DropdownProps,
 } from './types';
 
 export type { RepeatOption, AutoDeleteOption, TagColor, ButtonTypeOption };
-export { TAG_COLORS } from './types';
-
-interface DropdownProps {
-  label: string;
-  placeholder?: string;
-  options?: DropdownOption[];
-  selectedCount?: number;
-  totalCount?: number;
-  showSearch?: boolean;
-  showCheckboxes?: boolean;
-  onOptionChange?: (id: string, checked: boolean) => void;
-  onAddNew?: () => void;
-  addNewLabel?: string;
-  className?: string;
-  variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete' | 'button-type';
-  recentTags?: ApiTag[];
-  searchResults?: ApiTag[];
-  tagInputValue?: string;
-  selectedTagName?: string;
-  onTagInputChange?: (value: string) => void;
-  onSelectTag?: (tag: ApiTag) => void;
-  onSearchTags?: (query: string) => void;
-  onLoadRecentTags?: () => void;
-  onDeleteTag?: (tagId: number) => void;
-  tagsLoading?: boolean;
-  tagsSearching?: boolean;
-  selectedTagColor?: TagColor;
-  onTagColorChange?: (color: TagColor) => void;
-  repeatValue?: RepeatOption;
-  onRepeatChange?: (value: RepeatOption) => void;
-  repeatCustomDays?: number;
-  repeatCustomHours?: number;
-  repeatCustomUnit?: 'days' | 'weeks' | 'months' | 'years';
-  repeatCustomValue?: number;
-  repeatWeekdays?: number[];
-  repeatMonthDays?: number[];
-  repeatYearMonth?: number;
-  repeatYearDays?: number[];
-  onRepeatCustomDaysChange?: (value: number) => void;
-  onRepeatCustomHoursChange?: (value: number) => void;
-  onRepeatCustomUnitChange?: (value: 'days' | 'weeks' | 'months' | 'years') => void;
-  onRepeatCustomValueChange?: (value: number) => void;
-  onRepeatWeekdaysChange?: (value: number[]) => void;
-  onRepeatMonthDaysChange?: (value: number[]) => void;
-  onRepeatYearMonthChange?: (value: number) => void;
-  onRepeatYearDaysChange?: (value: number[]) => void;
-  repeatEndType?: 'never' | 'date';
-  repeatEndDate?: Date | null;
-  onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
-  onRepeatEndDateChange?: (value: Date | null) => void;
-  autoDeleteValue?: AutoDeleteOption;
-  onAutoDeleteChange?: (value: AutoDeleteOption) => void;
-  autoDeleteCustomDays?: number;
-  autoDeleteCustomHours?: number;
-  onAutoDeleteCustomDaysChange?: (value: number) => void;
-  onAutoDeleteCustomHoursChange?: (value: number) => void;
-  onOpen?: () => void;
-  loading?: boolean;
-  buttonTypeValue?: ButtonTypeOption;
-  onButtonTypeChange?: (value: ButtonTypeOption) => void;
-}
+export { TAG_COLORS} from './types';
 
 export default function Dropdown({
   label,
@@ -142,14 +81,28 @@ export default function Dropdown({
   loading = false,
   buttonTypeValue = 'url',
   onButtonTypeChange,
+  isOpen: controlledIsOpen,
+  onToggle: controlledOnToggle,
 }: DropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(variant === 'channels');
   const [repeatViewMode, setRepeatViewMode] = useState<RepeatViewMode>('list');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // Используем контролируемое состояние если передано, иначе внутреннее
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
   const handleToggle = () => {
+    if (variant === 'channels') return; // Каналы всегда открыты
+    
     const willOpen = !isOpen;
-    setIsOpen(willOpen);
+    
+    // Если есть внешний контроль - используем его
+    if (controlledOnToggle) {
+      controlledOnToggle(willOpen);
+    } else {
+      setInternalIsOpen(willOpen);
+    }
+    
     if (willOpen) {
       onOpen?.();
       if (variant === 'tags') {
@@ -257,7 +210,11 @@ export default function Dropdown({
       ref={dropdownRef}
       className={classNames(styles.dropdown, { [styles.open]: isOpen }, className)}
     >
-      <div className={styles.header} onClick={handleToggle}>
+      <div 
+        className={classNames(styles.header, { [styles.alwaysOpen]: variant === 'channels' })} 
+        onClick={handleToggle}
+        style={{ cursor: variant === 'channels' ? 'default' : 'pointer' }}
+      >
         <span className={styles.label}>{label}</span>
         <div className={styles.headerRight}>
           {variant === 'repeat' && isOpen && (repeatViewMode === 'daily' || repeatViewMode === 'custom') && (
@@ -273,11 +230,13 @@ export default function Dropdown({
               />
             </div>
           )}
-          <ChevronDownIcon
-            width={16}
-            height={16}
-            className={classNames(styles.chevron, { [styles.rotated]: isOpen })}
-          />
+          {variant !== 'channels' && (
+            <ChevronDownIcon
+              width={16}
+              height={16}
+              className={classNames(styles.chevron, { [styles.rotated]: isOpen })}
+            />
+          )}
         </div>
       </div>
 

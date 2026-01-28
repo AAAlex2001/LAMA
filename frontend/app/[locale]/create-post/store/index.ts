@@ -8,6 +8,10 @@ import quizReducer from './slices/quiz';
 import settingsReducer from './slices/settings';
 import uiReducer from './slices/ui';
 import seriesReducer from './slices/series';
+import draftsReducer from './slices/drafts';
+import templatesReducer from './slices/templates';
+import replyToPostReducer from './slices/replyToPost';
+import datePickerReducer from './slices/datePicker';
 
 export const createPostStore = configureStore({
   reducer: {
@@ -18,12 +22,16 @@ export const createPostStore = configureStore({
     settings: settingsReducer,
     ui: uiReducer,
     series: seriesReducer,
+    drafts: draftsReducer,
+    templates: templatesReducer,
+    replyToPost: replyToPostReducer,
+    datePicker: datePickerReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['media/addFiles', 'media/setFiles'],
-        ignoredPaths: ['media.files'],
+        ignoredActions: ['media/addFiles', 'media/setFiles', 'datePicker/setSelectedDate'],
+        ignoredPaths: ['media.files', 'datePicker.selectedDate'],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',

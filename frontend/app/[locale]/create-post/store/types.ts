@@ -176,19 +176,135 @@ export interface SettingsState {
   replyToPostId: number | null;
 }
 
+
 export interface Draft {
-  formatted_content?: { html?: string; text?: string };
+  id: number;
+  content_type: ContentType;
+  status: string;
   text_content?: string;
+  formatted_content?: Record<string, any>;
   media_urls?: string[];
-  media_thumbnail_urls?: (string | null)[];
+  media_thumbnail_urls?: Array<string | null>;
+  media_file_ids?: Array<string | null>;
   media_blur?: boolean[];
-  media_file_ids?: (string | null)[];
-  inline_keyboard?: { buttons: InlineButton[][] };
-  poll_data?: {
-    question: string;
-    options: string[];
-    is_quiz: boolean;
-    allows_multiple_answers: boolean;
-    correct_option_id?: number | null;
-  };
+  inline_keyboard?: Record<string, any>;
+  poll_data?: PollData;
+  created_at: string;
+  updated_at: string;
+  channels: Channel[];
+  tags: Tag[];
+}
+
+export interface DraftListResponse {
+  items: Draft[];
+  page: number;
+  page_size: number;
+}
+
+export interface TextTemplate {
+  id: number;
+  owner_id: number;
+  name: string;
+  formatted_content: Record<string, any>;
+  created_at: string;
+}
+
+export interface TextTemplateListResponse {
+  items: TextTemplate[];
+  total: number;
+}
+
+export interface CreateTextTemplateRequest {
+  name: string;
+  formatted_content: Record<string, any>;
+}
+
+export interface UpdateTextTemplateRequest {
+  name?: string;
+  formatted_content?: Record<string, any>;
+}
+
+export interface Post {
+  id: number;
+  content_type: ContentType;
+  status: string;
+  text_content?: string;
+  formatted_content?: Record<string, any>;
+  media_urls?: string[];
+  media_thumbnail_urls?: Array<string | null>;
+  media_file_ids?: Array<string | null>;
+  media_blur?: boolean[];
+  inline_keyboard?: Record<string, any>;
+  poll_data?: PollData;
+  reply_to_post_id?: number;
+  created_at: string;
+  updated_at: string;
+  channels: Channel[];
+  tags: Tag[];
+}
+
+export interface PostListResponse {
+  items: Post[];
+  page: number;
+  page_size: number;
+}
+
+// ===== Dumb Component Props =====
+
+export interface DraftsModalProps {
+  isOpen: boolean;
+  drafts: Draft[];
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  searchQuery: string;
+  selectedDraftId: number | null;
+  onSearchQueryChange: (query: string) => void;
+  onLoadMore: () => void;
+  onDelete: (id: number) => void;
+  onSelect: (draft: Draft) => void;
+  onClose: () => void;
+}
+
+export interface TemplatesModalProps {
+  isOpen: boolean;
+  templates: TextTemplate[];
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  searchQuery: string;
+  selectedTemplateId: number | null;
+  onSearchQueryChange: (query: string) => void;
+  onLoadMore: () => void;
+  onUpdate: (id: number, data: UpdateTextTemplateRequest) => void;
+  onDelete: (id: number) => void;
+  onSelect: (template: TextTemplate) => void;
+  onClose: () => void;
+}
+
+export interface ReplyToPostModalProps {
+  isOpen: boolean;
+  posts: Post[];
+  isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMore: boolean;
+  searchQuery: string;
+  selectedPostId: number | null;
+  channelTitle?: string;
+  onSearchQueryChange: (query: string) => void;
+  onLoadMore: () => void;
+  onSelect: (post: Post) => void;
+  onClose: () => void;
+}
+
+export interface DatePickerModalProps {
+  isOpen: boolean;
+  selectedDate: Date | null;
+  hours: number;
+  minutes: number;
+  onDateChange: (date: Date) => void;
+  onHoursChange: (hours: number) => void;
+  onMinutesChange: (minutes: number) => void;
+  onSchedule: (scheduledDate: Date) => void | Promise<void>;
+  onClose: () => void;
 }

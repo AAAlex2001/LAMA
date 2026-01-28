@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import styles from './post-settings.module.scss';
 import Dropdown from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
@@ -167,6 +168,10 @@ export default function PostSettings({
 
   onReset,
 }: PostSettingsProps) {
+  // Состояние для аккордеона (какой dropdown открыт)
+  // 'channels' всегда открыт, остальные работают по принципу аккордеона
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+
   return (
     <>
       <div className={`${styles.postSettings} ${className || ''}`}>
@@ -174,7 +179,7 @@ export default function PostSettings({
           <div className={styles.title}>Настройки публикации</div>
 
           <div className={styles.settingsList}>
-            {/* Каналы */}
+            {/* Каналы - всегда открыты */}
             <Dropdown
               label="Каналы и чаты для постинга"
               options={channelOptions}
@@ -207,6 +212,8 @@ export default function PostSettings({
               onDeleteTag={onDeleteTag}
               selectedTagColor={selectedTagColor}
               onTagColorChange={onTagColorChange}
+              isOpen={openDropdown === 'tags'}
+              onToggle={(willOpen) => setOpenDropdown(willOpen ? 'tags' : null)}
             />
 
             {/* Автоудаление */}
@@ -219,6 +226,8 @@ export default function PostSettings({
               autoDeleteCustomHours={autoDeleteCustomHours}
               onAutoDeleteCustomDaysChange={onAutoDeleteCustomDaysChange}
               onAutoDeleteCustomHoursChange={onAutoDeleteCustomHoursChange}
+              isOpen={openDropdown === 'auto-delete'}
+              onToggle={(willOpen) => setOpenDropdown(willOpen ? 'auto-delete' : null)}
             />
 
             {/* Повтор */}
@@ -247,6 +256,8 @@ export default function PostSettings({
               onRepeatYearDaysChange={onRepeatYearDaysChange}
               onRepeatEndTypeChange={onRepeatEndTypeChange}
               onRepeatEndDateChange={onRepeatEndDateChange}
+              isOpen={openDropdown === 'repeat'}
+              onToggle={(willOpen) => setOpenDropdown(willOpen ? 'repeat' : null)}
             />
 
             {/* Уведомления */}

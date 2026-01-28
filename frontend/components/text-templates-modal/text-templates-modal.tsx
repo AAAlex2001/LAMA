@@ -8,29 +8,23 @@ import Input from '@/components/input';
 import { EditNameIcon, CheckIcon, CloseIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import { useTemplates } from './TemplatesContext';
+import type { TemplatesModalProps, TextTemplate } from '@/app/[locale]/create-post/store/types';
 
-interface TextTemplatesModalProps {
-  onSelectTemplate: (formattedContent: Record<string, any>) => void;
-}
-
-export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesModalProps) {
-  const {
-    templates,
-    isOpen,
-    isLoading,
-    isLoadingMore,
-    hasMore,
-    searchQuery,
-    selectedTemplateId,
-    setSearchQuery,
-    updateTemplate,
-    deleteTemplate,
-    selectTemplate,
-    loadMoreTemplates,
-    close,
-  } = useTemplates();
-
+export default function TextTemplatesModal({
+  isOpen,
+  templates,
+  isLoading,
+  isLoadingMore,
+  hasMore,
+  searchQuery,
+  selectedTemplateId,
+  onSearchQueryChange,
+  onLoadMore,
+  onUpdate,
+  onDelete,
+  onSelect,
+  onClose,
+}: TemplatesModalProps) {
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
   const [hoveredEditId, setHoveredEditId] = useState<number | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
@@ -39,18 +33,17 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
-    
     if (scrolledToBottom && hasMore && !isLoadingMore && !searchQuery) {
-      loadMoreTemplates();
+      onLoadMore();
     }
   };
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteTemplate(id);
+    await onDelete(id);
   };
 
-  const startEdit = (template: { id: number; name: string }, e: React.MouseEvent) => {
+  const startEdit = (template: TextTemplate, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingTemplateId(template.id);
     setEditingName(template.name || '');
@@ -62,7 +55,7 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
     setEditingName('');
   };
 
-  const saveEdit = async (template: { id: number; name: string }) => {
+  const saveEdit = async (template: TextTemplate) => {
     const nextName = editingName.trim();
     if (!nextName) {
       setEditingName(template.name || '');
@@ -70,31 +63,21 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
       return;
     }
     if (nextName !== template.name) {
-      await updateTemplate(template.id, { name: nextName });
+      await onUpdate(template.id, { name: nextName });
     }
     setEditingTemplateId(null);
-  };
-
-  const handleTemplateClick = (template: { id: number; formatted_content: Record<string, any> }) => {
-    selectTemplate(template.id);
-    onSelectTemplate(template.formatted_content);
-    close();
-  };
-
-  const handleClose = () => {
-    close();
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className={styles.templatesModal} onClick={handleClose}>
+    <div className={styles.templatesModal} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchWrapper}>
           <SearchBar
             placeholder="Введите текст"
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={onSearchQueryChange}
           />
         </div>
 
@@ -115,12 +98,12 @@ export default function TextTemplatesModal({ onSelectTemplate }: TextTemplatesMo
                 <div
                   key={template.id}
                   className={styles.templateItem}
-                  onClick={() => handleTemplateClick(template)}
+                  onClick={() => onSelect(template)}
                 >
                   <Checkbox
                     variant="radio"
                     checked={selectedTemplateId === template.id}
-                    onChange={() => handleTemplateClick(template)}
+                    onChange={() => onSelect(template)}
                   />
                   {editingTemplateId === template.id ? (
                     <div className={styles.templateNameEditor} onClick={(e) => e.stopPropagation()}>

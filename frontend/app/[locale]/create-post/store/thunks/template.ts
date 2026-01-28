@@ -15,7 +15,7 @@ export const saveAsTemplate = createAsyncThunk(
     
     try {
       const name = `Шаблон ${new Date().toLocaleString('ru-RU')}`;
-      await apiRequest('/text-templates', {
+      await apiRequest('/publications/text-templates/', {
         method: 'POST',
         body: JSON.stringify({ name, formatted_content: { text: html } }),
       });

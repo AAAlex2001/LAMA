@@ -37,21 +37,34 @@ import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
 import * as seriesSlice from './store/slices/series';
-import { saveDraft, loadDraftIntoStore } from './store/thunks';
+import * as draftsSlice from './store/slices/drafts';
+import * as templatesSlice from './store/slices/templates';
+import * as replyToPostSlice from './store/slices/replyToPost';
+import * as datePickerSlice from './store/slices/datePicker';
+import {
+  saveDraft,
+  loadDraftIntoStore,
+  fetchDrafts,
+  fetchMoreDrafts,
+  deleteDraftThunk,
+  fetchTemplates,
+  fetchMoreTemplates,
+  updateTemplateThunk,
+  deleteTemplateThunk,
+  fetchPosts,
+  fetchMorePosts,
+  getPostById,
+} from './store/thunks';
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
-import { useReplyToPost } from '@/components/reply-to-post-modal';
-import { useDrafts } from '@/components/drafts-modal';
-import { useTemplates } from '@/components/text-templates-modal';
-import { useDatePicker } from '@/components/date-picker';
 
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
 import type { ButtonRow, InlineButton } from '@/components/inline-buttons/inline-buttons';
-import type { MediaFile, RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from './store/types';
+import type { MediaFile, RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor, Draft, TextTemplate, Post } from './store/types';
 
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
@@ -103,11 +116,16 @@ function CreatePostPageContent() {
   const channelsStore = useChannels();
   const tagsStore = useTags();
   
-  // Context hooks for modals
-  const replyToPostContext = useReplyToPost();
-  const draftsContext = useDrafts();
-  const templatesContext = useTemplates();
-  const datePickerContext = useDatePicker();
+  // Redux Modal State
+  const showDraftsModal = useAppSelector(state => state.ui.showDraftsModal);
+  const showTemplatesModal = useAppSelector(state => state.ui.showTemplatesModal);
+  const showReplyModal = useAppSelector(state => state.ui.showReplyModal);
+  const showDatePickerModal = useAppSelector(state => state.ui.showDatePickerModal);
+  
+  const draftsState = useAppSelector(state => state.drafts);
+  const templatesState = useAppSelector(state => state.templates);
+  const replyToPostState = useAppSelector(state => state.replyToPost);
+  const datePickerState = useAppSelector(state => state.datePicker);
 
   // Computed
   const canAddMedia = buttonRows.length > 0 ? mediaFiles.length < 1 : mediaFiles.length < 10;
@@ -152,8 +170,8 @@ function CreatePostPageContent() {
   }));
 
   useEffect(() => {
-    dispatch(settingsSlice.setReplyToPostId(replyToPostContext.replyToPost?.id ?? null));
-  }, [dispatch, replyToPostContext.replyToPost]);
+    dispatch(settingsSlice.setReplyToPostId(replyToPostState.selectedPost?.id ?? null));
+  }, [dispatch, replyToPostState.selectedPost]);
 
   useEffect(() => {
     channelsStore.fetchChannels();
@@ -335,15 +353,15 @@ function CreatePostPageContent() {
 
         <div className={styles.actionsMenu}>
           <div className={styles.actionsRow}>
-            <Button text="Черновики" variant="templateCard" showArrow={false} icon={<DraftsIcon width={24} height={24} />} className={styles.actionButton} onClick={() => draftsContext.open()} />
+            <Button text="Черновики" variant="templateCard" showArrow={false} icon={<DraftsIcon width={24} height={24} />} className={styles.actionButton} onClick={() => { dispatch(uiSlice.setShowDraftsModal(true)); dispatch(fetchDrafts()); }} />
             <Button text="Кнопки" variant="templateCard" showArrow={false} icon={<InlineButtonIcon width={24} height={24} />} className={styles.actionButton} active={inlineButtonsOpen} disabled={!canShowInlineButtons} onClick={() => dispatch(inlineButtonsSlice.toggle())} />
           </div>
           <div className={styles.actionsRow}>
-            <Button text="Шаблоны" variant="templateCard" showArrow={false} icon={<TemplatesIcon width={24} height={24} />} className={styles.actionButton} onClick={() => templatesContext.open()} />
+            <Button text="Шаблоны" variant="templateCard" showArrow={false} icon={<TemplatesIcon width={24} height={24} />} className={styles.actionButton} onClick={() => { dispatch(uiSlice.setShowTemplatesModal(true)); dispatch(fetchTemplates()); }} />
             <Button text="Опрос" variant="templateCard" showArrow={false} icon={<QuizIcon width={24} height={24} />} className={styles.actionButton} active={quizOpen} onClick={() => dispatch(quizSlice.setOpen(!quizOpen))} />
           </div>
           <div className={styles.actionsRowCenter}>
-            <Button text="Ответ на свой пост" variant="templateCard" showArrow={false} icon={<ReplyIcon width={24} height={24} />} className={styles.actionButtonCenter} disabled={!canReplyToPost} onClick={() => { if (primaryChannel) { replyToPostContext.open(primaryChannel.id); }}} />
+            <Button text="Ответ на свой пост" variant="templateCard" showArrow={false} icon={<ReplyIcon width={24} height={24} />} className={styles.actionButtonCenter} disabled={!canReplyToPost} onClick={() => { if (primaryChannel) { dispatch(uiSlice.setShowReplyModal(true)); dispatch(fetchPosts(primaryChannel.id)); }}} />
           </div>
         </div>
 
@@ -378,7 +396,7 @@ function CreatePostPageContent() {
         <Button text="Сохранить в черновики" showArrow={false} className={styles.saveDraftBtn} onClick={() => dispatch(saveDraft(selectedChannels.map(c => c.id)))} loading={isSavingDraft} disabled={isSavingDraft} />
         <div className={styles.publishRow}>
           <Button text="Опубликовать сейчас" showArrow={false} className={styles.publishNowBtn} onClick={() => { snapshots.length > 1 ? handlePublishSeries() : handlePublishNow(); }} loading={isPublishing} disabled={isPublishing} />
-          <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => datePickerContext.open()} />
+          <Button text="Запланировать" showArrow={false} active loading={isScheduling} disabled={isScheduling} className={styles.scheduleBtn} onClick={() => dispatch(uiSlice.setShowDatePickerModal(true))} />
         </div>
       </div>
     </div>
@@ -413,10 +431,63 @@ function CreatePostPageContent() {
       )}
 
       <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelExtraCount={channelExtraCount} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as MediaPreviewFile[]} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
-      <TextTemplatesModal onSelectTemplate={(formattedContent) => { dispatch(editorSlice.setText(formattedContent?.html || formattedContent?.text || '')); }} />
-      <DraftsModal onSelectDraft={(draft) => { loadDraftIntoStore(draft, dispatch); }} />
-      <ReplyToPostModal />
-      <DatePickerModal onSchedule={handleSchedule} />
+      
+      <DraftsModal
+        isOpen={showDraftsModal}
+        drafts={draftsState.items}
+        isLoading={draftsState.isLoading}
+        isLoadingMore={draftsState.isLoadingMore}
+        hasMore={draftsState.hasMore}
+        searchQuery={draftsState.searchQuery}
+        selectedDraftId={draftsState.selectedDraftId}
+        onSearchQueryChange={(q) => dispatch(draftsSlice.setSearchQuery(q))}
+        onLoadMore={() => dispatch(fetchMoreDrafts())}
+        onDelete={(id) => dispatch(deleteDraftThunk(id))}
+        onSelect={(draft: Draft) => { loadDraftIntoStore(draft, dispatch); dispatch(uiSlice.setShowDraftsModal(false)); }}
+        onClose={() => dispatch(uiSlice.setShowDraftsModal(false))}
+      />
+      
+      <TextTemplatesModal
+        isOpen={showTemplatesModal}
+        templates={templatesState.items}
+        isLoading={templatesState.isLoading}
+        isLoadingMore={templatesState.isLoadingMore}
+        hasMore={templatesState.hasMore}
+        searchQuery={templatesState.searchQuery}
+        selectedTemplateId={templatesState.selectedTemplateId}
+        onSearchQueryChange={(q) => dispatch(templatesSlice.setSearchQuery(q))}
+        onLoadMore={() => dispatch(fetchMoreTemplates())}
+        onUpdate={(id, changes) => dispatch(updateTemplateThunk({ id, changes }))}
+        onDelete={(id) => dispatch(deleteTemplateThunk(id))}
+        onSelect={(template: TextTemplate) => { dispatch(editorSlice.setText(template.formatted_content?.text || '')); dispatch(uiSlice.setShowTemplatesModal(false)); }}
+        onClose={() => dispatch(uiSlice.setShowTemplatesModal(false))}
+      />
+      
+      <ReplyToPostModal
+        isOpen={showReplyModal}
+        posts={replyToPostState.items}
+        isLoading={replyToPostState.isLoading}
+        isLoadingMore={replyToPostState.isLoadingMore}
+        hasMore={replyToPostState.hasMore}
+        searchQuery={replyToPostState.searchQuery}
+        selectedPostId={replyToPostState.selectedPostId}
+        onSearchQueryChange={(q) => dispatch(replyToPostSlice.setSearchQuery(q))}
+        onLoadMore={() => primaryChannel && dispatch(fetchMorePosts(primaryChannel.id))}
+        onSelect={(post: Post) => { dispatch(getPostById(post.id)); dispatch(uiSlice.setShowReplyModal(false)); }}
+        onClose={() => dispatch(uiSlice.setShowReplyModal(false))}
+      />
+      
+      <DatePickerModal
+        isOpen={showDatePickerModal}
+        selectedDate={datePickerState.selectedDate}
+        hours={datePickerState.hours}
+        minutes={datePickerState.minutes}
+        onDateChange={(date) => dispatch(datePickerSlice.setSelectedDate(date))}
+        onHoursChange={(h) => dispatch(datePickerSlice.setHours(h))}
+        onMinutesChange={(m) => dispatch(datePickerSlice.setMinutes(m))}
+        onSchedule={async (scheduledDate) => { await handleSchedule(scheduledDate); dispatch(uiSlice.setShowDatePickerModal(false)); dispatch(datePickerSlice.resetDatePicker()); }}
+        onClose={() => dispatch(uiSlice.setShowDatePickerModal(false))}
+      />
     </div>
   );
 }

@@ -6,80 +6,53 @@ import SearchBar from '@/components/search-bar/search-bar';
 import TrashIcon from '@/components/icons/trash-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import { useDrafts } from './DraftsContext';
-import type { Draft } from '@/stores/drafts';
+import type { DraftsModalProps, Draft } from '@/app/[locale]/create-post/store/types';
 
-interface DraftsModalProps {
-  onSelectDraft: (draft: Draft) => void;
+function getDraftPreview(draft: Draft): string {
+  const text = draft.formatted_content?.text || draft.text_content || '';
+  const plainText = text.replace(/<[^>]*>/g, '');
+  return plainText.length > 80 ? plainText.substring(0, 80) + '...' : plainText;
 }
 
-export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
-  const {
-    drafts,
-    isOpen,
-    isLoading,
-    isLoadingMore,
-    hasMore,
-    searchQuery,
-    selectedDraftId,
-    filteredDrafts,
-    setSearchQuery,
-    deleteDraft,
-    selectDraft,
-    getDraft,
-    loadMoreDrafts,
-    close,
-  } = useDrafts();
-
+export default function DraftsModal({
+  isOpen,
+  drafts,
+  isLoading,
+  isLoadingMore,
+  hasMore,
+  searchQuery,
+  selectedDraftId,
+  onSearchQueryChange,
+  onLoadMore,
+  onDelete,
+  onSelect,
+  onClose,
+}: DraftsModalProps) {
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const scrolledToBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 100;
-    
     if (scrolledToBottom && hasMore && !isLoadingMore && !searchQuery) {
-      loadMoreDrafts();
+      onLoadMore();
     }
   };
 
-  const handleDelete = async (id: number, e: React.MouseEvent) => {
+  const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteDraft(id);
-  };
-
-  const handleDraftClick = async (draft: Draft) => {
-    selectDraft(draft.id);
-    try {
-      const fullDraft = await getDraft(draft.id);
-      onSelectDraft(fullDraft);
-      close();
-    } catch (error) {
-      console.error('Failed to load full draft:', error);
-      onSelectDraft(draft);
-      close();
-    }
-  };
-
-  const handleClose = () => {
-    close();
-  };
-
-  const getDraftPreview = (draft: Draft): string => {
-    const text = draft.formatted_content?.text || draft.text_content || '';
-    const plainText = text.replace(/<[^>]*>/g, '');
-    return plainText.length > 80 ? plainText.substring(0, 80) + '...' : plainText;
+    onDelete(id);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className={styles.draftsModal} onClick={handleClose}>
+    <div className={styles.draftsModal} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchWrapper}>
           <SearchBar
             placeholder="Поиск по черновикам"
             value={searchQuery}
-            onChange={setSearchQuery}
+            onChange={onSearchQueryChange}
           />
         </div>
 
@@ -90,22 +63,22 @@ export default function DraftsModal({ onSelectDraft }: DraftsModalProps) {
             <div className={styles.emptyState}>
               <Loader size={24} color="blue" />
             </div>
-          ) : filteredDrafts.length === 0 ? (
+          ) : drafts.length === 0 ? (
             <div className={styles.emptyState}>
               {searchQuery ? 'Черновики не найдены' : 'У вас пока нет черновиков'}
             </div>
           ) : (
             <>
-              {filteredDrafts.map((draft) => (
+              {drafts.map((draft) => (
                 <div
                   key={draft.id}
                   className={styles.draftItem}
-                  onClick={() => handleDraftClick(draft)}
+                  onClick={() => onSelect(draft)}
                 >
                   <Checkbox
                     variant="radio"
                     checked={selectedDraftId === draft.id}
-                    onChange={() => handleDraftClick(draft)}
+                    onChange={() => onSelect(draft)}
                   />
                   <div className={styles.draftContent}>
                     <span className={styles.draftText}>{getDraftPreview(draft)}</span>
