@@ -75,7 +75,6 @@ function CreatePostPageContent() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
 
-  // Redux State
   const text = useAppSelector(state => state.editor.text);
   const showLinkPreview = useAppSelector(state => state.editor.showLinkPreview);
   const mediaFiles = useAppSelector(state => state.media.files);
@@ -115,11 +114,9 @@ function CreatePostPageContent() {
   const activeIndex = useAppSelector(state => state.series.activeIndex);
   const pollData = selectPollData(quizState);
 
-  // Zustand Stores
   const channelsStore = useChannels();
   const tagsStore = useTags();
-  
-  // Redux Modal State
+
   const showDraftsModal = useAppSelector(state => state.ui.showDraftsModal);
   const showTemplatesModal = useAppSelector(state => state.ui.showTemplatesModal);
   const showReplyModal = useAppSelector(state => state.ui.showReplyModal);
@@ -130,7 +127,6 @@ function CreatePostPageContent() {
   const replyToPostState = useAppSelector(state => state.replyToPost);
   const datePickerState = useAppSelector(state => state.datePicker);
 
-  // Computed
   const canAddMedia = buttonRows.length > 0 ? mediaFiles.length < 1 : mediaFiles.length < 10;
   const canShowInlineButtons = mediaFiles.length <= 1;
   const selectedChannels = channelsStore.channels.filter(c => c.selected);
