@@ -14,7 +14,9 @@ export const saveAsTemplate = createAsyncThunk(
     dispatch(setIsSavingTemplate(true));
     
     try {
-      const name = `Шаблон ${new Date().toLocaleString('ru-RU')}`;
+      const plainText = html.replace(/<[^>]*>/g, '').trim();
+      const name = plainText.length > 30 ? plainText.substring(0, 30) + '...' : plainText;
+      
       await apiRequest('/publications/text-templates/', {
         method: 'POST',
         body: JSON.stringify({ name, formatted_content: { text: html } }),

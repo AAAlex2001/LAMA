@@ -54,12 +54,14 @@ import {
   fetchPosts,
   fetchMorePosts,
   getPostById,
+  saveAsTemplate,
 } from './store/thunks';
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
@@ -68,6 +70,7 @@ import type { MediaFile, RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagCo
 
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotifications();
   const headerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<any>(null);
@@ -342,7 +345,15 @@ function CreatePostPageContent() {
       </div>
 
       <div className={styles.content}>
-        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." onSaveAsTemplate={() => {}} headerRef={headerRef} />
+        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." onSaveAsTemplate={(html) => {
+          dispatch(saveAsTemplate(html)).then((result) => {
+            if (result.meta.requestStatus === 'fulfilled') {
+              showSuccess('Шаблон успешно сохранён');
+            } else if (result.meta.requestStatus === 'rejected') {
+              showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения шаблона');
+            }
+          });
+        }} headerRef={headerRef} />
 
         {text && hasPlainUrlLikeText(text) && (
           <div className={styles.linkPreviewToggle}>
