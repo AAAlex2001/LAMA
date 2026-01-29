@@ -3,7 +3,8 @@
 import PostSettings from '@/components/post-settings/post-settings';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as settingsSlice from '../store/slices/settings';
-import { useTags } from '@/stores/tags';
+import { setTagInputValue, clearSearch, resetTags } from '../store/slices/tags';
+import { fetchTagsThunk, searchTagsThunk, deleteTagThunk } from '../store/thunks';
 import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from '../store/types';
 import type { ChannelsStore } from '@/stores/channels';
 
@@ -15,7 +16,6 @@ interface PostSettingsConnectedProps {
 
 export default function PostSettingsConnected({ channelsStore, onPreview, previewDisabled }: PostSettingsConnectedProps) {
   const dispatch = useAppDispatch();
-  const tagsStore = useTags();
 
   const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
   const selectedTagColor = useAppSelector(state => state.settings.selectedTagColor);
@@ -36,6 +36,14 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
   const autoDeleteInterval = useAppSelector(state => state.settings.autoDeleteInterval);
   const autoDeleteCustomDays = useAppSelector(state => state.settings.autoDeleteCustomDays);
   const autoDeleteCustomHours = useAppSelector(state => state.settings.autoDeleteCustomHours);
+
+  const tagsState = useAppSelector(state => ({
+    recentTags: state.tags.recentTags,
+    searchResults: state.tags.searchResults,
+    tagInputValue: state.tags.tagInputValue,
+    loading: state.tags.loading,
+    searching: state.tags.searching,
+  }));
 
   const selectedChannels = channelsStore.channels.filter(c => c.selected);
   const selectedCount = selectedChannels.length;
@@ -61,6 +69,22 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
 
   const handleSelectTag = (tag: { name: string; color: string }) => {
     dispatch(settingsSlice.selectTag({ ...tag, id: 0, created_at: '' }));
+    dispatch(clearSearch());
+  };
+
+  const handleLoadRecentTags = () => {
+    dispatch(fetchTagsThunk());
+  };
+
+  const handleSearchTags = (query: string) => {
+    dispatch(searchTagsThunk(query));
+  };
+
+  const handleDeleteTag = (name: string) => {
+    const tag = tagsState.recentTags.find(t => t.name === name);
+    if (tag) {
+      dispatch(deleteTagThunk(tag.id));
+    }
   };
 
   return (
@@ -78,21 +102,18 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
       onAddChannel={handleAddChannel}
       onOpenCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(true))}
       onCloseCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(false))}
-      recentTags={tagsStore.recentTags.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
-      searchResults={tagsStore.searchResults.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
-      tagInputValue={tagsStore.tagInputValue}
+      recentTags={tagsState.recentTags.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
+      searchResults={tagsState.searchResults.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
+      tagInputValue={tagsState.tagInputValue}
       selectedTagName={selectedTagName}
       selectedTagColor={selectedTagColor}
-      tagsLoading={tagsStore.loading}
-      tagsSearching={tagsStore.searching}
-      onLoadRecentTags={tagsStore.loadRecentTags}
-      onSearchTags={tagsStore.searchTags}
-      onTagInputChange={tagsStore.setTagInputValue}
+      tagsLoading={tagsState.loading}
+      tagsSearching={tagsState.searching}
+      onLoadRecentTags={handleLoadRecentTags}
+      onSearchTags={handleSearchTags}
+      onTagInputChange={(value: string) => dispatch(setTagInputValue(value))}
       onSelectTag={handleSelectTag}
-      onDeleteTag={(name: string) => {
-        const tag = tagsStore.recentTags.find(t => t.name === name);
-        if (tag) tagsStore.deleteTag(tag.id);
-      }}
+      onDeleteTag={handleDeleteTag}
       onTagColorChange={(color: TagColor) => dispatch(settingsSlice.setSelectedTagColor(color))}
       repeatInterval={repeatInterval}
       repeatCustomDays={repeatCustomDays}
@@ -126,7 +147,10 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
       pinPost={pinPost}
       onNotifyChange={(v: boolean) => dispatch(settingsSlice.setNotifySubscribers(v))}
       onPinChange={(v: boolean) => dispatch(settingsSlice.setPinPost(v))}
-      onReset={() => { dispatch(settingsSlice.resetSettings()); tagsStore.reset(); }}
+      onReset={() => { 
+        dispatch(settingsSlice.resetSettings()); 
+        dispatch(resetTags());
+      }}
     />
   );
 }

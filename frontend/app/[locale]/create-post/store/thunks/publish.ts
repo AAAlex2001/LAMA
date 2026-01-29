@@ -9,6 +9,8 @@ import { resetInlineButtons } from '../slices/inlineButtons';
 import { resetQuiz } from '../slices/quiz';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
+import { resetTags } from '../slices/tags';
+import { fetchTagsThunk } from './tags';
 import { apiRequest } from './api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
 
@@ -45,12 +47,18 @@ export const publishNow = createAsyncThunk(
       
       await apiRequest(`/publications/${createResponse.id}/publish`, { method: 'POST' });
       
+      // Если был создан новый тег, перезагружаем список тегов
+      if (settings.selectedTagName && settings.selectedTagName.trim()) {
+        dispatch(fetchTagsThunk({ force: true }));
+      }
+      
       dispatch(resetEditor());
       dispatch(clearFiles());
       dispatch(resetInlineButtons());
       dispatch(resetQuiz());
       dispatch(resetSettings());
       dispatch(resetSeries());
+      dispatch(resetTags());
       dispatch(resetUi());
       return { success: true, message: 'OK — публикация поставлена в очередь' };
     } catch (err) {

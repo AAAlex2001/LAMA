@@ -7,6 +7,8 @@ import { clearFiles } from '../slices/media';
 import { resetInlineButtons } from '../slices/inlineButtons';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
+import { resetTags } from '../slices/tags';
+import { fetchTagsThunk } from './tags';
 import { apiRequest } from './api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
 
@@ -37,12 +39,18 @@ export const schedulePost = createAsyncThunk(
       
       await apiRequest('/publications', { method: 'POST', body: JSON.stringify(request) });
       
+      // Если был создан новый тег, перезагружаем список тегов
+      if (settings.selectedTagName && settings.selectedTagName.trim()) {
+        dispatch(fetchTagsThunk({ force: true }));
+      }
+      
       dispatch(resetEditor());
       dispatch(clearFiles());
       dispatch(resetInlineButtons());
       dispatch(resetQuiz());
       dispatch(resetSettings());
       dispatch(resetSeries());
+      dispatch(resetTags());
       dispatch(resetUi());
       return { success: true, message: 'Пост успешно запланирован' };
     } catch (err) {
