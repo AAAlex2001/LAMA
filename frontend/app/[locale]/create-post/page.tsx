@@ -179,7 +179,7 @@ function CreatePostPageContent() {
               }
               
               return {
-                id: crypto.randomUUID(),
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 type,
                 file,
                 preview_url,

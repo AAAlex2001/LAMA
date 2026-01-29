@@ -16,16 +16,30 @@
   justify-content: center;
   cursor: grab;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
+  touch-action: none;
+  user-select: none;
 }
 
 .dragging {
   opacity: 0.6;
   cursor: grabbing;
   transform: scale(0.98);
+  pointer-events: none;
 }
 
 .dragOver {
-  box-shadow: 0 0 0 2px #3B82F6 inset;
+  pointer-events: auto;
+  z-index: 1;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 2px solid #3B82F6;
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
+  }
 }
 
 .mediaImage {
@@ -49,6 +63,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 40px;
+  pointer-events: none;
+
+  .controlButton {
+    pointer-events: auto;
+  }
 }
 
 .controlButton {
@@ -164,4 +183,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.dragGhost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.8;
+}
+
+.dragGhostContent {
+  width: 82px;
+  height: 82px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #F8FAFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
