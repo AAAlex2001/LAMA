@@ -1,4 +1,3 @@
-@ -1,310 +0,0 @@
 export type InlineButtonType = 'url' | 'callback' | 'hidden_text';
 
 export interface InlineButton {
