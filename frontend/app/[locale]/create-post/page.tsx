@@ -6,13 +6,15 @@ import styles from './create-post.module.scss';
 import Button from '@/components/button/button';
 import PostSettings from '@/components/post-settings/post-settings';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
-import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import MediaPreview from '@/components/media-preview/media-preview';
-import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
-import DraftsModal from '@/components/drafts-modal/drafts-modal';
-import ReplyToPostModal from '@/components/reply-to-post-modal/reply-to-post-modal';
-import { DatePickerModal } from '@/components/date-picker';
-import QuizForm from '@/components/quiz-form/quiz-form';
+import {
+  QuizFormConnected,
+  InlineButtonsConnected,
+  DraftsModalConnected,
+  TemplatesModalConnected,
+  ReplyModalConnected,
+  DatePickerModalConnected,
+} from './components';
 import Toggle from '@/components/toggle/toggle';
 import PostPreviewModal from '@/components/post-preview-modal';
 import PostAccordion from '@/components/post-accordion/post-accordion';
@@ -36,23 +38,11 @@ import * as inlineButtonsSlice from './store/slices/inlineButtons';
 import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
-import * as draftsSlice from './store/slices/drafts';
-import * as templatesSlice from './store/slices/templates';
-import * as replyToPostSlice from './store/slices/replyToPost';
-import * as datePickerSlice from './store/slices/datePicker';
 import {
   saveDraft,
-  loadDraftIntoStore,
   fetchDrafts,
-  fetchMoreDrafts,
-  deleteDraftThunk,
   fetchTemplates,
-  fetchMoreTemplates,
-  updateTemplateThunk,
-  deleteTemplateThunk,
   fetchPosts,
-  fetchMorePosts,
-  getPostById,
   saveAsTemplate,
 } from './store/thunks';
 import { selectPollData } from './store/slices/quiz';
@@ -64,9 +54,7 @@ import { useTags } from '@/stores/tags';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
-import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
-import type { ButtonRow, InlineButton } from '@/components/inline-buttons/inline-buttons';
-import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor, Draft, TextTemplate, Post } from './store/types';
+import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from './store/types';
 
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
@@ -117,15 +105,7 @@ function CreatePostPageContent() {
   const channelsStore = useChannels();
   const tagsStore = useTags();
 
-  const showDraftsModal = useAppSelector(state => state.ui.showDraftsModal);
-  const showTemplatesModal = useAppSelector(state => state.ui.showTemplatesModal);
-  const showReplyModal = useAppSelector(state => state.ui.showReplyModal);
-  const showDatePickerModal = useAppSelector(state => state.ui.showDatePickerModal);
-  
-  const draftsState = useAppSelector(state => state.drafts);
-  const templatesState = useAppSelector(state => state.templates);
   const replyToPostState = useAppSelector(state => state.replyToPost);
-  const datePickerState = useAppSelector(state => state.datePicker);
 
   const canAddMedia = buttonRows.length > 0 ? mediaFiles.length < 1 : mediaFiles.length < 10;
   const canShowInlineButtons = mediaFiles.length <= 1;
@@ -201,7 +181,7 @@ function CreatePostPageContent() {
     snapshots,
   });
 
-  const { handlePublishNow, handlePublishSeries, handleSchedule } = usePublishHandlers({
+  const { handlePublishNow, handlePublishSeries } = usePublishHandlers({
     dispatch,
     selectedChannels,
     text,
@@ -332,9 +312,9 @@ function CreatePostPageContent() {
           </div>
         </div>
 
-        <InlineButtons className={styles.inlineButtonsSection} isOpen={inlineButtonsOpen} rows={buttonRows as ButtonRow[]} onAddRow={() => dispatch(inlineButtonsSlice.addRow())} onAddColumn={(rowId) => dispatch(inlineButtonsSlice.addColumn(rowId))} onUpdateButton={(rowId, buttonId, updates) => dispatch(inlineButtonsSlice.updateButton({ rowId, buttonId, updates }))} onDeleteButton={(rowId, buttonId) => dispatch(inlineButtonsSlice.deleteButton({ rowId, buttonId }))} />
+        <InlineButtonsConnected className={styles.inlineButtonsSection} />
 
-        <QuizForm isOpen={quizOpen} mode={quizMode as QuizMode} question={quizQuestion} answers={quizAnswers as QuizAnswer[]} correctAnswerId={quizCorrectAnswerId} onModeChange={(mode) => dispatch(quizSlice.setMode(mode))} onQuestionChange={(v) => dispatch(quizSlice.setQuestion(v))} onAnswerChange={(id, text) => dispatch(quizSlice.updateAnswer({ id, text }))} onAddAnswer={() => dispatch(quizSlice.addAnswer())} onRemoveAnswer={(id) => dispatch(quizSlice.removeAnswer(id))} onCorrectAnswerChange={(id) => dispatch(quizSlice.setCorrectAnswer(id))} />
+        <QuizFormConnected />
 
         <div className={styles.mediaSection}>
           <span className={styles.mediaSectionTitle}>Медиа и файлы</span>
@@ -399,62 +379,10 @@ function CreatePostPageContent() {
 
       <PostPreviewModal isOpen={showPreviewModal} onClose={() => dispatch(uiSlice.setShowPreviewModal(false))} channelTitle={primaryChannel?.title} channelExtraCount={channelExtraCount} channelPhotoUrl={primaryChannel?.photo_url} channelMembersCount={primaryChannel?.members_count} html={text} mediaFiles={mediaFiles as MediaPreviewFile[]} quizData={quizPreviewData} inlineKeyboard={inlineKeyboardPreview} />
       
-      <DraftsModal
-        isOpen={showDraftsModal}
-        drafts={draftsState.items}
-        isLoading={draftsState.isLoading}
-        isLoadingMore={draftsState.isLoadingMore}
-        hasMore={draftsState.hasMore}
-        searchQuery={draftsState.searchQuery}
-        selectedDraftId={draftsState.selectedDraftId}
-        onSearchQueryChange={(q) => dispatch(draftsSlice.setSearchQuery(q))}
-        onLoadMore={() => dispatch(fetchMoreDrafts())}
-        onDelete={(id) => dispatch(deleteDraftThunk(id))}
-        onSelect={(draft: Draft) => { loadDraftIntoStore(draft, dispatch); dispatch(uiSlice.setShowDraftsModal(false)); }}
-        onClose={() => dispatch(uiSlice.setShowDraftsModal(false))}
-      />
-      
-      <TextTemplatesModal
-        isOpen={showTemplatesModal}
-        templates={templatesState.items}
-        isLoading={templatesState.isLoading}
-        isLoadingMore={templatesState.isLoadingMore}
-        hasMore={templatesState.hasMore}
-        searchQuery={templatesState.searchQuery}
-        selectedTemplateId={templatesState.selectedTemplateId}
-        onSearchQueryChange={(q) => dispatch(templatesSlice.setSearchQuery(q))}
-        onLoadMore={() => dispatch(fetchMoreTemplates())}
-        onUpdate={(id, changes) => dispatch(updateTemplateThunk({ id, changes }))}
-        onDelete={(id) => dispatch(deleteTemplateThunk(id))}
-        onSelect={(template: TextTemplate) => { dispatch(editorSlice.setText(template.formatted_content?.text || '')); dispatch(uiSlice.setShowTemplatesModal(false)); }}
-        onClose={() => dispatch(uiSlice.setShowTemplatesModal(false))}
-      />
-      
-      <ReplyToPostModal
-        isOpen={showReplyModal}
-        posts={replyToPostState.items}
-        isLoading={replyToPostState.isLoading}
-        isLoadingMore={replyToPostState.isLoadingMore}
-        hasMore={replyToPostState.hasMore}
-        searchQuery={replyToPostState.searchQuery}
-        selectedPostId={replyToPostState.selectedPostId}
-        onSearchQueryChange={(q) => dispatch(replyToPostSlice.setSearchQuery(q))}
-        onLoadMore={() => primaryChannel && dispatch(fetchMorePosts(primaryChannel.id))}
-        onSelect={(post: Post) => { dispatch(getPostById(post.id)); dispatch(uiSlice.setShowReplyModal(false)); }}
-        onClose={() => dispatch(uiSlice.setShowReplyModal(false))}
-      />
-      
-      <DatePickerModal
-        isOpen={showDatePickerModal}
-        selectedDate={datePickerState.selectedDate}
-        hours={datePickerState.hours}
-        minutes={datePickerState.minutes}
-        onDateChange={(date) => dispatch(datePickerSlice.setSelectedDate(date))}
-        onHoursChange={(h) => dispatch(datePickerSlice.setHours(h))}
-        onMinutesChange={(m) => dispatch(datePickerSlice.setMinutes(m))}
-        onSchedule={async (scheduledDate) => { await handleSchedule(scheduledDate); dispatch(uiSlice.setShowDatePickerModal(false)); dispatch(datePickerSlice.resetDatePicker()); }}
-        onClose={() => dispatch(uiSlice.setShowDatePickerModal(false))}
-      />
+      <DraftsModalConnected />
+      <TemplatesModalConnected />
+      <ReplyModalConnected />
+      <DatePickerModalConnected />
     </div>
   );
 }
