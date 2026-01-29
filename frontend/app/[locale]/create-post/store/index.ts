@@ -13,6 +13,7 @@ import templatesReducer from './slices/templates';
 import replyToPostReducer from './slices/replyToPost';
 import datePickerReducer from './slices/datePicker';
 import tagsReducer from './slices/tags';
+import channelsReducer from './slices/channels';
 
 export const createPostStore = configureStore({
   reducer: {
@@ -28,6 +29,7 @@ export const createPostStore = configureStore({
     replyToPost: replyToPostReducer,
     datePicker: datePickerReducer,
     tags: tagsReducer,
+    channels: channelsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

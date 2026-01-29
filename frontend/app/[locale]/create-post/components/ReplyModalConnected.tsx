@@ -5,20 +5,15 @@ import { useAppDispatch, useAppSelector } from '../store';
 import * as replyToPostSlice from '../store/slices/replyToPost';
 import * as uiSlice from '../store/slices/ui';
 import { fetchMorePosts, getPostById } from '../store/thunks';
-import type { ChannelsStore } from '@/stores/channels';
 import type { Post } from '../store/types';
 
-interface ReplyModalConnectedProps {
-  channelsStore: ChannelsStore;
-}
-
-export default function ReplyModalConnected({ channelsStore }: ReplyModalConnectedProps) {
+export default function ReplyModalConnected() {
   const dispatch = useAppDispatch();
 
   const isOpen = useAppSelector(state => state.ui.showReplyModal);
   const replyToPostState = useAppSelector(state => state.replyToPost);
 
-  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
   const primaryChannel = selectedChannels[0];
 
   return (

@@ -1,40 +1,25 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppDispatch } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
-import type { MediaFile, ButtonRow, QuizAnswer, ChannelsResponse, Channel, TagsResponse, Draft, InlineButton } from '../types';
+import type { MediaFile, ButtonRow, QuizAnswer, Draft, InlineButton } from '../types';
 import { setText } from '../slices/editor';
 import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
+import { fetchChannelsThunk } from './channels';
+import { fetchTagsThunk } from './tags';
 
 export const loadChannels = createAsyncThunk(
   'createPost/loadChannels',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await apiRequest<ChannelsResponse | Channel[]>('/channels');
-      const items = Array.isArray(response) ? response : (response.items || []);
-      return items.map((ch: Channel) => ({
-        id: String(ch.id),
-        label: ch.title,
-        checked: ch.selected || false,
-        members_count: ch.members_count,
-        photo_url: ch.photo_url,
-      }));
-    } catch (err) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки каналов');
-    }
+  async (_, { dispatch }) => {
+    return dispatch(fetchChannelsThunk());
   }
 );
 
 export const loadRecentTags = createAsyncThunk(
   'createPost/loadRecentTags',
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await apiRequest<TagsResponse>('/tags');
-      return response.items || [];
-    } catch (err) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки тегов');
-    }
+  async (_, { dispatch }) => {
+    return dispatch(fetchTagsThunk());
   }
 );
 

@@ -32,12 +32,12 @@ import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
 import {
   saveAsTemplate,
+  fetchChannelsThunk,
 } from './store/thunks';
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
 
-import { useChannels } from '@/stores/channels';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 function CreatePostPageContent() {
@@ -54,9 +54,8 @@ function CreatePostPageContent() {
   const snapshots = useAppSelector(state => state.series.snapshots);
   const activeIndex = useAppSelector(state => state.series.activeIndex);
   const pollData = selectPollData(quizState);
-  const channelsStore = useChannels();
   const replyToPostState = useAppSelector(state => state.replyToPost);
-  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
   
   const hasContentForPreview = 
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
@@ -69,9 +68,8 @@ function CreatePostPageContent() {
   }, [dispatch, replyToPostState.selectedPost]);
 
   useEffect(() => {
-    channelsStore.fetchChannels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    dispatch(fetchChannelsThunk({}));
+  }, [dispatch]);
 
   const {
     handleSelectPostSnapshot,
@@ -143,7 +141,6 @@ function CreatePostPageContent() {
         )}
 
         <ActionsMenuConnected
-          channelsStore={channelsStore}
           className={styles.actionsMenu}
           actionsRowClassName={styles.actionsRow}
           actionsRowCenterClassName={styles.actionsRowCenter}
@@ -185,7 +182,6 @@ function CreatePostPageContent() {
       </div>
 
       <FooterButtonsConnected
-        channelsStore={channelsStore}
         className={styles.footerButtons}
         saveDraftBtnClassName={styles.saveDraftBtn}
         publishRowClassName={styles.publishRow}
@@ -214,24 +210,23 @@ function CreatePostPageContent() {
           <Button text="Добавить серию постов" showArrow={false} className={styles.addSeriesBtn} onClick={() => handleAddSeries(currentSnapshot)} />
         </div>
         <div className={styles.settingsPanelDesktop}>
-          <PostSettingsConnected channelsStore={channelsStore} onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))} previewDisabled={!hasContentForPreview} />
+          <PostSettingsConnected onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))} previewDisabled={!hasContentForPreview} />
         </div>
       </div>
 
       <MobileSettingsModalConnected
-        channelsStore={channelsStore}
         overlayClassName={styles.settingsModalOverlay}
         modalClassName={styles.settingsModal}
         onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))}
         previewDisabled={!hasContentForPreview}
       />
 
-      <PostPreviewModalConnected channelsStore={channelsStore} />
+      <PostPreviewModalConnected />
       
       <DraftsModalConnected />
       <TemplatesModalConnected />
-      <ReplyModalConnected channelsStore={channelsStore} />
-      <DatePickerModalConnected channelsStore={channelsStore} />
+      <ReplyModalConnected />
+      <DatePickerModalConnected />
     </div>
   );
 }

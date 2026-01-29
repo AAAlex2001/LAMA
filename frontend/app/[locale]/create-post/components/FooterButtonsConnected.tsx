@@ -4,10 +4,8 @@ import Button from '@/components/button/button';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as uiSlice from '../store/slices/ui';
 import { saveDraft } from '../store/thunks';
-import type { ChannelsStore } from '@/stores/channels';
 
 interface FooterButtonsConnectedProps {
-  channelsStore: ChannelsStore;
   className?: string;
   saveDraftBtnClassName?: string;
   publishRowClassName?: string;
@@ -19,7 +17,6 @@ interface FooterButtonsConnectedProps {
 }
 
 export default function FooterButtonsConnected({
-  channelsStore,
   className,
   saveDraftBtnClassName,
   publishRowClassName,
@@ -35,7 +32,7 @@ export default function FooterButtonsConnected({
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
 
-  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
 
   return (
     <div className={className}>

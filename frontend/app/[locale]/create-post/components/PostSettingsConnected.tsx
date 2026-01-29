@@ -4,17 +4,16 @@ import PostSettings from '@/components/post-settings/post-settings';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as settingsSlice from '../store/slices/settings';
 import { setTagInputValue, clearSearch, resetTags } from '../store/slices/tags';
-import { fetchTagsThunk, searchTagsThunk, deleteTagThunk } from '../store/thunks';
+import { toggleChannelSelected, resetChannels } from '../store/slices/channels';
+import { fetchTagsThunk, searchTagsThunk, deleteTagThunk, fetchChannelsThunk, addChannelThunk } from '../store/thunks';
 import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from '../store/types';
-import type { ChannelsStore } from '@/stores/channels';
 
 interface PostSettingsConnectedProps {
-  channelsStore: ChannelsStore;
   onPreview?: () => void;
   previewDisabled?: boolean;
 }
 
-export default function PostSettingsConnected({ channelsStore, onPreview, previewDisabled }: PostSettingsConnectedProps) {
+export default function PostSettingsConnected({ onPreview, previewDisabled }: PostSettingsConnectedProps) {
   const dispatch = useAppDispatch();
 
   const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
@@ -45,10 +44,17 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
     searching: state.tags.searching,
   }));
 
-  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const channelsState = useAppSelector(state => ({
+    channels: state.channels.channels,
+    loading: state.channels.loading,
+    syncing: state.channels.syncing,
+    error: state.channels.error,
+  }));
+
+  const selectedChannels = channelsState.channels.filter(c => c.selected);
   const selectedCount = selectedChannels.length;
 
-  const channelOptions = channelsStore.channels.map(ch => ({
+  const channelOptions = channelsState.channels.map(ch => ({
     id: String(ch.id),
     label: ch.title,
     checked: ch.selected,
@@ -56,15 +62,25 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
     photo_url: ch.photo_url,
   }));
 
+  const handleFetchChannels = () => {
+    dispatch(fetchChannelsThunk({}));
+  };
+
   const handleChannelChange = (id: string) => {
     const numericId = parseInt(id, 10);
-    if (!isNaN(numericId)) channelsStore.toggleChannelSelected(numericId);
+    if (!isNaN(numericId)) {
+      dispatch(toggleChannelSelected(numericId));
+    }
   };
 
   const handleAddChannel = async (link: string) => {
-    const success = await channelsStore.addChannel(link);
-    if (success) dispatch(settingsSlice.setShowCreateChannel(false));
-    return success;
+    try {
+      const result = await dispatch(addChannelThunk(link)).unwrap();
+      dispatch(settingsSlice.setShowCreateChannel(false));
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleSelectTag = (tag: { name: string; color: string }) => {
@@ -73,7 +89,7 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
   };
 
   const handleLoadRecentTags = () => {
-    dispatch(fetchTagsThunk());
+    dispatch(fetchTagsThunk({}));
   };
 
   const handleSearchTags = (query: string) => {
@@ -92,12 +108,12 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
       onPreview={onPreview}
       previewDisabled={previewDisabled}
       channelOptions={channelOptions}
-      channelsLoading={channelsStore.loading}
-      channelsSyncing={channelsStore.syncing}
+      channelsLoading={channelsState.loading}
+      channelsSyncing={channelsState.syncing}
       selectedCount={selectedCount}
-      totalChannels={channelsStore.channels.length}
+      totalChannels={channelsState.channels.length}
       showCreateChannel={showCreateChannel}
-      onFetchChannels={channelsStore.fetchChannels}
+      onFetchChannels={handleFetchChannels}
       onChannelChange={handleChannelChange}
       onAddChannel={handleAddChannel}
       onOpenCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(true))}
@@ -150,6 +166,7 @@ export default function PostSettingsConnected({ channelsStore, onPreview, previe
       onReset={() => { 
         dispatch(settingsSlice.resetSettings()); 
         dispatch(resetTags());
+        dispatch(resetChannels());
       }}
     />
   );

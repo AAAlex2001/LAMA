@@ -144,6 +144,7 @@ export interface PublicationResponse {
 
 export interface ChannelsResponse {
   items?: Channel[];
+  total?: number;
 }
 
 export interface Channel {
@@ -152,6 +153,21 @@ export interface Channel {
   selected?: boolean;
   members_count?: number;
   photo_url?: string;
+  username?: string;
+  invite_link?: string;
+}
+
+export interface SyncChannelRequest {
+  token: string;
+  telegram_id?: number;
+  username?: string;
+  invite_link?: string;
+}
+
+export interface SyncChannelResponse {
+  success: boolean;
+  message?: string;
+  channel?: Channel;
 }
 
 export interface TagsResponse {

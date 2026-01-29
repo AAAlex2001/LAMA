@@ -13,10 +13,8 @@ import * as inlineButtonsSlice from '../store/slices/inlineButtons';
 import * as quizSlice from '../store/slices/quiz';
 import * as uiSlice from '../store/slices/ui';
 import { fetchDrafts, fetchTemplates, fetchPosts } from '../store/thunks';
-import type { ChannelsStore } from '@/stores/channels';
 
 interface ActionsMenuConnectedProps {
-  channelsStore: ChannelsStore;
   className?: string;
   actionsRowClassName?: string;
   actionsRowCenterClassName?: string;
@@ -25,7 +23,6 @@ interface ActionsMenuConnectedProps {
 }
 
 export default function ActionsMenuConnected({
-  channelsStore,
   className,
   actionsRowClassName,
   actionsRowCenterClassName,
@@ -40,7 +37,7 @@ export default function ActionsMenuConnected({
 
   const canShowInlineButtons = mediaFiles.length <= 1;
   
-  const selectedChannels = channelsStore.channels.filter(c => c.selected);
+  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
   const selectedCount = selectedChannels.length;
   const canReplyToPost = selectedCount === 1;
   const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;
