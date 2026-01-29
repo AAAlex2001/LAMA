@@ -50,6 +50,18 @@ const channelsSlice = createSlice({
       }
     },
     
+    selectAllChannels(state) {
+      state.channels.forEach(ch => {
+        ch.selected = true;
+      });
+    },
+    
+    deselectAllChannels(state) {
+      state.channels.forEach(ch => {
+        ch.selected = false;
+      });
+    },
+    
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
     },
@@ -82,6 +94,8 @@ export const {
   updateChannel,
   removeChannel,
   toggleChannelSelected,
+  selectAllChannels,
+  deselectAllChannels,
   setLoading,
   setSyncing,
   setError,

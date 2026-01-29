@@ -4,7 +4,9 @@ import PostSettings from '@/components/post-settings/post-settings';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as settingsSlice from '../store/slices/settings';
 import { setTagInputValue, clearSearch, resetTags } from '../store/slices/tags';
-import { toggleChannelSelected, resetChannels } from '../store/slices/channels';
+import { toggleChannelSelected, deselectAllChannels } from '../store/slices/channels';
+import { resetDatePicker } from '../store/slices/datePicker';
+import { resetReplyToPost } from '../store/slices/replyToPost';
 import { fetchTagsThunk, searchTagsThunk, deleteTagThunk, fetchChannelsThunk, addChannelThunk } from '../store/thunks';
 import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from '../store/types';
 
@@ -164,9 +166,11 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       onNotifyChange={(v: boolean) => dispatch(settingsSlice.setNotifySubscribers(v))}
       onPinChange={(v: boolean) => dispatch(settingsSlice.setPinPost(v))}
       onReset={() => { 
-        dispatch(settingsSlice.resetSettings()); 
+        dispatch(settingsSlice.resetSettings());
         dispatch(resetTags());
-        dispatch(resetChannels());
+        dispatch(deselectAllChannels());
+        dispatch(resetDatePicker());
+        dispatch(resetReplyToPost());
       }}
     />
   );

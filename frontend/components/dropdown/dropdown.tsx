@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styles from './base.module.scss';
 import classNames from 'classnames';
 import { ChevronDownIcon } from '@/components/icons';
@@ -87,6 +87,12 @@ export default function Dropdown({
   const [internalIsOpen, setInternalIsOpen] = useState(variant === 'channels');
   const [repeatViewMode, setRepeatViewMode] = useState<RepeatViewMode>('list');
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (repeatValue === 'never') {
+      setRepeatViewMode('list');
+    }
+  }, [repeatValue]);
 
   // Используем контролируемое состояние если передано, иначе внутреннее
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;

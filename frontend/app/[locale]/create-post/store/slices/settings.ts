@@ -65,9 +65,9 @@ const initialState: SettingsState = {
   repeatCustomUnit: 'days',
   repeatCustomValue: 1,
   repeatWeekdays: [],
-  repeatMonthDays: [new Date().getDate()],
-  repeatYearMonth: new Date().getMonth(),
-  repeatYearDays: [new Date().getDate()],
+  repeatMonthDays: [1],
+  repeatYearMonth: 0,
+  repeatYearDays: [1],
   repeatEndType: 'never',
   repeatEndDate: null,
   
@@ -188,12 +188,8 @@ const settingsSlice = createSlice({
       state.replyToPostId = action.payload;
     },
     
-    reset(state) {
-      Object.assign(state, {
-        ...initialState,
-        channels: state.channels,
-        recentTags: state.recentTags,
-      });
+    reset() {
+      return initialState;
     },
   },
 });
