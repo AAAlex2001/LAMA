@@ -1,0 +1,102 @@
+.replyToPostInfo {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 40px;
+  width: 100%;
+  max-width: 330px;
+}
+
+.postDetails {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0px;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.time {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+}
+
+.date {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.deleteButtonWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.deleteButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0px;
+  gap: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.1);
+  }
+}
+
+.deleteTooltip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
+  background: #CBDBFF;
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: #CBDBFF;
+    margin-bottom: -4px;
+  }
+}

@@ -19,6 +19,7 @@ import {
   PostPreviewModalConnected,
   ActionsMenuConnected,
   MobileSettingsModalConnected,
+  ReplyToPostInfoConnected,
 } from './components';
 import Toggle from '@/components/toggle/toggle';
 import PostAccordion from '@/components/post-accordion/post-accordion';
@@ -149,6 +150,8 @@ function CreatePostPageContent() {
           actionButtonClassName={styles.actionButton}
           actionButtonCenterClassName={styles.actionButtonCenter}
         />
+
+        <ReplyToPostInfoConnected />
 
         <InlineButtonsConnected className={styles.inlineButtonsSection} />
 

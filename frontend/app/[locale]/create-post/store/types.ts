@@ -245,6 +245,7 @@ export interface Post {
   content_type: ContentType;
   status: string;
   text_content?: string;
+  text?: string;
   formatted_content?: Record<string, any>;
   media_urls?: string[];
   media_thumbnail_urls?: Array<string | null>;
@@ -255,6 +256,7 @@ export interface Post {
   reply_to_post_id?: number;
   created_at: string;
   updated_at: string;
+  published_at: string;
   channels: Channel[];
   tags: Tag[];
 }

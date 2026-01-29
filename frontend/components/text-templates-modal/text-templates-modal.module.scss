@@ -14,7 +14,7 @@
 
 .modalContent {
   width: 100%;
-  max-width: 442px;
+  max-width: 450px;
   background: #F0F4FA;
   border-radius: 12px;
   padding: 24px 26px;
@@ -61,6 +61,7 @@
 .templatesList {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   max-height: 400px;
   
   &::-webkit-scrollbar {
@@ -86,7 +87,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 3px;
+  padding: 12px 33px 12px 3px;
   cursor: pointer;
   
   &:hover {
@@ -155,9 +156,9 @@
 
 .deleteTooltip {
   position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
+  left: 50%;
+  top: calc(100% + 8px);
+  transform: translateX(-50%);
   background: #CBDBFF;
   color: #000000;
   padding: 4px 8px;
@@ -172,12 +173,13 @@
   &::after {
     content: '';
     position: absolute;
-    right: -4px;
-    top: 50%;
-    transform: translateY(-50%) rotate(45deg);
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%) rotate(45deg);
     width: 8px;
     height: 8px;
     background: #CBDBFF;
+    margin-bottom: -4px;
   }
 }
 

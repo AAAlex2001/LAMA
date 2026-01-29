@@ -11,3 +11,4 @@ export { default as MediaSectionConnected } from './MediaSectionConnected';
 export { default as PostPreviewModalConnected } from './PostPreviewModalConnected';
 export { default as ActionsMenuConnected } from './ActionsMenuConnected';
 export { default as MobileSettingsModalConnected } from './MobileSettingsModalConnected';
+export { default as ReplyToPostInfoConnected } from './ReplyToPostInfoConnected';

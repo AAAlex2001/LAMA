@@ -9,6 +9,7 @@ import { resetQuiz } from '../slices/quiz';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
 import { resetTags } from '../slices/tags';
+import { resetReplyToPost } from '../slices/replyToPost';
 import { fetchTagsThunk } from './tags';
 import { apiRequest } from './api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
@@ -120,6 +121,7 @@ export const publishSeries = createAsyncThunk(
       dispatch(resetSettings());
       dispatch(resetSeries());
       dispatch(resetTags());
+      dispatch(resetReplyToPost());
       dispatch(resetUi());
       return { success: true, message: `Серия из ${snapshots.length} постов опубликована` };
     } catch (err) {
