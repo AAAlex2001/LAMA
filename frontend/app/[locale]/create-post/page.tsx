@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import styles from './create-post.module.scss';
 
 import Button from '@/components/button/button';
@@ -36,7 +36,6 @@ import * as inlineButtonsSlice from './store/slices/inlineButtons';
 import * as quizSlice from './store/slices/quiz';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
-import * as seriesSlice from './store/slices/series';
 import * as draftsSlice from './store/slices/drafts';
 import * as templatesSlice from './store/slices/templates';
 import * as replyToPostSlice from './store/slices/replyToPost';
@@ -58,6 +57,7 @@ import {
 } from './store/thunks';
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
+import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
 
 import { useChannels } from '@/stores/channels';
 import { useTags } from '@/stores/tags';
@@ -66,7 +66,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 import type { QuizMode, QuizAnswer } from '@/components/quiz-form/quiz-form';
 import type { ButtonRow, InlineButton } from '@/components/inline-buttons/inline-buttons';
-import type { MediaFile, RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor, Draft, TextTemplate, Post } from './store/types';
+import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor, Draft, TextTemplate, Post } from './store/types';
 
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
@@ -174,72 +174,32 @@ function CreatePostPageContent() {
 
   useEffect(() => {
     channelsStore.fetchChannels();
-  }, [channelsStore]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const newFiles: MediaFile[] = Array.from(files).map(file => {
-      const type = file.type.startsWith('video/') ? 'video' 
-        : file.type.startsWith('image/') ? 'image' : 'document';
-      return {
-        id: crypto.randomUUID(),
-        type,
-        file,
-        preview_url: type === 'image' ? URL.createObjectURL(file) : undefined,
-        size: file.size,
-        blur: false,
-      };
-    });
-    dispatch(mediaSlice.addFiles(newFiles));
-    e.target.value = '';
-  }, [dispatch]);
-
-  const handleMoveMedia = useCallback((fromId: string, toId: string) => {
-    dispatch(mediaSlice.moveFile({ sourceId: fromId, targetId: toId }));
-  }, [dispatch]);
-
-  const handleChannelChange = useCallback((id: string) => {
-    const numericId = parseInt(id, 10);
-    if (!isNaN(numericId)) channelsStore.toggleChannelSelected(numericId);
-  }, [channelsStore]);
-
-  const handleAddChannel = useCallback(async (link: string) => {
-    const success = await channelsStore.addChannel(link);
-    if (success) dispatch(settingsSlice.setShowCreateChannel(false));
-    return success;
-  }, [channelsStore, dispatch]);
-
-  const handleSelectTag = useCallback((tag: { name: string; color: string }) => {
-    dispatch(settingsSlice.selectTag({ ...tag, id: 0, created_at: '' }));
-  }, [dispatch]);
-
-  const handleSelectPostSnapshot = useCallback((index: number) => {
-    const currentSnapshot = { text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview };
-    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
-    dispatch(seriesSlice.setActiveIndex(index));
-    const snapshot = snapshots[index];
-    if (snapshot) {
-      dispatch(editorSlice.setText(snapshot.text));
-      dispatch(mediaSlice.setFiles(snapshot.mediaFiles));
-      dispatch(inlineButtonsSlice.setRows(snapshot.buttonRows));
-      if (snapshot.quizOpen) {
-        dispatch(quizSlice.openQuiz());
-      } else {
-        dispatch(quizSlice.closeQuiz());
-      }
-      dispatch(quizSlice.setMode(snapshot.quizMode));
-      dispatch(quizSlice.setQuestion(snapshot.quizQuestion));
-      dispatch(quizSlice.setAnswers(snapshot.quizAnswers));
-      dispatch(editorSlice.setShowLinkPreview(snapshot.showLinkPreview));
-    }
-  }, [dispatch, activeIndex, snapshots, text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview]);
-
-  const handleAddSeries = useCallback(() => {
-    const currentSnapshot = { text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview };
-    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
-    dispatch(seriesSlice.addPost());
-  }, [dispatch, text, mediaFiles, inlineButtonsOpen, buttonRows, quizOpen, quizMode, quizQuestion, quizAnswers, quizCorrectAnswerId, showLinkPreview]);
+  const {
+    handleFileUpload,
+    handleMoveMedia,
+    handleChannelChange,
+    handleAddChannel,
+    handleSelectTag,
+    handleSelectPostSnapshot,
+    handleAddSeries,
+  } = useCreatePostHandlers({
+    dispatch,
+    channelsStore,
+    text,
+    mediaFiles,
+    inlineButtonsOpen,
+    buttonRows,
+    quizOpen,
+    quizMode,
+    quizQuestion,
+    quizAnswers,
+    quizCorrectAnswerId,
+    showLinkPreview,
+    snapshots,
+  });
 
   const { handlePublishNow, handlePublishSeries, handleSchedule } = usePublishHandlers({
     dispatch,
