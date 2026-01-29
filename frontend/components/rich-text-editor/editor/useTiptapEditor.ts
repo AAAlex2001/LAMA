@@ -223,6 +223,8 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        link: false,
+        underline: false,
       }),
       CustomCodeBlock.configure({
         lowlight,

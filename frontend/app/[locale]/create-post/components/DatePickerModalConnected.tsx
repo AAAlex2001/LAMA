@@ -2,6 +2,7 @@
 
 import { DatePickerModal } from '@/components/date-picker';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectSelectedChannels } from '../store/selectors';
 import * as datePickerSlice from '../store/slices/datePicker';
 import * as uiSlice from '../store/slices/ui';
 import { schedulePost } from '../store/thunks';
@@ -14,7 +15,7 @@ export default function DatePickerModalConnected() {
   const isOpen = useAppSelector(state => state.ui.showDatePickerModal);
   const datePickerState = useAppSelector(state => state.datePicker);
 
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
 
   const handleSchedule = async (scheduledDate: Date) => {
     try {

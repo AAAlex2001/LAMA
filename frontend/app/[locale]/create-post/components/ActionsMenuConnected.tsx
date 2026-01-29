@@ -9,6 +9,7 @@ import {
   ReplyIcon,
 } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectSelectedChannels } from '../store/selectors';
 import * as inlineButtonsSlice from '../store/slices/inlineButtons';
 import * as quizSlice from '../store/slices/quiz';
 import * as uiSlice from '../store/slices/ui';
@@ -37,7 +38,7 @@ export default function ActionsMenuConnected({
 
   const canShowInlineButtons = mediaFiles.length <= 1;
   
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
   const selectedCount = selectedChannels.length;
   const canReplyToPost = selectedCount === 1;
   const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;

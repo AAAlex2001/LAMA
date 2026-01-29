@@ -26,6 +26,7 @@ import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-u
 
 import { CreatePostProvider } from './store/provider';
 import { useAppDispatch, useAppSelector } from './store';
+import { selectSelectedChannels } from './store/selectors';
 import * as editorSlice from './store/slices/editor';
 import * as mediaSlice from './store/slices/media';
 import * as settingsSlice from './store/slices/settings';
@@ -56,7 +57,7 @@ function CreatePostPageContent() {
   const activeIndex = useAppSelector(state => state.series.activeIndex);
   const pollData = selectPollData(quizState);
   const replyToPostState = useAppSelector(state => state.replyToPost);
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
   
   const hasContentForPreview = 
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||

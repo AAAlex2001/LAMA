@@ -2,6 +2,7 @@
 
 import ReplyToPostModal from '@/components/reply-to-post-modal/reply-to-post-modal';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectSelectedChannels } from '../store/selectors';
 import * as replyToPostSlice from '../store/slices/replyToPost';
 import * as uiSlice from '../store/slices/ui';
 import { fetchMorePosts, getPostById } from '../store/thunks';
@@ -13,7 +14,7 @@ export default function ReplyModalConnected() {
   const isOpen = useAppSelector(state => state.ui.showReplyModal);
   const replyToPostState = useAppSelector(state => state.replyToPost);
 
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
   const primaryChannel = selectedChannels[0];
 
   return (

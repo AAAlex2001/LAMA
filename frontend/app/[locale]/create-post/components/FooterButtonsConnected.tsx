@@ -2,6 +2,7 @@
 
 import Button from '@/components/button/button';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectSelectedChannels } from '../store/selectors';
 import * as uiSlice from '../store/slices/ui';
 import { saveDraft } from '../store/thunks';
 
@@ -32,7 +33,7 @@ export default function FooterButtonsConnected({
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
 
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
 
   return (
     <div className={className}>

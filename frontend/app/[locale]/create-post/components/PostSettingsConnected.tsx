@@ -2,6 +2,7 @@
 
 import PostSettings from '@/components/post-settings/post-settings';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectChannelsState, selectTagsState } from '../store/selectors';
 import * as settingsSlice from '../store/slices/settings';
 import { setTagInputValue, clearSearch, resetTags } from '../store/slices/tags';
 import { toggleChannelSelected, deselectAllChannels } from '../store/slices/channels';
@@ -38,20 +39,9 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
   const autoDeleteCustomDays = useAppSelector(state => state.settings.autoDeleteCustomDays);
   const autoDeleteCustomHours = useAppSelector(state => state.settings.autoDeleteCustomHours);
 
-  const tagsState = useAppSelector(state => ({
-    recentTags: state.tags.recentTags,
-    searchResults: state.tags.searchResults,
-    tagInputValue: state.tags.tagInputValue,
-    loading: state.tags.loading,
-    searching: state.tags.searching,
-  }));
+  const tagsState = useAppSelector(selectTagsState);
 
-  const channelsState = useAppSelector(state => ({
-    channels: state.channels.channels,
-    loading: state.channels.loading,
-    syncing: state.channels.syncing,
-    error: state.channels.error,
-  }));
+  const channelsState = useAppSelector(selectChannelsState);
 
   const selectedChannels = channelsState.channels.filter(c => c.selected);
   const selectedCount = selectedChannels.length;

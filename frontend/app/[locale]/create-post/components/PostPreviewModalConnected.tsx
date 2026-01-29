@@ -2,6 +2,7 @@
 
 import PostPreviewModal from '@/components/post-preview-modal';
 import { useAppDispatch, useAppSelector } from '../store';
+import { selectSelectedChannels } from '../store/selectors';
 import * as uiSlice from '../store/slices/ui';
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 
@@ -20,7 +21,7 @@ export default function PostPreviewModalConnected() {
   const quizAnswers = quizState.answers;
   const quizCorrectAnswerId = quizState.correctAnswerId;
 
-  const selectedChannels = useAppSelector(state => state.channels.channels.filter(c => c.selected));
+  const selectedChannels = useAppSelector(selectSelectedChannels);
   const selectedCount = selectedChannels.length;
   const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;
   const channelExtraCount = selectedCount > 1 ? `+${selectedCount - 1}` : undefined;
