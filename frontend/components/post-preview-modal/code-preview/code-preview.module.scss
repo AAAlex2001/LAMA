@@ -55,13 +55,75 @@
 }
 
 .codeContent {
-  font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 18px;
-  color: #383f45;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
+  margin: 0;
+  padding: 0;
+  background: transparent;
   width: 100%;
+  overflow-x: auto;
+
+  code {
+    display: block;
+    font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 18px;
+    color: #383f45;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  // Syntax highlighting colors
+  :global(.hljs-keyword),
+  :global(.hljs-selector-tag),
+  :global(.hljs-built_in),
+  :global(.hljs-name) {
+    color: #c678dd;
+  }
+
+  :global(.hljs-string),
+  :global(.hljs-attr),
+  :global(.hljs-symbol),
+  :global(.hljs-bullet),
+  :global(.hljs-addition) {
+    color: #98c379;
+  }
+
+  :global(.hljs-number),
+  :global(.hljs-literal) {
+    color: #d19a66;
+  }
+
+  :global(.hljs-comment),
+  :global(.hljs-quote),
+  :global(.hljs-deletion) {
+    color: #5c6370;
+    font-style: italic;
+  }
+
+  :global(.hljs-title),
+  :global(.hljs-section),
+  :global(.hljs-class .hljs-title),
+  :global(.hljs-function .hljs-title) {
+    color: #61afef;
+  }
+
+  :global(.hljs-variable),
+  :global(.hljs-template-variable),
+  :global(.hljs-attribute) {
+    color: #e06c75;
+  }
+
+  :global(.hljs-type),
+  :global(.hljs-params) {
+    color: #e5c07b;
+  }
+
+  :global(.hljs-meta) {
+    color: #56b6c2;
+  }
+
+  :global(.hljs-punctuation) {
+    color: #abb2bf;
+  }
 }

@@ -5,6 +5,8 @@ import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { common, createLowlight } from 'lowlight';
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
@@ -12,6 +14,58 @@ import type { SelectionRange } from '../store/types';
 
 import type { TextFormat, EditorState } from './types';
 import { isValidUrl } from './link-utils';
+import { detectLanguage, isCodeLike } from './detect-language';
+import nginxLang from 'highlight.js/lib/languages/nginx';
+import dockerfileLang from 'highlight.js/lib/languages/dockerfile';
+
+const lowlight = createLowlight(common);
+lowlight.register('nginx', nginxLang);
+lowlight.register('dockerfile', dockerfileLang);
+
+const CustomCodeBlock = CodeBlockLowlight.extend({
+  renderHTML({ node, HTMLAttributes }) {
+    return [
+      'pre',
+      { ...HTMLAttributes, 'data-language': node.attrs.language || 'plaintext' },
+      ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : '' }, 0],
+    ];
+  },
+});
+
+const AutoCodeDetect = Extension.create({
+  name: 'autoCodeDetect',
+
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (view, event) => {
+            const text = event.clipboardData?.getData('text/plain');
+            if (!text) return false;
+
+            if (view.state.selection.$from.parent.type.name === 'codeBlock') {
+              return false;
+            }
+
+            if (isCodeLike(text)) {
+              const lang = detectLanguage(text);
+              const { tr } = view.state;
+              const node = view.state.schema.nodes.codeBlock.create(
+                { language: lang },
+                view.state.schema.text(text)
+              );
+              tr.replaceSelectionWith(node);
+              view.dispatch(tr);
+              return true;
+            }
+
+            return false;
+          },
+        },
+      }),
+    ];
+  },
+});
 
 function countGraphemes(text: string): number {
   const Segmenter = (Intl as any)?.Segmenter as
@@ -165,7 +219,14 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false,
+      }),
+      CustomCodeBlock.configure({
+        lowlight,
+        defaultLanguage: 'plaintext',
+      }),
+      AutoCodeDetect,
       Underline,
       SpoilerMark,
       OverLimitHighlight,
@@ -211,10 +272,12 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     editor,
     selector: (ctx): EditorState | null => {
       if (!ctx.editor) return null;
-      
+
       const { from, to } = ctx.editor.state.selection;
       const text = getTextForCount(ctx.editor.state.doc);
-      
+      const isInCodeBlock = ctx.editor.isActive('codeBlock');
+      const codeBlockAttrs = isInCodeBlock ? ctx.editor.getAttributes('codeBlock') : null;
+
       return {
         html: ctx.editor.getHTML(),
         text,
@@ -229,6 +292,8 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
           code: ctx.editor.isActive('code'),
           spoiler: ctx.editor.isActive('spoiler'),
         },
+        isInCodeBlock,
+        codeBlockLanguage: codeBlockAttrs?.language || null,
       };
     },
   });
@@ -265,11 +330,50 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     editor.chain().focus().insertContent(content).run();
   };
 
+  const insertCodeBlock = (code: string, language?: string) => {
+    if (!editor) return;
+    const detectedLang = language || detectLanguage(code);
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'codeBlock',
+        attrs: { language: detectedLang },
+        content: [{ type: 'text', text: code }],
+      })
+      .run();
+  };
+
+  const toggleCodeBlock = () => {
+    if (!editor) return;
+
+    const { from, to } = editor.state.selection;
+    if (from !== to) {
+      const selectedText = editor.state.doc.textBetween(from, to, '\n');
+      const detectedLang = detectLanguage(selectedText);
+      editor
+        .chain()
+        .focus()
+        .toggleCodeBlock({ language: detectedLang })
+        .run();
+    } else {
+      editor.chain().focus().toggleCodeBlock().run();
+    }
+  };
+
+  const updateCodeBlockLanguage = (language: string) => {
+    if (!editor) return;
+    editor.chain().focus().updateAttributes('codeBlock', { language }).run();
+  };
+
   return {
     editor,
     state: editorState,
     toggleFormat,
     insertContent,
+    insertCodeBlock,
+    toggleCodeBlock,
+    updateCodeBlockLanguage,
     setAiHighlight: (range: SelectionRange | null, enabled: boolean) => {
       if (!editor) return;
       editor.view.dispatch(editor.state.tr.setMeta(aiSelectionKey, { range, enabled }));

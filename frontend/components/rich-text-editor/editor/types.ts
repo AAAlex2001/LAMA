@@ -16,4 +16,6 @@ export interface EditorState {
   isEmpty: boolean;
   hasSelection: boolean;
   formats: ActiveFormats;
+  isInCodeBlock: boolean;
+  codeBlockLanguage: string | null;
 }

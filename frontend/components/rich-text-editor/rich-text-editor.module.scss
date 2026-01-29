@@ -113,6 +113,103 @@
     border-radius: 4px;
     color: #1f2937;
   }
+
+  pre {
+    position: relative;
+    margin: 8px 0;
+    padding: 32px 12px 12px 12px;
+    background: linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.05) 0%,
+      rgba(47, 103, 195, 0.05) 50%,
+      rgba(41, 90, 170, 0.05) 75%,
+      rgba(38, 83, 157, 0.05) 87.5%,
+      rgba(36, 79, 150, 0.05) 93.75%,
+      rgba(35, 76, 144, 0.05) 100%
+    );
+    border-radius: 8px;
+    border-left: 4px solid #ced2d6;
+    overflow-x: auto;
+
+    &::before {
+      content: attr(data-language);
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 12px;
+      line-height: 15px;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+
+    code {
+      display: block;
+      font-family: 'Fira Code', 'Consolas', 'Monaco', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      background: transparent;
+      padding: 0;
+      border-radius: 0;
+      color: #383f45;
+      white-space: pre;
+    }
+
+    // Syntax highlighting colors
+    :global(.hljs-keyword),
+    :global(.hljs-selector-tag),
+    :global(.hljs-built_in),
+    :global(.hljs-name) {
+      color: #c678dd;
+    }
+
+    :global(.hljs-string),
+    :global(.hljs-attr),
+    :global(.hljs-symbol),
+    :global(.hljs-bullet),
+    :global(.hljs-addition) {
+      color: #98c379;
+    }
+
+    :global(.hljs-number),
+    :global(.hljs-literal) {
+      color: #d19a66;
+    }
+
+    :global(.hljs-comment),
+    :global(.hljs-quote),
+    :global(.hljs-deletion) {
+      color: #5c6370;
+      font-style: italic;
+    }
+
+    :global(.hljs-title),
+    :global(.hljs-section),
+    :global(.hljs-class .hljs-title),
+    :global(.hljs-function .hljs-title) {
+      color: #61afef;
+    }
+
+    :global(.hljs-variable),
+    :global(.hljs-template-variable),
+    :global(.hljs-attribute) {
+      color: #e06c75;
+    }
+
+    :global(.hljs-type),
+    :global(.hljs-params) {
+      color: #e5c07b;
+    }
+
+    :global(.hljs-meta) {
+      color: #56b6c2;
+    }
+
+    :global(.hljs-punctuation) {
+      color: #abb2bf;
+    }
+  }
 }
 
 

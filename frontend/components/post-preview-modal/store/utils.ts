@@ -156,7 +156,7 @@ export function extractBlockquotes(html: string): { mainHtml: string; blockquote
 
   const parts: HtmlPart[] = [];
   const blockquotes: string[] = [];
-  const combinedRegex = /<blockquote[^>]*>([\s\S]*?)<\/blockquote>|<pre[^>]*>(?:<code[^>]*(?:\s+class="language-(\w+)")?[^>]*>)?([\s\S]*?)(?:<\/code>)?<\/pre>/gi;
+  const combinedRegex = /<blockquote[^>]*>([\s\S]*?)<\/blockquote>|<pre(?:\s+data-language="([^"]+)")?[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi;
   
   let lastIndex = 0;
   let match;
