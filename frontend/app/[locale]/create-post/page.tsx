@@ -37,6 +37,7 @@ import {
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
+import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
@@ -159,21 +160,35 @@ function CreatePostPageContent() {
           dropzoneClassName={styles.mediaDropzone}
           dropzoneTextClassName={styles.dropzoneText}
           dropzoneContentClassName={styles.mediaDropzoneContent}
-          onFileUpload={(e) => {
+          onFileUpload={async (e) => {
             const files = e.target.files;
             if (!files) return;
-            const newFiles = Array.from(files).map(file => {
+            
+            const filePromises = Array.from(files).map(async (file) => {
               const type: 'video' | 'image' | 'document' = file.type.startsWith('video/') ? 'video'
                 : file.type.startsWith('image/') ? 'image' : 'document';
+              
+              let preview_url: string | undefined;
+              let thumbnail_url: string | undefined;
+              
+              if (type === 'image') {
+                preview_url = await compressImageForPreview(file);
+              } else if (type === 'video') {
+                thumbnail_url = await createVideoThumbnail(file);
+              }
+              
               return {
                 id: crypto.randomUUID(),
                 type,
                 file,
-                preview_url: type === 'image' ? URL.createObjectURL(file) : undefined,
+                preview_url,
+                thumbnail_url,
                 size: file.size,
                 blur: false,
               };
             });
+            
+            const newFiles = await Promise.all(filePromises);
             dispatch(mediaSlice.addFiles(newFiles));
             e.target.value = '';
           }}

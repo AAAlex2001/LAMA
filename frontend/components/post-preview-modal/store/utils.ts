@@ -1,4 +1,5 @@
 import type { MediaFile } from '@/components/media-preview';
+import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 import type { DocumentPreviewItem, MediaPreviewItem } from './types';
 
 export type MediaRun =
@@ -127,17 +128,31 @@ export function createMediaRuns(
   return runs;
 }
 
-export function createObjectUrls(mediaFiles: MediaFile[]): Map<string, string> {
+export async function createObjectUrls(mediaFiles: MediaFile[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
-  for (const m of mediaFiles) {
-    if (m.file) {
-      map.set(m.id, URL.createObjectURL(m.file));
-    }
-  }
+  
+  await Promise.all(
+    mediaFiles.map(async (m) => {
+      if (!m.file) return;
+      
+      if (m.type === 'image') {
+        const compressed = await compressImageForPreview(m.file);
+        map.set(m.id, compressed);
+      } else if (m.type === 'video') {
+        const thumbnail = await createVideoThumbnail(m.file);
+        map.set(m.id, thumbnail);
+      } else {
+        map.set(m.id, URL.createObjectURL(m.file));
+      }
+    })
+  );
+  
   return map;
 }
 
 export function revokeObjectUrls(urls: Map<string, string>): void {
+  if (!urls || typeof urls.values !== 'function') return;
+  
   for (const url of urls.values()) {
     if (url.startsWith('blob:')) {
       URL.revokeObjectURL(url);

@@ -52,11 +52,11 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   } = props;
 
   const [avatarBroken, setAvatarBroken] = useState(false);
+  const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
 
   const avatarSrc = avatarBroken ? '' : normalizeMaybeUrl(channelPhotoUrl);
   const channelMembersLabel = formatMembersCount(channelMembersCount);
   
-  const objectUrls = createObjectUrls(mediaFiles);
   const firstIsDocument = mediaFiles[0]?.type === 'document';
   const headMedia = firstIsDocument ? mediaFiles.slice(0, 1) : mediaFiles;
   const tailMedia = firstIsDocument ? mediaFiles.slice(1) : [];
@@ -67,8 +67,16 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   const hasContent = headRuns.length > 0 || parts.length > 0 || tailRuns.length > 0;
 
   useEffect(() => {
-    return () => revokeObjectUrls(objectUrls);
-  }, [objectUrls]);
+    createObjectUrls(mediaFiles).then((urls) => {
+      setObjectUrls(urls);
+    });
+    
+    return () => {
+      if (objectUrls.size > 0) {
+        revokeObjectUrls(objectUrls);
+      }
+    };
+  }, [mediaFiles]);
 
   useEffect(() => {
     if (!isOpen) return;
