@@ -101,11 +101,20 @@
   }
 
   tg-spoiler {
-    background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 50%, #3B82F6 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    border-radius: 2px;
+    position: relative;
+    display: inline;
+    background: rgba(255, 255, 255, 0.4);
+    background-image: url('/spoiler-noise.svg');
+    background-size: 100px 20px;
+    background-repeat: repeat;
+    border-radius: 4px;
+    padding: 0 4px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    
+    &::before {
+      content: none;
+    }
   }
 
   :global(.aiHighlight) {
@@ -225,12 +234,21 @@
 }
 
 .spoiler {
-  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 50%, #3B82F6 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  border-radius: 2px;
+  position: relative;
+  display: inline;
+  background: rgba(255, 255, 255, 0.4);
+  background-image: url('/spoiler-noise.svg');
+  background-size: 100px 20px;
+  background-repeat: repeat;
+  border-radius: 4px;
+  padding: 0 4px;
   cursor: pointer;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  
+  &::before {
+    content: none;
+  }
 }
 
 .textareaFooter {

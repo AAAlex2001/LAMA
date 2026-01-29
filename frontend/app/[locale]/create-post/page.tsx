@@ -239,7 +239,7 @@ function CreatePostPageContent() {
       <PostPreviewModalConnected />
       
       <DraftsModalConnected />
-      <TemplatesModalConnected />
+      <TemplatesModalConnected editorRef={editorRef} />
       <ReplyModalConnected />
       <DatePickerModalConnected />
     </div>

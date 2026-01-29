@@ -7,8 +7,13 @@ import * as editorSlice from '../store/slices/editor';
 import * as uiSlice from '../store/slices/ui';
 import { fetchMoreTemplates, updateTemplateThunk, deleteTemplateThunk } from '../store/thunks';
 import type { TextTemplate } from '../store/types';
+import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
 
-export default function TemplatesModalConnected() {
+interface TemplatesModalConnectedProps {
+  editorRef: React.RefObject<RichTextEditorRef>;
+}
+
+export default function TemplatesModalConnected({ editorRef }: TemplatesModalConnectedProps) {
   const dispatch = useAppDispatch();
 
   const isOpen = useAppSelector(state => state.ui.showTemplatesModal);
@@ -28,7 +33,9 @@ export default function TemplatesModalConnected() {
       onUpdate={(id, changes) => dispatch(updateTemplateThunk({ id, changes }))}
       onDelete={(id) => dispatch(deleteTemplateThunk(id))}
       onSelect={(template: TextTemplate) => {
-        dispatch(editorSlice.setText(template.formatted_content?.text || ''));
+        let html = template.formatted_content?.html || template.formatted_content?.text || '';
+        html = html.replace(/^<p>|<\/p>$/g, '');
+        editorRef.current?.insertHtml(html);
         dispatch(uiSlice.setShowTemplatesModal(false));
       }}
       onClose={() => dispatch(uiSlice.setShowTemplatesModal(false))}
