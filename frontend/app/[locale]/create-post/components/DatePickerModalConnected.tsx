@@ -5,12 +5,15 @@ import { useAppDispatch, useAppSelector } from '../store';
 import * as datePickerSlice from '../store/slices/datePicker';
 import * as uiSlice from '../store/slices/ui';
 import { schedulePost } from '../store/thunks';
-import { useChannels } from '@/stores/channels';
+import type { ChannelsStore } from '@/stores/channels';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
-export default function DatePickerModalConnected() {
+interface DatePickerModalConnectedProps {
+  channelsStore: ChannelsStore;
+}
+
+export default function DatePickerModalConnected({ channelsStore }: DatePickerModalConnectedProps) {
   const dispatch = useAppDispatch();
-  const channelsStore = useChannels();
   const { showSuccess, showError } = useNotifications();
 
   const isOpen = useAppSelector(state => state.ui.showDatePickerModal);
