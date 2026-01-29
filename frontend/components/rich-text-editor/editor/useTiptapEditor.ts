@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditor, useEditorState } from '@tiptap/react';
+import { useRef } from 'react';
 import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
@@ -170,6 +171,7 @@ function getOverflowDecorations(doc: ProseMirrorNode, limit: number) {
 
 export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
   const { maxLength = 4096, onUpdate } = options;
+  const isAutoCodeApplying = useRef(false);
 
   const OverLimitHighlight = Extension.create({
     name: 'overLimitHighlight',
@@ -264,6 +266,18 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       }),
     ],
     onUpdate: ({ editor }) => {
+      if (!isAutoCodeApplying.current && !editor.isActive('codeBlock')) {
+        const doc = editor.state.doc;
+        if (doc.childCount === 1 && doc.firstChild?.type.name === 'paragraph') {
+          const text = doc.textBetween(0, doc.content.size, '\n');
+          if (isCodeLike(text)) {
+            const lang = detectLanguage(text);
+            isAutoCodeApplying.current = true;
+            editor.chain().focus().setNode('codeBlock', { language: lang }).run();
+            isAutoCodeApplying.current = false;
+          }
+        }
+      }
       onUpdate?.(editor.getHTML());
     },
   });

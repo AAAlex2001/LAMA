@@ -123,6 +123,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
     };
 
     const formats = state?.formats;
+    const isInCodeBlock = state?.isInCodeBlock ?? false;
     const charCount = state?.charCount ?? 0;
     const isEmpty = state?.isEmpty ?? true;
     const isLink = editor?.isActive('link') ?? false;
@@ -163,7 +164,7 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       { id: 'italic', format: 'italic', label: 'Курсив', tooltip: 'курсив', isActive: Boolean(formats?.italic), disabled: false },
       { id: 'strike', format: 'strike', label: 'Зачёркнутый', tooltip: 'зачеркнутый', isActive: Boolean(formats?.strike), disabled: false },
       { id: 'underline', format: 'underline', label: 'Подчёркнутый', tooltip: 'подчеркнутый', isActive: Boolean(formats?.underline), disabled: false },
-      { id: 'code', format: 'code', label: 'Код', tooltip: 'код', isActive: Boolean(formats?.code), disabled: !hasSelection },
+      { id: 'code', format: 'code', label: 'Код', tooltip: 'код', isActive: Boolean(formats?.code) || isInCodeBlock, disabled: !hasSelection },
       { id: 'spoiler', format: 'spoiler', label: 'Скрытый текст', tooltip: 'скрытый', isActive: Boolean(formats?.spoiler), disabled: false },
     ];
 

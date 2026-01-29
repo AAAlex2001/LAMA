@@ -49,8 +49,8 @@ hljs.registerLanguage('shell', shell);
 
 const CANDIDATES = [
   'nginx',
-  'typescript',
   'javascript',
+  'typescript',
   'python',
   'bash',
   'shell',
@@ -107,6 +107,17 @@ export function detectLanguage(code: string): string {
   const lang = result.language ?? 'plaintext';
 
   if ((result.relevance ?? 0) < 3) return 'plaintext';
+
+  const text = code.trim();
+  const isJava = /(public\s+class|public\s+static\s+void\s+main|System\.out\.println|import\s+java\.)/m.test(text);
+  const isGo = /(^\s*package\s+\w+|\bfunc\s+\w+\s*\(|\bdefer\b|\bgo\s+\w+)/m.test(text);
+  const isTypeScript = /(interface\s+\w+|type\s+\w+\s*=|enum\s+\w+|implements\s+\w+|readonly\s+\w+|declare\s+|\bpublic\s+\w+\s*:\s*\w+|\bprivate\s+\w+\s*:\s*\w+|\bprotected\s+\w+\s*:\s*\w+)/m.test(text);
+
+  if (lang === 'typescript' && !isTypeScript) return isJava ? 'java' : 'javascript';
+  if (lang === 'swift' && isGo) return 'go';
+  if (lang === 'javascript' && isTypeScript) return 'typescript';
+  if (lang === 'go' && !isGo && /\bimport\s+Foundation\b/m.test(text)) return 'swift';
+  if (lang === 'java' && !isJava && isTypeScript) return 'typescript';
 
   return lang;
 }
