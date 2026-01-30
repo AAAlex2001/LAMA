@@ -92,23 +92,24 @@ export default function TextTemplatesModal({
 
         <h2 className={styles.modalTitle}>Шаблоны текста</h2>
 
-        <div className={styles.templatesList} onScroll={handleScroll}>
-          {isLoading || (templates.length === 0 && !searchQuery) ? (
-            <div className={styles.emptyState}>
-              <Loader size={24} color="blue" />
-            </div>
-          ) : templates.length === 0 ? (
-            <div className={styles.emptyState}>
-              {searchQuery ? 'Шаблоны не найдены' : 'У вас пока нет шаблонов'}
-            </div>
-          ) : (
-            <>
-              {templates.map((template) => (
-                <div
-                  key={template.id}
-                  className={styles.templateItem}
-                  onClick={() => onSelect(template)}
-                >
+        <div className={styles.templatesList}>
+          <div className={styles.listScroll} onScroll={handleScroll}>
+            {isLoading || (templates.length === 0 && !searchQuery) ? (
+              <div className={styles.emptyState}>
+                <Loader size={24} color="blue" />
+              </div>
+            ) : templates.length === 0 ? (
+              <div className={styles.emptyState}>
+                {searchQuery ? 'Шаблоны не найдены' : 'У вас пока нет шаблонов'}
+              </div>
+            ) : (
+              <>
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    className={styles.templateItem}
+                    onClick={() => onSelect(template)}
+                  >
                   <Checkbox
                     variant="radio"
                     checked={selectedTemplateId === template.id}
@@ -184,13 +185,14 @@ export default function TextTemplatesModal({
                 </div>
               ))}
               
-              {isLoadingMore && (
-                <div className={styles.loadingMore}>
-                  <Loader size={20} color="blue" />
-                </div>
-              )}
-            </>
-          )}
+                {isLoadingMore && (
+                  <div className={styles.loadingMore}>
+                    <Loader size={20} color="blue" />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 

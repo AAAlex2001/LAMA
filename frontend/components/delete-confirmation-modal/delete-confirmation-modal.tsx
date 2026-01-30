@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../button/button';
 import styles from './delete-confirmation-modal.module.scss';
 
@@ -19,15 +19,27 @@ export default function DeleteConfirmationModal({
 }: DeleteConfirmationModalProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setHoveredDelete(false);
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    setHoveredDelete(false);
     onConfirm();
     onClose();
   };
 
+  const handleClose = () => {
+    setHoveredDelete(false);
+    onClose();
+  };
+
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={styles.overlay} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h2 className={styles.title}>{title}</h2>
         
@@ -45,7 +57,7 @@ export default function DeleteConfirmationModal({
           
           <Button
             text="Отменить"
-            onClick={onClose}
+            onClick={handleClose}
             showArrow={false}
             fullWidth
             active

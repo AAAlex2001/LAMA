@@ -14,12 +14,14 @@
 .modal {
   position: relative;
   width: 360px;
+  max-width: calc(100vw - 32px);
   background: #FFFFFF;
   border-radius: 12px;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  box-sizing: border-box;
 }
 
 .title {
@@ -30,6 +32,7 @@
   font-size: 16px;
   line-height: 28px;
   color: #383F45;
+  text-align: center;
 }
 
 .buttons {
@@ -37,4 +40,5 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+  width: 100%;
 }
