@@ -75,8 +75,8 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
     }
   };
 
-  const handleSelectTag = (tag: { name: string; color: string }) => {
-    dispatch(settingsSlice.selectTag({ ...tag, id: 0, created_at: '' }));
+  const handleSelectTag = (tag: { id: number; name: string; color?: string; created_at: string }) => {
+    dispatch(settingsSlice.selectTag(tag));
     dispatch(clearSearch());
   };
 
@@ -88,11 +88,8 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
     dispatch(searchTagsThunk(query));
   };
 
-  const handleDeleteTag = (name: string) => {
-    const tag = tagsState.recentTags.find(t => t.name === name);
-    if (tag) {
-      dispatch(deleteTagThunk(tag.id));
-    }
+  const handleDeleteTag = (tagId: number) => {
+    dispatch(deleteTagThunk(tagId));
   };
 
   return (

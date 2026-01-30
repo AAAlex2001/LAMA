@@ -12,14 +12,14 @@ import { fetchTagsThunk } from './tags';
 export const loadChannels = createAsyncThunk(
   'createPost/loadChannels',
   async (_, { dispatch }) => {
-    return dispatch(fetchChannelsThunk());
+    return dispatch(fetchChannelsThunk({}));
   }
 );
 
 export const loadRecentTags = createAsyncThunk(
   'createPost/loadRecentTags',
   async (_, { dispatch }) => {
-    return dispatch(fetchTagsThunk());
+    return dispatch(fetchTagsThunk({}));
   }
 );
 

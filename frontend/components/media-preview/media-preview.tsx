@@ -11,7 +11,7 @@ export interface MediaFile {
   file?: File;
   url?: string;
   preview_url?: string;
-  thumbnail_url?: string;
+  thumbnail_url?: string | null;
   blur?: boolean;
   size?: number;
 }

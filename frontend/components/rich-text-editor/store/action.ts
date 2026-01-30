@@ -1,6 +1,6 @@
 import type { Editor } from '@tiptap/react';
 import type { Dispatch } from 'react';
-import { DOMSerializer } from '@tiptap/pm/model';
+import { DOMSerializer, Fragment } from '@tiptap/pm/model';
 import { TextSelection } from '@tiptap/pm/state';
 
 import { postAiEditTextStream } from './api';
@@ -211,7 +211,7 @@ export function applyQuoteFromSelection(editor: Editor): void {
       nodes.push(schema.nodes.paragraph.create());
     }
 
-    tr.replaceRangeWith(parentPos, parentPos + parentNode.nodeSize, nodes);
+    tr.replaceWith(parentPos, parentPos + parentNode.nodeSize, nodes);
 
     const newPos = parentPos + (beforeContent.size > 0 ? schema.nodes.paragraph.create(null, beforeContent).nodeSize : 0) + blockquote.nodeSize + 1;
     tr.setSelection(TextSelection.create(tr.doc, newPos));

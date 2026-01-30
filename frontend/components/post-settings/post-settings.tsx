@@ -21,8 +21,10 @@ export interface ChannelOption {
 }
 
 export interface Tag {
+  id: number;
   name: string;
-  color: string;
+  color?: string;
+  created_at: string;
 }
 
 interface PostSettingsProps {
@@ -55,7 +57,7 @@ interface PostSettingsProps {
   onSearchTags: (query: string) => void;
   onTagInputChange: (value: string) => void;
   onSelectTag: (tag: Tag) => void;
-  onDeleteTag: (name: string) => void;
+  onDeleteTag: (tagId: number) => void;
   onTagColorChange: (color: TagColor) => void;
 
   // Repeat
