@@ -86,8 +86,7 @@
   align-items: center;
   gap: 14px;
   padding: 6px 0;
-  margin: 0 auto;
-  width: 312px;
+  width: 100%;
   flex-shrink: 0;
 }
 
@@ -158,16 +157,15 @@
 }
 
 .messageArea {
+  width: 100%;
   margin: auto auto 0 auto;
-  width: 312px;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
 .bubble {
-  width: 312px;
-  max-width: 312px;
+  width: 100%;
   background: #ffffff;
   border-radius: 12px 12px 6px 6px;
   overflow: hidden;
@@ -179,6 +177,7 @@
 .textBlock {
   padding: 6px 8px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .html {
