@@ -179,49 +179,91 @@ export function applyQuoteFromSelection(editor: Editor): void {
 
   const state = editor.state;
   const schema = state.schema;
-  const slice = state.doc.slice(from, to);
-  if (slice.content.size === 0) return;
+  const $from = state.doc.resolve(from);
+  const $to = state.doc.resolve(to);
 
-  let allInline = true;
-  slice.content.forEach((node) => {
-    if (!node.isInline) allInline = false;
-  });
+  const sameParent = $from.sameParent($to);
+  const parentNode = $from.parent;
 
-  const quoteContent = allInline ? schema.nodes.paragraph.create(null, slice.content) : slice.content;
-  const blockquote = schema.nodes.blockquote.create(null, quoteContent);
+  if (sameParent && parentNode.type.name === 'paragraph') {
+    const tr = state.tr;
+    const parentPos = $from.before();
+    const startOffset = from - parentPos - 1;
+    const endOffset = to - parentPos - 1;
 
-  const tr = state.tr.replaceRangeWith(from, to, blockquote);
-  let quotePos = tr.mapping.map(from);
+    const beforeContent = parentNode.content.cut(0, startOffset);
+    const selectedContent = parentNode.content.cut(startOffset, endOffset);
+    const afterContent = parentNode.content.cut(endOffset);
 
-  const removeEmptyParagraphBefore = () => {
-    const $pos = tr.doc.resolve(quotePos);
-    const prev = $pos.nodeBefore;
-    if (prev?.type.name !== 'paragraph') return;
-    if (prev.content.size !== 0) return;
-    tr.delete(quotePos - prev.nodeSize, quotePos);
-    quotePos -= prev.nodeSize;
-  };
+    const nodes = [];
+    
+    if (beforeContent.size > 0) {
+      nodes.push(schema.nodes.paragraph.create(null, beforeContent));
+    }
 
-  removeEmptyParagraphBefore();
+    const quoteParagraph = schema.nodes.paragraph.create(null, selectedContent);
+    const blockquote = schema.nodes.blockquote.create(null, quoteParagraph);
+    nodes.push(blockquote);
 
-  const quoteNode = tr.doc.nodeAt(quotePos);
-  if (!quoteNode || quoteNode.type.name !== 'blockquote') return;
+    if (afterContent.size > 0) {
+      nodes.push(schema.nodes.paragraph.create(null, afterContent));
+    } else {
+      nodes.push(schema.nodes.paragraph.create());
+    }
 
-  const afterQuotePos = quotePos + quoteNode.nodeSize;
-  const $after = tr.doc.resolve(afterQuotePos);
-  const next = $after.nodeAfter;
+    tr.replaceRangeWith(parentPos, parentPos + parentNode.nodeSize, nodes);
 
-  if (next?.type.name === 'paragraph') {
-    tr.setSelection(TextSelection.create(tr.doc, afterQuotePos + 1));
+    const newPos = parentPos + (beforeContent.size > 0 ? schema.nodes.paragraph.create(null, beforeContent).nodeSize : 0) + blockquote.nodeSize + 1;
+    tr.setSelection(TextSelection.create(tr.doc, newPos));
+    
+    tr.setStoredMarks([]);
+    editor.view.dispatch(tr);
+    editor.view.focus();
   } else {
-    const paragraph = schema.nodes.paragraph.createAndFill();
-    if (paragraph) tr.insert(afterQuotePos, paragraph);
-    tr.setSelection(TextSelection.create(tr.doc, afterQuotePos + 1));
-  }
+    const slice = state.doc.slice(from, to);
+    if (slice.content.size === 0) return;
 
-  tr.setStoredMarks([]);
-  editor.view.dispatch(tr);
-  editor.view.focus();
+    let allInline = true;
+    slice.content.forEach((node) => {
+      if (!node.isInline) allInline = false;
+    });
+
+    const quoteContent = allInline ? schema.nodes.paragraph.create(null, slice.content) : slice.content;
+    const blockquote = schema.nodes.blockquote.create(null, quoteContent);
+
+    const tr = state.tr.replaceRangeWith(from, to, blockquote);
+    let quotePos = tr.mapping.map(from);
+
+    const removeEmptyParagraphBefore = () => {
+      const $pos = tr.doc.resolve(quotePos);
+      const prev = $pos.nodeBefore;
+      if (prev?.type.name !== 'paragraph') return;
+      if (prev.content.size !== 0) return;
+      tr.delete(quotePos - prev.nodeSize, quotePos);
+      quotePos -= prev.nodeSize;
+    };
+
+    removeEmptyParagraphBefore();
+
+    const quoteNode = tr.doc.nodeAt(quotePos);
+    if (!quoteNode || quoteNode.type.name !== 'blockquote') return;
+
+    const afterQuotePos = quotePos + quoteNode.nodeSize;
+    const $after = tr.doc.resolve(afterQuotePos);
+    const next = $after.nodeAfter;
+
+    if (next?.type.name === 'paragraph') {
+      tr.setSelection(TextSelection.create(tr.doc, afterQuotePos + 1));
+    } else {
+      const paragraph = schema.nodes.paragraph.createAndFill();
+      if (paragraph) tr.insert(afterQuotePos, paragraph);
+      tr.setSelection(TextSelection.create(tr.doc, afterQuotePos + 1));
+    }
+
+    tr.setStoredMarks([]);
+    editor.view.dispatch(tr);
+    editor.view.focus();
+  }
 }
 
 export function applyCodeFromSelection(editor: Editor): void {
