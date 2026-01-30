@@ -69,7 +69,7 @@ export default function RepeatEndSelector({
       {value === 'date' && !isOpen && (
         <div className={styles.datePickerContainer}>
           <DatePicker
-            value={endDate || undefined}
+            value={endDate ?? undefined}
             onChange={onEndDateChange}
             selectedDates={endDate ? [endDate.getDate()] : []}
           />

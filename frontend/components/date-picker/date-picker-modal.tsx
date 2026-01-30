@@ -16,6 +16,7 @@ export default function DatePickerModal({
   onMinutesChange,
   onSchedule,
   onClose,
+  isLoading = false,
 }: DatePickerModalProps) {
   const handleSchedule = async () => {
     if (!selectedDate) return;
@@ -30,7 +31,7 @@ export default function DatePickerModal({
     <div className={styles.datePickerModal} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <DatePicker 
-          value={selectedDate || undefined}
+          value={selectedDate ?? undefined}
           onChange={onDateChange}
           locale="ru"
           selectedDates={selectedDate ? [selectedDate.getDate()] : []}
@@ -46,7 +47,8 @@ export default function DatePickerModal({
           <Button 
             text="Запланировать" 
             onClick={handleSchedule}
-            disabled={!selectedDate}
+            disabled={!selectedDate || isLoading}
+            loading={isLoading}
             showArrow={false}
             fullWidth={true}
             active={true}

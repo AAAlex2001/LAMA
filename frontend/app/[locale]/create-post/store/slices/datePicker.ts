@@ -6,8 +6,11 @@ interface DatePickerState {
   minutes: number;
 }
 
+const now = new Date();
+now.setHours(0, 0, 0, 0);
+
 const initialState: DatePickerState = {
-  selectedDate: null,
+  selectedDate: now,
   hours: new Date().getHours(),
   minutes: new Date().getMinutes(),
 };
@@ -26,7 +29,9 @@ const datePickerSlice = createSlice({
       state.minutes = action.payload;
     },
     resetDatePicker: (state) => {
-      state.selectedDate = null;
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      state.selectedDate = now;
       state.hours = new Date().getHours();
       state.minutes = new Date().getMinutes();
     },

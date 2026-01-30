@@ -143,7 +143,14 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       onRepeatMonthDaysChange={(v: number[]) => dispatch(settingsSlice.setRepeatMonthDays(v))}
       onRepeatYearMonthChange={(v: number) => dispatch(settingsSlice.setRepeatYearMonth(v))}
       onRepeatYearDaysChange={(v: number[]) => dispatch(settingsSlice.setRepeatYearDays(v))}
-      onRepeatEndTypeChange={(v: 'never' | 'date') => dispatch(settingsSlice.setRepeatEndType(v))}
+      onRepeatEndTypeChange={(v: 'never' | 'date') => {
+        dispatch(settingsSlice.setRepeatEndType(v));
+        if (v === 'date' && !repeatEndDate) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          dispatch(settingsSlice.setRepeatEndDate(today.toISOString()));
+        }
+      }}
       onRepeatEndDateChange={(v: Date | null) => dispatch(settingsSlice.setRepeatEndDate(v?.toISOString() ?? null))}
       autoDeleteInterval={autoDeleteInterval}
       autoDeleteCustomDays={autoDeleteCustomDays}

@@ -326,4 +326,5 @@ export interface DatePickerModalProps {
   onMinutesChange: (minutes: number) => void;
   onSchedule: (scheduledDate: Date) => void | Promise<void>;
   onClose: () => void;
+  isLoading?: boolean;
 }

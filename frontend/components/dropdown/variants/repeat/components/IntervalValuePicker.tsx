@@ -18,6 +18,7 @@ export default function IntervalValuePicker({
 }: IntervalValuePickerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [originalValue, setOriginalValue] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ startY: 0, startValue: 0, isDragging: false });
 
@@ -63,7 +64,8 @@ export default function IntervalValuePicker({
   }
 
   function handleClick() {
-    setInputValue(value.toString());
+    setOriginalValue(value);
+    setInputValue('');
     setIsEditing(true);
   }
 
@@ -72,9 +74,16 @@ export default function IntervalValuePicker({
   }
 
   function handleInputBlur() {
-    const parsed = parseInt(inputValue, 10);
-    if (!isNaN(parsed)) onChange(clamp(parsed));
+    if (inputValue.trim() === '') {
+      if (originalValue !== null) {
+        onChange(originalValue);
+      }
+    } else {
+      const parsed = parseInt(inputValue, 10);
+      if (!isNaN(parsed)) onChange(clamp(parsed));
+    }
     setIsEditing(false);
+    setOriginalValue(null);
   }
 
   function handleInputKeyDown(e: React.KeyboardEvent) {

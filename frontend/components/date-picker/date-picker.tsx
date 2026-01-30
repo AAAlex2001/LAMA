@@ -23,8 +23,11 @@ export default function DatePicker({
   selectedDates = [],
   disableNavigation = false
 }: DatePickerProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(value || new Date());
-  const [activeStartDate, setActiveStartDate] = useState<Date>(value || new Date());
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  
+  const [selectedDate, setSelectedDate] = useState<Date>(value || now);
+  const [activeStartDate, setActiveStartDate] = useState<Date>(value || now);
 
   useEffect(() => {
     if (value) {

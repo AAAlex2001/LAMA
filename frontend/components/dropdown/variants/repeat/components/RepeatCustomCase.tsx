@@ -315,7 +315,7 @@ export default function RepeatCustomCase({
           </div>
           {showYearDays && (
             <DatePicker
-              value={selectedYearDates.length > 0 ? new Date(new Date().getFullYear(), selectedYearMonth, selectedYearDates[0]) : new Date(new Date().getFullYear(), selectedYearMonth, 1)}
+              value={selectedYearDates.length > 0 ? new Date(new Date().getFullYear(), selectedYearMonth, selectedYearDates[0]) : undefined}
               onChange={toggleYearDate}
               selectedDates={selectedYearDates}
               disableNavigation={true}

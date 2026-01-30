@@ -14,6 +14,7 @@ export default function DatePickerModalConnected() {
 
   const isOpen = useAppSelector(state => state.ui.showDatePickerModal);
   const datePickerState = useAppSelector(state => state.datePicker);
+  const isScheduling = useAppSelector(state => state.ui.isScheduling);
 
   const selectedChannels = useAppSelector(selectSelectedChannels);
 
@@ -42,6 +43,7 @@ export default function DatePickerModalConnected() {
       onMinutesChange={(m) => dispatch(datePickerSlice.setMinutes(m))}
       onSchedule={handleSchedule}
       onClose={() => dispatch(uiSlice.setShowDatePickerModal(false))}
+      isLoading={isScheduling}
     />
   );
 }

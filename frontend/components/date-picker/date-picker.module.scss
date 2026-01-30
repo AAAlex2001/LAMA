@@ -199,11 +199,15 @@
   }
 
   :global(.react-calendar__tile--now):not(:global(.react-calendar__tile--active)) {
-    background: transparent;
+    background: #3B82F6;
     
     abbr {
       font-weight: 600;
-      color: #383F45;
+      color: #FFFFFF;
+    }
+
+    &:hover {
+      background: #2F67C3;
     }
   }
 
