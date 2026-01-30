@@ -7,6 +7,7 @@ import TrashIcon from '@/components/icons/trash-icon';
 import EyeIcon from '@/components/icons/eye-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
+import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
 import type { DraftsModalProps, Draft } from '@/app/[locale]/create-post/store/types';
 
 function getDraftPreview(draft: Draft): string {
@@ -32,6 +33,7 @@ export default function DraftsModal({
 }: DraftsModalProps) {
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
   const [hoveredPreviewId, setHoveredPreviewId] = useState<number | null>(null);
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<number | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -43,7 +45,14 @@ export default function DraftsModal({
 
   const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(id);
+    setDeleteConfirmationId(id);
+  };
+
+  const confirmDelete = () => {
+    if (deleteConfirmationId !== null) {
+      onDelete(deleteConfirmationId);
+      setDeleteConfirmationId(null);
+    }
   };
 
   if (!isOpen) return null;
@@ -142,6 +151,13 @@ export default function DraftsModal({
           )}
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmationId !== null}
+        onClose={() => setDeleteConfirmationId(null)}
+        onConfirm={confirmDelete}
+        title="Удаление черновика"
+      />
     </div>
   );
 }

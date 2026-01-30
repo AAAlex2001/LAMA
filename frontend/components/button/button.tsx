@@ -15,7 +15,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
-  variant?: 'default' | 'templateCard' | 'inlineButton';
+  variant?: 'default' | 'templateCard' | 'inlineButton' | 'outlined-red';
   icon?: ReactNode;
   loading?: boolean;
   counter?: string;
@@ -83,6 +83,7 @@ export default function Button({
         [styles.mediumWrapper]: size === 'medium',
         [styles.templateCardWrapper]: variant === 'templateCard',
         [styles.inlineButtonWrapper]: variant === 'inlineButton',
+        [styles.outlinedRedButtonWrapper]: variant === 'outlined-red',
       }
   );
 
@@ -96,6 +97,8 @@ export default function Button({
         [styles.templateCardButton]: variant === 'templateCard',
         [styles.inlineButton]: variant === 'inlineButton',
         [styles.inlineButtonHovered]: variant === 'inlineButton' && hovered,
+        [styles.outlinedRedButton]: variant === 'outlined-red',
+        [styles.outlinedRedButtonHovered]: variant === 'outlined-red' && hovered,
         [styles.disabled]: disabled,
       }
   );

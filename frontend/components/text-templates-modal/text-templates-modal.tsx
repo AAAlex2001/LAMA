@@ -8,6 +8,7 @@ import Input from '@/components/input';
 import { EditNameIcon, CheckIcon, CloseIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
+import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
 import type { TemplatesModalProps, TextTemplate } from '@/app/[locale]/create-post/store/types';
 
 export default function TextTemplatesModal({
@@ -29,6 +30,7 @@ export default function TextTemplatesModal({
   const [hoveredEditId, setHoveredEditId] = useState<number | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<number | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -40,7 +42,14 @@ export default function TextTemplatesModal({
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    await onDelete(id);
+    setDeleteConfirmationId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirmationId !== null) {
+      await onDelete(deleteConfirmationId);
+      setDeleteConfirmationId(null);
+    }
   };
 
   const startEdit = (template: TextTemplate, e: React.MouseEvent) => {
@@ -184,6 +193,13 @@ export default function TextTemplatesModal({
           )}
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={deleteConfirmationId !== null}
+        onClose={() => setDeleteConfirmationId(null)}
+        onConfirm={confirmDelete}
+        title="Удаление шаблона"
+      />
     </div>
   );
 }
