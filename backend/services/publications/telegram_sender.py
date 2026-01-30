@@ -1,6 +1,7 @@
 from typing import List, Optional
 import logging
 import re
+import html as html_module
 
 from aiogram.types import (
     Message, InputMediaPhoto, InputMediaVideo, 
@@ -65,45 +66,39 @@ def prepare_inline_keyboard_data(publication: Publication) -> Optional[dict]:
 
 
 def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
-    """
-    Очистить HTML от неподдерживаемых Telegram тегов.
-    
-    Telegram поддерживает только:
-    - <b>, <strong> - жирный
-    - <i>, <em> - курсив
-    - <u> - подчеркнутый
-    - <s>, <strike>, <del> - зачеркнутый
-    - <code> - моноширинный код
-    - <pre> - блок кода
-    - <a href=""> - ссылка
-    - <tg-spoiler> - спойлер
-    - <blockquote> - цитата
-    """
     if not text:
         return text
-    
-    # Заменяем <br> и <br/> на перенос строки
+
     text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
-    
-    # Удаляем <div>, заменяя на содержимое с переносами строк
-    text = re.sub(r'<div[^>]*>', '\n', text, flags=re.IGNORECASE)
-    text = re.sub(r'</div>', '', text, flags=re.IGNORECASE)
-    
-    # Удаляем <span> теги (сохраняем содержимое)
+    text = re.sub(r'</(p|div)>', '\n', text, flags=re.IGNORECASE)
+    text = re.sub(r'<(p|div)[^>]*>', '', text, flags=re.IGNORECASE)
     text = re.sub(r'<span[^>]*>', '', text, flags=re.IGNORECASE)
     text = re.sub(r'</span>', '', text, flags=re.IGNORECASE)
-    
-    # Удаляем <p> теги
-    text = re.sub(r'<p[^>]*>', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'</p>', '\n', text, flags=re.IGNORECASE)
-    
-    # Удаляем style атрибуты из поддерживаемых тегов
-    text = re.sub(r'<(b|i|u|s|strong|em|strike|del|code|pre|tg-spoiler|blockquote)\s+style="[^"]*"', r'<\1', text, flags=re.IGNORECASE)
-    
-    # Убираем лишние пробелы и переносы строк
-    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)  # Максимум 2 переноса подряд
+    text = re.sub(r'<(b|i|u|s|strong|em|strike|del|tg-spoiler|blockquote)\s+style="[^"]*"', r'<\1', text, flags=re.IGNORECASE)
+
+    if re.search(r'</?(code|pre)\b', text, flags=re.IGNORECASE):
+        stripped = re.sub(r'<[^>]+>', '', text)
+        escaped = html_module.escape(stripped, quote=False)
+        result = f'<pre><code>{escaped}</code></pre>'
+        logger.info(f"Clean HTML result (first 500 chars): {result[:500]}")
+        return result
+
+    supported_pattern = r'</?(?:b|strong|i|em|u|s|strike|del|a(?:\s+href="[^"]*")?|tg-spoiler|blockquote)\b[^>]*>'
+    placeholders = []
+
+    def stash_tag(match):
+        placeholders.append(match.group(0))
+        return f'__TG_TAG_{len(placeholders) - 1}__'
+
+    text = re.sub(supported_pattern, stash_tag, text, flags=re.IGNORECASE)
+    text = html_module.escape(text, quote=False)
+    for i, tag in enumerate(placeholders):
+        text = text.replace(f'__TG_TAG_{i}__', tag)
+
+    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
     text = text.strip()
-    
+
+    logger.info(f"Clean HTML result (first 500 chars): {text[:500]}")
     return text
 
 
