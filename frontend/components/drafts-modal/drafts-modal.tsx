@@ -4,6 +4,7 @@ import { useState } from 'react';
 import styles from './drafts-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import TrashIcon from '@/components/icons/trash-icon';
+import EyeIcon from '@/components/icons/eye-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
 import type { DraftsModalProps, Draft } from '@/app/[locale]/create-post/store/types';
@@ -26,9 +27,11 @@ export default function DraftsModal({
   onLoadMore,
   onDelete,
   onSelect,
+  onPreview,
   onClose,
 }: DraftsModalProps) {
   const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
+  const [hoveredPreviewId, setHoveredPreviewId] = useState<number | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -88,22 +91,44 @@ export default function DraftsModal({
                       </span>
                     )}
                   </div>
-                  <div className={styles.deleteButtonWrapper}>
-                    <button
-                      className={styles.deleteButton}
-                      onClick={(e) => handleDelete(draft.id, e)}
-                      onMouseEnter={() => setHoveredDeleteId(draft.id)}
-                      onMouseLeave={() => setHoveredDeleteId(null)}
-                    >
-                      <TrashIcon 
-                        width={16} 
-                        height={16} 
-                        color={hoveredDeleteId === draft.id ? '#EF4444' : '#B0B4B8'} 
-                      />
-                    </button>
-                    {hoveredDeleteId === draft.id && (
-                      <div className={styles.deleteTooltip}>удалить?</div>
-                    )}
+                  <div className={styles.actionsWrapper}>
+                    <div className={styles.actionButtonWrapper}>
+                      <button
+                        className={styles.actionButton}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPreview(draft);
+                        }}
+                        onMouseEnter={() => setHoveredPreviewId(draft.id)}
+                        onMouseLeave={() => setHoveredPreviewId(null)}
+                      >
+                        <EyeIcon
+                          width={16}
+                          height={16}
+                          color={hoveredPreviewId === draft.id ? '#3B82F6' : '#B0B4B8'}
+                        />
+                      </button>
+                      {hoveredPreviewId === draft.id && (
+                        <div className={styles.actionTooltip}>предпросмотр</div>
+                      )}
+                    </div>
+                    <div className={styles.actionButtonWrapper}>
+                      <button
+                        className={styles.actionButton}
+                        onClick={(e) => handleDelete(draft.id, e)}
+                        onMouseEnter={() => setHoveredDeleteId(draft.id)}
+                        onMouseLeave={() => setHoveredDeleteId(null)}
+                      >
+                        <TrashIcon
+                          width={16}
+                          height={16}
+                          color={hoveredDeleteId === draft.id ? '#EF4444' : '#B0B4B8'}
+                        />
+                      </button>
+                      {hoveredDeleteId === draft.id && (
+                        <div className={styles.actionTooltip}>удалить?</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}

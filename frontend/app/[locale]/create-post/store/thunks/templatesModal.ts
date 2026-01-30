@@ -80,9 +80,9 @@ export const updateTemplateThunk = createAsyncThunk(
 export const deleteTemplateThunk = createAsyncThunk(
   'templates/deleteTemplate',
   async (templateId: number, { dispatch, rejectWithValue }) => {
+    dispatch(removeTemplate(templateId));
     try {
       await apiRequest(`/publications/text-templates/${templateId}`, { method: 'DELETE' });
-      dispatch(removeTemplate(templateId));
       return templateId;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка удаления');

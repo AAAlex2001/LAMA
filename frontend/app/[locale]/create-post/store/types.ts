@@ -281,6 +281,7 @@ export interface DraftsModalProps {
   onLoadMore: () => void;
   onDelete: (id: number) => void;
   onSelect: (draft: Draft) => void;
+  onPreview: (draft: Draft) => void;
   onClose: () => void;
 }
 

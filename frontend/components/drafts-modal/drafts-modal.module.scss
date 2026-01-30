@@ -86,7 +86,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 3px;
+  padding: 12px 33px 12px 3px;
   cursor: pointer;
   
   &:hover {
@@ -95,6 +95,18 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+    }
+  }
+
+  &:first-child {
+    .actionTooltip {
+      bottom: auto;
+      top: calc(100% + 8px);
+      
+      &::after {
+        bottom: auto;
+        top: -4px;
+      }
     }
   }
 }
@@ -124,6 +136,57 @@
   font-weight: 400;
 }
 
+.actionsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actionButtonWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionTooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #CBDBFF;
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
+    width: 8px;
+    height: 8px;
+    background: #CBDBFF;
+  }
+}
+
 .deleteButtonWrapper {
   position: relative;
   display: flex;
@@ -143,9 +206,9 @@
 
 .deleteTooltip {
   position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   background: #CBDBFF;
   color: #000000;
   padding: 4px 8px;
@@ -160,9 +223,9 @@
   &::after {
     content: '';
     position: absolute;
-    right: -4px;
-    top: 50%;
-    transform: translateY(-50%) rotate(45deg);
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg);
     width: 8px;
     height: 8px;
     background: #CBDBFF;

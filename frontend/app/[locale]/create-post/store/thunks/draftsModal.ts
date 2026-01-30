@@ -63,9 +63,9 @@ export const fetchMoreDrafts = createAsyncThunk(
 export const deleteDraftThunk = createAsyncThunk(
   'drafts/deleteDraft',
   async (draftId: number, { dispatch, rejectWithValue }) => {
+    dispatch(removeDraft(draftId));
     try {
       await apiRequest(`/publications/${draftId}`, { method: 'DELETE' });
-      dispatch(removeDraft(draftId));
       return draftId;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка удаления');

@@ -98,6 +98,19 @@
       background-clip: text;
     }
   }
+
+  &:first-child {
+    .deleteTooltip,
+    .editTooltip {
+      bottom: auto;
+      top: calc(100% + 8px);
+      
+      &::after {
+        bottom: auto;
+        top: -4px;
+      }
+    }
+  }
 }
 
 .templateName {
@@ -157,7 +170,7 @@
 .deleteTooltip {
   position: absolute;
   left: 50%;
-  top: calc(100% + 8px);
+  bottom: calc(100% + 8px);
   transform: translateX(-50%);
   background: #CBDBFF;
   color: #000000;
@@ -174,12 +187,11 @@
     content: '';
     position: absolute;
     left: 50%;
-    bottom: 100%;
+    bottom: -4px;
     transform: translateX(-50%) rotate(45deg);
     width: 8px;
     height: 8px;
     background: #CBDBFF;
-    margin-bottom: -4px;
   }
 }
 
