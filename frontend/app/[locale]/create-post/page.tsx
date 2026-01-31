@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
 import styles from './create-post.module.scss';
 
 import Button from '@/components/button/button';
@@ -39,6 +39,7 @@ import {
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
+import { useTokenFromUrl } from './hooks/useTokenFromUrl';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -46,6 +47,9 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 function CreatePostPageContent() {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
+  
+  useTokenFromUrl();
+  
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const text = useAppSelector(state => state.editor.text);
@@ -253,7 +257,9 @@ function CreatePostPageContent() {
 export default function CreatePostPage() {
   return (
     <CreatePostProvider>
-      <CreatePostPageContent />
+      <Suspense fallback={<div>Загрузка...</div>}>
+        <CreatePostPageContent />
+      </Suspense>
     </CreatePostProvider>
   );
 }
