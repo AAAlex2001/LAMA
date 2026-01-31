@@ -189,6 +189,19 @@ export interface SettingsState {
   selectedTagName: string | null;
   selectedTagColor: string | null;
   repeatInterval: RepeatOption;
+  repeatPublishTimeType: 'from_publish' | 'exact_time';
+  repeatPublishHours: number;
+  repeatPublishMinutes: number;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
+  repeatCustomUnit: RepeatCustomUnit;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: string | null;
   replyToPostId: number | null;
 }
 

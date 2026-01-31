@@ -48,6 +48,9 @@ export interface TagsContentProps {
 
 export interface RepeatContentProps {
   repeatValue: RepeatOption;
+  repeatPublishTimeType?: 'from_publish' | 'exact_time';
+  repeatPublishHours?: number;
+  repeatPublishMinutes?: number;
   repeatCustomDays: number;
   repeatCustomHours: number;
   repeatCustomUnit: 'days' | 'weeks' | 'months' | 'years';
@@ -59,6 +62,9 @@ export interface RepeatContentProps {
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
   onRepeatChange?: (value: RepeatOption) => void;
+  onRepeatPublishTimeTypeChange?: (value: 'from_publish' | 'exact_time') => void;
+  onRepeatPublishHoursChange?: (value: number) => void;
+  onRepeatPublishMinutesChange?: (value: number) => void;
   onRepeatCustomDaysChange?: (value: number) => void;
   onRepeatCustomHoursChange?: (value: number) => void;
   onRepeatCustomUnitChange?: (value: 'days' | 'weeks' | 'months' | 'years') => void;
@@ -112,7 +118,13 @@ export interface DropdownProps {
   selectedTagColor?: TagColor;
   onTagColorChange?: (color: TagColor) => void;
   repeatValue?: RepeatOption;
+  repeatPublishTimeType?: 'from_publish' | 'exact_time';
+  repeatPublishHours?: number;
+  repeatPublishMinutes?: number;
   onRepeatChange?: (value: RepeatOption) => void;
+  onRepeatPublishTimeTypeChange?: (value: 'from_publish' | 'exact_time') => void;
+  onRepeatPublishHoursChange?: (value: number) => void;
+  onRepeatPublishMinutesChange?: (value: number) => void;
   repeatCustomDays?: number;
   repeatCustomHours?: number;
   repeatCustomUnit?: 'days' | 'weeks' | 'months' | 'years';

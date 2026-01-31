@@ -25,6 +25,9 @@ interface SettingsState {
   selectedTagColor: TagColor;
   
   repeatInterval: RepeatOption;
+  repeatPublishTimeType: 'from_publish' | 'exact_time';
+  repeatPublishHours: number;
+  repeatPublishMinutes: number;
   repeatCustomDays: number;
   repeatCustomHours: number;
   repeatCustomUnit: RepeatCustomUnit;
@@ -60,6 +63,9 @@ const initialState: SettingsState = {
   selectedTagColor: '#FAC7C7',
   
   repeatInterval: 'never',
+  repeatPublishTimeType: 'from_publish',
+  repeatPublishHours: 12,
+  repeatPublishMinutes: 0,
   repeatCustomDays: 0,
   repeatCustomHours: 0,
   repeatCustomUnit: 'days',
@@ -140,6 +146,15 @@ const settingsSlice = createSlice({
     setRepeatInterval(state, action: PayloadAction<RepeatOption>) {
       state.repeatInterval = action.payload;
     },
+    setRepeatPublishTimeType(state, action: PayloadAction<'from_publish' | 'exact_time'>) {
+      state.repeatPublishTimeType = action.payload;
+    },
+    setRepeatPublishHours(state, action: PayloadAction<number>) {
+      state.repeatPublishHours = action.payload;
+    },
+    setRepeatPublishMinutes(state, action: PayloadAction<number>) {
+      state.repeatPublishMinutes = action.payload;
+    },
     setRepeatCustomDays(state, action: PayloadAction<number>) {
       state.repeatCustomDays = action.payload;
     },
@@ -211,6 +226,9 @@ export const {
   selectTag,
   clearTag,
   setRepeatInterval,
+  setRepeatPublishTimeType,
+  setRepeatPublishHours,
+  setRepeatPublishMinutes,
   setRepeatCustomDays,
   setRepeatCustomHours,
   setRepeatCustomUnit,

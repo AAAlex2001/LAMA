@@ -1,6 +1,4 @@
 'use client';
-
-import { useState } from 'react';
 import type { RepeatContentProps } from '../../types';
 import RepeatDefaultCase from './components/RepeatDefaultCase';
 import RepeatDailyCase from './components/RepeatDailyCase';
@@ -11,10 +9,6 @@ export type RepeatViewMode = 'list' | 'daily' | 'custom';
 interface RepeatContentPropsExtended extends RepeatContentProps {
   viewMode: RepeatViewMode;
   onViewModeChange: (mode: RepeatViewMode) => void;
-  publishHours?: number;
-  publishMinutes?: number;
-  onPublishHoursChange?: (hours: number) => void;
-  onPublishMinutesChange?: (minutes: number) => void;
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
@@ -23,6 +17,12 @@ interface RepeatContentPropsExtended extends RepeatContentProps {
 
 export default function RepeatContent({
   repeatValue,
+  repeatPublishTimeType,
+  repeatPublishHours,
+  repeatPublishMinutes,
+  onRepeatPublishTimeTypeChange,
+  onRepeatPublishHoursChange,
+  onRepeatPublishMinutesChange,
   repeatCustomDays,
   repeatCustomHours,
   repeatCustomUnit,
@@ -42,28 +42,14 @@ export default function RepeatContent({
   onRepeatYearDaysChange,
   viewMode,
   onViewModeChange,
-  publishHours = 12,
-  publishMinutes = 0,
-  onPublishHoursChange,
-  onPublishMinutesChange,
   repeatEndType,
   repeatEndDate,
   onRepeatEndTypeChange,
   onRepeatEndDateChange,
 }: RepeatContentPropsExtended) {
-  // Local state for hours/minutes if not controlled externally
-  const [localHours, setLocalHours] = useState(publishHours);
-  const [localMinutes, setLocalMinutes] = useState(publishMinutes);
-
-  const handleHoursChange = (hours: number) => {
-    setLocalHours(hours);
-    onPublishHoursChange?.(hours);
-  };
-
-  const handleMinutesChange = (minutes: number) => {
-    setLocalMinutes(minutes);
-    onPublishMinutesChange?.(minutes);
-  };
+  const effectivePublishTimeType = repeatPublishTimeType ?? 'from_publish';
+  const effectivePublishHours = repeatPublishHours ?? 12;
+  const effectivePublishMinutes = repeatPublishMinutes ?? 0;
 
   const handleBack = () => {
     // Reset to 'never' when going back
@@ -75,10 +61,12 @@ export default function RepeatContent({
     return (
       <RepeatDailyCase
         onBack={handleBack}
-        publishHours={localHours}
-        publishMinutes={localMinutes}
-        onPublishHoursChange={handleHoursChange}
-        onPublishMinutesChange={handleMinutesChange}
+        publishTimeType={effectivePublishTimeType}
+        onPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
+        publishHours={effectivePublishHours}
+        publishMinutes={effectivePublishMinutes}
+        onPublishHoursChange={onRepeatPublishHoursChange}
+        onPublishMinutesChange={onRepeatPublishMinutesChange}
         repeatEndType={repeatEndType}
         onRepeatEndTypeChange={(value) => {
           onRepeatEndTypeChange?.(value);

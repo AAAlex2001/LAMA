@@ -62,6 +62,9 @@ interface PostSettingsProps {
 
   // Repeat
   repeatInterval: RepeatOption;
+  repeatPublishTimeType: 'from_publish' | 'exact_time';
+  repeatPublishHours: number;
+  repeatPublishMinutes: number;
   repeatCustomDays: number;
   repeatCustomHours: number;
   repeatCustomUnit: RepeatCustomUnit;
@@ -73,6 +76,9 @@ interface PostSettingsProps {
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
   onRepeatChange: (value: RepeatOption) => void;
+  onRepeatPublishTimeTypeChange: (value: 'from_publish' | 'exact_time') => void;
+  onRepeatPublishHoursChange: (value: number) => void;
+  onRepeatPublishMinutesChange: (value: number) => void;
   onRepeatCustomDaysChange: (value: number) => void;
   onRepeatCustomHoursChange: (value: number) => void;
   onRepeatCustomUnitChange: (value: RepeatCustomUnit) => void;
@@ -134,6 +140,9 @@ export default function PostSettings({
   onTagColorChange,
 
   repeatInterval,
+  repeatPublishTimeType,
+  repeatPublishHours,
+  repeatPublishMinutes,
   repeatCustomDays,
   repeatCustomHours,
   repeatCustomUnit,
@@ -145,6 +154,9 @@ export default function PostSettings({
   repeatEndType,
   repeatEndDate,
   onRepeatChange,
+  onRepeatPublishTimeTypeChange,
+  onRepeatPublishHoursChange,
+  onRepeatPublishMinutesChange,
   onRepeatCustomDaysChange,
   onRepeatCustomHoursChange,
   onRepeatCustomUnitChange,
@@ -237,7 +249,13 @@ export default function PostSettings({
               label="Повтор"
               variant="repeat"
               repeatValue={repeatInterval}
+              repeatPublishTimeType={repeatPublishTimeType}
+              repeatPublishHours={repeatPublishHours}
+              repeatPublishMinutes={repeatPublishMinutes}
               onRepeatChange={onRepeatChange}
+              onRepeatPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
+              onRepeatPublishHoursChange={onRepeatPublishHoursChange}
+              onRepeatPublishMinutesChange={onRepeatPublishMinutesChange}
               repeatCustomDays={repeatCustomDays}
               repeatCustomHours={repeatCustomHours}
               repeatCustomUnit={repeatCustomUnit}

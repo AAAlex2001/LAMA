@@ -25,6 +25,9 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
   const pinPost = useAppSelector(state => state.settings.pinPost);
   const showCreateChannel = useAppSelector(state => state.settings.showCreateChannel);
   const repeatInterval = useAppSelector(state => state.settings.repeatInterval);
+  const repeatPublishTimeType = useAppSelector(state => state.settings.repeatPublishTimeType);
+  const repeatPublishHours = useAppSelector(state => state.settings.repeatPublishHours);
+  const repeatPublishMinutes = useAppSelector(state => state.settings.repeatPublishMinutes);
   const repeatCustomDays = useAppSelector(state => state.settings.repeatCustomDays);
   const repeatCustomHours = useAppSelector(state => state.settings.repeatCustomHours);
   const repeatCustomUnit = useAppSelector(state => state.settings.repeatCustomUnit);
@@ -121,6 +124,9 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       onDeleteTag={handleDeleteTag}
       onTagColorChange={(color: TagColor) => dispatch(settingsSlice.setSelectedTagColor(color))}
       repeatInterval={repeatInterval}
+      repeatPublishTimeType={repeatPublishTimeType}
+      repeatPublishHours={repeatPublishHours}
+      repeatPublishMinutes={repeatPublishMinutes}
       repeatCustomDays={repeatCustomDays}
       repeatCustomHours={repeatCustomHours}
       repeatCustomUnit={repeatCustomUnit}
@@ -132,6 +138,9 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       repeatEndType={repeatEndType}
       repeatEndDate={repeatEndDate ? new Date(repeatEndDate) : null}
       onRepeatChange={(v: RepeatOption) => dispatch(settingsSlice.setRepeatInterval(v))}
+      onRepeatPublishTimeTypeChange={(v: 'from_publish' | 'exact_time') => dispatch(settingsSlice.setRepeatPublishTimeType(v))}
+      onRepeatPublishHoursChange={(v: number) => dispatch(settingsSlice.setRepeatPublishHours(v))}
+      onRepeatPublishMinutesChange={(v: number) => dispatch(settingsSlice.setRepeatPublishMinutes(v))}
       onRepeatCustomDaysChange={(v: number) => dispatch(settingsSlice.setRepeatCustomDays(v))}
       onRepeatCustomHoursChange={(v: number) => dispatch(settingsSlice.setRepeatCustomHours(v))}
       onRepeatCustomUnitChange={(v: RepeatCustomUnit) => dispatch(settingsSlice.setRepeatCustomUnit(v))}

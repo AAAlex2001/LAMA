@@ -88,6 +88,54 @@ export function buildCreatePostRequest(
   const hasFormatting = hasText && hasSupportedFormatting(text);
   const autoDeleteSeconds = convertAutoDeleteToSeconds(settings.autoDeleteInterval, settings.autoDeleteCustomDays, settings.autoDeleteCustomHours);
   
+  const shouldUseExactRepeatTime = settings.repeatPublishTimeType === 'exact_time';
+
+  const repeatEndTime = settings.repeatEndType === 'date' && settings.repeatEndDate
+    ? (() => {
+        const endDate = new Date(settings.repeatEndDate);
+        if (shouldUseExactRepeatTime) {
+          endDate.setHours(settings.repeatPublishHours, settings.repeatPublishMinutes, 0, 0);
+        } else {
+          endDate.setHours(23, 59, 59, 999);
+        }
+        return endDate.toISOString();
+      })()
+    : undefined;
+
+  const effectiveScheduledTime = scheduledTime ?? (() => {
+    if (settings.repeatInterval !== 'never' && shouldUseExactRepeatTime) {
+      const now = new Date();
+      const next = new Date(now);
+      next.setHours(settings.repeatPublishHours, settings.repeatPublishMinutes, 0, 0);
+      if (next <= now) {
+        next.setDate(next.getDate() + 1);
+      }
+      return next.toISOString();
+    }
+    return new Date().toISOString();
+  })();
+
+  const repeatPayload: Partial<CreatePostRequest> = {
+    repeat_interval: settings.repeatInterval,
+    repeat_custom_days: settings.repeatCustomDays > 0 ? settings.repeatCustomDays : undefined,
+    repeat_custom_hours: settings.repeatCustomHours > 0 ? settings.repeatCustomHours : undefined,
+    repeat_custom_unit: settings.repeatInterval === 'custom' ? settings.repeatCustomUnit : undefined,
+    repeat_custom_value: settings.repeatInterval === 'custom' ? settings.repeatCustomValue : undefined,
+    repeat_weekdays: settings.repeatInterval === 'custom' && settings.repeatCustomUnit === 'weeks' && settings.repeatWeekdays.length > 0
+      ? settings.repeatWeekdays
+      : undefined,
+    repeat_month_days: settings.repeatInterval === 'custom' && settings.repeatCustomUnit === 'months' && settings.repeatMonthDays.length > 0
+      ? settings.repeatMonthDays
+      : undefined,
+    repeat_year_month: settings.repeatInterval === 'custom' && settings.repeatCustomUnit === 'years' && settings.repeatYearMonth > 0
+      ? settings.repeatYearMonth
+      : undefined,
+    repeat_year_days: settings.repeatInterval === 'custom' && settings.repeatCustomUnit === 'years' && settings.repeatYearDays.length > 0
+      ? settings.repeatYearDays
+      : undefined,
+    repeat_end_time: repeatEndTime,
+  };
+
   return {
     content_type: contentType,
     text_content: hasText ? text : undefined,
@@ -101,14 +149,14 @@ export function buildCreatePostRequest(
     disable_notification: !settings.notifySubscribers,
     disable_web_page_preview: !showLinkPreview,
     status: scheduledTime ? 'scheduled' : 'draft',
-    scheduled_time: scheduledTime || new Date().toISOString(),
+    scheduled_time: effectiveScheduledTime,
     inline_keyboard: buildInlineKeyboard(buttonRows),
     poll_data: pollData || undefined,
     tag_names: settings.selectedTagName ? [settings.selectedTagName] : undefined,
     tag_color: settings.selectedTagColor ?? undefined,
-    repeat_interval: settings.repeatInterval,
     reply_to_post_id: settings.replyToPostId || undefined,
     auto_delete_delay_seconds: autoDeleteSeconds,
+    ...repeatPayload,
   };
 }
 

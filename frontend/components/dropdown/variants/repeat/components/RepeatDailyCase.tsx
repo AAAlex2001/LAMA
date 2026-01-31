@@ -1,16 +1,16 @@
 'use client';
-
-import { useState } from 'react';
 import styles from '../repeat.module.scss';
 import PublishTimeSelector from './PublishTimeSelector';
 import RepeatEndSelector from './RepeatEndSelector';
 
 interface RepeatDailyCaseProps {
   onBack: () => void;
+  publishTimeType: 'from_publish' | 'exact_time';
+  onPublishTimeTypeChange?: (value: 'from_publish' | 'exact_time') => void;
   publishHours: number;
   publishMinutes: number;
-  onPublishHoursChange: (hours: number) => void;
-  onPublishMinutesChange: (minutes: number) => void;
+  onPublishHoursChange?: (hours: number) => void;
+  onPublishMinutesChange?: (minutes: number) => void;
   repeatEndType: 'never' | 'date';
   onRepeatEndTypeChange: (value: 'never' | 'date') => void;
   repeatEndDate: Date | null;
@@ -19,6 +19,8 @@ interface RepeatDailyCaseProps {
 
 export default function RepeatDailyCase({ 
   onBack,
+  publishTimeType,
+  onPublishTimeTypeChange,
   publishHours,
   publishMinutes,
   onPublishHoursChange,
@@ -28,8 +30,6 @@ export default function RepeatDailyCase({
   repeatEndDate,
   onRepeatEndDateChange,
 }: RepeatDailyCaseProps) {
-  const [publishTimeType, setPublishTimeType] = useState<'from_publish' | 'exact_time'>('from_publish');
-
   const getDescriptionText = () => {
     const timeStr = `${String(publishHours).padStart(2, '0')}:${String(publishMinutes).padStart(2, '0')}`;
     const dateStr = repeatEndDate ? repeatEndDate.toLocaleDateString('ru-RU', { 
@@ -79,11 +79,11 @@ export default function RepeatDailyCase({
 
       <PublishTimeSelector 
         value={publishTimeType} 
-        onChange={setPublishTimeType}
+        onChange={(value) => onPublishTimeTypeChange?.(value)}
         hours={publishHours}
         minutes={publishMinutes}
-        onHoursChange={onPublishHoursChange}
-        onMinutesChange={onPublishMinutesChange}
+        onHoursChange={(value) => onPublishHoursChange?.(value)}
+        onMinutesChange={(value) => onPublishMinutesChange?.(value)}
       />
 
       <RepeatEndSelector

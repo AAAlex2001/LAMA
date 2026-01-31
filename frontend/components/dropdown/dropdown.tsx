@@ -50,7 +50,13 @@ export default function Dropdown({
   selectedTagColor = '#FAC7C7',
   onTagColorChange,
   repeatValue = 'never',
+  repeatPublishTimeType = 'from_publish',
+  repeatPublishHours = 12,
+  repeatPublishMinutes = 0,
   onRepeatChange,
+  onRepeatPublishTimeTypeChange,
+  onRepeatPublishHoursChange,
+  onRepeatPublishMinutesChange,
   repeatCustomDays = 0,
   repeatCustomHours = 0,
   repeatCustomUnit = 'days',
@@ -160,6 +166,9 @@ export default function Dropdown({
         return (
           <RepeatContent
             repeatValue={repeatValue}
+            repeatPublishTimeType={repeatPublishTimeType}
+            repeatPublishHours={repeatPublishHours}
+            repeatPublishMinutes={repeatPublishMinutes}
             repeatCustomDays={repeatCustomDays}
             repeatCustomHours={repeatCustomHours}
             repeatCustomUnit={repeatCustomUnit}
@@ -171,6 +180,9 @@ export default function Dropdown({
             repeatEndType={repeatEndType}
             repeatEndDate={repeatEndDate}
             onRepeatChange={onRepeatChange}
+            onRepeatPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
+            onRepeatPublishHoursChange={onRepeatPublishHoursChange}
+            onRepeatPublishMinutesChange={onRepeatPublishMinutesChange}
             onRepeatCustomDaysChange={onRepeatCustomDaysChange}
             onRepeatCustomHoursChange={onRepeatCustomHoursChange}
             onRepeatCustomUnitChange={onRepeatCustomUnitChange}
