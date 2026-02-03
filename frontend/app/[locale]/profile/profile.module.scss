@@ -1,0 +1,410 @@
+/* Mobile first */
+.page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 94px;
+
+  @media (min-width: 1024px) {
+    padding: 32px 0;
+  }
+}
+
+.contentCard {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0;
+
+  @media (min-width: 1024px) {
+    width: 1334px;
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+  width: 100%;
+
+  @media (min-width: 1024px) {
+    width: 1302px;
+    gap: 22px;
+  }
+}
+
+/* Account */
+.accountSection {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  height: 67px;
+  align-items: flex-start;
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 129px;
+  height: 48px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #e0e0e0;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 72px;
+  height: 34px;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.userName {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  color: #383f45;
+  letter-spacing: -0.01em;
+}
+
+.editButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+}
+
+.userHandle {
+  font-size: 12px;
+  line-height: 12px;
+  color: #8e8e93;
+}
+
+.accountNote {
+  font-size: 12px;
+  line-height: 15px;
+  color: #ced2d6;
+  width: 179px;
+  height: 15px;
+}
+
+/* Grid - stacked on mobile */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+
+  @media (min-width: 1024px) {
+    display: grid;
+    grid-template-columns: 631px 631px;
+    gap: 40px;
+  }
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 50px;
+}
+
+.leftColumn {
+  @media (min-width: 1024px) {
+    gap: 53px;
+  }
+}
+
+.rightColumn {
+  @media (min-width: 1024px) {
+    gap: 68px;
+  }
+}
+
+/* Sections */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.sectionHeaderRow {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+
+.sectionHeaderText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.sectionTitle {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383f45;
+}
+
+.sectionDesc {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.dropdown {
+  width: 100%;
+  min-width: 170px;
+  height: 40px;
+}
+
+/* Plan */
+
+.planMeta {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.planBadge {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 16px;
+}
+
+.planActive {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.planActiveLabel,
+.planActiveDate {
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.planLimits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.planLimitsTitle {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 500;
+  color: #383f45;
+}
+
+.usageList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.planHint {
+  font-size: 14px;
+  line-height: 24px;
+  color: #b0b4b8;
+}
+
+/* Notifications */
+.notificationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.notificationColumns {
+  display: flex;
+  gap: 16px;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383f45;
+}
+
+.notificationsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.notificationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+}
+
+.notificationInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 210px;
+}
+
+.notificationTitle {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 500;
+  color: #383f45;
+}
+
+.notificationHint {
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 500;
+  color: #9ca0a4;
+}
+
+.notificationToggles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Security */
+.securityInputs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+  }
+}
+
+.securityInputs > * {
+  max-width: 100%;
+}
+
+.inputWhite :global(input) {
+  background: #ffffff;
+  border: 1px solid #b0b4b8;
+  box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
+}
+
+.inputWhite :global(input:focus) {
+  border-color: #b0b4b8;
+  box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
+}
+
+.inputIcon :global(svg) {
+  width: 16px;
+  height: 16px;
+}
+
+/* Delete */
+.deleteSection {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e5e5;
+  width: 100%;
+
+  @media (min-width: 1024px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 16px;
+  }
+}
+
+.supportText {
+  font-size: 14px;
+  line-height: 20px;
+  color: #383f45;
+  text-align: left;
+  width: 100%;
+}
+
+.deleteActions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.logoutButton button,
+.logoutButton a {
+  width: 280px;
+  height: 38px;
+  border: 1px solid #b0b4b8;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+}
+
+.logoutButton span {
+  color: #b0b4b8;
+  background: none;
+  -webkit-text-fill-color: #b0b4b8;
+}
+
+.deleteActions :global(button) {
+  width: 280px;
+  height: 38px;
+}
+
+.desktopOnly {
+  display: none;
+
+  @media (min-width: 1024px) {
+    display: inline;
+  }
+}
+
+.mobileOnly {
+  display: inline;
+
+  @media (min-width: 1024px) {
+    display: none;
+  }
+}
+
+.deleteIconButton {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #b0b4b8;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #b0b4b8;
+}
+
+.timezoneSection { order: 1; }
+.languageSection { order: 2; }
+.tariffSection { order: 3; }
+.notificationsSection { order: 4; }

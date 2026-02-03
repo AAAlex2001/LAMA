@@ -1,0 +1,37 @@
+.root {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px 10px 22px;
+  gap: 6px;
+  width: 100%;
+  min-width: 170px;
+  height: 40px;
+  background: #FFFFFF;
+  border: 1.5px solid #B0B4B8;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.value {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #6B6B6B;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+
+.chevron {
+  transform: rotate(-90deg);
+}
