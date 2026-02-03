@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import PostPreviewModal from '@/components/post-preview-modal';
+import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as draftsSlice from '../store/slices/drafts';
 import * as uiSlice from '../store/slices/ui';
@@ -62,6 +63,8 @@ export default function DraftsModalConnected() {
     };
   }, [previewDraft]);
 
+  const token = getAccessToken() || undefined;
+
   return (
     <>
       <DraftsModal
@@ -94,6 +97,7 @@ export default function DraftsModalConnected() {
           mediaFiles={previewData.mediaFiles}
           quizData={previewData.quizData}
           inlineKeyboard={previewData.inlineKeyboard}
+          token={token}
         />
       )}
     </>

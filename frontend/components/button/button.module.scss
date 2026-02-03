@@ -29,12 +29,10 @@
   box-sizing: border-box;
   min-height: 38px;
   min-width: 110px;
-  justify-content: center;
-  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
 
-  &:not(.templateCardButton):not(.inlineButton):not(.outlinedRedButton):hover {
+  &:not(.templateCardButton):not(.inlineButton):hover {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    border-color: transparent;
+    border: none;
 
     .buttonText {
       background: none;
@@ -50,7 +48,7 @@
 
   &.active {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-    border-color: transparent;
+    border: none;
     position: relative;
     z-index: 1;
 
@@ -286,51 +284,6 @@
 
     .buttonText {
       color: #8E8E93;
-    }
-  }
-}
-
-.outlinedRedButtonWrapper {
-  background: transparent;
-  padding: 0;
-  display: inline-block;
-  width: 100%;
-}
-
-.outlinedRedButton {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  width: 100%;
-  height: 37px;
-  background: #FFFFFF;
-  border: 1px solid #E33326;
-  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background-image: none;
-
-  .buttonText {
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    color: #E33326;
-    font-family: 'Inter', sans-serif;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 17px;
-    text-align: center;
-  }
-
-  &.outlinedRedButtonHovered {
-    background: #E33326;
-
-    .buttonText {
-      color: #FFFFFF;
     }
   }
 }

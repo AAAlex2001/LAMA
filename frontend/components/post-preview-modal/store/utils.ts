@@ -214,3 +214,29 @@ export function extractBlockquotes(html: string): { mainHtml: string; blockquote
   
   return { mainHtml, blockquotes, parts };
 }
+
+export function extractUrls(html: string): string[] {
+  if (!html) return [];
+  
+  const urls: string[] = [];
+  const urlRegex = /https?:\/\/[^\s<>"]+/gi;
+  const hrefRegex = /href=["'](https?:\/\/[^"']+)["']/gi;
+
+  const rawMatches = html.match(urlRegex) || [];
+  rawMatches.forEach((url) => {
+    const cleanUrl = url.replace(/[.,;!?)]$/, '');
+    if (!urls.includes(cleanUrl)) {
+      urls.push(cleanUrl);
+    }
+  });
+
+  let hrefMatch: RegExpExecArray | null;
+  while ((hrefMatch = hrefRegex.exec(html)) !== null) {
+    const cleanUrl = hrefMatch[1].replace(/[.,;!?)]$/, '');
+    if (!urls.includes(cleanUrl)) {
+      urls.push(cleanUrl);
+    }
+  }
+
+  return urls;
+}

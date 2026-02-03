@@ -1,6 +1,7 @@
 'use client';
 
 import PostPreviewModal from '@/components/post-preview-modal';
+import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { useAppDispatch, useAppSelector } from '../store';
 import { selectSelectedChannels } from '../store/selectors';
 import * as uiSlice from '../store/slices/ui';
@@ -45,6 +46,8 @@ export default function PostPreviewModalConnected() {
       .filter(row => row.length > 0),
   } : undefined;
 
+  const token = getAccessToken() || undefined;
+
   return (
     <PostPreviewModal
       isOpen={showPreviewModal}
@@ -57,6 +60,7 @@ export default function PostPreviewModalConnected() {
       mediaFiles={mediaFiles as MediaPreviewFile[]}
       quizData={quizPreviewData}
       inlineKeyboard={inlineKeyboardPreview}
+      token={token}
     />
   );
 }

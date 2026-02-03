@@ -24,6 +24,7 @@ from backend.routes.webhook import router as webhook_router
 from backend.routes.landing import router as landing_router
 from backend.routes.upload import router as upload_router
 from backend.routes.media_upload import router as media_upload_router
+from backend.routes.link_preview import router as link_preview_router
 
 
 @asynccontextmanager
@@ -63,6 +64,7 @@ app.include_router(webhook_router)
 app.include_router(landing_router, prefix=api_prefix)
 app.include_router(upload_router, prefix=api_prefix)
 app.include_router(media_upload_router, prefix=api_prefix)
+app.include_router(link_preview_router, prefix=api_prefix)
 
 upload_dir = Path("uploads/landing")
 upload_dir.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,86 @@
+.linkPreviewCard {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #f6f7f9;
+  border: 1px solid #e2e4e8;
+  margin-top: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  max-width: 100%;
+}
+
+.linkPreviewCard:hover {
+  opacity: 0.9;
+}
+
+.linkImage {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  background: #e0e0e0;
+}
+
+.linkContent {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.linkTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e1e1e;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkDescription {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.4;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.linkUrl {
+  font-size: 12px;
+  color: #7a7a7a;
+  line-height: 1.3;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.favicon {
+  width: 16px;
+  height: 16px;
+  border-radius: 2px;
+}
+
+.loading {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+}
+
+.error {
+  padding: 12px;
+  text-align: center;
+  color: #999;
+  font-size: 13px;
+}

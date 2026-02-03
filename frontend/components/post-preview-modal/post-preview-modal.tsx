@@ -12,12 +12,14 @@ import { QuizPreview } from './quiz-preview';
 import { BlockquotePreview } from './blockquote-preview';
 import { CodePreview } from './code-preview';
 import InlineKeyboardPreview, { type InlineKeyboardPreviewData } from './inline-keyboard-preview/inline-keyboard-preview';
+import { LinkPreviewCard } from './link-preview';
 import {
   type QuizPreviewData,
   normalizeMaybeUrl,
   formatMembersCount,
   createMediaRuns,
   extractBlockquotes,
+  extractUrls,
   createObjectUrls,
   revokeObjectUrls,
 } from './store';
@@ -34,6 +36,7 @@ export interface PostPreviewModalProps {
   mediaFiles: MediaFile[];
   quizData?: QuizPreviewData;
   inlineKeyboard?: InlineKeyboardPreviewData;
+  token?: string;
 }
 
 export default function PostPreviewModal(props: PostPreviewModalProps) {
@@ -49,6 +52,7 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
     mediaFiles,
     quizData,
     inlineKeyboard,
+    token,
   } = props;
 
   const [avatarBroken, setAvatarBroken] = useState(false);
@@ -64,6 +68,7 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
   const tailRuns = createMediaRuns(tailMedia, objectUrls);
 
   const { parts } = extractBlockquotes(html);
+  const urls = extractUrls(html);
   const hasContent = headRuns.length > 0 || parts.length > 0 || tailRuns.length > 0;
 
   useEffect(() => {
@@ -179,6 +184,10 @@ export default function PostPreviewModal(props: PostPreviewModalProps) {
                       <DocumentsPreview key={`tail-doc-${idx}`} items={run.items} showTitle={false} />
                     )
                   )}
+
+                  {urls.map((url, idx) => (
+                    <LinkPreviewCard key={`link-${idx}`} url={url} token={token} />
+                  ))}
                 </div>
               )}
 

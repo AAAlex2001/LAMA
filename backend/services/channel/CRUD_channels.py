@@ -18,6 +18,7 @@ from backend.schemas.channels import (
 )
 
 from backend.models.bots import Bot as BotModel
+from backend.models.auth import TelegramAccount
 from backend.services.bot.bots import BotService
 
 
@@ -202,10 +203,24 @@ class CRUDChannelService:
         if not bot_model:
             raise ValueError("Bot not found or does not belong to user")
 
-        # Используем мастер-бота для управления каналами
-        bot = self.get_master_bot()
+        user_query = select(TelegramAccount.telegram_id).where(TelegramAccount.user_id == owner_id)
+        user_result = await self.db.execute(user_query)
+        user_telegram_id = user_result.scalar_one_or_none()
+
+        if not user_telegram_id:
+            raise ValueError("User has no linked Telegram account")
+
+        bot = self.create_bot(bot_model.token)
 
         try:
+            bot_member = await bot.get_chat_member(chat_identifier, bot_model.telegram_id)
+            if bot_member.status in ["left", "kicked"]:
+                raise ValueError("Bot is not a member of this channel/group")
+
+            user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
+            if user_member.status not in ["administrator", "creator"]:
+                raise ValueError("User is not an admin in this channel/group")
+
             chat: Chat = await bot.get_chat(chat_identifier)
 
             actual_telegram_id = chat.id

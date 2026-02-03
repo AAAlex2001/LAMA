@@ -174,7 +174,12 @@ async def send_to_channel_with_retry(
     
     for attempt in range(MAX_RETRY_ATTEMPTS):
         try:
-            sent_messages = await send_to_telegram(publication, channel, bot, reply_to_message_id)
+            sent_messages = await send_to_telegram(
+                publication,
+                channel,
+                bot,
+                reply_to_message_id=reply_to_message_id
+            )
             
             message_ids = [msg.message_id for msg in sent_messages]
             telegram_messages_data = [
