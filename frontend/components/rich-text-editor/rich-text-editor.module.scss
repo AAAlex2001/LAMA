@@ -100,6 +100,40 @@
     font-size: 13px;
   }
 
+  code[data-language="monospace"] {
+    display: block;
+    position: relative;
+    margin: 8px 0;
+    padding: 32px 12px 12px 12px;
+    background: linear-gradient(
+      90deg,
+      rgba(59, 130, 246, 0.05) 0%,
+      rgba(47, 103, 195, 0.05) 50%,
+      rgba(41, 90, 170, 0.05) 75%,
+      rgba(38, 83, 157, 0.05) 87.5%,
+      rgba(36, 79, 150, 0.05) 93.75%,
+      rgba(35, 76, 144, 0.05) 100%
+    );
+    border-radius: 8px;
+    border-left: 4px solid #ced2d6;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  code[data-language="monospace"]::before {
+    content: attr(data-language);
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 15px;
+    color: #6b7280;
+    text-transform: uppercase;
+  }
+
   tg-spoiler {
     position: relative;
     display: inline;
@@ -163,6 +197,10 @@
       border-radius: 0;
       color: #383f45;
       white-space: pre;
+    }
+
+    code::before {
+      content: none;
     }
 
     // Syntax highlighting colors

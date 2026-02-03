@@ -1,11 +1,11 @@
-export type TextFormat = 'bold' | 'italic' | 'underline' | 'strike' | 'code' | 'spoiler';
+export type TextFormat = 'bold' | 'italic' | 'underline' | 'strike' | 'monospace' | 'code' | 'spoiler';
 
 export interface ActiveFormats {
   bold: boolean;
   italic: boolean;
   underline: boolean;
   strike: boolean;
-  code: boolean;
+  monospace: boolean;
   spoiler: boolean;
 }
 

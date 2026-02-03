@@ -13,12 +13,28 @@ interface CodePreviewProps {
 export default function CodePreview({ language, code }: CodePreviewProps) {
   if (!code) return null;
 
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   const { detectedLanguage, highlightedCode } = useMemo(() => {
     const lang = language || detectLanguage(code);
+    const isPlain = lang === 'plaintext' || !hljs.getLanguage(lang);
+
+    if (isPlain) {
+      return {
+        detectedLanguage: 'plaintext',
+        highlightedCode: escapeHtml(code),
+      };
+    }
 
     try {
       const result = hljs.highlight(code, {
-        language: lang === 'plaintext' ? 'plaintext' : lang,
+        language: lang,
         ignoreIllegals: true,
       });
       return {
@@ -27,8 +43,8 @@ export default function CodePreview({ language, code }: CodePreviewProps) {
       };
     } catch {
       return {
-        detectedLanguage: lang,
-        highlightedCode: code,
+        detectedLanguage: 'plaintext',
+        highlightedCode: escapeHtml(code),
       };
     }
   }, [code, language]);

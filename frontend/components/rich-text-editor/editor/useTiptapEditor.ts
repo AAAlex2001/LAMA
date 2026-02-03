@@ -4,6 +4,7 @@ import { useEditor, useEditorState } from '@tiptap/react';
 import { useRef } from 'react';
 import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
+import Code from '@tiptap/extension-code';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
@@ -30,6 +31,20 @@ const CustomCodeBlock = CodeBlockLowlight.extend({
       { ...HTMLAttributes, 'data-language': node.attrs.language || 'plaintext' },
       ['code', { class: node.attrs.language ? `language-${node.attrs.language}` : '' }, 0],
     ];
+  },
+});
+
+const MonospaceCode = Code.extend({
+  addAttributes() {
+    return {
+      dataLanguage: {
+        default: 'monospace',
+        renderHTML: (attributes) => ({ 'data-language': attributes.dataLanguage }),
+      },
+    };
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['code', mergeAttributes(HTMLAttributes), 0];
   },
 });
 
@@ -223,9 +238,11 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
     extensions: [
       StarterKit.configure({
         codeBlock: false,
+        code: false,
         link: false,
         underline: false,
       }),
+      MonospaceCode,
       CustomCodeBlock.configure({
         lowlight,
         defaultLanguage: 'plaintext',
@@ -305,7 +322,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
           italic: ctx.editor.isActive('italic'),
           underline: ctx.editor.isActive('underline'),
           strike: ctx.editor.isActive('strike'),
-          code: ctx.editor.isActive('code'),
+          monospace: ctx.editor.isActive('code'),
           spoiler: ctx.editor.isActive('spoiler'),
         },
         isInCodeBlock,
@@ -332,8 +349,11 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       case 'strike':
         chain.toggleStrike().run();
         break;
-      case 'code':
+      case 'monospace':
         chain.toggleCode().run();
+        break;
+      case 'code':
+        chain.toggleCodeBlock().run();
         break;
       case 'spoiler':
         editor.chain().focus().toggleMark('spoiler').run();

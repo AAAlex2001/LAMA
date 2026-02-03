@@ -164,7 +164,8 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
       { id: 'italic', format: 'italic', label: 'Курсив', tooltip: 'курсив', isActive: Boolean(formats?.italic), disabled: false },
       { id: 'strike', format: 'strike', label: 'Зачёркнутый', tooltip: 'зачеркнутый', isActive: Boolean(formats?.strike), disabled: false },
       { id: 'underline', format: 'underline', label: 'Подчёркнутый', tooltip: 'подчеркнутый', isActive: Boolean(formats?.underline), disabled: false },
-      { id: 'code', format: 'code', label: 'Код', tooltip: 'код', isActive: Boolean(formats?.code) || isInCodeBlock, disabled: !hasSelection },
+      { id: 'monospace', format: 'monospace', label: 'Моноширный', tooltip: 'моноширный', isActive: Boolean(formats?.monospace), disabled: !hasSelection && !formats?.monospace },
+      { id: 'code', format: 'code', label: 'Код', tooltip: 'код', isActive: Boolean(isInCodeBlock), disabled: !hasSelection },
       { id: 'spoiler', format: 'spoiler', label: 'Скрытый текст', tooltip: 'скрытый', isActive: Boolean(formats?.spoiler), disabled: false },
     ];
 
@@ -187,12 +188,16 @@ const RichTextEditor = forwardRef<RichTextEditorRef, RichTextEditorProps>(
         onAiButtonMouseDown={handleAiButtonMouseDown}
         onAiSubmit={handleAiSubmit}
         onToggleFormat={(format) => {
-          if (format === 'code') {
+          if (format === 'monospace') {
             if (!editor) return;
-            if (!hasSelection) return;
-            applyCodeFromSelection(editor);
+            if (hasSelection) {
+              applyCodeFromSelection(editor);
+            } else if (formats?.monospace) {
+              toggleFormat(format);
+            }
             return;
           }
+          if (format === 'code' && !hasSelection) return;
           toggleFormat(format);
         }}
         onQuoteMouseDown={handleQuoteMouseDown}

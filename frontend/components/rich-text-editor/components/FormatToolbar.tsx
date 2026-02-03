@@ -13,6 +13,7 @@ import {
   LinkIcon,
   QuoteIcon,
   CodeIcon,
+  MonospaceIcon,
   BlurIcon,
   StrikethroughIcon,
   UnderlineIcon,
@@ -74,6 +75,8 @@ export default function FormatToolbar({
         return StrikethroughIcon;
       case 'underline':
         return UnderlineIcon;
+      case 'monospace':
+        return MonospaceIcon;
       case 'code':
         return CodeIcon;
       case 'spoiler':

@@ -10,6 +10,7 @@ export type RichTextEditorHoveredButton =
   | 'italic'
   | 'strike'
   | 'underline'
+  | 'monospace'
   | 'code'
   | 'spoiler'
   | null;
