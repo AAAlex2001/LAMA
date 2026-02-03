@@ -23,6 +23,8 @@ export default function ProfilePage() {
   const [notifyTelegramResults, setNotifyTelegramResults] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -199,13 +201,44 @@ export default function ProfilePage() {
           <section className={styles.deleteSection}>
             <p className={styles.supportText}>Нашли ошибку? Сообщите нам в @LamaPlannerBot</p>
             <div className={styles.deleteActions}>
-              <button className={styles.deleteIconButton} aria-label="Удалить аккаунт">
+              <button
+                className={styles.deleteIconButton}
+                aria-label="Удалить аккаунт"
+                onClick={() => setIsDeleteModalOpen(true)}
+              >
                 <TrashIcon width={15} height={16.67} />
                 <span className={styles.deleteText}>Удалить аккаунт</span>
               </button>
-              <button className={styles.logoutButton}>Выйти из аккаунта</button>
+              <button className={styles.logoutButton} onClick={() => setIsLogoutModalOpen(true)}>
+                Выйти из аккаунта
+              </button>
             </div>
           </section>
+          <Modal
+            isOpen={isLogoutModalOpen}
+            onClose={() => setIsLogoutModalOpen(false)}
+            onConfirm={() => setIsLogoutModalOpen(false)}
+            title="Выйти из аккаунта?"
+            description="Вы сможете войти снова в любой момент"
+            confirmText="Выйти"
+            cancelText="Отменить"
+            confirmVariant="default"
+            confirmActive
+            cancelActive={false}
+          />
+          <Modal
+            isOpen={isDeleteModalOpen}
+            onClose={() => setIsDeleteModalOpen(false)}
+            onConfirm={() => setIsDeleteModalOpen(false)}
+            title="Удалить аккаунт?"
+            description="Вы собираетесь навсегда удалить аккаунт LamaPlanner. Это действие необратимо"
+            confirmText="Удалить все данные"
+            cancelText="Отменить"
+            confirmVariant="outlined-red"
+            confirmActive={false}
+            cancelActive
+            confirmFirst
+          />
           <Modal
             isOpen={isEmailModalOpen}
             onClose={() => setIsEmailModalOpen(false)}

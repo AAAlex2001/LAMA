@@ -159,6 +159,7 @@ export default function DraftsModal({
         onClose={() => setDeleteConfirmationId(null)}
         onConfirm={confirmDelete}
         title="Удаление черновика"
+        confirmVariant="outlined-red"
       />
     </div>
   );

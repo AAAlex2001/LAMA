@@ -15,6 +15,7 @@ interface DeleteConfirmationModalProps {
   confirmVariant?: 'default' | 'templateCard' | 'inlineButton' | 'outlined-red';
   confirmActive?: boolean;
   cancelActive?: boolean;
+  confirmFirst?: boolean;
   children?: React.ReactNode;
 }
 
@@ -29,6 +30,7 @@ export default function DeleteConfirmationModal({
   confirmVariant = 'outlined-red',
   confirmActive = false,
   cancelActive = true,
+  confirmFirst = false,
   children,
 }: DeleteConfirmationModalProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
@@ -62,6 +64,19 @@ export default function DeleteConfirmationModal({
           </div>
           {children}
           <div className={styles.buttons}>
+            {confirmFirst && (
+              <Button
+                text={confirmText}
+                variant={confirmVariant}
+                onClick={handleConfirm}
+                showArrow={false}
+                fullWidth
+                active={confirmActive}
+                hovered={hoveredDelete}
+                onMouseEnter={() => setHoveredDelete(true)}
+                onMouseLeave={() => setHoveredDelete(false)}
+              />
+            )}
             <Button
               text={cancelText}
               onClick={handleClose}
@@ -69,17 +84,19 @@ export default function DeleteConfirmationModal({
               fullWidth
               active={cancelActive}
             />
-            <Button
-              text={confirmText}
-              variant={confirmVariant}
-              onClick={handleConfirm}
-              showArrow={false}
-              fullWidth
-              active={confirmActive}
-              hovered={hoveredDelete}
-              onMouseEnter={() => setHoveredDelete(true)}
-              onMouseLeave={() => setHoveredDelete(false)}
-            />
+            {!confirmFirst && (
+              <Button
+                text={confirmText}
+                variant={confirmVariant}
+                onClick={handleConfirm}
+                showArrow={false}
+                fullWidth
+                active={confirmActive}
+                hovered={hoveredDelete}
+                onMouseEnter={() => setHoveredDelete(true)}
+                onMouseLeave={() => setHoveredDelete(false)}
+              />
+            )}
           </div>
         </div>
       </div>

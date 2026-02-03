@@ -201,6 +201,7 @@ export default function TextTemplatesModal({
         onClose={() => setDeleteConfirmationId(null)}
         onConfirm={confirmDelete}
         title="Удаление шаблона"
+        confirmVariant="outlined-red"
       />
     </div>
   );
