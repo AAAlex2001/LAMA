@@ -23,6 +23,8 @@ interface InputProps {
   icons?: Array<{
     icon: React.ReactNode;
     onClick?: () => void;
+    onMouseEnter?: () => void;
+    onMouseLeave?: () => void;
     disabled?: boolean;
     className?: string;
   }>;
@@ -122,7 +124,9 @@ export default function Input({
                 type="button"
                 className={classNames(styles.iconButton, item.className)}
                 onClick={item.onClick}
-                disabled={item.disabled || disabled}
+                onMouseEnter={item.onMouseEnter}
+                onMouseLeave={item.onMouseLeave}
+                disabled={item.disabled}
               >
                 {item.icon}
               </button>

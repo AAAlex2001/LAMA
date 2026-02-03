@@ -125,7 +125,7 @@
 
 .rightColumn {
   @media (min-width: 1440px) {
-    gap: 68px;
+    gap: 53px;
   }
 }
 
@@ -357,6 +357,12 @@
   box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
 }
 
+.inputWhite :global(input:disabled) {
+  background: #ffffff;
+  opacity: 1;
+  cursor: default;
+}
+
 .inputIcon :global(svg) {
   width: 24px;
   height: 24px;
@@ -400,27 +406,13 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  width: 100%;
-}
-
-.logoutButton button,
-.logoutButton a {
-  width: 280px;
+  width: 224px;
   height: 38px;
-  border: 1px solid #b0b4b8;
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
-}
-
-.logoutButton span {
-  color: #b0b4b8;
-  background: none;
-  -webkit-text-fill-color: #b0b4b8;
+  margin: 0 auto;
 }
 
 .deleteActions :global(button) {
-  width: 280px;
+  width: 176px;
   height: 38px;
 }
 
@@ -456,3 +448,9 @@
 .languageSection { order: 2; }
 .tariffSection { order: 3; }
 .notificationsSection { order: 4; }
+
+.modalFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -13,31 +13,39 @@
 
 .modal {
   position: relative;
-  width: 360px;
+  width: 340px;
   max-width: calc(100vw - 32px);
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 16px;
+  padding: 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 48px;
   box-sizing: border-box;
 }
 
 .content {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 30px;
   width: 100%;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  text-align: center;
 }
 
 .title {
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
   font-style: normal;
-  font-weight: 400;
+  font-weight: 600;
   font-size: 16px;
-  line-height: 28px;
+  line-height: 19px;
   color: #383F45;
   text-align: center;
 }
@@ -55,8 +63,8 @@
 
 .buttons {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
   gap: 8px;
   width: 100%;
 }

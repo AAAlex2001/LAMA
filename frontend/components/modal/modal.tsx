@@ -9,6 +9,13 @@ interface DeleteConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  confirmVariant?: 'default' | 'templateCard' | 'inlineButton' | 'outlined-red';
+  confirmActive?: boolean;
+  cancelActive?: boolean;
+  children?: React.ReactNode;
 }
 
 export default function DeleteConfirmationModal({
@@ -16,6 +23,13 @@ export default function DeleteConfirmationModal({
   onClose,
   onConfirm,
   title,
+  description,
+  confirmText = 'Удалить',
+  cancelText = 'Отменить',
+  confirmVariant = 'outlined-red',
+  confirmActive = false,
+  cancelActive = true,
+  children,
 }: DeleteConfirmationModalProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
 
@@ -41,27 +55,32 @@ export default function DeleteConfirmationModal({
   return (
     <div className={styles.overlay} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <h2 className={styles.title}>{title}</h2>
-        
-        <div className={styles.buttons}>
-          <Button
-            text="Удалить"
-            variant="outlined-red"
-            onClick={handleConfirm}
-            showArrow={false}
-            fullWidth
-            hovered={hoveredDelete}
-            onMouseEnter={() => setHoveredDelete(true)}
-            onMouseLeave={() => setHoveredDelete(false)}
-          />
-          
-          <Button
-            text="Отменить"
-            onClick={handleClose}
-            showArrow={false}
-            fullWidth
-            active
-          />
+        <div className={styles.content}>
+          <div className={styles.header}>
+            <h2 className={styles.title}>{title}</h2>
+            {description && <p className={styles.description}>{description}</p>}
+          </div>
+          {children}
+          <div className={styles.buttons}>
+            <Button
+              text={cancelText}
+              onClick={handleClose}
+              showArrow={false}
+              fullWidth
+              active={cancelActive}
+            />
+            <Button
+              text={confirmText}
+              variant={confirmVariant}
+              onClick={handleConfirm}
+              showArrow={false}
+              fullWidth
+              active={confirmActive}
+              hovered={hoveredDelete}
+              onMouseEnter={() => setHoveredDelete(true)}
+              onMouseLeave={() => setHoveredDelete(false)}
+            />
+          </div>
         </div>
       </div>
     </div>

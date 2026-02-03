@@ -6,6 +6,7 @@ import SimpleDropdown from '@/components/simple-dropdown/simple-dropdown';
 import UsageLine from '@/components/usage-line/usage-line';
 import Toggle from '@/components/toggle/toggle';
 import Input from '@/components/input';
+import Modal from '@/components/modal';
 import Button from '@/components/button/button';
 import { EditNameIcon, TrashIcon } from '@/components/icons';
 
@@ -20,6 +21,11 @@ export default function ProfilePage() {
   const [notifyTelegramErrors, setNotifyTelegramErrors] = useState(false);
   const [notifyInboxResults, setNotifyInboxResults] = useState(false);
   const [notifyTelegramResults, setNotifyTelegramResults] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   return (
     <div className={styles.page}>
@@ -161,7 +167,14 @@ export default function ProfilePage() {
                 placeholder="username@example.com"
                 variant="white"
                 className={styles.inputWhite}
-                icons={[{ icon: <EditNameIcon />, className: styles.inputIcon }]}
+                disabled
+                icons={[
+                  {
+                    icon: <EditNameIcon />,
+                    className: styles.inputIcon,
+                    onClick: () => setIsEmailModalOpen(true),
+                  },
+                ]}
               />
               <Input
                 label="Пароль"
@@ -171,7 +184,14 @@ export default function ProfilePage() {
                 placeholder="*******************"
                 variant="white"
                 className={styles.inputWhite}
-                icons={[{ icon: <EditNameIcon />, className: styles.inputIcon }]}
+                disabled
+                icons={[
+                  {
+                    icon: <EditNameIcon />,
+                    className: styles.inputIcon,
+                    onClick: () => setIsPasswordModalOpen(true),
+                  },
+                ]}
               />
             </div>
           </section>
@@ -182,9 +202,60 @@ export default function ProfilePage() {
               <button className={styles.deleteIconButton} aria-label="Удалить аккаунт">
                 <TrashIcon />
               </button>
-              <Button text="Выйти из аккаунта" className={styles.logoutButton} showArrow={false} />
+              <Button text="Выйти из аккаунта" variant="outlined-red" showArrow={false} />
             </div>
           </section>
+          <Modal
+            isOpen={isEmailModalOpen}
+            onClose={() => setIsEmailModalOpen(false)}
+            onConfirm={() => setNewEmail('')}
+            title="Смена электронной почты"
+            description="Мы отправим письмо для подтверждения нового адреса"
+            confirmText="Подтвердить"
+            cancelText="Отменить"
+            confirmVariant="default"
+            confirmActive
+            cancelActive={false}
+          >
+            <Input
+              label="Новая электронная почта"
+              value={newEmail}
+              onChange={setNewEmail}
+              placeholder="Введите новый email"
+            />
+          </Modal>
+          <Modal
+            isOpen={isPasswordModalOpen}
+            onClose={() => setIsPasswordModalOpen(false)}
+            onConfirm={() => {
+              setNewPassword('');
+              setConfirmPassword('');
+            }}
+            title="Смена пароля"
+            description="Мы отправим письмо для подтверждения смены пароля"
+            confirmText="Подтвердить"
+            cancelText="Отменить"
+            confirmVariant="default"
+            confirmActive
+            cancelActive={false}
+          >
+            <div className={styles.modalFields}>
+              <Input
+                label="Новый пароль"
+                type="password"
+                value={newPassword}
+                onChange={setNewPassword}
+                placeholder="Введите новый пароль"
+              />
+              <Input
+                label="Подтверждение пароля"
+                type="password"
+                value={confirmPassword}
+                onChange={setConfirmPassword}
+                placeholder="Повторите новый пароль"
+              />
+            </div>
+          </Modal>
         </div>
       </div>
     </div>
