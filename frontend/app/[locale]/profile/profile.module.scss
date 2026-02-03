@@ -145,6 +145,17 @@
   align-items: flex-start;
   gap: 20px;
   width: 100%;
+
+  &.horizontalLayout {
+    @media (min-width: 1440px) {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      gap: 4px;
+      width: 631px;
+      height: 40px;
+    }
+  }
 }
 
 .sectionHeaderText {
@@ -152,6 +163,13 @@
   flex-direction: column;
   gap: 4px;
   width: 100%;
+
+  .horizontalLayout & {
+    @media (min-width: 1440px) {
+      width: 420px;
+      height: 40px;
+    }
+  }
 }
 
 .sectionTitle {
@@ -172,6 +190,12 @@
   width: 100%;
   min-width: 170px;
   height: 40px;
+
+  .horizontalLayout & {
+    @media (min-width: 1440px) {
+      width: 207px;
+    }
+  }
 }
 
 .tariffHeaderRow {

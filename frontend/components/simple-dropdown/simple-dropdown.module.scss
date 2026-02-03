@@ -13,6 +13,11 @@
   border: 1.5px solid #B0B4B8;
   border-radius: 10px;
   cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: #F8F8F8;
+  }
 }
 
 .value {

@@ -47,7 +47,7 @@ export default function ProfilePage() {
           <div className={styles.grid}>
             <div className={styles.leftColumn}>
               <section className={`${styles.section} ${styles.timezoneSection}`}>
-                <div className={styles.sectionHeaderRow}>
+                <div className={`${styles.sectionHeaderRow} ${styles.horizontalLayout}`}>
                   <div className={styles.sectionHeaderText}>
                     <h2 className={styles.sectionTitle}>Часовой пояс</h2>
                     <p className={styles.sectionDesc}>
@@ -86,7 +86,7 @@ export default function ProfilePage() {
 
             <div className={styles.rightColumn}>
               <section className={`${styles.section} ${styles.languageSection}`}>
-                <div className={styles.sectionHeaderRow}>
+                <div className={`${styles.sectionHeaderRow} ${styles.horizontalLayout}`}>
                   <div className={styles.sectionHeaderText}>
                     <h2 className={styles.sectionTitle}>Смена языка</h2>
                     <p className={styles.sectionDesc}>Выберите язык интерфейса для работы с сервисом</p>

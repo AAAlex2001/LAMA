@@ -21,7 +21,7 @@ export default function SimpleDropdown({ value, onClick, className, ariaLabel }:
     >
       <span className={styles.value}>{value}</span>
       <span className={styles.icon} aria-hidden="true">
-        <ChevronDownIcon className={styles.chevron} width={10} height={6} color="#858585" />
+        <ChevronDownIcon className={styles.chevron} width={14} height={14} color="#858585" />
       </span>
     </button>
   );
