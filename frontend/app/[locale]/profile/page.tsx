@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import styles from './profile.module.scss';
 import SimpleDropdown from '@/components/simple-dropdown/simple-dropdown';
 import UsageLine from '@/components/usage-line/usage-line';
@@ -9,6 +9,40 @@ import Input from '@/components/input';
 import Modal from '@/components/modal';
 import Button from '@/components/button/button';
 import { EditNameIcon, TrashIcon, FlagRuIcon, FlagGbIcon, FlagRsIcon } from '@/components/icons';
+import { getTimeZones } from '@vvo/tzdb';
+
+const formatOffset = (minutes: number) => {
+  const sign = minutes >= 0 ? '+' : '-';
+  const abs = Math.abs(minutes);
+  const hours = Math.floor(abs / 60);
+  const mins = abs % 60;
+  return `GMT ${sign}${hours}${mins ? `:${String(mins).padStart(2, '0')}` : ''}`;
+};
+
+const RU_CITY_MAP: Record<string, string> = {
+  'Europe/Moscow': 'Москва',
+  'Europe/Kaliningrad': 'Калининград',
+  'Europe/Samara': 'Самара',
+  'Asia/Yekaterinburg': 'Екатеринбург',
+  'Asia/Omsk': 'Омск',
+  'Asia/Krasnoyarsk': 'Красноярск',
+  'Asia/Irkutsk': 'Иркутск',
+  'Asia/Yakutsk': 'Якутск',
+  'Asia/Vladivostok': 'Владивосток',
+  'Asia/Magadan': 'Магадан',
+  'Asia/Kamchatka': 'Камчатка',
+  'Asia/Novosibirsk': 'Новосибирск',
+  'Asia/Novokuznetsk': 'Новокузнецк',
+  'Asia/Tomsk': 'Томск',
+  'Asia/Barnaul': 'Барнаул',
+  'Asia/Chita': 'Чита',
+  'Asia/Sakhalin': 'Сахалин',
+};
+
+const formatTzLabel = (tz: { name: string; currentTimeOffsetInMinutes: number }) => {
+  const city = RU_CITY_MAP[tz.name] || tz.name.split('/').slice(-1)[0].replace(/_/g, ' ');
+  return `${city} (${formatOffset(tz.currentTimeOffsetInMinutes)})`;
+};
 
 export default function ProfilePage() {
   const [email, setEmail] = useState('admin');
@@ -28,6 +62,21 @@ export default function ProfilePage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const ruTimezones = useMemo(
+    () => getTimeZones().filter((tz) => tz.countryCode === 'RU'),
+    []
+  );
+  const timezoneItems = useMemo(
+    () =>
+      ruTimezones.map((tz) => ({
+        value: tz.name,
+        label: formatTzLabel(tz),
+      })),
+    [ruTimezones]
+  );
+  const [timezone, setTimezone] = useState('Europe/Moscow');
+  const selectedTimezoneLabel =
+    timezoneItems.find((item) => item.value === timezone)?.label || 'Москва (GMT +3)';
   const [language, setLanguage] = useState('Русский');
 
   return (
@@ -57,7 +106,12 @@ export default function ProfilePage() {
                       Используется для отображения времени в календаре и планирования публикаций
                     </p>
                   </div>
-                  <SimpleDropdown value="Москва (GMT +3)" className={styles.dropdown} />
+                  <SimpleDropdown
+                    value={selectedTimezoneLabel}
+                    className={styles.dropdown}
+                    items={timezoneItems}
+                    onSelect={setTimezone}
+                  />
                 </div>
               </section>
               <section className={`${styles.section} ${styles.tariffSection}`}>
