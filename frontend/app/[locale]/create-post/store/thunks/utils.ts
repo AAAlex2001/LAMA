@@ -162,8 +162,9 @@ export function buildCreatePostRequest(
 
 export function validatePost(text: string, filesCount: number, pollData: PollData | null, channelIds: number[]): string | null {
   const plainText = extractPlainText(text);
+  const maxTextLength = filesCount > 0 ? 1024 : 4096;
   if (!plainText && filesCount === 0 && !pollData) return 'Текст поста или медиа не могут быть пустыми';
-  if (plainText.length > 4096) return 'Превышен лимит 4096 символов';
+  if (plainText.length > maxTextLength) return `Превышен лимит ${maxTextLength} символов`;
   if (channelIds.length === 0) return 'Выберите хотя бы один канал';
   return null;
 }

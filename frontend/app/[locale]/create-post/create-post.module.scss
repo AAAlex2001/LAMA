@@ -182,9 +182,9 @@
   width: 100%;
 
   @media (min-width: 1440px) {
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: flex-start;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
   }
 }
 
@@ -214,7 +214,20 @@
   min-width: 0;
 
   @media (min-width: 1440px) {
-    flex: 0 0 auto;
+    width: 100%;
+
+    button {
+      width: 100% !important;
+      min-height: 34px !important;
+      padding: 6px 4px !important;
+      gap: 6px !important;
+    }
+
+    span[class*="buttonText"] {
+      font-size: 14px !important;
+      line-height: 28px !important;
+      white-space: nowrap !important;
+    }
   }
 }
 
@@ -223,7 +236,20 @@
   min-width: 0;
 
   @media (min-width: 1440px) {
-    flex: 0 0 auto;
+    width: 100%;
+
+    button {
+      width: 100% !important;
+      min-height: 34px !important;
+      padding: 6px 4px !important;
+      gap: 6px !important;
+    }
+
+    span[class*="buttonText"] {
+      font-size: 14px !important;
+      line-height: 28px !important;
+      white-space: nowrap !important;
+    }
   }
 }
 

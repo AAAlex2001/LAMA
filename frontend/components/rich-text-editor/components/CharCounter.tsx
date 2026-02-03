@@ -24,6 +24,7 @@ export default function CharCounter({
   onHover,
   getButtonColor,
 }: CharCounterProps) {
+  const isOver = charCount > maxLength;
   return (
     <div className={styles.charCountWrapper}>
       <button
@@ -38,8 +39,9 @@ export default function CharCounter({
         <TemplatesIcon width={21} height={21} color={getButtonColor('templates')} />
         {hoveredButton === 'templates' && <Tooltip text="сохранить в шаблоны" />}
       </button>
-      <span className={`${styles.charCount} ${charCount > maxLength ? styles.charCountOver : ''}`}>
-        {charCount}/{maxLength}
+      <span className={styles.charCount}>
+        <span className={isOver ? styles.charCountOver : ''}>{charCount}</span>
+        <span>/{maxLength}</span>
       </span>
     </div>
   );

@@ -32,6 +32,7 @@ import * as editorSlice from './store/slices/editor';
 import * as mediaSlice from './store/slices/media';
 import * as settingsSlice from './store/slices/settings';
 import * as uiSlice from './store/slices/ui';
+import * as channelsSlice from './store/slices/channels';
 import {
   saveAsTemplate,
   fetchChannelsThunk,
@@ -63,6 +64,8 @@ function CreatePostPageContent() {
   const pollData = selectPollData(quizState);
   const replyToPostState = useAppSelector(state => state.replyToPost);
   const selectedChannels = useAppSelector(selectSelectedChannels);
+  const channelsError = useAppSelector(state => state.channels.error);
+  const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
   
   const hasContentForPreview = 
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
@@ -77,6 +80,12 @@ function CreatePostPageContent() {
   useEffect(() => {
     dispatch(fetchChannelsThunk({}));
   }, [dispatch]);
+
+  useEffect(() => {
+    if (!channelsError) return;
+    showError(channelsError);
+    dispatch(channelsSlice.clearError());
+  }, [channelsError, dispatch, showError]);
 
   const {
     handleSelectPostSnapshot,
@@ -130,7 +139,7 @@ function CreatePostPageContent() {
       />
 
       <div className={styles.content}>
-        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." onSaveAsTemplate={(html) => {
+        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." maxLength={editorMaxLength} onSaveAsTemplate={(html) => {
           dispatch(saveAsTemplate(html)).then((result) => {
             if (result.meta.requestStatus === 'fulfilled') {
               showSuccess('Шаблон успешно сохранён');
