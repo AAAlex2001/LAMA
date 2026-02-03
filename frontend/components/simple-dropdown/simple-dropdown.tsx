@@ -4,6 +4,8 @@ import { useState, useRef, useEffect, ReactNode } from 'react';
 import classNames from 'classnames';
 import styles from './simple-dropdown.module.scss';
 import { ChevronDownIcon } from '@/components/icons';
+import Button from '@/components/button/button';
+import SearchBar from '@/components/search-bar/search-bar';
 
 interface DropdownItem {
   value: string;
@@ -18,6 +20,8 @@ interface SimpleDropdownProps {
   ariaLabel?: string;
   items?: DropdownItem[];
   onSelect?: (value: string) => void;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export default function SimpleDropdown({
@@ -27,8 +31,11 @@ export default function SimpleDropdown({
   ariaLabel,
   items,
   onSelect,
+  searchable = false,
+  searchPlaceholder = 'Поиск',
 }: SimpleDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +43,7 @@ export default function SimpleDropdown({
     const handleClickOutside = (event: MouseEvent) => {
       if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearchQuery('');
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -52,7 +60,17 @@ export default function SimpleDropdown({
   const handleSelect = (nextValue: string) => {
     onSelect?.(nextValue);
     setIsOpen(false);
+    setSearchQuery('');
   };
+
+  const filteredItems = (items || []).filter((item) => {
+    if (!searchable || !searchQuery.trim()) return true;
+    const query = searchQuery.trim().toLowerCase();
+    return (
+      item.label.toLowerCase().includes(query) ||
+      item.value.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className={classNames(styles.wrapper, className)} ref={rootRef}>
@@ -74,18 +92,45 @@ export default function SimpleDropdown({
       </button>
       {isOpen && items?.length && (
         <div className={styles.menu} role="listbox">
-          {items.map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={styles.menuItem}
-              onClick={() => handleSelect(item.value)}
-              role="option"
-            >
-              {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
-              <span className={styles.itemLabel}>{item.label}</span>
-            </button>
-          ))}
+          {searchable && (
+            <>
+              <div className={styles.searchWrapper}>
+                <SearchBar
+                  placeholder={searchPlaceholder}
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  showSearchIcon
+                />
+              </div>
+              <div className={styles.searchLinkWrapper}>
+                <Button
+                  text="Узнать регион"
+                  href="https://www.browserscan.net/timezone"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  showArrow={false}
+                  fullWidth
+                  variant="default"
+                  active
+                  className={styles.searchLinkButton}
+                />
+              </div>
+            </>
+          )}
+          <div className={styles.menuItems}>
+            {filteredItems.map((item) => (
+              <button
+                key={item.value}
+                type="button"
+                className={styles.menuItem}
+                onClick={() => handleSelect(item.value)}
+                role="option"
+              >
+                {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
+                <span className={styles.itemLabel}>{item.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>

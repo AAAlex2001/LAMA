@@ -36,6 +36,10 @@
   gap: 4px;
   width: 100%;
   align-items: flex-start;
+  margin-bottom: 50px;
+  @media (min-width: 1440px) {
+    margin-bottom: 0;
+  }
 }
 
 .accountRow {
@@ -47,9 +51,18 @@
 
 .avatar {
   width: 48px;
+  height: 48px;
   column-gap: 10px;
   border-radius: 50%;
   background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  color: #383f45;
 }
 
 .userInfo {
@@ -136,6 +149,15 @@
   width: 100%;
   @media (min-width: 1440px) {
     max-width: 631px;
+
+  }
+}
+
+.securitySection {
+  padding: 50px 0;
+
+  @media (min-width: 1440px) {
+    padding: 0;
   }
 }
 
@@ -468,8 +490,8 @@
   font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
-  font-size: 16px;
-  line-height: 19px;
+  font-size: 14px;
+  line-height: 17px;
 
   &:hover {
     border-color: #e33326;

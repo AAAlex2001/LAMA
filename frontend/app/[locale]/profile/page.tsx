@@ -10,7 +10,6 @@ import Modal from '@/components/modal';
 import Button from '@/components/button/button';
 import { EditNameIcon, TrashIcon, FlagRuIcon, FlagGbIcon, FlagRsIcon } from '@/components/icons';
 import { getTimeZones } from '@vvo/tzdb';
-
 const formatOffset = (minutes: number) => {
   const sign = minutes >= 0 ? '+' : '-';
   const abs = Math.abs(minutes);
@@ -19,32 +18,14 @@ const formatOffset = (minutes: number) => {
   return `GMT ${sign}${hours}${mins ? `:${String(mins).padStart(2, '0')}` : ''}`;
 };
 
-const RU_CITY_MAP: Record<string, string> = {
-  'Europe/Moscow': 'Москва',
-  'Europe/Kaliningrad': 'Калининград',
-  'Europe/Samara': 'Самара',
-  'Asia/Yekaterinburg': 'Екатеринбург',
-  'Asia/Omsk': 'Омск',
-  'Asia/Krasnoyarsk': 'Красноярск',
-  'Asia/Irkutsk': 'Иркутск',
-  'Asia/Yakutsk': 'Якутск',
-  'Asia/Vladivostok': 'Владивосток',
-  'Asia/Magadan': 'Магадан',
-  'Asia/Kamchatka': 'Камчатка',
-  'Asia/Novosibirsk': 'Новосибирск',
-  'Asia/Novokuznetsk': 'Новокузнецк',
-  'Asia/Tomsk': 'Томск',
-  'Asia/Barnaul': 'Барнаул',
-  'Asia/Chita': 'Чита',
-  'Asia/Sakhalin': 'Сахалин',
-};
-
-const formatTzLabel = (tz: { name: string; currentTimeOffsetInMinutes: number }) => {
-  const city = RU_CITY_MAP[tz.name] || tz.name.split('/').slice(-1)[0].replace(/_/g, ' ');
+const formatTzLabel = (tz: { name: string; currentTimeOffsetInMinutes: number; mainCities?: string[] }) => {
+  const city = tz.mainCities?.[0] || tz.name.split('/').slice(-1)[0].replace(/_/g, ' ');
   return `${city} (${formatOffset(tz.currentTimeOffsetInMinutes)})`;
 };
 
 export default function ProfilePage() {
+  const userName = 'John Doe';
+  const avatarLetter = userName.trim().charAt(0).toUpperCase();
   const [email, setEmail] = useState('admin');
   const [password, setPassword] = useState('password');
   const [notifyInboxBot, setNotifyInboxBot] = useState(true);
@@ -62,17 +43,14 @@ export default function ProfilePage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const ruTimezones = useMemo(
-    () => getTimeZones().filter((tz) => tz.countryCode === 'RU'),
-    []
-  );
+  const timezones = useMemo(() => getTimeZones(), []);
   const timezoneItems = useMemo(
     () =>
-      ruTimezones.map((tz) => ({
+      timezones.map((tz) => ({
         value: tz.name,
         label: formatTzLabel(tz),
       })),
-    [ruTimezones]
+    [timezones]
   );
   const [timezone, setTimezone] = useState('Europe/Moscow');
   const selectedTimezoneLabel =
@@ -85,10 +63,10 @@ export default function ProfilePage() {
         <div className={styles.content}>
           <section className={styles.accountSection}>
             <div className={styles.accountRow}>
-              <div className={styles.avatar} />
+              <div className={styles.avatar}>{avatarLetter}</div>
               <div className={styles.userInfo}>
                 <div className={styles.nameRow}>
-                  <span className={styles.userName}>John Doe</span>
+                  <span className={styles.userName}>{userName}</span>
                 </div>
                 <span className={styles.userHandle}>@JohnDoe</span>
               </div>
@@ -111,6 +89,8 @@ export default function ProfilePage() {
                     className={styles.dropdown}
                     items={timezoneItems}
                     onSelect={setTimezone}
+                    searchable
+                    searchPlaceholder="Поиск города"
                   />
                 </div>
               </section>
@@ -232,7 +212,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <section className={styles.section}>
+          <section className={`${styles.section} ${styles.securitySection}`}>
             <div className={styles.sectionHeaderText}>
               <h2 className={styles.sectionTitle}>Безопасность аккаунта</h2>
               <p className={styles.sectionDesc}>Управление данными для входа в аккаунт</p>

@@ -9,6 +9,8 @@ import classNames from "classnames";
 interface ButtonProps {
   text: string;
   href?: string;
+  target?: string;
+  rel?: string;
   onClick?: () => void;
   showArrow?: boolean;
   className?: string;
@@ -28,6 +30,8 @@ interface ButtonProps {
 export default function Button({ 
   text, 
   href, 
+  target,
+  rel,
   onClick, 
   showArrow = true,
   className,
@@ -108,6 +112,8 @@ export default function Button({
       <div className={wrapperClasses}>
         <a 
           href={href} 
+          target={target}
+          rel={rel}
           className={buttonClasses}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
