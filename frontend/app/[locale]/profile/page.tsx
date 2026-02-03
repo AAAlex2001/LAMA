@@ -76,7 +76,7 @@ export default function ProfilePage() {
                     <h2 className={styles.sectionTitle}>Тарифный план</h2>
                     <p className={styles.sectionDesc}>Информация о вашем плане и доступе к сервису</p>
                   </div>
-                  <Button text="Сменить план" size="small" showArrow={false} />
+                  <Button text="Сменить план" size="default" fullWidth={true} showArrow={false} />
                 </div>
                 <div className={styles.planMeta}>
                   <span className={styles.planBadge}>Базовый</span>
@@ -179,7 +179,7 @@ export default function ProfilePage() {
                 type="password"
                 value={password}
                 onChange={setPassword}
-                placeholder="••••••••"
+                placeholder="*******************"
                 variant="white"
                 className={styles.inputWhite}
                 icons={[{ icon: <EditNameIcon />, className: styles.inputIcon }]}
