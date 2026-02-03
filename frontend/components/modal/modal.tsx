@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import classNames from 'classnames';
 import Button from '../button/button';
 import styles from './modal.module.scss';
 
@@ -16,6 +17,7 @@ interface DeleteConfirmationModalProps {
   confirmActive?: boolean;
   cancelActive?: boolean;
   confirmFirst?: boolean;
+  buttonsDirection?: 'row' | 'column';
   children?: React.ReactNode;
 }
 
@@ -31,6 +33,7 @@ export default function DeleteConfirmationModal({
   confirmActive = false,
   cancelActive = true,
   confirmFirst = false,
+  buttonsDirection = 'column',
   children,
 }: DeleteConfirmationModalProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
@@ -63,7 +66,11 @@ export default function DeleteConfirmationModal({
             {description && <p className={styles.description}>{description}</p>}
           </div>
           {children}
-          <div className={styles.buttons}>
+          <div
+            className={classNames(styles.buttons, {
+              [styles.buttonsRow]: buttonsDirection === 'row',
+            })}
+          >
             {confirmFirst && (
               <Button
                 text={confirmText}

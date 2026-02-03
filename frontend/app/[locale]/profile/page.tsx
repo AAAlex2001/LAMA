@@ -272,6 +272,7 @@ export default function ProfilePage() {
             confirmVariant="default"
             confirmActive
             cancelActive={false}
+            buttonsDirection="row"
           >
             <Input
               label="Новая электронная почта"
@@ -294,6 +295,7 @@ export default function ProfilePage() {
             confirmVariant="default"
             confirmActive
             cancelActive={false}
+            buttonsDirection="row"
           >
             <div className={styles.modalFields}>
               <Input
