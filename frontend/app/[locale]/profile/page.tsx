@@ -25,16 +25,12 @@ export default function ProfilePage() {
     <div className={styles.page}>
       <div className={styles.contentCard}>
         <div className={styles.content}>
-          {/* Account */}
           <section className={styles.accountSection}>
             <div className={styles.accountRow}>
               <div className={styles.avatar} />
               <div className={styles.userInfo}>
                 <div className={styles.nameRow}>
                   <span className={styles.userName}>John Doe</span>
-                  <button className={styles.editButton} aria-label="Редактировать имя">
-                    <EditNameIcon />
-                  </button>
                 </div>
                 <span className={styles.userHandle}>@JohnDoe</span>
               </div>
@@ -42,10 +38,8 @@ export default function ProfilePage() {
             <span className={styles.accountNote}>Данные получены из Telegram</span>
           </section>
 
-          {/* Grid */}
           <div className={styles.grid}>
             <div className={styles.leftColumn}>
-              {/* Timezone */}
               <section className={`${styles.section} ${styles.timezoneSection}`}>
                 <div className={styles.sectionHeaderRow}>
                   <div className={styles.sectionHeaderText}>
@@ -57,26 +51,13 @@ export default function ProfilePage() {
                   <SimpleDropdown value="Москва (GMT +3)" className={styles.dropdown} />
                 </div>
               </section>
-
-              {/* Language */}
-              <section className={`${styles.section} ${styles.languageSection}`}>
-                <div className={styles.sectionHeaderRow}>
-                  <div className={styles.sectionHeaderText}>
-                    <h2 className={styles.sectionTitle}>Смена языка</h2>
-                    <p className={styles.sectionDesc}>Выберите язык интерфейса для работы с сервисом</p>
-                  </div>
-                  <SimpleDropdown value="Русский" className={styles.dropdown} />
-                </div>
-              </section>
-
-              {/* Tariff */}
               <section className={`${styles.section} ${styles.tariffSection}`}>
-                <div className={styles.sectionHeaderRow}>
-                  <div className={styles.sectionHeaderText}>
+                <div className={`${styles.sectionHeaderRow} ${styles.tariffHeaderRow}`}>
+                  <div className={`${styles.sectionHeaderText} ${styles.tariffHeaderText}`}>
                     <h2 className={styles.sectionTitle}>Тарифный план</h2>
                     <p className={styles.sectionDesc}>Информация о вашем плане и доступе к сервису</p>
                   </div>
-                  <Button text="Сменить план" size="default" fullWidth={true} showArrow={false} />
+                  <Button text="Сменить план" className={styles.tariffButton} size="default" showArrow={false} />
                 </div>
                 <div className={styles.planMeta}>
                   <span className={styles.planBadge}>Базовый</span>
@@ -98,7 +79,16 @@ export default function ProfilePage() {
             </div>
 
             <div className={styles.rightColumn}>
-              {/* Notifications */}
+              <section className={`${styles.section} ${styles.languageSection}`}>
+                <div className={styles.sectionHeaderRow}>
+                  <div className={styles.sectionHeaderText}>
+                    <h2 className={styles.sectionTitle}>Смена языка</h2>
+                    <p className={styles.sectionDesc}>Выберите язык интерфейса для работы с сервисом</p>
+                  </div>
+                  <SimpleDropdown value="Русский" className={styles.dropdown} />
+                </div>
+              </section>
+
               <section className={`${styles.section} ${styles.notificationsSection}`}>
                 <div className={styles.sectionHeaderText}>
                   <h2 className={styles.sectionTitle}>Уведомления</h2>
@@ -158,7 +148,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Security */}
           <section className={styles.section}>
             <div className={styles.sectionHeaderText}>
               <h2 className={styles.sectionTitle}>Безопасность аккаунта</h2>
@@ -187,7 +176,6 @@ export default function ProfilePage() {
             </div>
           </section>
 
-          {/* Delete */}
           <section className={styles.deleteSection}>
             <p className={styles.supportText}>Нашли ошибку? Сообщите нам в @LamaPlannerBot</p>
             <div className={styles.deleteActions}>

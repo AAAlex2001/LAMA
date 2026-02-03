@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Button from '../button/button';
-import styles from './delete-confirmation-modal.module.scss';
+import styles from './modal.module.scss';
 
 interface DeleteConfirmationModalProps {
   isOpen: boolean;

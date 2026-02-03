@@ -4,10 +4,7 @@
   align-items: flex-start;
   padding: 94px 0 30px 0;
   background: #F8FAFF;
-
-  @media (min-width: 1024px) {
-    padding: 32px 0;
-  }
+  min-height: 100vh;
 }
 
 .contentCard {
@@ -16,7 +13,7 @@
   border-radius: 12px;
   padding: 16px;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     width: 1334px;
   }
 }
@@ -27,19 +24,17 @@
   gap: 50px;
   width: 100%;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     width: 1302px;
     gap: 22px;
   }
 }
 
-/* Account */
 .accountSection {
   display: flex;
   flex-direction: column;
   gap: 4px;
   width: 100%;
-  height: 67px;
   align-items: flex-start;
 }
 
@@ -47,8 +42,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  width: 129px;
-  height: 48px;
+  overflow: visible;
 }
 
 .avatar {
@@ -64,12 +58,14 @@
   gap: 6px;
   width: 72px;
   height: 34px;
+  overflow: visible;
 }
 
 .nameRow {
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: nowrap;
 }
 
 .userName {
@@ -78,6 +74,7 @@
   line-height: 16px;
   color: #383f45;
   letter-spacing: -0.01em;
+  white-space: nowrap;
 }
 
 .editButton {
@@ -92,23 +89,21 @@
   font-size: 12px;
   line-height: 12px;
   color: #8e8e93;
+  white-space: nowrap;
 }
 
 .accountNote {
   font-size: 12px;
   line-height: 15px;
   color: #ced2d6;
-  width: 179px;
-  height: 15px;
 }
 
-/* Grid - stacked on mobile */
 .grid {
   display: flex;
   flex-direction: column;
   gap: 50px;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     display: grid;
     grid-template-columns: 631px 631px;
     gap: 40px;
@@ -123,23 +118,25 @@
 }
 
 .leftColumn {
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     gap: 53px;
   }
 }
 
 .rightColumn {
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     gap: 68px;
   }
 }
 
-/* Sections */
 .section {
   display: flex;
   flex-direction: column;
   gap: 20px;
   width: 100%;
+  @media (min-width: 1440px) {
+    max-width: 631px;
+  }
 }
 
 .sectionHeaderRow {
@@ -177,7 +174,51 @@
   height: 40px;
 }
 
-/* Plan */
+.tariffHeaderRow {
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    width: 631px;
+    height: 40px;
+  }
+}
+
+.tariffHeaderText {
+  @media (min-width: 1440px) {
+    width: 340px;
+    height: 40px;
+  }
+}
+
+.tariffButton {
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: 146px;
+    height: 38px;
+  }
+}
+
+.tariffButton button,
+.tariffButton a {
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: 146px;
+    height: 38px;
+    padding: 10px 24px;
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  }
+}
+
+.tariffButton span {
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+}
+
 
 .planMeta {
   display: flex;
@@ -232,7 +273,6 @@
   color: #b0b4b8;
 }
 
-/* Notifications */
 .notificationHeader {
   display: flex;
   align-items: center;
@@ -291,19 +331,19 @@
   gap: 10px;
 }
 
-/* Security */
 .securityInputs {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  align-items: flex-start;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     flex-direction: row;
   }
 }
 
 .securityInputs > * {
-  max-width: 100%;
+  width: 100%;
 }
 
 .inputWhite :global(input) {
@@ -318,18 +358,26 @@
 }
 
 .inputIcon :global(svg) {
-  width: 16px;
-  height: 16px;
+  width: 24px;
+  height: 24px;
+  color: #858585;
 }
 
-/* Delete */
+.inputIcon :global(path) {
+  stroke: #858585;
+}
+
+.inputIcon:hover :global(path) {
+  stroke: #3b82f6;
+}
+
 .deleteSection {
   display: flex;
   flex-direction: column;
   gap: 30px;
   width: 100%;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     flex-direction: row;
     justify-content: space-between;
     align-items: flex-end;
@@ -342,6 +390,9 @@
   color: #383f45;
   text-align: center;
   width: 100%;
+  @media (min-width: 1440px) {
+    text-align: left;
+  }
 }
 
 .deleteActions {
@@ -376,7 +427,7 @@
 .desktopOnly {
   display: none;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     display: inline;
   }
 }
@@ -384,7 +435,7 @@
 .mobileOnly {
   display: inline;
 
-  @media (min-width: 1024px) {
+  @media (min-width: 1440px) {
     display: none;
   }
 }

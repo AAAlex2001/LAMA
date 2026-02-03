@@ -24,6 +24,13 @@
   box-sizing: border-box;
 }
 
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
 .title {
   margin: 0 auto;
   font-family: 'Inter', sans-serif;
@@ -32,6 +39,17 @@
   font-size: 16px;
   line-height: 28px;
   color: #383F45;
+  text-align: center;
+}
+
+.description {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
   text-align: center;
 }
 

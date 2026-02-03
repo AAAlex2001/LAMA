@@ -7,7 +7,7 @@ import TrashIcon from '@/components/icons/trash-icon';
 import EyeIcon from '@/components/icons/eye-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
+import DeleteConfirmationModal from '@/components/modal';
 import type { DraftsModalProps, Draft } from '@/app/[locale]/create-post/store/types';
 
 function getDraftPreview(draft: Draft): string {

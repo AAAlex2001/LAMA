@@ -8,7 +8,7 @@ import Input from '@/components/input';
 import { EditNameIcon, CheckIcon, CloseIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import DeleteConfirmationModal from '@/components/delete-confirmation-modal';
+import DeleteConfirmationModal from '@/components/modal';
 import type { TemplatesModalProps, TextTemplate } from '@/app/[locale]/create-post/store/types';
 
 export default function TextTemplatesModal({
