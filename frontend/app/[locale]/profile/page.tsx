@@ -8,7 +8,7 @@ import Toggle from '@/components/toggle/toggle';
 import Input from '@/components/input';
 import Modal from '@/components/modal';
 import Button from '@/components/button/button';
-import { EditNameIcon, TrashIcon } from '@/components/icons';
+import { EditNameIcon, TrashIcon, FlagRuIcon, FlagGbIcon, FlagRsIcon } from '@/components/icons';
 
 export default function ProfilePage() {
   const [email, setEmail] = useState('admin');
@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [language, setLanguage] = useState('Русский');
 
   return (
     <div className={styles.page}>
@@ -93,7 +94,28 @@ export default function ProfilePage() {
                     <h2 className={styles.sectionTitle}>Смена языка</h2>
                     <p className={styles.sectionDesc}>Выберите язык интерфейса для работы с сервисом</p>
                   </div>
-                  <SimpleDropdown value="Русский" className={styles.dropdown} />
+                  <SimpleDropdown
+                    value={language}
+                    className={styles.dropdown}
+                    items={[
+                      {
+                        value: 'Русский',
+                        label: 'Русский',
+                        icon: <FlagRuIcon />,
+                      },
+                      {
+                        value: 'English',
+                        label: 'English',
+                        icon: <FlagGbIcon />,
+                      },
+                      {
+                        value: 'Serbian',
+                        label: 'Serbian',
+                        icon: <FlagRsIcon />,
+                      },
+                    ]}
+                    onSelect={setLanguage}
+                  />
                 </div>
               </section>
 

@@ -30,4 +30,7 @@ export { default as CheckIcon } from './check-icon';
 export { default as QuotePreviewIcon } from './quote-preview-icon';
 export { default as PreviewArrowIcon } from './preview-arrow-icon';
 export { default as EyeIcon } from './eye-icon';
+export { default as FlagRuIcon } from './flag-ru';
+export { default as FlagGbIcon } from './flag-gb';
+export { default as FlagRsIcon } from './flag-rs';
 
