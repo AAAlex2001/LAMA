@@ -5,7 +5,7 @@ interface IconProps {
   color?: string;
 }
 
-export default function TrashIcon({ className, width = 16, height = 16, color = '#EF4444' }: IconProps) {
+export default function TrashIcon({ className, width = 16, height = 16, color = 'currentColor' }: IconProps) {
   return (
     <svg
       width={width}

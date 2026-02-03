@@ -200,9 +200,10 @@ export default function ProfilePage() {
             <p className={styles.supportText}>Нашли ошибку? Сообщите нам в @LamaPlannerBot</p>
             <div className={styles.deleteActions}>
               <button className={styles.deleteIconButton} aria-label="Удалить аккаунт">
-                <TrashIcon />
+                <TrashIcon width={15} height={16.67} />
+                <span className={styles.deleteText}>Удалить аккаунт</span>
               </button>
-              <Button text="Выйти из аккаунта" variant="outlined-red" showArrow={false} />
+              <button className={styles.logoutButton}>Выйти из аккаунта</button>
             </div>
           </section>
           <Modal
