@@ -21,7 +21,7 @@
 .content {
   display: flex;
   flex-direction: column;
-  gap: 50px;
+  column-gap: 10px;
   width: 100%;
 
   @media (min-width: 1440px) {
@@ -47,7 +47,7 @@
 
 .avatar {
   width: 48px;
-  height: 48px;
+  column-gap: 10px;
   border-radius: 50%;
   background: #e0e0e0;
 }
@@ -298,19 +298,27 @@
 }
 
 .notificationHeader {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  column-gap: 10px;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 8px;
+
+  @media (min-width: 1440px) {
+    column-gap: 10px;
+    padding: 0 10px 0 0;
+  }
 }
 
 .notificationColumns {
-  display: flex;
-  gap: 16px;
+  display: contents;
   font-weight: 600;
   font-size: 16px;
   line-height: 19px;
   color: #383f45;
+
+  span {
+    text-align: center;
+  }
 }
 
 .notificationsList {
@@ -321,18 +329,22 @@
 }
 
 .notificationRow {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  column-gap: 10px;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   min-height: 52px;
+
+  @media (min-width: 1440px) {
+    column-gap: 20px;
+  }
 }
 
 .notificationInfo {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 210px;
+  width: auto;
 }
 
 .notificationTitle {
@@ -350,9 +362,11 @@
 }
 
 .notificationToggles {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: contents;
+
+  > * {
+    justify-self: center;
+  }
 }
 
 .securityInputs {
