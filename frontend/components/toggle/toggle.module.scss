@@ -25,6 +25,15 @@
     }
   }
 
+  &.mixed {
+    background: #858585;
+    justify-content: flex-end;
+
+    &:hover:not(.disabled) {
+      background: #7b7b7b;
+    }
+  }
+
   &.disabled {
     opacity: 0.5;
     cursor: not-allowed;

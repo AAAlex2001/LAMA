@@ -8,16 +8,21 @@ interface ToggleProps {
   onChange: (checked: boolean) => void;
   disabled?: boolean;
   className?: string;
+  mixed?: boolean;
 }
 
-export default function Toggle({ checked, onChange, disabled = false, className }: ToggleProps) {
+export default function Toggle({ checked, onChange, disabled = false, className, mixed = false }: ToggleProps) {
   return (
     <button
       type="button"
       role="switch"
-      aria-checked={checked}
+      aria-checked={mixed ? 'mixed' : checked}
       disabled={disabled}
-      className={classNames(styles.toggle, { [styles.checked]: checked, [styles.disabled]: disabled }, className)}
+      className={classNames(
+        styles.toggle,
+        { [styles.checked]: checked, [styles.mixed]: mixed, [styles.disabled]: disabled },
+        className
+      )}
       onClick={() => onChange(!checked)}
     >
       <span className={styles.button} />

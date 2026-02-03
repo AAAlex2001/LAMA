@@ -1,0 +1,66 @@
+.accordion {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 20px 1fr 60px 60px;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    column-gap: 20px;
+  }
+}
+
+.chevronButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.chevron {
+  transition: transform 160ms ease;
+  transform: rotate(-90deg);
+  
+  .accordion[data-open='true'] & {
+    transform: rotate(0deg);
+  }
+}
+
+.content {
+  display: contents;
+}
+
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px 0 0 0;
+  gap: 10px;
+  width: 100%;
+}
+
+.dropdownRow {
+  display: grid;
+  grid-template-columns: 20px 1fr 60px 60px;
+  column-gap: 10px;
+  align-items: center;
+  min-height: 52px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    column-gap: 20px;
+  }
+}

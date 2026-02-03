@@ -8,6 +8,7 @@ import Toggle from '@/components/toggle/toggle';
 import Input from '@/components/input';
 import Modal from '@/components/modal';
 import Button from '@/components/button/button';
+import NotificationAccordion from '@/components/notification-accordion';
 import { EditNameIcon, TrashIcon, FlagRuIcon, FlagGbIcon, FlagRsIcon } from '@/components/icons';
 import { getTimeZones } from '@vvo/tzdb';
 const formatOffset = (minutes: number) => {
@@ -23,19 +24,87 @@ const formatTzLabel = (tz: { name: string; currentTimeOffsetInMinutes: number; m
   return `${city} (${formatOffset(tz.currentTimeOffsetInMinutes)})`;
 };
 
+const BOT_ITEMS = [
+  {
+    title: 'Подключение Telegram-бота',
+    hint: 'Напоминания, если бот не подключён',
+  },
+  {
+    title: 'Проблемы авторизации бота',
+    hint: 'Если токен отозван или истёк',
+  },
+  {
+    title: 'Недостаточно прав',
+    hint: 'Бот не является администратором канала',
+  },
+];
+
+const MESSAGE_ITEMS = [
+  {
+    title: 'Новые сообщения',
+    hint: 'Оповещения о входящих сообщениях',
+  },
+  {
+    title: 'Упоминания',
+    hint: 'Когда вас упоминают в чатах',
+  },
+  {
+    title: 'Ответы на сообщения',
+    hint: 'Оповещения о ответах на ваши сообщения',
+  },
+];
+
+const ERROR_ITEMS = [
+  {
+    title: 'Ошибки и сбои',
+    hint: 'Уведомления о проблемах с публикациями',
+  },
+  {
+    title: 'Не удалось отправить пост',
+    hint: 'Если публикация не прошла',
+  },
+  {
+    title: 'Ошибка загрузки медиа',
+    hint: 'Файлы не удалось обработать',
+  },
+];
+
+const RESULT_ITEMS = [
+  {
+    title: 'О результатах публикаций',
+    hint: 'Уведомления о статусе и результатах постов',
+  },
+  {
+    title: 'Пост опубликован',
+    hint: 'Сообщение успешно размещено',
+  },
+  {
+    title: 'Пост удалён или снят',
+    hint: 'Публикация больше не отображается',
+  },
+];
+
+const getToggleStatus = (values: boolean[]) => {
+  const enabled = values.filter(Boolean).length;
+  if (enabled === 0) return 'none';
+  if (enabled === values.length) return 'all';
+  return 'mixed';
+};
+
 export default function ProfilePage() {
   const userName = 'John Doe';
   const avatarLetter = userName.trim().charAt(0).toUpperCase();
   const [email, setEmail] = useState('admin');
   const [password, setPassword] = useState('password');
-  const [notifyInboxBot, setNotifyInboxBot] = useState(true);
-  const [notifyTelegramBot, setNotifyTelegramBot] = useState(true);
-  const [notifyInboxMessages, setNotifyInboxMessages] = useState(true);
-  const [notifyTelegramMessages, setNotifyTelegramMessages] = useState(true);
-  const [notifyInboxErrors, setNotifyInboxErrors] = useState(false);
-  const [notifyTelegramErrors, setNotifyTelegramErrors] = useState(false);
-  const [notifyInboxResults, setNotifyInboxResults] = useState(false);
-  const [notifyTelegramResults, setNotifyTelegramResults] = useState(false);
+  const [botInboxStates, setBotInboxStates] = useState<boolean[]>(() => BOT_ITEMS.map(() => true));
+  const [botTelegramStates, setBotTelegramStates] = useState<boolean[]>(() => BOT_ITEMS.map(() => true));
+  const [messageInboxStates, setMessageInboxStates] = useState<boolean[]>(() => MESSAGE_ITEMS.map(() => true));
+  const [messageTelegramStates, setMessageTelegramStates] = useState<boolean[]>(() => MESSAGE_ITEMS.map(() => true));
+  const [errorInboxStates, setErrorInboxStates] = useState<boolean[]>(() => ERROR_ITEMS.map(() => false));
+  const [errorTelegramStates, setErrorTelegramStates] = useState<boolean[]>(() => ERROR_ITEMS.map(() => false));
+  const [resultInboxStates, setResultInboxStates] = useState<boolean[]>(() => RESULT_ITEMS.map(() => false));
+  const [resultTelegramStates, setResultTelegramStates] = useState<boolean[]>(() => RESULT_ITEMS.map(() => false));
+  const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -56,6 +125,28 @@ export default function ProfilePage() {
   const selectedTimezoneLabel =
     timezoneItems.find((item) => item.value === timezone)?.label || 'Москва (GMT +3)';
   const [language, setLanguage] = useState('Русский');
+
+  const botInboxStatus = getToggleStatus(botInboxStates);
+  const botTelegramStatus = getToggleStatus(botTelegramStates);
+  const messageInboxStatus = getToggleStatus(messageInboxStates);
+  const messageTelegramStatus = getToggleStatus(messageTelegramStates);
+  const errorInboxStatus = getToggleStatus(errorInboxStates);
+  const errorTelegramStatus = getToggleStatus(errorTelegramStates);
+  const resultInboxStatus = getToggleStatus(resultInboxStates);
+  const resultTelegramStatus = getToggleStatus(resultTelegramStates);
+
+  type ToggleStateSetter = (value: boolean[] | ((prev: boolean[]) => boolean[])) => void;
+
+  const toggleAll = (setStates: ToggleStateSetter) => {
+    setStates((prev) => {
+      const nextValue = getToggleStatus(prev) !== 'all';
+      return prev.map(() => nextValue);
+    });
+  };
+
+  const updateStateAtIndex = (setStates: ToggleStateSetter, index: number, value: boolean) => {
+    setStates((prev) => prev.map((item, i) => (i === index ? value : item)));
+  };
 
   return (
     <div className={styles.page}>
@@ -160,6 +251,7 @@ export default function ProfilePage() {
                 </div>
                 <div className={styles.notificationHeader}>
                   <span />
+                  <span />
                   <div className={styles.notificationColumns}>
                     <span>Inbox</span>
                     <span className={styles.desktopOnly}>Telegram</span>
@@ -167,46 +259,190 @@ export default function ProfilePage() {
                   </div>
                 </div>
                 <div className={styles.notificationsList}>
-                  <div className={styles.notificationRow}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationTitle}>Подключение Telegram-бота</span>
-                      <span className={styles.notificationHint}>Напоминания, если бот не подключён</span>
-                    </div>
-                    <div className={styles.notificationToggles}>
-                      <Toggle checked={notifyInboxBot} onChange={setNotifyInboxBot} />
-                      <Toggle checked={notifyTelegramBot} onChange={setNotifyTelegramBot} />
-                    </div>
-                  </div>
-                  <div className={styles.notificationRow}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationTitle}>Новые сообщения</span>
-                      <span className={styles.notificationHint}>Оповещения о входящих сообщениях</span>
-                    </div>
-                    <div className={styles.notificationToggles}>
-                      <Toggle checked={notifyInboxMessages} onChange={setNotifyInboxMessages} />
-                      <Toggle checked={notifyTelegramMessages} onChange={setNotifyTelegramMessages} />
-                    </div>
-                  </div>
-                  <div className={styles.notificationRow}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationTitle}>Ошибки и сбои</span>
-                      <span className={styles.notificationHint}>Уведомления о проблемах с публикациями</span>
-                    </div>
-                    <div className={styles.notificationToggles}>
-                      <Toggle checked={notifyInboxErrors} onChange={setNotifyInboxErrors} />
-                      <Toggle checked={notifyTelegramErrors} onChange={setNotifyTelegramErrors} />
-                    </div>
-                  </div>
-                  <div className={styles.notificationRow}>
-                    <div className={styles.notificationInfo}>
-                      <span className={styles.notificationTitle}>О результатах публикаций</span>
-                      <span className={styles.notificationHint}>Уведомления о статусе и результатах постов</span>
-                    </div>
-                    <div className={styles.notificationToggles}>
-                      <Toggle checked={notifyInboxResults} onChange={setNotifyInboxResults} />
-                      <Toggle checked={notifyTelegramResults} onChange={setNotifyTelegramResults} />
-                    </div>
-                  </div>
+                  <NotificationAccordion
+                    isOpen={openAccordion === 'bot'}
+                    onToggle={() => setOpenAccordion(openAccordion === 'bot' ? null : 'bot')}
+                    dropdown={
+                      <>
+                        {BOT_ITEMS.map((item, index) => (
+                          <div key={`bot-${index}`} className={styles.notificationDropdownRow}>
+                            <span />
+                            <div className={`${styles.notificationInfo} ${styles.notificationDropdownInfo}`}>
+                              <span className={styles.notificationTitle}>{item.title}</span>
+                              <span className={styles.notificationHint}>{item.hint}</span>
+                            </div>
+                            <div className={styles.notificationToggles}>
+                              <Toggle
+                                checked={botInboxStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setBotInboxStates, index, checked)}
+                              />
+                              <Toggle
+                                checked={botTelegramStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setBotTelegramStates, index, checked)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    }
+                  >
+                    <>
+                      <div className={styles.notificationInfo}>
+                        <span className={styles.notificationTitle}>Подключение Telegram-бота</span>
+                        <span className={styles.notificationHint}>Напоминания, если бот не подключён</span>
+                      </div>
+                      <div className={styles.notificationToggles}>
+                        <Toggle
+                          checked={botInboxStatus === 'all'}
+                          mixed={botInboxStatus === 'mixed'}
+                          onChange={() => toggleAll(setBotInboxStates)}
+                        />
+                        <Toggle
+                          checked={botTelegramStatus === 'all'}
+                          mixed={botTelegramStatus === 'mixed'}
+                          onChange={() => toggleAll(setBotTelegramStates)}
+                        />
+                      </div>
+                    </>
+                  </NotificationAccordion>
+                  <NotificationAccordion
+                    isOpen={openAccordion === 'messages'}
+                    onToggle={() => setOpenAccordion(openAccordion === 'messages' ? null : 'messages')}
+                    dropdown={
+                      <>
+                        {MESSAGE_ITEMS.map((item, index) => (
+                          <div key={`messages-${index}`} className={styles.notificationDropdownRow}>
+                            <span />
+                            <div className={`${styles.notificationInfo} ${styles.notificationDropdownInfo}`}>
+                              <span className={styles.notificationTitle}>{item.title}</span>
+                              <span className={styles.notificationHint}>{item.hint}</span>
+                            </div>
+                            <div className={styles.notificationToggles}>
+                              <Toggle
+                                checked={messageInboxStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setMessageInboxStates, index, checked)}
+                              />
+                              <Toggle
+                                checked={messageTelegramStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setMessageTelegramStates, index, checked)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    }
+                  >
+                    <>
+                      <div className={styles.notificationInfo}>
+                        <span className={styles.notificationTitle}>Новые сообщения</span>
+                        <span className={styles.notificationHint}>Оповещения о входящих сообщениях</span>
+                      </div>
+                      <div className={styles.notificationToggles}>
+                        <Toggle
+                          checked={messageInboxStatus === 'all'}
+                          mixed={messageInboxStatus === 'mixed'}
+                          onChange={() => toggleAll(setMessageInboxStates)}
+                        />
+                        <Toggle
+                          checked={messageTelegramStatus === 'all'}
+                          mixed={messageTelegramStatus === 'mixed'}
+                          onChange={() => toggleAll(setMessageTelegramStates)}
+                        />
+                      </div>
+                    </>
+                  </NotificationAccordion>
+                  <NotificationAccordion
+                    isOpen={openAccordion === 'errors'}
+                    onToggle={() => setOpenAccordion(openAccordion === 'errors' ? null : 'errors')}
+                    dropdown={
+                      <>
+                        {ERROR_ITEMS.map((item, index) => (
+                          <div key={`errors-${index}`} className={styles.notificationDropdownRow}>
+                            <span />
+                            <div className={`${styles.notificationInfo} ${styles.notificationDropdownInfo}`}>
+                              <span className={styles.notificationTitle}>{item.title}</span>
+                              <span className={styles.notificationHint}>{item.hint}</span>
+                            </div>
+                            <div className={styles.notificationToggles}>
+                              <Toggle
+                                checked={errorInboxStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setErrorInboxStates, index, checked)}
+                              />
+                              <Toggle
+                                checked={errorTelegramStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setErrorTelegramStates, index, checked)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    }
+                  >
+                    <>
+                      <div className={styles.notificationInfo}>
+                        <span className={styles.notificationTitle}>Ошибки и сбои</span>
+                        <span className={styles.notificationHint}>Уведомления о проблемах с публикациями</span>
+                      </div>
+                      <div className={styles.notificationToggles}>
+                        <Toggle
+                          checked={errorInboxStatus === 'all'}
+                          mixed={errorInboxStatus === 'mixed'}
+                          onChange={() => toggleAll(setErrorInboxStates)}
+                        />
+                        <Toggle
+                          checked={errorTelegramStatus === 'all'}
+                          mixed={errorTelegramStatus === 'mixed'}
+                          onChange={() => toggleAll(setErrorTelegramStates)}
+                        />
+                      </div>
+                    </>
+                  </NotificationAccordion>
+                  <NotificationAccordion
+                    isOpen={openAccordion === 'results'}
+                    onToggle={() => setOpenAccordion(openAccordion === 'results' ? null : 'results')}
+                    dropdown={
+                      <>
+                        {RESULT_ITEMS.map((item, index) => (
+                          <div key={`results-${index}`} className={styles.notificationDropdownRow}>
+                            <span />
+                            <div className={`${styles.notificationInfo} ${styles.notificationDropdownInfo}`}>
+                              <span className={styles.notificationTitle}>{item.title}</span>
+                              <span className={styles.notificationHint}>{item.hint}</span>
+                            </div>
+                            <div className={styles.notificationToggles}>
+                              <Toggle
+                                checked={resultInboxStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setResultInboxStates, index, checked)}
+                              />
+                              <Toggle
+                                checked={resultTelegramStates[index]}
+                                onChange={(checked) => updateStateAtIndex(setResultTelegramStates, index, checked)}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </>
+                    }
+                  >
+                    <>
+                      <div className={styles.notificationInfo}>
+                        <span className={styles.notificationTitle}>О результатах публикаций</span>
+                        <span className={styles.notificationHint}>Уведомления о статусе и результатах постов</span>
+                      </div>
+                      <div className={styles.notificationToggles}>
+                        <Toggle
+                          checked={resultInboxStatus === 'all'}
+                          mixed={resultInboxStatus === 'mixed'}
+                          onChange={() => toggleAll(setResultInboxStates)}
+                        />
+                        <Toggle
+                          checked={resultTelegramStatus === 'all'}
+                          mixed={resultTelegramStatus === 'mixed'}
+                          onChange={() => toggleAll(setResultTelegramStates)}
+                        />
+                      </div>
+                    </>
+                  </NotificationAccordion>
                 </div>
               </section>
             </div>
