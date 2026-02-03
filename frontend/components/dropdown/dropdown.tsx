@@ -90,7 +90,7 @@ export default function Dropdown({
   isOpen: controlledIsOpen,
   onToggle: controlledOnToggle,
 }: DropdownProps) {
-  const [internalIsOpen, setInternalIsOpen] = useState(variant === 'channels');
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [repeatViewMode, setRepeatViewMode] = useState<RepeatViewMode>('list');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -104,8 +104,6 @@ export default function Dropdown({
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
   const handleToggle = () => {
-    if (variant === 'channels') return; // Каналы всегда открыты
-    
     const willOpen = !isOpen;
     
     // Если есть внешний контроль - используем его
@@ -228,10 +226,10 @@ export default function Dropdown({
       ref={dropdownRef}
       className={classNames(styles.dropdown, { [styles.open]: isOpen }, className)}
     >
-      <div 
-        className={classNames(styles.header, { [styles.alwaysOpen]: variant === 'channels' })} 
+      <div
+        className={styles.header}
         onClick={handleToggle}
-        style={{ cursor: variant === 'channels' ? 'default' : 'pointer' }}
+        style={{ cursor: 'pointer' }}
       >
         <span className={styles.label}>{label}</span>
         <div className={styles.headerRight}>
@@ -248,13 +246,11 @@ export default function Dropdown({
               />
             </div>
           )}
-          {variant !== 'channels' && (
-            <ChevronDownIcon
-              width={16}
-              height={16}
-              className={classNames(styles.chevron, { [styles.rotated]: isOpen })}
-            />
-          )}
+          <ChevronDownIcon
+            width={16}
+            height={16}
+            className={classNames(styles.chevron, { [styles.rotated]: isOpen })}
+          />
         </div>
       </div>
 

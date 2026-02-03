@@ -183,8 +183,8 @@ export default function PostSettings({
   onReset,
 }: PostSettingsProps) {
   // Состояние для аккордеона (какой dropdown открыт)
-  // 'channels' всегда открыт, остальные работают по принципу аккордеона
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  // По умолчанию открыты каналы/чаты
+  const [openDropdown, setOpenDropdown] = useState<string | null>('channels');
 
   return (
     <>
@@ -207,6 +207,8 @@ export default function PostSettings({
               variant="channels"
               onOpen={onFetchChannels}
               loading={channelsLoading}
+              isOpen={openDropdown === 'channels'}
+              onToggle={(willOpen) => setOpenDropdown(willOpen ? 'channels' : null)}
             />
 
             {/* Теги */}
