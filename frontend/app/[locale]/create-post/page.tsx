@@ -40,6 +40,8 @@ import {
 import { selectPollData } from './store/slices/quiz';
 import { usePublishHandlers } from './hooks/usePublishHandlers';
 import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
+import { useDraftFromUrl } from './hooks/useDraftFromUrl';
+import Loader from '@/components/loader';
 import { useTokenFromUrl } from './hooks/useTokenFromUrl';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
@@ -50,6 +52,7 @@ function CreatePostPageContent() {
   const { showSuccess, showError } = useNotifications();
   
   useTokenFromUrl();
+  const { isDraftLoading } = useDraftFromUrl();
   
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
@@ -232,7 +235,17 @@ function CreatePostPageContent() {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.mainContent}>
+      {isDraftLoading && (
+        <div className={styles.draftLoadingOverlay}>
+          <Loader size={32} color="blue" />
+        </div>
+      )}
+
+      <div
+        className={`${styles.mainContent} ${
+          isDraftLoading ? styles.contentLoading : styles.contentReady
+        }`}
+      >
         <div className={styles.editorColumn}>
           {snapshots.length > 1 ? (
             <div className={styles.seriesList}>

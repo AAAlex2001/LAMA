@@ -18,12 +18,42 @@
   gap: 24px;
   max-width: 1320px;
   margin: 0 auto;
+  transition: opacity 0.25s ease;
 
   @media (min-width: 1440px) {
     flex-direction: row;
     align-items: flex-start;
     gap: 24px;
   }
+}
+
+.contentLoading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.contentReady {
+  opacity: 1;
+  animation: fadeIn 0.25s ease;
+}
+
+.draftLoadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F0F4FA;
+  z-index: 20;
 }
 
 .editorColumn {

@@ -1,11 +1,12 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { AppDispatch } from '../index';
+import type { AppDispatch, RootState } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
 import type { MediaFile, ButtonRow, QuizAnswer, Draft, InlineButton } from '../types';
 import { setText } from '../slices/editor';
 import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
+import { setChannels as setChannelSelections } from '../slices/channels';
 import { fetchChannelsThunk } from './channels';
 import { fetchTagsThunk } from './tags';
 
@@ -20,6 +21,30 @@ export const loadRecentTags = createAsyncThunk(
   'createPost/loadRecentTags',
   async (_, { dispatch }) => {
     return dispatch(fetchTagsThunk({}));
+  }
+);
+
+export const loadDraftById = createAsyncThunk(
+  'createPost/loadDraftById',
+  async (draftId: number, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const draft = await apiRequest<Draft>(`/publications/${draftId}`);
+      loadDraftIntoStore(draft, dispatch);
+
+      const state = getState() as RootState;
+      const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
+      if (state.channels.channels.length > 0) {
+        const next = state.channels.channels.map((ch) => ({
+          ...ch,
+          selected: channelIds.size > 0 ? channelIds.has(ch.id) : false,
+        }));
+        dispatch(setChannelSelections(next));
+      }
+
+      return draft;
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки черновика');
+    }
   }
 );
 
