@@ -10,22 +10,39 @@ import {
   setIsLoadingMore,
   setHasMore,
   setPage,
+  setTagIdsFilter,
 } from '@/app/[locale]/create-post/store/slices/drafts';
 
 const PAGE_SIZE = 20;
 
+const filterDraftsByTagIds = (items: DraftListResponse['items'], tagIds: number[]) => {
+  if (tagIds.length === 0) return items;
+  return items.filter((draft) =>
+    draft.tags?.some((tag) => tagIds.includes(tag.id))
+  );
+};
+
 export const fetchDrafts = createAsyncThunk(
   'draftsPage/fetchDrafts',
-  async (_, { dispatch, rejectWithValue }) => {
+  async (params: { tagIds?: number[] } = {}, { dispatch, rejectWithValue }) => {
     dispatch(setIsLoading(true));
     try {
+      const tagIds = params.tagIds ?? [];
+      const queryParams = new URLSearchParams({
+        status: 'draft',
+        page: '1',
+        page_size: String(PAGE_SIZE),
+      });
+      tagIds.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
-        `/publications?status=draft&page=1&page_size=${PAGE_SIZE}`
+        `/publications?${queryParams}`
       );
-      dispatch(setDrafts(response.items));
+      const filteredItems = filterDraftsByTagIds(response.items, tagIds);
+      dispatch(setDrafts(filteredItems));
+      dispatch(setTagIdsFilter(tagIds));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(1));
-      return response.items;
+      return filteredItems;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки черновиков');
     } finally {
@@ -38,20 +55,27 @@ export const fetchMoreDrafts = createAsyncThunk(
   'draftsPage/fetchMoreDrafts',
   async (_, { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState;
-    const { page, isLoadingMore, hasMore } = state.drafts;
+    const { page, isLoadingMore, hasMore, tagIdsFilter } = state.drafts;
 
     if (isLoadingMore || !hasMore) return;
 
     dispatch(setIsLoadingMore(true));
     try {
       const nextPage = page + 1;
+      const queryParams = new URLSearchParams({
+        status: 'draft',
+        page: String(nextPage),
+        page_size: String(PAGE_SIZE),
+      });
+      tagIdsFilter.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
-        `/publications?status=draft&page=${nextPage}&page_size=${PAGE_SIZE}`
+        `/publications?${queryParams}`
       );
-      dispatch(appendDrafts(response.items));
+      const filteredItems = filterDraftsByTagIds(response.items, tagIdsFilter);
+      dispatch(appendDrafts(filteredItems));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(nextPage));
-      return response.items;
+      return filteredItems;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {

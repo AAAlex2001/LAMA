@@ -41,3 +41,4 @@ export { default as GifIcon } from './gif-icon';
 export { default as ShareIcon } from './share-icon';
 export { default as EditIcon } from './edit-icon';
 export { default as SortClearIcon } from './sort-clear-icon';
+export { default as FilterSortIcon } from './filter-sort-icon';

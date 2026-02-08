@@ -7,6 +7,7 @@ interface DraftsState {
   isLoadingMore: boolean;
   hasMore: boolean;
   searchQuery: string;
+  tagIdsFilter: number[];
   selectedDraftId: number | null;
   page: number;
 }
@@ -17,6 +18,7 @@ const initialState: DraftsState = {
   isLoadingMore: false,
   hasMore: true,
   searchQuery: '',
+  tagIdsFilter: [],
   selectedDraftId: null,
   page: 1,
 };
@@ -48,6 +50,9 @@ const draftsSlice = createSlice({
     setSearchQuery: (state, action: PayloadAction<string>) => {
       state.searchQuery = action.payload;
     },
+    setTagIdsFilter: (state, action: PayloadAction<number[]>) => {
+      state.tagIdsFilter = action.payload;
+    },
     setSelectedDraftId: (state, action: PayloadAction<number | null>) => {
       state.selectedDraftId = action.payload;
     },
@@ -66,6 +71,7 @@ export const {
   setIsLoadingMore,
   setHasMore,
   setSearchQuery,
+  setTagIdsFilter,
   setSelectedDraftId,
   setPage,
   resetDrafts,

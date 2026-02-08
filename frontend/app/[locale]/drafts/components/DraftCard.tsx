@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import DraftContentIcons from './DraftContentIcons';
 import DraftCardActions from './DraftCardActions';
+import Loader from '@/components/loader';
 import styles from './draft-card.module.scss';
 
 interface DraftCardProps {
@@ -59,6 +61,13 @@ export default function DraftCard({
   const { time, date } = formatDraftDate(draft.updated_at || draft.created_at);
   const previewHtml = getDraftPreviewHtml(draft);
   const thumbnail = getThumbnail(draft);
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
+  const [thumbnailError, setThumbnailError] = useState(false);
+
+  useEffect(() => {
+    setThumbnailLoaded(false);
+    setThumbnailError(false);
+  }, [thumbnail]);
 
   return (
     <div className={styles.card}>
@@ -91,7 +100,19 @@ export default function DraftCard({
           )}
           {thumbnail && (
             <div className={styles.thumbnail}>
-              <img src={thumbnail} alt="" />
+              {!thumbnailLoaded && !thumbnailError && (
+                <div className={styles.thumbnailLoader}>
+                  <Loader size={18} color="blue" />
+                </div>
+              )}
+              <img
+                src={thumbnail}
+                alt=""
+                loading="lazy"
+                onLoad={() => setThumbnailLoaded(true)}
+                onError={() => setThumbnailError(true)}
+                style={{ opacity: thumbnailLoaded ? 1 : 0 }}
+              />
             </div>
           )}
         </div>

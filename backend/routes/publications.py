@@ -54,6 +54,8 @@ async def create_publication(
 
 @router.get("/drafts", response_model=PublicationListResponse)
 async def get_drafts(
+    tag_names: Optional[List[str]] = None,
+    tag_ids: Optional[List[int]] = None,
     page: int = 1,
     page_size: int = 50,
     service: PublicationService = Depends(get_publication_service),
@@ -64,6 +66,8 @@ async def get_drafts(
     publications = await service.get_publications(
         owner_id=current_user.id,
         status=PublicationStatus.DRAFT,
+        tag_names=tag_names,
+        tag_ids=tag_ids,
         skip=skip,
         limit=page_size
     )
@@ -104,6 +108,7 @@ async def get_publications(
     content_type: Optional[ContentType] = None,
     channel_id: Optional[int] = None,
     tag_names: Optional[List[str]] = None,
+    tag_ids: Optional[List[int]] = None,
     series_id: Optional[int] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -121,6 +126,7 @@ async def get_publications(
         content_type=content_type,
         channel_id=channel_id,
         tag_names=tag_names,
+        tag_ids=tag_ids,
         series_id=series_id,
         start_date=start_date,
         end_date=end_date,

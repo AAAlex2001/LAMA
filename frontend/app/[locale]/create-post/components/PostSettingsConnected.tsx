@@ -119,7 +119,10 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       tagsSearching={tagsState.searching}
       onLoadRecentTags={handleLoadRecentTags}
       onSearchTags={handleSearchTags}
-      onTagInputChange={(value: string) => dispatch(setTagInputValue(value))}
+      onTagInputChange={(value: string) => {
+        dispatch(setTagInputValue(value));
+        dispatch(settingsSlice.setSelectedTagName(value));
+      }}
       onSelectTag={handleSelectTag}
       onDeleteTag={handleDeleteTag}
       onTagColorChange={(color: TagColor) => dispatch(settingsSlice.setSelectedTagColor(color))}

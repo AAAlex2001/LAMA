@@ -275,6 +275,22 @@ class PublicationBase(BaseModel):
                 raise ValueError('repeat month/day values must be in range 1..31')
         return unique
 
+    @validator('tag_names')
+    def validate_tag_names(cls, v):
+        if v is None:
+            return v
+        cleaned = []
+        for name in v:
+            if name is None:
+                raise ValueError('Имя тега не может быть пустым')
+            trimmed = name.strip()
+            if not trimmed:
+                raise ValueError('Имя тега не может быть пустым')
+            if len(trimmed) > 100:
+                raise ValueError('Имя тега не должно превышать 100 символов')
+            cleaned.append(trimmed)
+        return cleaned
+
 
 class PublicationCreate(PublicationBase):
     status: PublicationStatus = PublicationStatus.DRAFT
@@ -328,6 +344,22 @@ class PublicationUpdate(BaseModel):
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
     tag_color: Optional[str] = None
+
+    @validator('tag_names')
+    def validate_update_tag_names(cls, v):
+        if v is None:
+            return v
+        cleaned = []
+        for name in v:
+            if name is None:
+                raise ValueError('Имя тега не может быть пустым')
+            trimmed = name.strip()
+            if not trimmed:
+                raise ValueError('Имя тега не может быть пустым')
+            if len(trimmed) > 100:
+                raise ValueError('Имя тега не должно превышать 100 символов')
+            cleaned.append(trimmed)
+        return cleaned
 
     @model_validator(mode="after")
     def validate_auto_delete(cls, values):

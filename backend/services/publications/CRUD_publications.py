@@ -116,6 +116,7 @@ class CRUDPublicationService:
         content_type: Optional[ContentType] = None,
         channel_id: Optional[int] = None,
         tag_names: Optional[List[str]] = None,
+        tag_ids: Optional[List[int]] = None,
         series_id: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
@@ -154,7 +155,10 @@ class CRUDPublicationService:
             base_query = base_query.join(
                 Publication.channels).where(Channel.id == channel_id)
 
-        if tag_names:
+        if tag_ids:
+            base_query = base_query.join(
+                Publication.tags).where(Tag.id.in_(tag_ids))
+        elif tag_names:
             base_query = base_query.join(
                 Publication.tags).where(Tag.name.in_(tag_names))
 

@@ -135,6 +135,7 @@ export function buildCreatePostRequest(
       : undefined,
     repeat_end_time: repeatEndTime,
   };
+  const normalizedTagName = (settings.selectedTagName ?? '').trim();
 
   return {
     content_type: contentType,
@@ -152,7 +153,7 @@ export function buildCreatePostRequest(
     scheduled_time: effectiveScheduledTime,
     inline_keyboard: buildInlineKeyboard(buttonRows),
     poll_data: pollData || undefined,
-    tag_names: settings.selectedTagName ? [settings.selectedTagName] : undefined,
+    tag_names: normalizedTagName ? [normalizedTagName] : undefined,
     tag_color: settings.selectedTagColor ?? undefined,
     reply_to_post_id: settings.replyToPostId || undefined,
     auto_delete_delay_seconds: autoDeleteSeconds,
