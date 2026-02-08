@@ -1,0 +1,242 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  background: #F0F4FA;
+  padding: 24px 16px 140px;
+  position: relative;
+}
+
+.pageLoader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+
+  @media (min-width: 1440px) {
+    max-width: 1328px;
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
+
+  @media (max-width: 980px) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.sortBar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sortLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: #383F45;
+  white-space: nowrap;
+}
+
+.sortGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sortDropdown {
+  position: relative;
+}
+
+.sortButton {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 6px;
+  height: 24px;
+  border-radius: 25px;
+  background: #FFFFFF;
+  border: none;
+  cursor: pointer;
+}
+
+.sortButtonActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.sortButtonText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.sortChevron {
+  color: #1E1E1E;
+}
+
+.sortClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+
+  svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+
+  &:hover svg path:first-child {
+    fill: #3B82F6;
+    stroke: #3B82F6;
+  }
+
+  &:hover svg path:last-child {
+    stroke: #FFFFFF;
+  }
+}
+
+.sortMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 8px;
+  gap: 0;
+  min-width: 150px;
+  background: linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), #FFFFFF;
+  border-radius: 8px;
+  z-index: 20;
+}
+
+.sortOption {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:hover .sortOptionText {
+    color: #3B82F6;
+  }
+}
+
+.sortOptionText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #383F45;
+  white-space: nowrap;
+}
+
+.sortRadio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  background: #FFFFFF;
+  box-shadow: 0px 2px 5px rgba(103, 110, 118, 0.08), 0px 0px 0px 1px rgba(103, 110, 118, 0.16), 0px 1px 1px rgba(0, 0, 0, 0.12);
+}
+
+.sortRadioDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.sortRadioActive {
+  background: #3B82F6;
+  box-shadow: none;
+
+  .sortRadioDot {
+    background: #FFFFFF;
+  }
+}
+
+.createButton {
+  width: 100%;
+  height: 37px;
+
+  @media (min-width: 980px) {
+    width: 216px;
+  }
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+  justify-content: center;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+  }
+
+  @media (min-width: 980px) {
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+  }
+
+  > * {
+    width: 100%;
+  }
+}
+
+.loaderWrapper {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.bottomGradient {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(360deg, #F1F5FB 7.95%, rgba(255, 255, 255, 0) 64.11%);
+  pointer-events: none;
+  z-index: 10;
+}

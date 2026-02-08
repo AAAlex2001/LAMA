@@ -33,4 +33,11 @@ export { default as EyeIcon } from './eye-icon';
 export { default as FlagRuIcon } from './flag-ru';
 export { default as FlagGbIcon } from './flag-gb';
 export { default as FlagRsIcon } from './flag-rs';
-
+export { default as PhotoIcon } from './photo-icon';
+export { default as VideoIcon } from './video-icon';
+export { default as AudioIcon } from './audio-icon';
+export { default as DocIcon } from './doc-icon';
+export { default as GifIcon } from './gif-icon';
+export { default as ShareIcon } from './share-icon';
+export { default as EditIcon } from './edit-icon';
+export { default as SortClearIcon } from './sort-clear-icon';
