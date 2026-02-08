@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from '../repeat.module.scss';
 import IntervalSelector, { type IntervalType } from './IntervalSelector';
 import IntervalValuePicker from './IntervalValuePicker';
@@ -10,6 +10,9 @@ import MonthDatePicker from '@/components/month-date-picker';
 import { DatePicker } from '@/components/date-picker';
 import Toggle from '@/components/toggle/toggle';
 import RepeatEndSelector from './RepeatEndSelector';
+import { ChevronDownIcon } from '@/components/icons';
+import Checkbox from '@/components/checkbox/checkbox';
+import type { RepeatOption } from '../../../types';
 
 interface RepeatCustomCaseProps {
   repeatCustomDays: number;
@@ -32,6 +35,7 @@ interface RepeatCustomCaseProps {
   repeatEndDate: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
   onRepeatEndDateChange?: (value: Date | null) => void;
+  onRepeatOptionChange?: (value: RepeatOption) => void;
 }
 
 function pluralize(n: number, one: string, few: string, many: string): string {
@@ -64,6 +68,7 @@ export default function RepeatCustomCase({
   repeatEndDate,
   onRepeatEndTypeChange,
   onRepeatEndDateChange,
+  onRepeatOptionChange,
 }: RepeatCustomCaseProps) {
   const [intervalType, setIntervalType] = useState<IntervalType>(repeatCustomUnit || 'days');
   const [intervalValue, setIntervalValue] = useState(() => (repeatCustomValue > 0 ? repeatCustomValue : 1));
@@ -72,6 +77,32 @@ export default function RepeatCustomCase({
   const [selectedYearMonth, setSelectedYearMonth] = useState(repeatYearMonth ?? new Date().getMonth());
   const [showYearDays, setShowYearDays] = useState(false);
   const [selectedYearDates, setSelectedYearDates] = useState<number[]>(repeatYearDays?.length ? repeatYearDays : [new Date().getDate()]);
+  const [showFrequencyPopup, setShowFrequencyPopup] = useState(false);
+  const popupRef = useRef<HTMLDivElement>(null);
+  const selectorRef = useRef<HTMLButtonElement>(null);
+
+  const FREQUENCY_OPTIONS: { id: RepeatOption; label: string }[] = [
+    { id: 'never', label: 'Никогда' },
+    { id: 'daily', label: 'Каждый день' },
+    { id: 'weekly', label: 'Каждую неделю' },
+    { id: 'monthly', label: 'Каждый месяц' },
+    { id: 'yearly', label: 'Каждый год' },
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        popupRef.current && !popupRef.current.contains(e.target as Node) &&
+        selectorRef.current && !selectorRef.current.contains(e.target as Node)
+      ) {
+        setShowFrequencyPopup(false);
+      }
+    };
+    if (showFrequencyPopup) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showFrequencyPopup]);
 
   const updateCustomInterval = (type: IntervalType, value: number) => {
     const normalizedValue = Math.max(1, value);
@@ -159,20 +190,24 @@ export default function RepeatCustomCase({
   };
 
   const getWeekdayName = (dayIndex: number): string => {
-    const days = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье'];
+    const days: Record<number, string> = {
+      1: 'понедельник',
+      2: 'вторник',
+      3: 'среда',
+      4: 'четверг',
+      5: 'пятница',
+      6: 'суббота',
+      0: 'воскресенье',
+    };
     return days[dayIndex] || '';
   };
 
   const formatWeeksDescription = (): string => {
-    if (selectedWeekdays.length === 0) return '';
-    
+    const base = intervalValue === 1 ? 'Каждую неделю' : `Каждую ${intervalValue} неделю`;
+    if (selectedWeekdays.length === 0) return base;
+
     const dayNames = selectedWeekdays.map(day => getWeekdayName(day)).join(', ');
-    
-    if (intervalValue === 1) {
-      return `Каждую неделю в ${dayNames}`;
-    }
-    
-    return `Каждую ${intervalValue} неделю в ${dayNames}`;
+    return `${base} в ${dayNames}`;
   };
 
   const formatMonthsDescription = (): string => {
@@ -237,10 +272,39 @@ export default function RepeatCustomCase({
   return (
     <div className={styles.repeatDaily}>
       <div className={styles.repeatDailyTopRow}>
-        <div className={styles.repeatDailySelector}>
+        <button
+          type="button"
+          ref={selectorRef}
+          className={styles.repeatDailySelector}
+          onClick={() => setShowFrequencyPopup(prev => !prev)}
+        >
           <span className={styles.repeatDailySelectorText}>Настройка повтора</span>
-        </div>
+          <ChevronDownIcon
+            width={14}
+            height={14}
+            color="#858585"
+            className={`${styles.frequencyChevron} ${showFrequencyPopup ? styles.frequencyChevronRotated : ''}`}
+          />
+        </button>
       </div>
+
+      {showFrequencyPopup && (
+        <div ref={popupRef} className={styles.frequencyPopup}>
+          {FREQUENCY_OPTIONS.map((option) => (
+            <div key={option.id} className={styles.frequencyPopupRow}>
+              <Checkbox
+                variant="radio"
+                checked={false}
+                onChange={() => {
+                  onRepeatOptionChange?.(option.id);
+                  setShowFrequencyPopup(false);
+                }}
+              />
+              <span className={styles.optionLabel}>{option.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {intervalType === 'days' && (
         <div className={styles.repeatDescription}>
@@ -248,7 +312,7 @@ export default function RepeatCustomCase({
         </div>
       )}
 
-      {intervalType === 'weeks' && selectedWeekdays.length > 0 && (
+      {intervalType === 'weeks' && (
         <div className={styles.repeatDescription}>
           {formatWeeksDescription()}
         </div>
@@ -266,7 +330,10 @@ export default function RepeatCustomCase({
         </div>
       )}
 
-      <IntervalSelector value={intervalType} onChange={handleIntervalTypeChange} />
+      <IntervalSelector
+        value={intervalType}
+        onChange={handleIntervalTypeChange}
+      />
 
       <div className={styles.repeatCustomIntervalRow}>
         <span className={styles.repeatCustomIntervalText}>{getEveryLabel(intervalType, intervalValue)}</span>
@@ -312,21 +379,30 @@ export default function RepeatCustomCase({
             <Toggle checked={showYearDays} onChange={setShowYearDays} />
           </div>
           {showYearDays && (
-            <DatePicker
-              value={selectedYearDates.length > 0 ? new Date(new Date().getFullYear(), selectedYearMonth, selectedYearDates[0]) : undefined}
-              onChange={toggleYearDate}
-              selectedDates={selectedYearDates}
-              disableNavigation={true}
-            />
+            <div className={styles.yearDatePicker}>
+              <DatePicker
+                value={selectedYearDates.length > 0 ? new Date(new Date().getFullYear(), selectedYearMonth, selectedYearDates[0]) : undefined}
+                onChange={toggleYearDate}
+                selectedDates={selectedYearDates}
+                disableNavigation={true}
+                minDate={null}
+              />
+            </div>
           )}
         </>
       )}
 
       <RepeatEndSelector
         value={repeatEndType}
-        onChange={(value) => onRepeatEndTypeChange?.(value)}
+        onChange={(value) => {
+          console.log('RepeatEndSelector onChange:', value);
+          onRepeatEndTypeChange?.(value);
+        }}
         endDate={repeatEndDate}
-        onEndDateChange={(date) => onRepeatEndDateChange?.(date)}
+        onEndDateChange={(date) => {
+          console.log('RepeatEndSelector onEndDateChange:', date);
+          onRepeatEndDateChange?.(date);
+        }}
       />
     </div>
   );

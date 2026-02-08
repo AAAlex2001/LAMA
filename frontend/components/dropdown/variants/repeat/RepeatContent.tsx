@@ -55,7 +55,12 @@ export default function RepeatContent({
     return (
       <RepeatDailyCase
         repeatValue={repeatValue}
-        onRepeatChange={onRepeatChange}
+        onRepeatChange={(value) => {
+          onRepeatChange?.(value);
+          if (value === 'never') {
+            onViewModeChange('list');
+          }
+        }}
         publishTimeType={effectivePublishTimeType}
         onPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
         publishHours={effectivePublishHours}
@@ -69,6 +74,10 @@ export default function RepeatContent({
         repeatEndDate={repeatEndDate}
         onRepeatEndDateChange={(date) => {
           onRepeatEndDateChange?.(date);
+        }}
+        onCustomClick={() => {
+          onRepeatChange?.('custom');
+          onViewModeChange('custom');
         }}
       />
     );
@@ -97,6 +106,14 @@ export default function RepeatContent({
         repeatEndDate={repeatEndDate}
         onRepeatEndTypeChange={onRepeatEndTypeChange}
         onRepeatEndDateChange={onRepeatEndDateChange}
+        onRepeatOptionChange={(value) => {
+          onRepeatChange?.(value);
+          if (value === 'daily' || value === 'weekly' || value === 'monthly' || value === 'yearly') {
+            onViewModeChange('daily');
+          } else if (value === 'never') {
+            onViewModeChange('list');
+          }
+        }}
       />
     );
   }
@@ -106,7 +123,7 @@ export default function RepeatContent({
       repeatValue={repeatValue}
       onRepeatChange={(value) => {
         onRepeatChange?.(value);
-        if (value !== 'never') {
+        if (value === 'daily' || value === 'weekly' || value === 'monthly' || value === 'yearly') {
           onViewModeChange('daily');
         }
       }}

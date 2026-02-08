@@ -10,7 +10,6 @@ import CreateChannel from '@/components/create-channel/create-channel';
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
-export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
 
 export interface ChannelOption {
   id: string;
@@ -20,12 +19,6 @@ export interface ChannelOption {
   photo_url?: string;
 }
 
-export interface Tag {
-  id: number;
-  name: string;
-  color?: string;
-  created_at: string;
-}
 
 interface PostSettingsProps {
   className?: string;
@@ -125,20 +118,6 @@ export default function PostSettings({
   onOpenCreateChannel,
   onCloseCreateChannel,
 
-  recentTags,
-  searchResults,
-  tagInputValue,
-  selectedTagName,
-  selectedTagColor,
-  tagsLoading,
-  tagsSearching,
-  onLoadRecentTags,
-  onSearchTags,
-  onTagInputChange,
-  onSelectTag,
-  onDeleteTag,
-  onTagColorChange,
-
   repeatInterval,
   repeatPublishTimeType,
   repeatPublishHours,
@@ -211,27 +190,6 @@ export default function PostSettings({
               onToggle={(willOpen) => setOpenDropdown(willOpen ? 'channels' : null)}
             />
 
-            {/* Теги */}
-            <Dropdown
-              label="Тег поста"
-              variant="tags"
-              recentTags={recentTags}
-              searchResults={searchResults}
-              tagInputValue={tagInputValue}
-              selectedTagName={selectedTagName}
-              tagsLoading={tagsLoading}
-              tagsSearching={tagsSearching}
-              onLoadRecentTags={onLoadRecentTags}
-              onSearchTags={onSearchTags}
-              onTagInputChange={onTagInputChange}
-              onSelectTag={onSelectTag}
-              onDeleteTag={onDeleteTag}
-              selectedTagColor={selectedTagColor}
-              onTagColorChange={onTagColorChange}
-              isOpen={openDropdown === 'tags'}
-              onToggle={(willOpen) => setOpenDropdown(willOpen ? 'tags' : null)}
-            />
-
             {/* Автоудаление */}
             <Dropdown
               label="Автоудаление поста"
@@ -282,36 +240,38 @@ export default function PostSettings({
               onToggle={(willOpen) => setOpenDropdown(willOpen ? 'repeat' : null)}
             />
 
-            {/* Уведомления */}
-            <div className={styles.toggleRow}>
-              <span className={styles.toggleLabel}>Уведомлять подписчиков</span>
-              <Toggle checked={notifySubscribers} onChange={onNotifyChange} />
-            </div>
-
-            {/* Закрепление */}
-            <div className={styles.toggleRow}>
-              <span className={styles.toggleLabel}>Закрепить пост после публикации</span>
-              <Toggle checked={pinPost} onChange={onPinChange} />
-            </div>
           </div>
         </div>
 
-        {/* Кнопки */}
-        <Button
-          text="Предпросмотр поста"
-          showArrow={false}
-          active
-          fullWidth
-          onClick={onPreview}
-          disabled={previewDisabled}
-        />
-        <Button
-          text="Сбросить настройки"
-          showArrow={false}
-          fullWidth
-          variant="templateCard"
-          onClick={onReset}
-        />
+        <div className={styles.settingsBottom}>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Уведомлять подписчиков</span>
+            <Toggle checked={notifySubscribers} onChange={onNotifyChange} />
+          </div>
+
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Закрепить пост после публикации</span>
+            <Toggle checked={pinPost} onChange={onPinChange} />
+          </div>
+
+          <div className={styles.settingsButtons}>
+            <Button
+              text="Предпросмотр поста"
+              showArrow={false}
+              active
+              fullWidth
+              onClick={onPreview}
+              disabled={previewDisabled}
+            />
+            <Button
+              text="Сбросить настройки"
+              showArrow={false}
+              fullWidth
+              variant="templateCard"
+              onClick={onReset}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Модалка добавления канала */}

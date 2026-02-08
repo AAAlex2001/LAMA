@@ -13,6 +13,7 @@ interface DatePickerProps {
   className?: string;
   selectedDates?: number[];
   disableNavigation?: boolean;
+  minDate?: Date | null;
 }
 
 export default function DatePicker({ 
@@ -21,7 +22,8 @@ export default function DatePicker({
   locale = 'ru',
   className,
   selectedDates = [],
-  disableNavigation = false
+  disableNavigation = false,
+  minDate
 }: DatePickerProps) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -83,7 +85,7 @@ export default function DatePicker({
           if (newDate) setActiveStartDate(newDate);
         }}
         locale={locale}
-        minDate={today}
+        minDate={minDate === null ? undefined : (minDate ?? today)}
         tileClassName={({ date }) => getTileClassName(date)}
         formatShortWeekday={(locale, date) => {
           const dayIndex = (date.getDay() + 6) % 7;

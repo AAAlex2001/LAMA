@@ -16,13 +16,13 @@
   flex-direction: column;
   width: 100%;
   gap: 24px;
-  max-width: 1320px;
+  max-width: 1345px;
   margin: 0 auto;
   transition: opacity 0.25s ease;
 
   @media (min-width: 1440px) {
     flex-direction: row;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 24px;
   }
 }
@@ -146,10 +146,11 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 12px;
-  max-height: 435px;
-  overflow: hidden;
+  height: 558px;
+  max-height: 80vh;
+  overflow: visible;
   width: 100%;
-  max-width: 320px;
+  max-width: 350px;
   animation: modalSlideIn 0.2s ease-out;
 }
 
@@ -170,7 +171,10 @@
   @media (min-width: 1440px) {
     display: flex;
     flex-shrink: 0;
-    width: 320px;
+    width: 350px;
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
   }
 }
 

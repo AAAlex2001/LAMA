@@ -2,6 +2,7 @@
 
 import styles from '../repeat.module.scss';
 import Checkbox from '@/components/checkbox/checkbox';
+import { ChevronDownIcon } from '@/components/icons';
 import type { RepeatOption } from '../../../types';
 
 type RepeatOptionItem = { id: RepeatOption; label: string };

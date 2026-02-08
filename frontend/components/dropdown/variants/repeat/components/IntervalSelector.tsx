@@ -10,10 +10,25 @@ export type IntervalType = 'days' | 'weeks' | 'months' | 'years';
 interface IntervalSelectorProps {
   value: IntervalType;
   onChange: (value: IntervalType) => void;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export default function IntervalSelector({ value, onChange }: IntervalSelectorProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export default function IntervalSelector({
+  value,
+  onChange,
+  isOpen,
+  onOpenChange,
+}: IntervalSelectorProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = typeof isOpen === 'boolean';
+  const open = isControlled ? isOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(next);
+    }
+    onOpenChange?.(next);
+  };
 
   const displayLabels: Record<IntervalType, string> = {
     days: 'По дням',
@@ -29,16 +44,21 @@ export default function IntervalSelector({ value, onChange }: IntervalSelectorPr
       <button
         type="button"
         className={styles.repeatDailyRow}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => setOpen(!open)}
       >
         <span className={styles.repeatDailyRowLabel}>Настроить</span>
         <div className={styles.repeatDailyRowValue}>
           <span className={styles.repeatDailyRowValueText}>{displayText}</span>
-          <ChevronDownIcon width={14} height={14} color="#858585" />
+          <ChevronDownIcon
+            width={14}
+            height={14}
+            color="#858585"
+            className={`${styles.frequencyChevron} ${open ? styles.frequencyChevronRotated : ''}`}
+          />
         </div>
       </button>
 
-      {isOpen && (
+      {open && (
         <div className={styles.publishTimeDropdown}>
           <div className={styles.publishTimeOption}>
             <Checkbox
@@ -46,7 +66,7 @@ export default function IntervalSelector({ value, onChange }: IntervalSelectorPr
               checked={value === 'days'}
               onChange={() => {
                 onChange('days');
-                setIsOpen(false);
+                setOpen(false);
               }}
             />
             <span className={styles.optionLabel}>По дням</span>
@@ -57,7 +77,7 @@ export default function IntervalSelector({ value, onChange }: IntervalSelectorPr
               checked={value === 'weeks'}
               onChange={() => {
                 onChange('weeks');
-                setIsOpen(false);
+                setOpen(false);
               }}
             />
             <span className={styles.optionLabel}>По неделям</span>
@@ -68,7 +88,7 @@ export default function IntervalSelector({ value, onChange }: IntervalSelectorPr
               checked={value === 'months'}
               onChange={() => {
                 onChange('months');
-                setIsOpen(false);
+                setOpen(false);
               }}
             />
             <span className={styles.optionLabel}>По месяцам</span>
@@ -79,7 +99,7 @@ export default function IntervalSelector({ value, onChange }: IntervalSelectorPr
               checked={value === 'years'}
               onChange={() => {
                 onChange('years');
-                setIsOpen(false);
+                setOpen(false);
               }}
             />
             <span className={styles.optionLabel}>По годам</span>

@@ -10,6 +10,7 @@ import type { RepeatOption } from '../../../types';
 type FrequencyOption = { id: RepeatOption; label: string };
 
 const FREQUENCY_OPTIONS: FrequencyOption[] = [
+  { id: 'never', label: 'Никогда' },
   { id: 'daily', label: 'Каждый день' },
   { id: 'weekly', label: 'Каждую неделю' },
   { id: 'monthly', label: 'Каждый месяц' },
@@ -29,6 +30,7 @@ interface RepeatDailyCaseProps {
   onRepeatEndTypeChange: (value: 'never' | 'date') => void;
   repeatEndDate: Date | null;
   onRepeatEndDateChange: (date: Date) => void;
+  onCustomClick?: () => void;
 }
 
 export default function RepeatDailyCase({ 
@@ -44,6 +46,7 @@ export default function RepeatDailyCase({
   onRepeatEndTypeChange,
   repeatEndDate,
   onRepeatEndDateChange,
+  onCustomClick,
 }: RepeatDailyCaseProps) {
   const [showFrequencyPopup, setShowFrequencyPopup] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
@@ -67,6 +70,10 @@ export default function RepeatDailyCase({
   const currentLabel = FREQUENCY_OPTIONS.find(o => o.id === repeatValue)?.label ?? 'Каждый день';
 
   const getDescriptionText = () => {
+    if (repeatValue === 'never') {
+      return 'Пост не будет повторяться';
+    }
+
     const timeStr = `${String(publishHours).padStart(2, '0')}:${String(publishMinutes).padStart(2, '0')}`;
     const dateStr = repeatEndDate ? repeatEndDate.toLocaleDateString('ru-RU', { 
       day: '2-digit', 
@@ -111,8 +118,9 @@ export default function RepeatDailyCase({
         >
           <span className={styles.frequencySelectorText}>{currentLabel}</span>
           <ChevronDownIcon
-            width={12}
-            height={12}
+            width={14}
+            height={14}
+            color="#858585"
             className={`${styles.frequencyChevron} ${showFrequencyPopup ? styles.frequencyChevronRotated : ''}`}
           />
         </div>
@@ -133,6 +141,16 @@ export default function RepeatDailyCase({
               <span className={styles.optionLabel}>{option.label}</span>
             </div>
           ))}
+          <button
+            type="button"
+            className={styles.customButton}
+            onClick={() => {
+              onCustomClick?.();
+              setShowFrequencyPopup(false);
+            }}
+          >
+            <span className={styles.optionLabel}>Настроить</span>
+          </button>
         </div>
       )}
       
@@ -140,21 +158,25 @@ export default function RepeatDailyCase({
         {getDescriptionText()}
       </div>
 
-      <PublishTimeSelector 
-        value={publishTimeType} 
-        onChange={(value) => onPublishTimeTypeChange?.(value)}
-        hours={publishHours}
-        minutes={publishMinutes}
-        onHoursChange={(value) => onPublishHoursChange?.(value)}
-        onMinutesChange={(value) => onPublishMinutesChange?.(value)}
-      />
+      {repeatValue !== 'never' && (
+        <>
+          <PublishTimeSelector 
+            value={publishTimeType} 
+            onChange={(value) => onPublishTimeTypeChange?.(value)}
+            hours={publishHours}
+            minutes={publishMinutes}
+            onHoursChange={(value) => onPublishHoursChange?.(value)}
+            onMinutesChange={(value) => onPublishMinutesChange?.(value)}
+          />
 
-      <RepeatEndSelector
-        value={repeatEndType}
-        onChange={onRepeatEndTypeChange}
-        endDate={repeatEndDate}
-        onEndDateChange={onRepeatEndDateChange}
-      />
+          <RepeatEndSelector
+            value={repeatEndType}
+            onChange={onRepeatEndTypeChange}
+            endDate={repeatEndDate}
+            onEndDateChange={onRepeatEndDateChange}
+          />
+        </>
+      )}
     </div>
   );
 }

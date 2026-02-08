@@ -200,16 +200,14 @@
     }
   }
 
-  :global(.react-calendar__tile--now):not(:global(.react-calendar__tile--active)) {
-    background: #3B82F6;
+  :global(.react-calendar__tile--now) {
+    position: relative;
     
-    abbr {
-      font-weight: 600;
-      color: #FFFFFF;
-    }
-
-    &:hover {
-      background: #2F67C3;
+    &:not(:global(.react-calendar__tile--selected)):not(:global(.react-calendar__tile--active)) {
+      abbr {
+        color: #3B82F6;
+        font-weight: 600;
+      }
     }
   }
 
