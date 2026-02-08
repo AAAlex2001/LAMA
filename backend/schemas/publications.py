@@ -103,6 +103,8 @@ class ChannelResponse(BaseModel):
     title: str
     username: Optional[str] = None
     is_active: bool
+    members_count: Optional[int] = None
+    photo_url: Optional[str] = None
 
 
 class PublicationSeriesBase(BaseModel):

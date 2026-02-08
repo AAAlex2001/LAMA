@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDrafts, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks';
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
-import type { Draft, MediaFile } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import type { Draft, MediaFile, Tag, TagsResponse } from '@/app/[locale]/create-post/store/types';
 
 type SortKey = 'date' | 'tags' | 'source' | null;
 
@@ -36,13 +37,14 @@ export function useDraftsPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
   const [openSort, setOpenSort] = useState<SortKey>(null);
-  const defaultSortByDate = 'По дате создания';
+  const defaultSortByDate = 'Сначала новые';
   const defaultSortByTags = 'По тегам';
   const defaultSortBySource = 'По источнику';
   const [sortByDate, setSortByDate] = useState(defaultSortByDate);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [sortBySource, setSortBySource] = useState(defaultSortBySource);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sortBarRef = useRef<HTMLDivElement>(null);
   const mobileFilterRef = useRef<HTMLDivElement>(null);
@@ -50,6 +52,22 @@ export function useDraftsPage() {
   useEffect(() => {
     dispatch(fetchDrafts({ tagIds: selectedTagIds }));
   }, [dispatch, selectedTagIds]);
+
+  useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const queryParams = new URLSearchParams({
+          page: '1',
+          page_size: '100',
+        });
+        const response = await apiRequest<TagsResponse>(`/publications/tags/?${queryParams}`);
+        setAllTags(response.items || []);
+      } catch {
+        setAllTags([]);
+      }
+    };
+    loadTags();
+  }, []);
 
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
@@ -86,8 +104,7 @@ export function useDraftsPage() {
     }
   };
 
-  const previewData = useMemo(() => {
-    if (!previewDraft) return null;
+  const previewData = previewDraft ? (() => {
     const channel = previewDraft.channels?.[0];
     const extraCount = previewDraft.channels?.length > 1
       ? `+${previewDraft.channels.length - 1}`
@@ -111,7 +128,7 @@ export function useDraftsPage() {
         correctAnswerIndex: previewDraft.poll_data.correct_option_id ?? undefined,
       } : undefined,
     };
-  }, [previewDraft]);
+  })() : null;
 
   const token = getAccessToken() || undefined;
   const showPageLoader = isLoading && drafts.length === 0;
@@ -130,9 +147,9 @@ export function useDraftsPage() {
     window.location.href = `create-post?draft=${draft.id}`;
   };
 
-  const dateOptions = [defaultSortByDate, 'Сначала новые', 'Сначала старые'];
+  const dateOptions = ['Сначала новые', 'Сначала старые'];
   const sourceOptions = [defaultSortBySource, 'Все', 'Из парсера', 'Созданы мной'];
-  const tagOptions = useMemo(() => {
+  const fallbackTagOptions = (() => {
     const tagMap = new Map<number, { id: number; name: string; latestAt: number }>();
     drafts.forEach((draft) => {
       const timestamp = new Date(draft.updated_at || draft.created_at).getTime();
@@ -144,7 +161,11 @@ export function useDraftsPage() {
       });
     });
     return Array.from(tagMap.values()).sort((a, b) => b.latestAt - a.latestAt);
-  }, [drafts]);
+  })();
+
+  const tagOptions = allTags.length > 0
+    ? allTags.map((tag) => ({ id: tag.id, name: tag.name }))
+    : fallbackTagOptions;
 
   const isDateActive = sortByDate !== defaultSortByDate;
   const isTagsActive = selectedTagIds.length > 0;
@@ -155,8 +176,20 @@ export function useDraftsPage() {
       ? (tagOptions.find((tag) => tag.id === selectedTagIds[0])?.name || defaultSortByTags)
       : `${defaultSortByTags} (${selectedTagIds.length})`;
 
+  const sortedDrafts = (() => {
+    if (sortByDate === 'Сначала новые' || sortByDate === 'Сначала старые') {
+      const isDesc = sortByDate === 'Сначала новые';
+      return [...drafts].sort((a, b) => {
+        const aTime = new Date(a.updated_at || a.created_at).getTime();
+        const bTime = new Date(b.updated_at || b.created_at).getTime();
+        return isDesc ? bTime - aTime : aTime - bTime;
+      });
+    }
+    return drafts;
+  })();
+
   return {
-    drafts,
+    drafts: sortedDrafts,
     isLoading,
     isLoadingMore,
     hasMore,

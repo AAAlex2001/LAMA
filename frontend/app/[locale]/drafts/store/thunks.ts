@@ -13,7 +13,7 @@ import {
   setTagIdsFilter,
 } from '@/app/[locale]/create-post/store/slices/drafts';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 30;
 
 const filterDraftsByTagIds = (items: DraftListResponse['items'], tagIds: number[]) => {
   if (tagIds.length === 0) return items;

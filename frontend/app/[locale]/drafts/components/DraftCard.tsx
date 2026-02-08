@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import DraftContentIcons from './DraftContentIcons';
 import DraftCardActions from './DraftCardActions';
@@ -63,10 +63,17 @@ export default function DraftCard({
   const thumbnail = getThumbnail(draft);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
     setThumbnailLoaded(false);
     setThumbnailError(false);
+    const timerId = window.setTimeout(() => {
+      if (imgRef.current?.complete) {
+        setThumbnailLoaded(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(timerId);
   }, [thumbnail]);
 
   return (
@@ -109,8 +116,12 @@ export default function DraftCard({
                 src={thumbnail}
                 alt=""
                 loading="lazy"
+                ref={imgRef}
                 onLoad={() => setThumbnailLoaded(true)}
-                onError={() => setThumbnailError(true)}
+                onError={() => {
+                  setThumbnailError(true);
+                  setThumbnailLoaded(true);
+                }}
                 style={{ opacity: thumbnailLoaded ? 1 : 0 }}
               />
             </div>
