@@ -29,7 +29,7 @@ export const loadDraftById = createAsyncThunk(
   async (draftId: number, { dispatch, getState, rejectWithValue }) => {
     try {
       const draft = await apiRequest<Draft>(`/publications/${draftId}`);
-      loadDraftIntoStore(draft, dispatch);
+      loadDraftIntoStore(draft, dispatch as AppDispatch);
 
       const state = getState() as RootState;
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));

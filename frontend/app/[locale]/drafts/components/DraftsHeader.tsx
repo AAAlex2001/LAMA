@@ -13,8 +13,8 @@ interface TagOption {
 }
 
 interface DraftsHeaderProps {
-  sortBarRef: RefObject<HTMLDivElement>;
-  mobileFilterRef: RefObject<HTMLDivElement>;
+  sortBarRef: RefObject<HTMLDivElement | null>;
+  mobileFilterRef: RefObject<HTMLDivElement | null>;
   openSort: SortKey;
   setOpenSort: (value: SortKey) => void;
   sortByDate: string;

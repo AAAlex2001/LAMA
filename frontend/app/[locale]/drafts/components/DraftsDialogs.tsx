@@ -54,8 +54,8 @@ export default function DraftsDialogs({
           onClose={onClosePreview}
           channelTitle={previewData.channelTitle}
           channelExtraCount={previewData.channelExtraCount}
-          channelPhotoUrl={previewData.channelPhotoUrl}
-          channelMembersCount={previewData.channelMembersCount}
+          channelPhotoUrl={previewData.channelPhotoUrl ?? undefined}
+          channelMembersCount={previewData.channelMembersCount ?? undefined}
           html={previewData.html}
           mediaFiles={previewData.mediaFiles}
           quizData={previewData.quizData}
