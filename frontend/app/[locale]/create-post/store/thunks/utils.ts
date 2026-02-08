@@ -237,7 +237,7 @@ export function validateQuizState(
 
   const options = answers.map(a => a.text.trim()).filter(Boolean);
   if (options.length < 2) return 'Добавьте минимум 2 варианта ответа';
-  if (options.length > 10) return 'В опросе максимум 10 вариантов ответа';
+  if (options.length > 12) return 'В опросе максимум 12 вариантов ответа';
 
   if (mode === 'quiz') {
     if (!correctAnswerId) return 'Выберите правильный ответ для квиза';
