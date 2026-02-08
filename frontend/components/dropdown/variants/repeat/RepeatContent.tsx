@@ -11,6 +11,7 @@ interface RepeatContentPropsExtended extends RepeatContentProps {
   onViewModeChange: (mode: RepeatViewMode) => void;
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
+  scheduledMinDate?: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
   onRepeatEndDateChange?: (value: Date | null) => void;
 }
@@ -44,6 +45,7 @@ export default function RepeatContent({
   onViewModeChange,
   repeatEndType,
   repeatEndDate,
+  scheduledMinDate,
   onRepeatEndTypeChange,
   onRepeatEndDateChange,
 }: RepeatContentPropsExtended) {
@@ -72,6 +74,7 @@ export default function RepeatContent({
           onRepeatEndTypeChange?.(value);
         }}
         repeatEndDate={repeatEndDate}
+        scheduledMinDate={scheduledMinDate}
         onRepeatEndDateChange={(date) => {
           onRepeatEndDateChange?.(date);
         }}
@@ -104,6 +107,7 @@ export default function RepeatContent({
         onRepeatYearDaysChange={onRepeatYearDaysChange}
         repeatEndType={repeatEndType}
         repeatEndDate={repeatEndDate}
+        scheduledMinDate={scheduledMinDate}
         onRepeatEndTypeChange={onRepeatEndTypeChange}
         onRepeatEndDateChange={onRepeatEndDateChange}
         onRepeatOptionChange={(value) => {

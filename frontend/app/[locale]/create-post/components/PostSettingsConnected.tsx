@@ -19,6 +19,7 @@ interface PostSettingsConnectedProps {
 export default function PostSettingsConnected({ onPreview, previewDisabled }: PostSettingsConnectedProps) {
   const dispatch = useAppDispatch();
 
+  const datePickerState = useAppSelector(state => state.datePicker);
   const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
   const selectedTagColor = useAppSelector(state => state.settings.selectedTagColor);
   const notifySubscribers = useAppSelector(state => state.settings.notifySubscribers);
@@ -140,6 +141,7 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       repeatYearDays={repeatYearDays}
       repeatEndType={repeatEndType}
       repeatEndDate={repeatEndDate ? new Date(repeatEndDate) : null}
+      scheduledPostDate={datePickerState.selectedDate}
       onRepeatChange={(v: RepeatOption) => dispatch(settingsSlice.setRepeatInterval(v))}
       onRepeatPublishTimeTypeChange={(v: 'from_publish' | 'exact_time') => dispatch(settingsSlice.setRepeatPublishTimeType(v))}
       onRepeatPublishHoursChange={(v: number) => dispatch(settingsSlice.setRepeatPublishHours(v))}
@@ -155,9 +157,11 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       onRepeatEndTypeChange={(v: 'never' | 'date') => {
         dispatch(settingsSlice.setRepeatEndType(v));
         if (v === 'date' && !repeatEndDate) {
+          const scheduledDate = datePickerState.selectedDate;
           const today = new Date();
           today.setHours(0, 0, 0, 0);
-          dispatch(settingsSlice.setRepeatEndDate(today.toISOString()));
+          const minDate = scheduledDate && scheduledDate > today ? scheduledDate : today;
+          dispatch(settingsSlice.setRepeatEndDate(minDate.toISOString()));
         }
       }}
       onRepeatEndDateChange={(v: Date | null) => dispatch(settingsSlice.setRepeatEndDate(v?.toISOString() ?? null))}

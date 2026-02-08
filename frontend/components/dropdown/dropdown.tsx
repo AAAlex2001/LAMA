@@ -74,6 +74,7 @@ export default function Dropdown({
   onRepeatYearDaysChange,
   repeatEndType = 'never',
   repeatEndDate = null,
+  scheduledMinDate,
   onRepeatEndTypeChange,
   onRepeatEndDateChange,
   autoDeleteValue = 'never',
@@ -176,6 +177,7 @@ export default function Dropdown({
             repeatYearDays={repeatYearDays}
             repeatEndType={repeatEndType}
             repeatEndDate={repeatEndDate}
+            scheduledMinDate={scheduledMinDate}
             onRepeatChange={onRepeatChange}
             onRepeatPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
             onRepeatPublishHoursChange={onRepeatPublishHoursChange}

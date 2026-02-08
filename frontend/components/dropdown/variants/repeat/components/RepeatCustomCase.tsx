@@ -33,6 +33,7 @@ interface RepeatCustomCaseProps {
   onRepeatYearDaysChange?: (value: number[]) => void;
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
+  scheduledMinDate?: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
   onRepeatEndDateChange?: (value: Date | null) => void;
   onRepeatOptionChange?: (value: RepeatOption) => void;
@@ -66,6 +67,7 @@ export default function RepeatCustomCase({
   onRepeatYearDaysChange,
   repeatEndType,
   repeatEndDate,
+  scheduledMinDate,
   onRepeatEndTypeChange,
   onRepeatEndDateChange,
   onRepeatOptionChange,
@@ -399,6 +401,7 @@ export default function RepeatCustomCase({
           onRepeatEndTypeChange?.(value);
         }}
         endDate={repeatEndDate}
+        scheduledMinDate={scheduledMinDate}
         onEndDateChange={(date) => {
           console.log('RepeatEndSelector onEndDateChange:', date);
           onRepeatEndDateChange?.(date);

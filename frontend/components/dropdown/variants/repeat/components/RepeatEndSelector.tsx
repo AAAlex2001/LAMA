@@ -12,6 +12,7 @@ interface RepeatEndSelectorProps {
   value: RepeatEndType;
   onChange: (value: RepeatEndType) => void;
   endDate: Date | null;
+  scheduledMinDate?: Date | null;
   onEndDateChange: (date: Date) => void;
 }
 
@@ -19,6 +20,7 @@ export default function RepeatEndSelector({
   value, 
   onChange,
   endDate,
+  scheduledMinDate,
   onEndDateChange,
 }: RepeatEndSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -72,6 +74,7 @@ export default function RepeatEndSelector({
             value={endDate ?? undefined}
             onChange={onEndDateChange}
             selectedDates={endDate ? [endDate.getDate()] : []}
+            minDate={scheduledMinDate ?? undefined}
           />
         </div>
       )}

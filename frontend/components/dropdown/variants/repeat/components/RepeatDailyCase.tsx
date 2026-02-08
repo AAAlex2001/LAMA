@@ -45,6 +45,7 @@ export default function RepeatDailyCase({
   repeatEndType,
   onRepeatEndTypeChange,
   repeatEndDate,
+  scheduledMinDate,
   onRepeatEndDateChange,
   onCustomClick,
 }: RepeatDailyCaseProps) {
@@ -173,6 +174,7 @@ export default function RepeatDailyCase({
             value={repeatEndType}
             onChange={onRepeatEndTypeChange}
             endDate={repeatEndDate}
+            scheduledMinDate={scheduledMinDate}
             onEndDateChange={onRepeatEndDateChange}
           />
         </>

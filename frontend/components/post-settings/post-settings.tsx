@@ -68,6 +68,7 @@ interface PostSettingsProps {
   repeatYearDays: number[];
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
+  scheduledPostDate?: Date | null;
   onRepeatChange: (value: RepeatOption) => void;
   onRepeatPublishTimeTypeChange: (value: 'from_publish' | 'exact_time') => void;
   onRepeatPublishHoursChange: (value: number) => void;
@@ -132,6 +133,7 @@ export default function PostSettings({
   repeatYearDays,
   repeatEndType,
   repeatEndDate,
+  scheduledPostDate,
   onRepeatChange,
   onRepeatPublishTimeTypeChange,
   onRepeatPublishHoursChange,
@@ -226,6 +228,7 @@ export default function PostSettings({
               repeatYearDays={repeatYearDays}
               repeatEndType={repeatEndType}
               repeatEndDate={repeatEndDate}
+              scheduledMinDate={scheduledPostDate}
               onRepeatCustomDaysChange={onRepeatCustomDaysChange}
               onRepeatCustomHoursChange={onRepeatCustomHoursChange}
               onRepeatCustomUnitChange={onRepeatCustomUnitChange}

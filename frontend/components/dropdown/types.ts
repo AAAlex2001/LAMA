@@ -61,6 +61,7 @@ export interface RepeatContentProps {
   repeatYearDays: number[];
   repeatEndType: 'never' | 'date';
   repeatEndDate: Date | null;
+  scheduledMinDate?: Date | null;
   onRepeatChange?: (value: RepeatOption) => void;
   onRepeatPublishTimeTypeChange?: (value: 'from_publish' | 'exact_time') => void;
   onRepeatPublishHoursChange?: (value: number) => void;
@@ -143,6 +144,7 @@ export interface DropdownProps {
   onRepeatYearDaysChange?: (value: number[]) => void;
   repeatEndType?: 'never' | 'date';
   repeatEndDate?: Date | null;
+  scheduledMinDate?: Date | null;
   onRepeatEndTypeChange?: (value: 'never' | 'date') => void;
   onRepeatEndDateChange?: (value: Date | null) => void;
   autoDeleteValue?: AutoDeleteOption;
