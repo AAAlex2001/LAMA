@@ -3,17 +3,7 @@
 import styles from './auto-delete.module.scss';
 import Checkbox from '@/components/checkbox/checkbox';
 import TimeDurationPicker from '@/components/time-duration-picker';
-import type { AutoDeleteContentProps, AutoDeleteOption } from '../../types';
-
-type AutoDeleteOptionItem = { id: AutoDeleteOption; label: string };
-
-const AUTO_DELETE_OPTIONS: AutoDeleteOptionItem[] = [
-  { id: 'never', label: 'Никогда' },
-  { id: '24h', label: '24 часа' },
-  { id: '48h', label: '48 часов' },
-  { id: '72h', label: '72 часа' },
-  { id: 'custom', label: 'Другой вариант' },
-];
+import type { AutoDeleteContentProps } from '../../types';
 
 export default function AutoDeleteContent({
   autoDeleteValue,
@@ -23,31 +13,83 @@ export default function AutoDeleteContent({
   onAutoDeleteCustomDaysChange,
   onAutoDeleteCustomHoursChange,
 }: AutoDeleteContentProps) {
+  const isCustomActive = autoDeleteValue !== 'never';
+
+  const handlePreset = (hours: number) => {
+    const days = Math.floor(hours / 24);
+    const remainingHours = hours % 24;
+    onAutoDeleteCustomDaysChange?.(days);
+    onAutoDeleteCustomHoursChange?.(remainingHours);
+    onAutoDeleteChange?.('custom');
+  };
+
   return (
-    <>
+    <div className={styles.content}>
       <span className={styles.deleteLabel}>Удалить через:</span>
-      <div className={styles.optionsList}>
-        {AUTO_DELETE_OPTIONS.map((option) => (
-          <div key={option.id} className={styles.optionRow}>
-            <Checkbox
-              variant="radio"
-              checked={autoDeleteValue === option.id}
-              onChange={() => onAutoDeleteChange?.(option.id)}
-            />
-            <span className={styles.optionLabel}>{option.label}</span>
-          </div>
-        ))}
+
+      <div className={styles.optionRow}>
+        <Checkbox
+          variant="radio"
+          checked={autoDeleteValue === 'never'}
+          onChange={() => onAutoDeleteChange?.('never')}
+        />
+        <span className={styles.optionLabel}>Никогда</span>
       </div>
 
-      {autoDeleteValue === 'custom' && (
-        <TimeDurationPicker
-          days={autoDeleteCustomDays}
-          hours={autoDeleteCustomHours}
-          onDaysChange={(val) => onAutoDeleteCustomDaysChange?.(val)}
-          onHoursChange={(val) => onAutoDeleteCustomHoursChange?.(val)}
-          maxDays={365}
+      <div className={styles.optionRow}>
+        <Checkbox
+          variant="radio"
+          checked={isCustomActive}
+          onChange={() => {
+            if (!isCustomActive) {
+              onAutoDeleteChange?.('custom');
+            }
+          }}
         />
+        <span className={styles.optionLabel}>Удалить через</span>
+      </div>
+
+      {isCustomActive && (
+        <div className={styles.pickerSection}>
+          <TimeDurationPicker
+            days={autoDeleteCustomDays}
+            hours={autoDeleteCustomHours}
+            onDaysChange={(val) => {
+              onAutoDeleteCustomDaysChange?.(val);
+              onAutoDeleteChange?.('custom');
+            }}
+            onHoursChange={(val) => {
+              onAutoDeleteCustomHoursChange?.(val);
+              onAutoDeleteChange?.('custom');
+            }}
+            maxDays={365}
+          />
+
+          <div className={styles.presetsRow}>
+            <button
+              type="button"
+              className={styles.presetButton}
+              onClick={() => handlePreset(24)}
+            >
+              24 часа
+            </button>
+            <button
+              type="button"
+              className={styles.presetButton}
+              onClick={() => handlePreset(48)}
+            >
+              48 часов
+            </button>
+            <button
+              type="button"
+              className={styles.presetButton}
+              onClick={() => handlePreset(72)}
+            >
+              72 часа
+            </button>
+          </div>
+        </div>
       )}
-    </>
+    </div>
   );
 }

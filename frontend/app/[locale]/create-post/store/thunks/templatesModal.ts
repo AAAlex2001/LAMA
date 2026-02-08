@@ -95,9 +95,8 @@ export const searchTemplates = createAsyncThunk(
   async (query: string, { dispatch, rejectWithValue }) => {
     dispatch(setIsLoading(true));
     try {
-      const response = await apiRequest<TextTemplateListResponse>(
-        `/publications/text-templates/?search=${encodeURIComponent(query)}&limit=${PAGE_SIZE}`
-      );
+      const url = `/publications/text-templates/?search=${encodeURIComponent(query)}&limit=${PAGE_SIZE}`;
+      const response = await apiRequest<TextTemplateListResponse>(url);
       dispatch(setTemplates(response.items));
       dispatch(setHasMore(false));
       return response.items;

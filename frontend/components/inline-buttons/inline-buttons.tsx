@@ -66,23 +66,9 @@ export default function InlineButtons({
     return found?.number ?? 1;
   };
 
-  const handleAddColumn = () => {
-    if (rows.length > 0) {
-      onAddColumn(rows[rows.length - 1].id);
-    }
-  };
-
   return (
     <div className={`${styles.container} ${className || ''}`}>
-      {/* Сетка кнопок */}
       <div className={styles.tableContainer}>
-        <div className={styles.tableTop}>
-          <button type="button" className={styles.addColumnButton} onClick={handleAddColumn}>
-            <PlusIcon width={16} height={16} />
-            <span>Столбец</span>
-          </button>
-        </div>
-
         <div className={styles.tableBody}>
           <div className={styles.tableLeft}>
             <button type="button" className={styles.addRowButton} onClick={onAddRow}>
@@ -94,6 +80,14 @@ export default function InlineButtons({
           <div className={styles.buttonsGrid}>
             {rows.map(row => (
               <div key={row.id} className={styles.buttonRow}>
+                <button
+                  type="button"
+                  className={styles.addColumnInRowButton}
+                  onClick={() => onAddColumn(row.id)}
+                  aria-label="Добавить кнопку в ряд"
+                >
+                  <PlusIcon width={16} height={16} />
+                </button>
                 {row.buttons.map(button => {
                   const btnNumber = getButtonNumber(button.id);
                   const isHovered = hoveredButton === button.id;

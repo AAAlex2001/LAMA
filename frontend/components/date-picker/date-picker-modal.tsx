@@ -30,22 +30,25 @@ export default function DatePickerModal({
   return (
     <div className={styles.datePickerModal} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <DatePicker 
-          value={selectedDate ?? undefined}
-          onChange={onDateChange}
-          locale="ru"
-          selectedDates={selectedDate ? [selectedDate.getDate()] : []}
-        />
-        <TimePicker
-          hours={hours}
-          minutes={minutes}
-          onHoursChange={onHoursChange}
-          onMinutesChange={onMinutesChange}
-          selectedDate={selectedDate}
-        />
+        <div className={styles.modalHeader}>Расписание публикации</div>
+        <div className={styles.pickersWrapper}>
+          <DatePicker
+            value={selectedDate ?? undefined}
+            onChange={onDateChange}
+            locale="ru"
+            selectedDates={selectedDate ? [selectedDate.getDate()] : []}
+          />
+          <TimePicker
+            hours={hours}
+            minutes={minutes}
+            onHoursChange={onHoursChange}
+            onMinutesChange={onMinutesChange}
+            selectedDate={selectedDate}
+          />
+        </div>
         <div className={styles.buttonWrapper}>
-          <Button 
-            text="Запланировать" 
+          <Button
+            text="Запланировать"
             onClick={handleSchedule}
             disabled={!selectedDate || isLoading}
             loading={isLoading}

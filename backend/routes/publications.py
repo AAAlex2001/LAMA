@@ -107,6 +107,7 @@ async def get_publications(
     series_id: Optional[int] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
+    search: Optional[str] = None,
     page: int = 1,
     page_size: int = 50,
     service: PublicationService = Depends(get_publication_service),
@@ -123,6 +124,7 @@ async def get_publications(
         series_id=series_id,
         start_date=start_date,
         end_date=end_date,
+        search=search,
         skip=skip,
         limit=page_size
     )

@@ -31,8 +31,6 @@ export default function DraftsModal({
   onPreview,
   onClose,
 }: DraftsModalProps) {
-  const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
-  const [hoveredPreviewId, setHoveredPreviewId] = useState<number | null>(null);
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<number | null>(null);
 
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
@@ -72,13 +70,13 @@ export default function DraftsModal({
 
         <div className={styles.draftsList}>
           <div className={styles.listScroll} onScroll={handleScroll}>
-            {isLoading || (drafts.length === 0 && !searchQuery) ? (
+            {isLoading ? (
               <div className={styles.emptyState}>
                 <Loader size={24} color="blue" />
               </div>
             ) : drafts.length === 0 ? (
               <div className={styles.emptyState}>
-                {searchQuery ? 'Черновики не найдены' : 'У вас пока нет черновиков'}
+                {searchQuery ? 'Черновики не найдены' : 'У вас еще нет черновиков'}
               </div>
             ) : (
               <>
@@ -88,11 +86,6 @@ export default function DraftsModal({
                     className={styles.draftItem}
                     onClick={() => onSelect(draft)}
                   >
-                  <Checkbox
-                    variant="radio"
-                    checked={selectedDraftId === draft.id}
-                    onChange={() => onSelect(draft)}
-                  />
                   <div className={styles.draftContent}>
                     <span className={styles.draftText}>{getDraftPreview(draft)}</span>
                     {draft.media_urls && draft.media_urls.length > 0 && (
@@ -102,43 +95,29 @@ export default function DraftsModal({
                     )}
                   </div>
                   <div className={styles.actionsWrapper}>
-                    <div className={styles.actionButtonWrapper}>
-                      <button
-                        className={styles.actionButton}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onPreview(draft);
-                        }}
-                        onMouseEnter={() => setHoveredPreviewId(draft.id)}
-                        onMouseLeave={() => setHoveredPreviewId(null)}
-                      >
-                        <EyeIcon
-                          width={16}
-                          height={16}
-                          color={hoveredPreviewId === draft.id ? '#3B82F6' : '#B0B4B8'}
-                        />
-                      </button>
-                      {hoveredPreviewId === draft.id && (
-                        <div className={styles.actionTooltip}>предпросмотр</div>
-                      )}
-                    </div>
-                    <div className={styles.actionButtonWrapper}>
-                      <button
-                        className={styles.actionButton}
-                        onClick={(e) => handleDelete(draft.id, e)}
-                        onMouseEnter={() => setHoveredDeleteId(draft.id)}
-                        onMouseLeave={() => setHoveredDeleteId(null)}
-                      >
-                        <TrashIcon
-                          width={16}
-                          height={16}
-                          color={hoveredDeleteId === draft.id ? '#EF4444' : '#B0B4B8'}
-                        />
-                      </button>
-                      {hoveredDeleteId === draft.id && (
-                        <div className={styles.actionTooltip}>удалить?</div>
-                      )}
-                    </div>
+                    <button
+                      className={styles.actionButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onPreview(draft);
+                      }}
+                    >
+                      <EyeIcon
+                        width={16}
+                        height={16}
+                        color="#B0B4B8"
+                      />
+                    </button>
+                    <button
+                      className={styles.actionButton}
+                      onClick={(e) => handleDelete(draft.id, e)}
+                    >
+                      <TrashIcon
+                        width={16}
+                        height={16}
+                        color="#B0B4B8"
+                      />
+                    </button>
                   </div>
                 </div>
               ))}

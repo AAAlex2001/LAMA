@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import styles from './base.module.scss';
 import classNames from 'classnames';
 import { ChevronDownIcon } from '@/components/icons';
-import Button from '@/components/button/button';
 
 import { ChannelsContent } from './variants/channels';
 import { TagsContent } from './variants/tags';
@@ -233,19 +232,6 @@ export default function Dropdown({
       >
         <span className={styles.label}>{label}</span>
         <div className={styles.headerRight}>
-          {variant === 'repeat' && isOpen && (repeatViewMode === 'daily' || repeatViewMode === 'custom') && (
-            <div onClick={(e) => e.stopPropagation()}>
-              <Button
-                text="Назад"
-                showArrow={false}
-                size="small"
-                onClick={() => {
-                  onRepeatChange?.('never');
-                  setRepeatViewMode('list');
-                }}
-              />
-            </div>
-          )}
           <ChevronDownIcon
             width={16}
             height={16}

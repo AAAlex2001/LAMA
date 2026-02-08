@@ -94,7 +94,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 33px 12px 3px;
+  padding: 12px 3px 12px 3px;
   cursor: pointer;
   
   &:hover {
@@ -155,6 +155,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
+  &:hover svg path {
+    stroke: #2F67C3;
+    transition: all 0.2s ease;
+  }
 }
 
 .deleteButtonWrapper {
@@ -172,6 +177,11 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+
+  &:hover svg path {
+    stroke: #EF4444;
+    transition: all 0.2s ease;
+  }
 }
 
 .deleteTooltip {

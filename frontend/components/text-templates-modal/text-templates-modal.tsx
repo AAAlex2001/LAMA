@@ -26,8 +26,6 @@ export default function TextTemplatesModal({
   onSelect,
   onClose,
 }: TemplatesModalProps) {
-  const [hoveredDeleteId, setHoveredDeleteId] = useState<number | null>(null);
-  const [hoveredEditId, setHoveredEditId] = useState<number | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<number | null>(null);
   const [editingName, setEditingName] = useState('');
   const [deleteConfirmationId, setDeleteConfirmationId] = useState<number | null>(null);
@@ -94,13 +92,13 @@ export default function TextTemplatesModal({
 
         <div className={styles.templatesList}>
           <div className={styles.listScroll} onScroll={handleScroll}>
-            {isLoading || (templates.length === 0 && !searchQuery) ? (
+            {isLoading ? (
               <div className={styles.emptyState}>
                 <Loader size={24} color="blue" />
               </div>
             ) : templates.length === 0 ? (
               <div className={styles.emptyState}>
-                {searchQuery ? 'Шаблоны не найдены' : 'У вас пока нет шаблонов'}
+                {searchQuery ? 'Шаблоны не найдены' : 'У вас еще нет шаблонов'}
               </div>
             ) : (
               <>
@@ -110,11 +108,6 @@ export default function TextTemplatesModal({
                     className={styles.templateItem}
                     onClick={() => onSelect(template)}
                   >
-                  <Checkbox
-                    variant="radio"
-                    checked={selectedTemplateId === template.id}
-                    onChange={() => onSelect(template)}
-                  />
                   {editingTemplateId === template.id ? (
                     <div className={styles.templateNameEditor} onClick={(e) => e.stopPropagation()}>
                       <Input
@@ -147,41 +140,27 @@ export default function TextTemplatesModal({
                   ) : (
                     <span className={styles.templateName}>{template.name}</span>
                   )}
-                  <div className={styles.editButtonWrapper}>
-                    <button
-                      className={styles.editButton}
-                      onClick={(e) => startEdit(template, e)}
-                      onMouseEnter={() => setHoveredEditId(template.id)}
-                      onMouseLeave={() => setHoveredEditId(null)}
-                      aria-label="Редактировать название"
-                    >
-                      <EditNameIcon
-                        width={20}
-                        height={20}
-                        color={hoveredEditId === template.id ? '#2F67C3' : '#383F45'}
-                      />
-                    </button>
-                    {hoveredEditId === template.id && (
-                      <div className={styles.editTooltip}>редактировать название</div>
-                    )}
-                  </div>
-                  <div className={styles.deleteButtonWrapper}>
-                    <button
-                      className={styles.deleteButton}
-                      onClick={(e) => handleDelete(template.id, e)}
-                      onMouseEnter={() => setHoveredDeleteId(template.id)}
-                      onMouseLeave={() => setHoveredDeleteId(null)}
-                    >
-                      <TrashIcon 
-                        width={16} 
-                        height={16} 
-                        color={hoveredDeleteId === template.id ? '#EF4444' : '#B0B4B8'} 
-                      />
-                    </button>
-                    {hoveredDeleteId === template.id && (
-                      <div className={styles.deleteTooltip}>удалить?</div>
-                    )}
-                  </div>
+                  <button
+                    className={styles.editButton}
+                    onClick={(e) => startEdit(template, e)}
+                    aria-label="Редактировать название"
+                  >
+                    <EditNameIcon
+                      width={20}
+                      height={20}
+                      color="#383F45"
+                    />
+                  </button>
+                  <button
+                    className={styles.deleteButton}
+                    onClick={(e) => handleDelete(template.id, e)}
+                  >
+                    <TrashIcon
+                      width={16}
+                      height={16}
+                      color="#B0B4B8"
+                    />
+                  </button>
                 </div>
               ))}
               

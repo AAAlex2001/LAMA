@@ -1,11 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as templatesSlice from '../store/slices/templates';
 import * as editorSlice from '../store/slices/editor';
 import * as uiSlice from '../store/slices/ui';
-import { fetchMoreTemplates, updateTemplateThunk, deleteTemplateThunk } from '../store/thunks';
+import { fetchMoreTemplates, updateTemplateThunk, deleteTemplateThunk, searchTemplates, fetchTemplates } from '../store/thunks';
 import type { TextTemplate } from '../store/types';
 import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
 
@@ -18,6 +19,19 @@ export default function TemplatesModalConnected({ editorRef }: TemplatesModalCon
 
   const isOpen = useAppSelector(state => state.ui.showTemplatesModal);
   const templatesState = useAppSelector(state => state.templates);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (templatesState.searchQuery) {
+      const timeoutId = setTimeout(() => {
+        dispatch(searchTemplates(templatesState.searchQuery));
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      dispatch(fetchTemplates());
+    }
+  }, [templatesState.searchQuery, isOpen, dispatch]);
 
   return (
     <TextTemplatesModal

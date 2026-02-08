@@ -92,7 +92,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 33px 12px 3px;
+  padding: 12px 3px 12px 3px;
   cursor: pointer;
   
   &:hover {
@@ -163,6 +163,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
+
+  &:hover {
+    svg path {
+      transition: all 0.2s ease;
+    }
+  }
+
+  &:first-child:hover svg path {
+    stroke: #3B82F6;
+  }
+
+  &:last-child:hover svg path {
+    stroke: #EF4444;
+  }
 }
 
 .actionTooltip {

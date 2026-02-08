@@ -13,7 +13,9 @@ import { selectSelectedChannels } from '../store/selectors';
 import * as inlineButtonsSlice from '../store/slices/inlineButtons';
 import * as quizSlice from '../store/slices/quiz';
 import * as uiSlice from '../store/slices/ui';
-import { fetchDrafts, fetchTemplates, fetchPosts } from '../store/thunks';
+import * as draftsSlice from '../store/slices/drafts';
+import * as templatesSlice from '../store/slices/templates';
+import * as replyToPostSlice from '../store/slices/replyToPost';
 
 interface ActionsMenuConnectedProps {
   className?: string;
@@ -37,7 +39,7 @@ export default function ActionsMenuConnected({
   const mediaFiles = useAppSelector(state => state.media.files);
 
   const canShowInlineButtons = mediaFiles.length <= 1;
-  
+
   const selectedChannels = useAppSelector(selectSelectedChannels);
   const selectedCount = selectedChannels.length;
   const canReplyToPost = selectedCount === 1;
@@ -53,8 +55,8 @@ export default function ActionsMenuConnected({
           icon={<DraftsIcon width={24} height={24} />}
           className={actionButtonClassName}
           onClick={() => {
+            dispatch(draftsSlice.setSearchQuery(''));
             dispatch(uiSlice.setShowDraftsModal(true));
-            dispatch(fetchDrafts());
           }}
         />
         <Button
@@ -76,8 +78,8 @@ export default function ActionsMenuConnected({
           icon={<TemplatesIcon width={24} height={24} />}
           className={actionButtonClassName}
           onClick={() => {
+            dispatch(templatesSlice.setSearchQuery(''));
             dispatch(uiSlice.setShowTemplatesModal(true));
-            dispatch(fetchTemplates());
           }}
         />
         <Button
@@ -100,8 +102,8 @@ export default function ActionsMenuConnected({
           disabled={!canReplyToPost}
           onClick={() => {
             if (primaryChannel) {
+              dispatch(replyToPostSlice.setSearchQuery(''));
               dispatch(uiSlice.setShowReplyModal(true));
-              dispatch(fetchPosts(primaryChannel.id));
             }
           }}
         />

@@ -80,9 +80,8 @@ export const searchPosts = createAsyncThunk(
   async ({ channelId, query }: { channelId: number; query: string }, { dispatch, rejectWithValue }) => {
     dispatch(setIsLoading(true));
     try {
-      const response = await apiRequest<PostListResponse>(
-        `/publications?channel_id=${channelId}&status=published&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}`
-      );
+      const url = `/publications?channel_id=${channelId}&status=published&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}`;
+      const response = await apiRequest<PostListResponse>(url);
       dispatch(setPosts(response.items));
       dispatch(setHasMore(false));
       return response.items;

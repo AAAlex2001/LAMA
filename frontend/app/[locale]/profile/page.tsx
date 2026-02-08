@@ -210,6 +210,47 @@ export default function ProfilePage() {
                   <span className={styles.planHint}>Обновите план, чтобы подключить больше</span>
                 </div>
               </section>
+              <section className={`${styles.section} ${styles.securitySection}`}>
+                <div className={styles.sectionHeaderText}>
+                  <h2 className={styles.sectionTitle}>Безопасность аккаунта</h2>
+                  <p className={styles.sectionDesc}>Управление данными для входа в аккаунт</p>
+                </div>
+                <div className={styles.securityInputs}>
+                  <Input
+                    label="Электронная почта"
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="username@example.com"
+                    variant="white"
+                    className={styles.inputWhite}
+                    disabled
+                    icons={[
+                      {
+                        icon: <EditNameIcon />,
+                        className: styles.inputIcon,
+                        onClick: () => setIsEmailModalOpen(true),
+                      },
+                    ]}
+                  />
+                  <Input
+                    label="Пароль"
+                    type="password"
+                    value={password}
+                    onChange={setPassword}
+                    placeholder="*******************"
+                    variant="white"
+                    className={styles.inputWhite}
+                    disabled
+                    icons={[
+                      {
+                        icon: <EditNameIcon />,
+                        className: styles.inputIcon,
+                        onClick: () => setIsPasswordModalOpen(true),
+                      },
+                    ]}
+                  />
+                </div>
+              </section>
             </div>
 
             <div className={styles.rightColumn}>
@@ -448,53 +489,11 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <section className={`${styles.section} ${styles.securitySection}`}>
-            <div className={styles.sectionHeaderText}>
-              <h2 className={styles.sectionTitle}>Безопасность аккаунта</h2>
-              <p className={styles.sectionDesc}>Управление данными для входа в аккаунт</p>
-            </div>
-            <div className={styles.securityInputs}>
-              <Input
-                label="Электронная почта"
-                value={email}
-                onChange={setEmail}
-                placeholder="username@example.com"
-                variant="white"
-                className={styles.inputWhite}
-                disabled
-                icons={[
-                  {
-                    icon: <EditNameIcon />,
-                    className: styles.inputIcon,
-                    onClick: () => setIsEmailModalOpen(true),
-                  },
-                ]}
-              />
-              <Input
-                label="Пароль"
-                type="password"
-                value={password}
-                onChange={setPassword}
-                placeholder="*******************"
-                variant="white"
-                className={styles.inputWhite}
-                disabled
-                icons={[
-                  {
-                    icon: <EditNameIcon />,
-                    className: styles.inputIcon,
-                    onClick: () => setIsPasswordModalOpen(true),
-                  },
-                ]}
-              />
-            </div>
-          </section>
-
           <section className={styles.deleteSection}>
             <p className={styles.supportText}>Нашли ошибку? Сообщите нам в @LamaPlannerBot</p>
             <div className={styles.deleteActions}>
               <button
-                className={styles.deleteIconButton}
+                className={`${styles.deleteIconButton} ${isDeleteModalOpen ? styles.active : ''}`}
                 aria-label="Удалить аккаунт"
                 onClick={() => setIsDeleteModalOpen(true)}
               >

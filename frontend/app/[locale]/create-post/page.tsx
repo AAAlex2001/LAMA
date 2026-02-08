@@ -90,6 +90,7 @@ function CreatePostPageContent() {
   const {
     handleSelectPostSnapshot,
     handleAddSeries,
+    handleRemovePost,
   } = useCreatePostHandlers({
     dispatch,
     snapshots,
@@ -216,12 +217,15 @@ function CreatePostPageContent() {
       <FooterButtonsConnected
         className={styles.footerButtons}
         saveDraftBtnClassName={styles.saveDraftBtn}
+        deleteFromSeriesBtnClassName={styles.deleteFromSeriesBtn}
+        leftGroupClassName={styles.leftGroup}
         publishRowClassName={styles.publishRow}
         publishNowBtnClassName={styles.publishNowBtn}
         scheduleBtnClassName={styles.scheduleBtn}
         onPublishNow={handlePublishNow}
         onPublishSeries={handlePublishSeries}
         hasMultiplePosts={snapshots.length > 1}
+        onRemovePost={(index) => handleRemovePost(index, currentSnapshot)}
       />
     </div>
   );

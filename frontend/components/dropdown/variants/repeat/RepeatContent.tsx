@@ -51,16 +51,11 @@ export default function RepeatContent({
   const effectivePublishHours = repeatPublishHours ?? 12;
   const effectivePublishMinutes = repeatPublishMinutes ?? 0;
 
-  const handleBack = () => {
-    // Reset to 'never' when going back
-    onRepeatChange?.('never');
-    onViewModeChange('list');
-  };
-
   if (viewMode === 'daily') {
     return (
       <RepeatDailyCase
-        onBack={handleBack}
+        repeatValue={repeatValue}
+        onRepeatChange={onRepeatChange}
         publishTimeType={effectivePublishTimeType}
         onPublishTimeTypeChange={onRepeatPublishTimeTypeChange}
         publishHours={effectivePublishHours}
@@ -82,7 +77,6 @@ export default function RepeatContent({
   if (viewMode === 'custom') {
     return (
       <RepeatCustomCase
-        onBack={handleBack}
         repeatCustomDays={repeatCustomDays}
         repeatCustomHours={repeatCustomHours}
         repeatCustomUnit={repeatCustomUnit}
@@ -112,7 +106,7 @@ export default function RepeatContent({
       repeatValue={repeatValue}
       onRepeatChange={(value) => {
         onRepeatChange?.(value);
-        if (value === 'daily') {
+        if (value !== 'never') {
           onViewModeChange('daily');
         }
       }}

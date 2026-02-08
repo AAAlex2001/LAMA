@@ -12,7 +12,6 @@ import Toggle from '@/components/toggle/toggle';
 import RepeatEndSelector from './RepeatEndSelector';
 
 interface RepeatCustomCaseProps {
-  onBack: () => void;
   repeatCustomDays: number;
   repeatCustomHours: number;
   repeatCustomUnit: IntervalType;
@@ -45,7 +44,6 @@ function pluralize(n: number, one: string, few: string, many: string): string {
 }
 
 export default function RepeatCustomCase({
-  onBack,
   repeatCustomDays,
   repeatCustomHours,
   repeatCustomUnit,

@@ -65,6 +65,55 @@
   width: 100%;
 }
 
+.frequencySelector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.frequencySelectorText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.frequencyChevron {
+  color: #858585;
+  transition: transform 0.2s ease;
+}
+
+.frequencyChevronRotated {
+  transform: rotate(180deg);
+}
+
+.frequencyPopup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  gap: 0;
+  width: 100%;
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.frequencyPopupRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0;
+  gap: 16px;
+  width: 100%;
+}
+
 .repeatDailySelector {
   display: flex;
   flex-direction: row;

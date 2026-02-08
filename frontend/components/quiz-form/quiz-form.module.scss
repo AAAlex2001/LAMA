@@ -88,8 +88,10 @@
 .togglesSection {
   display: flex;
   flex-direction: column;
+  gap: 6px;
   @media (min-width: 1440px) {
     flex-direction: row;
+    align-items: flex-start;
   }
 }
 

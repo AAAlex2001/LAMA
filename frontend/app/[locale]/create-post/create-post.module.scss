@@ -338,10 +338,43 @@
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
+  }
+}
+
+.leftGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    gap: 10px;
+    width: auto;
   }
 }
 
 .saveDraftBtn {
+  width: 100%;
+  display: flex;
+
+  button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (min-width: 1440px) {
+    width: auto;
+    display: inline-block;
+
+    button {
+      width: auto;
+    }
+  }
+}
+
+.deleteFromSeriesBtn {
   width: 100%;
   display: flex;
 

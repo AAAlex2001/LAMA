@@ -120,6 +120,7 @@
     display: grid;
     grid-template-columns: 631px 631px;
     gap: 40px;
+    align-items: flex-start;
   }
 }
 
@@ -150,14 +151,6 @@
   @media (min-width: 1440px) {
     max-width: 631px;
 
-  }
-}
-
-.securitySection {
-  padding: 50px 0;
-
-  @media (min-width: 1440px) {
-    padding: 0;
   }
 }
 
@@ -300,7 +293,7 @@
   gap: 10px;
 
   @media (min-width: 1440px) {
-    margin-top: 20px;
+    margin-top: 32px;
   }
 }
 
@@ -461,13 +454,14 @@
 .deleteSection {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 20px;
   width: 100%;
+  margin-top: 20px;
 
   @media (min-width: 1440px) {
     flex-direction: row;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: stretch;
   }
 }
 
@@ -559,6 +553,15 @@
     transition: all 0.3s ease;
   }
 
+  &.active {
+    @media (max-width: 1439px) {
+      width: 178px !important;
+      padding: 0px 11px !important;
+      border-color: #e33326 !important;
+      color: #e33326 !important;
+    }
+  }
+
   &:hover {
     width: 178px;
     padding: 0px 11px;
@@ -577,6 +580,12 @@
   color: #e33326;
   width: 131px;
 
+  .deleteIconButton.active & {
+    @media (max-width: 1439px) {
+      display: block !important;
+    }
+  }
+
   .deleteIconButton:hover & {
     display: block;
   }
@@ -585,7 +594,8 @@
 .timezoneSection { order: 1; }
 .languageSection { order: 2; }
 .tariffSection { order: 3; }
-.notificationsSection { order: 4; }
+.securitySection { order: 4; }
+.notificationsSection { order: 5; }
 
 .modalFields {
   display: flex;

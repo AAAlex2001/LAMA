@@ -60,7 +60,7 @@ const quizSlice = createSlice({
       state.answers = action.payload;
     },
     addAnswer(state) {
-      if (state.answers.length < 10) {
+      if (state.answers.length < 12) {
         state.answers.push(createAnswer());
       }
     },

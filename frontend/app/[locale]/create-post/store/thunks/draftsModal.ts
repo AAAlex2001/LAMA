@@ -78,9 +78,8 @@ export const searchDrafts = createAsyncThunk(
   async (query: string, { dispatch, rejectWithValue }) => {
     dispatch(setIsLoading(true));
     try {
-      const response = await apiRequest<DraftListResponse>(
-        `/publications?status=draft&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}`
-      );
+      const url = `/publications?status=draft&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}`;
+      const response = await apiRequest<DraftListResponse>(url);
       dispatch(setDrafts(response.items));
       dispatch(setHasMore(false));
       return response.items;

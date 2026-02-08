@@ -38,10 +38,47 @@ export function useCreatePostHandlers({
   const handleAddSeries = (currentSnapshot: any) => {
     dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
     dispatch(seriesSlice.addPost());
+
+    dispatch(editorSlice.setText(''));
+    dispatch(mediaSlice.setFiles([]));
+    dispatch(inlineButtonsSlice.closeInlineButtons());
+    dispatch(quizSlice.closeQuiz());
+    dispatch(editorSlice.setShowLinkPreview(false));
+  };
+
+  const handleRemovePost = (indexToRemove: number, currentSnapshot: PostSnapshot) => {
+    if (snapshots.length <= 1) return;
+
+    // Save current editor state into the active snapshot first
+    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+
+    // Remove the post
+    dispatch(seriesSlice.removePost(indexToRemove));
+
+    // Determine which snapshot will become active after removal
+    const remaining = snapshots.filter((_, i) => i !== indexToRemove);
+    const newActiveIndex = indexToRemove >= remaining.length ? remaining.length - 1 : indexToRemove;
+    const newSnapshot = remaining[newActiveIndex];
+
+    if (newSnapshot) {
+      dispatch(editorSlice.setText(newSnapshot.text));
+      dispatch(mediaSlice.setFiles(newSnapshot.mediaFiles));
+      dispatch(inlineButtonsSlice.setRows(newSnapshot.buttonRows));
+      if (newSnapshot.quizOpen) {
+        dispatch(quizSlice.openQuiz());
+      } else {
+        dispatch(quizSlice.closeQuiz());
+      }
+      dispatch(quizSlice.setMode(newSnapshot.quizMode));
+      dispatch(quizSlice.setQuestion(newSnapshot.quizQuestion));
+      dispatch(quizSlice.setAnswers(newSnapshot.quizAnswers));
+      dispatch(editorSlice.setShowLinkPreview(newSnapshot.showLinkPreview));
+    }
   };
 
   return {
     handleSelectPostSnapshot,
     handleAddSeries,
+    handleRemovePost,
   };
 }

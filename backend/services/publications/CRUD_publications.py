@@ -119,6 +119,7 @@ class CRUDPublicationService:
         series_id: Optional[int] = None,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
+        search: Optional[str] = None,
         skip: int = 0,
         limit: int = 100
     ) -> List[Publication]:
@@ -156,6 +157,9 @@ class CRUDPublicationService:
         if tag_names:
             base_query = base_query.join(
                 Publication.tags).where(Tag.name.in_(tag_names))
+
+        if search:
+            base_query = base_query.where(Publication.text_content.ilike(f'%{search}%'))
 
         ordered_query = base_query.order_by(Publication.created_at.desc())
 

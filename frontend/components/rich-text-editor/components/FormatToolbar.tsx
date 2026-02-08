@@ -154,16 +154,17 @@ export default function FormatToolbar({
         hoveredButton={hoveredButton}
       />
 
-      <button
-        className={styles.toolButton}
-        type="button"
-        aria-label="Эмодзи"
+      <FormatButton
+        id="emoji"
+        label="Эмодзи"
+        tooltip="эмодзи"
+        icon={<EmojiIcon width={21} height={21} color={showEmojiPicker ? '#3B82F6' : getButtonColor('emoji')} />}
+        isActive={showEmojiPicker}
         onClick={onToggleEmojiPicker}
         onMouseEnter={() => onHover('emoji')}
         onMouseLeave={() => onHover(null)}
-      >
-        <EmojiIcon width={21} height={21} color={showEmojiPicker ? '#3B82F6' : getButtonColor('emoji')} />
-      </button>
+        hoveredButton={hoveredButton}
+      />
 
       {showEmojiPicker && (
         <div className={styles.emojiPickerWrapper}>

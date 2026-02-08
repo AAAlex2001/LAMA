@@ -62,13 +62,13 @@ export default function ReplyToPostModal({
         <h2 className={styles.modalTitle}>Название выбранного канала</h2>
 
         <div className={styles.postsList} ref={postsListRef} onScroll={handleScroll}>
-          {isLoading || (posts.length === 0 && !searchQuery) ? (
+          {isLoading ? (
             <div className={styles.emptyState}>
               <Loader size={24} color="blue" />
             </div>
           ) : posts.length === 0 ? (
             <div className={styles.emptyState}>
-              {searchQuery ? 'Посты не найдены' : 'У вас пока нет опубликованных постов'}
+              {searchQuery ? 'Посты не найдены' : 'У вас еще нет опубликованных постов'}
             </div>
           ) : (
             <>
@@ -78,11 +78,6 @@ export default function ReplyToPostModal({
                   className={styles.postItem}
                   onClick={() => onSelect(post)}
                 >
-                  <Checkbox
-                    variant="radio"
-                    checked={selectedPostId === post.id}
-                    onChange={() => onSelect(post)}
-                  />
                   <span className={styles.postTime}>{formatTime(post.created_at)}</span>
                   <span className={styles.postDate}>{formatDate(post.created_at)}</span>
                   <span className={styles.postText}>{getPostPreview(post)}</span>

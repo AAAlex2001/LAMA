@@ -28,15 +28,17 @@ export default function PostPreviewModalConnected() {
   const channelExtraCount = selectedCount > 1 ? `+${selectedCount - 1}` : undefined;
 
   const quizPreviewMode = quizMode === 'quiz' ? 'quiz' : 'poll';
+  const filledAnswers = quizAnswers.filter(a => a.text.trim());
+  const quizPreviewOptions = filledAnswers.map(a => a.text);
 
-  const quizPreviewData = quizOpen && quizQuestion.trim() ? {
+  const quizPreviewData = quizOpen && quizQuestion.trim() && quizPreviewOptions.length > 0 ? {
     mode: quizPreviewMode as 'quiz' | 'poll',
     question: quizQuestion,
-    options: quizAnswers.map(a => a.text),
+    options: quizPreviewOptions,
     isAnonymous: true,
     allowsMultipleAnswers: quizMode === 'poll_multi',
     correctAnswerIndex: quizMode === 'quiz' && quizCorrectAnswerId
-      ? quizAnswers.findIndex(a => a.id === quizCorrectAnswerId)
+      ? filledAnswers.findIndex(a => a.id === quizCorrectAnswerId)
       : undefined,
   } : undefined;
 

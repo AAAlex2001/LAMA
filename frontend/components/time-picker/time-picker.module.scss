@@ -3,9 +3,34 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  padding: 0;
+  gap: 24px;
+  width: 100%;
+  max-width: 288px;
+}
+
+.dateTimeSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  max-width: 288px;
+}
+
+.timePickerWrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
   width: 100%;
   max-width: 288px;
   height: 96px;
+  background: #FFFFFF;
+  border-radius: 11px;
+  box-sizing: border-box;
 }
 
 .columnsWrapper {
@@ -47,4 +72,68 @@
   height: 32px;
   display: flex;
   align-items: center;
+}
+
+.quickTimeButtons {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 16px;
+  width: 100%;
+  max-width: 288px;
+  height: 48px;
+  background: #FFFFFF;
+  border-radius: 11px;
+  box-sizing: border-box;
+}
+
+.quickTimeButtonsRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 100%;
+  height: 24px;
+  gap: 0;
+}
+
+.quickTimeButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 2px;
+  flex: 1;
+  height: 24px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  text-align: center;
+  color: #D1D1D6;
+  transition: all 0.2s;
+
+  &:hover {
+    color: #3B82F6;
+  }
+}
+
+.hint {
+  max-width: 255px;
+  width: 100%;
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #CED2D6;
 }

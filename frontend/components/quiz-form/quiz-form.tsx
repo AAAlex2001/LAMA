@@ -115,13 +115,21 @@ export default function QuizForm({
 
       {/* Переключатели */}
       <div className={styles.togglesSection}>
-        <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>Выбор нескольких ответов</span>
-          <Toggle
-            checked={isMulti}
-            onChange={handleMultiToggle}
-            disabled={isQuiz}
-          />
+        <div className={styles.toggleColumn}>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Выбор нескольких ответов</span>
+            <Toggle
+              checked={isMulti}
+              onChange={handleMultiToggle}
+              disabled={isQuiz}
+            />
+          </div>
+
+          {isQuiz && (
+            <div className={styles.quizHint}>
+              В режиме викторины недоступна опция выбора нескольких ответов
+            </div>
+          )}
         </div>
 
         <div className={styles.toggleColumn}>
@@ -134,12 +142,16 @@ export default function QuizForm({
             />
           </div>
 
-          {isQuiz && (
+          {isQuiz ? (
             <div className={styles.quizHint}>
               В викторинах есть правильный вариант ответа, а пользователям
               недоступна возможность переголосовать
             </div>
-          )}
+          ) : isMulti ? (
+            <div className={styles.quizHint}>
+              Режим викторины недоступен при активной опции выбора нескольких вариантов ответа
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

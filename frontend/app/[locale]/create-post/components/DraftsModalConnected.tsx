@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import DraftsModal from '@/components/drafts-modal/drafts-modal';
 import PostPreviewModal from '@/components/post-preview-modal';
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as draftsSlice from '../store/slices/drafts';
 import * as uiSlice from '../store/slices/ui';
-import { loadDraftIntoStore, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks';
+import { loadDraftIntoStore, fetchMoreDrafts, deleteDraftThunk, searchDrafts, fetchDrafts } from '../store/thunks';
 import type { Draft, MediaFile } from '../store/types';
 
 function getMediaType(url: string): 'image' | 'video' | 'document' {
@@ -64,6 +64,19 @@ export default function DraftsModalConnected() {
   }, [previewDraft]);
 
   const token = getAccessToken() || undefined;
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (draftsState.searchQuery) {
+      const timeoutId = setTimeout(() => {
+        dispatch(searchDrafts(draftsState.searchQuery));
+      }, 300);
+      return () => clearTimeout(timeoutId);
+    } else {
+      dispatch(fetchDrafts());
+    }
+  }, [draftsState.searchQuery, isOpen, dispatch]);
 
   return (
     <>

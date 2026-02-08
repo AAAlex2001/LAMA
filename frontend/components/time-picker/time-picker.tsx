@@ -41,27 +41,56 @@ export default function TimePicker({
     if (minutes < minMinutes) onMinutesChange(minMinutes);
   }, [minutes, minMinutes, onMinutesChange]);
 
+  const quickTimes = [
+    { label: '20:00', hours: 20, minutes: 0 },
+    { label: '15:00', hours: 15, minutes: 0 },
+    { label: '13:30', hours: 13, minutes: 30 },
+  ];
+
+  const handleQuickTime = (h: number, m: number) => {
+    onHoursChange(h);
+    onMinutesChange(m);
+  };
+
   return (
     <div className={styles.container}>
-      <div className={styles.columnsWrapper}>
-        <WheelPicker
-          value={hours}
-          onChange={onHoursChange}
-          min={minHours}
-          max={23}
-        />
-        <div className={styles.separatorColumn}>
-          <span className={styles.separator}>&nbsp;</span>
-          <span className={styles.activeSeparator}>:</span>
-          <span className={styles.separator}>:</span>
+      <div className={styles.dateTimeSection}>
+        <div className={styles.timePickerWrapper}>
+          <div className={styles.columnsWrapper}>
+            <WheelPicker
+              value={hours}
+              onChange={onHoursChange}
+              min={minHours}
+              max={23}
+            />
+            <div className={styles.separatorColumn}>
+              <span className={styles.separator}>&nbsp;</span>
+              <span className={styles.activeSeparator}>:</span>
+              <span className={styles.separator}>:</span>
+            </div>
+            <WheelPicker
+              value={minutes}
+              onChange={onMinutesChange}
+              min={minMinutes}
+              max={59}
+            />
+          </div>
         </div>
-        <WheelPicker
-          value={minutes}
-          onChange={onMinutesChange}
-          min={minMinutes}
-          max={59}
-        />
       </div>
+      <div className={styles.quickTimeButtons}>
+        <div className={styles.quickTimeButtonsRow}>
+          {quickTimes.map((time) => (
+            <button
+              key={time.label}
+              className={styles.quickTimeButton}
+              onClick={() => handleQuickTime(time.hours, time.minutes)}
+            >
+              {time.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className={styles.hint}>Расширенные настройки доступны в меню</div>
     </div>
   );
 }
