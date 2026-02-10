@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useNotifications } from '@/components/notifications';
 import { publishNow, publishSeries, schedulePost } from '../store/thunks';
 import { validatePost, validateTelegramMediaRules } from '../store/thunks/utils';
+import { saveCurrentSnapshot } from '../store/slices/series';
 import type { AppDispatch } from '../store';
 import type { MediaFile, ButtonRow, QuizMode, QuizAnswer, PostSnapshot, PollData } from '../store/types';
 
@@ -67,8 +68,8 @@ export function usePublishHandlers({
 
   const handlePublishSeries = useCallback(async () => {
     const channelIds = selectedChannels.map(c => c.id);
-    const snapshotsWithCurrent = [...snapshots];
-    snapshotsWithCurrent[activeIndex] = {
+
+    const currentSnap: PostSnapshot = {
       text,
       mediaFiles,
       inlineButtonsOpen,
@@ -80,6 +81,10 @@ export function usePublishHandlers({
       quizCorrectAnswerId,
       showLinkPreview,
     };
+    dispatch(saveCurrentSnapshot(currentSnap));
+
+    const snapshotsWithCurrent = [...snapshots];
+    snapshotsWithCurrent[activeIndex] = currentSnap;
 
     for (let i = 0; i < snapshotsWithCurrent.length; i++) {
       const snap = snapshotsWithCurrent[i];

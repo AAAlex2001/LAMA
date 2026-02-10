@@ -109,8 +109,8 @@ export const publishSeries = createAsyncThunk(
         await apiRequest(`/publications/${pub.id}/publish`, { method: 'POST' });
       }
       
-      // Если был создан новый тег, перезагружаем список тегов
-      if (settings.selectedTagName && settings.selectedTagName.trim()) {
+      // Если были теги, перезагружаем список тегов
+      if (settings.selectedTags && settings.selectedTags.length > 0) {
         dispatch(fetchTagsThunk({ force: true }));
       }
       

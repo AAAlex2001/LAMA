@@ -80,7 +80,12 @@ class CRUDPublicationService:
             publication.channels = channels
 
         if data.tag_names:
-            tags = await self.get_or_create_tags(data.tag_names, data.tag_color, owner_id=owner_id)
+            tags = await self.get_or_create_tags(
+                data.tag_names,
+                tag_color=data.tag_color,
+                tag_colors=data.tag_colors,
+                owner_id=owner_id,
+            )
             publication.tags = tags
 
         logger.info(f"Before commit: publication.media_thumbnail_urls={publication.media_thumbnail_urls}")
@@ -194,8 +199,16 @@ class CRUDPublicationService:
                     "One or more channels not found or do not belong to the user")
             publication.channels = channels
 
+        tag_colors_list = update_data.pop('tag_colors', None)
+        tag_color_single = update_data.pop('tag_color', None)
+
         if 'tag_names' in update_data:
-            tags = await self.get_or_create_tags(update_data.pop('tag_names'), update_data.get('tag_color'), owner_id=owner_id)
+            tags = await self.get_or_create_tags(
+                update_data.pop('tag_names'),
+                tag_color=tag_color_single,
+                tag_colors=tag_colors_list,
+                owner_id=owner_id,
+            )
             publication.tags = tags
 
         if 'inline_keyboard' in update_data:
@@ -271,8 +284,17 @@ class CRUDPublicationService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_or_create_tags(self, tag_names: List[str], tag_color: Optional[str] = None, owner_id: Optional[int] = None) -> List[Tag]:
-        """Получить или создать теги"""
+    async def get_or_create_tags(
+        self,
+        tag_names: List[str],
+        tag_color: Optional[str] = None,
+        tag_colors: Optional[List[str]] = None,
+        owner_id: Optional[int] = None,
+    ) -> List[Tag]:
+        """Получить или создать теги.
+        
+        tag_colors (per-tag list) takes priority over tag_color (single fallback).
+        """
         from datetime import datetime, timezone
 
         query = select(Tag).where(Tag.name.in_(tag_names))
@@ -285,15 +307,21 @@ class CRUDPublicationService:
         new_tags = []
         now = datetime.now(timezone.utc)
 
-        for name in tag_names:
+        for idx, name in enumerate(tag_names):
+            color = None
+            if tag_colors and idx < len(tag_colors):
+                color = tag_colors[idx]
+            elif tag_color:
+                color = tag_color
+
             if name in existing_tags:
                 tag = existing_tags[name]
-                if tag_color and tag.color != tag_color:
-                    tag.color = tag_color
+                if color and tag.color != color:
+                    tag.color = color
                 tag.last_used_at = now
                 tags.append(tag)
             else:
-                new_tag = Tag(name=name, color=tag_color, last_used_at=now, owner_id=owner_id)
+                new_tag = Tag(name=name, color=color, last_used_at=now, owner_id=owner_id)
                 new_tags.append(new_tag)
                 tags.append(new_tag)
 

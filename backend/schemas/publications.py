@@ -82,6 +82,11 @@ class TagCreate(TagBase):
     pass
 
 
+class TagUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    color: Optional[str] = Field(None, max_length=7)
+
+
 class TagResponse(TagBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -208,6 +213,7 @@ class PublicationBase(BaseModel):
     channel_ids: List[int] = Field(default_factory=list)
     tag_names: List[str] = Field(default_factory=list)
     tag_color: Optional[str] = None
+    tag_colors: Optional[List[str]] = Field(None, description="Per-tag colors, parallel to tag_names")
 
     @model_validator(mode="after")
     def validate_content_payload(cls, values):
@@ -346,6 +352,7 @@ class PublicationUpdate(BaseModel):
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
     tag_color: Optional[str] = None
+    tag_colors: Optional[List[str]] = Field(None, description="Per-tag colors, parallel to tag_names")
 
     @validator('tag_names')
     def validate_update_tag_names(cls, v):

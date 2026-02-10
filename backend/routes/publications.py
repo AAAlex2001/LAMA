@@ -12,7 +12,7 @@ from backend.schemas.publications import (
     AIGenerateRequest, AIEditRequest, AIEditTextRequest, AIEditTextResponse,
     PublicationSeriesCreate, PublicationSeriesUpdate, PublicationSeriesResponse, CalendarEntry,
     RescheduleRequest, EditPublishedRequest,
-    TagCreate, TagResponse, TagListResponse,
+    TagCreate, TagUpdate, TagResponse, TagListResponse,
     TextTemplateCreate, TextTemplateUpdate, TextTemplateResponse, TextTemplateListResponse,
 )
 from backend.models.publications import Tag, publication_tags, PublicationStatus as DBPublicationStatus, RepeatInterval as DBRepeatInterval
@@ -499,13 +499,50 @@ async def create_tag(
     existing_tag = existing_result.scalar_one_or_none()
     
     if existing_tag:
+        if data.color and existing_tag.color != data.color:
+            existing_tag.color = data.color
+            await db.commit()
+            await db.refresh(existing_tag)
         return existing_tag
     
-    tag = Tag(name=data.name, owner_id=current_user.id)
+    tag = Tag(name=data.name, color=data.color, owner_id=current_user.id)
     db.add(tag)
     await db.commit()
     await db.refresh(tag)
     
+    return tag
+
+
+@router.put("/tags/{tag_id}", response_model=TagResponse)
+async def update_tag(
+    tag_id: int,
+    data: TagUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = select(Tag).where(Tag.id == tag_id, Tag.owner_id == current_user.id)
+    result = await db.execute(query)
+    tag = result.scalar_one_or_none()
+
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    if data.name is not None and data.name != tag.name:
+        dup_query = select(Tag).where(
+            Tag.owner_id == current_user.id,
+            Tag.name == data.name,
+            Tag.id != tag_id
+        )
+        dup_result = await db.execute(dup_query)
+        if dup_result.scalar_one_or_none():
+            raise HTTPException(status_code=409, detail="Tag with this name already exists")
+        tag.name = data.name
+
+    if data.color is not None:
+        tag.color = data.color
+
+    await db.commit()
+    await db.refresh(tag)
     return tag
 
 

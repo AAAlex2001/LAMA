@@ -9,6 +9,7 @@ interface SearchBarProps {
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
+  onFocus?: () => void;
   className?: string;
   showSearchIcon?: boolean;
 }
@@ -17,6 +18,7 @@ export default function SearchBar({
   placeholder = 'Введите название канала',
   value,
   onChange,
+  onFocus,
   className,
   showSearchIcon = true,
 }: SearchBarProps) {
@@ -38,6 +40,7 @@ export default function SearchBar({
         placeholder={placeholder}
         value={currentValue}
         onChange={(e) => handleChange(e.target.value)}
+        onFocus={onFocus}
         className={styles.searchInput}
       />
       {showSearchIcon && <SearchIcon width={18} height={18} />}

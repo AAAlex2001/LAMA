@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 interface UiState {
   showPreviewModal: boolean;
   showMobileSettings: boolean;
+  showTagsPanel: boolean;
   showDraftsModal: boolean;
   showTemplatesModal: boolean;
   showReplyModal: boolean;
@@ -19,6 +20,7 @@ interface UiState {
 const initialState: UiState = {
   showPreviewModal: false,
   showMobileSettings: false,
+  showTagsPanel: false,
   showDraftsModal: false,
   showTemplatesModal: false,
   showReplyModal: false,
@@ -41,6 +43,9 @@ const uiSlice = createSlice({
     },
     setShowMobileSettings(state, action: PayloadAction<boolean>) {
       state.showMobileSettings = action.payload;
+    },
+    setShowTagsPanel(state, action: PayloadAction<boolean>) {
+      state.showTagsPanel = action.payload;
     },
     setShowDraftsModal(state, action: PayloadAction<boolean>) {
       state.showDraftsModal = action.payload;
@@ -83,6 +88,7 @@ const uiSlice = createSlice({
 export const {
   setShowPreviewModal,
   setShowMobileSettings,
+  setShowTagsPanel,
   setShowDraftsModal,
   setShowTemplatesModal,
   setShowReplyModal,

@@ -110,6 +110,7 @@ export interface CreatePostRequest {
   poll_data?: PollData;
   tag_names?: string[];
   tag_color?: string;
+  tag_colors?: string[];
   repeat_interval?: string;
   repeat_custom_days?: number;
   repeat_custom_hours?: number;
@@ -172,6 +173,7 @@ export interface SyncChannelResponse {
 
 export interface TagsResponse {
   items?: Tag[];
+  total?: number;
 }
 
 export interface UploadedFile {
@@ -186,7 +188,7 @@ export interface SettingsState {
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
-  selectedTagName: string | null;
+  selectedTags: Array<{ name: string; color: string }>;
   selectedTagColor: string | null;
   repeatInterval: RepeatOption;
   repeatPublishTimeType: 'from_publish' | 'exact_time';

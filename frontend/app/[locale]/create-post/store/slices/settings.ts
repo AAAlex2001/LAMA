@@ -21,7 +21,7 @@ interface SettingsState {
   searchResults: Tag[];
   searching: boolean;
   tagInputValue: string;
-  selectedTagName: string;
+  selectedTags: Array<{ id?: number; name: string; color: TagColor }>;
   selectedTagColor: TagColor;
   
   repeatInterval: RepeatOption;
@@ -59,7 +59,7 @@ const initialState: SettingsState = {
   searchResults: [],
   searching: false,
   tagInputValue: '',
-  selectedTagName: '',
+  selectedTags: [],
   selectedTagColor: '#FAC7C7',
   
   repeatInterval: 'never',
@@ -126,20 +126,35 @@ const settingsSlice = createSlice({
     setTagInputValue(state, action: PayloadAction<string>) {
       state.tagInputValue = action.payload;
     },
-    setSelectedTagName(state, action: PayloadAction<string>) {
-      state.selectedTagName = action.payload;
-    },
     setSelectedTagColor(state, action: PayloadAction<TagColor>) {
       state.selectedTagColor = action.payload;
     },
-    selectTag(state, action: PayloadAction<Tag>) {
-      state.selectedTagName = action.payload.name;
-      state.selectedTagColor = (action.payload.color as TagColor) || '#FAC7C7';
+    addTag(state, action: PayloadAction<{ id?: number; name: string; color: TagColor }>) {
+      const exists = state.selectedTags.some(t => t.name === action.payload.name);
+      if (!exists && action.payload.name.trim()) {
+        state.selectedTags.push(action.payload);
+      }
       state.tagInputValue = '';
       state.searchResults = [];
     },
-    clearTag(state) {
-      state.selectedTagName = '';
+    updateSelectedTagId(state, action: PayloadAction<{ name: string; id: number }>) {
+      const tag = state.selectedTags.find(t => t.name === action.payload.name);
+      if (tag) {
+        tag.id = action.payload.id;
+      }
+    },
+    updateSelectedTag(state, action: PayloadAction<{ id: number; name: string; color: TagColor }>) {
+      const tag = state.selectedTags.find(t => t.id === action.payload.id);
+      if (tag) {
+        tag.name = action.payload.name;
+        tag.color = action.payload.color;
+      }
+    },
+    removeSelectedTag(state, action: PayloadAction<string>) {
+      state.selectedTags = state.selectedTags.filter(t => t.name !== action.payload);
+    },
+    clearTags(state) {
+      state.selectedTags = [];
       state.tagInputValue = '';
     },
     
@@ -221,10 +236,12 @@ export const {
   setSearchResults,
   setSearching,
   setTagInputValue,
-  setSelectedTagName,
   setSelectedTagColor,
-  selectTag,
-  clearTag,
+  addTag,
+  updateSelectedTagId,
+  updateSelectedTag,
+  removeSelectedTag,
+  clearTags,
   setRepeatInterval,
   setRepeatPublishTimeType,
   setRepeatPublishHours,

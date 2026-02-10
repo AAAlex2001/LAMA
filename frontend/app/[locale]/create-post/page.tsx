@@ -135,11 +135,6 @@ function CreatePostPageContent() {
       <EditorHeaderConnected
         className={styles.header}
         headerRef={headerRef}
-        tagClassName={styles.headerTag}
-        tagButtonClassName={styles.headerTagButton}
-        tagTextClassName={styles.headerTagText}
-        tagCloseClassName={styles.headerTagClose}
-        settingsButtonClassName={styles.settingsButton}
       />
 
       <div className={styles.content}>

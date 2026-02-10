@@ -7,8 +7,11 @@ import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
 import { setChannels as setChannelSelections } from '../slices/channels';
+import { addTag, clearTags } from '../slices/settings';
 import { fetchChannelsThunk } from './channels';
 import { fetchTagsThunk } from './tags';
+import type { TagColor } from '../types';
+import { TAG_COLORS } from '@/components/dropdown/types';
 
 export const loadChannels = createAsyncThunk(
   'createPost/loadChannels',
@@ -155,5 +158,19 @@ export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
     dispatch(openQuiz());
   } else {
     dispatch(resetQuiz());
+  }
+
+  // Restore tags
+  dispatch(clearTags());
+  if (draft.tags && draft.tags.length > 0) {
+    for (const tag of draft.tags) {
+      const validColor = (tag.color && TAG_COLORS.includes(tag.color as TagColor))
+        ? (tag.color as TagColor)
+        : '#FAC7C7';
+      dispatch(addTag({
+        name: tag.name,
+        color: validColor,
+      }));
+    }
   }
 }

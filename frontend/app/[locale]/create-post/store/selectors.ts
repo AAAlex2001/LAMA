@@ -15,7 +15,11 @@ export const selectTagsState = createSelector(selectTagsSlice, (tags) => ({
   searchResults: tags.searchResults,
   tagInputValue: tags.tagInputValue,
   loading: tags.loading,
+  loadingMore: tags.loadingMore,
   searching: tags.searching,
+  hasMore: tags.hasMore,
+  page: tags.page,
+  total: tags.total,
 }));
 
 export const selectChannelsState = createSelector(selectChannelsSlice, (channels) => ({

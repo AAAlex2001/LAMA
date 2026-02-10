@@ -3,25 +3,37 @@ import type { Tag, TagsResponse } from '../types';
 import { apiRequest } from './api';
 import { 
   setRecentTags, 
+  appendRecentTags,
+  setPage,
+  setHasMore,
+  setTotal,
   setSearchResults, 
   setLoading, 
+  setLoadingMore,
   setSearching, 
   setError, 
-  removeTag 
+  removeTag,
+  updateTagInList,
+  resetPagination,
 } from '../slices/tags';
 
-// Загрузка списка тегов
+const PAGE_SIZE = 20;
+
 export const fetchTagsThunk = createAsyncThunk(
   'tags/fetchTags',
-  async (params: { page?: number; pageSize?: number; force?: boolean } = {}, { getState, dispatch, rejectWithValue }) => {
-    const { page = 1, pageSize = 20, force = false } = params;
-    const state = getState() as { tags: { recentTags: Tag[]; loading: boolean } };
+  async (params: { page?: number; pageSize?: number; force?: boolean; append?: boolean } = {}, { getState, dispatch, rejectWithValue }) => {
+    const { pageSize = PAGE_SIZE, force = false, append = false } = params;
+    const state = getState() as { tags: { recentTags: Tag[]; loading: boolean; loadingMore: boolean; page: number } };
     
-    // Если уже загружаются или есть данные и не forced reload
-    if (state.tags.loading) return;
-    if (!force && state.tags.recentTags.length > 0) return;
-    
-    dispatch(setLoading(true));
+    if (state.tags.loading || state.tags.loadingMore) return;
+
+    const page = params.page ?? (append ? state.tags.page + 1 : 1);
+
+    if (append) {
+      dispatch(setLoadingMore(true));
+    } else {
+      dispatch(setLoading(true));
+    }
     dispatch(setError(null));
     
     try {
@@ -34,20 +46,32 @@ export const fetchTagsThunk = createAsyncThunk(
         `/publications/tags/?${queryParams}`,
         { method: 'GET' }
       );
+
+      const items = response.items || [];
+      const total = response.total || 0;
       
-      dispatch(setRecentTags(response.items || []));
-      return response.items;
+      if (append) {
+        dispatch(appendRecentTags(items));
+      } else {
+        dispatch(setRecentTags(items));
+      }
+
+      dispatch(setPage(page));
+      dispatch(setTotal(total));
+      dispatch(setHasMore(page * pageSize < total));
+
+      return items;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки тегов';
       dispatch(setError(errorMessage));
       return rejectWithValue(errorMessage);
     } finally {
       dispatch(setLoading(false));
+      dispatch(setLoadingMore(false));
     }
   }
 );
 
-// Поиск тегов
 export const searchTagsThunk = createAsyncThunk(
   'tags/searchTags',
   async (query: string, { dispatch, rejectWithValue }) => {
@@ -81,10 +105,9 @@ export const searchTagsThunk = createAsyncThunk(
   }
 );
 
-// Создание нового тега
 export const createTagThunk = createAsyncThunk(
   'tags/createTag',
-  async (name: string, { dispatch, rejectWithValue }) => {
+  async ({ name, color }: { name: string; color?: string }, { dispatch, rejectWithValue }) => {
     if (!name.trim()) {
       return rejectWithValue('Имя тега не может быть пустым');
     }
@@ -94,11 +117,10 @@ export const createTagThunk = createAsyncThunk(
         '/publications/tags/',
         {
           method: 'POST',
-          body: JSON.stringify({ name: name.trim() }),
+          body: JSON.stringify({ name: name.trim(), color: color || null }),
         }
       );
       
-      // После создания тега перезагружаем список
       dispatch(fetchTagsThunk({ force: true }));
       
       return response;
@@ -108,7 +130,6 @@ export const createTagThunk = createAsyncThunk(
   }
 );
 
-// Удаление тега
 export const deleteTagThunk = createAsyncThunk(
   'tags/deleteTag',
   async (tagId: number, { dispatch, rejectWithValue }) => {
@@ -122,6 +143,30 @@ export const deleteTagThunk = createAsyncThunk(
       return tagId;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Ошибка удаления тега');
+    }
+  }
+);
+
+export const updateTagThunk = createAsyncThunk(
+  'tags/updateTag',
+  async ({ id, name, color }: { id: number; name?: string; color?: string }, { dispatch, rejectWithValue }) => {
+    try {
+      const body: Record<string, string> = {};
+      if (name !== undefined) body.name = name.trim();
+      if (color !== undefined) body.color = color;
+
+      const response = await apiRequest<Tag>(
+        `/publications/tags/${id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(body),
+        }
+      );
+
+      dispatch(updateTagInList(response));
+      return response;
+    } catch (error) {
+      return rejectWithValue(error instanceof Error ? error.message : 'Ошибка обновления тега');
     }
   }
 );

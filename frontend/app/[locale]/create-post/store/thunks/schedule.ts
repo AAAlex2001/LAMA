@@ -40,8 +40,8 @@ export const schedulePost = createAsyncThunk(
       
       await apiRequest('/publications', { method: 'POST', body: JSON.stringify(request) });
       
-      // Если был создан новый тег, перезагружаем список тегов
-      if (settings.selectedTagName && settings.selectedTagName.trim()) {
+      // Если были теги, перезагружаем список тегов
+      if (settings.selectedTags && settings.selectedTags.length > 0) {
         dispatch(fetchTagsThunk({ force: true }));
       }
       

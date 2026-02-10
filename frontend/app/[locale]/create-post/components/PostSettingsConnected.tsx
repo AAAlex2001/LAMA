@@ -2,14 +2,14 @@
 
 import PostSettings from '@/components/post-settings/post-settings';
 import { useAppDispatch, useAppSelector } from '../store';
-import { selectChannelsState, selectTagsState } from '../store/selectors';
+import { selectChannelsState } from '../store/selectors';
 import * as settingsSlice from '../store/slices/settings';
-import { setTagInputValue, clearSearch, resetTags } from '../store/slices/tags';
+import { resetTags } from '../store/slices/tags';
 import { toggleChannelSelected, deselectAllChannels } from '../store/slices/channels';
 import { resetDatePicker } from '../store/slices/datePicker';
 import { resetReplyToPost } from '../store/slices/replyToPost';
-import { fetchTagsThunk, searchTagsThunk, deleteTagThunk, fetchChannelsThunk, addChannelThunk } from '../store/thunks';
-import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption, TagColor } from '../store/types';
+import { fetchChannelsThunk, addChannelThunk } from '../store/thunks';
+import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption } from '../store/types';
 
 interface PostSettingsConnectedProps {
   onPreview?: () => void;
@@ -20,8 +20,6 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
   const dispatch = useAppDispatch();
 
   const datePickerState = useAppSelector(state => state.datePicker);
-  const selectedTagName = useAppSelector(state => state.settings.selectedTagName);
-  const selectedTagColor = useAppSelector(state => state.settings.selectedTagColor);
   const notifySubscribers = useAppSelector(state => state.settings.notifySubscribers);
   const pinPost = useAppSelector(state => state.settings.pinPost);
   const showCreateChannel = useAppSelector(state => state.settings.showCreateChannel);
@@ -42,8 +40,6 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
   const autoDeleteInterval = useAppSelector(state => state.settings.autoDeleteInterval);
   const autoDeleteCustomDays = useAppSelector(state => state.settings.autoDeleteCustomDays);
   const autoDeleteCustomHours = useAppSelector(state => state.settings.autoDeleteCustomHours);
-
-  const tagsState = useAppSelector(selectTagsState);
 
   const channelsState = useAppSelector(selectChannelsState);
 
@@ -71,29 +67,12 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
 
   const handleAddChannel = async (link: string) => {
     try {
-      const result = await dispatch(addChannelThunk(link)).unwrap();
+      await dispatch(addChannelThunk(link)).unwrap();
       dispatch(settingsSlice.setShowCreateChannel(false));
       return true;
     } catch {
       return false;
     }
-  };
-
-  const handleSelectTag = (tag: { id: number; name: string; color?: string; created_at: string }) => {
-    dispatch(settingsSlice.selectTag(tag));
-    dispatch(clearSearch());
-  };
-
-  const handleLoadRecentTags = () => {
-    dispatch(fetchTagsThunk({}));
-  };
-
-  const handleSearchTags = (query: string) => {
-    dispatch(searchTagsThunk(query));
-  };
-
-  const handleDeleteTag = (tagId: number) => {
-    dispatch(deleteTagThunk(tagId));
   };
 
   return (
@@ -111,22 +90,6 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       onAddChannel={handleAddChannel}
       onOpenCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(true))}
       onCloseCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(false))}
-      recentTags={tagsState.recentTags.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
-      searchResults={tagsState.searchResults.map(tag => ({ ...tag, color: tag.color || '#808080' }))}
-      tagInputValue={tagsState.tagInputValue}
-      selectedTagName={selectedTagName}
-      selectedTagColor={selectedTagColor}
-      tagsLoading={tagsState.loading}
-      tagsSearching={tagsState.searching}
-      onLoadRecentTags={handleLoadRecentTags}
-      onSearchTags={handleSearchTags}
-      onTagInputChange={(value: string) => {
-        dispatch(setTagInputValue(value));
-        dispatch(settingsSlice.setSelectedTagName(value));
-      }}
-      onSelectTag={handleSelectTag}
-      onDeleteTag={handleDeleteTag}
-      onTagColorChange={(color: TagColor) => dispatch(settingsSlice.setSelectedTagColor(color))}
       repeatInterval={repeatInterval}
       repeatPublishTimeType={repeatPublishTimeType}
       repeatPublishHours={repeatPublishHours}
@@ -175,7 +138,7 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       pinPost={pinPost}
       onNotifyChange={(v: boolean) => dispatch(settingsSlice.setNotifySubscribers(v))}
       onPinChange={(v: boolean) => dispatch(settingsSlice.setPinPost(v))}
-      onReset={() => { 
+      onReset={() => {
         dispatch(settingsSlice.resetSettings());
         dispatch(resetTags());
         dispatch(deselectAllChannels());

@@ -5,18 +5,26 @@ interface TagsState {
   recentTags: Tag[];
   searchResults: Tag[];
   loading: boolean;
+  loadingMore: boolean;
   searching: boolean;
   error: string | null;
   tagInputValue: string;
+  page: number;
+  hasMore: boolean;
+  total: number;
 }
 
 const initialState: TagsState = {
   recentTags: [],
   searchResults: [],
   loading: false,
+  loadingMore: false,
   searching: false,
   error: null,
   tagInputValue: '',
+  page: 1,
+  hasMore: true,
+  total: 0,
 };
 
 const tagsSlice = createSlice({
@@ -27,6 +35,24 @@ const tagsSlice = createSlice({
       state.recentTags = action.payload;
       state.error = null;
     },
+
+    appendRecentTags(state, action: PayloadAction<Tag[]>) {
+      const existingIds = new Set(state.recentTags.map(t => t.id));
+      const newTags = action.payload.filter(t => !existingIds.has(t.id));
+      state.recentTags = [...state.recentTags, ...newTags];
+    },
+
+    setPage(state, action: PayloadAction<number>) {
+      state.page = action.payload;
+    },
+
+    setHasMore(state, action: PayloadAction<boolean>) {
+      state.hasMore = action.payload;
+    },
+
+    setTotal(state, action: PayloadAction<number>) {
+      state.total = action.payload;
+    },
     
     setSearchResults(state, action: PayloadAction<Tag[]>) {
       state.searchResults = action.payload;
@@ -34,6 +60,10 @@ const tagsSlice = createSlice({
     
     setLoading(state, action: PayloadAction<boolean>) {
       state.loading = action.payload;
+    },
+
+    setLoadingMore(state, action: PayloadAction<boolean>) {
+      state.loadingMore = action.payload;
     },
     
     setSearching(state, action: PayloadAction<boolean>) {
@@ -56,6 +86,20 @@ const tagsSlice = createSlice({
     removeTag(state, action: PayloadAction<number>) {
       state.recentTags = state.recentTags.filter(tag => tag.id !== action.payload);
       state.searchResults = state.searchResults.filter(tag => tag.id !== action.payload);
+      state.total = Math.max(0, state.total - 1);
+    },
+
+    updateTagInList(state, action: PayloadAction<Tag>) {
+      const updated = action.payload;
+      state.recentTags = state.recentTags.map(t => t.id === updated.id ? updated : t);
+      state.searchResults = state.searchResults.map(t => t.id === updated.id ? updated : t);
+    },
+
+    resetPagination(state) {
+      state.page = 1;
+      state.hasMore = true;
+      state.recentTags = [];
+      state.total = 0;
     },
     
     reset(state) {
@@ -68,13 +112,20 @@ const tagsSlice = createSlice({
 
 export const {
   setRecentTags,
+  appendRecentTags,
+  setPage,
+  setHasMore,
+  setTotal,
   setSearchResults,
   setLoading,
+  setLoadingMore,
   setSearching,
   setError,
   setTagInputValue,
   clearSearch,
   removeTag,
+  updateTagInList,
+  resetPagination,
   reset: resetTags,
 } = tagsSlice.actions;
 

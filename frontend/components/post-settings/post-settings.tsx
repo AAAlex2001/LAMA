@@ -38,21 +38,6 @@ interface PostSettingsProps {
   onOpenCreateChannel: () => void;
   onCloseCreateChannel: () => void;
 
-  // Tags
-  recentTags: Tag[];
-  searchResults: Tag[];
-  tagInputValue: string;
-  selectedTagName: string;
-  selectedTagColor: TagColor;
-  tagsLoading: boolean;
-  tagsSearching: boolean;
-  onLoadRecentTags: () => void;
-  onSearchTags: (query: string) => void;
-  onTagInputChange: (value: string) => void;
-  onSelectTag: (tag: Tag) => void;
-  onDeleteTag: (tagId: number) => void;
-  onTagColorChange: (color: TagColor) => void;
-
   // Repeat
   repeatInterval: RepeatOption;
   repeatPublishTimeType: 'from_publish' | 'exact_time';
