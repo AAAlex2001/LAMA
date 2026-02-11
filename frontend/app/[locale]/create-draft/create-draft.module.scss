@@ -24,6 +24,13 @@
   transition: opacity 0.25s ease;
 }
 
+.draftsHeaderWrapper {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+
 .contentLoading {
   opacity: 0;
   pointer-events: none;

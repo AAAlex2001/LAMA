@@ -8,7 +8,11 @@ import * as uiSlice from '../store/slices/ui';
 import { schedulePost } from '../store/thunks';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
-export default function DatePickerModalConnected() {
+interface DatePickerModalConnectedProps {
+  redirectToDraftsOnSuccess?: boolean;
+}
+
+export default function DatePickerModalConnected({ redirectToDraftsOnSuccess = false }: DatePickerModalConnectedProps) {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
 
@@ -27,6 +31,12 @@ export default function DatePickerModalConnected() {
       showSuccess(result?.message || 'Пост запланирован');
       dispatch(uiSlice.setShowDatePickerModal(false));
       dispatch(datePickerSlice.resetDatePicker());
+
+      if (redirectToDraftsOnSuccess) {
+        setTimeout(() => {
+          window.location.href = '/drafts';
+        }, 3000);
+      }
     } catch (err) {
       showError(typeof err === 'string' ? err : 'Ошибка планирования');
     }

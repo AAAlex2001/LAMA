@@ -57,7 +57,9 @@ function CreateDraftPageContent() {
     const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
-      window.location.href = '/drafts';
+      setTimeout(() => {
+        window.location.href = '/drafts';
+      }, 3000);
     } else if (saveDraft.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
     }
@@ -147,11 +149,6 @@ function CreateDraftPageContent() {
 
       <div className={styles.footerButtons}>
         <Button
-          text="Список черновиков"
-          showArrow={false}
-          onClick={() => { window.location.href = '/drafts'; }}
-        />
-        <Button
           text="Сохранить в черновики"
           showArrow={false}
           active
@@ -172,7 +169,9 @@ function CreateDraftPageContent() {
         </div>
       )}
 
-      <DraftsHeaderDisabled />
+      <div className={styles.draftsHeaderWrapper}>
+        <DraftsHeaderDisabled />
+      </div>
 
       <div
         className={`${styles.mainContent} ${

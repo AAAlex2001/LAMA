@@ -47,12 +47,12 @@ export default function DraftsHeaderDisabled() {
 
       <div className={styles.headerCreateBtn}>
         <Button
-          text="Создать черновик"
+          text="Список черновиков"
           showArrow={false}
           fullWidth
           active
           className={styles.createButton}
-          onClick={() => { window.location.href = 'create-draft'; }}
+          onClick={() => { window.location.href = '/drafts'; }}
         />
       </div>
 

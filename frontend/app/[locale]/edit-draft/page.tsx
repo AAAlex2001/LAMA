@@ -71,6 +71,7 @@ function EditDraftPageContent() {
   const quizState = useAppSelector(state => state.quiz);
   const replyToPostState = useAppSelector(state => state.replyToPost);
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
+  const isPublishing = useAppSelector(state => state.ui.isPublishing);
   const selectedChannels = useAppSelector(selectSelectedChannels);
   const channelsError = useAppSelector(state => state.channels.error);
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
@@ -99,7 +100,9 @@ function EditDraftPageContent() {
     const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
-      window.location.href = '/drafts';
+      setTimeout(() => {
+        window.location.href = '/drafts';
+      }, 3000);
     } else if (saveDraft.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
     }
@@ -109,6 +112,9 @@ function EditDraftPageContent() {
     const result = await dispatch(publishNow(selectedChannels.map(c => c.id)));
     if (publishNow.fulfilled.match(result)) {
       showSuccess('Публикация поставлена в очередь!');
+      setTimeout(() => {
+        window.location.href = '/drafts';
+      }, 3000);
     } else if (publishNow.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка публикации');
     }
@@ -233,6 +239,8 @@ function EditDraftPageContent() {
             showArrow={false}
             className={styles.publishBtn}
             onClick={handlePublishNow}
+            loading={isPublishing}
+            disabled={isPublishing}
           />
           <Button
             text="Запланировать"
@@ -254,7 +262,9 @@ function EditDraftPageContent() {
         </div>
       )}
 
-      <DraftsHeaderDisabled />
+      <div className={styles.draftsHeaderWrapper}>
+        <DraftsHeaderDisabled />
+      </div>
 
       <div
         className={`${styles.mainContent} ${
@@ -281,7 +291,7 @@ function EditDraftPageContent() {
       <DraftsModalConnected />
       <TemplatesModalConnected editorRef={editorRef} />
       <ReplyModalConnected />
-      <DatePickerModalConnected />
+      <DatePickerModalConnected redirectToDraftsOnSuccess />
 
       <div className={styles.shareModal}>
         <Modal
