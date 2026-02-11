@@ -74,7 +74,7 @@ function EditDraftPageContent() {
     setIsGeneratingToken(true);
     try {
       const token = localStorage.getItem('lamaplanner_access_token');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/publications/${draftId}/share`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${draftId}/share`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
