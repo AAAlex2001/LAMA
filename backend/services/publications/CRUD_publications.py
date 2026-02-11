@@ -552,9 +552,24 @@ class CRUDPublicationService:
             
         if publication.share_token_used:
             return None
-            
+
+        return publication
+
+    async def consume_share_token(self, token: str) -> bool:
+        """Пометить share_token как использованный (после успешного действия получателя)."""
+        query = select(Publication).where(Publication.share_token == token)
+        result = await self.db.execute(query)
+        publication = result.scalar_one_or_none()
+
+        if not publication:
+            return False
+
+        if publication.share_token_expires_at and publication.share_token_expires_at < datetime.now(timezone.utc):
+            return False
+
+        if publication.share_token_used:
+            return False
+
         publication.share_token_used = True
         await self.db.commit()
-        await self.db.refresh(publication)
-        
-        return publication
+        return True

@@ -4,6 +4,9 @@ import Button from '@/components/button/button';
 import { TrashIcon } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as uiSlice from '../store/slices/ui';
+import { saveDraft } from '../store/thunks';
+import { selectSelectedChannels } from '../store/selectors';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface FooterButtonsConnectedProps {
   className?: string;
@@ -33,11 +36,14 @@ export default function FooterButtonsConnected({
   onRemovePost,
 }: FooterButtonsConnectedProps) {
   const dispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotifications();
 
   const isPublishing = useAppSelector(state => state.ui.isPublishing);
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
+  const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const snapshots = useAppSelector(state => state.series.snapshots);
   const activeIndex = useAppSelector(state => state.series.activeIndex);
+  const selectedChannels = useAppSelector(selectSelectedChannels);
 
   const canDeleteFromSeries = snapshots.length > 1;
 
@@ -45,10 +51,23 @@ export default function FooterButtonsConnected({
     <div className={className}>
       <div className={leftGroupClassName}>
         <Button
-          text="Список черновиков"
+          text="Сохранить в черновики"
           showArrow={false}
           className={saveDraftBtnClassName}
-          onClick={() => { window.location.href = '/drafts'; }}
+          active
+          loading={isSavingDraft}
+          disabled={isSavingDraft}
+          onClick={async () => {
+            const result = await dispatch(saveDraft(selectedChannels.map((c) => c.id)));
+            if (saveDraft.fulfilled.match(result)) {
+              showSuccess('Черновик сохранён!');
+              setTimeout(() => {
+                window.location.href = '/drafts';
+              }, 3000);
+            } else if (saveDraft.rejected.match(result)) {
+              showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
+            }
+          }}
         />
         {canDeleteFromSeries && (
           <Button

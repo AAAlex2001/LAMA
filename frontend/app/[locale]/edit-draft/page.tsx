@@ -67,7 +67,9 @@ function EditDraftPageContent() {
   const searchParams = useSearchParams();
   const draftId = searchParams?.get('draft');
   const sharedFrom = searchParams?.get('from');
+  const shareTokenParam = searchParams?.get('token');
   const [showSharedDraftModal, setShowSharedDraftModal] = useState(false);
+  const [showExpiredLinkModal, setShowExpiredLinkModal] = useState(false);
 
   const generateShareToken = async () => {
     if (!draftId || isGeneratingToken) return;
@@ -92,6 +94,16 @@ function EditDraftPageContent() {
     }
   };
 
+  const consumeShareToken = async (token: string) => {
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/shared/${token}/consume`, {
+        method: 'POST',
+      });
+    } catch {
+      // ignore
+    }
+  };
+
   useEffect(() => {
     if (showShareModal && !shareToken) {
       generateShareToken();
@@ -99,13 +111,32 @@ function EditDraftPageContent() {
   }, [showShareModal]);
 
   useTokenFromUrl();
-  const { isDraftLoading } = useDraftFromUrl();
+  const { isDraftLoading, draftLoadError, loadedViaShareToken } = useDraftFromUrl();
+
+  const shareModalShownRef = useRef(false);
 
   useEffect(() => {
     if (sharedFrom && !isDraftLoading) {
       setShowSharedDraftModal(true);
     }
   }, [sharedFrom, isDraftLoading]);
+
+  useEffect(() => {
+    if (!shareTokenParam) return;
+    if (isDraftLoading) return;
+    if (shareModalShownRef.current) return;
+
+    if (draftLoadError) {
+      setShowExpiredLinkModal(true);
+      shareModalShownRef.current = true;
+      return;
+    }
+
+    if (loadedViaShareToken) {
+      setShowSharedDraftModal(true);
+      shareModalShownRef.current = true;
+    }
+  }, [shareTokenParam, isDraftLoading, draftLoadError, loadedViaShareToken]);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
@@ -142,28 +173,32 @@ function EditDraftPageContent() {
     dispatch(channelsSlice.clearError());
   }, [channelsError, dispatch, showError]);
 
-  const handleSaveDraft = async () => {
+  const handleSaveDraft = async (): Promise<boolean> => {
     const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
       setTimeout(() => {
         window.location.href = '/drafts';
       }, 3000);
+      return true;
     } else if (saveDraft.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
     }
+    return false;
   };
 
-  const handlePublishNow = async () => {
+  const handlePublishNow = async (): Promise<boolean> => {
     const result = await dispatch(publishNow(selectedChannels.map(c => c.id)));
     if (publishNow.fulfilled.match(result)) {
       showSuccess('Публикация поставлена в очередь!');
       setTimeout(() => {
         window.location.href = '/drafts';
       }, 3000);
+      return true;
     } else if (publishNow.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка публикации');
     }
+    return false;
   };
 
   const editorBlock = (
@@ -342,20 +377,49 @@ function EditDraftPageContent() {
       <SharedDraftModal
         isOpen={showSharedDraftModal}
         onClose={() => setShowSharedDraftModal(false)}
-        username={sharedFrom || ''}
+        username={sharedFrom || undefined}
         onSave={async () => {
           setShowSharedDraftModal(false);
-          await handleSaveDraft();
+          const ok = await handleSaveDraft();
+          if (ok && shareTokenParam) await consumeShareToken(shareTokenParam);
         }}
         onPublish={async () => {
           setShowSharedDraftModal(false);
-          await handlePublishNow();
+          const ok = await handlePublishNow();
+          if (ok && shareTokenParam) await consumeShareToken(shareTokenParam);
         }}
         onPreview={() => {
           setShowSharedDraftModal(false);
           dispatch(uiSlice.setShowPreviewModal(true));
         }}
       />
+
+      <Modal
+        isOpen={showExpiredLinkModal}
+        onClose={() => setShowExpiredLinkModal(false)}
+        onConfirm={() => setShowExpiredLinkModal(false)}
+        title="Ссылка недействительна"
+        hideButtons
+      >
+        <div className={styles.shareModalContent}>
+          <p className={styles.shareDescription}>
+            Срок действия ссылки истёк или она уже была использована.
+          </p>
+          <div className={styles.shareLinkRow}>
+            <Button
+              text="Список черновиков"
+              showArrow={false}
+              onClick={() => { window.location.href = '/drafts'; }}
+            />
+            <Button
+              text="Создать пост"
+              showArrow={false}
+              active
+              onClick={() => { window.location.href = '/create-post'; }}
+            />
+          </div>
+        </div>
+      </Modal>
 
       <div className={styles.shareModal}>
         <Modal

@@ -65,6 +65,9 @@ class PublicationService:
     async def get_publication_by_share_token(self, token: str):
         return await self.crud.get_publication_by_share_token(token)
 
+    async def consume_share_token(self, token: str) -> bool:
+        return await self.crud.consume_share_token(token)
+
     async def create_notification(self, publication_id: int, status: str, message: str, error_details: Optional[Dict] = None):
         return await self.crud.create_notification(publication_id, status, message, error_details)
 

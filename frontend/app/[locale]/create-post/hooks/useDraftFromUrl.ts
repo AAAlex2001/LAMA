@@ -15,6 +15,8 @@ export function useDraftFromUrl() {
   const hasDraftParam = !!draftParam || !!tokenParam;
   const [draftChannelIds, setDraftChannelIds] = useState<number[] | null>(null);
   const [isDraftLoading, setIsDraftLoading] = useState(hasDraftParam);
+  const [draftLoadError, setDraftLoadError] = useState<string | null>(null);
+  const [loadedViaShareToken, setLoadedViaShareToken] = useState(false);
   const appliedRef = useRef(false);
   const loadedRef = useRef<string | null>(null);
 
@@ -23,6 +25,8 @@ export function useDraftFromUrl() {
       if (loadedRef.current === tokenParam) return;
       loadedRef.current = tokenParam;
       setIsDraftLoading(true);
+      setDraftLoadError(null);
+      setLoadedViaShareToken(false);
 
       dispatch(loadDraftByToken(tokenParam))
         .unwrap()
@@ -30,8 +34,12 @@ export function useDraftFromUrl() {
           const ids = (draft.channels || []).map((ch) => ch.id);
           setDraftChannelIds(ids);
           appliedRef.current = false;
+          setLoadedViaShareToken(true);
         })
-        .catch(() => {})
+        .catch((err) => {
+          setDraftLoadError(typeof err === 'string' ? err : 'Ссылка недействительна, истекла или уже была использована');
+          setLoadedViaShareToken(false);
+        })
         .finally(() => {
           setIsDraftLoading(false);
         });
@@ -42,6 +50,8 @@ export function useDraftFromUrl() {
       if (loadedRef.current === key) return;
       loadedRef.current = key;
       setIsDraftLoading(true);
+      setDraftLoadError(null);
+      setLoadedViaShareToken(false);
 
       dispatch(loadDraftById(draftId))
         .unwrap()
@@ -50,10 +60,15 @@ export function useDraftFromUrl() {
           setDraftChannelIds(ids);
           appliedRef.current = false;
         })
-        .catch(() => {})
+        .catch((err) => {
+          setDraftLoadError(typeof err === 'string' ? err : 'Ошибка загрузки черновика');
+        })
         .finally(() => {
           setIsDraftLoading(false);
         });
+    } else {
+      setDraftLoadError(null);
+      setLoadedViaShareToken(false);
     }
   }, [dispatch, searchParams, tokenParam, draftParam]);
 
@@ -71,6 +86,6 @@ export function useDraftFromUrl() {
     appliedRef.current = true;
   }, [channels, dispatch, draftChannelIds]);
 
-  return { isDraftLoading };
+  return { isDraftLoading, draftLoadError, loadedViaShareToken };
 }
 

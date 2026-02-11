@@ -7,7 +7,7 @@ import styles from './shared-draft-modal.module.scss';
 interface SharedDraftModalProps {
   isOpen: boolean;
   onClose: () => void;
-  username: string;
+  username?: string;
   onSave: () => void;
   onPublish: () => void;
   onPreview: () => void;
@@ -21,13 +21,17 @@ export default function SharedDraftModal({
   onPublish,
   onPreview,
 }: SharedDraftModalProps) {
+  const title = username
+    ? `@${username} поделился (-лась) с Вами черновиком`
+    : 'С Вами поделились черновиком';
+
   return (
     <div className={styles.wrapper}>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
         onConfirm={onClose}
-        title={`@${username} поделился (-лась) с Вами черновиком`}
+        title={title}
         hideButtons
       >
         <div className={styles.content}>

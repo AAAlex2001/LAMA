@@ -342,6 +342,18 @@ async def get_shared_publication(
     return publication
 
 
+@router.post("/shared/{token}/consume", response_model=dict)
+async def consume_shared_publication_token(
+    token: str,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Пометить share-токен как использованный (после сохранения/публикации получателем)."""
+    ok = await service.consume_share_token(token)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Invalid or expired token")
+    return {"success": True}
+
+
 @router.post("/{publication_id}/publish", response_model=PublicationResponse, status_code=202)
 async def publish_now(
     publication_id: int,
