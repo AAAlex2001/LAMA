@@ -101,6 +101,12 @@
   background: rgba(59, 130, 246, 0.1);
 }
 
+.sortButtonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .sortButtonText {
   font-family: 'Inter', sans-serif;
   font-style: normal;

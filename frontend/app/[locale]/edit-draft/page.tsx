@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useEffect, Suspense } from 'react';
-import styles from './create-post.module.scss';
+import { useRef, useEffect, useState, Suspense } from 'react';
+import styles from './edit-draft.module.scss';
 
 import { AppLayout } from '@/components/app-layout';
 import Button from '@/components/button/button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
+import { ShareIcon, CopyIcon, TelegramCircleIcon } from '@/components/icons';
 import {
   QuizFormConnected,
   InlineButtonsConnected,
@@ -15,43 +16,51 @@ import {
   DatePickerModalConnected,
   PostSettingsConnected,
   EditorHeaderConnected,
-  FooterButtonsConnected,
   MediaSectionConnected,
   PostPreviewModalConnected,
   ActionsMenuConnected,
   MobileSettingsModalConnected,
   ReplyToPostInfoConnected,
-} from './components';
+} from '../create-post/components';
 import Toggle from '@/components/toggle/toggle';
-import PostAccordion from '@/components/post-accordion/post-accordion';
 import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-utils';
+import Modal from '@/components/modal/modal';
+import Input from '@/components/input/input';
+import Tooltip from '@/components/tooltip/tooltip';
 
-import { CreatePostProvider } from './store/provider';
-import { useAppDispatch, useAppSelector } from './store';
-import { selectSelectedChannels } from './store/selectors';
-import * as editorSlice from './store/slices/editor';
-import * as mediaSlice from './store/slices/media';
-import * as settingsSlice from './store/slices/settings';
-import * as uiSlice from './store/slices/ui';
-import * as channelsSlice from './store/slices/channels';
+import { CreatePostProvider } from '../create-post/store/provider';
+import { useAppDispatch, useAppSelector } from '../create-post/store';
+import { selectSelectedChannels } from '../create-post/store/selectors';
+import * as editorSlice from '../create-post/store/slices/editor';
+import * as mediaSlice from '../create-post/store/slices/media';
+import * as settingsSlice from '../create-post/store/slices/settings';
+import * as uiSlice from '../create-post/store/slices/ui';
+import * as channelsSlice from '../create-post/store/slices/channels';
 import {
   saveAsTemplate,
+  saveDraft,
+  publishNow,
   fetchChannelsThunk,
-} from './store/thunks';
-import { selectPollData } from './store/slices/quiz';
-import { usePublishHandlers } from './hooks/usePublishHandlers';
-import { useCreatePostHandlers } from './hooks/useCreatePostHandlers';
-import { useTokenFromUrl } from './hooks/useTokenFromUrl';
+} from '../create-post/store/thunks';
+import { useTokenFromUrl } from '../create-post/hooks/useTokenFromUrl';
+import { useDraftFromUrl } from '../create-post/hooks/useDraftFromUrl';
+import Loader from '@/components/loader';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
+import DraftsHeaderDisabled from '../drafts/components/DraftsHeaderDisabled';
 
-function CreatePostPageContent() {
+function EditDraftPageContent() {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  
+
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [hoveredShareBtn, setHoveredShareBtn] = useState(false);
+  const shareLink = typeof window !== 'undefined' ? window.location.href : '';
+
   useTokenFromUrl();
-  
+  const { isDraftLoading } = useDraftFromUrl();
+
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const text = useAppSelector(state => state.editor.text);
@@ -60,15 +69,13 @@ function CreatePostPageContent() {
   const buttonRows = useAppSelector(state => state.inlineButtons.rows);
   const mediaFiles = useAppSelector(state => state.media.files);
   const quizState = useAppSelector(state => state.quiz);
-  const snapshots = useAppSelector(state => state.series.snapshots);
-  const activeIndex = useAppSelector(state => state.series.activeIndex);
-  const pollData = selectPollData(quizState);
   const replyToPostState = useAppSelector(state => state.replyToPost);
+  const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const selectedChannels = useAppSelector(selectSelectedChannels);
   const channelsError = useAppSelector(state => state.channels.error);
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
-  
-  const hasContentForPreview = 
+
+  const hasContentForPreview =
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
     mediaFiles.length > 0 ||
     (quizState.isOpen && quizState.question.trim().length > 0) ||
@@ -88,44 +95,23 @@ function CreatePostPageContent() {
     dispatch(channelsSlice.clearError());
   }, [channelsError, dispatch, showError]);
 
-  const {
-    handleSelectPostSnapshot,
-    handleAddSeries,
-    handleRemovePost,
-  } = useCreatePostHandlers({
-    dispatch,
-    snapshots,
-  });
+  const handleSaveDraft = async () => {
+    const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
+    if (saveDraft.fulfilled.match(result)) {
+      showSuccess('Черновик сохранён!');
+      window.location.href = '/drafts';
+    } else if (saveDraft.rejected.match(result)) {
+      showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
+    }
+  };
 
-  const { handlePublishNow, handlePublishSeries } = usePublishHandlers({
-    dispatch,
-    selectedChannels,
-    text,
-    mediaFiles,
-    pollData,
-    snapshots,
-    activeIndex,
-    inlineButtonsOpen,
-    buttonRows,
-    quizOpen: quizState.isOpen,
-    quizMode: quizState.mode,
-    quizQuestion: quizState.question,
-    quizAnswers: quizState.answers,
-    quizCorrectAnswerId: quizState.correctAnswerId,
-    showLinkPreview,
-  });
-
-  const currentSnapshot = {
-    text,
-    mediaFiles,
-    inlineButtonsOpen,
-    buttonRows,
-    quizOpen: quizState.isOpen,
-    quizMode: quizState.mode,
-    quizQuestion: quizState.question,
-    quizAnswers: quizState.answers,
-    quizCorrectAnswerId: quizState.correctAnswerId,
-    showLinkPreview,
+  const handlePublishNow = async () => {
+    const result = await dispatch(publishNow(selectedChannels.map(c => c.id)));
+    if (publishNow.fulfilled.match(result)) {
+      showSuccess('Публикация поставлена в очередь!');
+    } else if (publishNow.rejected.match(result)) {
+      showError(typeof result.payload === 'string' ? result.payload : 'Ошибка публикации');
+    }
   };
 
   const editorBlock = (
@@ -177,20 +163,20 @@ function CreatePostPageContent() {
           onFileUpload={async (e) => {
             const files = e.target.files;
             if (!files) return;
-            
+
             const filePromises = Array.from(files).map(async (file) => {
               const type: 'video' | 'image' | 'document' = file.type.startsWith('video/') ? 'video'
                 : file.type.startsWith('image/') ? 'image' : 'document';
-              
+
               let preview_url: string | undefined;
               let thumbnail_url: string | undefined;
-              
+
               if (type === 'image') {
                 preview_url = await compressImageForPreview(file);
               } else if (type === 'video') {
                 thumbnail_url = await createVideoThumbnail(file);
               }
-              
+
               return {
                 id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                 type,
@@ -201,7 +187,7 @@ function CreatePostPageContent() {
                 blur: false,
               };
             });
-            
+
             const newFiles = await Promise.all(filePromises);
             dispatch(mediaSlice.addFiles(newFiles));
             e.target.value = '';
@@ -210,36 +196,73 @@ function CreatePostPageContent() {
         />
       </div>
 
-      <FooterButtonsConnected
-        className={styles.footerButtons}
-        saveDraftBtnClassName={styles.saveDraftBtn}
-        deleteFromSeriesBtnClassName={styles.deleteFromSeriesBtn}
-        leftGroupClassName={styles.leftGroup}
-        publishRowClassName={styles.publishRow}
-        publishNowBtnClassName={styles.publishNowBtn}
-        scheduleBtnClassName={styles.scheduleBtn}
-        onPublishNow={handlePublishNow}
-        onPublishSeries={handlePublishSeries}
-        hasMultiplePosts={snapshots.length > 1}
-        onRemovePost={(index) => handleRemovePost(index, currentSnapshot)}
-      />
+      <div className={styles.footerButtons}>
+        <Button
+          text="Сохранить изменения"
+          showArrow={false}
+          className={styles.saveBtn}
+          onClick={handleSaveDraft}
+          loading={isSavingDraft}
+          disabled={isSavingDraft}
+        />
+        <button
+          type="button"
+          className={styles.shareBtn}
+          aria-label="Поделиться"
+          onClick={() => setShowShareModal(true)}
+          onMouseEnter={() => setHoveredShareBtn(true)}
+          onMouseLeave={() => setHoveredShareBtn(false)}
+        >
+          <ShareIcon width={24} height={24} color="#B0B4B8" />
+          {hoveredShareBtn && <Tooltip text="Поделиться" />}
+        </button>
+        <div className={styles.rightButtons}>
+          <button
+            type="button"
+            className={styles.shareBtnDesktop}
+            aria-label="Поделиться"
+            onClick={() => setShowShareModal(true)}
+            onMouseEnter={() => setHoveredShareBtn(true)}
+            onMouseLeave={() => setHoveredShareBtn(false)}
+          >
+            <ShareIcon width={24} height={24} color="#B0B4B8" />
+            {hoveredShareBtn && <Tooltip text="Поделиться" />}
+          </button>
+          <Button
+            text="Опубликовать сейчас"
+            showArrow={false}
+            className={styles.publishBtn}
+            onClick={handlePublishNow}
+          />
+          <Button
+            text="Запланировать"
+            showArrow={false}
+            active
+            className={styles.scheduleBtn}
+            onClick={() => dispatch(uiSlice.setShowDatePickerModal(true))}
+          />
+        </div>
+      </div>
     </div>
   );
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.mainContent}>
+      {isDraftLoading && (
+        <div className={styles.draftLoadingOverlay}>
+          <Loader size={32} color="blue" />
+        </div>
+      )}
+
+      <DraftsHeaderDisabled />
+
+      <div
+        className={`${styles.mainContent} ${
+          isDraftLoading ? styles.contentLoading : styles.contentReady
+        }`}
+      >
         <div className={styles.editorColumn}>
-          {snapshots.length > 1 ? (
-            <div className={styles.seriesList}>
-              {snapshots.map((_, index) => (
-                <PostAccordion key={`post-${index + 1}`} title={`Пост ${index + 1}`} isOpen={index === activeIndex} onToggle={() => handleSelectPostSnapshot(index, currentSnapshot)}>
-                  {index === activeIndex ? editorBlock : null}
-                </PostAccordion>
-              ))}
-            </div>
-          ) : editorBlock}
-          <Button text="Добавить серию постов" showArrow={false} className={styles.addSeriesBtn} onClick={() => handleAddSeries(currentSnapshot)} />
+          {editorBlock}
         </div>
         <div className={styles.settingsPanelDesktop}>
           <PostSettingsConnected onPreview={() => dispatch(uiSlice.setShowPreviewModal(true))} previewDisabled={!hasContentForPreview} />
@@ -254,21 +277,59 @@ function CreatePostPageContent() {
       />
 
       <PostPreviewModalConnected />
-      
+
       <DraftsModalConnected />
       <TemplatesModalConnected editorRef={editorRef} />
       <ReplyModalConnected />
       <DatePickerModalConnected />
+
+      <div className={styles.shareModal}>
+        <Modal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          onConfirm={() => setShowShareModal(false)}
+          title="Поделиться черновиком"
+          hideButtons
+        >
+          <div className={styles.shareModalContent}>
+            <p className={styles.shareDescription}>
+              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую
+            </p>
+            <div className={styles.shareLinkRow}>
+              <Input
+                value={shareLink}
+                onChange={() => {}}
+                variant="white"
+                className={styles.shareLinkInput}
+                icon={<CopyIcon width={24} height={24} color="#383F45" />}
+                onIconClick={() => {
+                  navigator.clipboard.writeText(shareLink);
+                  showSuccess('Ссылка скопирована!');
+                }}
+              />
+              <button
+                type="button"
+                className={styles.telegramBtn}
+                onClick={() => {
+                  window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                }}
+              >
+                <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 }
 
-export default function CreatePostPage() {
+export default function EditDraftPage() {
   return (
-    <AppLayout pageTitle="Новая публикация">
+    <AppLayout pageTitle="Редактирование черновика">
       <CreatePostProvider>
         <Suspense fallback={<div>Загрузка...</div>}>
-          <CreatePostPageContent />
+          <EditDraftPageContent />
         </Suspense>
       </CreatePostProvider>
     </AppLayout>

@@ -2,13 +2,16 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 24px;
+  padding: 20px 16px;
+  gap: 16px;
   width: 100%;
   box-sizing: border-box;
   min-height: calc(100vh - 64px);
   background: #F0F4FA;
+
+  @media (min-width: 1440px) {
+    padding: 30px 36px;
+  }
 }
 
 .mainContent {
@@ -16,7 +19,7 @@
   flex-direction: column;
   width: 100%;
   gap: 24px;
-  max-width: 1345px;
+  max-width: 1328px;
   margin: 0 auto;
   transition: opacity 0.25s ease;
 
@@ -27,19 +30,36 @@
   }
 }
 
-.editorColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  width: 100%;
+.contentLoading {
+  opacity: 0;
+  pointer-events: none;
+}
 
-  @media (min-width: 1440px) {
-    flex: 1;
-    min-width: 0;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
-.seriesList {
+.contentReady {
+  opacity: 1;
+  animation: fadeIn 0.25s ease;
+}
+
+.draftLoadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F0F4FA;
+  z-index: 20;
+}
+
+.editorColumn {
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -65,96 +85,6 @@
   align-items: flex-start;
   gap: 24px;
   width: 100%;
-}
-
-.headerTitle {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 16px;
-  line-height: 28px;
-  color: #383F45;
-}
-
-.settingsButton {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  width: 24px;
-  min-width: 24px;
-  align-self: stretch;
-  background: none;
-  border: none;
-  padding: 0;
-  padding-top: 4px;
-  cursor: pointer;
-  flex-shrink: 0;
-
-  &:hover {
-    opacity: 0.7;
-  }
-
-  @media (min-width: 1440px) {
-    display: none;
-  }
-}
-
-.settingsModalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-
-  @media (min-width: 1440px) {
-    display: none;
-  }
-}
-
-.settingsModal {
-  position: relative;
-  background: #FFFFFF;
-  border-radius: 12px;
-  height: 558px;
-  max-height: 80vh;
-  overflow: visible;
-  width: 100%;
-  max-width: 350px;
-  animation: modalSlideIn 0.2s ease-out;
-}
-
-@keyframes modalSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.settingsPanelDesktop {
-  display: none;
-
-  @media (min-width: 1440px) {
-    display: flex;
-    flex-shrink: 0;
-    width: 350px;
-    align-self: stretch;
-    height: 100%;
-    min-height: 0;
-  }
-}
-
-.addSeriesBtn {
-  align-self: center;
 }
 
 .content {
@@ -335,232 +265,300 @@
   color: #CED2D6;
 }
 
+.inlineButtonsSection {
+  width: 100%;
+}
+
 .footerButtons {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: flex-start;
   padding: 0;
-  gap: 16px;
+  gap: 10px;
   width: 100%;
 
   @media (min-width: 1440px) {
-    flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-  }
-}
-
-.leftGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
-
-  @media (min-width: 1440px) {
-    flex-direction: row;
-    gap: 10px;
-    width: auto;
-  }
-}
-
-.saveDraftBtn {
-  width: 100%;
-  display: flex;
-
-  button {
+    align-items: flex-end;
+    gap: 0;
     width: 100%;
-    justify-content: center;
-  }
-
-  @media (min-width: 1440px) {
-    width: auto;
-    display: inline-block;
-
-    button {
-      width: auto;
-    }
+    height: 37px;
   }
 }
 
-.deleteFromSeriesBtn {
-  width: 100%;
-  display: flex;
-
-  button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  @media (min-width: 1440px) {
-    width: auto;
-    display: inline-block;
-
-    button {
-      width: auto;
-    }
-  }
-}
-
-.publishRow {
+.rightButtons {
   display: flex;
   flex-direction: row;
-  align-items: stretch;
-  justify-content: center;
+  align-items: center;
+  padding: 0;
   gap: 8px;
   width: 100%;
+  order: 3;
+
+  @media (min-width: 1440px) {
+    flex: none;
+    width: auto;
+    order: 2;
+  }
+}
+
+.saveBtn {
+  display: flex !important;
+  flex: 1 1 calc(100% - 47px);
+  margin: 0;
+  height: 37px;
+  order: 0;
+
+  button, a {
+    width: 100%;
+    height: 37px;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  @media (min-width: 1440px) {
+    flex: 0 0 172px;
+    order: 0;
+
+    button, a {
+      width: 172px;
+      white-space: nowrap;
+    }
+  }
+}
+
+.shareBtn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 37px;
+  height: 37px;
+  border: 1px solid rgba(176, 180, 184, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  flex-shrink: 0;
+  order: 1;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+
+  &:hover {
+    background: #EBF2FE;
+
+    svg path {
+      fill: #3B82F6;
+    }
+  }
+}
+
+.shareBtnDesktop {
+  box-sizing: border-box;
+  display: none;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 37px;
+  height: 37px;
+  border: 1px solid rgba(176, 180, 184, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+  flex-shrink: 0;
 
   @media (min-width: 1440px) {
     display: flex;
-    width: auto;
-    gap: 8px;
+  }
+
+  &:hover {
+    background: #EBF2FE;
+
+    svg path {
+      fill: #3B82F6;
+    }
   }
 }
 
-.publishNowBtn {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
+.publishBtn {
+  display: flex !important;
+  flex: 1;
+  margin: 0;
+  height: 37px;
 
-  button {
+  button, a {
     width: 100%;
-    height: 100%;
+    height: 37px;
     justify-content: center;
+    padding: 10px;
   }
 
   @media (min-width: 1440px) {
-    flex: 0 0 auto;
-    display: inline-block;
+    flex: 0 0 170px;
 
-    button {
-      width: auto;
+    button, a {
+      width: 170px;
+      white-space: nowrap;
     }
   }
 }
 
 .scheduleBtn {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
+  display: flex !important;
+  flex: 1;
+  margin: 0;
+  height: 37px;
 
-  button {
+  button, a {
     width: 100%;
-    height: 100%;
+    height: 37px;
     justify-content: center;
+    padding: 10px;
   }
 
   @media (min-width: 1440px) {
-    flex: 0 0 auto;
-    display: inline-block;
+    flex: 0 0 125px;
 
-    button {
-      width: auto;
+    button, a {
+      width: 125px;
+      white-space: nowrap;
     }
   }
 }
 
-.scheduleBtnWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1 1 0;
-  min-width: 0;
+.shareModal {
+  > div > div {
+    width: 397px;
+  }
 
-  @media (min-width: 1440px) {
-    flex: 0 0 auto;
+  h2 {
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    line-height: 19px !important;
+    color: #000000 !important;
   }
 }
 
-.selectedDate {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  line-height: 16px;
-  color: #383F45;
-  text-align: center;
-  padding: 4px 8px;
-  background: rgba(59, 130, 246, 0.1);
-  border-radius: 6px;
+.shareModalContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
 }
 
-.headerTagsRow {
+.shareDescription {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: center;
+  color: #0D0D0D;
+  margin: 0;
+  width: 100%;
+}
+
+.shareLinkRow {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   padding: 0;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
 }
 
-.addTagButton {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 8px;
-  gap: 8px;
-  height: 24px;
-  background: #B8DBF1;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.15s ease;
+.shareLinkInput {
+  flex: 1;
+  min-width: 0;
 
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 16px;
-  text-align: center;
-  color: #383F45;
-
-  &:hover {
-    opacity: 0.85;
+  input {
+    font-size: 12px !important;
+    line-height: 15px !important;
+    height: 32px !important;
+    padding: 4px 8px 4px 16px !important;
   }
 }
 
-.tagChip {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 8px;
-  gap: 6px;
-  height: 24px;
-  border-radius: 5px;
-  flex-shrink: 0;
-
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 16px;
-  text-align: center;
-  color: #383F45;
-}
-
-.tagChipText {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 120px;
-}
-
-.tagChipClose {
+.telegramBtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 12px;
-  height: 12px;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   flex-shrink: 0;
-  border-radius: 50%;
-  transition: background 0.2s;
+  transition: opacity 0.15s ease;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.1);
+    opacity: 0.7;
+  }
+}
+
+.settingsModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.settingsModal {
+  position: relative;
+  background: #FFFFFF;
+  border-radius: 12px;
+  height: 558px;
+  max-height: 80vh;
+  overflow: visible;
+  width: 100%;
+  max-width: 350px;
+  animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.settingsPanelDesktop {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-shrink: 0;
+    width: 350px;
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
   }
 }

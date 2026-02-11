@@ -8,7 +8,7 @@
     align-items: center;
     padding: 0;
     position: absolute;
-    bottom: calc(100% + 8px);
+    top: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
@@ -22,7 +22,7 @@
   align-items: center;
   padding: 4px 8px;
   gap: 8px;
-  background: #F0F4FA;
+  background: #EBF2FE;
   border-radius: 5px;
   white-space: nowrap;
 }
@@ -44,7 +44,8 @@
   padding: 0;
   width: 14px;
   height: 8px;
-  margin-top: -3px;
+  margin-bottom: -3px;
+  order: -1;
 }
 
 .arrow {
@@ -52,5 +53,5 @@
   height: 0;
   border-left: 7px solid transparent;
   border-right: 7px solid transparent;
-  border-top: 8px solid #F0F4FA;
+  border-bottom: 8px solid #EBF2FE;
 }

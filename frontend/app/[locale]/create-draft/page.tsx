@@ -35,6 +35,7 @@ import Loader from '@/components/loader';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
+import DraftsHeaderDisabled from '../drafts/components/DraftsHeaderDisabled';
 
 function CreateDraftPageContent() {
   const dispatch = useAppDispatch();
@@ -56,6 +57,7 @@ function CreateDraftPageContent() {
     const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
+      window.location.href = '/drafts';
     } else if (saveDraft.rejected.match(result)) {
       showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
     }
@@ -169,6 +171,8 @@ function CreateDraftPageContent() {
           <Loader size={32} color="blue" />
         </div>
       )}
+
+      <DraftsHeaderDisabled />
 
       <div
         className={`${styles.mainContent} ${

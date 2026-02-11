@@ -1,4 +1,6 @@
 export { default as TelegramIcon } from './telegram-icon';
+export { default as TelegramCircleIcon } from './telegram-circle-icon';
+export { default as CopyIcon } from './copy-icon';
 export { default as BotIcon } from './bot-icon';
 export { default as DraftsIcon } from './drafts-icon';
 export { default as InlineButtonIcon } from './inline-button-icon';

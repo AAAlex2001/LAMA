@@ -19,6 +19,7 @@ interface DeleteConfirmationModalProps {
   confirmFirst?: boolean;
   buttonsDirection?: 'row' | 'column';
   children?: React.ReactNode;
+  hideButtons?: boolean;
 }
 
 export default function DeleteConfirmationModal({
@@ -35,6 +36,7 @@ export default function DeleteConfirmationModal({
   confirmFirst = false,
   buttonsDirection = 'column',
   children,
+  hideButtons = false,
 }: DeleteConfirmationModalProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
 
@@ -66,6 +68,7 @@ export default function DeleteConfirmationModal({
             {description && <p className={styles.description}>{description}</p>}
           </div>
           {children}
+          {!hideButtons && (
           <div
             className={classNames(styles.buttons, {
               [styles.buttonsRow]: buttonsDirection === 'row',
@@ -105,6 +108,7 @@ export default function DeleteConfirmationModal({
               />
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

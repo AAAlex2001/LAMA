@@ -144,7 +144,7 @@ export function useDraftsPage() {
   };
 
   const handleEdit = (draft: Draft) => {
-    window.location.href = `create-post?draft=${draft.id}`;
+    window.location.href = `edit-draft?draft=${draft.id}`;
   };
 
   const dateOptions = ['Сначала новые', 'Сначала старые'];
