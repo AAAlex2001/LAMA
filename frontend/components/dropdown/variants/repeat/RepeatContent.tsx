@@ -74,7 +74,7 @@ export default function RepeatContent({
           onRepeatEndTypeChange?.(value);
         }}
         repeatEndDate={repeatEndDate}
-        scheduledMinDate={scheduledMinDate}
+        scheduledMinDate={scheduledMinDate ?? undefined}
         onRepeatEndDateChange={(date) => {
           onRepeatEndDateChange?.(date);
         }}
@@ -107,7 +107,7 @@ export default function RepeatContent({
         onRepeatYearDaysChange={onRepeatYearDaysChange}
         repeatEndType={repeatEndType}
         repeatEndDate={repeatEndDate}
-        scheduledMinDate={scheduledMinDate}
+        scheduledMinDate={scheduledMinDate ?? undefined}
         onRepeatEndTypeChange={onRepeatEndTypeChange}
         onRepeatEndDateChange={onRepeatEndDateChange}
         onRepeatOptionChange={(value) => {

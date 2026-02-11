@@ -29,6 +29,7 @@ interface RepeatDailyCaseProps {
   repeatEndType: 'never' | 'date';
   onRepeatEndTypeChange: (value: 'never' | 'date') => void;
   repeatEndDate: Date | null;
+  scheduledMinDate?: Date;
   onRepeatEndDateChange: (date: Date) => void;
   onCustomClick?: () => void;
 }
