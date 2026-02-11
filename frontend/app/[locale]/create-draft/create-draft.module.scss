@@ -1,0 +1,376 @@
+.pageWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  gap: 24px;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: #F0F4FA;
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  transition: opacity 0.25s ease;
+}
+
+.contentLoading {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.contentReady {
+  opacity: 1;
+  animation: fadeIn 0.25s ease;
+}
+
+.draftLoadingOverlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F0F4FA;
+  z-index: 20;
+}
+
+.editorColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.seriesList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+.headerTitle {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 28px;
+  color: #383F45;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 24px;
+  width: 100%;
+}
+
+.linkPreviewToggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.linkPreviewLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.actionsMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+}
+
+.actionsRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: contents;
+  }
+}
+
+.actionsRowCenter {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: contents;
+  }
+}
+
+.actionButton {
+  flex: 1 1 0;
+  min-width: 0;
+
+  @media (min-width: 1440px) {
+    width: 100%;
+
+    button {
+      width: 100% !important;
+      min-height: 34px !important;
+      padding: 6px 4px !important;
+      gap: 6px !important;
+    }
+
+    span[class*="buttonText"] {
+      font-size: 14px !important;
+      line-height: 28px !important;
+      white-space: nowrap !important;
+    }
+  }
+}
+
+.actionButtonCenter {
+  flex: 1 1 100%;
+  min-width: 0;
+
+  @media (min-width: 1440px) {
+    width: 100%;
+
+    button {
+      width: 100% !important;
+      min-height: 34px !important;
+      padding: 6px 4px !important;
+      gap: 6px !important;
+    }
+
+    span[class*="buttonText"] {
+      font-size: 14px !important;
+      line-height: 28px !important;
+      white-space: nowrap !important;
+    }
+  }
+}
+
+.mediaSection {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+  gap: 14px;
+  width: 100%;
+}
+
+.mediaSectionTitle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.mediaMobile {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.mediaDropzone {
+  display: none;
+
+  @media (min-width: 1440px) {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    gap: 16px;
+    width: 100%;
+    min-height: 143px;
+    background: #FFFFFF;
+    border: 1px dashed #CED2D6;
+    border-radius: 10px;
+  }
+}
+
+.mediaDropzoneContent {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+
+.dropzoneText {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #CED2D6;
+}
+
+.inlineButtonsSection {
+  width: 100%;
+}
+
+.footerButtons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+}
+
+.saveDraftBtn {
+  button {
+    justify-content: center;
+  }
+}
+
+.headerTagsRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.addTagButton {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 8px;
+  height: 24px;
+  background: #B8DBF1;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #383F45;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.tagChip {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 8px;
+  gap: 6px;
+  height: 24px;
+  border-radius: 5px;
+  flex-shrink: 0;
+
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: #383F45;
+}
+
+.tagChipText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.tagChipClose {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 50%;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+}
