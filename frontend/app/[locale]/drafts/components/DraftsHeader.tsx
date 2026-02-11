@@ -245,7 +245,7 @@ export default function DraftsHeader({
           fullWidth
           active
           className={styles.createButton}
-          onClick={() => { window.location.href = 'create-post'; }}
+          onClick={() => { window.location.href = 'create-draft'; }}
         />
       </div>
 

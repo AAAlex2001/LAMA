@@ -2,13 +2,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   background: #F0F4FA;
-  padding: 89px 16px 45px;
+  padding: 20px 16px 45px;
   position: relative;
   @media (min-width: 1440px) {
-    padding: 94px 36px 30px 76px;
-    
+    padding: 30px 36px 30px 36px;
+
   }
 }
 

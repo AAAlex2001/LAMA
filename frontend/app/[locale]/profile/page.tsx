@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import styles from './profile.module.scss';
+import { AppLayout } from '@/components/app-layout';
 import SimpleDropdown from '@/components/simple-dropdown/simple-dropdown';
 import UsageLine from '@/components/usage-line/usage-line';
 import Toggle from '@/components/toggle/toggle';
@@ -149,7 +150,8 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className={styles.page}>
+    <AppLayout pageTitle="Профиль">
+      <div className={styles.page}>
       <div className={styles.contentCard}>
         <div className={styles.content}>
           <section className={styles.accountSection}>
@@ -586,5 +588,6 @@ export default function ProfilePage() {
         </div>
       </div>
     </div>
+    </AppLayout>
   );
 }

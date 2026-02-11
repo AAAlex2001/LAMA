@@ -3,6 +3,7 @@
 import { useRef, useEffect, Suspense } from 'react';
 import styles from './create-post.module.scss';
 
+import { AppLayout } from '@/components/app-layout';
 import Button from '@/components/button/button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
 import {
@@ -277,10 +278,12 @@ function CreatePostPageContent() {
 
 export default function CreatePostPage() {
   return (
-    <CreatePostProvider>
-      <Suspense fallback={<div>Загрузка...</div>}>
-        <CreatePostPageContent />
-      </Suspense>
-    </CreatePostProvider>
+    <AppLayout pageTitle="Новая публикация">
+      <CreatePostProvider>
+        <Suspense fallback={<div>Загрузка...</div>}>
+          <CreatePostPageContent />
+        </Suspense>
+      </CreatePostProvider>
+    </AppLayout>
   );
 }

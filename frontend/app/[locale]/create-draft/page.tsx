@@ -3,6 +3,7 @@
 import { useRef, Suspense } from 'react';
 import styles from './create-draft.module.scss';
 
+import { AppLayout } from '@/components/app-layout';
 import Button from '@/components/button/button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
 import {
@@ -17,7 +18,6 @@ import {
 } from '../create-post/components';
 import { EditorHeaderConnected } from './components';
 import Toggle from '@/components/toggle/toggle';
-import PostAccordion from '@/components/post-accordion/post-accordion';
 import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-utils';
 
 import { CreatePostProvider } from '../create-post/store/provider';
@@ -29,10 +29,9 @@ import {
   saveAsTemplate,
   saveDraft,
 } from '../create-post/store/thunks';
-import { selectPollData } from '../create-post/store/slices/quiz';
-import { useCreatePostHandlers } from '../create-post/hooks/useCreatePostHandlers';
-import Loader from '@/components/loader';
 import { useTokenFromUrl } from '../create-post/hooks/useTokenFromUrl';
+import { useDraftFromUrl } from '../create-post/hooks/useDraftFromUrl';
+import Loader from '@/components/loader';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -42,42 +41,16 @@ function CreateDraftPageContent() {
   const { showSuccess, showError } = useNotifications();
 
   useTokenFromUrl();
+  const { isDraftLoading } = useDraftFromUrl();
 
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
   const text = useAppSelector(state => state.editor.text);
   const showLinkPreview = useAppSelector(state => state.editor.showLinkPreview);
-  const inlineButtonsOpen = useAppSelector(state => state.inlineButtons.isOpen);
-  const buttonRows = useAppSelector(state => state.inlineButtons.rows);
   const mediaFiles = useAppSelector(state => state.media.files);
-  const quizState = useAppSelector(state => state.quiz);
-  const snapshots = useAppSelector(state => state.series.snapshots);
-  const activeIndex = useAppSelector(state => state.series.activeIndex);
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const selectedChannels = useAppSelector(selectSelectedChannels);
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
-
-  const {
-    handleSelectPostSnapshot,
-    handleAddSeries,
-    handleRemovePost,
-  } = useCreatePostHandlers({
-    dispatch,
-    snapshots,
-  });
-
-  const currentSnapshot = {
-    text,
-    mediaFiles,
-    inlineButtonsOpen,
-    buttonRows,
-    quizOpen: quizState.isOpen,
-    quizMode: quizState.mode,
-    quizQuestion: quizState.question,
-    quizAnswers: quizState.answers,
-    quizCorrectAnswerId: quizState.correctAnswerId,
-    showLinkPreview,
-  };
 
   const handleSaveDraft = async () => {
     const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
@@ -172,6 +145,11 @@ function CreateDraftPageContent() {
 
       <div className={styles.footerButtons}>
         <Button
+          text="Список черновиков"
+          showArrow={false}
+          onClick={() => { window.location.href = '/drafts'; }}
+        />
+        <Button
           text="Сохранить в черновики"
           showArrow={false}
           active
@@ -186,18 +164,19 @@ function CreateDraftPageContent() {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.mainContent}>
+      {isDraftLoading && (
+        <div className={styles.draftLoadingOverlay}>
+          <Loader size={32} color="blue" />
+        </div>
+      )}
+
+      <div
+        className={`${styles.mainContent} ${
+          isDraftLoading ? styles.contentLoading : styles.contentReady
+        }`}
+      >
         <div className={styles.editorColumn}>
-          {snapshots.length > 1 ? (
-            <div className={styles.seriesList}>
-              {snapshots.map((_, index) => (
-                <PostAccordion key={`post-${index + 1}`} title={`Пост ${index + 1}`} isOpen={index === activeIndex} onToggle={() => handleSelectPostSnapshot(index, currentSnapshot)}>
-                  {index === activeIndex ? editorBlock : null}
-                </PostAccordion>
-              ))}
-            </div>
-          ) : editorBlock}
-          <Button text="Добавить серию постов" showArrow={false} className={styles.addSeriesBtn} onClick={() => handleAddSeries(currentSnapshot)} />
+          {editorBlock}
         </div>
       </div>
 
@@ -210,10 +189,12 @@ function CreateDraftPageContent() {
 
 export default function CreateDraftPage() {
   return (
-    <CreatePostProvider>
-      <Suspense fallback={<div>Загрузка...</div>}>
-        <CreateDraftPageContent />
-      </Suspense>
-    </CreatePostProvider>
+    <AppLayout pageTitle="Создание черновика">
+      <CreatePostProvider>
+        <Suspense fallback={<div>Загрузка...</div>}>
+          <CreateDraftPageContent />
+        </Suspense>
+      </CreatePostProvider>
+    </AppLayout>
   );
 }

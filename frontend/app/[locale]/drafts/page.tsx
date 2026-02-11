@@ -1,6 +1,7 @@
 'use client';
 
 import { DraftsProvider } from './store/provider';
+import { AppLayout } from '@/components/app-layout';
 import Loader from '@/components/loader';
 import DraftsHeader from './components/DraftsHeader';
 import DraftsList from './components/DraftsList';
@@ -106,8 +107,10 @@ function DraftsPageContent() {
 
 export default function DraftsPage() {
   return (
-    <DraftsProvider>
-      <DraftsPageContent />
-    </DraftsProvider>
+    <AppLayout pageTitle="Черновики">
+      <DraftsProvider>
+        <DraftsPageContent />
+      </DraftsProvider>
+    </AppLayout>
   );
 }

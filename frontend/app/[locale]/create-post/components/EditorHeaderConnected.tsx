@@ -247,40 +247,48 @@ export default function EditorHeaderConnected({
                 onChange={handleSearch}
                 onFocus={handleSearchFocus}
               />
-              {showDropdown && displayResults.length > 0 && (
+              {showDropdown && (
                 <div className={tagStyles.tagSearchDropdown}>
-                  <span className={tagStyles.tagSearchDropdownTitle}>Созданные теги</span>
-                  <div
-                    className={tagStyles.tagSearchDropdownScroll}
-                    onScroll={handleDropdownScroll}
-                  >
-                    {displayResults.map((tag) => (
-                      <div key={tag.id} className={tagStyles.tagSearchResultRow}>
-                        <button
-                          type="button"
-                          className={tagStyles.tagSearchResultChip}
-                          style={{ backgroundColor: tag.color || '#B8DBF1' }}
-                          onClick={() => handleSelectSearchTag(tag)}
-                          onDoubleClick={() => handleStartEditTag(tag)}
-                        >
-                          <span className={tagStyles.tagSearchResultChipText}>{tag.name}</span>
-                        </button>
-                        <button
-                          type="button"
-                          className={tagStyles.tagSearchDeleteBtn}
-                          onClick={() => handleRequestDelete(tag.id)}
-                          aria-label={`Удалить тег ${tag.name}`}
-                        >
-                          <TrashIcon width={15} height={17} color="#B0B4B8" />
-                        </button>
+                  {tagsState.loading ? (
+                    <div className={tagStyles.tagDropdownLoading}>
+                      <Loader size={24} color="blue" />
+                    </div>
+                  ) : displayResults.length > 0 ? (
+                    <>
+                      <span className={tagStyles.tagSearchDropdownTitle}>Созданные теги</span>
+                      <div
+                        className={tagStyles.tagSearchDropdownScroll}
+                        onScroll={handleDropdownScroll}
+                      >
+                        {displayResults.map((tag) => (
+                          <div key={tag.id} className={tagStyles.tagSearchResultRow}>
+                            <button
+                              type="button"
+                              className={tagStyles.tagSearchResultChip}
+                              style={{ backgroundColor: tag.color || '#B8DBF1' }}
+                              onClick={() => handleSelectSearchTag(tag)}
+                              onDoubleClick={() => handleStartEditTag(tag)}
+                            >
+                              <span className={tagStyles.tagSearchResultChipText}>{tag.name}</span>
+                            </button>
+                            <button
+                              type="button"
+                              className={tagStyles.tagSearchDeleteBtn}
+                              onClick={() => handleRequestDelete(tag.id)}
+                              aria-label={`Удалить тег ${tag.name}`}
+                            >
+                              <TrashIcon width={15} height={17} color="#B0B4B8" />
+                            </button>
+                          </div>
+                        ))}
+                        {tagsState.loadingMore && (
+                          <div className={tagStyles.tagScrollLoading}>
+                            <Loader size={16} color="blue" />
+                          </div>
+                        )}
                       </div>
-                    ))}
-                    {tagsState.loadingMore && (
-                      <div className={tagStyles.tagScrollLoading}>
-                        <Loader size={16} color="blue" />
-                      </div>
-                    )}
-                  </div>
+                    </>
+                  ) : null}
                 </div>
               )}
             </div>
