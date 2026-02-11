@@ -133,14 +133,10 @@ export function useDraftsPage() {
   const token = getAccessToken() || undefined;
   const showPageLoader = isLoading && drafts.length === 0;
 
+  const [shareDraft, setShareDraft] = useState<Draft | null>(null);
+
   const handleShare = (draft: Draft) => {
-    const text = draft.formatted_content?.text || draft.text_content || '';
-    const plainText = text.replace(/<[^>]*>/g, '');
-    if (navigator.share) {
-      navigator.share({ text: plainText }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(plainText).catch(() => {});
-    }
+    setShareDraft(draft);
   };
 
   const handleEdit = (draft: Draft) => {
@@ -223,6 +219,8 @@ export function useDraftsPage() {
     handleEdit,
     confirmDelete,
     previewData,
+    shareDraft,
+    setShareDraft,
     defaultSortByDate,
     defaultSortBySource,
   };

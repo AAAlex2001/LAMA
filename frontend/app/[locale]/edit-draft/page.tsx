@@ -27,6 +27,7 @@ import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-u
 import Modal from '@/components/modal/modal';
 import Input from '@/components/input/input';
 import Tooltip from '@/components/tooltip/tooltip';
+import SharedDraftModal from '@/components/shared-draft-modal/shared-draft-modal';
 
 import { CreatePostProvider } from '../create-post/store/provider';
 import { useAppDispatch, useAppSelector } from '../create-post/store';
@@ -44,6 +45,7 @@ import {
 } from '../create-post/store/thunks';
 import { useTokenFromUrl } from '../create-post/hooks/useTokenFromUrl';
 import { useDraftFromUrl } from '../create-post/hooks/useDraftFromUrl';
+import { useSearchParams } from 'next/navigation';
 import Loader from '@/components/loader';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
@@ -58,8 +60,18 @@ function EditDraftPageContent() {
   const [hoveredShareBtn, setHoveredShareBtn] = useState(false);
   const shareLink = typeof window !== 'undefined' ? window.location.href : '';
 
+  const searchParams = useSearchParams();
+  const sharedFrom = searchParams?.get('from');
+  const [showSharedDraftModal, setShowSharedDraftModal] = useState(false);
+
   useTokenFromUrl();
   const { isDraftLoading } = useDraftFromUrl();
+
+  useEffect(() => {
+    if (sharedFrom && !isDraftLoading) {
+      setShowSharedDraftModal(true);
+    }
+  }, [sharedFrom, isDraftLoading]);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
@@ -292,6 +304,24 @@ function EditDraftPageContent() {
       <TemplatesModalConnected editorRef={editorRef} />
       <ReplyModalConnected />
       <DatePickerModalConnected redirectToDraftsOnSuccess />
+
+      <SharedDraftModal
+        isOpen={showSharedDraftModal}
+        onClose={() => setShowSharedDraftModal(false)}
+        username={sharedFrom || ''}
+        onSave={async () => {
+          setShowSharedDraftModal(false);
+          await handleSaveDraft();
+        }}
+        onPublish={async () => {
+          setShowSharedDraftModal(false);
+          await handlePublishNow();
+        }}
+        onPreview={() => {
+          setShowSharedDraftModal(false);
+          dispatch(uiSlice.setShowPreviewModal(true));
+        }}
+      />
 
       <div className={styles.shareModal}>
         <Modal
