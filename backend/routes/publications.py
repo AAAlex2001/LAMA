@@ -317,6 +317,31 @@ async def delete_publication(
         raise HTTPException(status_code=404, detail="Publication not found")
 
 
+@router.post("/{publication_id}/share", response_model=dict)
+async def generate_share_link(
+    publication_id: int,
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user)
+):
+    """Генерировать токен для шеринга черновика"""
+    token = await service.generate_share_token(publication_id, owner_id=current_user.id)
+    if not token:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return {"share_token": token}
+
+
+@router.get("/shared/{token}", response_model=PublicationResponse)
+async def get_shared_publication(
+    token: str,
+    service: PublicationService = Depends(get_publication_service)
+):
+    """Получить публикацию по share токену (публичный доступ)"""
+    publication = await service.get_publication_by_share_token(token)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Shared publication not found")
+    return publication
+
+
 @router.post("/{publication_id}/publish", response_model=PublicationResponse, status_code=202)
 async def publish_now(
     publication_id: int,

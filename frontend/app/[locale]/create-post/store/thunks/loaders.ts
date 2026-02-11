@@ -51,6 +51,38 @@ export const loadDraftById = createAsyncThunk(
   }
 );
 
+export const loadDraftByToken = createAsyncThunk(
+  'createPost/loadDraftByToken',
+  async (token: string, { dispatch, getState, rejectWithValue }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/publications/shared/${token}`);
+      if (response.status === 404) {
+        return rejectWithValue('Ссылка недействительна, истекла или уже была использована');
+      }
+      if (!response.ok) {
+        return rejectWithValue('Не удалось загрузить черновик по ссылке');
+      }
+      const draft = await response.json() as Draft;
+      
+      loadDraftIntoStore(draft, dispatch as AppDispatch);
+
+      const state = getState() as RootState;
+      const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
+      if (state.channels.channels.length > 0) {
+        const next = state.channels.channels.map((ch) => ({
+          ...ch,
+          selected: channelIds.size > 0 ? channelIds.has(ch.id) : false,
+        }));
+        dispatch(setChannelSelections(next));
+      }
+
+      return draft;
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки черновика');
+    }
+  }
+);
+
 export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
   const baseUrl = API_BASE_URL.replace('/api', '');
   

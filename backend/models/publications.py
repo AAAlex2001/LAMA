@@ -4,6 +4,7 @@ from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKe
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
+import secrets
 
 
 class PublicationStatus(enum.Enum):
@@ -103,6 +104,10 @@ class Publication(Base):
     
     ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    
+    share_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True, index=True)
+    share_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    share_token_used: Mapped[bool] = mapped_column(Boolean, default=False)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

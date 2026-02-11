@@ -3,7 +3,7 @@ export { publishSeries } from './publishSeries';
 export { saveDraft } from './draft';
 export { schedulePost } from './schedule';
 export { saveAsTemplate } from './template';
-export { loadChannels, loadRecentTags, loadDraftIntoStore, loadDraftById } from './loaders';
+export { loadChannels, loadRecentTags, loadDraftIntoStore, loadDraftById, loadDraftByToken } from './loaders';
 export { fetchTagsThunk, searchTagsThunk, createTagThunk, deleteTagThunk, updateTagThunk } from './tags';
 export { fetchChannelsThunk, addChannelThunk, deleteChannelThunk } from './channels';
 export { fetchDrafts, fetchMoreDrafts, deleteDraftThunk, searchDrafts } from './draftsModal';

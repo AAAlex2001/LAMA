@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { DraftsProvider } from './store/provider';
 import { AppLayout } from '@/components/app-layout';
 import Loader from '@/components/loader';
@@ -15,6 +16,8 @@ import styles from './drafts.module.scss';
 
 function DraftsPageContent() {
   const { showSuccess } = useNotifications();
+  const [shareLink, setShareLink] = React.useState('');
+  
   const {
     drafts,
     isLoading,
@@ -54,6 +57,34 @@ function DraftsPageContent() {
     defaultSortByDate,
     defaultSortBySource,
   } = useDraftsPage();
+
+  React.useEffect(() => {
+    if (!shareDraft) {
+      setShareLink('');
+      return;
+    }
+
+    const generateTokenAndGetLink = async () => {
+      try {
+        const token = localStorage.getItem('lamaplanner_access_token');
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/publications/${shareDraft.id}/share`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!response.ok) throw new Error('Failed');
+        const data = await response.json();
+        const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/edit-draft?token=${data.share_token}`;
+        setShareLink(link);
+      } catch {
+        setShareLink('');
+      }
+    };
+
+    generateTokenAndGetLink();
+  }, [shareDraft]);
 
   return (
     <div className={styles.page} ref={scrollRef}>
@@ -117,38 +148,38 @@ function DraftsPageContent() {
           title="Поделиться черновиком"
           hideButtons
         >
-          {shareDraft && (() => {
-            const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/edit-draft?draft=${shareDraft.id}`;
-            return (
-              <div className={styles.shareModalContent}>
-                <p className={styles.shareDescription}>
-                  Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую
-                </p>
-                <div className={styles.shareLinkRow}>
-                  <Input
-                    value={link}
-                    onChange={() => {}}
-                    variant="white"
-                    className={styles.shareLinkInput}
-                    icon={<CopyIcon width={24} height={24} color="#383F45" />}
-                    onIconClick={() => {
-                      navigator.clipboard.writeText(link);
-                      showSuccess('Ссылка скопирована!');
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={styles.telegramBtn}
-                    onClick={() => {
-                      window.open(`https://t.me/share/url?url=${encodeURIComponent(link)}`, '_blank');
-                    }}
-                  >
-                    <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
-                  </button>
-                </div>
-              </div>
-            );
-          })()}
+          <div className={styles.shareModalContent}>
+            <p className={styles.shareDescription}>
+              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую.<br /><br />
+              <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
+            </p>
+            <div className={styles.shareLinkRow}>
+              <Input
+                value={shareLink}
+                onChange={() => {}}
+                variant="white"
+                className={styles.shareLinkInput}
+                icon={<CopyIcon width={24} height={24} color="#383F45" />}
+                onIconClick={() => {
+                  if (shareLink) {
+                    navigator.clipboard.writeText(shareLink);
+                    showSuccess('Ссылка скопирована!');
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className={styles.telegramBtn}
+                onClick={() => {
+                  if (shareLink) {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                  }
+                }}
+              >
+                <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
+              </button>
+            </div>
+          </div>
         </Modal>
       </div>
     </div>

@@ -58,11 +58,45 @@ function EditDraftPageContent() {
 
   const [showShareModal, setShowShareModal] = useState(false);
   const [hoveredShareBtn, setHoveredShareBtn] = useState(false);
-  const shareLink = typeof window !== 'undefined' ? window.location.href : '';
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false);
+  const shareLink = shareToken && typeof window !== 'undefined'
+    ? `${window.location.origin}/edit-draft?token=${shareToken}`
+    : '';
 
   const searchParams = useSearchParams();
+  const draftId = searchParams?.get('draft');
   const sharedFrom = searchParams?.get('from');
   const [showSharedDraftModal, setShowSharedDraftModal] = useState(false);
+
+  const generateShareToken = async () => {
+    if (!draftId || isGeneratingToken) return;
+    setIsGeneratingToken(true);
+    try {
+      const token = localStorage.getItem('lamaplanner_access_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/publications/${draftId}/share`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      if (!response.ok) throw new Error('Failed to generate share token');
+      const data = await response.json();
+      setShareToken(data.share_token);
+    } catch (error) {
+      showError('Ошибка генерации ссылки');
+      setShowShareModal(false);
+    } finally {
+      setIsGeneratingToken(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showShareModal && !shareToken) {
+      generateShareToken();
+    }
+  }, [showShareModal]);
 
   useTokenFromUrl();
   const { isDraftLoading } = useDraftFromUrl();
@@ -333,7 +367,8 @@ function EditDraftPageContent() {
         >
           <div className={styles.shareModalContent}>
             <p className={styles.shareDescription}>
-              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую
+              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую.<br /><br />
+              <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
             </p>
             <div className={styles.shareLinkRow}>
               <Input

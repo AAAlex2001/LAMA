@@ -447,6 +447,9 @@ class PublicationResponse(BaseModel):
     repeat_end_time: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
+    share_token: Optional[str] = None
+    share_token_expires_at: Optional[datetime] = None
+    share_token_used: bool = False
     channels: List[ChannelResponse] = []
     tags: List[TagResponse] = []
     series: Optional[PublicationSeriesResponse] = None

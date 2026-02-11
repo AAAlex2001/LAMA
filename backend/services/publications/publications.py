@@ -59,6 +59,12 @@ class PublicationService:
     async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None):
         return await self.crud.reschedule_publication(publication_id, new_time, owner_id)
 
+    async def generate_share_token(self, publication_id: int, owner_id: int) -> Optional[str]:
+        return await self.crud.generate_share_token(publication_id, owner_id)
+
+    async def get_publication_by_share_token(self, token: str):
+        return await self.crud.get_publication_by_share_token(token)
+
     async def create_notification(self, publication_id: int, status: str, message: str, error_details: Optional[Dict] = None):
         return await self.crud.create_notification(publication_id, status, message, error_details)
 

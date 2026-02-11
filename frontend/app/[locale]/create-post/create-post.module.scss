@@ -55,7 +55,10 @@
   border-radius: 12px;
   padding: 16px;
   box-sizing: border-box;
-  min-height: 628px;
+
+  @media (min-width: 1440px) {
+    min-height: 628px;
+  }
 }
 
 .header {
@@ -121,7 +124,7 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 12px;
-  height: 628px;
+  height: auto;
   max-height: 80vh;
   overflow: visible;
   width: 100%;

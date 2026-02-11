@@ -6,13 +6,16 @@
   gap: 16px;
   width: 100%;
   max-width: 350px;
-  min-height: 628px;
-  max-height: 628px;
-  height: 628px;
   background: #FFFFFF;
   border-radius: 12px;
   box-sizing: border-box;
   overflow: visible;
+
+  @media (min-width: 1440px) {
+    min-height: 628px;
+    max-height: 628px;
+    height: 628px;
+  }
 }
 
 .settingsContent {
