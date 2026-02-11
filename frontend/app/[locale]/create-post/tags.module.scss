@@ -5,6 +5,13 @@
   padding: 0;
   gap: 10px;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.tagsPanelEditing {
+  .tagsPanelTop {
+    display: none;
+  }
 }
 
 .tagsPanelTop {
@@ -173,12 +180,14 @@
   flex-direction: row;
   align-items: center;
   padding: 0;
-  gap: 10px;
-  flex-shrink: 0;
+  gap: 6px;
   width: 100%;
+  box-sizing: border-box;
 
   @media (min-width: 1440px) {
     width: auto;
+    flex-shrink: 0;
+    gap: 10px;
   }
 }
 
@@ -187,9 +196,10 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 8px 12px;
+  padding: 8px;
   gap: 12px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   height: 32px;
   background: #F8FAFF;
   border: 1px solid rgba(1, 42, 249, 0.1);
@@ -203,7 +213,7 @@
   }
 
   @media (min-width: 1440px) {
-    width: 290px;
+    padding: 8px 12px;
   }
 }
 
@@ -291,6 +301,42 @@
   padding: 0;
   gap: 10px;
   width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.tagEditTitleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 100%;
+}
+
+.tagEditLabel {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 24px;
+  color: #383F45;
+  flex-shrink: 0;
+}
+
+.tagEditLabelMobile {
+  display: block;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.tagEditLabelDesktop {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: block;
+  }
 }
 
 .tagEditChip {
@@ -302,6 +348,8 @@
   gap: 6px;
   height: 24px;
   border-radius: 5px;
+  min-width: 0;
+  flex: 1;
 
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -309,6 +357,19 @@
   line-height: 16px;
   text-align: center;
   color: #383F45;
+
+  @media (min-width: 1440px) {
+    flex: 0 0 auto;
+    max-width: 200px;
+  }
+}
+
+.tagEditChipText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
 
 .tagEditChipClose {
@@ -328,23 +389,7 @@
   }
 }
 
-.tagEditControls {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0;
-  gap: 10px;
-  width: 100%;
-
-  @media (min-width: 1440px) {
-    flex-direction: row;
-    align-items: center;
-    gap: 20px;
-    height: 32px;
-  }
-}
-
-.tagEditMiddle {
+.tagEditBottomRow {
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -354,21 +399,9 @@
 
   @media (min-width: 1440px) {
     flex-direction: row;
-    justify-content: space-between;
     align-items: center;
-    gap: 37px;
-    flex: 1;
-    height: 32px;
+    gap: 20px;
   }
-}
-
-.tagEditLabel {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 24px;
-  color: #383F45;
-  flex-shrink: 0;
 }
 
 .tagEditInputGroup {
@@ -376,12 +409,13 @@
   flex-direction: row;
   align-items: center;
   padding: 0;
-  gap: 20px;
+  gap: 10px;
   width: 100%;
-  flex-shrink: 0;
 
   @media (min-width: 1440px) {
-    width: 356px;
+    flex: 0 0 auto;
+    width: auto;
+    gap: 20px;
   }
 }
 
@@ -392,8 +426,9 @@
   align-items: center;
   padding: 8px 16px;
   gap: 10px;
-  width: 100%;
-  height: 32px;
+  flex: 1;
+  min-width: 0;
+  height: 33px;
   background: #F8FAFF;
   border: 1px solid rgba(59, 130, 246, 0.1);
   box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
@@ -407,6 +442,8 @@
 
   @media (min-width: 1440px) {
     width: 224px;
+    flex: 0 0 224px;
+    height: 32px;
   }
 }
 
@@ -430,11 +467,45 @@
 
 .tagEditActions {
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: row;
   align-items: center;
   padding: 0;
   gap: 10px;
-  flex-shrink: 0;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: auto;
+    flex-shrink: 0;
+    margin-left: auto;
+    min-width: 141px;
+  }
+}
+
+.tagEditSaveBtn {
+  flex: 1;
+  min-width: 0;
+
+  button {
+    width: 100%;
+    height: 32px;
+    min-height: 32px;
+    padding: 0 8px;
+    border-radius: 8px;
+
+    span {
+      font-size: 14px !important;
+      line-height: 17px !important;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    flex: 0 0 auto;
+
+    button {
+      width: auto;
+      padding: 0 12px;
+    }
+  }
 }
 
 .tagEditDeleteBtn {
@@ -451,9 +522,10 @@
   background: #FFFFFF;
   color: #B0B4B8;
   cursor: pointer;
-  transition: width 0.3s ease, border-color 0.3s ease, color 0.3s ease, padding 0.3s ease;
+  flex-shrink: 0;
   overflow: hidden;
   white-space: nowrap;
+  transition: width 0.3s ease, border-color 0.3s ease, color 0.3s ease, padding 0.3s ease;
 
   svg {
     flex-shrink: 0;
@@ -461,14 +533,19 @@
   }
 
   &:hover {
-    width: 140px;
-    padding: 0 10px;
     border-color: #E33326;
     color: #E33326;
     background: #FFFFFF;
 
     svg path {
       stroke: #E33326;
+    }
+  }
+
+  @media (min-width: 1440px) {
+    &:hover {
+      width: 140px;
+      padding: 0 10px;
     }
   }
 }
@@ -482,21 +559,9 @@
   color: #E33326;
   white-space: nowrap;
 
-  .tagEditDeleteBtn:hover & {
-    display: block;
-  }
-}
-
-.tagEditSaveBtn {
-  button {
-    height: 32px;
-    min-height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
-
-    span {
-      font-size: 14px !important;
-      line-height: 17px !important;
+  @media (min-width: 1440px) {
+    .tagEditDeleteBtn:hover & {
+      display: block;
     }
   }
 }

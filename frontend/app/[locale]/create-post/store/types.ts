@@ -188,7 +188,7 @@ export interface SettingsState {
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
-  selectedTags: Array<{ name: string; color: string }>;
+  selectedTags: Array<{ id?: number; name: string; color: string }>;
   selectedTagColor: string | null;
   repeatInterval: RepeatOption;
   repeatPublishTimeType: 'from_publish' | 'exact_time';

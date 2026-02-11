@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import classNames from 'classnames';
-import { CloseIcon, SettingsIcon } from '@/components/icons';
+import { SettingsIcon } from '@/components/icons';
+import TagCloseIcon from '@/components/icons/tag-close-icon';
 import PlusIcon from '@/components/icons/plus-icon';
 import TrashIcon from '@/components/icons/trash-icon';
 import SearchBar from '@/components/search-bar/search-bar';
@@ -217,10 +218,10 @@ export default function EditorHeaderConnected({
               <button
                 type="button"
                 className={styles.tagChipClose}
-                onClick={() => handleRemoveTag(tag.name)}
+                onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.name); }}
                 aria-label={`Удалить тег ${tag.name}`}
               >
-                <CloseIcon width={10} height={10} color="#383F45" />
+                <TagCloseIcon width={12} height={12} color="#383F45" />
               </button>
             </div>
           ))}
@@ -237,7 +238,7 @@ export default function EditorHeaderConnected({
       </div>
 
       {showTagsPanel && (
-        <div className={tagStyles.tagsPanel}>
+        <div className={classNames(tagStyles.tagsPanel, { [tagStyles.tagsPanelEditing]: !!editingTag })}>
           <div className={tagStyles.tagsPanelTop}>
             <div className={tagStyles.tagSearchWrapper} ref={dropdownRef}>
               <SearchBar
@@ -320,64 +321,63 @@ export default function EditorHeaderConnected({
 
           {editingTag && (
             <div className={tagStyles.tagEditRow}>
-              <div className={tagStyles.tagEditChip} style={{ backgroundColor: editColor }}>
-                <span>{editingTag.name}</span>
-                <button
-                  type="button"
-                  className={tagStyles.tagEditChipClose}
-                  onClick={handleCancelEdit}
-                >
-                  <CloseIcon width={12} height={12} color="#383F45" />
-                </button>
+              <div className={tagStyles.tagEditTitleRow}>
+                <span className={classNames(tagStyles.tagEditLabel, tagStyles.tagEditLabelMobile)}>Редактирование тега</span>
+                <div className={tagStyles.tagEditChip} style={{ backgroundColor: editColor }}>
+                  <span className={tagStyles.tagEditChipText}>{editingTag.name}</span>
+                  <button
+                    type="button"
+                    className={tagStyles.tagEditChipClose}
+                    onClick={handleCancelEdit}
+                  >
+                    <TagCloseIcon width={12} height={12} color="#383F45" />
+                  </button>
+                </div>
               </div>
 
-              <div className={tagStyles.tagEditControls}>
-                <span className={tagStyles.tagEditLabel}>Редактирование тега</span>
-
-                <div className={tagStyles.tagEditMiddle}>
-                  <div className={tagStyles.tagEditInputGroup}>
-                    <div className={tagStyles.tagEditInputWrapper}>
-                      <input
-                        type="text"
-                        className={tagStyles.tagEditInput}
-                        placeholder="Введите новое название"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                      />
-                    </div>
-                    <div className={tagStyles.tagColorPicker}>
-                      {TAG_COLORS.map((color) => (
-                        <button
-                          key={color}
-                          type="button"
-                          className={classNames(tagStyles.tagColorButton, {
-                            [tagStyles.tagColorButtonSelected]: editColor === color,
-                          })}
-                          style={{ backgroundColor: color }}
-                          onClick={() => setEditColor(color as TagColor)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={tagStyles.tagEditActions}>
-                    <Button
-                      text="Сохранить"
-                      onClick={handleSaveEdit}
-                      showArrow={false}
-                      size="small"
-                      className={tagStyles.tagEditSaveBtn}
+              <div className={tagStyles.tagEditBottomRow}>
+                <span className={classNames(tagStyles.tagEditLabel, tagStyles.tagEditLabelDesktop)}>Редактирование тега</span>
+                <div className={tagStyles.tagEditInputGroup}>
+                  <div className={tagStyles.tagEditInputWrapper}>
+                    <input
+                      type="text"
+                      className={tagStyles.tagEditInput}
+                      placeholder="Введите новое название"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
                     />
-                    <button
-                      type="button"
-                      className={tagStyles.tagEditDeleteBtn}
-                      onClick={() => handleRequestDelete(editingTag.id)}
-                      aria-label="Удалить тег"
-                    >
-                      <TrashIcon width={15} height={16.67} color="#B0B4B8" />
-                      <span className={tagStyles.tagEditDeleteText}>Удалить тег</span>
-                    </button>
                   </div>
+                  <div className={tagStyles.tagColorPicker}>
+                    {TAG_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        className={classNames(tagStyles.tagColorButton, {
+                          [tagStyles.tagColorButtonSelected]: editColor === color,
+                        })}
+                        style={{ backgroundColor: color }}
+                        onClick={() => setEditColor(color as TagColor)}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <div className={tagStyles.tagEditActions}>
+                  <button
+                    type="button"
+                    className={tagStyles.tagEditDeleteBtn}
+                    onClick={() => handleRequestDelete(editingTag.id)}
+                    aria-label="Удалить тег"
+                  >
+                    <TrashIcon width={15} height={16.67} color="#B0B4B8" />
+                    <span className={tagStyles.tagEditDeleteText}>Удалить тег</span>
+                  </button>
+                  <Button
+                    text="Сохранить"
+                    onClick={handleSaveEdit}
+                    showArrow={false}
+                    size="small"
+                    className={tagStyles.tagEditSaveBtn}
+                  />
                 </div>
               </div>
             </div>
