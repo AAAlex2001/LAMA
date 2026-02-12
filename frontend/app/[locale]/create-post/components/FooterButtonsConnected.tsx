@@ -54,7 +54,6 @@ export default function FooterButtonsConnected({
           text="Сохранить в черновики"
           showArrow={false}
           className={saveDraftBtnClassName}
-          active
           loading={isSavingDraft}
           disabled={isSavingDraft}
           onClick={async () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import Modal from '@/components/modal/modal';
+import Button from '@/components/button/button';
 import EyeIcon from '@/components/icons/eye-icon';
 import styles from './shared-draft-modal.module.scss';
 
@@ -39,13 +40,20 @@ export default function SharedDraftModal({
             Посмотрите, что внутри. Вы можете сразу перейти к публикации или сохранить его в свои черновики
           </p>
           <div className={styles.buttons}>
-            <button className={styles.saveBtn} onClick={onSave}>
-              Сохранить
-            </button>
-            <button className={styles.publishBtn} onClick={onPublish}>
-              Опубликовать
-            </button>
-            <button className={styles.previewBtn} onClick={onPreview} title="Просмотр">
+            <Button
+              text="Сохранить"
+              showArrow={false}
+              className={styles.actionBtn}
+              onClick={onSave}
+            />
+            <Button
+              text="Опубликовать"
+              showArrow={false}
+              active
+              className={styles.actionBtn}
+              onClick={onPublish}
+            />
+            <button className={styles.previewBtn} onClick={onPreview} aria-label="Предпросмотр">
               <EyeIcon width={16} height={16} color="#B0B4B8" />
             </button>
           </div>

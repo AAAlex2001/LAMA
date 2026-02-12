@@ -470,6 +470,27 @@
   }
 }
 
+.invalidLinkModal {
+  h2 {
+    font-weight: 600 !important;
+  }
+}
+
+.invalidCreatePostBtn {
+  flex: 1.2;
+
+  button,
+  a {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  span[class*="buttonText"] {
+    text-align: center;
+  }
+}
+
 .shareModalContent {
   display: flex;
   flex-direction: column;
@@ -503,13 +524,30 @@
 .shareLinkInput {
   flex: 1;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
 
   input {
     font-size: 12px !important;
     line-height: 15px !important;
     height: 32px !important;
-    padding: 4px 8px 4px 16px !important;
+    padding: 4px 44px 4px 16px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+}
+
+.shareLinkLoader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .telegramBtn {

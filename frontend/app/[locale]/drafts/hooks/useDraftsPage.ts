@@ -45,12 +45,28 @@ export function useDraftsPage() {
   const [sortBySource, setSortBySource] = useState(defaultSortBySource);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [isInitialDraftsLoaded, setIsInitialDraftsLoaded] = useState(false);
+  const initialLoadCompletedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sortBarRef = useRef<HTMLDivElement>(null);
   const mobileFilterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    dispatch(fetchDrafts({ tagIds: selectedTagIds }));
+    let isMounted = true;
+
+    const loadDrafts = async () => {
+      await dispatch(fetchDrafts({ tagIds: selectedTagIds }));
+      if (isMounted && !initialLoadCompletedRef.current) {
+        initialLoadCompletedRef.current = true;
+        setIsInitialDraftsLoaded(true);
+      }
+    };
+
+    loadDrafts();
+
+    return () => {
+      isMounted = false;
+    };
   }, [dispatch, selectedTagIds]);
 
   useEffect(() => {
@@ -131,7 +147,7 @@ export function useDraftsPage() {
   })() : null;
 
   const token = getAccessToken() || undefined;
-  const showPageLoader = isLoading && drafts.length === 0;
+  const showPageLoader = !isInitialDraftsLoaded || (isLoading && drafts.length === 0);
 
   const [shareDraft, setShareDraft] = useState<Draft | null>(null);
 
@@ -215,6 +231,7 @@ export function useDraftsPage() {
     tagButtonLabel,
     token,
     showPageLoader,
+    isInitialDraftsLoaded,
     handleShare,
     handleEdit,
     confirmDelete,

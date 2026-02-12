@@ -21,6 +21,7 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
+  gap: 16px;
   max-height: 80vh;
   overflow: visible;
 }
@@ -35,9 +36,9 @@
 .modalTitle {
   font-size: 14px;
   line-height: 17px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 16px;
+  font-weight: 500;
+  color: #383F45;
+  margin: 0;
 }
 
 .closeButton {
@@ -56,7 +57,7 @@
 }
 
 .searchWrapper {
-  margin-bottom: 16px;
+  width: 100%;
 }
 
 .templatesList {
@@ -67,8 +68,8 @@
 .listScroll {
   overflow-y: auto;
   max-height: 400px;
-  padding-top: 32px;
-  margin-top: -32px;
+  padding-top: 0;
+  margin-top: 0;
   position: relative;
   
   &::-webkit-scrollbar {
@@ -94,7 +95,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 3px 12px 3px;
+  padding: 8px 3px;
   cursor: pointer;
   
   &:hover {

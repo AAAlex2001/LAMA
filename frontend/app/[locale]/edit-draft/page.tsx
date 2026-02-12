@@ -61,7 +61,7 @@ function EditDraftPageContent() {
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [isGeneratingToken, setIsGeneratingToken] = useState(false);
   const shareLink = shareToken && typeof window !== 'undefined'
-    ? `${window.location.origin}/edit-draft?token=${shareToken}`
+    ? `${window.location.origin}/drafts?token=${shareToken}`
     : '';
 
   const searchParams = useSearchParams();
@@ -394,32 +394,35 @@ function EditDraftPageContent() {
         }}
       />
 
-      <Modal
-        isOpen={showExpiredLinkModal}
-        onClose={() => setShowExpiredLinkModal(false)}
-        onConfirm={() => setShowExpiredLinkModal(false)}
-        title="Ссылка недействительна"
-        hideButtons
-      >
-        <div className={styles.shareModalContent}>
-          <p className={styles.shareDescription}>
-            Срок действия ссылки истёк или она уже была использована.
-          </p>
-          <div className={styles.shareLinkRow}>
-            <Button
-              text="Список черновиков"
-              showArrow={false}
-              onClick={() => { window.location.href = '/drafts'; }}
-            />
-            <Button
-              text="Создать пост"
-              showArrow={false}
-              active
-              onClick={() => { window.location.href = '/create-post'; }}
-            />
+      <div className={styles.invalidLinkModal}>
+        <Modal
+          isOpen={showExpiredLinkModal}
+          onClose={() => setShowExpiredLinkModal(false)}
+          onConfirm={() => setShowExpiredLinkModal(false)}
+          title="Ссылка недействительна"
+          hideButtons
+        >
+          <div className={styles.shareModalContent}>
+            <p className={styles.shareDescription}>
+              Срок действия ссылки истёк или она уже была использована.
+            </p>
+            <div className={styles.shareLinkRow}>
+              <Button
+                text="Список черновиков"
+                showArrow={false}
+                onClick={() => { window.location.href = '/drafts'; }}
+              />
+              <Button
+                text="Создать пост"
+                showArrow={false}
+                active
+                className={styles.invalidCreatePostBtn}
+                onClick={() => { window.location.href = '/create-post'; }}
+              />
+            </div>
           </div>
-        </div>
-      </Modal>
+        </Modal>
+      </div>
 
       <div className={styles.shareModal}>
         <Modal
@@ -435,23 +438,35 @@ function EditDraftPageContent() {
               <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
             </p>
             <div className={styles.shareLinkRow}>
-              <Input
-                value={shareLink}
-                onChange={() => {}}
-                variant="white"
-                className={styles.shareLinkInput}
-                icon={<CopyIcon width={24} height={24} color="#383F45" />}
-                onIconClick={() => {
-                  navigator.clipboard.writeText(shareLink);
-                  showSuccess('Ссылка скопирована!');
-                }}
-              />
+              <div className={styles.shareLinkInput}>
+                <Input
+                  value={shareLink}
+                  onChange={() => {}}
+                  variant="white"
+                  icon={<CopyIcon width={24} height={24} color="#383F45" />}
+                  iconDisabled={isGeneratingToken || !shareLink}
+                  onIconClick={() => {
+                    if (!isGeneratingToken && shareLink) {
+                      navigator.clipboard.writeText(shareLink);
+                      showSuccess('Ссылка скопирована!');
+                    }
+                  }}
+                />
+                {isGeneratingToken && (
+                  <div className={styles.shareLinkLoader}>
+                    <Loader size={16} color="blue" />
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 className={styles.telegramBtn}
                 onClick={() => {
-                  window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                  if (!isGeneratingToken && shareLink) {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                  }
                 }}
+                disabled={isGeneratingToken || !shareLink}
               >
                 <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
               </button>

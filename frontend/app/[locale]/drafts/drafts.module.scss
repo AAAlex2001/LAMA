@@ -435,6 +435,68 @@
   }
 }
 
+.emptyDraftsState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  gap: 10px;
+  width: 100%;
+  max-width: 485px;
+  min-height: 142px;
+  border-radius: 12px;
+  margin: 120px auto 0;
+}
+
+.emptyDraftsTextWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  max-width: 445px;
+}
+
+.emptyDraftsTitle {
+  width: 100%;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  color: #383F45;
+}
+
+.emptyDraftsSubtitle {
+  width: 100%;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #9CA0A4;
+}
+
+.emptyDraftsCreateBtn {
+  width: 146px;
+  height: 37px;
+
+  button,
+  a {
+    width: 146px;
+    height: 37px;
+    min-height: 37px;
+    padding: 10px;
+    gap: 15px;
+    justify-content: center;
+  }
+}
+
 .loaderWrapper {
   display: flex;
   justify-content: center;
@@ -462,6 +524,27 @@
     font-size: 16px !important;
     line-height: 19px !important;
     color: #000000 !important;
+  }
+}
+
+.invalidLinkModal {
+  h2 {
+    font-weight: 600 !important;
+  }
+}
+
+.invalidCreatePostBtn {
+  flex: 1.2;
+
+  button,
+  a {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  span[class*="buttonText"] {
+    text-align: center;
   }
 }
 
@@ -498,13 +581,30 @@
 .shareLinkInput {
   flex: 1;
   min-width: 0;
+  position: relative;
+  overflow: hidden;
 
   input {
     font-size: 12px !important;
     line-height: 15px !important;
     height: 32px !important;
-    padding: 4px 8px 4px 16px !important;
+    padding: 4px 44px 4px 16px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
+}
+
+.shareLinkLoader {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .telegramBtn {
