@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
+import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
 import styles from './weekly-view.module.scss';
@@ -130,9 +131,7 @@ export default function WeeklyCalendarView({
               className={addBtnClasses}
               onClick={() => onAddPost(dayDate)}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8.00065 3.33203V12.6654M3.33398 7.9987H12.6673" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              <CalendarAddIcon />
             </button>
 
             <div className={cardsClasses}>
