@@ -56,3 +56,5 @@ export { default as ExitIcon } from './exit-icon';
 export { default as BellIcon } from './bell-icon';
 export { default as BurgerIcon } from './burger-icon';
 export { default as UserIcon } from './user-icon';
+export { default as ArrowsSpinIcon } from './arrows-spin-icon';
+export { default as CalendarArrowIcon } from './calendar-arrow-icon';

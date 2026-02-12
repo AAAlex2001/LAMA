@@ -37,7 +37,7 @@ export default function AppSidebar() {
 
   const mainItems: SidebarItem[] = [
     { id: 'create-post', icon: <PostIcon width={24} height={24} />, label: 'Новая публикация', href: `/${locale}/create-post` },
-    { id: 'calendar', icon: <CalendarIcon width={24} height={24} />, label: 'Календарь публикаций', disabled: true },
+    { id: 'calendar', icon: <CalendarIcon width={24} height={24} />, label: 'Календарь публикаций', href: `/${locale}/calendar` },
     { id: 'drafts', icon: <DraftsIcon width={24} height={24} />, label: 'Черновики', href: `/${locale}/drafts` },
     { id: 'channels', icon: <ChannelsIcon width={24} height={24} />, label: 'Управление каналами', disabled: true },
     { id: 'bots', icon: <BotsIcon width={24} height={24} />, label: 'Управление ботами', disabled: true },

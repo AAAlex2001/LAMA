@@ -145,6 +145,7 @@
     width: 100%;
     min-width: 0;
     height: 32px;
+    position: relative;
     background: transparent !important;
     border: none;
     cursor: pointer;
@@ -165,10 +166,6 @@
 
     &:hover:not(:disabled):not(:global(.react-calendar__tile--selected)) {
       background: rgba(59, 130, 246, 0.1) !important;
-      
-      abbr {
-        color: #383F45;
-      }
     }
 
     &:disabled {
@@ -188,7 +185,8 @@
   }
 
   :global(.react-calendar__tile--active) {
-    background: #3B82F6;
+    background: #3B82F6 !important;
+    border-radius: 50px !important;
 
     abbr {
       font-weight: 600;
@@ -196,7 +194,7 @@
     }
 
     &:hover {
-      background: #2F67C3;
+      background: #3B82F6 !important;
     }
   }
 
@@ -213,6 +211,7 @@
 
   :global(.react-calendar__tile--selected) {
     background: #3B82F6 !important;
+    border-radius: 50px !important;
 
     abbr {
       font-weight: 600;
@@ -220,11 +219,97 @@
     }
 
     &:hover {
-      background: #2F67C3 !important;
+      background: #3B82F6 !important;
     }
 
     &:global(.react-calendar__tile--active) {
       background: #3B82F6 !important;
     }
+  }
+
+  .postIndicator {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 21px;
+    height: 3px;
+    background: #3B82F6;
+    border-radius: 100px;
+    z-index: 4;
+  }
+
+  .postIndicatorActive {
+    background: #FFFFFF;
+  }
+
+  :global(.react-calendar__tile--active) .postIndicator,
+  :global(.react-calendar__tile--selected) .postIndicator {
+    background: #FFFFFF;
+  }
+}
+
+.weekMode {
+  :global(.react-calendar__tile--active),
+  :global(.react-calendar__tile--selected) {
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  :global(.react-calendar__tile--week-highlight) {
+    background: transparent !important;
+    border-radius: 0 !important;
+  }
+
+  :global(.react-calendar__tile--week-highlight)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 32px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 0;
+    z-index: 1;
+  }
+
+  :global(.react-calendar__tile--week-start) {
+    border-radius: 0 !important;
+  }
+
+  :global(.react-calendar__tile--week-start)::after {
+    border-radius: 50px 0 0 50px;
+  }
+
+  :global(.react-calendar__tile--week-end) {
+    border-radius: 0 !important;
+  }
+
+  :global(.react-calendar__tile--week-end)::after {
+    border-radius: 0 50px 50px 0;
+  }
+
+  :global(.react-calendar__tile--week-highlight) abbr {
+    position: relative;
+    z-index: 3;
+  }
+
+  :global(.react-calendar__tile--active)::before,
+  :global(.react-calendar__tile--selected)::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: none;
+    width: 100%;
+    height: 32px;
+    background: #3B82F6;
+    border-radius: 50px;
+    z-index: 2;
+  }
+
+  :global(.react-calendar__tile--active) .postIndicator,
+  :global(.react-calendar__tile--selected) .postIndicator {
+    background: #FFFFFF;
   }
 }

@@ -9,21 +9,38 @@ import 'react-calendar/dist/Calendar.css';
 interface DatePickerProps {
   value?: Date;
   onChange?: (date: Date) => void;
+  onMonthChange?: (date: Date) => void;
   locale?: string;
   className?: string;
   selectedDates?: number[];
   disableNavigation?: boolean;
   minDate?: Date | null;
+  highlightWeek?: boolean;
+  postCounts?: Record<string, number>;
+}
+
+function getWeekStartDate(date: Date): Date {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff);
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
 export default function DatePicker({ 
   value, 
   onChange, 
+  onMonthChange,
   locale = 'ru',
   className,
   selectedDates = [],
   disableNavigation = false,
-  minDate
+  minDate,
+  highlightWeek = false,
+  postCounts,
 }: DatePickerProps) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -46,10 +63,32 @@ export default function DatePicker({
   };
 
   const getTileClassName = (date: Date) => {
+    const classes: string[] = [];
+
     if (selectedDates && selectedDates.length > 0 && selectedDates.includes(date.getDate())) {
-      return 'react-calendar__tile--selected';
+      classes.push('react-calendar__tile--selected');
     }
-    return '';
+
+    if (highlightWeek && selectedDate) {
+      const weekStart = getWeekStartDate(selectedDate);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const checkDate = new Date(date);
+      checkDate.setHours(0, 0, 0, 0);
+      const ws = new Date(weekStart);
+      ws.setHours(0, 0, 0, 0);
+      const we = new Date(weekEnd);
+      we.setHours(0, 0, 0, 0);
+
+      if (checkDate >= ws && checkDate <= we) {
+        classes.push('react-calendar__tile--week-highlight');
+        if (isSameDay(checkDate, ws)) classes.push('react-calendar__tile--week-start');
+        if (isSameDay(checkDate, we)) classes.push('react-calendar__tile--week-end');
+      }
+    }
+
+    return classes.join(' ');
   };
 
   const monthNames: Record<string, string[]> = {
@@ -76,17 +115,37 @@ export default function DatePicker({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className={`${styles.datePicker} ${className || ''}`}>
+    <div className={`${styles.datePicker} ${highlightWeek ? styles.weekMode : ''} ${className || ''}`}>
       <Calendar
         onChange={handleDateChange}
         value={selectedDate}
         activeStartDate={activeStartDate}
         onActiveStartDateChange={({ activeStartDate: newDate }) => {
-          if (newDate) setActiveStartDate(newDate);
+          if (newDate) {
+            setActiveStartDate(newDate);
+            onMonthChange?.(newDate);
+          }
         }}
         locale={locale}
         minDate={minDate === null ? undefined : (minDate ?? today)}
         tileClassName={({ date }) => getTileClassName(date)}
+        tileContent={({ date }) => {
+          if (!postCounts) return null;
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, '0');
+          const d = String(date.getDate()).padStart(2, '0');
+          const count = postCounts[`${y}-${m}-${d}`];
+          if (!count) return null;
+          const isSelected = isSameDay(date, selectedDate);
+          const progressUnits = Math.max(1, Math.min(5, count));
+          const progressWidth = `${(21 / 5) * progressUnits}px`;
+          return (
+            <div
+              className={`${styles.postIndicator} ${isSelected ? styles.postIndicatorActive : ''}`}
+              style={{ width: progressWidth }}
+            />
+          );
+        }}
         formatShortWeekday={(locale, date) => {
           const dayIndex = (date.getDay() + 6) % 7;
           return getWeekDay(locale || 'ru', dayIndex);

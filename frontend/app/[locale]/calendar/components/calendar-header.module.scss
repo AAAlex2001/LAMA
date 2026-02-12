@@ -1,0 +1,136 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 24px;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 16px;
+  }
+}
+
+.tabsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  order: 0;
+
+  @media (min-width: 1440px) {
+    order: 1;
+    width: auto;
+    justify-content: flex-end;
+  }
+}
+
+.slideButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  order: 1;
+
+  @media (min-width: 1440px) {
+    order: 0;
+    width: auto;
+    justify-content: flex-start;
+  }
+}
+
+.slideBtn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px;
+  width: 28px;
+  height: 28px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.2);
+  }
+}
+
+.slideBtnRight svg {
+  transform: scaleX(-1);
+}
+
+.dateTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 28px;
+  color: #383F45;
+  white-space: nowrap;
+}
+
+.viewTabs {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+}
+
+.tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 10px;
+  border-radius: 25px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.tabActive {
+  background: rgba(59, 130, 246, 0.1);
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15);
+  }
+}
+
+.tabText {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.settingsBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}

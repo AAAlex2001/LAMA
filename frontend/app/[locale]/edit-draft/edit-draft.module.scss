@@ -19,7 +19,6 @@
   flex-direction: column;
   width: 100%;
   gap: 24px;
-  max-width: 1274px;
   margin: auto auto;
   transition: opacity 0.25s ease;
 
@@ -33,7 +32,6 @@
 
 .draftsHeaderWrapper {
   width: 100%;
-  max-width: 1274px;
   margin: 0 auto;
 }
 
@@ -74,9 +72,8 @@
   width: 100%;
 
   @media (min-width: 1440px) {
-    flex: 0 0 900px;
-    max-width: 900px;
-    margin: 0 auto;
+    flex: 1;
+    min-width: 0;
   }
 }
 

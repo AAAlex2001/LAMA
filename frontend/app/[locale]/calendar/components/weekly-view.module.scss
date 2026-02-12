@@ -1,0 +1,171 @@
+.weeklyView {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  padding: 0;
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 0;
+  height: calc(100vh - 210px);
+  height: calc(100dvh - 210px);
+  min-height: 0;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #CED2D6;
+    border-radius: 100px;
+  }
+}
+
+.dayColumn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px 0 4px;
+  gap: 8px;
+  flex: 1 0 131px;
+  min-width: 131px;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  border-right: 1px solid rgba(59, 130, 246, 0.1);
+  isolation: isolate;
+
+  &:first-child {
+    padding-left: 0;
+    padding-right: 5px;
+  }
+
+  &:last-child {
+    border-right: none;
+    padding-right: 0;
+    padding-left: 4px;
+  }
+}
+
+.dayHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 12px;
+  gap: 10px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.dayHeaderToday {
+  background: linear-gradient(360deg, rgba(255, 255, 255, 0) -28.15%, #3B82F6 248.74%), #FFFFFF;
+}
+
+.dayHeaderPast {
+  opacity: 0.4;
+}
+
+.dayName {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #3B82F6;
+  flex: 1;
+}
+
+.dayNumber {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.addBtn {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 10px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.addBtnPast {
+  opacity: 0.4;
+}
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #CED2D6;
+    border-radius: 100px;
+  }
+}
+
+.cardsContainerPast {
+  opacity: 0.4;
+}
+
+.dayLoader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  width: 100%;
+}
+
+.emptyDay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+  text-align: center;
+}

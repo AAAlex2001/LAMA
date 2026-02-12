@@ -221,11 +221,6 @@ function DraftsPageContent() {
 
   return (
     <div className={styles.page} ref={scrollRef}>
-      {showPageLoader && (
-        <div className={styles.pageLoader}>
-          <Loader size={32} color="blue" />
-        </div>
-      )}
       <div className={styles.container}>
         <DraftsHeader
           sortBarRef={sortBarRef}
@@ -251,16 +246,22 @@ function DraftsPageContent() {
           defaultSortBySource={defaultSortBySource}
         />
 
-        <DraftsList
-          drafts={drafts}
-          isLoading={isLoading}
-          isInitialDraftsLoaded={isInitialDraftsLoaded}
-          showInlineLoader={!showPageLoader && (isLoading || isLoadingMore)}
-          onPreview={(draft) => setPreviewDraft(draft)}
-          onShare={handleShare}
-          onDelete={(draft) => setDeleteConfirmId(draft.id)}
-          onEdit={handleEdit}
-        />
+        {showPageLoader ? (
+          <div className={styles.loaderCentered}>
+            <Loader size={32} color="blue" />
+          </div>
+        ) : (
+          <DraftsList
+            drafts={drafts}
+            isLoading={isLoading}
+            isInitialDraftsLoaded={isInitialDraftsLoaded}
+            showInlineLoader={isLoadingMore}
+            onPreview={(draft) => setPreviewDraft(draft)}
+            onShare={handleShare}
+            onDelete={(draft) => setDeleteConfirmId(draft.id)}
+            onEdit={handleEdit}
+          />
+        )}
       </div>
 
       <DraftsDialogs
