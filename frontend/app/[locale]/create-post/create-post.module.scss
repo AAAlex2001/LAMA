@@ -130,6 +130,15 @@
   width: 100%;
   max-width: 350px;
   animation: modalSlideIn 0.2s ease-out;
+
+  @media (max-width: 1439px) {
+    height: 600px;
+    min-height: 600px;
+    max-height: 600px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 @keyframes modalSlideIn {
