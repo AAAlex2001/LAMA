@@ -1,6 +1,8 @@
 'use client';
 
-import { SettingsIcon, CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
+import React from 'react';
+import { CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
+import DatePicker from '@/components/date-picker/date-picker';
 import ListDateRangePicker from './ListDateRangePicker';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
@@ -13,8 +15,10 @@ interface CalendarHeaderProps {
   onPrevDay: () => void;
   onNextDay: () => void;
   onViewChange: (view: CalendarView) => void;
-  onSettingsClick?: () => void;
-  onListSortClick?: (anchor: DOMRect) => void;
+  onDateChange?: (date: Date) => void;
+  gridPostCounts?: Record<string, number>;
+  listSortOrder: 'asc' | 'desc' | null;
+  onListSortChange: (order: 'asc' | 'desc' | null) => void;
 }
 
 const MONTH_NAMES_RU = [
@@ -69,9 +73,38 @@ export default function CalendarHeader({
   onPrevDay,
   onNextDay,
   onViewChange,
-  onSettingsClick,
-  onListSortClick,
+  onDateChange,
+  gridPostCounts,
+  listSortOrder,
+  onListSortChange,
 }: CalendarHeaderProps) {
+  const [datePickerOpen, setDatePickerOpen] = React.useState(false);
+  const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
+  const datePickerRef = React.useRef<HTMLDivElement>(null);
+  const sortWrapperRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!datePickerOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
+        setDatePickerOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [datePickerOpen]);
+
+  React.useEffect(() => {
+    if (!sortPopupOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (sortWrapperRef.current && !sortWrapperRef.current.contains(e.target as Node)) {
+        setSortPopupOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [sortPopupOpen]);
+
   return (
     <div className={styles.header}>
       <div className={styles.tabsRow}>
@@ -88,25 +121,40 @@ export default function CalendarHeader({
           ))}
         </div>
 
-        {currentView === 'list' && onListSortClick ? (
+        <div className={styles.sortWrapper} ref={sortWrapperRef}>
           <button
             type="button"
             className={styles.settingsBtn}
-            onClick={(event) => onListSortClick(event.currentTarget.getBoundingClientRect())}
+            onClick={() => setSortPopupOpen((prev) => !prev)}
             aria-label="Сортировка"
           >
             <FilterSortIcon width={24} height={24} />
           </button>
-        ) : onSettingsClick ? (
-          <button
-            type="button"
-            className={styles.settingsBtn}
-            onClick={onSettingsClick}
-            aria-label="Настройки"
-          >
-            <SettingsIcon width={24} height={24} />
-          </button>
-        ) : null}
+          {sortPopupOpen && (
+            <div className={styles.sortPopup}>
+              <button
+                type="button"
+                className={styles.sortPopupItem}
+                onClick={() => { onListSortChange('desc'); setSortPopupOpen(false); }}
+              >
+                <span className={listSortOrder !== 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
+                  <span className={styles.sortRadioDot} />
+                </span>
+                <span className={styles.sortPopupItemText}>Сначала новые</span>
+              </button>
+              <button
+                type="button"
+                className={styles.sortPopupItem}
+                onClick={() => { onListSortChange('asc'); setSortPopupOpen(false); }}
+              >
+                <span className={listSortOrder === 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
+                  <span className={styles.sortRadioDot} />
+                </span>
+                <span className={styles.sortPopupItemText}>Сначала старые</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className={styles.slideButtons}>
@@ -115,23 +163,67 @@ export default function CalendarHeader({
             <ListDateRangePicker value={listRange} onChange={onListRangeChange} />
           </div>
         ) : (
-          <>
-            <button type="button" className={styles.slideBtn} onClick={onPrevDay}>
+          <div className={styles.slideRow}>
+            <button
+              type="button"
+              className={styles.slideBtn}
+              onClick={() => {
+                if (currentView === 'day' || currentView === 'week') {
+                  setDatePickerOpen((prev) => !prev);
+                } else {
+                  onPrevDay();
+                }
+              }}
+            >
               <CalendarArrowIcon width={16} height={16} />
             </button>
-            <span className={styles.dateTitle}>
-              {currentView === 'week'
-                ? formatWeekRange(selectedDate)
-                : currentView === 'month'
-                  ? formatMonthTitle(selectedDate)
-                  : currentView === 'list'
-                    ? formatListTitle(selectedDate)
+            <button
+              type="button"
+              className={styles.dateTitleBtn}
+              onClick={() => {
+                if (currentView === 'day' || currentView === 'week') {
+                  setDatePickerOpen((prev) => !prev);
+                }
+              }}
+            >
+              <span className={styles.dateTitle}>
+                {currentView === 'week'
+                  ? formatWeekRange(selectedDate)
+                  : currentView === 'month'
+                    ? formatMonthTitle(selectedDate)
                     : formatShortDate(selectedDate)}
-            </span>
-            <button type="button" className={`${styles.slideBtn} ${styles.slideBtnRight}`} onClick={onNextDay}>
+              </span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.slideBtn} ${styles.slideBtnRight}`}
+              onClick={() => {
+                if (currentView === 'day' || currentView === 'week') {
+                  setDatePickerOpen((prev) => !prev);
+                } else {
+                  onNextDay();
+                }
+              }}
+            >
               <CalendarArrowIcon width={16} height={16} />
             </button>
-          </>
+          </div>
+        )}
+
+        {datePickerOpen && (currentView === 'day' || currentView === 'week') && (
+          <div className={styles.datePickerPopup} ref={datePickerRef}>
+            <DatePicker
+              value={selectedDate}
+              onChange={(date: Date) => {
+                if (onDateChange) onDateChange(date);
+                setDatePickerOpen(false);
+              }}
+              locale="ru"
+              minDate={null}
+              highlightWeek={currentView === 'week'}
+              postCounts={gridPostCounts}
+            />
+          </div>
         )}
       </div>
     </div>

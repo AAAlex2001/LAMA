@@ -104,7 +104,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
 
   return (
     <div
-      className={styles.card}
+      className={`${styles.card} ${!listMode && post.status === 'published' ? styles.publishedCard : ''}`}
       onClick={onEdit}
     >
       <div className={styles.topSection}>

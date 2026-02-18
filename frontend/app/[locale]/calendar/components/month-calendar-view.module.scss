@@ -1,0 +1,262 @@
+.monthWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  gap: 8px;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.loaderWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 260px;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.calendarCard {
+  width: 100%;
+  background: #FFFFFF;
+  box-shadow: 0px 0px 14px rgba(0, 0, 0, 0.07);
+  border-radius: 11px;
+  overflow: hidden;
+}
+
+.monthDatePicker {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.postsCard {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  padding: 8px;
+  gap: 14px;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.createWrap {
+  width: 100%;
+}
+
+.createBtn {
+  width: 100%;
+
+  button,
+  a {
+    width: 100%;
+    min-height: 37px;
+    padding: 10px;
+    justify-content: center;
+  }
+}
+
+.statusTabs {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.controlsRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+
+.sortWrapper {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.sortTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sortPopup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 4px;
+  width: 180px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  z-index: 20;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sortPopupItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 8px;
+  width: 100%;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.sortPopupItemText {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.sortRadio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid #CED2D6;
+  flex-shrink: 0;
+}
+
+.sortRadioActive {
+  border-color: #3B82F6;
+}
+
+.sortRadioDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+
+  .sortRadioActive & {
+    background: #3B82F6;
+  }
+}
+
+.statusTab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 12px;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 23px;
+  border: none;
+  border-radius: 25px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.statusTabActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.statusTabText {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.filterBarWrap {
+  display: flex;
+  width: 100%;
+  justify-content: stretch;
+}
+
+.postList {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  gap: 4px;
+}
+
+.loadMoreWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 12px 0;
+  width: 100%;
+}
+
+.postRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  padding: 12px 16px;
+  gap: 6px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  cursor: pointer;
+
+  &:hover {
+    background: #F8FAFC;
+  }
+}
+
+.postTime {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #9CA0A4;
+  flex-shrink: 0;
+}
+
+.postPreview {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  padding: 24px 0;
+}

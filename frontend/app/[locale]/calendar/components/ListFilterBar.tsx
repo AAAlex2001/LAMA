@@ -39,6 +39,7 @@ export default function ListFilterBar({
   const [openFilter, setOpenFilter] = React.useState<string | null>(null);
   const [internalMobileFilterOpen, setInternalMobileFilterOpen] = React.useState(false);
   const barRef = React.useRef<HTMLDivElement>(null);
+  const mobileTriggerRef = React.useRef<HTMLButtonElement>(null);
   const isControlledMobileOpen = mobileFilterOpen !== undefined;
   const isMobileOpen = isControlledMobileOpen ? !!mobileFilterOpen : internalMobileFilterOpen;
 
@@ -51,7 +52,8 @@ export default function ListFilterBar({
 
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (barRef.current && !barRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (!barRef.current?.contains(target)) {
         setOpenFilter(null);
         setMobileOpen(false);
       }
@@ -91,18 +93,6 @@ export default function ListFilterBar({
     }
     return `${filter.label}: ${activeValues.length}`;
   }
-
-  const mobilePopupStyle = React.useMemo(() => {
-    if (!mobilePopupAnchor) return undefined;
-    const popupWidth = 220;
-    const left = Math.max(8, mobilePopupAnchor.right - popupWidth);
-    return {
-      position: 'fixed' as const,
-      top: mobilePopupAnchor.bottom + 10,
-      left,
-      right: 'auto' as const,
-    };
-  }, [mobilePopupAnchor]);
 
   return (
     <div className={styles.sortBar} ref={barRef}>
@@ -172,6 +162,7 @@ export default function ListFilterBar({
       <div className={styles.mobileFilterWrapper}>
         {!hideMobileTrigger && (
           <button
+            ref={mobileTriggerRef}
             type="button"
             className={styles.mobileFilterButton}
             onClick={() => {
@@ -186,7 +177,7 @@ export default function ListFilterBar({
         )}
 
         {isMobileOpen && (
-          <div className={styles.mobileFilterPopup} style={mobilePopupStyle}>
+          <div className={styles.mobileFilterPopup}>
             {filters.map((filter) => {
               const active = activeFilters[filter.key] || [];
               const isOpen = openFilter === filter.key;

@@ -10,7 +10,7 @@
   -webkit-overflow-scrolling: touch;
 
   @media (min-width: 1440px) {
-    padding: 30px 36px 30px 36px;
+    padding: 30px 36px 30px;
   }
 }
 
@@ -52,6 +52,21 @@
   min-height: 0;
   overflow: hidden;
   flex: 1;
+}
+
+.monthMode {
+  @media (max-width: 1439px) {
+    overflow: visible;
+    min-height: auto;
+  }
+}
+
+.monthDesktopGrid {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: contents;
+  }
 }
 
 .postsColumn {

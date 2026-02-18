@@ -8,6 +8,8 @@ import WeeklyCalendarView from './WeeklyCalendarView';
 import WeeklySidebar from './WeeklySidebar';
 import MonthlySidebar from './MonthlySidebar';
 import ListCalendarView from './ListCalendarView';
+import DayCalendarView from './DayCalendarView';
+import MonthCalendarView from './MonthCalendarView';
 import styles from '../calendar.module.scss';
 
 interface CalendarMainContentProps {
@@ -22,9 +24,6 @@ interface CalendarMainContentProps {
   isLoadingMore: boolean;
   listSortOrder: 'asc' | 'desc' | null;
   listStatusFilter: string | null;
-  mobileListSortOpen: boolean;
-  onMobileListSortOpenChange: (open: boolean) => void;
-  mobileListSortAnchor: { bottom: number; right: number } | null;
   gridPostCounts: Record<string, number>;
   dayLoadingMap: Record<string, boolean>;
   onEdit: (post: Draft) => void;
@@ -48,9 +47,6 @@ export default function CalendarMainContent({
   isLoadingMore,
   listSortOrder,
   listStatusFilter,
-  mobileListSortOpen,
-  onMobileListSortOpenChange,
-  mobileListSortAnchor,
   gridPostCounts,
   dayLoadingMap,
   onEdit,
@@ -62,8 +58,47 @@ export default function CalendarMainContent({
   onSidebarDateChange,
 }: CalendarMainContentProps) {
   return (
-    <div className={`${styles.mainContent} ${isGridView ? styles.mainContentWeek : ''}`}>
-      {isGridView ? (
+    <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
+      {currentView === 'month' ? (
+        <>
+          <div className={styles.monthDesktopGrid}>
+            <WeeklyCalendarView
+              weekItems={weekItems}
+              selectedDate={selectedDate}
+              sidebarDate={sidebarDate}
+              isLoading={isLoading}
+              onEdit={onEdit}
+              onAddPost={onAddPost}
+              visibleDates={monthDates}
+              onReachEnd={onLoadMoreDay}
+              dayLoading={dayLoadingMap}
+              onDayClick={onSidebarDateChange}
+            />
+            <MonthlySidebar
+              sidebarDate={sidebarDate}
+              weekItems={weekItems}
+              onEdit={onEdit}
+              onLoadMoreDay={onLoadMoreDay}
+              dayLoading={dayLoadingMap}
+            />
+          </div>
+          <MonthCalendarView
+            selectedDate={selectedDate}
+            sidebarDate={sidebarDate}
+            onSidebarDateChange={onSidebarDateChange}
+            weekItems={weekItems}
+            gridPostCounts={gridPostCounts}
+            onMonthChange={onMonthChange}
+            onEdit={onEdit}
+            onAddPost={onAddPost}
+            isLoading={isLoading}
+            listSortOrder={listSortOrder}
+            onListSortChange={onListSortChange}
+            onLoadMoreDay={onLoadMoreDay}
+            dayLoadingMap={dayLoadingMap}
+          />
+        </>
+      ) : isGridView ? (
         <>
           <WeeklyCalendarView
             weekItems={weekItems}
@@ -72,33 +107,22 @@ export default function CalendarMainContent({
             isLoading={isLoading}
             onEdit={onEdit}
             onAddPost={onAddPost}
-            visibleDates={currentView === 'month' ? monthDates : undefined}
             onReachEnd={onLoadMoreDay}
             dayLoading={dayLoadingMap}
             onDayClick={onSidebarDateChange}
           />
-          {currentView === 'month' ? (
-            <MonthlySidebar
-              sidebarDate={sidebarDate}
-              weekItems={weekItems}
-              onEdit={onEdit}
-              onLoadMoreDay={onLoadMoreDay}
-              dayLoading={dayLoadingMap}
-            />
-          ) : (
-            <WeeklySidebar
-              selectedDate={selectedDate}
-              sidebarDate={sidebarDate}
-              weekItems={weekItems}
-              postCounts={gridPostCounts}
-              onMonthChange={onMonthChange}
-              onSidebarDateChange={onSidebarDateChange}
-              onEdit={onEdit}
-              highlightWeek={true}
-              onLoadMoreDay={onLoadMoreDay}
-              dayLoading={dayLoadingMap}
-            />
-          )}
+          <WeeklySidebar
+            selectedDate={selectedDate}
+            sidebarDate={sidebarDate}
+            weekItems={weekItems}
+            postCounts={gridPostCounts}
+            onMonthChange={onMonthChange}
+            onSidebarDateChange={onSidebarDateChange}
+            onEdit={onEdit}
+            highlightWeek={true}
+            onLoadMoreDay={onLoadMoreDay}
+            dayLoading={dayLoadingMap}
+          />
         </>
       ) : currentView === 'list' ? (
         <div className={styles.postsColumn}>
@@ -111,11 +135,29 @@ export default function CalendarMainContent({
             statusFilter={listStatusFilter}
             onDateSortChange={onListSortChange}
             onStatusFilterChange={onListStatusChange}
-            mobileFilterOpen={mobileListSortOpen}
-            onMobileFilterOpenChange={onMobileListSortOpenChange}
-            mobileFilterAnchor={mobileListSortAnchor}
           />
         </div>
+      ) : currentView === 'day' ? (
+        <>
+          <div className={styles.postsColumn}>
+            <DayCalendarView
+              posts={sortedPosts}
+              isLoading={isLoading}
+              isLoadingMore={isLoadingMore}
+              onEdit={onEdit}
+              onAddPost={onAddPost}
+              selectedDate={selectedDate}
+            />
+          </div>
+
+          <CalendarSidebar
+            selectedDate={selectedDate}
+            sidebarDate={sidebarDate}
+            onSidebarDateChange={onSidebarDateChange}
+            posts={sortedPosts}
+            onEdit={onEdit}
+          />
+        </>
       ) : (
         <>
           <div className={styles.postsColumn}>

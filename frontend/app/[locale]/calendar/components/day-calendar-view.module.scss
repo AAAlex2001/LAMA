@@ -1,0 +1,119 @@
+.dayWrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 16px;
+}
+
+.loaderWrap {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  min-height: 260px;
+}
+
+.mobileControls {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 12px;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.mobileMiniTabs {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  width: 328px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.mobileMiniTab {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 9px;
+  min-height: 23px;
+  border: none;
+  border-radius: 25px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mobileMiniTabActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.mobileMiniTabText {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.filterBarWrap {
+  display: flex;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.createWrap {
+  width: 100%;
+}
+
+.createBtn {
+  width: 100%;
+
+  button,
+  a {
+    width: 100%;
+    min-height: 37px;
+    padding: 10px;
+    justify-content: center;
+  }
+}
+
+.empty {
+  width: 100%;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  padding: 24px 0;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, minmax(280px, 1fr));
+  }
+
+  @media (min-width: 980px) {
+    grid-template-columns: repeat(3, minmax(280px, 1fr));
+  }
+
+  > * {
+    width: 100%;
+  }
+}
+
+.listLoader {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 24px 0;
+}

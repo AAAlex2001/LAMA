@@ -15,8 +15,6 @@ import styles from './calendar.module.scss';
 function CalendarPageContent() {
   const [showMobileCalendar, setShowMobileCalendar] = React.useState(false);
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
-  const [mobileListSortOpen, setMobileListSortOpen] = React.useState(false);
-  const [mobileListSortAnchor, setMobileListSortAnchor] = React.useState<{ bottom: number; right: number } | null>(null);
   const {
     weekItems,
     isLoading,
@@ -56,13 +54,6 @@ function CalendarPageContent() {
       setShowMobileCalendar(false);
     }
   }
-
-  React.useEffect(() => {
-    if (currentView !== 'list') {
-      setMobileListSortOpen(false);
-      setMobileListSortAnchor(null);
-    }
-  }, [currentView]);
 
   function handleListRangeChange(range: { start: Date; end: Date } | null) {
     if (!range) {
@@ -142,7 +133,7 @@ function CalendarPageContent() {
   })();
 
   return (
-    <div className={`${styles.page} ${isGridView ? styles.pageWeek : ''}`}>
+    <div className={`${styles.page} ${currentView === 'week' ? styles.pageWeek : ''}`}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}
@@ -152,11 +143,10 @@ function CalendarPageContent() {
           onPrevDay={handlePrevDay}
           onNextDay={handleNextDay}
           onViewChange={handleViewChange}
-          onSettingsClick={() => setShowMobileCalendar(true)}
-          onListSortClick={(anchor) => {
-            setMobileListSortAnchor({ bottom: anchor.bottom, right: anchor.right });
-            setMobileListSortOpen((prev) => !prev);
-          }}
+          onDateChange={handleSidebarDateChange}
+          gridPostCounts={gridPostCounts}
+          listSortOrder={listSortOrder}
+          onListSortChange={setListSortOrder}
         />
 
         <CalendarMainContent
@@ -178,9 +168,6 @@ function CalendarPageContent() {
           onLoadMoreDay={handleLoadMoreDay}
           onListSortChange={setListSortOrder}
           onListStatusChange={setListStatusFilter}
-          mobileListSortOpen={mobileListSortOpen}
-          onMobileListSortOpenChange={setMobileListSortOpen}
-          mobileListSortAnchor={mobileListSortAnchor}
           onMonthChange={setCountsMonthAnchor}
           onSidebarDateChange={handleSidebarDateChange}
         />
