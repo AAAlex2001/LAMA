@@ -1,22 +1,16 @@
-from backend.services.publications.telegram_sender import clean_html_for_telegram, send_to_telegram, prepare_inline_keyboard_data
+from backend.services.publications.telegram_sender import send_to_telegram
 from typing import Optional, List
 from sqlalchemy import select
 from sqlalchemy.sql import nullslast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
-
 from aiogram import Bot
-from aiogram.types import Message
-from aiogram.enums import ParseMode
 
 from backend.models.publications import (
     Publication, PublicationSeries, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
-    ContentType as DBContentType,
 )
-from backend.models.channels import ChannelGroup as Channel
-from backend.utils.keyboard import build_keyboard
 from backend.schemas.publications import PublishResult, ChannelPublishResult
 
 
@@ -73,222 +67,32 @@ class SeriesService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def get_root_published_in_series(
-        self,
-        series_id: int,
-        channel_id: int
-    ) -> Optional[Publication]:
-        """Получить последнюю опубликованную публикацию серии в канале.
-
-        Используется для reply-chain: каждый следующий пост серии отвечает на
-        последний опубликованный пост этой серии в конкретном канале.
-        """
-
-        query = (
-            select(Publication)
-            .where(
-                Publication.series_id == series_id,
-                Publication.status == DBPublicationStatus.PUBLISHED,
-            )
-            .options(
-                selectinload(Publication.telegram_messages).selectinload(TelegramMessage.channel)
-            )
-            .join(Publication.telegram_messages)
-            .where(TelegramMessage.channel_id == channel_id)
-            .order_by(
-                nullslast(Publication.series_order.desc()),
-                nullslast(Publication.published_time.desc()),
-                Publication.id.desc(),
-            )
-        )
-
-        result = await self.db.execute(query)
-        return result.scalars().first()
-
     async def get_reply_to_message_id(
         self,
         series_id: int,
         channel_id: int
     ) -> Optional[int]:
-        """Получить telegram_message_id для reply (последний пост серии в канале)."""
+        """Получить telegram_message_id последнего опубликованного поста серии в канале."""
 
-        root_pub = await self.get_root_published_in_series(series_id, channel_id)
-
-        if not root_pub or not root_pub.telegram_messages:
-            return None
-
-        # Ищем сообщение именно в этом канале
-        for tg_msg in root_pub.telegram_messages:
-            if tg_msg.channel_id == channel_id:
-                return tg_msg.telegram_message_id
-
-        return None
-
-    async def send_as_reply(
-        self,
-        bot: Bot,
-        channel: Channel,
-        publication: Publication,
-        reply_to_message_id: int,
-        reply_markup=None
-    ) -> List[Message]:
-        """Отправить публикацию как ответ на предыдущее сообщение"""
-        
-        cleaned_text = clean_html_for_telegram(publication.text_content)
-
-        if publication.content_type == DBContentType.TEXT:
-            message = await bot.send_message(
-                chat_id=channel.telegram_id,
-                text=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                reply_markup=reply_markup
+        query = (
+            select(TelegramMessage.telegram_message_id)
+            .join(Publication, Publication.id == TelegramMessage.publication_id)
+            .where(
+                Publication.series_id == series_id,
+                Publication.status == DBPublicationStatus.PUBLISHED,
+                TelegramMessage.channel_id == channel_id,
             )
-            return [message]
-
-        elif publication.content_type == DBContentType.IMAGE:
-            message = await bot.send_photo(
-                chat_id=channel.telegram_id,
-                photo=publication.media_urls[0],
-                caption=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur,
-                reply_markup=reply_markup
+            .order_by(
+                nullslast(Publication.series_order.desc()),
+                nullslast(Publication.published_time.desc()),
+                Publication.id.desc(),
+                TelegramMessage.id.desc(),
             )
-            return [message]
+            .limit(1)
+        )
 
-        elif publication.content_type == DBContentType.VIDEO:
-            message = await bot.send_video(
-                chat_id=channel.telegram_id,
-                video=publication.media_urls[0],
-                caption=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                has_spoiler=publication.media_blur,
-                reply_markup=reply_markup
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.AUDIO:
-            message = await bot.send_audio(
-                chat_id=channel.telegram_id,
-                audio=publication.media_urls[0],
-                caption=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                reply_markup=reply_markup
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.DOCUMENT:
-            message = await bot.send_document(
-                chat_id=channel.telegram_id,
-                document=publication.media_urls[0],
-                caption=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                reply_markup=reply_markup
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.LINK:
-            message = await bot.send_message(
-                chat_id=channel.telegram_id,
-                text=cleaned_text,
-                reply_to_message_id=reply_to_message_id,
-                parse_mode=ParseMode.HTML,
-                disable_web_page_preview=publication.disable_web_page_preview,
-                reply_markup=reply_markup
-            )
-            return [message]
-
-        elif publication.content_type == DBContentType.TEXT_WITH_MEDIA:
-            if publication.media_urls and len(publication.media_urls) > 0:
-                spoiler = publication.media_blur
-
-                if len(publication.media_urls) == 1:
-                    single_url = publication.media_urls[0]
-                    is_video = single_url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-
-                    if is_video:
-                        message = await bot.send_video(
-                            chat_id=channel.telegram_id,
-                            video=single_url,
-                            caption=cleaned_text,
-                            reply_to_message_id=reply_to_message_id,
-                            parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler,
-                            reply_markup=reply_markup
-                        )
-                    else:
-                        message = await bot.send_photo(
-                            chat_id=channel.telegram_id,
-                            photo=single_url,
-                            caption=cleaned_text,
-                            reply_to_message_id=reply_to_message_id,
-                            parse_mode=ParseMode.HTML,
-                            has_spoiler=spoiler,
-                            reply_markup=reply_markup
-                        )
-                    return [message]
-                messages = []
-                if publication.text_content:
-                    text_msg = await bot.send_message(
-                        chat_id=channel.telegram_id,
-                        text=cleaned_text,
-                        reply_to_message_id=reply_to_message_id,
-                        parse_mode=ParseMode.HTML
-                    )
-                    messages.append(text_msg)
-
-                from aiogram.types import InputMediaPhoto, InputMediaVideo
-                media = []
-
-                def is_video_url(u: str) -> bool:
-                    return u.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-
-                urls = publication.media_urls[:10]
-                for url in urls:
-                    if is_video_url(url):
-                        media.append(InputMediaVideo(
-                            media=url, has_spoiler=spoiler))
-                    else:
-                        media.append(InputMediaPhoto(
-                            media=url, has_spoiler=spoiler))
-
-                media_msgs = await bot.send_media_group(chat_id=channel.telegram_id, media=media)
-                messages.extend(list(media_msgs))
-                return messages
-            else:
-                message = await bot.send_message(
-                    chat_id=channel.telegram_id,
-                    text=cleaned_text,
-                    reply_to_message_id=reply_to_message_id,
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=reply_markup
-                )
-                return [message]
-
-        elif publication.content_type in [DBContentType.POLL, DBContentType.QUIZ]:
-            poll_data = publication.poll_data
-            message = await bot.send_poll(
-                chat_id=channel.telegram_id,
-                question=poll_data['question'],
-                options=poll_data['options'],
-                is_anonymous=poll_data.get('is_anonymous', True),
-                type='quiz' if (poll_data.get('is_quiz') or publication.content_type == DBContentType.QUIZ) else 'regular',
-                allows_multiple_answers=poll_data.get(
-                    'allows_multiple_answers', False),
-                correct_option_id=poll_data.get('correct_option_id'),
-                explanation=poll_data.get('explanation'),
-                reply_to_message_id=reply_to_message_id,
-                reply_markup=reply_markup
-            )
-            return [message]
-
-        raise ValueError(
-            f"Unsupported content type: {publication.content_type}")
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
 
     async def publish_series_post(
         self,
@@ -321,18 +125,12 @@ class SeriesService:
                         channel.id
                     )
 
-                reply_markup = None
-                if publication.inline_keyboard:
-                    prepared_keyboard = prepare_inline_keyboard_data(publication)
-                    reply_markup = build_keyboard(prepared_keyboard) if prepared_keyboard else None
-
                 if reply_to_id and series.reply_to_previous:
-                    sent_messages = await self.send_as_reply(
-                        bot=bot,
-                        channel=channel,
-                        publication=publication,
+                    sent_messages = await send_to_telegram(
+                        publication,
+                        channel,
+                        bot,
                         reply_to_message_id=reply_to_id,
-                        reply_markup=reply_markup
                     )
                 else:
                     sent_messages = await send_to_telegram(publication, channel, bot)

@@ -1,4 +1,5 @@
 from typing import Optional
+import json
 import httpx
 
 from backend.schemas.publications import AIGenerateRequest
@@ -120,9 +121,8 @@ class AIService:
                     if data == "[DONE]":
                         break
                     try:
-                        import json
                         chunk = json.loads(data)
                         if chunk['choices'][0]['delta'].get('content'):
                             yield chunk['choices'][0]['delta']['content']
-                    except:
+                    except (json.JSONDecodeError, KeyError, IndexError, TypeError):
                         continue

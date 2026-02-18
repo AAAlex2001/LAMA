@@ -5,7 +5,9 @@ import time
 import logging
 
 from aiogram.exceptions import TelegramRetryAfter
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from backend.database import AsyncSessionLocal
 
 from backend.models.publications import (
     Publication, TelegramMessage,
@@ -156,9 +158,6 @@ async def send_to_channel_with_retry(
     # Получаем reply_to_message_id если нужно ответить на другой пост
     reply_to_message_id = None
     if publication.reply_to_post_id:
-        from sqlalchemy import select
-        from backend.database import AsyncSessionLocal
-        
         async with AsyncSessionLocal() as db:
             result = await db.execute(
                 select(TelegramMessage.telegram_message_id)

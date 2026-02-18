@@ -14,6 +14,7 @@ from backend.schemas.publications import (
     ChannelPublishResult
 )
 from backend.services.telegram_client import RateLimitedBot
+from backend.services.publications.utils import clean_html_for_telegram
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -174,11 +175,15 @@ async def edit_text_message(
     
     if text is None:
         raise ValueError("text_content must be provided for text publications")
+
+    cleaned_text = clean_html_for_telegram(text)
+    if not cleaned_text:
+        raise ValueError("Telegram message text is empty")
         
     await bot.edit_message_text(
         chat_id=chat_id,
         message_id=message_id,
-        text=text,
+        text=cleaned_text,
         parse_mode=ParseMode.HTML,
         reply_markup=reply_markup
     )
@@ -206,6 +211,7 @@ async def edit_media_message(
         media_url = requested_media[0]
 
     caption_value = new_text if new_text is not None else publication.text_content
+    cleaned_caption = clean_html_for_telegram(caption_value) if caption_value is not None else ""
 
     can_use_caption_edit = (
         media_url is None or
@@ -216,7 +222,7 @@ async def edit_media_message(
         await bot.edit_message_caption(
             chat_id=chat_id,
             message_id=message_id,
-            caption=caption_value or "",
+            caption=cleaned_caption,
             parse_mode=ParseMode.HTML,
             reply_markup=reply_markup
         )
@@ -229,7 +235,7 @@ async def edit_media_message(
         media_input = create_media_input(
             publication.content_type,
             media_url,
-            caption_value,
+            cleaned_caption,
             publication.media_blur
         )
 

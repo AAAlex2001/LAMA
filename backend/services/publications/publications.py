@@ -10,10 +10,13 @@ from backend.models.publications import Publication, RepeatInterval as DBRepeatI
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import (
     AIGenerateRequest, AIEditRequest, EditPublishedRequest,
-    PublishResult, EditMessageResult, DeleteMessageResult
+    PublishResult, EditMessageResult, DeleteMessageResult,
+    TextTemplateCreate, TextTemplateUpdate,
 )
 from backend.services.channel import ChannelService
-from backend.services.publications.CRUD_publications import CRUDPublicationService
+from backend.services.publications.crud_publications_posts import PublicationPostsCRUDService
+from backend.services.publications.crud_publications_templates import PublicationTemplatesCRUDService
+from backend.services.publications.crud_publications_sharing import PublicationSharingCRUDService
 from backend.services.publications.ai_service import AIService
 from backend.services.publications import publisher, message_editor
 from backend.services.publications.series_service import SeriesService
@@ -26,7 +29,9 @@ class PublicationService:
 
     def __init__(self, db: AsyncSession, openai_api_key: Optional[str] = None):
         self.db = db
-        self.crud = CRUDPublicationService(db)
+        self.posts_crud = PublicationPostsCRUDService(db)
+        self.templates_crud = PublicationTemplatesCRUDService(db)
+        self.sharing_crud = PublicationSharingCRUDService(db)
         self.ai_service = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
 
@@ -39,41 +44,41 @@ class PublicationService:
         return get_bot()
 
     async def create_publication(self, data, owner_id: int):
-        return await self.crud.create_publication(data, owner_id)
+        return await self.posts_crud.create_publication(data, owner_id)
 
     async def get_publication(self, publication_id: int, owner_id: Optional[int] = None):
-        return await self.crud.get_publication(publication_id, owner_id)
+        return await self.posts_crud.get_publication(publication_id, owner_id)
 
     async def get_publications(self, **kwargs):
-        return await self.crud.get_publications(**kwargs)
+        return await self.posts_crud.get_publications(**kwargs)
 
     async def update_publication(self, publication_id: int, data, owner_id: Optional[int] = None):
-        return await self.crud.update_publication(publication_id, data, owner_id)
+        return await self.posts_crud.update_publication(publication_id, data, owner_id)
 
     async def delete_publication(self, publication_id: int, owner_id: Optional[int] = None):
-        return await self.crud.delete_publication(publication_id, owner_id)
+        return await self.posts_crud.delete_publication(publication_id, owner_id)
 
     async def create_series(self, name: str, description: Optional[str] = None, reply_to_previous: bool = True):
-        return await self.crud.create_series(name, description, reply_to_previous)
+        return await self.posts_crud.create_series(name, description, reply_to_previous)
 
     async def reschedule_publication(self, publication_id: int, new_time: datetime, owner_id: Optional[int] = None):
-        return await self.crud.reschedule_publication(publication_id, new_time, owner_id)
+        return await self.posts_crud.reschedule_publication(publication_id, new_time, owner_id)
 
     async def generate_share_token(self, publication_id: int, owner_id: int) -> Optional[str]:
-        return await self.crud.generate_share_token(publication_id, owner_id)
+        return await self.sharing_crud.generate_share_token(publication_id, owner_id)
 
     async def get_publication_by_share_token(self, token: str):
-        return await self.crud.get_publication_by_share_token(token)
+        return await self.sharing_crud.get_publication_by_share_token(token)
 
     async def consume_share_token(self, token: str) -> bool:
-        return await self.crud.consume_share_token(token)
+        return await self.sharing_crud.consume_share_token(token)
 
     async def create_notification(self, publication_id: int, status: str, message: str, error_details: Optional[Dict] = None):
-        return await self.crud.create_notification(publication_id, status, message, error_details)
+        return await self.posts_crud.create_notification(publication_id, status, message, error_details)
 
     async def get_calendar(self, year: int, month: int, timezone_str: str = "UTC", owner_id: Optional[int] = None) -> Dict[str, List[Publication]]:
         """Получить календарь публикаций за месяц"""
-        publications = await self.crud.get_calendar(year, month, owner_id)
+        publications = await self.posts_crud.get_calendar(year, month, owner_id)
         tz = pytz.timezone(timezone_str)
         calendar_dict = {}
         for pub in publications:
@@ -83,6 +88,21 @@ class PublicationService:
                 calendar_dict[date_key] = []
             calendar_dict[date_key].append(pub)
         return calendar_dict
+
+    async def create_text_template(self, user_id: int, data: TextTemplateCreate):
+        return await self.templates_crud.create_text_template(user_id, data)
+
+    async def get_text_templates(self, user_id: int, search: Optional[str] = None, skip: int = 0, limit: int = 100):
+        return await self.templates_crud.get_text_templates(user_id, search, skip, limit)
+
+    async def get_text_template_by_id(self, template_id: int, user_id: int):
+        return await self.templates_crud.get_text_template_by_id(template_id, user_id)
+
+    async def update_text_template(self, template_id: int, user_id: int, data: TextTemplateUpdate):
+        return await self.templates_crud.update_text_template(template_id, user_id, data)
+
+    async def delete_text_template(self, template_id: int, user_id: int):
+        return await self.templates_crud.delete_text_template(template_id, user_id)
 
     async def generate_with_ai(self, request: AIGenerateRequest) -> str:
         """Сгенерировать контент с помощью AI"""

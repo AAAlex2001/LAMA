@@ -1,7 +1,5 @@
 from typing import List, Optional
 import logging
-import re
-import html as html_module
 
 from aiogram.types import (
     Message, InputMediaPhoto, InputMediaVideo, 
@@ -14,142 +12,17 @@ from backend.models.channels import ChannelGroup as Channel
 from backend.services.telegram_client import RateLimitedBot
 from backend.utils.keyboard import build_keyboard
 from backend.services.publications.media_warmup import get_file_id_for_media
+from backend.services.publications.utils import (
+    clean_html_for_telegram,
+    get_spoiler,
+    is_audio_url,
+    is_document_url,
+    is_video_url,
+    prepare_inline_keyboard_data,
+    validate_media_urls,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def prepare_inline_keyboard_data(publication: Publication) -> Optional[dict]:
-    """
-    Подготовить inline_keyboard для Telegram:
-    - генерирует callback_data для кнопок hidden_text
-    - сохраняет совместимость с существующим форматом
-    """
-    if not publication.inline_keyboard:
-        return None
-
-    raw = publication.inline_keyboard
-    if isinstance(raw, dict):
-        rows = raw.get("buttons", [])
-    elif isinstance(raw, list):
-        rows = raw
-    else:
-        return None
-
-    if not rows:
-        return None
-
-    prepared_rows = []
-    for row_idx, row in enumerate(rows):
-        if not isinstance(row, list):
-            continue
-        prepared_row = []
-        for btn_idx, btn in enumerate(row):
-            if not isinstance(btn, dict):
-                continue
-
-            btn_type = btn.get("type")
-            hidden_text = btn.get("hidden_text")
-
-            if btn_type == "hidden_text" or hidden_text:
-                button_id = btn.get("id") or f"{row_idx}-{btn_idx}"
-                callback_data = btn.get("callback_data") or f"hidden_text:{publication.id}:{button_id}"
-                prepared_btn = {**btn, "callback_data": callback_data}
-                prepared_btn.pop("url", None)
-                prepared_row.append(prepared_btn)
-            else:
-                prepared_row.append(btn)
-
-        if prepared_row:
-            prepared_rows.append(prepared_row)
-
-    return {"buttons": prepared_rows} if prepared_rows else None
-
-
-def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
-    if not text:
-        return text
-
-    text = re.sub(r'<br\s*/?>', '\n', text, flags=re.IGNORECASE)
-    text = re.sub(r'</(p|div)>', '\n', text, flags=re.IGNORECASE)
-    text = re.sub(r'<(p|div)[^>]*>', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<span[^>]*>', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'</span>', '', text, flags=re.IGNORECASE)
-    text = re.sub(r'<(b|i|u|s|strong|em|strike|del|tg-spoiler|blockquote)\s+style="[^"]*"', r'<\1', text, flags=re.IGNORECASE)
-
-    code_placeholders = []
-    def stash_code(match):
-        raw = match.group(1)
-        unescaped = html_module.unescape(raw)
-        escaped = html_module.escape(unescaped, quote=False)
-        code_placeholders.append(f"<pre><code>{escaped}</code></pre>")
-        return f'__TG_CODE_{len(code_placeholders) - 1}__'
-
-    text = re.sub(
-        r'<pre[^>]*>\s*<code[^>]*>([\s\S]*?)</code>\s*</pre>',
-        stash_code,
-        text,
-        flags=re.IGNORECASE
-    )
-
-    text = re.sub(
-        r'<code[^>]*>([\s\S]*?)</code>',
-        stash_code,
-        text,
-        flags=re.IGNORECASE
-    )
-
-    supported_pattern = r'</?(?:b|strong|i|em|u|s|strike|del|a(?:\s+href="[^"]*")?|tg-spoiler|blockquote|pre|code)\b[^>]*>'
-    placeholders = []
-
-    def stash_tag(match):
-        placeholders.append(match.group(0))
-        return f'__TG_TAG_{len(placeholders) - 1}__'
-
-    text = re.sub(supported_pattern, stash_tag, text, flags=re.IGNORECASE)
-    text = html_module.escape(text, quote=False)
-    for i, tag in enumerate(placeholders):
-        text = text.replace(f'__TG_TAG_{i}__', tag)
-    for i, block in enumerate(code_placeholders):
-        text = text.replace(f'__TG_CODE_{i}__', block)
-
-    allowed_tags = {
-        'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'del',
-        'a', 'tg-spoiler', 'blockquote', 'pre', 'code'
-    }
-    tag_re = re.compile(r'</?([a-z0-9-]+)(?:\s[^>]*)?>', re.IGNORECASE)
-    result = []
-    stack = []
-    last = 0
-
-    for match in tag_re.finditer(text):
-        result.append(text[last:match.start()])
-        tag = match.group(1).lower()
-        is_close = match.group(0).startswith('</')
-
-        if tag not in allowed_tags:
-            last = match.end()
-            continue
-
-        if is_close:
-            if stack and stack[-1] == tag:
-                result.append(match.group(0))
-                stack.pop()
-        else:
-            result.append(match.group(0))
-            stack.append(tag)
-
-        last = match.end()
-
-    result.append(text[last:])
-    while stack:
-        result.append(f'</{stack.pop()}>')
-    text = ''.join(result)
-
-    text = re.sub(r'\n\s*\n\s*\n+', '\n\n', text)
-    text = text.strip()
-
-    logger.info(f"Clean HTML result (first 500 chars): {text[:500]}")
-    return text
 
 
 async def send_to_telegram(
@@ -168,36 +41,35 @@ async def send_to_telegram(
         keyboard = build_keyboard(prepared_keyboard) if prepared_keyboard else None
     
     content_type = publication.content_type
+    cleaned_text = clean_html_for_telegram(publication.text_content)
     messages: List[Message] = []
 
     if content_type == DBContentType.TEXT:
-        cleaned = clean_html_for_telegram(publication.text_content)
-        if cleaned:
-            messages = await send_text(bot, channel, publication, keyboard, reply_to_message_id)
+        if cleaned_text:
+            messages = await send_text(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
         else:
             # Если текст пустой, но есть опрос — просто пропускаем текстовое сообщение
             if not publication.poll_data:
                 raise ValueError('Telegram message text is empty')
 
     elif content_type == DBContentType.TEXT_WITH_MEDIA:
-        messages = await send_text_with_media(bot, channel, publication, keyboard, reply_to_message_id)
+        messages = await send_text_with_media(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
 
     elif content_type == DBContentType.IMAGE:
-        messages = await send_image(bot, channel, publication, keyboard, reply_to_message_id)
+        messages = await send_image(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
 
     elif content_type == DBContentType.VIDEO:
-        messages = await send_video(bot, channel, publication, keyboard, reply_to_message_id)
+        messages = await send_video(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
 
     elif content_type == DBContentType.AUDIO:
-        messages = await send_audio(bot, channel, publication, keyboard, reply_to_message_id)
+        messages = await send_audio(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
 
     elif content_type == DBContentType.DOCUMENT:
-        messages = await send_document(bot, channel, publication, keyboard, reply_to_message_id)
+        messages = await send_document(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
 
     elif content_type == DBContentType.LINK:
-        cleaned = clean_html_for_telegram(publication.text_content)
-        if cleaned:
-            messages = await send_link(bot, channel, publication, keyboard, reply_to_message_id)
+        if cleaned_text:
+            messages = await send_link(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
         else:
             if not publication.poll_data:
                 raise ValueError('Telegram message text is empty')
@@ -216,28 +88,18 @@ async def send_to_telegram(
     return messages
 
 
-def validate_media_urls(publication: Publication) -> None:
-    """Валидация наличия медиа URL для типов контента требующих медиа"""
-    content_type = publication.content_type
-    
-    if content_type in [DBContentType.IMAGE, DBContentType.VIDEO, 
-                       DBContentType.AUDIO, DBContentType.DOCUMENT]:
-        if not publication.media_urls or not publication.media_urls[0]:
-            type_name = content_type.value.upper()
-            raise ValueError(f"media_urls is required for {type_name} content type")
-
-
 async def send_text(
     bot: RateLimitedBot,
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить текстовое сообщение"""
     message = await bot.send_message(
         chat_id=channel.telegram_id,
-        text=clean_html_for_telegram(publication.text_content),
+        text=cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_notification=publication.disable_notification,
@@ -252,13 +114,15 @@ async def send_text_with_media(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить текст с медиа"""
-    if not publication.media_urls or len(publication.media_urls) == 0:
-        return await send_text(bot, channel, publication, keyboard, reply_to_message_id)
+    if not publication.media_urls:
+        return await send_text(bot, channel, publication, keyboard, reply_to_message_id, cleaned_text)
     
     blur_list = publication.media_blur or []
+    caption_text = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
     
     if len(publication.media_urls) == 1:
         single_url = publication.media_urls[0]
@@ -278,7 +142,7 @@ async def send_text_with_media(
             message = await bot.send_document(
                 chat_id=channel.telegram_id,
                 document=media_to_send,
-                caption=clean_html_for_telegram(publication.text_content),
+                caption=caption_text,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 disable_notification=publication.disable_notification,
@@ -288,7 +152,7 @@ async def send_text_with_media(
             message = await bot.send_video(
                 chat_id=channel.telegram_id,
                 video=media_to_send,
-                caption=clean_html_for_telegram(publication.text_content),
+                caption=caption_text,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
@@ -299,7 +163,7 @@ async def send_text_with_media(
             message = await bot.send_photo(
                 chat_id=channel.telegram_id,
                 photo=media_to_send,
-                caption=clean_html_for_telegram(publication.text_content),
+                caption=caption_text,
                 reply_markup=keyboard,
                 parse_mode=ParseMode.HTML,
                 has_spoiler=spoiler,
@@ -311,7 +175,7 @@ async def send_text_with_media(
     urls = publication.media_urls[:10]
     logger.info(f"Preparing media_group: {len(urls)} files, file_ids={publication.media_file_ids}")
 
-    cleaned_caption = clean_html_for_telegram(publication.text_content)
+    cleaned_caption = caption_text
     media: list = []
 
     for i, url in enumerate(urls):
@@ -373,14 +237,15 @@ async def send_image(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить фото"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
     
-    cleaned_caption = clean_html_for_telegram(publication.text_content)
+    cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
     if file_id and is_document_url(url):
         message = await bot.send_document(
             chat_id=channel.telegram_id,
@@ -410,13 +275,14 @@ async def send_video(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить видео"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
-    cleaned_caption = clean_html_for_telegram(publication.text_content)
+    cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
     
     if file_id and is_document_url(url):
         message = await bot.send_document(
@@ -447,13 +313,14 @@ async def send_audio(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить аудио"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
     media_to_send = file_id if file_id else publication.media_urls[0]
     url = publication.media_urls[0]
-    cleaned_caption = clean_html_for_telegram(publication.text_content)
+    cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
     
     if file_id and is_document_url(url):
         message = await bot.send_document(
@@ -483,7 +350,8 @@ async def send_document(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить документ"""
     file_id = get_file_id_for_media(publication.media_file_ids, 0)
@@ -492,7 +360,7 @@ async def send_document(
     message = await bot.send_document(
         chat_id=channel.telegram_id,
         document=media_to_send,
-        caption=clean_html_for_telegram(publication.text_content),
+        caption=cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_notification=publication.disable_notification,
@@ -506,12 +374,13 @@ async def send_link(
     channel: Channel,
     publication: Publication,
     keyboard: Optional[InlineKeyboardMarkup],
-    reply_to_message_id: Optional[int] = None
+    reply_to_message_id: Optional[int] = None,
+    cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить ссылку с превью"""
     message = await bot.send_message(
         chat_id=channel.telegram_id,
-        text=clean_html_for_telegram(publication.text_content),
+        text=cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content),
         reply_markup=keyboard,
         parse_mode=ParseMode.HTML,
         disable_web_page_preview=publication.disable_web_page_preview,
@@ -546,25 +415,3 @@ async def send_poll(
         reply_to_message_id=reply_to_message_id
     )
     return [message]
-
-
-def get_spoiler(blur_list: Optional[List[bool]], index: int) -> bool:
-    """Получить значение spoiler для медиа по индексу"""
-    if blur_list and index < len(blur_list):
-        return bool(blur_list[index])
-    return False
-
-
-def is_video_url(url: str) -> bool:
-    """Проверить является ли URL видео"""
-    return url.lower().endswith((".mp4", ".mov", ".m4v", ".webm"))
-
-
-def is_document_url(url: str) -> bool:
-    """Проверить является ли URL документом"""
-    return url.lower().endswith((".pdf", ".doc", ".docx", ".txt", ".zip", ".rar"))
-
-
-def is_audio_url(url: str) -> bool:
-    """Проверить является ли URL аудио"""
-    return url.lower().endswith((".mp3", ".wav", ".ogg", ".m4a", ".flac"))

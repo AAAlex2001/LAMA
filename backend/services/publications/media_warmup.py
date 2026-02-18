@@ -1,5 +1,6 @@
 """Прогрев медиа в Telegram для быстрой рассылки по file_id."""
 
+import asyncio
 import io
 import logging
 from typing import List, Optional, Tuple
@@ -12,6 +13,14 @@ from aiogram.types import BufferedInputFile, Message
 from PIL import Image
 
 from backend.services.rate_limiter import get_rate_limiter
+from backend.services.publications.utils import (
+    AUDIO_EXTENSIONS,
+    DOCUMENT_EXTENSIONS,
+    VIDEO_EXTENSIONS,
+    is_audio_url,
+    is_document_url,
+    is_video_url,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +40,6 @@ async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[s
     Returns:
         Список file_id (None если прогрев не удался)
     """
-    import asyncio
-    
     async def warmup_with_logging(idx: int, url: str, total: int) -> Optional[str]:
         try:
             file_id = await warmup_single_media(bot, url, idx=idx)
@@ -77,11 +84,9 @@ async def warmup_single_media(bot: Bot, media_url: str, idx: Optional[int] = Non
 
     try:
         file_bytes, filename = await download_media(media_url)
-        
-        is_photo = not any(url_lower.endswith(ext) for ext in 
-                          ['.mp4', '.mov', '.m4v', '.webm', '.avi',
-                           '.mp3', '.wav', '.ogg', '.m4a', '.flac',
-                           '.pdf', '.doc', '.docx', '.txt', '.zip', '.rar'])
+
+        is_media_file = is_video_url(url_lower) or is_audio_url(url_lower) or is_document_url(url_lower)
+        is_photo = not is_media_file
         
         logger.info(f"Warmup file: {filename}, is_photo={is_photo}, url={url_lower[:80]}")
         
@@ -90,30 +95,27 @@ async def warmup_single_media(bot: Bot, media_url: str, idx: Optional[int] = Non
         
         input_file = BufferedInputFile(file_bytes, filename=filename)
         message: Optional[Message] = None
+        rate_limiter = get_rate_limiter()
 
-        if any(url_lower.endswith(ext) for ext in ['.mp4', '.mov', '.m4v', '.webm', '.avi']):
-            rate_limiter = get_rate_limiter()
+        if url_lower.endswith(VIDEO_EXTENSIONS):
             async with rate_limiter.limit(chat_id=storage_channel_id):
                 message = await bot.send_video(chat_id=storage_channel_id, video=input_file)
             if message.video:
                 return message.video.file_id
 
-        elif any(url_lower.endswith(ext) for ext in ['.mp3', '.wav', '.ogg', '.m4a', '.flac']):
-            rate_limiter = get_rate_limiter()
+        elif url_lower.endswith(AUDIO_EXTENSIONS):
             async with rate_limiter.limit(chat_id=storage_channel_id):
                 message = await bot.send_audio(chat_id=storage_channel_id, audio=input_file)
             if message.audio:
                 return message.audio.file_id
 
-        elif any(url_lower.endswith(ext) for ext in ['.pdf', '.doc', '.docx', '.txt', '.zip', '.rar']):
-            rate_limiter = get_rate_limiter()
+        elif url_lower.endswith(DOCUMENT_EXTENSIONS):
             async with rate_limiter.limit(chat_id=storage_channel_id):
                 message = await bot.send_document(chat_id=storage_channel_id, document=input_file)
             if message.document:
                 return message.document.file_id
 
         else:
-            rate_limiter = get_rate_limiter()
             async with rate_limiter.limit(chat_id=storage_channel_id):
                 message = await bot.send_photo(chat_id=storage_channel_id, photo=input_file)
             if message.photo:

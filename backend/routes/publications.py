@@ -611,7 +611,7 @@ async def create_text_template_route(
     current_user: User = Depends(get_current_user)
 ):
     """Создать новый текстовый шаблон"""
-    template = await service.crud.create_text_template(current_user.id, data)
+    template = await service.create_text_template(current_user.id, data)
     return template
 
 
@@ -624,7 +624,7 @@ async def list_text_templates_route(
     current_user: User = Depends(get_current_user)
 ):
     """Получить список шаблонов пользователя"""
-    templates, total = await service.crud.get_text_templates(current_user.id, search, skip, limit)
+    templates, total = await service.get_text_templates(current_user.id, search, skip, limit)
     return TextTemplateListResponse(items=templates, total=total)
 
 
@@ -635,7 +635,7 @@ async def get_text_template_route(
     current_user: User = Depends(get_current_user)
 ):
     """Получить шаблон по ID"""
-    template = await service.crud.get_text_template_by_id(template_id, current_user.id)
+    template = await service.get_text_template_by_id(template_id, current_user.id)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     return template
@@ -649,7 +649,7 @@ async def update_text_template_route(
     current_user: User = Depends(get_current_user)
 ):
     """Обновить текстовый шаблон"""
-    template = await service.crud.update_text_template(template_id, current_user.id, data)
+    template = await service.update_text_template(template_id, current_user.id, data)
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     return template
@@ -662,7 +662,7 @@ async def delete_text_template_route(
     current_user: User = Depends(get_current_user)
 ):
     """Удалить текстовый шаблон"""
-    success = await service.crud.delete_text_template(template_id, current_user.id)
+    success = await service.delete_text_template(template_id, current_user.id)
     if not success:
         raise HTTPException(status_code=404, detail="Template not found")
     return None
