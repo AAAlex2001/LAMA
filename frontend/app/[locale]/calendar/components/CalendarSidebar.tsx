@@ -13,6 +13,8 @@ interface CalendarSidebarProps {
   posts: Draft[];
   onEdit: (post: Draft) => void;
   highlightedDates?: number[];
+  postCounts?: Record<string, number>;
+  onMonthChange?: (date: Date) => void;
 }
 
 function formatTime(dateStr: string): string {
@@ -38,6 +40,8 @@ export default function CalendarSidebar({
   posts,
   onEdit,
   highlightedDates = [],
+  postCounts,
+  onMonthChange,
 }: CalendarSidebarProps) {
   return (
     <div className={styles.sidebar}>
@@ -45,9 +49,11 @@ export default function CalendarSidebar({
         <DatePicker
           value={sidebarDate}
           onChange={onSidebarDateChange}
+          onMonthChange={onMonthChange}
           locale="ru"
           minDate={null}
           className={styles.calendar}
+          postCounts={postCounts}
         />
       </div>
 

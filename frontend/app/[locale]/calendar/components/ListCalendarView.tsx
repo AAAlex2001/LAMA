@@ -26,9 +26,6 @@ interface ListCalendarViewProps {
   statusFilter: string | null;
   onDateSortChange: (order: 'asc' | 'desc' | null) => void;
   onStatusFilterChange: (status: string | null) => void;
-  mobileFilterOpen: boolean;
-  onMobileFilterOpenChange: (open: boolean) => void;
-  mobileFilterAnchor: { bottom: number; right: number } | null;
 }
 
 function formatDate(dateStr: string): string {
@@ -133,9 +130,6 @@ export default function ListCalendarView({
   statusFilter,
   onDateSortChange,
   onStatusFilterChange,
-  mobileFilterOpen,
-  onMobileFilterOpenChange,
-  mobileFilterAnchor,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
 
@@ -374,9 +368,6 @@ export default function ListCalendarView({
             filters={filterConfigs}
             activeFilters={activeFilters}
             onFilterChange={handleFilterChange}
-            mobileFilterOpen={mobileFilterOpen}
-            onMobileFilterOpenChange={onMobileFilterOpenChange}
-            mobilePopupAnchor={mobileFilterAnchor}
             hideMobileTrigger
           />
         </div>

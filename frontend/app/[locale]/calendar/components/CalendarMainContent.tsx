@@ -156,6 +156,8 @@ export default function CalendarMainContent({
             onSidebarDateChange={onSidebarDateChange}
             posts={sortedPosts}
             onEdit={onEdit}
+            postCounts={gridPostCounts}
+            onMonthChange={onMonthChange}
           />
         </>
       ) : (
@@ -175,6 +177,8 @@ export default function CalendarMainContent({
             onSidebarDateChange={onSidebarDateChange}
             posts={sortedPosts}
             onEdit={onEdit}
+            postCounts={gridPostCounts}
+            onMonthChange={onMonthChange}
           />
         </>
       )}

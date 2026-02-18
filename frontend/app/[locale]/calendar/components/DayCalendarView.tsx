@@ -12,9 +12,6 @@ interface DayCalendarViewProps {
   posts: Draft[];
   isLoading: boolean;
   isLoadingMore?: boolean;
-  mobileFilterOpen: boolean;
-  onMobileFilterOpenChange: (open: boolean) => void;
-  mobileFilterAnchor: { bottom: number; right: number } | null;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   selectedDate: Date;
@@ -43,9 +40,6 @@ export default function DayCalendarView({
   posts,
   isLoading,
   isLoadingMore = false,
-  mobileFilterOpen,
-  onMobileFilterOpenChange,
-  mobileFilterAnchor,
   onEdit,
   onAddPost,
   selectedDate,
@@ -196,9 +190,6 @@ export default function DayCalendarView({
               filters={filterConfigs}
               activeFilters={activeFilters}
               onFilterChange={handleFilterChange}
-              mobileFilterOpen={mobileFilterOpen}
-              onMobileFilterOpenChange={onMobileFilterOpenChange}
-              mobilePopupAnchor={mobileFilterAnchor}
               hideMobileTrigger
             />
           </div>

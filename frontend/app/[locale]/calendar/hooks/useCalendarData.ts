@@ -231,34 +231,16 @@ export function useCalendarData() {
       const month = countsMonthAnchor.getMonth();
 
       try {
-        const counts: Record<string, number> = {};
+        const params = new URLSearchParams({
+          start_date: `${formatDateOnly(new Date(year, month, 1))}T00:00:00`,
+          end_date: `${formatDateOnly(new Date(year, month + 1, 0))}T23:59:59`,
+        });
 
-        const pageSize = 100;
-        let page = 1;
-        let keepLoading = true;
+        const res = await apiRequest<{ counts: Record<string, number> }>(
+          `/publications/day-counts?${params}`
+        );
 
-        while (keepLoading) {
-          const params = new URLSearchParams({
-            page: String(page),
-            page_size: String(pageSize),
-            start_date: `${formatDateOnly(new Date(year, month, 1))}T00:00:00`,
-            end_date: `${formatDateOnly(new Date(year, month + 1, 0))}T23:59:59`,
-          });
-
-          const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
-
-          res.items.forEach(p => {
-            const d = new Date((p as any).scheduled_time || p.updated_at || p.created_at);
-            if (!isNaN(d.getTime())) counts[formatDateOnly(d)] = (counts[formatDateOnly(d)] || 0) + 1;
-          });
-
-          keepLoading = res.items.length === pageSize;
-          page += 1;
-
-          if (!active) break;
-        }
-
-        if (active) dispatch(setMonthPostCounts(counts));
+        if (active) dispatch(setMonthPostCounts(res.counts));
       } catch {}
     }
 

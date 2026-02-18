@@ -19,9 +19,6 @@ interface MonthCalendarViewProps {
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   isLoading: boolean;
-  mobileFilterOpen: boolean;
-  onMobileFilterOpenChange: (open: boolean) => void;
-  mobileFilterAnchor: { bottom: number; right: number } | null;
   listSortOrder: 'asc' | 'desc' | null;
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
   onLoadMoreDay: (dateKey: string) => void;
@@ -79,9 +76,6 @@ export default function MonthCalendarView({
   onEdit,
   onAddPost,
   isLoading,
-  mobileFilterOpen,
-  onMobileFilterOpenChange,
-  mobileFilterAnchor,
   listSortOrder,
   onListSortChange,
   onLoadMoreDay,
@@ -321,9 +315,6 @@ export default function MonthCalendarView({
               filters={filterConfigs}
               activeFilters={activeFilters}
               onFilterChange={handleFilterChange}
-              mobileFilterOpen={mobileFilterOpen}
-              onMobileFilterOpenChange={onMobileFilterOpenChange}
-              mobilePopupAnchor={mobileFilterAnchor}
               hideMobileTrigger
             />
           </div>

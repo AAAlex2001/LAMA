@@ -89,6 +89,15 @@ class PublicationService:
             calendar_dict[date_key].append(pub)
         return calendar_dict
 
+    async def get_day_counts(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        owner_id: Optional[int] = None,
+    ) -> Dict[str, int]:
+        """Быстрый подсчёт публикаций по дням."""
+        return await self.posts_crud.get_day_counts(start_date, end_date, owner_id)
+
     async def create_text_template(self, user_id: int, data: TextTemplateCreate):
         return await self.templates_crud.create_text_template(user_id, data)
 

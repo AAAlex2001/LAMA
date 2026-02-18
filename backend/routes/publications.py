@@ -165,6 +165,18 @@ async def get_calendar(
     return {"calendar": entries}
 
 
+@router.get("/day-counts")
+async def get_day_counts(
+    start_date: datetime = Query(...),
+    end_date: datetime = Query(...),
+    service: PublicationService = Depends(get_publication_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Быстрый подсчёт публикаций по дням (SQL GROUP BY)."""
+    counts = await service.get_day_counts(start_date, end_date, owner_id=current_user.id)
+    return {"counts": counts}
+
+
 @router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
 async def generate_content_with_ai(
     request: AIGenerateRequest,
