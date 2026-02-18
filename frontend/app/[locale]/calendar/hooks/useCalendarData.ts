@@ -73,7 +73,15 @@ export function useCalendarData() {
   const listRangeEnd = listRangeEndStr ? parseDate(listRangeEndStr) : null;
 
   React.useEffect(() => {
-    dispatch(setCountsMonthAnchor(selectedDateStr));
+    const selected = parseDate(selectedDateStr);
+    const anchor = parseDate(stateRef.current.countsMonthAnchor);
+    if (
+      selected.getFullYear() === anchor.getFullYear()
+      && selected.getMonth() === anchor.getMonth()
+    ) {
+      return;
+    }
+    dispatch(setCountsMonthAnchor(formatDateOnly(new Date(selected.getFullYear(), selected.getMonth(), 1))));
   }, [selectedDateStr, dispatch]);
 
   async function loadListPage(page: number, append: boolean) {
@@ -216,31 +224,39 @@ export function useCalendarData() {
   }, [currentView, selectedDateStr, listRangeStartStr, listRangeEndStr, listSortOrder, listStatusFilter]); 
 
   React.useEffect(() => {
-    if (currentView !== 'week') {
-      dispatch(setMonthPostCounts({}));
-      return;
-    }
-    
     let active = true;
     
     async function fetchCounts() {
       const year = countsMonthAnchor.getFullYear();
       const month = countsMonthAnchor.getMonth();
-      const params = new URLSearchParams({
-        page: '1',
-        page_size: '100', 
-        start_date: `${formatDateOnly(new Date(year, month, 1))}T00:00:00`,
-        end_date: `${formatDateOnly(new Date(year, month + 1, 0))}T23:59:59`,
-      });
 
       try {
-        const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
         const counts: Record<string, number> = {};
-        
-        res.items.forEach(p => {
-          const d = new Date((p as any).scheduled_time || p.updated_at || p.created_at);
-          if (!isNaN(d.getTime())) counts[formatDateOnly(d)] = (counts[formatDateOnly(d)] || 0) + 1;
-        });
+
+        const pageSize = 100;
+        let page = 1;
+        let keepLoading = true;
+
+        while (keepLoading) {
+          const params = new URLSearchParams({
+            page: String(page),
+            page_size: String(pageSize),
+            start_date: `${formatDateOnly(new Date(year, month, 1))}T00:00:00`,
+            end_date: `${formatDateOnly(new Date(year, month + 1, 0))}T23:59:59`,
+          });
+
+          const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+
+          res.items.forEach(p => {
+            const d = new Date((p as any).scheduled_time || p.updated_at || p.created_at);
+            if (!isNaN(d.getTime())) counts[formatDateOnly(d)] = (counts[formatDateOnly(d)] || 0) + 1;
+          });
+
+          keepLoading = res.items.length === pageSize;
+          page += 1;
+
+          if (!active) break;
+        }
 
         if (active) dispatch(setMonthPostCounts(counts));
       } catch {}
@@ -248,7 +264,7 @@ export function useCalendarData() {
 
     fetchCounts();
     return () => { active = false; };
-  }, [currentView, countsMonthAnchorStr]);
+  }, [countsMonthAnchorStr]);
 
   function handleLoadMore() {
     const s = stateRef.current;
@@ -348,9 +364,17 @@ export function useCalendarData() {
     ? sortPosts(weekItems[sidebarDateStr] || [])
     : sortedPosts;
 
-  const currentMonthCounts = Object.entries(weekItems).reduce((acc, [k, v]) => ({
-    ...acc, [k]: v.length
-  }), {} as Record<string, number>);
+  const currentMonthCounts = Object.entries(weekItems).reduce((acc, [k, v]) => {
+    acc[k] = v.length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const mergedGridPostCounts = Object.keys({ ...monthPostCounts, ...currentMonthCounts }).reduce((acc, key) => {
+    const monthCount = monthPostCounts[key] || 0;
+    const loadedCount = currentMonthCounts[key] || 0;
+    acc[key] = Math.max(monthCount, loadedCount);
+    return acc;
+  }, {} as Record<string, number>);
 
   const dayLoadingMap = Object.fromEntries(
     Object.entries(dayPageState).map(([k, v]) => [k, v.isLoading])
@@ -368,7 +392,7 @@ export function useCalendarData() {
     monthDates: getMonthDates(selectedDate),
     isGridView: ['week', 'month'].includes(currentView),
     isTodaySelected: isSameDay(selectedDate, new Date()),
-    gridPostCounts: currentView === 'month' ? currentMonthCounts : { ...monthPostCounts, ...currentMonthCounts },
+    gridPostCounts: mergedGridPostCounts,
     mobileGridTitle: currentView === 'month' ? getMonthLabel(selectedDate) : formatDayTitle(sidebarDate),
     listTitle: String(selectedDate.getFullYear()),
     dayLoadingMap,

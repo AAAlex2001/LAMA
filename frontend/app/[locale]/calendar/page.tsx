@@ -143,8 +143,9 @@ function CalendarPageContent() {
           onPrevDay={handlePrevDay}
           onNextDay={handleNextDay}
           onViewChange={handleViewChange}
-          onDateChange={handleSidebarDateChange}
+          onOpenCalendarPopup={() => setShowMobileCalendar(true)}
           gridPostCounts={gridPostCounts}
+          onMonthChange={setCountsMonthAnchor}
           listSortOrder={listSortOrder}
           onListSortChange={setListSortOrder}
         />

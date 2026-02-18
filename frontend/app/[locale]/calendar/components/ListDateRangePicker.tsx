@@ -11,6 +11,8 @@ type DateRange = { start: Date; end: Date };
 interface ListDateRangePickerProps {
   value: DateRange | null;
   onChange: (range: DateRange | null) => void;
+  postCounts?: Record<string, number>;
+  onMonthChange?: (date: Date) => void;
 }
 
 function formatLabel(range: DateRange | null): string {
@@ -25,7 +27,7 @@ function formatLabel(range: DateRange | null): string {
   return `${fmt(range.start)} — ${fmt(range.end)}`;
 }
 
-export default function ListDateRangePicker({ value, onChange }: ListDateRangePickerProps) {
+export default function ListDateRangePicker({ value, onChange, postCounts, onMonthChange }: ListDateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [draftStart, setDraftStart] = React.useState<Date | null>(value?.start || null);
   const [draftEnd, setDraftEnd] = React.useState<Date | null>(value?.end || null);
@@ -103,10 +105,12 @@ export default function ListDateRangePicker({ value, onChange }: ListDateRangePi
             <DatePicker
               value={pickerValue}
               onChange={handleDatePick}
+              onMonthChange={onMonthChange}
               locale="ru"
               minDate={null}
               selectedDateKeys={selectedDateKeys}
               rangeSelection
+              postCounts={postCounts}
               className={styles.calendar}
             />
 

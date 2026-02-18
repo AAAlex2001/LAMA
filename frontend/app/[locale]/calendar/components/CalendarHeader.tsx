@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
-import DatePicker from '@/components/date-picker/date-picker';
 import ListDateRangePicker from './ListDateRangePicker';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
@@ -15,8 +14,9 @@ interface CalendarHeaderProps {
   onPrevDay: () => void;
   onNextDay: () => void;
   onViewChange: (view: CalendarView) => void;
-  onDateChange?: (date: Date) => void;
-  gridPostCounts?: Record<string, number>;
+  onOpenCalendarPopup?: () => void;
+  gridPostCounts: Record<string, number>;
+  onMonthChange?: (date: Date) => void;
   listSortOrder: 'asc' | 'desc' | null;
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
 }
@@ -73,26 +73,14 @@ export default function CalendarHeader({
   onPrevDay,
   onNextDay,
   onViewChange,
-  onDateChange,
+  onOpenCalendarPopup,
   gridPostCounts,
+  onMonthChange,
   listSortOrder,
   onListSortChange,
 }: CalendarHeaderProps) {
-  const [datePickerOpen, setDatePickerOpen] = React.useState(false);
   const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
-  const datePickerRef = React.useRef<HTMLDivElement>(null);
   const sortWrapperRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    if (!datePickerOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (datePickerRef.current && !datePickerRef.current.contains(e.target as Node)) {
-        setDatePickerOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [datePickerOpen]);
 
   React.useEffect(() => {
     if (!sortPopupOpen) return;
@@ -160,7 +148,12 @@ export default function CalendarHeader({
       <div className={styles.slideButtons}>
         {currentView === 'list' ? (
           <div className={styles.listRangeWrap}>
-            <ListDateRangePicker value={listRange} onChange={onListRangeChange} />
+            <ListDateRangePicker
+              value={listRange}
+              onChange={onListRangeChange}
+              postCounts={gridPostCounts}
+              onMonthChange={onMonthChange}
+            />
           </div>
         ) : (
           <div className={styles.slideRow}>
@@ -169,7 +162,7 @@ export default function CalendarHeader({
               className={styles.slideBtn}
               onClick={() => {
                 if (currentView === 'day' || currentView === 'week') {
-                  setDatePickerOpen((prev) => !prev);
+                  onOpenCalendarPopup?.();
                 } else {
                   onPrevDay();
                 }
@@ -182,7 +175,7 @@ export default function CalendarHeader({
               className={styles.dateTitleBtn}
               onClick={() => {
                 if (currentView === 'day' || currentView === 'week') {
-                  setDatePickerOpen((prev) => !prev);
+                  onOpenCalendarPopup?.();
                 }
               }}
             >
@@ -199,7 +192,7 @@ export default function CalendarHeader({
               className={`${styles.slideBtn} ${styles.slideBtnRight}`}
               onClick={() => {
                 if (currentView === 'day' || currentView === 'week') {
-                  setDatePickerOpen((prev) => !prev);
+                  onOpenCalendarPopup?.();
                 } else {
                   onNextDay();
                 }
@@ -207,22 +200,6 @@ export default function CalendarHeader({
             >
               <CalendarArrowIcon width={16} height={16} />
             </button>
-          </div>
-        )}
-
-        {datePickerOpen && (currentView === 'day' || currentView === 'week') && (
-          <div className={styles.datePickerPopup} ref={datePickerRef}>
-            <DatePicker
-              value={selectedDate}
-              onChange={(date: Date) => {
-                if (onDateChange) onDateChange(date);
-                setDatePickerOpen(false);
-              }}
-              locale="ru"
-              minDate={null}
-              highlightWeek={currentView === 'week'}
-              postCounts={gridPostCounts}
-            />
           </div>
         )}
       </div>
