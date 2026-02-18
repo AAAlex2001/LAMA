@@ -3,6 +3,7 @@
 import React from 'react';
 import { CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
 import ListDateRangePicker from './ListDateRangePicker';
+import ListFilterBar, { type FilterConfig } from './ListFilterBar';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
 
@@ -19,6 +20,9 @@ interface CalendarHeaderProps {
   onMonthChange?: (date: Date) => void;
   listSortOrder: 'asc' | 'desc' | null;
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
+  mobileFilterConfigs: FilterConfig[];
+  mobileActiveFilters: Record<string, string[]>;
+  onMobileFilterChange: (key: string, values: string[]) => void;
 }
 
 const MONTH_NAMES_RU = [
@@ -78,6 +82,9 @@ export default function CalendarHeader({
   onMonthChange,
   listSortOrder,
   onListSortChange,
+  mobileFilterConfigs,
+  mobileActiveFilters,
+  onMobileFilterChange,
 }: CalendarHeaderProps) {
   const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
   const sortWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -110,38 +117,13 @@ export default function CalendarHeader({
         </div>
 
         <div className={styles.sortWrapper} ref={sortWrapperRef}>
-          <button
-            type="button"
-            className={styles.settingsBtn}
-            onClick={() => setSortPopupOpen((prev) => !prev)}
-            aria-label="Сортировка"
-          >
-            <FilterSortIcon width={24} height={24} />
-          </button>
-          {sortPopupOpen && (
-            <div className={styles.sortPopup}>
-              <button
-                type="button"
-                className={styles.sortPopupItem}
-                onClick={() => { onListSortChange('desc'); setSortPopupOpen(false); }}
-              >
-                <span className={listSortOrder !== 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
-                  <span className={styles.sortRadioDot} />
-                </span>
-                <span className={styles.sortPopupItemText}>Сначала новые</span>
-              </button>
-              <button
-                type="button"
-                className={styles.sortPopupItem}
-                onClick={() => { onListSortChange('asc'); setSortPopupOpen(false); }}
-              >
-                <span className={listSortOrder === 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
-                  <span className={styles.sortRadioDot} />
-                </span>
-                <span className={styles.sortPopupItemText}>Сначала старые</span>
-              </button>
-            </div>
-          )}
+          <ListFilterBar
+            filters={mobileFilterConfigs}
+            activeFilters={mobileActiveFilters}
+            onFilterChange={onMobileFilterChange}
+            mobileFilterOpen={sortPopupOpen}
+            onMobileFilterOpenChange={setSortPopupOpen}
+          />
         </div>
       </div>
 

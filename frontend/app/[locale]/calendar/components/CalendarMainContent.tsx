@@ -33,6 +33,8 @@ interface CalendarMainContentProps {
   onListStatusChange: (status: string | null) => void;
   onMonthChange: (date: Date) => void;
   onSidebarDateChange: (date: Date) => void;
+  mobileActiveFilters: Record<string, string[]>;
+  onMobileFilterChange: (key: string, values: string[]) => void;
 }
 
 export default function CalendarMainContent({
@@ -56,6 +58,8 @@ export default function CalendarMainContent({
   onListStatusChange,
   onMonthChange,
   onSidebarDateChange,
+  mobileActiveFilters,
+  onMobileFilterChange,
 }: CalendarMainContentProps) {
   return (
     <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
@@ -96,6 +100,7 @@ export default function CalendarMainContent({
             onListSortChange={onListSortChange}
             onLoadMoreDay={onLoadMoreDay}
             dayLoadingMap={dayLoadingMap}
+            mobileActiveFilters={mobileActiveFilters}
           />
         </>
       ) : isGridView ? (
@@ -135,6 +140,7 @@ export default function CalendarMainContent({
             statusFilter={listStatusFilter}
             onDateSortChange={onListSortChange}
             onStatusFilterChange={onListStatusChange}
+            mobileActiveFilters={mobileActiveFilters}
           />
         </div>
       ) : currentView === 'day' ? (
@@ -147,6 +153,7 @@ export default function CalendarMainContent({
               onEdit={onEdit}
               onAddPost={onAddPost}
               selectedDate={selectedDate}
+              mobileActiveFilters={mobileActiveFilters}
             />
           </div>
 

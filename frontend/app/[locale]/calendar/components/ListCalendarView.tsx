@@ -26,6 +26,7 @@ interface ListCalendarViewProps {
   statusFilter: string | null;
   onDateSortChange: (order: 'asc' | 'desc' | null) => void;
   onStatusFilterChange: (status: string | null) => void;
+  mobileActiveFilters?: Record<string, string[]>;
 }
 
 function formatDate(dateStr: string): string {
@@ -130,6 +131,7 @@ export default function ListCalendarView({
   statusFilter,
   onDateSortChange,
   onStatusFilterChange,
+  mobileActiveFilters,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
 
@@ -260,29 +262,36 @@ export default function ListCalendarView({
 
   // Apply filters
   const filteredPosts = React.useMemo(() => {
+    const merged = { ...activeFilters };
+    if (mobileActiveFilters) {
+      for (const [k, v] of Object.entries(mobileActiveFilters)) {
+        if (v?.length) merged[k] = v;
+      }
+    }
+
     let next = posts.filter((post) => {
       // Channel filter
-      const channelFilter = activeFilters['channel'];
+      const channelFilter = merged['channel'];
       if (channelFilter?.length) {
         const postChannelIds = post.channels?.map((ch) => String(ch.id)) || [];
         if (!channelFilter.some((id) => postChannelIds.includes(id))) return false;
       }
 
       // Tag filter
-      const tagFilter = activeFilters['tag'];
+      const tagFilter = merged['tag'];
       if (tagFilter?.length) {
         const postTagIds = post.tags?.map((t) => String(t.id)) || [];
         if (!tagFilter.some((id) => postTagIds.includes(id))) return false;
       }
 
       // Media type filter
-      const mediaFilter = activeFilters['media'];
+      const mediaFilter = merged['media'];
       if (mediaFilter?.length) {
         const postMediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
         if (!mediaFilter.some((t) => postMediaTypes.has(t))) return false;
       }
 
-      const viewsFilter = activeFilters['views'];
+      const viewsFilter = merged['views'];
       if (viewsFilter?.length) {
         const views = Number((post as any).views_count ?? (post as any).views ?? 0);
         const ok = viewsFilter.some((v) =>
@@ -293,7 +302,7 @@ export default function ListCalendarView({
         if (!ok) return false;
       }
 
-      const reactionsFilter = activeFilters['reactions'];
+      const reactionsFilter = merged['reactions'];
       if (reactionsFilter?.length) {
         const reactions = Number((post as any).reactions_count ?? (post as any).likes_count ?? 0);
         const ok = reactionsFilter.some((v) =>
@@ -308,7 +317,7 @@ export default function ListCalendarView({
     });
 
     return next;
-  }, [posts, activeFilters]);
+  }, [posts, activeFilters, mobileActiveFilters]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {

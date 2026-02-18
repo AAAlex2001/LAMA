@@ -23,6 +23,7 @@ interface MonthCalendarViewProps {
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
   onLoadMoreDay: (dateKey: string) => void;
   dayLoadingMap: Record<string, boolean>;
+  mobileActiveFilters?: Record<string, string[]>;
 }
 
 function formatTime(dateStr: string): string {
@@ -80,6 +81,7 @@ export default function MonthCalendarView({
   onListSortChange,
   onLoadMoreDay,
   dayLoadingMap,
+  mobileActiveFilters,
 }: MonthCalendarViewProps) {
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
@@ -155,22 +157,29 @@ export default function MonthCalendarView({
   }, [dayPosts]);
 
   const filteredPosts = React.useMemo(() => {
+    const merged = { ...activeFilters };
+    if (mobileActiveFilters) {
+      for (const [k, v] of Object.entries(mobileActiveFilters)) {
+        if (v?.length) merged[k] = v;
+      }
+    }
+
     return dayPosts.filter((post) => {
       if (statusFilter && post.status !== statusFilter) return false;
 
-      const channelFilter = activeFilters['channel'];
+      const channelFilter = merged['channel'];
       if (channelFilter?.length) {
         const postChannelIds = post.channels?.map((ch) => String(ch.id)) || [];
         if (!channelFilter.some((id) => postChannelIds.includes(id))) return false;
       }
 
-      const tagFilter = activeFilters['tag'];
+      const tagFilter = merged['tag'];
       if (tagFilter?.length) {
         const postTagIds = post.tags?.map((t) => String(t.id)) || [];
         if (!tagFilter.some((id) => postTagIds.includes(id))) return false;
       }
 
-      const mediaFilter = activeFilters['media'];
+      const mediaFilter = merged['media'];
       if (mediaFilter?.length) {
         const postMediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
         if (!mediaFilter.some((t) => postMediaTypes.has(t))) return false;
@@ -178,7 +187,7 @@ export default function MonthCalendarView({
 
       return true;
     });
-  }, [dayPosts, statusFilter, activeFilters]);
+  }, [dayPosts, statusFilter, activeFilters, mobileActiveFilters]);
 
   function handleFilterChange(key: string, values: string[]) {
     setActiveFilters((prev) => ({ ...prev, [key]: values }));
