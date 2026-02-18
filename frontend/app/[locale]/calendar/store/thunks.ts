@@ -106,6 +106,64 @@ export const fetchWeeklyPosts = createAsyncThunk(
   }
 );
 
+export const fetchMonthlyPosts = createAsyncThunk(
+  'calendar/fetchMonthlyPosts',
+  async (params: { date: string }, { dispatch, rejectWithValue }) => {
+    dispatch(setIsLoading(true));
+    try {
+      const baseDate = new Date(params.date + 'T00:00:00');
+      const monthStart = new Date(baseDate.getFullYear(), baseDate.getMonth(), 1);
+      const monthEnd = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0);
+
+      const startDateStr = formatDate(monthStart);
+      const endDateStr = formatDate(monthEnd);
+
+      const allItems: Draft[] = [];
+      let page = 1;
+      const pageSize = 500;
+
+      while (true) {
+        const queryParams = new URLSearchParams({
+          page: String(page),
+          page_size: String(pageSize),
+          start_date: toStartOfDayISO(startDateStr),
+          end_date: toEndOfDayISO(endDateStr),
+        });
+
+        const response = await apiRequest<DraftListResponse>(
+          `/publications?${queryParams}`
+        );
+
+        allItems.push(...response.items);
+
+        if (response.items.length < pageSize) {
+          break;
+        }
+        page += 1;
+      }
+
+      const grouped = groupPostsByDate(allItems);
+      const monthItems: Record<string, Draft[]> = {};
+
+      const daysInMonth = monthEnd.getDate();
+      for (let i = 0; i < daysInMonth; i++) {
+        const d = new Date(monthStart);
+        d.setDate(monthStart.getDate() + i);
+        const key = formatDate(d);
+        monthItems[key] = grouped[key] || [];
+      }
+
+      dispatch(setWeekItems(monthItems));
+      dispatch(setItems(allItems));
+      return monthItems;
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      dispatch(setIsLoading(false));
+    }
+  }
+);
+
 export const deleteCalendarPost = createAsyncThunk(
   'calendar/deletePost',
   async (postId: number, { dispatch, rejectWithValue }) => {

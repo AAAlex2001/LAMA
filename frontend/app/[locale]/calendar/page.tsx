@@ -5,7 +5,7 @@ import { CalendarProvider } from './store/provider';
 import { useAppDispatch, useAppSelector } from './store';
 import { setSelectedDate, setCurrentView } from './store';
 import type { CalendarView } from './store';
-import { fetchCalendarPosts, fetchWeeklyPosts } from './store/thunks';
+import { fetchCalendarPosts, fetchWeeklyPosts, fetchMonthlyPosts } from './store/thunks';
 import { AppLayout } from '@/components/app-layout';
 import type { MediaFile } from '@/components/media-preview';
 import DatePicker from '@/components/date-picker/date-picker';
@@ -96,6 +96,21 @@ function getWeekStartKey(dateStr: string): string {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function getMonthDates(date: Date): Date[] {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const result: Date[] = [];
+  for (let day = 1; day <= daysInMonth; day++) {
+    result.push(new Date(year, month, day));
+  }
+  return result;
+}
+
+function getMonthLabel(date: Date): string {
+  return `${MONTH_NAMES_GEN[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 function CalendarPageContent() {
   const dispatch = useAppDispatch();
   const items = useAppSelector(state => state.calendar.items);
@@ -108,6 +123,7 @@ function CalendarPageContent() {
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
   const [countsMonthAnchor, setCountsMonthAnchor] = React.useState<Date>(new Date());
   const lastFetchedWeekKeyRef = React.useRef<string>('');
+  const lastFetchedMonthKeyRef = React.useRef<string>('');
 
   const selectedDate = React.useMemo(() => {
     const parts = selectedDateStr.split('-');
@@ -125,12 +141,22 @@ function CalendarPageContent() {
         return;
       }
       lastFetchedWeekKeyRef.current = weekKey;
+      lastFetchedMonthKeyRef.current = '';
       dispatch(fetchWeeklyPosts({ date: selectedDateStr }));
+    } else if (currentView === 'month') {
+      const monthKey = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
+      if (lastFetchedMonthKeyRef.current === monthKey) {
+        return;
+      }
+      lastFetchedMonthKeyRef.current = monthKey;
+      lastFetchedWeekKeyRef.current = '';
+      dispatch(fetchMonthlyPosts({ date: selectedDateStr }));
     } else {
       lastFetchedWeekKeyRef.current = '';
+      lastFetchedMonthKeyRef.current = '';
       dispatch(fetchCalendarPosts({ date: selectedDateStr }));
     }
-  }, [dispatch, selectedDateStr, currentView]);
+  }, [dispatch, selectedDateStr, currentView, selectedDate]);
 
   React.useEffect(() => {
     if (currentView !== 'week') {
@@ -216,6 +242,8 @@ function CalendarPageContent() {
     const d = new Date(selectedDate);
     if (currentView === 'week') {
       d.setDate(d.getDate() - 7);
+    } else if (currentView === 'month') {
+      d.setMonth(d.getMonth() - 1);
     } else {
       d.setDate(d.getDate() - 1);
     }
@@ -226,6 +254,8 @@ function CalendarPageContent() {
     const d = new Date(selectedDate);
     if (currentView === 'week') {
       d.setDate(d.getDate() + 7);
+    } else if (currentView === 'month') {
+      d.setMonth(d.getMonth() + 1);
     } else {
       d.setDate(d.getDate() + 1);
     }
@@ -308,8 +338,24 @@ function CalendarPageContent() {
     return combined;
   }, [monthPostCounts, weekItems]);
 
+  const monthPostCountsFromItems = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const [key, posts] of Object.entries(weekItems)) {
+      counts[key] = posts.length;
+    }
+    return counts;
+  }, [weekItems]);
+
+  const gridPostCounts = currentView === 'month' ? monthPostCountsFromItems : combinedPostCounts;
+  const monthDates = React.useMemo(() => getMonthDates(selectedDate), [selectedDate]);
+  const isGridView = currentView === 'week' || currentView === 'month';
+  const mobileGridTitle = React.useMemo(
+    () => (currentView === 'month' ? getMonthLabel(selectedDate) : mobileWeekDayTitle),
+    [currentView, selectedDate, mobileWeekDayTitle]
+  );
+
   return (
-    <div className={`${styles.page} ${currentView === 'week' ? styles.pageWeek : ''}`}>
+    <div className={`${styles.page} ${isGridView ? styles.pageWeek : ''}`}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}
@@ -320,8 +366,8 @@ function CalendarPageContent() {
           onSettingsClick={() => setShowMobileCalendar(true)}
         />
 
-        <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''}`}>
-          {currentView === 'week' ? (
+        <div className={`${styles.mainContent} ${isGridView ? styles.mainContentWeek : ''}`}>
+          {isGridView ? (
             <>
               <WeeklyCalendarView
                 weekItems={weekItems}
@@ -329,14 +375,16 @@ function CalendarPageContent() {
                 isLoading={isLoading}
                 onEdit={handleEdit}
                 onAddPost={handleAddPost}
+                visibleDates={currentView === 'month' ? monthDates : undefined}
               />
               <WeeklySidebar
                 selectedDate={selectedDate}
                 weekItems={weekItems}
-                postCounts={combinedPostCounts}
+                postCounts={gridPostCounts}
                 onMonthChange={setCountsMonthAnchor}
                 onDateChange={changeDate}
                 onEdit={handleEdit}
+                highlightWeek={currentView === 'week'}
               />
             </>
           ) : (
@@ -375,10 +423,10 @@ function CalendarPageContent() {
               locale="ru"
               minDate={null}
               highlightWeek={currentView === 'week'}
-              postCounts={currentView === 'week' ? combinedPostCounts : undefined}
+              postCounts={isGridView ? gridPostCounts : undefined}
             />
 
-            {currentView === 'week' && (
+            {isGridView && (
               mobileWeekPosts.length === 0 ? (
                 isTodaySelected ? (
                   <div className={styles.mobileTodayEmptyState}>
@@ -388,7 +436,7 @@ function CalendarPageContent() {
                   </div>
                 ) : (
                   <div className={styles.mobileEmptyState}>
-                    <div className={styles.mobileDayTitle}>{mobileWeekDayTitle}</div>
+                    <div className={styles.mobileDayTitle}>{mobileGridTitle}</div>
                     <div className={styles.mobileEmptyTextBlock}>
                       <p className={styles.mobileEmptyTitle}>Ничего не запланировано</p>
                       <p className={styles.mobileEmptySubtitle}>
@@ -399,7 +447,7 @@ function CalendarPageContent() {
                 )
               ) : (
                 <div className={styles.mobilePostsSection}>
-                  <div className={styles.mobileDayTitle}>{mobileWeekDayTitle}</div>
+                  <div className={styles.mobileDayTitle}>{mobileGridTitle}</div>
                   <div className={styles.mobilePostsList}>
                     <div className={styles.mobilePostsInner}>
                       {mobileWeekPosts.map((post) => {

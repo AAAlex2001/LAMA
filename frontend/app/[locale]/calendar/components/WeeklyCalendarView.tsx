@@ -13,6 +13,7 @@ interface WeeklyCalendarViewProps {
   isLoading: boolean;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
+  visibleDates?: Date[];
 }
 
 const DAY_NAMES_SHORT: Record<number, string> = {
@@ -73,10 +74,14 @@ export default function WeeklyCalendarView({
   isLoading,
   onEdit,
   onAddPost,
+  visibleDates,
 }: WeeklyCalendarViewProps) {
   const weekStart = getWeekStart(selectedDate);
 
   const weekDays = React.useMemo(() => {
+    if (visibleDates?.length) {
+      return visibleDates;
+    }
     const days: Date[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
@@ -84,7 +89,7 @@ export default function WeeklyCalendarView({
       days.push(d);
     }
     return days;
-  }, [weekStart.getTime()]);
+  }, [visibleDates, weekStart.getTime()]);
 
   return (
     <div className={styles.weeklyView}>

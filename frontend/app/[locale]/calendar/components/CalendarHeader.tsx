@@ -42,6 +42,10 @@ function formatWeekRange(date: Date): string {
   return `${startDay} ${startMonth} – ${endDay} ${endMonth}`;
 }
 
+function formatMonthTitle(date: Date): string {
+  return `${MONTH_NAMES_RU[date.getMonth()]} ${date.getFullYear()}`;
+}
+
 const VIEW_TABS: { key: CalendarView; label: string }[] = [
   { key: 'day', label: 'День' },
   { key: 'week', label: 'Неделя' },
@@ -92,6 +96,8 @@ export default function CalendarHeader({
         <span className={styles.dateTitle}>
           {currentView === 'week'
             ? formatWeekRange(selectedDate)
+            : currentView === 'month'
+              ? formatMonthTitle(selectedDate)
             : formatShortDate(selectedDate)}
         </span>
         <button type="button" className={`${styles.slideBtn} ${styles.slideBtnRight}`} onClick={onNextDay}>

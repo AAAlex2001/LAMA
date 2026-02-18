@@ -13,6 +13,7 @@ interface WeeklySidebarProps {
   onMonthChange?: (date: Date) => void;
   onDateChange: (date: Date) => void;
   onEdit: (post: Draft) => void;
+  highlightWeek?: boolean;
 }
 
 const DAY_NAMES_FULL: Record<number, string> = {
@@ -87,6 +88,7 @@ export default function WeeklySidebar({
   onMonthChange,
   onDateChange,
   onEdit,
+  highlightWeek = true,
 }: WeeklySidebarProps) {
   const dateKey = formatDateKey(selectedDate);
   const dayPosts = weekItems[dateKey] || [];
@@ -121,7 +123,7 @@ export default function WeeklySidebar({
           locale="ru"
           minDate={null}
           className={styles.calendar}
-          highlightWeek
+          highlightWeek={highlightWeek}
           postCounts={postCounts}
         />
       </div>
