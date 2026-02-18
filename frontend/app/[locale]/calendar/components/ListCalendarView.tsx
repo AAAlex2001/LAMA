@@ -14,6 +14,7 @@ import {
 } from '@/components/icons';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
+import ListFilterBar, { type FilterConfig } from './ListFilterBar';
 import styles from './list-calendar-view.module.scss';
 
 interface ListCalendarViewProps {
@@ -21,6 +22,13 @@ interface ListCalendarViewProps {
   isLoading: boolean;
   onEdit: (post: Draft) => void;
   isLoadingMore?: boolean;
+  dateSortOrder: 'asc' | 'desc' | null;
+  statusFilter: string | null;
+  onDateSortChange: (order: 'asc' | 'desc' | null) => void;
+  onStatusFilterChange: (status: string | null) => void;
+  mobileFilterOpen: boolean;
+  onMobileFilterOpenChange: (open: boolean) => void;
+  mobileFilterAnchor: { bottom: number; right: number } | null;
 }
 
 function formatDate(dateStr: string): string {
@@ -51,10 +59,16 @@ function getStatusLabel(status: string): string {
       return 'Запланирован';
     case 'published':
       return 'Опубликован';
+    case 'publishing':
+      return 'Публикуется';
+    case 'partial_success':
+      return 'Частично опубликован';
     case 'draft':
       return 'Черновик';
     case 'failed':
       return 'Ошибка';
+    case 'deleted':
+      return 'Удалён';
     default:
       return status;
   }
@@ -110,7 +124,210 @@ function MediaIcons({ post }: { post: Draft }) {
   );
 }
 
-export default function ListCalendarView({ posts, isLoading, onEdit, isLoadingMore = false }: ListCalendarViewProps) {
+export default function ListCalendarView({
+  posts,
+  isLoading,
+  onEdit,
+  isLoadingMore = false,
+  dateSortOrder,
+  statusFilter,
+  onDateSortChange,
+  onStatusFilterChange,
+  mobileFilterOpen,
+  onMobileFilterOpenChange,
+  mobileFilterAnchor,
+}: ListCalendarViewProps) {
+  const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+
+  React.useEffect(() => {
+    setActiveFilters((prev) => ({
+      ...prev,
+      date: dateSortOrder ? [dateSortOrder === 'desc' ? 'new' : 'old'] : [],
+      status: statusFilter ? [statusFilter] : [],
+    }));
+  }, [dateSortOrder, statusFilter]);
+
+  // Build filter options from posts data
+  const filterConfigs: FilterConfig[] = React.useMemo(() => {
+    const channelMap = new Map<string, string>();
+    const tagMap = new Map<string, { name: string; color?: string }>();
+    const mediaTypeSet = new Set<string>();
+
+    const statusOptions = [
+      { value: 'draft', label: getStatusLabel('draft') },
+      { value: 'scheduled', label: getStatusLabel('scheduled') },
+      { value: 'publishing', label: getStatusLabel('publishing') },
+      { value: 'published', label: getStatusLabel('published') },
+      { value: 'partial_success', label: getStatusLabel('partial_success') },
+      { value: 'failed', label: getStatusLabel('failed') },
+      { value: 'deleted', label: getStatusLabel('deleted') },
+    ];
+
+    posts.forEach((post) => {
+      post.channels?.forEach((ch) => {
+        channelMap.set(String(ch.id), ch.title || `Канал ${ch.id}`);
+      });
+      post.tags?.forEach((tag) => {
+        tagMap.set(String(tag.id), { name: tag.name, color: tag.color });
+      });
+      if (post.media_urls?.length) {
+        getMediaTypes(post.media_urls).forEach((t) => mediaTypeSet.add(t));
+      }
+    });
+
+    const configs: FilterConfig[] = [];
+
+    configs.push({
+      key: 'date',
+      label: 'По дате',
+      multiSelect: false,
+      options: [
+        { value: 'new', label: 'Сначала новые' },
+        { value: 'old', label: 'Сначала старые' },
+      ],
+    });
+
+    configs.push({
+      key: 'status',
+      label: 'По статусу',
+      multiSelect: false,
+      options: statusOptions,
+    });
+
+    if (channelMap.size > 0) {
+      configs.push({
+        key: 'channel',
+        label: 'По каналам',
+        multiSelect: true,
+        options: Array.from(channelMap.entries()).map(([id, title]) => ({
+          value: id,
+          label: title,
+        })),
+      });
+    }
+
+    if (tagMap.size > 0) {
+      configs.push({
+        key: 'tag',
+        label: 'По тэгам',
+        multiSelect: true,
+        options: Array.from(tagMap.entries()).map(([id, { name, color }]) => ({
+          value: id,
+          label: name,
+          color,
+        })),
+      });
+    }
+
+    const mediaTypeLabels: Record<string, string> = {
+      photo: 'Фото',
+      video: 'Видео',
+      audio: 'Аудио',
+      doc: 'Документ',
+      gif: 'GIF',
+    };
+
+    if (mediaTypeSet.size > 0) {
+      configs.push({
+        key: 'media',
+        label: 'По типу вложений',
+        multiSelect: true,
+        options: Array.from(mediaTypeSet).map((t) => ({
+          value: t,
+          label: mediaTypeLabels[t] || t,
+        })),
+      });
+    }
+
+    configs.push({
+      key: 'views',
+      label: 'По просмотрам',
+      multiSelect: false,
+      options: [
+        { value: 'gt1000', label: 'Более 1000' },
+        { value: '100to1000', label: '100 - 1000' },
+        { value: 'lt100', label: 'Менее 100' },
+      ],
+    });
+
+    configs.push({
+      key: 'reactions',
+      label: 'По реакциям',
+      multiSelect: false,
+      options: [
+        { value: 'gt100', label: 'Более 100' },
+        { value: '10to100', label: '10 - 100' },
+        { value: 'lt10', label: 'Менее 10' },
+      ],
+    });
+
+    return configs;
+  }, [posts]);
+
+  // Apply filters
+  const filteredPosts = React.useMemo(() => {
+    let next = posts.filter((post) => {
+      // Channel filter
+      const channelFilter = activeFilters['channel'];
+      if (channelFilter?.length) {
+        const postChannelIds = post.channels?.map((ch) => String(ch.id)) || [];
+        if (!channelFilter.some((id) => postChannelIds.includes(id))) return false;
+      }
+
+      // Tag filter
+      const tagFilter = activeFilters['tag'];
+      if (tagFilter?.length) {
+        const postTagIds = post.tags?.map((t) => String(t.id)) || [];
+        if (!tagFilter.some((id) => postTagIds.includes(id))) return false;
+      }
+
+      // Media type filter
+      const mediaFilter = activeFilters['media'];
+      if (mediaFilter?.length) {
+        const postMediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
+        if (!mediaFilter.some((t) => postMediaTypes.has(t))) return false;
+      }
+
+      const viewsFilter = activeFilters['views'];
+      if (viewsFilter?.length) {
+        const views = Number((post as any).views_count ?? (post as any).views ?? 0);
+        const ok = viewsFilter.some((v) =>
+          (v === 'gt1000' && views > 1000) ||
+          (v === '100to1000' && views >= 100 && views <= 1000) ||
+          (v === 'lt100' && views < 100)
+        );
+        if (!ok) return false;
+      }
+
+      const reactionsFilter = activeFilters['reactions'];
+      if (reactionsFilter?.length) {
+        const reactions = Number((post as any).reactions_count ?? (post as any).likes_count ?? 0);
+        const ok = reactionsFilter.some((v) =>
+          (v === 'gt100' && reactions > 100) ||
+          (v === '10to100' && reactions >= 10 && reactions <= 100) ||
+          (v === 'lt10' && reactions < 10)
+        );
+        if (!ok) return false;
+      }
+
+      return true;
+    });
+
+    return next;
+  }, [posts, activeFilters]);
+
+  function handleFilterChange(key: string, values: string[]) {
+    if (key === 'date') {
+      const value = values[0] || null;
+      onDateSortChange(value === 'new' ? 'desc' : value === 'old' ? 'asc' : null);
+    }
+
+    if (key === 'status') {
+      onStatusFilterChange(values[0] || null);
+    }
+
+    setActiveFilters((prev) => ({ ...prev, [key]: values }));
+  }
 
   if (isLoading) {
     return (
@@ -128,8 +345,45 @@ export default function ListCalendarView({ posts, isLoading, onEdit, isLoadingMo
 
   return (
     <>
+      <div className={styles.mobileMiniTabs}>
+        {[
+          { key: 'all', label: 'Все', status: null as string | null },
+          { key: 'scheduled', label: 'Запланированные', status: 'scheduled' as string | null },
+          { key: 'published', label: 'Опубликованные', status: 'published' as string | null },
+        ].map((tab) => {
+          const isActive = (statusFilter || null) === tab.status;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              className={isActive ? `${styles.mobileMiniTab} ${styles.mobileMiniTabActive}` : styles.mobileMiniTab}
+              onClick={() => {
+                onStatusFilterChange(tab.status);
+                setActiveFilters((prev) => ({ ...prev, status: tab.status ? [tab.status] : [] }));
+              }}
+            >
+              <span className={styles.mobileMiniTabText}>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filterConfigs.length > 0 && (
+        <div className={styles.filterBarWrap}>
+          <ListFilterBar
+            filters={filterConfigs}
+            activeFilters={activeFilters}
+            onFilterChange={handleFilterChange}
+            mobileFilterOpen={mobileFilterOpen}
+            onMobileFilterOpenChange={onMobileFilterOpenChange}
+            mobilePopupAnchor={mobileFilterAnchor}
+            hideMobileTrigger
+          />
+        </div>
+      )}
+
       <div className={styles.desktopList}>
-        {posts.map((post) => {
+        {filteredPosts.map((post) => {
           const sourceDate = getSourceDate(post);
           const channel = post.channels?.[0];
           const extraChannelsCount = post.channels?.length > 1 ? post.channels.length - 1 : 0;
@@ -197,13 +451,15 @@ export default function ListCalendarView({ posts, isLoading, onEdit, isLoadingMo
 
       <div className={styles.mobileList}>
         <div className={styles.mobileListInner}>
-          {posts.map((post) => (
+          {filteredPosts.map((post) => (
             <CalendarCard
               key={post.id}
               post={post}
               onEdit={() => onEdit(post)}
+              listMode
             />
           ))}
+
           {isLoadingMore && (
             <div className={styles.listLoaderMobile}>
               <Loader size={18} color="blue" />

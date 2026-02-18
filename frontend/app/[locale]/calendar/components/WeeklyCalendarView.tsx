@@ -10,12 +10,14 @@ import styles from './weekly-view.module.scss';
 interface WeeklyCalendarViewProps {
   weekItems: Record<string, Draft[]>;
   selectedDate: Date;
+  sidebarDate?: Date;
   isLoading: boolean;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   visibleDates?: Date[];
   onReachEnd?: (dateKey: string) => void;
   dayLoading?: Record<string, boolean>;
+  onDayClick?: (date: Date) => void;
 }
 
 const DAY_NAMES_SHORT: Record<number, string> = {
@@ -73,12 +75,14 @@ function sortPostsByTime(posts: Draft[]): Draft[] {
 export default function WeeklyCalendarView({
   weekItems,
   selectedDate,
+  sidebarDate,
   isLoading,
   onEdit,
   onAddPost,
   visibleDates,
   onReachEnd,
   dayLoading,
+  onDayClick,
 }: WeeklyCalendarViewProps) {
   const weekStart = getWeekStart(selectedDate);
   const nearBottomByDayRef = React.useRef<Record<string, boolean>>({});
@@ -102,7 +106,8 @@ export default function WeeklyCalendarView({
         const dateKey = formatDateKey(dayDate);
         const dayPosts = weekItems[dateKey] || [];
         const sorted = sortPostsByTime(dayPosts);
-        const isSelected = isSameDay(dayDate, selectedDate);
+        const selectedTarget = sidebarDate ?? selectedDate;
+        const isSelected = isSameDay(dayDate, selectedTarget);
         const isPast = isBeforeToday(dayDate);
 
         const headerClasses = [
@@ -129,7 +134,7 @@ export default function WeeklyCalendarView({
 
         return (
           <div key={dateKey} className={styles.dayColumn}>
-            <div className={headerClasses}>
+            <div className={headerClasses} onClick={() => onDayClick?.(dayDate)} style={{ cursor: onDayClick ? 'pointer' : undefined }}>
               <span className={styles.dayName}>
                 {DAY_NAMES_SHORT[dayDate.getDay()]}
               </span>

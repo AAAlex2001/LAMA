@@ -5,8 +5,8 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    padding: 0;
-    gap: 0;
+    padding: 8px;
+    gap: 14px;
     width: 320px;
     flex-shrink: 0;
     align-self: flex-start;
@@ -14,55 +14,9 @@
     top: 0;
     max-height: 710px;
     background: #FFFFFF;
-    border-radius: 8px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    border-radius: 12px;
+    overflow: hidden;
   }
-}
-
-.sidebarEmpty {
-  @media (min-width: 1440px) {
-    height: 423px;
-  }
-}
-
-.sidebarTodayEmpty {
-  @media (min-width: 1440px) {
-    height: 333px;
-  }
-}
-
-.calendarWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  padding: 12px 16px;
-  gap: 20px;
-  width: 100%;
-  background: #FFFFFF;
-  border-radius: 11px;
-}
-
-.calendarWrapperEmpty {
-  min-height: 292px;
-  box-sizing: border-box;
-}
-
-.calendar {
-  max-width: 100% !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-.postsSection {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0 8px 0 0;
-  gap: 8px;
-  width: 100%;
-  flex: 1;
-  min-height: 0;
 }
 
 .dayTitle {
@@ -74,15 +28,81 @@
   line-height: 24px;
   text-align: center;
   color: #3B82F6;
-  padding: 0 16px;
   text-transform: capitalize;
+  border-radius: 25px;
+}
+
+.createBtnWrapper {
+  width: 100%;
+}
+
+.createBtn {
+  width: 100%;
+  height: 37px;
+
+  button, a {
+    width: 100%;
+    height: 37px;
+    justify-content: center;
+    padding: 10px;
+  }
+}
+
+.tabsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  width: 100%;
+}
+
+.tab {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  border-radius: 25px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  text-align: center;
+  color: #1A1A1A;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.tabActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.postsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 16px;
+  width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .postsList {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  padding: 0 8px 8px 0;
+  padding: 0;
+  gap: 10px;
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -168,73 +188,6 @@
   line-height: 17px;
   color: #B0B4B8;
   text-align: center;
-}
-
-.emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0 16px;
-  gap: 16px;
-  width: 100%;
-}
-
-.emptyTextBlock {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-}
-
-.emptyTitle {
-  width: 100%;
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 17px;
-  text-align: center;
-  color: #000000;
-}
-
-.emptySubtitle {
-  width: 100%;
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  text-align: center;
-  color: #B0B4B8;
-}
-
-.todayEmptyState {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 0 16px 10px;
-  width: 100%;
-}
-
-.todayEmptyInner {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 8px 0;
-  width: 100%;
-}
-
-.todayEmptyText {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  color: #3B82F6;
-  opacity: 0.8;
 }
 
 .dayLoader {

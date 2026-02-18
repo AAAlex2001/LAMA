@@ -15,6 +15,9 @@ interface CalendarState {
   weekItems: Record<string, Draft[]>;
   isLoading: boolean;
   selectedDate: string;
+  sidebarDate: string;
+  listRangeStart: string | null;
+  listRangeEnd: string | null;
   currentView: CalendarView;
   monthPostCounts: Record<string, number>;
   countsMonthAnchor: string;
@@ -23,6 +26,8 @@ interface CalendarState {
   hasMore: boolean;
   isLoadingMore: boolean;
   dayPageState: Record<string, DayPageState>;
+  listSortOrder: 'asc' | 'desc' | null;
+  listStatusFilter: string | null;
 }
 
 const initialState: CalendarState = {
@@ -30,6 +35,9 @@ const initialState: CalendarState = {
   weekItems: {},
   isLoading: false,
   selectedDate: new Date().toISOString().split('T')[0],
+  sidebarDate: new Date().toISOString().split('T')[0],
+  listRangeStart: null,
+  listRangeEnd: null,
   currentView: 'day',
   monthPostCounts: {},
   countsMonthAnchor: new Date().toISOString().split('T')[0],
@@ -38,6 +46,8 @@ const initialState: CalendarState = {
   hasMore: false,
   isLoadingMore: false,
   dayPageState: {},
+  listSortOrder: null,
+  listStatusFilter: null,
 };
 
 const calendarSlice = createSlice({
@@ -55,9 +65,27 @@ const calendarSlice = createSlice({
     },
     setSelectedDate: (state, action: PayloadAction<string>) => {
       state.selectedDate = action.payload;
+      state.sidebarDate = action.payload;
+    },
+    setSidebarDate: (state, action: PayloadAction<string>) => {
+      state.sidebarDate = action.payload;
+    },
+    setListDateRange: (state, action: PayloadAction<{ start: string; end: string }>) => {
+      state.listRangeStart = action.payload.start;
+      state.listRangeEnd = action.payload.end;
+    },
+    clearListDateRange: (state) => {
+      state.listRangeStart = null;
+      state.listRangeEnd = null;
     },
     setCurrentView: (state, action: PayloadAction<CalendarView>) => {
       state.currentView = action.payload;
+    },
+    setListSortOrder: (state, action: PayloadAction<'asc' | 'desc' | null>) => {
+      state.listSortOrder = action.payload;
+    },
+    setListStatusFilter: (state, action: PayloadAction<string | null>) => {
+      state.listStatusFilter = action.payload;
     },
     setMonthPostCounts: (state, action: PayloadAction<Record<string, number>>) => {
       state.monthPostCounts = action.payload;
@@ -97,7 +125,12 @@ export const {
   setWeekItems,
   setIsLoading,
   setSelectedDate,
+  setSidebarDate,
+  setListDateRange,
+  clearListDateRange,
   setCurrentView,
+  setListSortOrder,
+  setListStatusFilter,
   setMonthPostCounts,
   setCountsMonthAnchor,
   setCurrentRangeKey,

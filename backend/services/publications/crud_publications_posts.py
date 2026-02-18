@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import pytz
-from sqlalchemy import and_, exists, select
+from sqlalchemy import and_, exists, select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -131,6 +131,7 @@ class PublicationPostsCRUDService:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         search: Optional[str] = None,
+        sort_order: Optional[str] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> List[Publication]:
@@ -197,9 +198,14 @@ class PublicationPostsCRUDService:
             if search_text:
                 id_query = id_query.where(Publication.text_content.ilike(f"%{escape_like(search_text)}%"))
 
+        source_date = func.coalesce(Publication.scheduled_time, Publication.updated_at, Publication.created_at)
+        order_asc = (sort_order or '').lower() == 'asc'
+        order_expr = source_date.asc() if order_asc else source_date.desc()
+        id_tie_breaker = Publication.id.asc() if order_asc else Publication.id.desc()
+
         id_subquery = (
             id_query
-            .order_by(Publication.created_at.desc(), Publication.id.desc())
+            .order_by(order_expr, id_tie_breaker)
             .offset(skip)
             .limit(limit)
             .subquery()
@@ -213,7 +219,7 @@ class PublicationPostsCRUDService:
                 selectinload(Publication.tags),
                 selectinload(Publication.series),
             )
-            .order_by(Publication.created_at.desc(), Publication.id.desc())
+            .order_by(order_expr, id_tie_breaker)
         )
 
         result = await self.db.execute(publications_query)

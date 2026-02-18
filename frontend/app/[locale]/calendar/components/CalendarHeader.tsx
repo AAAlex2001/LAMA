@@ -1,16 +1,20 @@
 'use client';
 
-import { SettingsIcon, CalendarArrowIcon } from '@/components/icons';
+import { SettingsIcon, CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
+import ListDateRangePicker from './ListDateRangePicker';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
 
 interface CalendarHeaderProps {
   selectedDate: Date;
   currentView: CalendarView;
+  listRange: { start: Date; end: Date } | null;
+  onListRangeChange: (range: { start: Date; end: Date } | null) => void;
   onPrevDay: () => void;
   onNextDay: () => void;
   onViewChange: (view: CalendarView) => void;
   onSettingsClick?: () => void;
+  onListSortClick?: (anchor: DOMRect) => void;
 }
 
 const MONTH_NAMES_RU = [
@@ -60,10 +64,13 @@ const VIEW_TABS: { key: CalendarView; label: string }[] = [
 export default function CalendarHeader({
   selectedDate,
   currentView,
+  listRange,
+  onListRangeChange,
   onPrevDay,
   onNextDay,
   onViewChange,
   onSettingsClick,
+  onListSortClick,
 }: CalendarHeaderProps) {
   return (
     <div className={styles.header}>
@@ -81,7 +88,16 @@ export default function CalendarHeader({
           ))}
         </div>
 
-        {onSettingsClick && (
+        {currentView === 'list' && onListSortClick ? (
+          <button
+            type="button"
+            className={styles.settingsBtn}
+            onClick={(event) => onListSortClick(event.currentTarget.getBoundingClientRect())}
+            aria-label="Сортировка"
+          >
+            <FilterSortIcon width={24} height={24} />
+          </button>
+        ) : onSettingsClick ? (
           <button
             type="button"
             className={styles.settingsBtn}
@@ -90,25 +106,33 @@ export default function CalendarHeader({
           >
             <SettingsIcon width={24} height={24} />
           </button>
-        )}
+        ) : null}
       </div>
 
       <div className={styles.slideButtons}>
-        <button type="button" className={styles.slideBtn} onClick={onPrevDay}>
-          <CalendarArrowIcon width={16} height={16} />
-        </button>
-        <span className={styles.dateTitle}>
-          {currentView === 'week'
-            ? formatWeekRange(selectedDate)
-            : currentView === 'month'
-              ? formatMonthTitle(selectedDate)
-              : currentView === 'list'
-                ? formatListTitle(selectedDate)
-                : formatShortDate(selectedDate)}
-        </span>
-        <button type="button" className={`${styles.slideBtn} ${styles.slideBtnRight}`} onClick={onNextDay}>
-          <CalendarArrowIcon width={16} height={16} />
-        </button>
+        {currentView === 'list' ? (
+          <div className={styles.listRangeWrap}>
+            <ListDateRangePicker value={listRange} onChange={onListRangeChange} />
+          </div>
+        ) : (
+          <>
+            <button type="button" className={styles.slideBtn} onClick={onPrevDay}>
+              <CalendarArrowIcon width={16} height={16} />
+            </button>
+            <span className={styles.dateTitle}>
+              {currentView === 'week'
+                ? formatWeekRange(selectedDate)
+                : currentView === 'month'
+                  ? formatMonthTitle(selectedDate)
+                  : currentView === 'list'
+                    ? formatListTitle(selectedDate)
+                    : formatShortDate(selectedDate)}
+            </span>
+            <button type="button" className={`${styles.slideBtn} ${styles.slideBtnRight}`} onClick={onNextDay}>
+              <CalendarArrowIcon width={16} height={16} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

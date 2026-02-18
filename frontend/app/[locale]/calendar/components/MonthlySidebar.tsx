@@ -1,24 +1,21 @@
 'use client';
 
 import React from 'react';
-import DatePicker from '@/components/date-picker/date-picker';
+import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
 import Loader from '@/components/loader';
-import styles from './weekly-sidebar.module.scss';
+import styles from './monthly-sidebar.module.scss';
 
-interface WeeklySidebarProps {
-  selectedDate: Date;
+interface MonthlySidebarProps {
   sidebarDate: Date;
   weekItems: Record<string, Draft[]>;
-  postCounts: Record<string, number>;
-  onMonthChange?: (date: Date) => void;
-  onSidebarDateChange: (date: Date) => void;
   onEdit: (post: Draft) => void;
-  highlightWeek?: boolean;
   onLoadMoreDay?: (dateKey: string) => void;
   dayLoading?: Record<string, boolean>;
 }
+
+type TabFilter = 'all' | 'scheduled' | 'published';
 
 const DAY_NAMES_FULL: Record<number, string> = {
   0: 'воскресенье',
@@ -77,26 +74,20 @@ function sortPostsByTime(posts: Draft[]): Draft[] {
   });
 }
 
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
+const TAB_LABELS: Record<TabFilter, string> = {
+  all: 'Все',
+  scheduled: 'По расписанию',
+  published: 'Опубликовано',
+};
 
-export default function WeeklySidebar({
-  selectedDate,
+export default function MonthlySidebar({
   sidebarDate,
   weekItems,
-  postCounts,
-  onMonthChange,
-  onSidebarDateChange,
   onEdit,
-  highlightWeek = true,
   onLoadMoreDay,
   dayLoading,
-}: WeeklySidebarProps) {
+}: MonthlySidebarProps) {
+  const [activeTab, setActiveTab] = React.useState<TabFilter>('all');
   const postsListRef = React.useRef<HTMLDivElement>(null);
   const wasNearBottomRef = React.useRef(false);
 
@@ -104,9 +95,6 @@ export default function WeeklySidebar({
   const dayPosts = weekItems[dateKey] || [];
   const sortedPosts = sortPostsByTime(dayPosts);
   const dayTitle = formatDayTitle(sidebarDate);
-  const hasPosts = sortedPosts.length > 0;
-  const today = new Date();
-  const isTodaySelected = isSameDay(sidebarDate, today);
   const isLoadingDay = dayLoading?.[dateKey] ?? false;
 
   const handlePostsScroll = React.useCallback(() => {
@@ -120,60 +108,50 @@ export default function WeeklySidebar({
     if (!nearBottom) wasNearBottomRef.current = false;
   }, [dateKey, onLoadMoreDay, isLoadingDay]);
 
-  const sidebarClasses = [
-    styles.sidebar,
-    !hasPosts && !isTodaySelected ? styles.sidebarEmpty : '',
-    !hasPosts && isTodaySelected ? styles.sidebarTodayEmpty : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
-  const calendarWrapperClasses = [
-    styles.calendarWrapper,
-    !hasPosts ? styles.calendarWrapperEmpty : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const filteredPosts = React.useMemo(() => {
+    if (activeTab === 'all') return sortedPosts;
+    return sortedPosts.filter((p) => p.status === activeTab);
+  }, [sortedPosts, activeTab]);
 
   return (
-    <div className={sidebarClasses}>
-      <div className={calendarWrapperClasses}>
-        <DatePicker
-          value={sidebarDate}
-          onChange={onSidebarDateChange}
-          onMonthChange={onMonthChange}
-          locale="ru"
-          minDate={null}
-          className={styles.calendar}
-          highlightWeek={highlightWeek}
-          postCounts={postCounts}
+    <div className={styles.sidebar}>
+      <div className={styles.dayTitle}>{dayTitle}</div>
+
+      <div className={styles.createBtnWrapper}>
+        <Button
+          text="Создать публикацию"
+          showArrow={false}
+          active
+          fullWidth
+          className={styles.createBtn}
+          onClick={() => {
+            const yyyy = sidebarDate.getFullYear();
+            const mm = String(sidebarDate.getMonth() + 1).padStart(2, '0');
+            const dd = String(sidebarDate.getDate()).padStart(2, '0');
+            window.location.href = `/create-post?date=${yyyy}-${mm}-${dd}`;
+          }}
         />
       </div>
 
-      {!hasPosts ? (
-        isTodaySelected ? (
-          <div className={styles.todayEmptyState}>
-            <div className={styles.todayEmptyInner}>
-              <p className={styles.todayEmptyText}>На сегодня ничего не запланировано</p>
-            </div>
-          </div>
-        ) : (
-          <div className={styles.emptyState}>
-            <div className={styles.dayTitle}>{dayTitle}</div>
-            <div className={styles.emptyTextBlock}>
-              <p className={styles.emptyTitle}>Ничего не запланировано</p>
-              <p className={styles.emptySubtitle}>
-                Создайте публикацию — она появится в календаре и в списке этого дня
-              </p>
-            </div>
-          </div>
-        )
-      ) : (
-        <div className={styles.postsSection}>
-          <div className={styles.dayTitle}>{dayTitle}</div>
-          <div className={styles.postsList} ref={postsListRef} onScroll={handlePostsScroll}>
-            <div className={styles.postsInner}>
-              {sortedPosts.map((post) => {
+      <div className={styles.tabsRow}>
+        {(Object.keys(TAB_LABELS) as TabFilter[]).map((tab) => (
+          <button
+            key={tab}
+            className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
+            onClick={() => setActiveTab(tab)}
+          >
+            {TAB_LABELS[tab]}
+          </button>
+        ))}
+      </div>
+
+      <div className={styles.postsSection}>
+        <div className={styles.postsList} ref={postsListRef} onScroll={handlePostsScroll}>
+          <div className={styles.postsInner}>
+            {filteredPosts.length === 0 ? (
+              <div className={styles.emptyDay}>Нет публикаций</div>
+            ) : (
+              filteredPosts.map((post) => {
                 const time = formatTime(
                   post.status === 'scheduled'
                     ? ((post as any).scheduled_time || post.created_at)
@@ -197,16 +175,16 @@ export default function WeeklySidebar({
                     </span>
                   </div>
                 );
-              })}
-              {isLoadingDay && (
-                <div className={styles.dayLoader}>
-                  <Loader size={16} color="blue" />
-                </div>
-              )}
-            </div>
+              })
+            )}
+            {isLoadingDay && (
+              <div className={styles.dayLoader}>
+                <Loader size={16} color="blue" />
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

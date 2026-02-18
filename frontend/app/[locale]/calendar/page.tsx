@@ -15,11 +15,18 @@ import styles from './calendar.module.scss';
 function CalendarPageContent() {
   const [showMobileCalendar, setShowMobileCalendar] = React.useState(false);
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
+  const [mobileListSortOpen, setMobileListSortOpen] = React.useState(false);
+  const [mobileListSortAnchor, setMobileListSortAnchor] = React.useState<{ bottom: number; right: number } | null>(null);
   const {
     weekItems,
     isLoading,
     currentView,
     selectedDate,
+    sidebarDate,
+    listRangeStart,
+    listRangeEnd,
+    listSortOrder,
+    listStatusFilter,
     sortedPosts,
     mobilePosts,
     gridPostCounts,
@@ -31,6 +38,11 @@ function CalendarPageContent() {
     listTitle,
     dayLoadingMap,
     changeDate,
+    changeSidebarDate,
+    setListDateRange,
+    clearListDateRange,
+    setListSortOrder,
+    setListStatusFilter,
     handlePrevDay,
     handleNextDay,
     handleViewChange,
@@ -42,6 +54,47 @@ function CalendarPageContent() {
     changeDate(date);
     if (currentView !== 'week') {
       setShowMobileCalendar(false);
+    }
+  }
+
+  React.useEffect(() => {
+    if (currentView !== 'list') {
+      setMobileListSortOpen(false);
+      setMobileListSortAnchor(null);
+    }
+  }, [currentView]);
+
+  function handleListRangeChange(range: { start: Date; end: Date } | null) {
+    if (!range) {
+      clearListDateRange();
+      return;
+    }
+    setListDateRange(range.start, range.end);
+  }
+
+  function handleSidebarDateChange(date: Date) {
+    if (currentView === 'week') {
+      changeSidebarDate(date);
+      // If the selected day is in a different week, navigate the main calendar too
+      const getWeekStart = (d: Date) => {
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.getFullYear(), d.getMonth(), diff);
+      };
+      const currentWeekStart = getWeekStart(selectedDate);
+      const newWeekStart = getWeekStart(date);
+      if (currentWeekStart.getTime() !== newWeekStart.getTime()) {
+        changeDate(date);
+      }
+    } else if (currentView === 'month') {
+      changeSidebarDate(date);
+      // If the selected day is in a different month, navigate the main calendar too
+      if (date.getMonth() !== selectedDate.getMonth() || date.getFullYear() !== selectedDate.getFullYear()) {
+        changeDate(date);
+      }
+    } else {
+      // Day view: navigate to the selected day (triggers data fetch)
+      changeDate(date);
     }
   }
 
@@ -94,28 +147,42 @@ function CalendarPageContent() {
         <CalendarHeader
           selectedDate={selectedDate}
           currentView={currentView}
+          listRange={listRangeStart && listRangeEnd ? { start: listRangeStart, end: listRangeEnd } : null}
+          onListRangeChange={handleListRangeChange}
           onPrevDay={handlePrevDay}
           onNextDay={handleNextDay}
           onViewChange={handleViewChange}
           onSettingsClick={() => setShowMobileCalendar(true)}
+          onListSortClick={(anchor) => {
+            setMobileListSortAnchor({ bottom: anchor.bottom, right: anchor.right });
+            setMobileListSortOpen((prev) => !prev);
+          }}
         />
 
         <CalendarMainContent
           weekItems={weekItems}
           selectedDate={selectedDate}
+          sidebarDate={sidebarDate}
           isLoading={isLoading}
           currentView={currentView}
           sortedPosts={sortedPosts}
           monthDates={monthDates}
           isGridView={isGridView}
           isLoadingMore={isLoadingMore}
+          listSortOrder={listSortOrder}
+          listStatusFilter={listStatusFilter}
           gridPostCounts={gridPostCounts}
           dayLoadingMap={dayLoadingMap}
           onEdit={handleEdit}
           onAddPost={handleAddPost}
           onLoadMoreDay={handleLoadMoreDay}
+          onListSortChange={setListSortOrder}
+          onListStatusChange={setListStatusFilter}
+          mobileListSortOpen={mobileListSortOpen}
+          onMobileListSortOpenChange={setMobileListSortOpen}
+          mobileListSortAnchor={mobileListSortAnchor}
           onMonthChange={setCountsMonthAnchor}
-          onDateChange={handleDateChange}
+          onSidebarDateChange={handleSidebarDateChange}
         />
       </div>
 

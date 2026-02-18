@@ -10,6 +10,15 @@ import styles from './calendar-card.module.scss';
 interface CalendarCardProps {
   post: Draft;
   onEdit: () => void;
+  listMode?: boolean;
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${dd}.${mm}.${yyyy}`;
 }
 
 function formatTime(dateStr: string): string {
@@ -36,6 +45,14 @@ function getPreviewHtml(post: Draft): string {
     || '';
 }
 
+function getPreviewText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function getThumbnail(post: Draft): string | null {
   if (post.media_thumbnail_urls?.length) {
     const thumb = post.media_thumbnail_urls.find(u => u);
@@ -57,14 +74,16 @@ function hasRepeat(post: Draft): boolean {
   return !!(p.repeat_interval && p.repeat_interval !== 'never');
 }
 
-export default function CalendarCard({ post, onEdit }: CalendarCardProps) {
-  const time = formatTime(post.status === 'scheduled'
+export default function CalendarCard({ post, onEdit, listMode = false }: CalendarCardProps) {
+  const sourceDate = post.status === 'scheduled'
     ? ((post as any).scheduled_time || post.created_at)
-    : ((post as any).published_at || post.updated_at || post.created_at));
+    : ((post as any).published_at || post.updated_at || post.created_at);
+  const time = formatTime(sourceDate);
+  const date = formatDate(sourceDate);
   const previewHtml = getPreviewHtml(post);
+  const previewText = getPreviewText(previewHtml);
   const thumbnail = getThumbnail(post);
   const isRepeating = hasRepeat(post);
-  const isPublished = post.status === 'published';
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -86,19 +105,19 @@ export default function CalendarCard({ post, onEdit }: CalendarCardProps) {
   return (
     <div
       className={styles.card}
-      style={isPublished ? { opacity: 0.4 } : undefined}
       onClick={onEdit}
     >
       <div className={styles.topSection}>
         <div className={styles.headerRow}>
-          <div className={styles.timeBlock}>
-            <PostIcon width={16} height={16} color="#3B82F6" />
-            <span className={styles.time}>{time}</span>
+          <div className={listMode ? styles.timeBlockList : styles.timeBlock}>
+            {!listMode && <PostIcon width={16} height={16} color="#3B82F6" />}
+            <span className={listMode ? styles.timeList : styles.time}>{listMode ? date : time}</span>
           </div>
-          <div className={styles.statusBlock}>
-            <span className={styles.statusText}>{getStatusLabel(post.status)}</span>
+          <div className={listMode ? styles.statusIconsOnly : styles.statusBlock}>
+            {listMode && <PostIcon width={16} height={16} color="#3B82F6" />}
+            {!listMode && <span className={styles.statusText}>{getStatusLabel(post.status)}</span>}
             {isRepeating && (
-              <ArrowsSpinIcon width={14} height={14} color="#B0B4B8" />
+              <ArrowsSpinIcon width={listMode ? 16 : 14} height={listMode ? 16 : 14} color={listMode ? '#3B82F6' : '#B0B4B8'} />
             )}
           </div>
         </div>
@@ -117,14 +136,20 @@ export default function CalendarCard({ post, onEdit }: CalendarCardProps) {
           </div>
         )}
 
-        <div className={styles.previewRow}>
-          {previewHtml.trim().length > 0 && (
-            <div
-              className={styles.preview}
-              dangerouslySetInnerHTML={{ __html: previewHtml }}
-            />
+        <div className={listMode ? styles.previewRowList : styles.previewRow}>
+          {listMode ? (
+            previewText.length > 0 && (
+              <div className={styles.previewList}>{previewText}</div>
+            )
+          ) : (
+            previewHtml.trim().length > 0 && (
+              <div
+                className={styles.preview}
+                dangerouslySetInnerHTML={{ __html: previewHtml }}
+              />
+            )
           )}
-          {thumbnail && (
+          {thumbnail && !listMode && (
             <div className={styles.thumbnail}>
               {!thumbnailLoaded && !thumbnailError && (
                 <div className={styles.thumbnailLoader}>

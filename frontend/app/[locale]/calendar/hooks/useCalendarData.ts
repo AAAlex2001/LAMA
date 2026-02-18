@@ -2,9 +2,14 @@ import React from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
 import {
   setCurrentView,
+  setListSortOrder,
+  setListStatusFilter,
   setIsLoading,
   setItems,
   setSelectedDate,
+  setSidebarDate,
+  setListDateRange,
+  clearListDateRange,
   setWeekItems,
   setMonthPostCounts,
   setCountsMonthAnchor,
@@ -48,7 +53,10 @@ export function useCalendarData() {
   
   const {
     items, weekItems, isLoading, selectedDate: selectedDateStr, currentView,
-    monthPostCounts, countsMonthAnchor: countsMonthAnchorStr, isLoadingMore, dayPageState
+    sidebarDate: sidebarDateStr,
+    monthPostCounts, countsMonthAnchor: countsMonthAnchorStr, isLoadingMore, dayPageState,
+    listRangeStart: listRangeStartStr, listRangeEnd: listRangeEndStr,
+    listSortOrder, listStatusFilter,
   } = state;
 
   const stateRef = React.useRef(state);
@@ -59,7 +67,10 @@ export function useCalendarData() {
   const prevScrollTopByTargetRef = React.useRef<Record<'main' | 'window', number>>({ main: 0, window: 0 });
 
   const selectedDate = parseDate(selectedDateStr);
+  const sidebarDate = parseDate(sidebarDateStr);
   const countsMonthAnchor = parseDate(countsMonthAnchorStr);
+  const listRangeStart = listRangeStartStr ? parseDate(listRangeStartStr) : null;
+  const listRangeEnd = listRangeEndStr ? parseDate(listRangeEndStr) : null;
 
   React.useEffect(() => {
     dispatch(setCountsMonthAnchor(selectedDateStr));
@@ -67,7 +78,20 @@ export function useCalendarData() {
 
   async function loadListPage(page: number, append: boolean) {
     const s = stateRef.current;
-    const { startDate, endDate, key } = getRangeForView(s.currentView, parseDate(s.selectedDate));
+    let startDate: string;
+    let endDate: string;
+    let key: string;
+
+    if (s.currentView === 'list' && s.listRangeStart && s.listRangeEnd) {
+      startDate = s.listRangeStart;
+      endDate = s.listRangeEnd;
+      key = `${startDate}_${endDate}`;
+    } else {
+      const range = getRangeForView(s.currentView, parseDate(s.selectedDate));
+      startDate = range.startDate;
+      endDate = range.endDate;
+      key = range.key;
+    }
     
     const params = new URLSearchParams({
       page: String(page),
@@ -75,6 +99,15 @@ export function useCalendarData() {
       start_date: `${startDate}T00:00:00`,
       end_date: `${endDate}T23:59:59`,
     });
+
+    if (s.currentView === 'list') {
+      if (s.listSortOrder) {
+        params.set('sort_order', s.listSortOrder);
+      }
+      if (s.listStatusFilter) {
+        params.set('status', s.listStatusFilter);
+      }
+    }
 
     const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
 
@@ -180,7 +213,7 @@ export function useCalendarData() {
 
     init();
     return () => { active = false; };
-  }, [currentView, selectedDateStr]); 
+  }, [currentView, selectedDateStr, listRangeStartStr, listRangeEndStr, listSortOrder, listStatusFilter]); 
 
   React.useEffect(() => {
     if (currentView !== 'week') {
@@ -308,7 +341,11 @@ export function useCalendarData() {
 
   const sortedPosts = sortPosts(items);
   const mobilePosts = ['week', 'month'].includes(currentView) 
-    ? sortPosts(weekItems[selectedDateStr] || []) 
+    ? sortPosts(weekItems[sidebarDateStr] || []) 
+    : sortedPosts;
+
+  const sidebarPosts = ['week', 'month'].includes(currentView)
+    ? sortPosts(weekItems[sidebarDateStr] || [])
     : sortedPosts;
 
   const currentMonthCounts = Object.entries(weekItems).reduce((acc, [k, v]) => ({
@@ -322,18 +359,26 @@ export function useCalendarData() {
   return {
     ...state,
     selectedDate,
+    sidebarDate,
+    listRangeStart,
+    listRangeEnd,
     sortedPosts,
+    sidebarPosts,
     mobilePosts,
     monthDates: getMonthDates(selectedDate),
     isGridView: ['week', 'month'].includes(currentView),
     isTodaySelected: isSameDay(selectedDate, new Date()),
     gridPostCounts: currentView === 'month' ? currentMonthCounts : { ...monthPostCounts, ...currentMonthCounts },
-    mobileGridTitle: currentView === 'month' ? getMonthLabel(selectedDate) : formatDayTitle(selectedDate),
+    mobileGridTitle: currentView === 'month' ? getMonthLabel(selectedDate) : formatDayTitle(sidebarDate),
     listTitle: String(selectedDate.getFullYear()),
     dayLoadingMap,
     isLoadingMore,
     
     changeDate: (d: Date) => dispatch(setSelectedDate(formatDateOnly(d))),
+    changeSidebarDate: (d: Date) => dispatch(setSidebarDate(formatDateOnly(d))),
+    setListDateRange: (start: Date, end: Date) =>
+      dispatch(setListDateRange({ start: formatDateOnly(start), end: formatDateOnly(end) })),
+    clearListDateRange: () => dispatch(clearListDateRange()),
     
     handlePrevDay: () => {
       if (currentView === 'week') updateDate(-1, 'week');
@@ -350,6 +395,8 @@ export function useCalendarData() {
     },
     
     handleViewChange: (v: CalendarView) => dispatch(setCurrentView(v)),
+    setListSortOrder: (order: 'asc' | 'desc' | null) => dispatch(setListSortOrder(order)),
+    setListStatusFilter: (status: string | null) => dispatch(setListStatusFilter(status)),
     handleLoadMore,
     handleLoadMoreDay,
     setCountsMonthAnchor: (d: Date) => dispatch(setCountsMonthAnchor(formatDateOnly(d))),

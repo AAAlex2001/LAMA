@@ -75,6 +75,16 @@
   white-space: nowrap;
 }
 
+.listRangeWrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: auto;
+  }
+}
+
 .viewTabs {
   display: flex;
   flex-direction: row;

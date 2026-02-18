@@ -1,0 +1,131 @@
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 4px 8px;
+  width: 100%;
+  min-height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.1);
+  cursor: pointer;
+}
+
+.triggerText {
+  flex: 0 0 auto;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 28px;
+  color: #383F45;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.triggerIcon {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 420px;
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.calendar {
+  width: 100%;
+  max-width: none !important;
+
+  :global(.react-calendar),
+  :global(.react-calendar__viewContainer) {
+    width: 100%;
+  }
+
+  :global(.react-calendar__month-view__days) {
+    column-gap: 0;
+    row-gap: 4px;
+  }
+
+  :global(.react-calendar__tile--range) {
+    position: relative;
+    background: transparent !important;
+    border-radius: 0 !important;
+    z-index: 1;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      height: 32px;
+      background: rgba(59, 130, 246, 0.15);
+      border-radius: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    abbr {
+      position: relative;
+      z-index: 3;
+      color: #858585 !important;
+      font-weight: 400 !important;
+    }
+  }
+
+  :global(.react-calendar__tile--range-start)::before {
+    border-radius: 50px 0 0 50px;
+  }
+
+  :global(.react-calendar__tile--range-end)::before {
+    border-radius: 0 50px 50px 0;
+  }
+
+  :global(.react-calendar__tile--range-start.react-calendar__tile--range-end)::before {
+    border-radius: 50px;
+  }
+
+  :global(.react-calendar__tile--range.react-calendar__tile--active),
+  :global(.react-calendar__tile--range.react-calendar__tile--selected) {
+    background: #3B82F6 !important;
+    border-radius: 50px !important;
+    z-index: 2;
+
+    &::before {
+      opacity: 0;
+    }
+
+    abbr {
+      color: #FFFFFF !important;
+      font-weight: 600 !important;
+    }
+  }
+}
+
+.resetBtnWrap {
+  width: 100%;
+}

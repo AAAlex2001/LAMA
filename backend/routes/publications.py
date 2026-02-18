@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime, timezone
 import logging
 
@@ -113,6 +113,7 @@ async def get_publications(
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
     search: Optional[str] = None,
+    sort_order: Optional[Literal['asc', 'desc']] = Query(None),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
     service: PublicationService = Depends(get_publication_service),
@@ -131,6 +132,7 @@ async def get_publications(
         start_date=start_date,
         end_date=end_date,
         search=search,
+        sort_order=sort_order,
         skip=skip,
         limit=page_size
     )

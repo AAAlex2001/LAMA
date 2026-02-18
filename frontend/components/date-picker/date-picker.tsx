@@ -17,6 +17,8 @@ interface DatePickerProps {
   minDate?: Date | null;
   highlightWeek?: boolean;
   postCounts?: Record<string, number>;
+  selectedDateKeys?: string[];
+  rangeSelection?: boolean;
 }
 
 function getWeekStartDate(date: Date): Date {
@@ -41,6 +43,8 @@ export default function DatePicker({
   minDate,
   highlightWeek = false,
   postCounts,
+  selectedDateKeys = [],
+  rangeSelection = false,
 }: DatePickerProps) {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
@@ -50,10 +54,18 @@ export default function DatePicker({
 
   useEffect(() => {
     if (value) {
-      setSelectedDate(value);
-      setActiveStartDate(value);
+      setSelectedDate((prev) => {
+        if (prev.getTime() === value.getTime()) return prev;
+        return value;
+      });
+      // Only reset visible month when the selected date actually changes
+      // (prevents month navigation from being overridden by re-renders)
+      setActiveStartDate((prev) => {
+        if (value.getFullYear() === prev.getFullYear() && value.getMonth() === prev.getMonth()) return prev;
+        return new Date(value.getFullYear(), value.getMonth(), 1);
+      });
     }
-  }, [value]);
+  }, [value?.getTime()]);
 
   const handleDateChange = (newValue: any) => {
     if (newValue instanceof Date) {
@@ -64,6 +76,22 @@ export default function DatePicker({
 
   const getTileClassName = (date: Date) => {
     const classes: string[] = [];
+
+    const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const hasDateKeys = selectedDateKeys.length > 0;
+    const rangeStartKey = hasDateKeys ? selectedDateKeys[0] : null;
+    const rangeEndKey = hasDateKeys ? selectedDateKeys[selectedDateKeys.length - 1] : null;
+
+    if (hasDateKeys && selectedDateKeys.includes(dateKey)) {
+      if (rangeSelection) {
+        classes.push('react-calendar__tile--range');
+        if (dateKey === rangeStartKey) classes.push('react-calendar__tile--range-start');
+        if (dateKey === rangeEndKey) classes.push('react-calendar__tile--range-end');
+        if (dateKey !== rangeStartKey && dateKey !== rangeEndKey) classes.push('react-calendar__tile--range-middle');
+      } else {
+        classes.push('react-calendar__tile--selected');
+      }
+    }
 
     if (selectedDates && selectedDates.length > 0 && selectedDates.includes(date.getDate())) {
       classes.push('react-calendar__tile--selected');

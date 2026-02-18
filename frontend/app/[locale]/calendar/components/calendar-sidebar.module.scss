@@ -4,29 +4,44 @@
   @media (min-width: 1440px) {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 0;
     width: 320px;
     flex-shrink: 0;
     align-self: flex-start;
     position: sticky;
     top: 0;
     max-height: 710px;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
+    background: #FFFFFF;
+    border-radius: 8px;
   }
 }
 
 .calendarWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 12px 16px;
+  gap: 20px;
+  width: 100%;
   background: #FFFFFF;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0px 0px 14px 0px rgba(0, 0, 0, 0.07);
+  border-radius: 11px;
 }
 
 .calendar {
   max-width: 100% !important;
   box-shadow: none !important;
   padding: 0 !important;
+}
+
+.bottomSection {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 10px 16px;
+  gap: 10px;
+  width: 100%;
 }
 
 .createBtnWrapper {
@@ -43,4 +58,60 @@
     justify-content: center;
     padding: 10px;
   }
+}
+
+.postsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 12px;
+  width: 100%;
+}
+
+.postsInner {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  width: 100%;
+}
+
+.postRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 0;
+  gap: 6px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #F5F7FA;
+  }
+}
+
+.postTime {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+  flex-shrink: 0;
+}
+
+.postPreview {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
