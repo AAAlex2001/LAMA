@@ -42,16 +42,18 @@ class RepeatInterval(enum.Enum):
 publication_tags = Table(
     'publication_tags',
     Base.metadata,
-    Column('publication_id', Integer, ForeignKey('publications.id', ondelete='CASCADE')),
-    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'))
+    Column('publication_id', Integer, ForeignKey('publications.id', ondelete='CASCADE'), index=True),
+    Column('tag_id', Integer, ForeignKey('tags.id', ondelete='CASCADE'), index=True),
+    Index('ix_publication_tags_pub_tag', 'publication_id', 'tag_id', unique=True),
 )
 
 
 publication_channels = Table(
     'publication_channels',
     Base.metadata,
-    Column('publication_id', Integer, ForeignKey('publications.id', ondelete='CASCADE')),
-    Column('channel_id', Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'))
+    Column('publication_id', Integer, ForeignKey('publications.id', ondelete='CASCADE'), index=True),
+    Column('channel_id', Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'), index=True),
+    Index('ix_publication_channels_pub_ch', 'publication_id', 'channel_id', unique=True),
 )
 
 
@@ -111,6 +113,10 @@ class Publication(Base):
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    __table_args__ = (
+        Index('ix_publications_owner_status_created', 'owner_id', 'status', 'created_at'),
+    )
     
     owner = relationship("User", back_populates="publications")
     channels = relationship('ChannelGroup', secondary=publication_channels, back_populates='publications')
@@ -161,6 +167,9 @@ class Tag(Base):
 
 class TelegramMessage(Base):
     __tablename__ = 'telegram_messages'
+    __table_args__ = (
+        Index('ix_telegram_messages_pub_channel', 'publication_id', 'channel_id'),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     publication_id: Mapped[int] = mapped_column(Integer, ForeignKey('publications.id', ondelete='CASCADE'))

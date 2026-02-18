@@ -14,6 +14,8 @@ interface WeeklyCalendarViewProps {
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   visibleDates?: Date[];
+  onReachEnd?: (dateKey: string) => void;
+  dayLoading?: Record<string, boolean>;
 }
 
 const DAY_NAMES_SHORT: Record<number, string> = {
@@ -75,10 +77,13 @@ export default function WeeklyCalendarView({
   onEdit,
   onAddPost,
   visibleDates,
+  onReachEnd,
+  dayLoading,
 }: WeeklyCalendarViewProps) {
   const weekStart = getWeekStart(selectedDate);
+  const nearBottomByDayRef = React.useRef<Record<string, boolean>>({});
 
-  const weekDays = React.useMemo(() => {
+  const weekDays = (() => {
     if (visibleDates?.length) {
       return visibleDates;
     }
@@ -89,7 +94,7 @@ export default function WeeklyCalendarView({
       days.push(d);
     }
     return days;
-  }, [visibleDates, weekStart.getTime()]);
+  })();
 
   return (
     <div className={styles.weeklyView}>
@@ -139,21 +144,40 @@ export default function WeeklyCalendarView({
               <CalendarAddIcon />
             </button>
 
-            <div className={cardsClasses}>
-              {isLoading ? (
-                <div className={styles.dayLoader}>
-                  <Loader size={18} color="blue" />
-                </div>
-              ) : sorted.length === 0 ? (
+            <div
+              className={cardsClasses}
+              data-date-key={dateKey}
+              onScroll={(e) => {
+                const target = e.currentTarget;
+                if (!onReachEnd || isLoading) return;
+
+                const nearBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 2;
+                const wasNearBottom = !!nearBottomByDayRef.current[dateKey];
+
+                if (nearBottom && !wasNearBottom && !dayLoading?.[dateKey]) {
+                  onReachEnd(dateKey);
+                }
+
+                nearBottomByDayRef.current[dateKey] = nearBottom;
+              }}
+            >
+              {sorted.length === 0 && !isLoading ? (
                 <div className={styles.emptyDay}>—</div>
               ) : (
-                sorted.map((post) => (
-                  <WeeklyCard
-                    key={post.id}
-                    post={post}
-                    onEdit={() => onEdit(post)}
-                  />
-                ))
+                <>
+                  {sorted.map((post) => (
+                    <WeeklyCard
+                      key={post.id}
+                      post={post}
+                      onEdit={() => onEdit(post)}
+                    />
+                  ))}
+                  {(isLoading || dayLoading?.[dateKey]) && (
+                    <div className={styles.dayLoader}>
+                      <Loader size={16} color="blue" />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

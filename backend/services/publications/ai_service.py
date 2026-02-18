@@ -4,17 +4,20 @@ import httpx
 
 from backend.schemas.publications import AIGenerateRequest
 
+# Module-level singleton — reused across all requests, no per-request leak
+_ai_http_client = httpx.AsyncClient(
+    timeout=30.0,
+    limits=httpx.Limits(
+        max_keepalive_connections=20, max_connections=100)
+)
+
 
 class AIService:
     """Сервис для работы с AI (DeepSeek API)"""
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key
-        self.http_client = httpx.AsyncClient(
-            timeout=30.0,
-            limits=httpx.Limits(
-                max_keepalive_connections=20, max_connections=100)
-        )
+        self.http_client = _ai_http_client
 
     async def generate_content(self, request: AIGenerateRequest) -> str:
         """Сгенерировать контент с помощью AI"""

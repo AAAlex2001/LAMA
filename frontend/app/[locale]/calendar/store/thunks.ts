@@ -47,7 +47,7 @@ export const fetchCalendarPosts = createAsyncThunk(
     try {
       const queryParams = new URLSearchParams({
         page: '1',
-        page_size: '100',
+        page_size: '30',
         start_date: toStartOfDayISO(params.date),
         end_date: toEndOfDayISO(params.date),
       });
@@ -78,7 +78,7 @@ export const fetchWeeklyPosts = createAsyncThunk(
 
       const queryParams = new URLSearchParams({
         page: '1',
-        page_size: '500',
+        page_size: '20',
         start_date: toStartOfDayISO(startDateStr),
         end_date: toEndOfDayISO(endDateStr),
       });
@@ -120,7 +120,7 @@ export const fetchMonthlyPosts = createAsyncThunk(
 
       const allItems: Draft[] = [];
       let page = 1;
-      const pageSize = 500;
+      const pageSize = 20;
 
       while (true) {
         const queryParams = new URLSearchParams({
@@ -156,6 +156,52 @@ export const fetchMonthlyPosts = createAsyncThunk(
       dispatch(setWeekItems(monthItems));
       dispatch(setItems(allItems));
       return monthItems;
+    } catch (err) {
+      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки');
+    } finally {
+      dispatch(setIsLoading(false));
+    }
+  }
+);
+
+export const fetchListPosts = createAsyncThunk(
+  'calendar/fetchListPosts',
+  async (params: { date: string }, { dispatch, rejectWithValue }) => {
+    dispatch(setIsLoading(true));
+    try {
+      const baseDate = new Date(params.date + 'T00:00:00');
+      const year = baseDate.getFullYear();
+
+      const startDateStr = `${year}-01-01`;
+      const endDateStr = `${year}-12-31`;
+
+      const allItems: Draft[] = [];
+      let page = 1;
+      const pageSize = 30;
+
+      while (true) {
+        const queryParams = new URLSearchParams({
+          page: String(page),
+          page_size: String(pageSize),
+          start_date: toStartOfDayISO(startDateStr),
+          end_date: toEndOfDayISO(endDateStr),
+        });
+
+        const response = await apiRequest<DraftListResponse>(
+          `/publications?${queryParams}`
+        );
+
+        allItems.push(...response.items);
+
+        if (response.items.length < pageSize) {
+          break;
+        }
+        page += 1;
+      }
+
+      dispatch(setItems(allItems));
+      dispatch(setWeekItems({}));
+      return allItems;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {

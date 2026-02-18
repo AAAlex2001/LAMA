@@ -41,6 +41,15 @@ async def publish_to_channels(
     logger.info(f"publish_now START publication_id={publication.id}")
     logger.info(f"Batched send to {len(publication.channels)} channels")
 
+    # Pre-fetch reply_to mapping once instead of per-channel
+    reply_map: Dict[int, int] = {}
+    if publication.reply_to_post_id:
+        result = await db.execute(
+            select(TelegramMessage.channel_id, TelegramMessage.telegram_message_id)
+            .where(TelegramMessage.publication_id == publication.reply_to_post_id)
+        )
+        reply_map = dict(result.all())
+
     results: List[ChannelPublishResult] = []
 
     for batch_start in range(0, len(publication.channels), BATCH_SIZE):
@@ -52,7 +61,8 @@ async def publish_to_channels(
             publication,
             batch_channels,
             batch_num,
-            get_bot_callback
+            get_bot_callback,
+            reply_map
         )
         results.extend(batch_results)
 
@@ -96,14 +106,15 @@ async def process_batch(
     publication: Publication,
     batch_channels: List[Channel],
     batch_num: int,
-    get_bot_callback
+    get_bot_callback,
+    reply_map: Dict[int, int] = None
 ) -> List[ChannelPublishResult]:
     """Обработать батч каналов"""
     
     logger.info(f"Processing batch {batch_num}: {len(batch_channels)} channels")
     
     tasks = [
-        safe_send_to_channel(publication, channel, get_bot_callback)
+        safe_send_to_channel(publication, channel, get_bot_callback, reply_map)
         for channel in batch_channels
     ]
     raw_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -128,7 +139,8 @@ async def process_batch(
 async def safe_send_to_channel(
     publication: Publication,
     channel: Channel,
-    get_bot_callback
+    get_bot_callback,
+    reply_map: dict = None
 ) -> ChannelPublishResult:
     """Безопасная отправка в канал с обработкой ошибок"""
     
@@ -144,32 +156,22 @@ async def safe_send_to_channel(
             notification_error=f"Failed to publish to {channel_name}: {str(e)}"
         )
 
-    return await send_to_channel_with_retry(publication, channel, bot, channel_name)
+    return await send_to_channel_with_retry(publication, channel, bot, channel_name, reply_map)
 
 
 async def send_to_channel_with_retry(
     publication: Publication,
     channel: Channel,
     bot: RateLimitedBot,
-    channel_name: str
+    channel_name: str,
+    reply_map: dict = None
 ) -> ChannelPublishResult:
     """Отправить в канал с повторными попытками"""
     
-    # Получаем reply_to_message_id если нужно ответить на другой пост
+    # Получаем reply_to_message_id из предварительно загруженной карты
     reply_to_message_id = None
-    if publication.reply_to_post_id:
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                select(TelegramMessage.telegram_message_id)
-                .where(
-                    TelegramMessage.publication_id == publication.reply_to_post_id,
-                    TelegramMessage.channel_id == channel.id
-                )
-                .limit(1)
-            )
-            telegram_msg = result.scalar_one_or_none()
-            if telegram_msg:
-                reply_to_message_id = telegram_msg
+    if publication.reply_to_post_id and reply_map:
+        reply_to_message_id = reply_map.get(channel.id)
     
     for attempt in range(MAX_RETRY_ATTEMPTS):
         try:

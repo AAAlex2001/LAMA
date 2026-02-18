@@ -2,7 +2,13 @@ import { configureStore, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 
-export type CalendarView = 'day' | 'week' | 'month' | 'year';
+export type CalendarView = 'day' | 'week' | 'month' | 'list';
+
+export type DayPageState = {
+  page: number;
+  hasMore: boolean;
+  isLoading: boolean;
+};
 
 interface CalendarState {
   items: Draft[];
@@ -10,6 +16,13 @@ interface CalendarState {
   isLoading: boolean;
   selectedDate: string;
   currentView: CalendarView;
+  monthPostCounts: Record<string, number>;
+  countsMonthAnchor: string;
+  currentRangeKey: string;
+  currentPage: number;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  dayPageState: Record<string, DayPageState>;
 }
 
 const initialState: CalendarState = {
@@ -18,6 +31,13 @@ const initialState: CalendarState = {
   isLoading: false,
   selectedDate: new Date().toISOString().split('T')[0],
   currentView: 'day',
+  monthPostCounts: {},
+  countsMonthAnchor: new Date().toISOString().split('T')[0],
+  currentRangeKey: '',
+  currentPage: 1,
+  hasMore: false,
+  isLoadingMore: false,
+  dayPageState: {},
 };
 
 const calendarSlice = createSlice({
@@ -39,6 +59,30 @@ const calendarSlice = createSlice({
     setCurrentView: (state, action: PayloadAction<CalendarView>) => {
       state.currentView = action.payload;
     },
+    setMonthPostCounts: (state, action: PayloadAction<Record<string, number>>) => {
+      state.monthPostCounts = action.payload;
+    },
+    setCountsMonthAnchor: (state, action: PayloadAction<string>) => {
+      state.countsMonthAnchor = action.payload;
+    },
+    setCurrentRangeKey: (state, action: PayloadAction<string>) => {
+      state.currentRangeKey = action.payload;
+    },
+    setCurrentPage: (state, action: PayloadAction<number>) => {
+      state.currentPage = action.payload;
+    },
+    setHasMore: (state, action: PayloadAction<boolean>) => {
+      state.hasMore = action.payload;
+    },
+    setIsLoadingMore: (state, action: PayloadAction<boolean>) => {
+      state.isLoadingMore = action.payload;
+    },
+    setDayPageState: (state, action: PayloadAction<Record<string, DayPageState>>) => {
+      state.dayPageState = action.payload;
+    },
+    patchDayPageState: (state, action: PayloadAction<{ dateKey: string; value: DayPageState }>) => {
+      state.dayPageState[action.payload.dateKey] = action.payload.value;
+    },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);
       for (const key of Object.keys(state.weekItems)) {
@@ -48,7 +92,22 @@ const calendarSlice = createSlice({
   },
 });
 
-export const { setItems, setWeekItems, setIsLoading, setSelectedDate, setCurrentView, removeItem } = calendarSlice.actions;
+export const {
+  setItems,
+  setWeekItems,
+  setIsLoading,
+  setSelectedDate,
+  setCurrentView,
+  setMonthPostCounts,
+  setCountsMonthAnchor,
+  setCurrentRangeKey,
+  setCurrentPage,
+  setHasMore,
+  setIsLoadingMore,
+  setDayPageState,
+  patchDayPageState,
+  removeItem,
+} = calendarSlice.actions;
 
 export const calendarStore = configureStore({
   reducer: {

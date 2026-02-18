@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Loader from '@/components/loader';
 import Button from '@/components/button/button';
 import CalendarCard from './CalendarCard';
@@ -9,12 +10,14 @@ import styles from '../calendar.module.scss';
 interface CalendarListProps {
   posts: Draft[];
   isLoading: boolean;
+  showInlineLoader?: boolean;
   onEdit: (post: Draft) => void;
 }
 
 export default function CalendarList({
   posts,
   isLoading,
+  showInlineLoader = false,
   onEdit,
 }: CalendarListProps) {
   if (isLoading) {
@@ -52,6 +55,11 @@ export default function CalendarList({
           onEdit={() => onEdit(post)}
         />
       ))}
+      {showInlineLoader && (
+        <div className={styles.loaderWrapper}>
+          <Loader size={20} color="blue" />
+        </div>
+      )}
     </div>
   );
 }

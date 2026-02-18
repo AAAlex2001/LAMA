@@ -46,11 +46,15 @@ function formatMonthTitle(date: Date): string {
   return `${MONTH_NAMES_RU[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+function formatListTitle(date: Date): string {
+  return String(date.getFullYear());
+}
+
 const VIEW_TABS: { key: CalendarView; label: string }[] = [
   { key: 'day', label: 'День' },
   { key: 'week', label: 'Неделя' },
   { key: 'month', label: 'Месяц' },
-  { key: 'year', label: 'Год' },
+  { key: 'list', label: 'Список' },
 ];
 
 export default function CalendarHeader({
@@ -98,7 +102,9 @@ export default function CalendarHeader({
             ? formatWeekRange(selectedDate)
             : currentView === 'month'
               ? formatMonthTitle(selectedDate)
-            : formatShortDate(selectedDate)}
+              : currentView === 'list'
+                ? formatListTitle(selectedDate)
+                : formatShortDate(selectedDate)}
         </span>
         <button type="button" className={`${styles.slideBtn} ${styles.slideBtnRight}`} onClick={onNextDay}>
           <CalendarArrowIcon width={16} height={16} />

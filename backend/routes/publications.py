@@ -57,7 +57,7 @@ async def get_drafts(
     tag_names: Optional[List[str]] = None,
     tag_ids: Optional[List[int]] = None,
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = Query(50, ge=1, le=200),
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
@@ -82,7 +82,7 @@ async def get_drafts(
 @router.get("/scheduled", response_model=PublicationListResponse)
 async def get_scheduled(
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = Query(50, ge=1, le=200),
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
@@ -114,7 +114,7 @@ async def get_publications(
     end_date: Optional[datetime] = None,
     search: Optional[str] = None,
     page: int = 1,
-    page_size: int = 50,
+    page_size: int = Query(50, ge=1, le=200),
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user)
 ):
@@ -368,23 +368,9 @@ async def publish_now(
     if not publication.channels:
         raise HTTPException(status_code=400, detail="No channels selected")
     
-    publication.status = DBPublicationStatus.PUBLISHED
+    # Only mark as SCHEDULED; Celery task will set PUBLISHED after actual send
+    publication.status = DBPublicationStatus.SCHEDULED
     publication.published_time = datetime.now(timezone.utc)
-    if publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER:
-        base_time = publication.scheduled_time or publication.published_time
-        publication.next_repeat_time = calculate_next_repeat_time(
-            base_time,
-            publication.repeat_interval,
-            publication.repeat_custom_days,
-            publication.repeat_custom_hours,
-            publication.repeat_end_time,
-            publication.repeat_custom_unit,
-            publication.repeat_custom_value,
-            publication.repeat_weekdays,
-            publication.repeat_month_days,
-            publication.repeat_year_month,
-            publication.repeat_year_days
-        )
     await service.db.commit()
     
     publish_publication.apply_async(args=[publication_id], queue="high")
@@ -507,7 +493,7 @@ async def search_tags(
     query = (
         select(Tag)
         .where(Tag.owner_id == current_user.id)
-        .where(Tag.name.ilike(f"%{q}%"))
+        .where(Tag.name.ilike(f"%{q.replace('%', '').replace('_', '')}%"))
         .order_by(Tag.name)
         .limit(limit)
     )

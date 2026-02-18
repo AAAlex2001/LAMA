@@ -28,6 +28,11 @@ from backend.schemas.publications import (
 )
 
 
+def escape_like(s: str) -> str:
+    """Escape special LIKE/ILIKE characters."""
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 class PublicationPostsCRUDService:
     """CRUD-операции для публикаций, тегов, каналов и календаря."""
 
@@ -190,7 +195,7 @@ class PublicationPostsCRUDService:
         if search:
             search_text = search.strip()
             if search_text:
-                id_query = id_query.where(Publication.text_content.ilike(f"%{search_text}%"))
+                id_query = id_query.where(Publication.text_content.ilike(f"%{escape_like(search_text)}%"))
 
         id_subquery = (
             id_query
@@ -327,13 +332,16 @@ class PublicationPostsCRUDService:
         if new_tags:
             self.db.add_all(new_tags)
             try:
+                await self.db.begin_nested()
                 await self.db.flush()
             except IntegrityError:
-                await self.db.rollback()
+                # Only the savepoint is rolled back, rest of session survives
                 query = select(Tag).where(Tag.name.in_(tag_names))
+                if owner_id is not None:
+                    query = query.where(Tag.owner_id == owner_id)
                 result = await self.db.execute(query)
                 existing_tags = {tag.name: tag for tag in result.scalars().all()}
-                tags = [existing_tags[name] for name in tag_names]
+                tags = [existing_tags[name] for name in tag_names if name in existing_tags]
                 for tag in tags:
                     tag.last_used_at = now
 
@@ -402,6 +410,7 @@ class PublicationPostsCRUDService:
             )
             .options(selectinload(Publication.channels), selectinload(Publication.tags))
             .order_by(Publication.scheduled_time)
+            .limit(500)
         )
         if owner_id is not None:
             query = query.where(Publication.owner_id == owner_id)
