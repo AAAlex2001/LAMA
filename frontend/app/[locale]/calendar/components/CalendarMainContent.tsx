@@ -29,6 +29,7 @@ interface CalendarMainContentProps {
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   onLoadMoreDay: (dateKey: string) => void;
+  onLoadMoreList: () => void;
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
   onListStatusChange: (status: string | null) => void;
   onMonthChange: (date: Date) => void;
@@ -54,6 +55,7 @@ export default function CalendarMainContent({
   onEdit,
   onAddPost,
   onLoadMoreDay,
+  onLoadMoreList,
   onListSortChange,
   onListStatusChange,
   onMonthChange,
@@ -135,6 +137,7 @@ export default function CalendarMainContent({
             posts={sortedPosts}
             isLoading={isLoading}
             onEdit={onEdit}
+            onLoadMore={onLoadMoreList}
             isLoadingMore={isLoadingMore}
             dateSortOrder={listSortOrder}
             statusFilter={listStatusFilter}
@@ -150,6 +153,7 @@ export default function CalendarMainContent({
               posts={sortedPosts}
               isLoading={isLoading}
               isLoadingMore={isLoadingMore}
+              onLoadMore={onLoadMoreList}
               onEdit={onEdit}
               onAddPost={onAddPost}
               selectedDate={selectedDate}

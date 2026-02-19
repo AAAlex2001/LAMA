@@ -9,6 +9,12 @@ import {
   CalendarViewsIcon,
 } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
+import {
+  formatTime,
+  getPreviewText,
+  hasRepeat,
+  getSourceDate,
+} from '../utils/calendar-helpers';
 import styles from './weekly-card.module.scss';
 
 interface WeeklyCardProps {
@@ -16,32 +22,8 @@ interface WeeklyCardProps {
   onEdit: () => void;
 }
 
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function getPreviewText(post: Draft): string {
-  const html = post.formatted_content?.html
-    || post.formatted_content?.text
-    || post.text_content
-    || '';
-  return html.replace(/<[^>]*>/g, '').trim();
-}
-
-function hasRepeat(post: Draft): boolean {
-  const p = post as any;
-  return !!(p.repeat_interval && p.repeat_interval !== 'never');
-}
-
 export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
-  const time = formatTime(
-    post.status === 'scheduled'
-      ? ((post as any).scheduled_time || post.created_at)
-      : ((post as any).published_at || post.updated_at || post.created_at)
-  );
+  const time = formatTime(getSourceDate(post));
   const previewText = getPreviewText(post);
   const isRepeating = hasRepeat(post);
   const isPublished = post.status === 'published';
@@ -105,13 +87,13 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
           <div className={styles.statItem}>
             <CalendarReactionsIcon />
             <span className={styles.statValue}>
-              {(post as any).reactions_count ?? '—'}
+              {post.reactions_count ?? '—'}
             </span>
           </div>
           <div className={styles.statItem}>
             <CalendarViewsIcon />
             <span className={styles.statValue}>
-              {(post as any).views_count ?? '—'}
+              {post.views_count ?? '—'}
             </span>
           </div>
         </div>

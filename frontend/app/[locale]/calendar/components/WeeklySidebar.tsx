@@ -5,6 +5,15 @@ import DatePicker from '@/components/date-picker/date-picker';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
 import Loader from '@/components/loader';
+import {
+  formatDayTitle,
+  formatTime,
+  getPreviewText,
+  getSourceDate,
+  sortPostsByTime,
+  isSameDay,
+  formatDateOnly,
+} from '../utils/calendar-helpers';
 import styles from './weekly-sidebar.module.scss';
 
 interface WeeklySidebarProps {
@@ -18,71 +27,6 @@ interface WeeklySidebarProps {
   highlightWeek?: boolean;
   onLoadMoreDay?: (dateKey: string) => void;
   dayLoading?: Record<string, boolean>;
-}
-
-const DAY_NAMES_FULL: Record<number, string> = {
-  0: 'воскресенье',
-  1: 'понедельник',
-  2: 'вторник',
-  3: 'среда',
-  4: 'четверг',
-  5: 'пятница',
-  6: 'суббота',
-};
-
-const MONTH_NAMES_GEN: string[] = [
-  'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
-  'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
-];
-
-function formatDayTitle(date: Date): string {
-  const day = date.getDate();
-  const month = MONTH_NAMES_GEN[date.getMonth()];
-  const weekDay = DAY_NAMES_FULL[date.getDay()];
-  return `${day} ${month}, ${weekDay}`;
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function getPreviewText(post: Draft): string {
-  const html =
-    post.formatted_content?.html ||
-    post.formatted_content?.text ||
-    post.text_content ||
-    '';
-  return html.replace(/<[^>]*>/g, '').trim();
-}
-
-function formatDateKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function sortPostsByTime(posts: Draft[]): Draft[] {
-  return [...posts].sort((a, b) => {
-    const aTime = new Date(
-      (a as any).scheduled_time || a.updated_at || a.created_at
-    ).getTime();
-    const bTime = new Date(
-      (b as any).scheduled_time || b.updated_at || b.created_at
-    ).getTime();
-    return aTime - bTime;
-  });
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
 }
 
 export default function WeeklySidebar({
@@ -100,7 +44,7 @@ export default function WeeklySidebar({
   const postsListRef = React.useRef<HTMLDivElement>(null);
   const wasNearBottomRef = React.useRef(false);
 
-  const dateKey = formatDateKey(sidebarDate);
+  const dateKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dateKey] || [];
   const sortedPosts = sortPostsByTime(dayPosts);
   const dayTitle = formatDayTitle(sidebarDate);
@@ -174,11 +118,7 @@ export default function WeeklySidebar({
           <div className={styles.postsList} ref={postsListRef} onScroll={handlePostsScroll}>
             <div className={styles.postsInner}>
               {sortedPosts.map((post) => {
-                const time = formatTime(
-                  post.status === 'scheduled'
-                    ? ((post as any).scheduled_time || post.created_at)
-                    : ((post as any).published_at || post.updated_at || post.created_at)
-                );
+                const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
 

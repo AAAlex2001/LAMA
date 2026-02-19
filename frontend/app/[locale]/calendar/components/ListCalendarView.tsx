@@ -14,13 +14,26 @@ import {
 } from '@/components/icons';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
-import ListFilterBar, { type FilterConfig } from './ListFilterBar';
+import ListFilterBar from './ListFilterBar';
+import { buildFilterConfigs } from '../utils/buildFilterConfigs';
+import { applyPostFilters } from '../utils/filterPosts';
+import {
+  formatDateDot,
+  formatTime,
+  getSourceDate,
+  getPreviewText,
+  getStatusLabel,
+  hasRepeat,
+  formatCompact,
+  getMediaFilterTypes,
+} from '../utils/calendar-helpers';
 import styles from './list-calendar-view.module.scss';
 
 interface ListCalendarViewProps {
   posts: Draft[];
   isLoading: boolean;
   onEdit: (post: Draft) => void;
+  onLoadMore?: () => void;
   isLoadingMore?: boolean;
   dateSortOrder: 'asc' | 'desc' | null;
   statusFilter: string | null;
@@ -29,88 +42,8 @@ interface ListCalendarViewProps {
   mobileActiveFilters?: Record<string, string[]>;
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function getSourceDate(post: Draft): string {
-  return ((post as any).scheduled_time || (post as any).published_at || post.updated_at || post.created_at);
-}
-
-function getPreviewText(post: Draft): string {
-  const html = post.formatted_content?.html || post.formatted_content?.text || post.text_content || '';
-  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'scheduled':
-      return 'Запланирован';
-    case 'published':
-      return 'Опубликован';
-    case 'publishing':
-      return 'Публикуется';
-    case 'partial_success':
-      return 'Частично опубликован';
-    case 'draft':
-      return 'Черновик';
-    case 'failed':
-      return 'Ошибка';
-    case 'deleted':
-      return 'Удалён';
-    default:
-      return status;
-  }
-}
-
-function hasRepeat(post: Draft): boolean {
-  const value = (post as any).repeat_interval;
-  return !!(value && value !== 'never');
-}
-
-function getMediaTypes(urls: string[]): Set<string> {
-  const types = new Set<string>();
-  for (const url of urls) {
-    const ext = url.split('.').pop()?.toLowerCase() || '';
-    if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext)) {
-      types.add('photo');
-    } else if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) {
-      types.add('video');
-    } else if (['mp3', 'ogg', 'wav', 'flac', 'aac', 'wma'].includes(ext)) {
-      types.add('audio');
-    } else if (['gif'].includes(ext)) {
-      types.add('gif');
-    } else {
-      types.add('doc');
-    }
-  }
-  return types;
-}
-
-function formatCompact(value: unknown): string {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return '—';
-  }
-  if (value >= 1000000) {
-    return `${Math.round(value / 100000) / 10}M`;
-  }
-  if (value >= 1000) {
-    return `${Math.round(value / 100) / 10}K`;
-  }
-  return String(value);
-}
-
 function MediaIcons({ post }: { post: Draft }) {
-  const mediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
+  const mediaTypes = post.media_urls?.length ? getMediaFilterTypes(post.media_urls) : new Set<string>();
   return (
     <div className={styles.mediaIcons}>
       {mediaTypes.has('photo') && <PhotoIcon width={18} height={18} color="#B0B4B8" />}
@@ -126,6 +59,7 @@ export default function ListCalendarView({
   posts,
   isLoading,
   onEdit,
+  onLoadMore,
   isLoadingMore = false,
   dateSortOrder,
   statusFilter,
@@ -134,201 +68,58 @@ export default function ListCalendarView({
   mobileActiveFilters,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+  const desktopListRef = React.useRef<HTMLDivElement>(null);
+  const mobileListRef = React.useRef<HTMLDivElement>(null);
+  const desktopNearBottomRef = React.useRef(false);
+  const mobileNearBottomRef = React.useRef(false);
+
+  const filterConfigs = React.useMemo(
+    () => buildFilterConfigs(posts, { withDateSort: true, withStatusFilter: true, withStatsFilters: true }),
+    [posts],
+  );
+  const filteredPosts = React.useMemo(
+    () => applyPostFilters(posts, activeFilters, mobileActiveFilters),
+    [posts, activeFilters, mobileActiveFilters],
+  );
 
   React.useEffect(() => {
-    setActiveFilters((prev) => ({
-      ...prev,
-      date: dateSortOrder ? [dateSortOrder === 'desc' ? 'new' : 'old'] : [],
-      status: statusFilter ? [statusFilter] : [],
-    }));
-  }, [dateSortOrder, statusFilter]);
+    setActiveFilters((prev) => ({ ...prev, date: dateSortOrder ? [dateSortOrder === 'desc' ? 'new' : 'old'] : [] }));
+  }, [dateSortOrder]);
 
-  // Build filter options from posts data
-  const filterConfigs: FilterConfig[] = React.useMemo(() => {
-    const channelMap = new Map<string, string>();
-    const tagMap = new Map<string, { name: string; color?: string }>();
-    const mediaTypeSet = new Set<string>();
+  React.useEffect(() => {
+    setActiveFilters((prev) => ({ ...prev, status: statusFilter ? [statusFilter] : [] }));
+  }, [statusFilter]);
 
-    const statusOptions = [
-      { value: 'draft', label: getStatusLabel('draft') },
-      { value: 'scheduled', label: getStatusLabel('scheduled') },
-      { value: 'publishing', label: getStatusLabel('publishing') },
-      { value: 'published', label: getStatusLabel('published') },
-      { value: 'partial_success', label: getStatusLabel('partial_success') },
-      { value: 'failed', label: getStatusLabel('failed') },
-      { value: 'deleted', label: getStatusLabel('deleted') },
-    ];
+  const handleLoadMoreByElement = React.useCallback(
+    (element: HTMLDivElement | null, nearBottomRef: React.MutableRefObject<boolean>) => {
+      if (!element || !onLoadMore || isLoadingMore) return;
+      const dist = element.scrollHeight - element.scrollTop - element.clientHeight;
+      const nearBottom = dist <= 24;
 
-    posts.forEach((post) => {
-      post.channels?.forEach((ch) => {
-        channelMap.set(String(ch.id), ch.title || `Канал ${ch.id}`);
-      });
-      post.tags?.forEach((tag) => {
-        tagMap.set(String(tag.id), { name: tag.name, color: tag.color });
-      });
-      if (post.media_urls?.length) {
-        getMediaTypes(post.media_urls).forEach((t) => mediaTypeSet.add(t));
+      if (nearBottom && !nearBottomRef.current) {
+        nearBottomRef.current = true;
+        onLoadMore();
       }
-    });
-
-    const configs: FilterConfig[] = [];
-
-    configs.push({
-      key: 'date',
-      label: 'По дате',
-      multiSelect: false,
-      options: [
-        { value: 'new', label: 'Сначала новые' },
-        { value: 'old', label: 'Сначала старые' },
-      ],
-    });
-
-    configs.push({
-      key: 'status',
-      label: 'По статусу',
-      multiSelect: false,
-      options: statusOptions,
-    });
-
-    if (channelMap.size > 0) {
-      configs.push({
-        key: 'channel',
-        label: 'По каналам',
-        multiSelect: true,
-        options: Array.from(channelMap.entries()).map(([id, title]) => ({
-          value: id,
-          label: title,
-        })),
-      });
-    }
-
-    if (tagMap.size > 0) {
-      configs.push({
-        key: 'tag',
-        label: 'По тэгам',
-        multiSelect: true,
-        options: Array.from(tagMap.entries()).map(([id, { name, color }]) => ({
-          value: id,
-          label: name,
-          color,
-        })),
-      });
-    }
-
-    const mediaTypeLabels: Record<string, string> = {
-      photo: 'Фото',
-      video: 'Видео',
-      audio: 'Аудио',
-      doc: 'Документ',
-      gif: 'GIF',
-    };
-
-    if (mediaTypeSet.size > 0) {
-      configs.push({
-        key: 'media',
-        label: 'По типу вложений',
-        multiSelect: true,
-        options: Array.from(mediaTypeSet).map((t) => ({
-          value: t,
-          label: mediaTypeLabels[t] || t,
-        })),
-      });
-    }
-
-    configs.push({
-      key: 'views',
-      label: 'По просмотрам',
-      multiSelect: false,
-      options: [
-        { value: 'gt1000', label: 'Более 1000' },
-        { value: '100to1000', label: '100 - 1000' },
-        { value: 'lt100', label: 'Менее 100' },
-      ],
-    });
-
-    configs.push({
-      key: 'reactions',
-      label: 'По реакциям',
-      multiSelect: false,
-      options: [
-        { value: 'gt100', label: 'Более 100' },
-        { value: '10to100', label: '10 - 100' },
-        { value: 'lt10', label: 'Менее 10' },
-      ],
-    });
-
-    return configs;
-  }, [posts]);
-
-  // Apply filters
-  const filteredPosts = React.useMemo(() => {
-    const merged = { ...activeFilters };
-    if (mobileActiveFilters) {
-      for (const [k, v] of Object.entries(mobileActiveFilters)) {
-        if (v?.length) merged[k] = v;
+      if (dist > 96) {
+        nearBottomRef.current = false;
       }
-    }
+    },
+    [onLoadMore, isLoadingMore],
+  );
 
-    let next = posts.filter((post) => {
-      // Channel filter
-      const channelFilter = merged['channel'];
-      if (channelFilter?.length) {
-        const postChannelIds = post.channels?.map((ch) => String(ch.id)) || [];
-        if (!channelFilter.some((id) => postChannelIds.includes(id))) return false;
-      }
-
-      // Tag filter
-      const tagFilter = merged['tag'];
-      if (tagFilter?.length) {
-        const postTagIds = post.tags?.map((t) => String(t.id)) || [];
-        if (!tagFilter.some((id) => postTagIds.includes(id))) return false;
-      }
-
-      // Media type filter
-      const mediaFilter = merged['media'];
-      if (mediaFilter?.length) {
-        const postMediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
-        if (!mediaFilter.some((t) => postMediaTypes.has(t))) return false;
-      }
-
-      const viewsFilter = merged['views'];
-      if (viewsFilter?.length) {
-        const views = Number((post as any).views_count ?? (post as any).views ?? 0);
-        const ok = viewsFilter.some((v) =>
-          (v === 'gt1000' && views > 1000) ||
-          (v === '100to1000' && views >= 100 && views <= 1000) ||
-          (v === 'lt100' && views < 100)
-        );
-        if (!ok) return false;
-      }
-
-      const reactionsFilter = merged['reactions'];
-      if (reactionsFilter?.length) {
-        const reactions = Number((post as any).reactions_count ?? (post as any).likes_count ?? 0);
-        const ok = reactionsFilter.some((v) =>
-          (v === 'gt100' && reactions > 100) ||
-          (v === '10to100' && reactions >= 10 && reactions <= 100) ||
-          (v === 'lt10' && reactions < 10)
-        );
-        if (!ok) return false;
-      }
-
-      return true;
-    });
-
-    return next;
-  }, [posts, activeFilters, mobileActiveFilters]);
+  React.useEffect(() => {
+    handleLoadMoreByElement(desktopListRef.current, desktopNearBottomRef);
+    handleLoadMoreByElement(mobileListRef.current, mobileNearBottomRef);
+  }, [filteredPosts.length, handleLoadMoreByElement]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {
       const value = values[0] || null;
       onDateSortChange(value === 'new' ? 'desc' : value === 'old' ? 'asc' : null);
     }
-
     if (key === 'status') {
       onStatusFilterChange(values[0] || null);
     }
-
     setActiveFilters((prev) => ({ ...prev, [key]: values }));
   }
 
@@ -382,15 +173,19 @@ export default function ListCalendarView({
         </div>
       )}
 
-      <div className={styles.desktopList}>
+      <div
+        className={styles.desktopList}
+        ref={desktopListRef}
+        onScroll={() => handleLoadMoreByElement(desktopListRef.current, desktopNearBottomRef)}
+      >
         {filteredPosts.map((post) => {
           const sourceDate = getSourceDate(post);
           const channel = post.channels?.[0];
           const extraChannelsCount = post.channels?.length > 1 ? post.channels.length - 1 : 0;
           const preview = getPreviewText(post);
           const tags = post.tags || [];
-          const views = (post as any).views_count ?? (post as any).views;
-          const reactions = (post as any).reactions_count ?? (post as any).likes_count;
+          const views = post.views_count ?? post.views;
+          const reactions = post.reactions_count ?? post.likes_count;
 
           return (
             <div
@@ -400,7 +195,7 @@ export default function ListCalendarView({
             >
               <div className={styles.leftBlock}>
                 <div className={styles.dateTime}>
-                  <span className={styles.date}>{formatDate(sourceDate)}</span>
+                  <span className={styles.date}>{formatDateDot(sourceDate)}</span>
                   <span className={styles.time}>{formatTime(sourceDate)}</span>
                 </div>
                 <div className={styles.tagsWrap}>
@@ -450,7 +245,11 @@ export default function ListCalendarView({
       </div>
 
       <div className={styles.mobileList}>
-        <div className={styles.mobileListInner}>
+        <div
+          className={styles.mobileListInner}
+          ref={mobileListRef}
+          onScroll={() => handleLoadMoreByElement(mobileListRef.current, mobileNearBottomRef)}
+        >
           {filteredPosts.map((post) => (
             <CalendarCard
               key={post.id}

@@ -6,7 +6,15 @@ import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon, FilterSortIcon, ChevronDownIcon } from '@/components/icons';
-import ListFilterBar, { type FilterConfig } from './ListFilterBar';
+import ListFilterBar from './ListFilterBar';
+import { buildFilterConfigs } from '../utils/buildFilterConfigs';
+import { applyPostFilters } from '../utils/filterPosts';
+import {
+  formatTime,
+  getSourceDate,
+  getPreviewText,
+  formatDateOnly,
+} from '../utils/calendar-helpers';
 import styles from './month-calendar-view.module.scss';
 
 interface MonthCalendarViewProps {
@@ -24,40 +32,6 @@ interface MonthCalendarViewProps {
   onLoadMoreDay: (dateKey: string) => void;
   dayLoadingMap: Record<string, boolean>;
   mobileActiveFilters?: Record<string, string[]>;
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function getSourceDate(post: Draft): string {
-  return (post as any).scheduled_time || (post as any).published_at || post.updated_at || post.created_at;
-}
-
-function getPreviewText(post: Draft): string {
-  const html = post.formatted_content?.html || post.formatted_content?.text || post.text_content || '';
-  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function getMediaTypes(urls: string[]): Set<string> {
-  const types = new Set<string>();
-  for (const url of urls) {
-    const ext = url.split('.').pop()?.toLowerCase() || '';
-    if (['jpg', 'jpeg', 'png', 'webp', 'bmp'].includes(ext)) types.add('photo');
-    else if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) types.add('video');
-    else if (['mp3', 'ogg', 'wav', 'flac', 'aac', 'wma'].includes(ext)) types.add('audio');
-    else if (['gif'].includes(ext)) types.add('gif');
-    else types.add('doc');
-  }
-  return types;
-}
-
-function formatDateKey(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
 }
 
 function PostStatusIcon({ status }: { status: string }) {
@@ -84,116 +58,27 @@ export default function MonthCalendarView({
   mobileActiveFilters,
 }: MonthCalendarViewProps) {
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
-  const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
   const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
   const sortWrapperRef = React.useRef<HTMLDivElement>(null);
 
-  const dayKey = formatDateKey(sidebarDate);
+  const dayKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dayKey] || [];
 
-  const filterConfigs: FilterConfig[] = React.useMemo(() => {
-    const channelMap = new Map<string, string>();
-    const tagMap = new Map<string, { name: string; color?: string }>();
-    const mediaTypeSet = new Set<string>();
-
-    dayPosts.forEach((post) => {
-      post.channels?.forEach((ch) => {
-        channelMap.set(String(ch.id), ch.title || `Канал ${ch.id}`);
-      });
-      post.tags?.forEach((tag) => {
-        tagMap.set(String(tag.id), { name: tag.name, color: tag.color });
-      });
-      if (post.media_urls?.length) {
-        getMediaTypes(post.media_urls).forEach((t) => mediaTypeSet.add(t));
-      }
-    });
-
-    const configs: FilterConfig[] = [];
-
-    if (channelMap.size > 0) {
-      configs.push({
-        key: 'channel',
-        label: 'По каналам',
-        multiSelect: true,
-        options: Array.from(channelMap.entries()).map(([id, title]) => ({
-          value: id,
-          label: title,
-        })),
-      });
-    }
-
-    configs.push({
-      key: 'tag',
-      label: 'По тегам',
-      multiSelect: true,
-      options: Array.from(tagMap.entries()).map(([id, { name, color }]) => ({
-        value: id,
-        label: name,
-        color,
-      })),
-    });
-
-    const mediaTypeLabels: Record<string, string> = {
-      photo: 'Фото',
-      video: 'Видео',
-      audio: 'Аудио',
-      doc: 'Документ',
-      gif: 'GIF',
-    };
-
-    if (mediaTypeSet.size > 0) {
-      configs.push({
-        key: 'media',
-        label: 'По типу контента',
-        multiSelect: true,
-        options: Array.from(mediaTypeSet).map((t) => ({
-          value: t,
-          label: mediaTypeLabels[t] || t,
-        })),
-      });
-    }
-
-    return configs;
-  }, [dayPosts]);
-
+  const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+  const filterConfigs = React.useMemo(() => buildFilterConfigs(dayPosts, {}), [dayPosts]);
+  const allFilteredPosts = React.useMemo(
+    () => applyPostFilters(dayPosts, activeFilters, mobileActiveFilters),
+    [dayPosts, activeFilters, mobileActiveFilters],
+  );
+  const handleFilterChange = React.useCallback(
+    (key: string, values: string[]) => setActiveFilters((prev) => ({ ...prev, [key]: values })),
+    [],
+  );
   const filteredPosts = React.useMemo(() => {
-    const merged = { ...activeFilters };
-    if (mobileActiveFilters) {
-      for (const [k, v] of Object.entries(mobileActiveFilters)) {
-        if (v?.length) merged[k] = v;
-      }
-    }
+    if (!statusFilter) return allFilteredPosts;
+    return allFilteredPosts.filter((p) => p.status === statusFilter);
+  }, [allFilteredPosts, statusFilter]);
 
-    return dayPosts.filter((post) => {
-      if (statusFilter && post.status !== statusFilter) return false;
-
-      const channelFilter = merged['channel'];
-      if (channelFilter?.length) {
-        const postChannelIds = post.channels?.map((ch) => String(ch.id)) || [];
-        if (!channelFilter.some((id) => postChannelIds.includes(id))) return false;
-      }
-
-      const tagFilter = merged['tag'];
-      if (tagFilter?.length) {
-        const postTagIds = post.tags?.map((t) => String(t.id)) || [];
-        if (!tagFilter.some((id) => postTagIds.includes(id))) return false;
-      }
-
-      const mediaFilter = merged['media'];
-      if (mediaFilter?.length) {
-        const postMediaTypes = post.media_urls?.length ? getMediaTypes(post.media_urls) : new Set<string>();
-        if (!mediaFilter.some((t) => postMediaTypes.has(t))) return false;
-      }
-
-      return true;
-    });
-  }, [dayPosts, statusFilter, activeFilters, mobileActiveFilters]);
-
-  function handleFilterChange(key: string, values: string[]) {
-    setActiveFilters((prev) => ({ ...prev, [key]: values }));
-  }
-
-  // Close sort popup on click outside
   React.useEffect(() => {
     if (!sortPopupOpen) return;
     function handleClickOutside(e: MouseEvent) {
@@ -205,7 +90,6 @@ export default function MonthCalendarView({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sortPopupOpen]);
 
-  // Infinite scroll — detect when user scrolls near bottom of main container
   React.useEffect(() => {
     const mainNode = document.querySelector<HTMLElement>('main');
     if (!mainNode) return;

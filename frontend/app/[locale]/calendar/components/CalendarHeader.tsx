@@ -142,13 +142,7 @@ export default function CalendarHeader({
             <button
               type="button"
               className={styles.slideBtn}
-              onClick={() => {
-                if (currentView === 'day' || currentView === 'week') {
-                  onOpenCalendarPopup?.();
-                } else {
-                  onPrevDay();
-                }
-              }}
+              onClick={onPrevDay}
             >
               <CalendarArrowIcon width={16} height={16} />
             </button>
@@ -172,13 +166,7 @@ export default function CalendarHeader({
             <button
               type="button"
               className={`${styles.slideBtn} ${styles.slideBtnRight}`}
-              onClick={() => {
-                if (currentView === 'day' || currentView === 'week') {
-                  onOpenCalendarPopup?.();
-                } else {
-                  onNextDay();
-                }
-              }}
+              onClick={onNextDay}
             >
               <CalendarArrowIcon width={16} height={16} />
             </button>

@@ -5,6 +5,16 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { PostIcon, ArrowsSpinIcon } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import Loader from '@/components/loader';
+import {
+  formatDateDot,
+  formatTime,
+  getStatusLabel,
+  getPreviewHtml,
+  getPreviewText,
+  getThumbnail,
+  hasRepeat,
+  getSourceDate,
+} from '../utils/calendar-helpers';
 import styles from './calendar-card.module.scss';
 
 interface CalendarCardProps {
@@ -13,75 +23,12 @@ interface CalendarCardProps {
   listMode?: boolean;
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
-}
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'scheduled': return 'Запланирован';
-    case 'published': return 'Опубликован';
-    case 'draft': return 'Черновик';
-    case 'failed': return 'Ошибка';
-    default: return status;
-  }
-}
-
-function getPreviewHtml(post: Draft): string {
-  return post.formatted_content?.html
-    || post.formatted_content?.text
-    || post.text_content
-    || '';
-}
-
-function getPreviewText(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function getThumbnail(post: Draft): string | null {
-  if (post.media_thumbnail_urls?.length) {
-    const thumb = post.media_thumbnail_urls.find(u => u);
-    if (thumb) return thumb;
-  }
-  if (post.media_urls?.length) {
-    const imageExts = ['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'];
-    const imageUrl = post.media_urls.find(url => {
-      const ext = url.split('.').pop()?.toLowerCase() || '';
-      return imageExts.includes(ext);
-    });
-    if (imageUrl) return imageUrl;
-  }
-  return null;
-}
-
-function hasRepeat(post: Draft): boolean {
-  const p = post as any;
-  return !!(p.repeat_interval && p.repeat_interval !== 'never');
-}
-
 export default function CalendarCard({ post, onEdit, listMode = false }: CalendarCardProps) {
-  const sourceDate = post.status === 'scheduled'
-    ? ((post as any).scheduled_time || post.created_at)
-    : ((post as any).published_at || post.updated_at || post.created_at);
+  const sourceDate = getSourceDate(post);
   const time = formatTime(sourceDate);
-  const date = formatDate(sourceDate);
+  const date = formatDateDot(sourceDate);
   const previewHtml = getPreviewHtml(post);
-  const previewText = getPreviewText(previewHtml);
+  const previewText = getPreviewText(post);
   const thumbnail = getThumbnail(post);
   const isRepeating = hasRepeat(post);
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);

@@ -1,9 +1,16 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import {
+  formatTime,
+  getPreviewText,
+  getSourceDate,
+  buildCreatePostUrl,
+} from '../utils/calendar-helpers';
 import styles from './calendar-sidebar.module.scss';
 
 interface CalendarSidebarProps {
@@ -17,22 +24,6 @@ interface CalendarSidebarProps {
   onMonthChange?: (date: Date) => void;
 }
 
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const hours = String(d.getHours()).padStart(2, '0');
-  const minutes = String(d.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function getPreviewText(post: Draft): string {
-  const html =
-    post.formatted_content?.html ||
-    post.formatted_content?.text ||
-    post.text_content ||
-    '';
-  return html.replace(/<[^>]*>/g, '').trim();
-}
-
 export default function CalendarSidebar({
   selectedDate,
   sidebarDate,
@@ -43,6 +34,8 @@ export default function CalendarSidebar({
   postCounts,
   onMonthChange,
 }: CalendarSidebarProps) {
+  const router = useRouter();
+
   return (
     <div className={styles.sidebar}>
       <div className={styles.calendarWrapper}>
@@ -65,12 +58,7 @@ export default function CalendarSidebar({
             active
             fullWidth
             className={styles.createBtn}
-            onClick={() => {
-              const yyyy = selectedDate.getFullYear();
-              const mm = String(selectedDate.getMonth() + 1).padStart(2, '0');
-              const dd = String(selectedDate.getDate()).padStart(2, '0');
-              window.location.href = `/create-post?date=${yyyy}-${mm}-${dd}`;
-            }}
+            onClick={() => router.push(buildCreatePostUrl(selectedDate))}
           />
         </div>
 
@@ -78,11 +66,7 @@ export default function CalendarSidebar({
           <div className={styles.postsSection}>
             <div className={styles.postsInner}>
               {posts.map((post) => {
-                const time = formatTime(
-                  post.status === 'scheduled'
-                    ? ((post as any).scheduled_time || post.created_at)
-                    : ((post as any).published_at || post.updated_at || post.created_at)
-                );
+                const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
 

@@ -224,6 +224,14 @@ export interface Draft {
   updated_at: string;
   channels: Channel[];
   tags: Tag[];
+  /** Server fields available on calendar/list responses */
+  scheduled_time?: string;
+  published_at?: string;
+  repeat_interval?: string;
+  views_count?: number;
+  views?: number;
+  reactions_count?: number;
+  likes_count?: number;
 }
 
 export interface DraftListResponse {

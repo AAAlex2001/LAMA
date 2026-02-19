@@ -5,6 +5,14 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
+import {
+  DAY_NAMES_SHORT,
+  getWeekStart,
+  formatDateOnly,
+  isSameDay,
+  isBeforeToday,
+  sortPostsByTime,
+} from '../utils/calendar-helpers';
 import styles from './weekly-view.module.scss';
 
 interface WeeklyCalendarViewProps {
@@ -18,58 +26,6 @@ interface WeeklyCalendarViewProps {
   onReachEnd?: (dateKey: string) => void;
   dayLoading?: Record<string, boolean>;
   onDayClick?: (date: Date) => void;
-}
-
-const DAY_NAMES_SHORT: Record<number, string> = {
-  0: 'Вс',
-  1: 'Пн',
-  2: 'Вт',
-  3: 'Ср',
-  4: 'Чт',
-  5: 'Пт',
-  6: 'Сб',
-};
-
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff);
-}
-
-function formatDateKey(d: Date): string {
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yyyy}-${mm}-${dd}`;
-}
-
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-function isBeforeToday(d: Date): boolean {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const check = new Date(d);
-  check.setHours(0, 0, 0, 0);
-  return check < today;
-}
-
-function sortPostsByTime(posts: Draft[]): Draft[] {
-  return [...posts].sort((a, b) => {
-    const aTime = new Date(
-      (a as any).scheduled_time || a.updated_at || a.created_at
-    ).getTime();
-    const bTime = new Date(
-      (b as any).scheduled_time || b.updated_at || b.created_at
-    ).getTime();
-    return aTime - bTime;
-  });
 }
 
 export default function WeeklyCalendarView({
@@ -103,7 +59,7 @@ export default function WeeklyCalendarView({
   return (
     <div className={styles.weeklyView}>
       {weekDays.map((dayDate) => {
-        const dateKey = formatDateKey(dayDate);
+        const dateKey = formatDateOnly(dayDate);
         const dayPosts = weekItems[dateKey] || [];
         const sorted = sortPostsByTime(dayPosts);
         const selectedTarget = sidebarDate ?? selectedDate;

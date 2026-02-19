@@ -1,0 +1,18 @@
+import type { Draft } from '@/app/[locale]/create-post/store/types';
+import { formatDateOnly } from './date-helpers';
+
+export function mergeUniqueById(existing: Draft[], incoming: Draft[]): Draft[] {
+  const seen = new Set<number>();
+  const result: Draft[] = [];
+  for (const post of [...existing, ...incoming]) {
+    if (seen.has(post.id)) continue;
+    seen.add(post.id);
+    result.push(post);
+  }
+  return result;
+}
+
+/** Построить URL /create-post с query-параметром даты */
+export function buildCreatePostUrl(date: Date): string {
+  return `/create-post?date=${formatDateOnly(date)}`;
+}
