@@ -22,10 +22,12 @@ interface CalendarMainContentProps {
   monthDates: Date[];
   isGridView: boolean;
   isLoadingMore: boolean;
+  hasMore: boolean;
   listSortOrder: 'asc' | 'desc' | null;
   listStatusFilter: string | null;
   gridPostCounts: Record<string, number>;
   dayLoadingMap: Record<string, boolean>;
+  dayHasMoreMap: Record<string, boolean>;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   onLoadMoreDay: (dateKey: string) => void;
@@ -48,10 +50,12 @@ export default function CalendarMainContent({
   monthDates,
   isGridView,
   isLoadingMore,
+  hasMore,
   listSortOrder,
   listStatusFilter,
   gridPostCounts,
   dayLoadingMap,
+  dayHasMoreMap,
   onEdit,
   onAddPost,
   onLoadMoreDay,
@@ -78,14 +82,13 @@ export default function CalendarMainContent({
               visibleDates={monthDates}
               onReachEnd={onLoadMoreDay}
               dayLoading={dayLoadingMap}
+              dayHasMore={dayHasMoreMap}
               onDayClick={onSidebarDateChange}
             />
             <MonthlySidebar
               sidebarDate={sidebarDate}
               weekItems={weekItems}
               onEdit={onEdit}
-              onLoadMoreDay={onLoadMoreDay}
-              dayLoading={dayLoadingMap}
             />
           </div>
           <MonthCalendarView
@@ -102,6 +105,7 @@ export default function CalendarMainContent({
             onListSortChange={onListSortChange}
             onLoadMoreDay={onLoadMoreDay}
             dayLoadingMap={dayLoadingMap}
+            dayHasMoreMap={dayHasMoreMap}
             mobileActiveFilters={mobileActiveFilters}
           />
         </>
@@ -116,6 +120,7 @@ export default function CalendarMainContent({
             onAddPost={onAddPost}
             onReachEnd={onLoadMoreDay}
             dayLoading={dayLoadingMap}
+            dayHasMore={dayHasMoreMap}
             onDayClick={onSidebarDateChange}
           />
           <WeeklySidebar
@@ -127,8 +132,6 @@ export default function CalendarMainContent({
             onSidebarDateChange={onSidebarDateChange}
             onEdit={onEdit}
             highlightWeek={true}
-            onLoadMoreDay={onLoadMoreDay}
-            dayLoading={dayLoadingMap}
           />
         </>
       ) : currentView === 'list' ? (
@@ -139,6 +142,7 @@ export default function CalendarMainContent({
             onEdit={onEdit}
             onLoadMore={onLoadMoreList}
             isLoadingMore={isLoadingMore}
+            hasMore={hasMore}
             dateSortOrder={listSortOrder}
             statusFilter={listStatusFilter}
             onDateSortChange={onListSortChange}
@@ -153,6 +157,7 @@ export default function CalendarMainContent({
               posts={sortedPosts}
               isLoading={isLoading}
               isLoadingMore={isLoadingMore}
+              hasMore={hasMore}
               onLoadMore={onLoadMoreList}
               onEdit={onEdit}
               onAddPost={onAddPost}

@@ -88,7 +88,8 @@ export default function ListDateRangePicker({ value, onChange, postCounts, onMon
     }
   }
 
-  const pickerValue = draftEnd || draftStart || value?.start || new Date();
+  const [fallbackDate] = React.useState(() => new Date());
+  const pickerValue = draftEnd || draftStart || value?.start || fallbackDate;
 
   return (
     <div className={styles.root} ref={rootRef}>

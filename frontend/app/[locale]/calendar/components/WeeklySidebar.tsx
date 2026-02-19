@@ -4,7 +4,6 @@ import React from 'react';
 import DatePicker from '@/components/date-picker/date-picker';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
-import Loader from '@/components/loader';
 import {
   formatDayTitle,
   formatTime,
@@ -25,8 +24,6 @@ interface WeeklySidebarProps {
   onSidebarDateChange: (date: Date) => void;
   onEdit: (post: Draft) => void;
   highlightWeek?: boolean;
-  onLoadMoreDay?: (dateKey: string) => void;
-  dayLoading?: Record<string, boolean>;
 }
 
 export default function WeeklySidebar({
@@ -38,12 +35,7 @@ export default function WeeklySidebar({
   onSidebarDateChange,
   onEdit,
   highlightWeek = true,
-  onLoadMoreDay,
-  dayLoading,
 }: WeeklySidebarProps) {
-  const postsListRef = React.useRef<HTMLDivElement>(null);
-  const wasNearBottomRef = React.useRef(false);
-
   const dateKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dateKey] || [];
   const sortedPosts = sortPostsByTime(dayPosts);
@@ -51,18 +43,6 @@ export default function WeeklySidebar({
   const hasPosts = sortedPosts.length > 0;
   const today = new Date();
   const isTodaySelected = isSameDay(sidebarDate, today);
-  const isLoadingDay = dayLoading?.[dateKey] ?? false;
-
-  const handlePostsScroll = React.useCallback(() => {
-    const el = postsListRef.current;
-    if (!el || !onLoadMoreDay) return;
-    const nearBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 12;
-    if (nearBottom && !wasNearBottomRef.current && !isLoadingDay) {
-      wasNearBottomRef.current = true;
-      onLoadMoreDay(dateKey);
-    }
-    if (!nearBottom) wasNearBottomRef.current = false;
-  }, [dateKey, onLoadMoreDay, isLoadingDay]);
 
   const sidebarClasses = [
     styles.sidebar,
@@ -115,7 +95,7 @@ export default function WeeklySidebar({
       ) : (
         <div className={styles.postsSection}>
           <div className={styles.dayTitle}>{dayTitle}</div>
-          <div className={styles.postsList} ref={postsListRef} onScroll={handlePostsScroll}>
+          <div className={styles.postsList}>
             <div className={styles.postsInner}>
               {sortedPosts.map((post) => {
                 const time = formatTime(getSourceDate(post));
@@ -138,11 +118,6 @@ export default function WeeklySidebar({
                   </div>
                 );
               })}
-              {isLoadingDay && (
-                <div className={styles.dayLoader}>
-                  <Loader size={16} color="blue" />
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -14,6 +14,7 @@ interface DayCalendarViewProps {
   posts: Draft[];
   isLoading: boolean;
   isLoadingMore?: boolean;
+  hasMore?: boolean;
   onLoadMore?: () => void;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
@@ -25,6 +26,7 @@ export default function DayCalendarView({
   posts,
   isLoading,
   isLoadingMore = false,
+  hasMore = false,
   onLoadMore,
   onEdit,
   onAddPost,
@@ -32,8 +34,6 @@ export default function DayCalendarView({
   mobileActiveFilters,
 }: DayCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
-  const listRef = React.useRef<HTMLDivElement>(null);
-  const nearBottomRef = React.useRef(false);
 
   const filterConfigs = React.useMemo(() => buildFilterConfigs(posts, {}), [posts]);
   const filteredPosts = React.useMemo(
@@ -44,25 +44,6 @@ export default function DayCalendarView({
     (key: string, values: string[]) => setActiveFilters((prev) => ({ ...prev, [key]: values })),
     [],
   );
-
-  const handleScroll = React.useCallback(() => {
-    const list = listRef.current;
-    if (!list || !onLoadMore || isLoadingMore) return;
-
-    const dist = list.scrollHeight - list.scrollTop - list.clientHeight;
-    const nearBottom = dist <= 24;
-    if (nearBottom && !nearBottomRef.current) {
-      nearBottomRef.current = true;
-      onLoadMore();
-    }
-    if (dist > 96) {
-      nearBottomRef.current = false;
-    }
-  }, [onLoadMore, isLoadingMore]);
-
-  React.useEffect(() => {
-    handleScroll();
-  }, [filteredPosts.length, handleScroll]);
 
   function handleStatusChange(status: string | null) {
     handleFilterChange('status', status ? [status] : []);
@@ -125,7 +106,7 @@ export default function DayCalendarView({
       {filteredPosts.length === 0 ? (
         <div className={styles.empty}>Нет публикаций на этот день</div>
       ) : (
-        <div className={styles.list} ref={listRef} onScroll={handleScroll}>
+        <div className={styles.list}>
           {filteredPosts.map((post) => (
             <CalendarCard
               key={post.id}
@@ -136,6 +117,17 @@ export default function DayCalendarView({
           {isLoadingMore && (
             <div className={styles.listLoader}>
               <Loader size={20} color="blue" />
+            </div>
+          )}
+          {!isLoadingMore && hasMore && onLoadMore && (
+            <div className={styles.listLoader}>
+              <Button
+                text="Загрузить ещё"
+                showArrow={false}
+                active
+                size="small"
+                onClick={onLoadMore}
+              />
             </div>
           )}
         </div>

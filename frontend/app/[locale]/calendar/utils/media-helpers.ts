@@ -8,7 +8,6 @@ export function getMediaType(url: string): 'image' | 'video' | 'document' {
   return 'document';
 }
 
-/** Классифицировать URL медиа по категориям фильтров */
 export function getMediaFilterTypes(urls: string[]): Set<string> {
   const types = new Set<string>();
   for (const url of urls) {

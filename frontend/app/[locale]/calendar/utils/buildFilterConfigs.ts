@@ -8,7 +8,6 @@ interface FilterConfigOptions {
   withStatsFilters?: boolean;
 }
 
-/** Построить конфиги фильтров на основе списка постов */
 export function buildFilterConfigs(posts: Draft[], opts: FilterConfigOptions = {}): FilterConfig[] {
   const channelMap = new Map<string, string>();
   const tagMap = new Map<string, { name: string; color?: string }>();
@@ -40,7 +39,7 @@ export function buildFilterConfigs(posts: Draft[], opts: FilterConfigOptions = {
   }
   if (tagMap.size > 0) {
     configs.push({ key: 'tag', label: 'По тегам', multiSelect: true,
-      options: Array.from(tagMap.entries()).map(([id, { name, color }]) => ({ value: id, label: name, color })),
+      options: Array.from(tagMap.entries()).map(([id, { name }]) => ({ value: id, label: name })),
     });
   }
   if (mediaSet.size > 0) {

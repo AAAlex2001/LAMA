@@ -1,7 +1,6 @@
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { getMediaFilterTypes } from './calendar-helpers';
 
-/** Применить все активные фильтры к списку постов */
 export function applyPostFilters(
   posts: Draft[],
   activeFilters: Record<string, string[]>,

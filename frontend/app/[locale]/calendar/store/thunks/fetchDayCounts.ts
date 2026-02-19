@@ -3,7 +3,6 @@ import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { RootState } from '..';
 import { parseDate, formatDateOnly } from '../../utils/calendar-helpers';
 
-/** Количество постов за каждый день месяца (для виджета-датапикера) */
 export const fetchDayCounts = createAsyncThunk<Record<string, number>, void, { state: RootState }>(
   'calendar/fetchDayCounts',
   async (_, { getState }) => {

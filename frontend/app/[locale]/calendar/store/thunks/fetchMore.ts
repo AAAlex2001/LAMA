@@ -4,7 +4,6 @@ import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, mergeUniqueById } from '../../utils/calendar-helpers';
 
-/** Пагинация для day/list вида — дозагрузка постов */
 export const fetchMoreListPosts = createAsyncThunk<
   { items: Draft[]; page: number; hasMore: boolean }, void, { state: RootState }
 >(
@@ -22,8 +21,9 @@ export const fetchMoreListPosts = createAsyncThunk<
     }
 
     const nextPage = s.currentPage + 1;
+    const pageSize = 30;
     const params = new URLSearchParams({
-      page: String(nextPage), page_size: '30',
+      page: String(nextPage), page_size: String(pageSize),
       start_date: `${startDate}T00:00:00`, end_date: `${endDate}T23:59:59`,
     });
     if (s.currentView === 'list') {
@@ -33,7 +33,7 @@ export const fetchMoreListPosts = createAsyncThunk<
 
     const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
     const merged = mergeUniqueById(s.items, res.items);
-    return { items: merged, page: nextPage, hasMore: merged.length > s.items.length && res.items.length > 0 };
+    return { items: merged, page: nextPage, hasMore: res.items.length === pageSize };
   },
   {
     condition: (_, { getState }) => {
@@ -44,7 +44,6 @@ export const fetchMoreListPosts = createAsyncThunk<
   },
 );
 
-/** Пагинация одной колонки-дня в grid-виде */
 export const fetchMoreDayPosts = createAsyncThunk<
   { dateKey: string; items: Draft[]; page: number; hasMore: boolean }, string, { state: RootState }
 >(
@@ -55,15 +54,16 @@ export const fetchMoreDayPosts = createAsyncThunk<
     if (!dayState) throw new Error(`No day state for ${dateKey}`);
 
     const nextPage = dayState.page + 1;
+    const pageSize = 20;
     const params = new URLSearchParams({
-      page: String(nextPage), page_size: '20',
+      page: String(nextPage), page_size: String(pageSize),
       start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
     });
 
     const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
     const current = s.weekItems[dateKey] || [];
     const merged = mergeUniqueById(current, res.items);
-    return { dateKey, items: merged, page: nextPage, hasMore: merged.length > current.length && res.items.length > 0 };
+    return { dateKey, items: merged, page: nextPage, hasMore: res.items.length === pageSize };
   },
   {
     condition: (dateKey, { getState }) => {

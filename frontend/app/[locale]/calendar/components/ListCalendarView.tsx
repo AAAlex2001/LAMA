@@ -13,6 +13,7 @@ import {
   VideoIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
+import Button from '@/components/button/button';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
@@ -35,6 +36,7 @@ interface ListCalendarViewProps {
   onEdit: (post: Draft) => void;
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  hasMore?: boolean;
   dateSortOrder: 'asc' | 'desc' | null;
   statusFilter: string | null;
   onDateSortChange: (order: 'asc' | 'desc' | null) => void;
@@ -61,6 +63,7 @@ export default function ListCalendarView({
   onEdit,
   onLoadMore,
   isLoadingMore = false,
+  hasMore = false,
   dateSortOrder,
   statusFilter,
   onDateSortChange,
@@ -68,10 +71,6 @@ export default function ListCalendarView({
   mobileActiveFilters,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
-  const desktopListRef = React.useRef<HTMLDivElement>(null);
-  const mobileListRef = React.useRef<HTMLDivElement>(null);
-  const desktopNearBottomRef = React.useRef(false);
-  const mobileNearBottomRef = React.useRef(false);
 
   const filterConfigs = React.useMemo(
     () => buildFilterConfigs(posts, { withDateSort: true, withStatusFilter: true, withStatsFilters: true }),
@@ -89,28 +88,6 @@ export default function ListCalendarView({
   React.useEffect(() => {
     setActiveFilters((prev) => ({ ...prev, status: statusFilter ? [statusFilter] : [] }));
   }, [statusFilter]);
-
-  const handleLoadMoreByElement = React.useCallback(
-    (element: HTMLDivElement | null, nearBottomRef: React.MutableRefObject<boolean>) => {
-      if (!element || !onLoadMore || isLoadingMore) return;
-      const dist = element.scrollHeight - element.scrollTop - element.clientHeight;
-      const nearBottom = dist <= 24;
-
-      if (nearBottom && !nearBottomRef.current) {
-        nearBottomRef.current = true;
-        onLoadMore();
-      }
-      if (dist > 96) {
-        nearBottomRef.current = false;
-      }
-    },
-    [onLoadMore, isLoadingMore],
-  );
-
-  React.useEffect(() => {
-    handleLoadMoreByElement(desktopListRef.current, desktopNearBottomRef);
-    handleLoadMoreByElement(mobileListRef.current, mobileNearBottomRef);
-  }, [filteredPosts.length, handleLoadMoreByElement]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {
@@ -173,11 +150,7 @@ export default function ListCalendarView({
         </div>
       )}
 
-      <div
-        className={styles.desktopList}
-        ref={desktopListRef}
-        onScroll={() => handleLoadMoreByElement(desktopListRef.current, desktopNearBottomRef)}
-      >
+      <div className={styles.desktopList}>
         {filteredPosts.map((post) => {
           const sourceDate = getSourceDate(post);
           const channel = post.channels?.[0];
@@ -242,14 +215,21 @@ export default function ListCalendarView({
             <Loader size={18} color="blue" />
           </div>
         )}
+        {!isLoadingMore && hasMore && onLoadMore && (
+          <div className={styles.listLoader}>
+            <Button
+              text="Загрузить ещё"
+              showArrow={false}
+              active
+              size="small"
+              onClick={onLoadMore}
+            />
+          </div>
+        )}
       </div>
 
       <div className={styles.mobileList}>
-        <div
-          className={styles.mobileListInner}
-          ref={mobileListRef}
-          onScroll={() => handleLoadMoreByElement(mobileListRef.current, mobileNearBottomRef)}
-        >
+        <div className={styles.mobileListInner}>
           {filteredPosts.map((post) => (
             <CalendarCard
               key={post.id}
@@ -262,6 +242,17 @@ export default function ListCalendarView({
           {isLoadingMore && (
             <div className={styles.listLoaderMobile}>
               <Loader size={18} color="blue" />
+            </div>
+          )}
+          {!isLoadingMore && hasMore && onLoadMore && (
+            <div className={styles.listLoaderMobile}>
+              <Button
+                text="Загрузить ещё"
+                showArrow={false}
+                active
+                size="small"
+                onClick={onLoadMore}
+              />
             </div>
           )}
         </div>

@@ -10,7 +10,6 @@ type FetchDataResult =
   | { type: 'grid'; keys: string[]; results: GridDayResult[] }
   | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string };
 
-/** Основной фетч: вызывается при смене вида / даты / фильтров */
 export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state: RootState }>(
   'calendar/fetchData',
   async (_, { getState }) => {
@@ -22,12 +21,13 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       const keys = getVisibleDayKeys(view, date);
       const results = await Promise.all(
         keys.map(async (dateKey): Promise<GridDayResult> => {
+          const pageSize = 20;
           const params = new URLSearchParams({
-            page: '1', page_size: '20',
+            page: '1', page_size: String(pageSize),
             start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
           });
           const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
-          return { dateKey, items: res.items, hasMore: res.items.length > 0 };
+          return { dateKey, items: res.items, hasMore: res.items.length === pageSize };
         }),
       );
       return { type: 'grid', keys, results };
@@ -43,8 +43,9 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       endDate = range.endDate;
     }
 
+    const pageSize = 30;
     const params = new URLSearchParams({
-      page: '1', page_size: '30',
+      page: '1', page_size: String(pageSize),
       start_date: `${startDate}T00:00:00`, end_date: `${endDate}T23:59:59`,
     });
     if (view === 'list') {
@@ -57,6 +58,6 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;
 
-    return { type: 'list', items: res.items, hasMore: res.items.length > 0, rangeKey };
+    return { type: 'list', items: res.items, hasMore: res.items.length === pageSize, rangeKey };
   },
 );

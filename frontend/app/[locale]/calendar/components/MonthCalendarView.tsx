@@ -31,6 +31,7 @@ interface MonthCalendarViewProps {
   onListSortChange: (order: 'asc' | 'desc' | null) => void;
   onLoadMoreDay: (dateKey: string) => void;
   dayLoadingMap: Record<string, boolean>;
+  dayHasMoreMap: Record<string, boolean>;
   mobileActiveFilters?: Record<string, string[]>;
 }
 
@@ -55,11 +56,18 @@ export default function MonthCalendarView({
   onListSortChange,
   onLoadMoreDay,
   dayLoadingMap,
+  dayHasMoreMap,
   mobileActiveFilters,
 }: MonthCalendarViewProps) {
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
   const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
   const sortWrapperRef = React.useRef<HTMLDivElement>(null);
+  const mainRef = React.useRef<HTMLElement | null>(null);
+  const dayScrollRestoreRef = React.useRef<{ pending: boolean; sawLoading: boolean; top: number }>({
+    pending: false,
+    sawLoading: false,
+    top: 0,
+  });
 
   const dayKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dayKey] || [];
@@ -91,29 +99,29 @@ export default function MonthCalendarView({
   }, [sortPopupOpen]);
 
   React.useEffect(() => {
-    const mainNode = document.querySelector<HTMLElement>('main');
-    if (!mainNode) return;
-
-    const THRESHOLD = 120;
-    let wasNearBottom = false;
-
-    function onScroll() {
-      if (!mainNode) return;
-      const { scrollHeight, scrollTop, clientHeight } = mainNode;
-      const distToBottom = scrollHeight - scrollTop - clientHeight;
-      const nearBottom = distToBottom <= THRESHOLD;
-
-      if (nearBottom && !wasNearBottom) {
-        wasNearBottom = true;
-        onLoadMoreDay(dayKey);
-      }
-      if (distToBottom > THRESHOLD * 2) {
-        wasNearBottom = false;
-      }
+    const restore = dayScrollRestoreRef.current;
+    if (!restore.pending) return;
+    const isDayLoading = !!dayLoadingMap[dayKey];
+    if (isDayLoading) {
+      restore.sawLoading = true;
+      return;
     }
+    if (restore.sawLoading) {
+      const main = mainRef.current || (mainRef.current = document.querySelector('main'));
+      if (main) {
+        main.scrollTop = restore.top;
+      }
+      restore.pending = false;
+      restore.sawLoading = false;
+    }
+  }, [dayKey, dayLoadingMap]);
 
-    mainNode.addEventListener('scroll', onScroll, { passive: true });
-    return () => mainNode.removeEventListener('scroll', onScroll);
+  const handleLoadMoreDay = React.useCallback(() => {
+    const main = mainRef.current || (mainRef.current = document.querySelector('main'));
+    dayScrollRestoreRef.current.pending = true;
+    dayScrollRestoreRef.current.sawLoading = false;
+    dayScrollRestoreRef.current.top = main?.scrollTop ?? 0;
+    onLoadMoreDay(dayKey);
   }, [dayKey, onLoadMoreDay]);
 
   if (isLoading) {
@@ -237,6 +245,17 @@ export default function MonthCalendarView({
           {dayLoadingMap[dayKey] && (
             <div className={styles.loadMoreWrap}>
               <Loader size={20} color="blue" />
+            </div>
+          )}
+          {!dayLoadingMap[dayKey] && !!dayHasMoreMap[dayKey] && (
+            <div className={styles.loadMoreWrap}>
+              <Button
+                text="Загрузить ещё"
+                showArrow={false}
+                active
+                size="small"
+                onClick={handleLoadMoreDay}
+              />
             </div>
           )}
         </div>

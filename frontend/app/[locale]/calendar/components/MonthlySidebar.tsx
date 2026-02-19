@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
-import Loader from '@/components/loader';
 import {
   formatDayTitle,
   formatTime,
@@ -21,8 +20,6 @@ interface MonthlySidebarProps {
   sidebarDate: Date;
   weekItems: Record<string, Draft[]>;
   onEdit: (post: Draft) => void;
-  onLoadMoreDay?: (dateKey: string) => void;
-  dayLoading?: Record<string, boolean>;
 }
 
 type TabFilter = 'all' | 'scheduled' | 'published';
@@ -37,30 +34,14 @@ export default function MonthlySidebar({
   sidebarDate,
   weekItems,
   onEdit,
-  onLoadMoreDay,
-  dayLoading,
 }: MonthlySidebarProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = React.useState<TabFilter>('all');
-  const postsListRef = React.useRef<HTMLDivElement>(null);
-  const wasNearBottomRef = React.useRef(false);
 
   const dateKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dateKey] || [];
   const sortedPosts = sortPostsByTime(dayPosts);
   const dayTitle = formatDayTitle(sidebarDate);
-  const isLoadingDay = dayLoading?.[dateKey] ?? false;
-
-  const handlePostsScroll = React.useCallback(() => {
-    const el = postsListRef.current;
-    if (!el || !onLoadMoreDay) return;
-    const nearBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 12;
-    if (nearBottom && !wasNearBottomRef.current && !isLoadingDay) {
-      wasNearBottomRef.current = true;
-      onLoadMoreDay(dateKey);
-    }
-    if (!nearBottom) wasNearBottomRef.current = false;
-  }, [dateKey, onLoadMoreDay, isLoadingDay]);
 
   const filteredPosts = React.useMemo(() => {
     if (activeTab === 'all') return sortedPosts;
@@ -95,7 +76,7 @@ export default function MonthlySidebar({
       </div>
 
       <div className={styles.postsSection}>
-        <div className={styles.postsList} ref={postsListRef} onScroll={handlePostsScroll}>
+        <div className={styles.postsList}>
           <div className={styles.postsInner}>
             {filteredPosts.length === 0 ? (
               <div className={styles.emptyDay}>Нет публикаций</div>
@@ -121,11 +102,6 @@ export default function MonthlySidebar({
                   </div>
                 );
               })
-            )}
-            {isLoadingDay && (
-              <div className={styles.dayLoader}>
-                <Loader size={16} color="blue" />
-              </div>
             )}
           </div>
         </div>

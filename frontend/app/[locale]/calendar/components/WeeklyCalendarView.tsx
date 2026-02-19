@@ -3,6 +3,7 @@
 import React from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarAddIcon } from '@/components/icons';
+import Button from '@/components/button/button';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
 import {
@@ -25,6 +26,7 @@ interface WeeklyCalendarViewProps {
   visibleDates?: Date[];
   onReachEnd?: (dateKey: string) => void;
   dayLoading?: Record<string, boolean>;
+  dayHasMore?: Record<string, boolean>;
   onDayClick?: (date: Date) => void;
 }
 
@@ -38,10 +40,12 @@ export default function WeeklyCalendarView({
   visibleDates,
   onReachEnd,
   dayLoading,
+  dayHasMore,
   onDayClick,
 }: WeeklyCalendarViewProps) {
   const weekStart = getWeekStart(selectedDate);
-  const nearBottomByDayRef = React.useRef<Record<string, boolean>>({});
+  const cardsRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
+  const dayScrollRestoreRef = React.useRef<Record<string, { top: number; pending: boolean; sawLoading: boolean }>>({});
 
   const weekDays = (() => {
     if (visibleDates?.length) {
@@ -55,6 +59,37 @@ export default function WeeklyCalendarView({
     }
     return days;
   })();
+
+  React.useEffect(() => {
+    const restoreMap = dayScrollRestoreRef.current;
+    Object.keys(restoreMap).forEach((dateKey) => {
+      const restore = restoreMap[dateKey];
+      if (!restore?.pending) return;
+      const isDayLoading = !!dayLoading?.[dateKey];
+      if (isDayLoading) {
+        restore.sawLoading = true;
+        return;
+      }
+      if (restore.sawLoading) {
+        const el = cardsRefs.current[dateKey];
+        if (el) {
+          el.scrollTop = restore.top;
+        }
+        delete restoreMap[dateKey];
+      }
+    });
+  }, [dayLoading]);
+
+  const handleLoadMoreDay = React.useCallback((dateKey: string) => {
+    if (!onReachEnd) return;
+    const el = cardsRefs.current[dateKey];
+    dayScrollRestoreRef.current[dateKey] = {
+      top: el?.scrollTop ?? 0,
+      pending: true,
+      sawLoading: false,
+    };
+    onReachEnd(dateKey);
+  }, [onReachEnd]);
 
   return (
     <div className={styles.weeklyView}>
@@ -108,18 +143,8 @@ export default function WeeklyCalendarView({
             <div
               className={cardsClasses}
               data-date-key={dateKey}
-              onScroll={(e) => {
-                const target = e.currentTarget;
-                if (!onReachEnd || isLoading) return;
-
-                const nearBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 2;
-                const wasNearBottom = !!nearBottomByDayRef.current[dateKey];
-
-                if (nearBottom && !wasNearBottom && !dayLoading?.[dateKey]) {
-                  onReachEnd(dateKey);
-                }
-
-                nearBottomByDayRef.current[dateKey] = nearBottom;
+              ref={(el) => {
+                cardsRefs.current[dateKey] = el;
               }}
             >
               {sorted.length === 0 && !isLoading ? (
@@ -136,6 +161,17 @@ export default function WeeklyCalendarView({
                   {(isLoading || dayLoading?.[dateKey]) && (
                     <div className={styles.dayLoader}>
                       <Loader size={16} color="blue" />
+                    </div>
+                  )}
+                  {!isLoading && !dayLoading?.[dateKey] && !!dayHasMore?.[dateKey] && !!onReachEnd && (
+                    <div className={styles.dayLoader}>
+                      <Button
+                        text="Загрузить ещё"
+                        showArrow={false}
+                        active
+                        size="small"
+                        onClick={() => handleLoadMoreDay(dateKey)}
+                      />
                     </div>
                   )}
                 </>

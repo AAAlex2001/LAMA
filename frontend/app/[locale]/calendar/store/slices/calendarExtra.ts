@@ -16,6 +16,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
+          state.monthPostCounts[r.dateKey] = r.items.length;
         }
         state.weekItems = weekItems;
         state.dayPageState = dayPageState;
@@ -27,6 +28,9 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         state.currentRangeKey = action.payload.rangeKey;
         state.currentPage = 1;
         state.hasMore = action.payload.hasMore;
+        if (state.currentView === 'day') {
+          state.monthPostCounts[state.selectedDate] = action.payload.items.length;
+        }
       }
     })
     .addCase(fetchCalendarData.rejected, (state) => {

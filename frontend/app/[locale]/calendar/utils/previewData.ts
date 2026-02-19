@@ -1,7 +1,6 @@
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { draftToMediaFiles } from './media-helpers';
 
-/** Подготовка данных для превью поста (чистая функция, не хук) */
 export function getPreviewData(post: Draft) {
   const channel = post.channels?.[0];
   const extraCount =

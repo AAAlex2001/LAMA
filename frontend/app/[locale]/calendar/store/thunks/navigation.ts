@@ -1,16 +1,16 @@
+import type { ThunkAction, UnknownAction } from '@reduxjs/toolkit';
 import { setSelectedDate, setSidebarDate } from '../slices/calendar';
 import type { CalendarView } from '../slices/calendar';
-import type { RootState, AppDispatch } from '../index';
+import type { RootState } from '../index';
 import { parseDate, formatDateOnly, getWeekStart } from '../../utils/calendar-helpers';
 
-type ThunkAction = (dispatch: AppDispatch, getState: () => RootState) => void;
+type AppThunkAction = ThunkAction<void, RootState, undefined, UnknownAction>;
 
 const STEP: Record<CalendarView, [number, 'day' | 'week' | 'month' | 'year']> = {
   day: [1, 'day'], week: [1, 'week'], month: [1, 'month'], list: [1, 'year'],
 };
 
-/** Навигация стрелками: сдвиг на шаг в зависимости от текущего вида */
-export function navigateStep(direction: 'prev' | 'next'): ThunkAction {
+export function navigateStep(direction: 'prev' | 'next'): AppThunkAction {
   return (dispatch, getState) => {
     const { currentView, selectedDate } = getState().calendar;
     const d = new Date(parseDate(selectedDate));
@@ -26,8 +26,7 @@ export function navigateStep(direction: 'prev' | 'next'): ThunkAction {
   };
 }
 
-/** Клик по дате в сайдбаре: умная логика для week/month */
-export function sidebarDateChange(date: Date): ThunkAction {
+export function sidebarDateChange(date: Date): AppThunkAction {
   return (dispatch, getState) => {
     const { currentView, selectedDate } = getState().calendar;
     const sel = parseDate(selectedDate);

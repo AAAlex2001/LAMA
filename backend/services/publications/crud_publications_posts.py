@@ -431,14 +431,13 @@ class PublicationPostsCRUDService:
         owner_id: Optional[int] = None,
     ) -> Dict[str, int]:
         """Быстрый подсчёт публикаций по дням (SQL GROUP BY, без загрузки объектов)."""
-        source_date = func.coalesce(
-            Publication.scheduled_time, Publication.updated_at, Publication.created_at
-        )
+        source_date = Publication.scheduled_time
         date_expr = func.date(source_date)
         query = (
             select(date_expr.label("day"), func.count().label("cnt"))
             .where(
                 and_(
+                    Publication.scheduled_time.isnot(None),
                     source_date >= start_date,
                     source_date <= end_date,
                     Publication.status.notin_([

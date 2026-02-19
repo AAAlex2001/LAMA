@@ -59,6 +59,7 @@ const calendarSlice = createSlice({
     setSelectedDate: (state, action: PayloadAction<string>) => {
       state.selectedDate = action.payload;
       state.sidebarDate = action.payload;
+      state.countsMonthAnchor = `${action.payload.slice(0, 7)}-01`;
     },
     setSidebarDate: (state, action: PayloadAction<string>) => {
       state.sidebarDate = action.payload;
