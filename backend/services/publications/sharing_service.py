@@ -10,15 +10,13 @@ from backend.models.channels import ChannelGroup as Channel
 from backend.models.publications import Publication, TelegramMessage
 
 
-class PublicationSharingCRUDService:
-    """CRUD-операции для share-токенов публикаций."""
+class SharingService:
+    """Share-token operations for publications."""
 
     def __init__(self, db: AsyncSession):
-        """Инициализировать сервис с асинхронной сессией БД."""
         self.db = db
 
     async def generate_share_token(self, publication_id: int, owner_id: int, expires_days: int = 7) -> Optional[str]:
-        """Сгенерировать одноразовый share-токен для публикации владельца."""
         query = select(Publication).where(
             Publication.id == publication_id,
             Publication.owner_id == owner_id,
@@ -38,14 +36,17 @@ class PublicationSharingCRUDService:
         return token
 
     async def get_publication_by_share_token(self, token: str) -> Optional[Publication]:
-        """Получить публикацию по валидному и неиспользованному токену."""
-        query = select(Publication).where(Publication.share_token == token).options(
-            selectinload(Publication.channels).selectinload(Channel.bot),
-            selectinload(Publication.tags),
-            selectinload(Publication.series),
-            selectinload(Publication.telegram_messages)
-            .selectinload(TelegramMessage.channel)
-            .selectinload(Channel.bot),
+        query = (
+            select(Publication)
+            .where(Publication.share_token == token)
+            .options(
+                selectinload(Publication.channels).selectinload(Channel.bot),
+                selectinload(Publication.tags),
+                selectinload(Publication.series),
+                selectinload(Publication.telegram_messages)
+                .selectinload(TelegramMessage.channel)
+                .selectinload(Channel.bot),
+            )
         )
         result = await self.db.execute(query)
         publication = result.scalar_one_or_none()
@@ -56,11 +57,9 @@ class PublicationSharingCRUDService:
             return None
         if publication.share_token_used:
             return None
-
         return publication
 
     async def consume_share_token(self, token: str) -> bool:
-        """Пометить токен использованным, если он валиден."""
         query = select(Publication).where(Publication.share_token == token)
         result = await self.db.execute(query)
         publication = result.scalar_one_or_none()

@@ -1,0 +1,48 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.schemas.publications.series import (
+    PublicationSeriesCreate,
+    PublicationSeriesUpdate,
+    PublicationSeriesResponse,
+)
+from backend.models.publications import PublicationSeries
+from backend.database import get_db
+from backend.services.publications.publication_service import PublicationService
+from backend.routes.publications.dependencies import get_publication_service
+
+router = APIRouter(prefix="/series")
+
+
+@router.post("/", response_model=PublicationSeriesResponse, status_code=201)
+async def create_series(
+    data: PublicationSeriesCreate,
+    service: PublicationService = Depends(get_publication_service),
+):
+    return await service.create_series(
+        name=data.name,
+        description=data.description,
+        reply_to_previous=data.reply_to_previous,
+    )
+
+
+@router.patch("/{series_id}", response_model=PublicationSeriesResponse)
+async def update_series(
+    series_id: int,
+    data: PublicationSeriesUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(PublicationSeries).where(PublicationSeries.id == series_id)
+    )
+    series = result.scalar_one_or_none()
+    if not series:
+        raise HTTPException(status_code=404, detail="Series not found")
+
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(series, field, value)
+
+    await db.commit()
+    await db.refresh(series)
+    return series

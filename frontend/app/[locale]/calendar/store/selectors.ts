@@ -7,8 +7,8 @@ import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 const selectCalendar = (s: RootState) => s.calendar;
 
 export const selectSortedPosts = createSelector(
-  [(s: RootState) => s.calendar.items],
-  (items) => sortPostsByTime(items),
+  [(s: RootState) => s.calendar.items, (s: RootState) => s.calendar.currentView],
+  (items, view) => view === 'list' ? items : sortPostsByTime(items, 'desc'),
 );
 
 export const selectSidebarPosts = createSelector(

@@ -1,8 +1,14 @@
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 
 export function getSourceDate(post: Draft): string {
-  if (post.status === 'scheduled') return post.scheduled_time || post.created_at;
-  return post.published_at || post.updated_at || post.created_at;
+  return post.scheduled_time || post.updated_at || post.created_at;
+}
+
+export function sortPostsByTime(posts: Draft[], order: 'asc' | 'desc' = 'desc'): Draft[] {
+  const dir = order === 'asc' ? 1 : -1;
+  return [...posts].sort(
+    (a, b) => dir * (new Date(getSourceDate(a)).getTime() - new Date(getSourceDate(b)).getTime()),
+  );
 }
 
 export function getPreviewText(post: Draft): string {
@@ -36,12 +42,6 @@ export function getThumbnail(post: Draft): string | null {
     if (img) return img;
   }
   return null;
-}
-
-export function sortPostsByTime(posts: Draft[]): Draft[] {
-  return [...posts].sort(
-    (a, b) => new Date(getSourceDate(a)).getTime() - new Date(getSourceDate(b)).getTime(),
-  );
 }
 
 export function formatCompact(value: unknown): string {

@@ -105,11 +105,16 @@ export default function ListCalendarView({
 
   // IntersectionObserver for infinite scroll
   React.useEffect(() => {
-    if (!onLoadMore || !hasMore) return;
+    if (isLoading || !onLoadMore || !hasMore) return;
 
     const sentinel = sentinelRef.current;
     const container = scrollContainerRef.current;
-    if (!sentinel || !container) return;
+    if (!sentinel) return;
+
+    // On mobile the page scrolls (not the inner container), so use viewport as root
+    const isMobile = typeof window !== 'undefined' && !window.matchMedia('(min-width: 1440px)').matches;
+    const root = isMobile ? null : container;
+    if (!root && !isMobile) return;
 
     let hasSeenExit = false;
 
@@ -126,11 +131,11 @@ export default function ListCalendarView({
         if (!hasSeenExit) return;
         if (isLoadingMore) return;
 
-        savedScrollRef.current = container.scrollTop;
+        if (container) savedScrollRef.current = container.scrollTop;
         onLoadMore();
       },
       {
-        root: container,
+        root,
         rootMargin: '0px',
         threshold: 0,
       },
@@ -138,7 +143,7 @@ export default function ListCalendarView({
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [onLoadMore, hasMore, isLoadingMore]);
+  }, [isLoading, onLoadMore, hasMore, isLoadingMore]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {
