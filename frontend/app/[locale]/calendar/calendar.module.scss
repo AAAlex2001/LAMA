@@ -45,10 +45,11 @@
 }
 
 .pageWeek {
-  @media (min-width: 1440px) {
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
+  min-height: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .mainContentWeek {
