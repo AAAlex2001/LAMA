@@ -179,7 +179,11 @@ export default function WeeklyCalendarView({
                 cardsRefs.current[dateKey] = el;
               }}
             >
-              {sorted.length === 0 && !isLoading ? (
+              {isLoading ? (
+                <div className={styles.dayLoader}>
+                  <Loader size={16} color="blue" />
+                </div>
+              ) : sorted.length === 0 ? (
                 <div className={styles.emptyDay}>—</div>
               ) : (
                 <>

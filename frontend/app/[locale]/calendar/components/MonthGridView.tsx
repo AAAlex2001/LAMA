@@ -159,22 +159,20 @@ export default function MonthGridView({
                           <ParserIcon width={12} height={12} color="#CED2D6" />
                           <span className={styles.statValueGray}>{stats.scheduled}</span>
                         </div>
-                        {stats.draft > 0 && (
-                          <div className={styles.statItemRight}>
-                            <span className={styles.statValueOrange}>{stats.draft}</span>
-                            <WalletIcon width={12} height={12} color="#FF8D28" />
-                          </div>
-                        )}
+                        <div className={styles.statItemRight}>
+                          <span className={styles.statValueOrange}>{stats.draft}</span>
+                          <WalletIcon width={12} height={12} color="#FF8D28" />
+                        </div>
                       </div>
 
                       <div className={styles.statsRowBottom}>
                         <div className={styles.statItem}>
                           <CalendarReactionsIcon width={12} height={12} color="#B0B4B8" />
-                          <span className={styles.statValueMuted}>{formatCompact(stats.totalReactions)}</span>
+                          <span className={styles.statValueMuted}>{formatCompact(stats.totalReactions || 0)}</span>
                         </div>
-                        <div className={styles.statItem}>
+                        <div className={styles.statItemRight}>
                           <CalendarViewsIcon width={12} height={12} color="#B0B4B8" />
-                          <span className={styles.statValueMuted}>{formatCompact(stats.totalViews)}</span>
+                          <span className={styles.statValueMuted}>{formatCompact(stats.totalViews || 0)}</span>
                         </div>
                       </div>
                     </div>

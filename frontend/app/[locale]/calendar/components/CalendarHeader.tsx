@@ -101,7 +101,7 @@ export default function CalendarHeader({
   }, [sortPopupOpen]);
 
   return (
-    <div className={styles.header}>
+    <div className={`${styles.header} ${currentView !== 'list' ? styles.headerHasSidebar : ''}`}>
       <div className={styles.tabsRow}>
         <div className={styles.viewTabs}>
           {VIEW_TABS.map(tab => (

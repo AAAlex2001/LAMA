@@ -67,7 +67,7 @@ export default function CalendarMainContent({
   onMobileFilterChange,
 }: CalendarMainContentProps) {
   return (
-    <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'day' ? styles.mainContentDay : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
+    <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'day' ? styles.mainContentDay : ''} ${currentView === 'list' ? styles.mainContentList : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
       {currentView === 'month' ? (
         <>
           <div className={styles.monthDesktopGrid}>

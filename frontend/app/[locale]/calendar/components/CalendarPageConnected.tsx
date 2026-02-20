@@ -130,7 +130,7 @@ export default function CalendarPageConnected() {
   const previewData = previewPost ? getPreviewData(previewPost) : null;
 
   return (
-    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'day' ? styles.pageDay : ''}`}>
+    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''}`}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}

@@ -12,6 +12,12 @@
   }
 }
 
+.headerHasSidebar {
+  @media (min-width: 1440px) {
+    padding-right: calc(320px + 24px);
+  }
+}
+
 .tabsRow {
   display: flex;
   flex-direction: row;
@@ -23,7 +29,8 @@
   @media (min-width: 1440px) {
     order: 1;
     width: auto;
-    justify-content: flex-end;
+    flex: none;
+    flex-grow: 0;
   }
 }
 
@@ -119,6 +126,8 @@
   background: transparent;
   cursor: pointer;
   transition: background 0.15s ease;
+  flex: none;
+  flex-grow: 0;
 
   &:hover {
     background: rgba(59, 130, 246, 0.05);

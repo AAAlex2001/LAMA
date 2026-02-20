@@ -10,11 +10,6 @@
     width: 320px;
     flex-shrink: 0;
     min-width: 320px;
-    align-self: stretch;
-    position: sticky;
-    top: 0;
-    height: calc(100vh - 240px);
-    max-height: calc(100dvh - 240px);
     background: #FFFFFF;
     border-radius: 12px;
     overflow: hidden;

@@ -13,7 +13,6 @@ import {
   VideoIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
-import Button from '@/components/button/button';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
@@ -160,12 +159,6 @@ export default function ListCalendarView({
     );
   }
 
-  if (posts.length === 0) {
-    return (
-      <div className={styles.empty}>Нет публикаций в этом периоде</div>
-    );
-  }
-
   return (
     <>
       <div className={styles.mobileMiniTabs}>
@@ -201,6 +194,10 @@ export default function ListCalendarView({
           />
         </div>
       )}
+
+      {posts.length === 0 ? (
+        <div className={styles.empty}>Нет публикаций в этом периоде</div>
+      ) : (
 
       <div className={styles.scrollContainer} ref={scrollContainerRef}>
         <div className={styles.desktopList}>
@@ -287,6 +284,7 @@ export default function ListCalendarView({
           <div ref={sentinelRef} className={styles.scrollSentinel} />
         )}
       </div>
+      )}
     </>
   );
 }
