@@ -127,15 +127,12 @@ async def send_media_group(
 
 def build_media_item(url: str, media_to_send, caption: Optional[str], spoiler: bool):
     """Создать InputMedia элемент для медиа-группы."""
-    kwargs = {"media": media_to_send}
-    if caption:
-        kwargs["caption"] = caption
-        kwargs["parse_mode"] = ParseMode.HTML
+    parse_mode = ParseMode.HTML if caption else None
 
     if is_document_url(url):
-        return InputMediaDocument(**kwargs)
+        return InputMediaDocument(media=media_to_send, caption=caption, parse_mode=parse_mode)
     if is_audio_url(url):
-        return InputMediaAudio(**kwargs)
+        return InputMediaAudio(media=media_to_send, caption=caption, parse_mode=parse_mode)
     if is_video_url(url):
-        return InputMediaVideo(**kwargs, has_spoiler=spoiler)
-    return InputMediaPhoto(**kwargs, has_spoiler=spoiler)
+        return InputMediaVideo(media=media_to_send, caption=caption, parse_mode=parse_mode, has_spoiler=spoiler)
+    return InputMediaPhoto(media=media_to_send, caption=caption, parse_mode=parse_mode, has_spoiler=spoiler)
