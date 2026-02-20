@@ -5,6 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import CalendarList from './CalendarList';
 import CalendarSidebar from './CalendarSidebar';
 import WeeklyCalendarView from './WeeklyCalendarView';
+import MonthGridView from './MonthGridView';
 import WeeklySidebar from './WeeklySidebar';
 import MonthlySidebar from './MonthlySidebar';
 import ListCalendarView from './ListCalendarView';
@@ -19,7 +20,6 @@ interface CalendarMainContentProps {
   isLoading: boolean;
   currentView: 'day' | 'week' | 'month' | 'list';
   sortedPosts: Draft[];
-  monthDates: Date[];
   isGridView: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
@@ -47,7 +47,6 @@ export default function CalendarMainContent({
   isLoading,
   currentView,
   sortedPosts,
-  monthDates,
   isGridView,
   isLoadingMore,
   hasMore,
@@ -68,22 +67,16 @@ export default function CalendarMainContent({
   onMobileFilterChange,
 }: CalendarMainContentProps) {
   return (
-    <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
+    <div className={`${styles.mainContent} ${currentView === 'week' ? styles.mainContentWeek : ''} ${currentView === 'day' ? styles.mainContentDay : ''} ${currentView === 'month' ? styles.monthMode : ''}`}>
       {currentView === 'month' ? (
         <>
           <div className={styles.monthDesktopGrid}>
-            <WeeklyCalendarView
-              weekItems={weekItems}
+            <MonthGridView
               selectedDate={selectedDate}
               sidebarDate={sidebarDate}
-              isLoading={isLoading}
-              onEdit={onEdit}
-              onAddPost={onAddPost}
-              visibleDates={monthDates}
-              onReachEnd={onLoadMoreDay}
-              dayLoading={dayLoadingMap}
-              dayHasMore={dayHasMoreMap}
+              weekItems={weekItems}
               onDayClick={onSidebarDateChange}
+              onEdit={onEdit}
             />
             <MonthlySidebar
               sidebarDate={sidebarDate}

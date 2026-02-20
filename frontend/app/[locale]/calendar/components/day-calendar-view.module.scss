@@ -3,6 +3,8 @@
   flex-direction: column;
   width: 100%;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .loaderWrap {
@@ -17,6 +19,7 @@
   flex-direction: column;
   width: 100%;
   gap: 12px;
+  flex-shrink: 0;
 
   @media (min-width: 1440px) {
     display: none;
@@ -92,12 +95,33 @@
   padding: 24px 0;
 }
 
+.scrollContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 30px;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #CED2D6;
+    border-radius: 100px;
+  }
+}
+
 .list {
   display: grid;
   grid-template-columns: 1fr;
   gap: 16px;
   width: 100%;
-  padding-bottom: 30px;
 
   @media (min-width: 640px) {
     grid-template-columns: repeat(2, minmax(280px, 1fr));
@@ -117,4 +141,10 @@
   justify-content: center;
   width: 100%;
   padding: 24px 0;
+}
+
+.scrollSentinel {
+  width: 100%;
+  height: 1px;
+  flex-shrink: 0;
 }

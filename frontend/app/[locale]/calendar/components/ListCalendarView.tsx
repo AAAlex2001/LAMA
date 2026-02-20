@@ -71,6 +71,10 @@ export default function ListCalendarView({
   mobileActiveFilters,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const wasLoadingRef = React.useRef(false);
+  const savedScrollRef = React.useRef(0);
 
   const filterConfigs = React.useMemo(
     () => buildFilterConfigs(posts, { withDateSort: true, withStatusFilter: true, withStatsFilters: true }),
@@ -88,6 +92,54 @@ export default function ListCalendarView({
   React.useEffect(() => {
     setActiveFilters((prev) => ({ ...prev, status: statusFilter ? [statusFilter] : [] }));
   }, [statusFilter]);
+
+  // After loading finishes, restore scroll to saved position
+  React.useEffect(() => {
+    if (wasLoadingRef.current && !isLoadingMore) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTop = savedScrollRef.current;
+      }
+    }
+    wasLoadingRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
+  // IntersectionObserver for infinite scroll
+  React.useEffect(() => {
+    if (!onLoadMore || !hasMore) return;
+
+    const sentinel = sentinelRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container) return;
+
+    let hasSeenExit = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        if (!entry.isIntersecting) {
+          hasSeenExit = true;
+          return;
+        }
+
+        if (!hasSeenExit) return;
+        if (isLoadingMore) return;
+
+        savedScrollRef.current = container.scrollTop;
+        onLoadMore();
+      },
+      {
+        root: container,
+        rootMargin: '0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {
@@ -150,112 +202,90 @@ export default function ListCalendarView({
         </div>
       )}
 
-      <div className={styles.desktopList}>
-        {filteredPosts.map((post) => {
-          const sourceDate = getSourceDate(post);
-          const channel = post.channels?.[0];
-          const extraChannelsCount = post.channels?.length > 1 ? post.channels.length - 1 : 0;
-          const preview = getPreviewText(post);
-          const tags = post.tags || [];
-          const views = post.views_count ?? post.views;
-          const reactions = post.reactions_count ?? post.likes_count;
+      <div className={styles.scrollContainer} ref={scrollContainerRef}>
+        <div className={styles.desktopList}>
+          {filteredPosts.map((post) => {
+            const sourceDate = getSourceDate(post);
+            const channel = post.channels?.[0];
+            const extraChannelsCount = post.channels?.length > 1 ? post.channels.length - 1 : 0;
+            const preview = getPreviewText(post);
+            const tags = post.tags || [];
+            const views = post.views_count ?? post.views;
+            const reactions = post.reactions_count ?? post.likes_count;
 
-          return (
-            <div
-              key={post.id}
-              className={styles.row}
-              onClick={() => onEdit(post)}
-            >
-              <div className={styles.leftBlock}>
-                <div className={styles.dateTime}>
-                  <span className={styles.date}>{formatDateDot(sourceDate)}</span>
-                  <span className={styles.time}>{formatTime(sourceDate)}</span>
+            return (
+              <div
+                key={post.id}
+                className={styles.row}
+                onClick={() => onEdit(post)}
+              >
+                <div className={styles.leftBlock}>
+                  <div className={styles.dateTime}>
+                    <span className={styles.date}>{formatDateDot(sourceDate)}</span>
+                    <span className={styles.time}>{formatTime(sourceDate)}</span>
+                  </div>
+                  <div className={styles.tagsWrap}>
+                    {tags.slice(0, 2).map((tag) => (
+                      <span key={tag.id} className={styles.tag} style={{ backgroundColor: tag.color || '#B8DBF1' }}>
+                        {tag.name}
+                      </span>
+                    ))}
+                    {tags.length > 2 && (
+                      <span className={styles.tagsMore}>+{tags.length - 2}</span>
+                    )}
+                  </div>
                 </div>
-                <div className={styles.tagsWrap}>
-                  {tags.slice(0, 2).map((tag) => (
-                    <span key={tag.id} className={styles.tag} style={{ backgroundColor: tag.color || '#B8DBF1' }}>
-                      {tag.name}
-                    </span>
-                  ))}
-                  {tags.length > 2 && (
-                    <span className={styles.tagsMore}>+{tags.length - 2}</span>
-                  )}
+
+                <div className={styles.mainBlock}>
+                  <span className={styles.channelTitle}>
+                    {channel?.title || 'Канал'}{extraChannelsCount > 0 ? ` +${extraChannelsCount}` : ''}
+                  </span>
+                  <span className={styles.preview}>{preview || '(без текста)'}</span>
+                </div>
+
+                <MediaIcons post={post} />
+
+                <div className={styles.statusBlock}>
+                  <span className={styles.status}>{getStatusLabel(post.status)}</span>
+                  {hasRepeat(post) && <ArrowsSpinIcon width={14} height={14} color="#B0B4B8" />}
+                </div>
+
+                <div className={styles.stats}>
+                  <div className={styles.statItem}>
+                    <CalendarViewsIcon width={12} height={12} color="#B0B4B8" />
+                    <span className={styles.statValue}>{formatCompact(views)}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <CalendarReactionsIcon width={12} height={12} color="#B0B4B8" />
+                    <span className={styles.statValue}>{formatCompact(reactions)}</span>
+                  </div>
                 </div>
               </div>
+            );
+          })}
+        </div>
 
-              <div className={styles.mainBlock}>
-                <span className={styles.channelTitle}>
-                  {channel?.title || 'Канал'}{extraChannelsCount > 0 ? ` +${extraChannelsCount}` : ''}
-                </span>
-                <span className={styles.preview}>{preview || '(без текста)'}</span>
-              </div>
+        <div className={styles.mobileList}>
+          <div className={styles.mobileListInner}>
+            {filteredPosts.map((post) => (
+              <CalendarCard
+                key={post.id}
+                post={post}
+                onEdit={() => onEdit(post)}
+                listMode
+              />
+            ))}
+          </div>
+        </div>
 
-              <MediaIcons post={post} />
-
-              <div className={styles.statusBlock}>
-                <span className={styles.status}>{getStatusLabel(post.status)}</span>
-                {hasRepeat(post) && <ArrowsSpinIcon width={14} height={14} color="#B0B4B8" />}
-              </div>
-
-              <div className={styles.stats}>
-                <div className={styles.statItem}>
-                  <CalendarViewsIcon width={12} height={12} color="#B0B4B8" />
-                  <span className={styles.statValue}>{formatCompact(views)}</span>
-                </div>
-                <div className={styles.statItem}>
-                  <CalendarReactionsIcon width={12} height={12} color="#B0B4B8" />
-                  <span className={styles.statValue}>{formatCompact(reactions)}</span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
         {isLoadingMore && (
           <div className={styles.listLoader}>
             <Loader size={18} color="blue" />
           </div>
         )}
-        {!isLoadingMore && hasMore && onLoadMore && (
-          <div className={styles.listLoader}>
-            <Button
-              text="Загрузить ещё"
-              showArrow={false}
-              active
-              size="small"
-              onClick={onLoadMore}
-            />
-          </div>
+        {hasMore && !isLoadingMore && (
+          <div ref={sentinelRef} className={styles.scrollSentinel} />
         )}
-      </div>
-
-      <div className={styles.mobileList}>
-        <div className={styles.mobileListInner}>
-          {filteredPosts.map((post) => (
-            <CalendarCard
-              key={post.id}
-              post={post}
-              onEdit={() => onEdit(post)}
-              listMode
-            />
-          ))}
-
-          {isLoadingMore && (
-            <div className={styles.listLoaderMobile}>
-              <Loader size={18} color="blue" />
-            </div>
-          )}
-          {!isLoadingMore && hasMore && onLoadMore && (
-            <div className={styles.listLoaderMobile}>
-              <Button
-                text="Загрузить ещё"
-                showArrow={false}
-                active
-                size="small"
-                onClick={onLoadMore}
-              />
-            </div>
-          )}
-        </div>
       </div>
     </>
   );

@@ -45,6 +45,7 @@ export default function ListFilterBar({
 
   function setMobileOpen(next: boolean) {
     if (!isControlledMobileOpen) {
+      
       setInternalMobileFilterOpen(next);
     }
     onMobileFilterOpenChange?.(next);

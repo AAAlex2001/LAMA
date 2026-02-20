@@ -34,6 +34,10 @@ export default function DayCalendarView({
   mobileActiveFilters,
 }: DayCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const wasLoadingRef = React.useRef(false);
+  const savedScrollRef = React.useRef(0);
 
   const filterConfigs = React.useMemo(() => buildFilterConfigs(posts, {}), [posts]);
   const filteredPosts = React.useMemo(
@@ -48,6 +52,52 @@ export default function DayCalendarView({
   function handleStatusChange(status: string | null) {
     handleFilterChange('status', status ? [status] : []);
   }
+
+  React.useEffect(() => {
+    if (wasLoadingRef.current && !isLoadingMore) {
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTop = savedScrollRef.current;
+      }
+    }
+    wasLoadingRef.current = isLoadingMore;
+  }, [isLoadingMore]);
+
+  React.useEffect(() => {
+    if (!onLoadMore || !hasMore) return;
+
+    const sentinel = sentinelRef.current;
+    const container = scrollContainerRef.current;
+    if (!sentinel || !container) return;
+
+    let hasSeenExit = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        if (!entry.isIntersecting) {
+          hasSeenExit = true;
+          return;
+        }
+
+        if (!hasSeenExit) return;
+        if (isLoadingMore) return;
+
+        savedScrollRef.current = container.scrollTop;
+        onLoadMore();
+      },
+      {
+        root: container,
+        rootMargin: '0px',
+        threshold: 0,
+      },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [onLoadMore, hasMore, isLoadingMore]);
 
   if (isLoading) {
     return (
@@ -106,29 +156,23 @@ export default function DayCalendarView({
       {filteredPosts.length === 0 ? (
         <div className={styles.empty}>Нет публикаций на этот день</div>
       ) : (
-        <div className={styles.list}>
-          {filteredPosts.map((post) => (
-            <CalendarCard
-              key={post.id}
-              post={post}
-              onEdit={() => onEdit(post)}
-            />
-          ))}
+        <div className={styles.scrollContainer} ref={scrollContainerRef}>
+          <div className={styles.list}>
+            {filteredPosts.map((post) => (
+              <CalendarCard
+                key={post.id}
+                post={post}
+                onEdit={() => onEdit(post)}
+              />
+            ))}
+          </div>
           {isLoadingMore && (
             <div className={styles.listLoader}>
               <Loader size={20} color="blue" />
             </div>
           )}
-          {!isLoadingMore && hasMore && onLoadMore && (
-            <div className={styles.listLoader}>
-              <Button
-                text="Загрузить ещё"
-                showArrow={false}
-                active
-                size="small"
-                onClick={onLoadMore}
-              />
-            </div>
+          {hasMore && !isLoadingMore && (
+            <div ref={sentinelRef} className={styles.scrollSentinel} />
           )}
         </div>
       )}

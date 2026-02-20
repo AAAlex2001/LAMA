@@ -1,0 +1,201 @@
+.monthGrid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  max-width: 1007px;
+  flex: 1;
+  min-width: 0;
+}
+
+.weekdayRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0;
+  gap: 8px;
+  width: 100%;
+  height: 33px;
+}
+
+.weekdayCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  gap: 10px;
+  flex: 1;
+  height: 33px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+}
+
+.weekdayLabel {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #3B82F6;
+}
+
+.daysGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.daysRow {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  width: 100%;
+}
+
+.dayCell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  height: 119px;
+  background: #FFFFFF;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.dayCellOther {
+  background: #F8F8F8;
+}
+
+.dayCellPast {
+  background: #F8F8F8;
+}
+
+.dayCellToday {
+  background: linear-gradient(360deg, rgba(255, 255, 255, 0) -28.15%, #3B82F6 248.74%), #FFFFFF;
+}
+
+.dayCellSelected {
+  box-shadow: 0 0 0 2px #3B82F6;
+
+  &:hover {
+    box-shadow: 0 0 0 2px #3B82F6;
+  }
+}
+
+.dayNumber {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.dayNumberPast {
+  opacity: 0.4;
+}
+
+.statsBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+}
+
+.statsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  height: 18px;
+}
+
+.statsRowBottom {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  width: 100%;
+  height: 18px;
+}
+
+.statItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  flex: 1;
+}
+
+.statItemRight {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0;
+  gap: 4px;
+  flex: 1;
+}
+
+.statValueBlue {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #3B82F6;
+}
+
+.statValueGreen {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #34C759;
+}
+
+.statValueGray {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #CED2D6;
+}
+
+.statValueOrange {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #FF8D28;
+}
+
+.statValueMuted {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}

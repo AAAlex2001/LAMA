@@ -156,6 +156,12 @@
   width: 100%;
 }
 
+.scrollSentinel {
+  width: 100%;
+  height: 1px;
+  flex-shrink: 0;
+}
+
 .emptyDay {
   display: flex;
   align-items: center;

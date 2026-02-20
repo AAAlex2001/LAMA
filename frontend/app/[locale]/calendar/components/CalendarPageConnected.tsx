@@ -36,7 +36,6 @@ import {
   buildCreatePostUrl,
   formatDateOnly,
   formatDayTitle,
-  getMonthDates,
   getMonthLabel,
   isSameDay,
 } from '../utils/calendar-helpers';
@@ -131,7 +130,7 @@ export default function CalendarPageConnected() {
   const previewData = previewPost ? getPreviewData(previewPost) : null;
 
   return (
-    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''}`}>
+    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'day' ? styles.pageDay : ''}`}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}
@@ -164,7 +163,6 @@ export default function CalendarPageConnected() {
           isLoading={calendar.isLoading}
           currentView={calendar.currentView}
           sortedPosts={sortedPosts}
-          monthDates={getMonthDates(selectedDate)}
           isGridView={isGridView}
           isLoadingMore={calendar.isLoadingMore}
           hasMore={calendar.hasMore}

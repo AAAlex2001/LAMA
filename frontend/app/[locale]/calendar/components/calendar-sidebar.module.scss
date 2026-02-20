@@ -12,22 +12,9 @@
     top: 0;
     height: calc(100vh - 240px);
     max-height: calc(100dvh - 240px);
-    overflow-y: auto;
+    overflow: hidden;
     background: #FFFFFF;
     border-radius: 8px;
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: #CED2D6;
-      border-radius: 100px;
-    }
   }
 }
 
@@ -40,6 +27,7 @@
   width: 100%;
   background: #FFFFFF;
   border-radius: 11px;
+  flex-shrink: 0;
 }
 
 .calendar {
@@ -51,11 +39,12 @@
 .bottomSection {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: flex-start;
   padding: 10px 16px;
   gap: 10px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 .createBtnWrapper {
@@ -81,6 +70,22 @@
   padding: 0;
   gap: 12px;
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #CED2D6;
+    border-radius: 100px;
+  }
 }
 
 .postsInner {
