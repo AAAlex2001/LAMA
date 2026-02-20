@@ -30,6 +30,11 @@ const MONTH_NAMES_RU = [
   'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
 ];
 
+const MONTH_NAMES_NOMINATIVE_RU = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
+
 function formatShortDate(date: Date): string {
   const day = date.getDate();
   const month = MONTH_NAMES_RU[date.getMonth()];
@@ -55,7 +60,7 @@ function formatWeekRange(date: Date): string {
 }
 
 function formatMonthTitle(date: Date): string {
-  return `${MONTH_NAMES_RU[date.getMonth()]} ${date.getFullYear()}`;
+  return `${MONTH_NAMES_NOMINATIVE_RU[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function formatListTitle(date: Date): string {

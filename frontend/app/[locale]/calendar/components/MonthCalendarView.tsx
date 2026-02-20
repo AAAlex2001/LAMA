@@ -5,7 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
-import { CalendarSidebarPostIcon, CalendarSidebarSentIcon, FilterSortIcon, ChevronDownIcon } from '@/components/icons';
+import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
 import ListFilterBar from './ListFilterBar';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 import { applyPostFilters } from '../utils/filterPosts';
@@ -27,8 +27,6 @@ interface MonthCalendarViewProps {
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   isLoading: boolean;
-  listSortOrder: 'asc' | 'desc' | null;
-  onListSortChange: (order: 'asc' | 'desc' | null) => void;
   onLoadMoreDay: (dateKey: string) => void;
   dayLoadingMap: Record<string, boolean>;
   dayHasMoreMap: Record<string, boolean>;
@@ -52,22 +50,16 @@ export default function MonthCalendarView({
   onEdit,
   onAddPost,
   isLoading,
-  listSortOrder,
-  onListSortChange,
   onLoadMoreDay,
   dayLoadingMap,
   dayHasMoreMap,
   mobileActiveFilters,
 }: MonthCalendarViewProps) {
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
-  const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
-  const sortWrapperRef = React.useRef<HTMLDivElement>(null);
-  const mainRef = React.useRef<HTMLElement | null>(null);
-  const dayScrollRestoreRef = React.useRef<{ pending: boolean; sawLoading: boolean; top: number }>({
-    pending: false,
-    sawLoading: false,
-    top: 0,
-  });
+  const scrollContainerRef = React.useRef<HTMLElement | null>(null);
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+  const wasLoadingRef = React.useRef(false);
+  const savedScrollRef = React.useRef(0);
 
   const dayKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dayKey] || [];
@@ -88,41 +80,47 @@ export default function MonthCalendarView({
   }, [allFilteredPosts, statusFilter]);
 
   React.useEffect(() => {
-    if (!sortPopupOpen) return;
-    function handleClickOutside(e: MouseEvent) {
-      if (sortWrapperRef.current && !sortWrapperRef.current.contains(e.target as Node)) {
-        setSortPopupOpen(false);
-      }
+    const isDayLoading = !!dayLoadingMap[dayKey];
+    if (wasLoadingRef.current && !isDayLoading) {
+      const container = scrollContainerRef.current || (scrollContainerRef.current = document.querySelector('main'));
+      if (container) container.scrollTop = savedScrollRef.current;
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [sortPopupOpen]);
+    wasLoadingRef.current = isDayLoading;
+  }, [dayLoadingMap, dayKey]);
 
   React.useEffect(() => {
-    const restore = dayScrollRestoreRef.current;
-    if (!restore.pending) return;
     const isDayLoading = !!dayLoadingMap[dayKey];
-    if (isDayLoading) {
-      restore.sawLoading = true;
-      return;
-    }
-    if (restore.sawLoading) {
-      const main = mainRef.current || (mainRef.current = document.querySelector('main'));
-      if (main) {
-        main.scrollTop = restore.top;
-      }
-      restore.pending = false;
-      restore.sawLoading = false;
-    }
-  }, [dayKey, dayLoadingMap]);
+    const hasDayMore = !!dayHasMoreMap[dayKey];
+    if (!hasDayMore) return;
 
-  const handleLoadMoreDay = React.useCallback(() => {
-    const main = mainRef.current || (mainRef.current = document.querySelector('main'));
-    dayScrollRestoreRef.current.pending = true;
-    dayScrollRestoreRef.current.sawLoading = false;
-    dayScrollRestoreRef.current.top = main?.scrollTop ?? 0;
-    onLoadMoreDay(dayKey);
-  }, [dayKey, onLoadMoreDay]);
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    let hasSeenExit = false;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry) return;
+
+        if (!entry.isIntersecting) {
+          hasSeenExit = true;
+          return;
+        }
+
+        if (!hasSeenExit) return;
+        if (isDayLoading) return;
+
+        const container = scrollContainerRef.current || (scrollContainerRef.current = document.querySelector('main'));
+        savedScrollRef.current = container?.scrollTop ?? 0;
+        onLoadMoreDay(dayKey);
+      },
+      { root: null, rootMargin: '0px', threshold: 0 },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [dayKey, dayLoadingMap, dayHasMoreMap, onLoadMoreDay]);
 
   if (isLoading) {
     return (
@@ -157,8 +155,7 @@ export default function MonthCalendarView({
           />
         </div>
 
-        <div className={styles.controlsRow}>
-          <div className={styles.statusTabs}>
+        <div className={styles.statusTabs}>
             {[
               { key: null as string | null, label: 'Все' },
               { key: 'scheduled' as string | null, label: 'Запланированные' },
@@ -174,41 +171,6 @@ export default function MonthCalendarView({
               </button>
             ))}
           </div>
-
-          <div className={styles.sortWrapper} ref={sortWrapperRef}>
-            <button
-              type="button"
-              className={styles.sortTrigger}
-              onClick={() => setSortPopupOpen((prev) => !prev)}
-            >
-              <FilterSortIcon width={24} height={24} />
-            </button>
-            {sortPopupOpen && (
-              <div className={styles.sortPopup}>
-                <button
-                  type="button"
-                  className={styles.sortPopupItem}
-                  onClick={() => { onListSortChange('desc'); setSortPopupOpen(false); }}
-                >
-                  <span className={listSortOrder !== 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
-                    <span className={styles.sortRadioDot} />
-                  </span>
-                  <span className={styles.sortPopupItemText}>Сначала новые</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.sortPopupItem}
-                  onClick={() => { onListSortChange('asc'); setSortPopupOpen(false); }}
-                >
-                  <span className={listSortOrder === 'asc' ? `${styles.sortRadio} ${styles.sortRadioActive}` : styles.sortRadio}>
-                    <span className={styles.sortRadioDot} />
-                  </span>
-                  <span className={styles.sortPopupItemText}>Сначала старые</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
 
         {filterConfigs.length > 0 && (
           <div className={styles.filterBarWrap}>
@@ -247,16 +209,8 @@ export default function MonthCalendarView({
               <Loader size={20} color="blue" />
             </div>
           )}
-          {!dayLoadingMap[dayKey] && !!dayHasMoreMap[dayKey] && (
-            <div className={styles.loadMoreWrap}>
-              <Button
-                text="Загрузить ещё"
-                showArrow={false}
-                active
-                size="small"
-                onClick={handleLoadMoreDay}
-              />
-            </div>
+          {!!dayHasMoreMap[dayKey] && !dayLoadingMap[dayKey] && (
+            <div ref={sentinelRef} className={styles.scrollSentinel} />
           )}
         </div>
       </div>

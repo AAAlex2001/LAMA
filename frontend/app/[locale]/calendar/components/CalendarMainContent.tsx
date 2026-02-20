@@ -94,8 +94,6 @@ export default function CalendarMainContent({
             onEdit={onEdit}
             onAddPost={onAddPost}
             isLoading={isLoading}
-            listSortOrder={listSortOrder}
-            onListSortChange={onListSortChange}
             onLoadMoreDay={onLoadMoreDay}
             dayLoadingMap={dayLoadingMap}
             dayHasMoreMap={dayHasMoreMap}
