@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { PostIcon, ArrowsSpinIcon } from '@/components/icons';
+import { PostIcon, CalendarRepeatIcon } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import Loader from '@/components/loader';
 import {
@@ -64,7 +64,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
             {listMode && <PostIcon width={16} height={16} color="#3B82F6" />}
             {!listMode && <span className={styles.statusText}>{getStatusLabel(post.status)}</span>}
             {isRepeating && (
-              <ArrowsSpinIcon width={listMode ? 16 : 14} height={listMode ? 16 : 14} color={listMode ? '#3B82F6' : '#B0B4B8'} />
+              <CalendarRepeatIcon width={listMode ? 16 : 14} height={listMode ? 16 : 14} color={listMode ? '#3B82F6' : '#B0B4B8'} />
             )}
           </div>
         </div>

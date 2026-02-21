@@ -87,13 +87,13 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
           <div className={styles.statItem}>
             <CalendarReactionsIcon />
             <span className={styles.statValue}>
-              {post.reactions_count ?? '—'}
+              {post.reactions_count ?? 0}
             </span>
           </div>
           <div className={styles.statItem}>
             <CalendarViewsIcon />
             <span className={styles.statValue}>
-              {post.views_count ?? '—'}
+              {post.views_count ?? 0}
             </span>
           </div>
         </div>
