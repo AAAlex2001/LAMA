@@ -1,21 +1,23 @@
 from datetime import datetime, timezone
 from typing import List, Optional
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.channels import ChannelModerationRule, ChannelGroup
-from backend.schemas.channels import (
-    ChannelModerationRuleCreate,
-    ChannelModerationRuleUpdate,
-)
+from backend.models.channels import ChannelGroup, ChannelModerationRule
+from backend.schemas.channels import ChannelModerationRuleCreate, ChannelModerationRuleUpdate
+from backend.services.channel.utils.query_utils import get_channel
 
 
-class ChannelModerationService:
+class ModerationService:
+    """CRUD и проверка правил модерации."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_rule(self, channel_id: int, data: ChannelModerationRuleCreate, owner_id: int):
-        channel = await self.get_channel(channel_id, owner_id)
+    async def create_rule(self, channel_id: int, data: ChannelModerationRuleCreate, owner_id: int) -> ChannelModerationRule:
+        """Создать правило модерации."""
+        channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
             raise ValueError("Channel not found")
 
@@ -31,16 +33,23 @@ class ChannelModerationService:
         return rule
 
     async def list_rules(self, channel_id: int, owner_id: int) -> List[ChannelModerationRule]:
-        channel = await self.get_channel(channel_id, owner_id)
+        """Получить список правил."""
+        channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
             raise ValueError("Channel not found")
 
-        query = select(ChannelModerationRule).where(
-            ChannelModerationRule.channel_id == channel_id)
+        query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
-    async def update_rule(self, channel_id: int, rule_id: int, data: ChannelModerationRuleUpdate, owner_id: int):
+    async def update_rule(
+        self,
+        channel_id: int,
+        rule_id: int,
+        data: ChannelModerationRuleUpdate,
+        owner_id: int,
+    ) -> Optional[ChannelModerationRule]:
+        """Обновить правило."""
         rule = await self.get_rule(channel_id, rule_id, owner_id)
         if not rule:
             return None
@@ -54,6 +63,7 @@ class ChannelModerationService:
         return rule
 
     async def delete_rule(self, channel_id: int, rule_id: int, owner_id: int) -> bool:
+        """Удалить правило."""
         rule = await self.get_rule(channel_id, rule_id, owner_id)
         if not rule:
             return False
@@ -62,16 +72,17 @@ class ChannelModerationService:
         return True
 
     async def check_message(self, channel_id: int, text: str) -> Optional[ChannelModerationRule]:
-        query = select(ChannelModerationRule).where(
-            ChannelModerationRule.channel_id == channel_id)
+        """Проверить сообщение на запрещённые фразы."""
+        query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
-        lowered_text = text.lower()
+        lowered = text.lower()
         for rule in result.scalars():
-            if rule.phrase.lower() in lowered_text:
+            if rule.phrase.lower() in lowered:
                 return rule
         return None
 
     async def check_message_by_telegram_id(self, telegram_id: int, text: str) -> Optional[ChannelModerationRule]:
+        """Проверить сообщение по Telegram ID канала."""
         if not text:
             return None
 
@@ -81,21 +92,14 @@ class ChannelModerationService:
             .where(ChannelGroup.telegram_id == telegram_id)
         )
         result = await self.db.execute(query)
-        lowered_text = text.lower()
+        lowered = text.lower()
         for rule in result.scalars():
-            if rule.phrase.lower() in lowered_text:
+            if rule.phrase.lower() in lowered:
                 return rule
         return None
 
-    async def get_channel(self, channel_id: int, owner_id: int) -> Optional[ChannelGroup]:
-        query = select(ChannelGroup).where(
-            ChannelGroup.id == channel_id,
-            ChannelGroup.owner_id == owner_id,
-        )
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
-
     async def get_rule(self, channel_id: int, rule_id: int, owner_id: int) -> Optional[ChannelModerationRule]:
+        """Получить правило с проверкой."""
         query = (
             select(ChannelModerationRule)
             .join(ChannelGroup)

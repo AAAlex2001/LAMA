@@ -25,8 +25,7 @@ from backend.services.bot.auto_reply import AutoReplyService
 from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.services.bot.moderation_triggers import ModerationTriggerService
 from backend.utils import build_keyboard as utils_build_keyboard
-from backend.services.channel.auto_delete import ChannelAutoDeleteService
-from backend.services.channel.night_mode import ChannelNightModeService
+from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
 
 logger = logging.getLogger(__name__)
 

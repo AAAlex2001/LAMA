@@ -9,8 +9,8 @@ from backend.schemas.publications.series import (
 )
 from backend.models.publications import PublicationSeries
 from backend.database import get_db
-from backend.services.publications.publication_service import PublicationService
-from backend.routes.publications.dependencies import get_publication_service
+from backend.services.publications.series_service import SeriesService
+from backend.routes.publications.dependencies import get_series_service
 
 router = APIRouter(prefix="/series")
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/series")
 @router.post("/", response_model=PublicationSeriesResponse, status_code=201)
 async def create_series(
     data: PublicationSeriesCreate,
-    service: PublicationService = Depends(get_publication_service),
+    service: SeriesService = Depends(get_series_service),
 ):
     return await service.create_series(
         name=data.name,

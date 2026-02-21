@@ -10,8 +10,14 @@ from backend.schemas.publications.ai import (
     AIEditTextRequest,
     AIEditTextResponse,
 )
+from backend.services.publications.ai_service import AIService
+from backend.services.publications.publication_create_service import PublicationCreateService
 from backend.services.publications.publication_service import PublicationService
-from backend.routes.publications.dependencies import get_publication_service
+from backend.routes.publications.dependencies import (
+    get_ai_service,
+    get_create_service,
+    get_publication_service,
+)
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
@@ -21,10 +27,11 @@ router = APIRouter()
 @router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
 async def generate_content_with_ai(
     request: AIGenerateRequest,
-    service: PublicationService = Depends(get_publication_service),
+    ai: AIService = Depends(get_ai_service),
+    creator: PublicationCreateService = Depends(get_create_service),
     current_user: User = Depends(get_current_user),
 ):
-    content = await service.generate_with_ai(request)
+    content = await ai.generate_content(request)
     publication_data = PublicationCreate(
         content_type=request.content_type,
         text_content=content,
@@ -34,28 +41,28 @@ async def generate_content_with_ai(
         channel_ids=[],
         tag_names=[],
     )
-    return await service.create_publication(publication_data, owner_id=current_user.id)
+    return await creator.create_publication(publication_data, owner_id=current_user.id)
 
 
 @router.post("/ai/edit-text", response_model=AIEditTextResponse)
 async def edit_text_with_ai(
     request: AIEditTextRequest,
-    service: PublicationService = Depends(get_publication_service),
+    ai: AIService = Depends(get_ai_service),
     current_user: User = Depends(get_current_user),
 ):
-    result = await service.edit_text_with_ai(request.text, request.instruction)
+    result = await ai.edit_content(request.text, request.instruction)
     return AIEditTextResponse(result=result)
 
 
 @router.post("/ai/edit-text-stream")
 async def edit_text_with_ai_stream(
     request: AIEditTextRequest,
-    service: PublicationService = Depends(get_publication_service),
+    ai: AIService = Depends(get_ai_service),
     current_user: User = Depends(get_current_user),
 ):
     async def generate():
         try:
-            async for chunk in service.edit_text_with_ai_stream(request.text, request.instruction):
+            async for chunk in ai.edit_content_stream(request.text, request.instruction):
                 yield f"data: {chunk}\n\n"
         except Exception as e:
             yield f"data: [ERROR] {str(e)}\n\n"

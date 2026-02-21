@@ -11,7 +11,13 @@ from backend.schemas.publications.publication_response import (
     PublicationListResponse,
 )
 from backend.services.publications.publication_service import PublicationService
-from backend.routes.publications.dependencies import get_publication_service
+from backend.services.publications.publication_create_service import PublicationCreateService
+from backend.services.publications.publication_query_service import PublicationQueryService
+from backend.routes.publications.dependencies import (
+    get_publication_service,
+    get_create_service,
+    get_query_service,
+)
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
@@ -21,10 +27,10 @@ router = APIRouter()
 @router.post("/", response_model=PublicationResponse, status_code=201)
 async def create_publication(
     data: PublicationCreate,
-    service: PublicationService = Depends(get_publication_service),
+    creator: PublicationCreateService = Depends(get_create_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create_publication(data, owner_id=current_user.id)
+    return await creator.create_publication(data, owner_id=current_user.id)
 
 
 @router.get("/drafts", response_model=PublicationListResponse)
@@ -33,11 +39,11 @@ async def get_drafts(
     tag_ids: Optional[List[int]] = None,
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query_service: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await query_service.get_publications(
         owner_id=current_user.id,
         status=PublicationStatus.DRAFT,
         tag_names=tag_names,
@@ -52,11 +58,11 @@ async def get_drafts(
 async def get_scheduled(
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query_service: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await query_service.get_publications(
         owner_id=current_user.id,
         status=PublicationStatus.SCHEDULED,
         skip=skip,
@@ -79,11 +85,11 @@ async def get_publications(
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query_service: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await query_service.get_publications(
         owner_id=current_user.id,
         status=status,
         content_type=content_type,
