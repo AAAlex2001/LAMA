@@ -15,6 +15,7 @@ import {
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
+import { useInView } from '../store/useInView';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 import { applyPostFilters } from '../utils/filterPosts';
 import {
@@ -70,10 +71,14 @@ export default function ListCalendarView({
   mobileActiveFilters,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const sentinelRef = React.useRef<HTMLDivElement>(null);
-  const wasLoadingRef = React.useRef(false);
-  const savedScrollRef = React.useRef(0);
+
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+
+  React.useEffect(() => {
+    if (inView && hasMore && !isLoadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  }, [inView, hasMore, isLoadingMore, onLoadMore]);
 
   const filterConfigs = React.useMemo(
     () => buildFilterConfigs(posts, { withDateSort: true, withStatusFilter: true, withStatsFilters: true }),
@@ -91,59 +96,6 @@ export default function ListCalendarView({
   React.useEffect(() => {
     setActiveFilters((prev) => ({ ...prev, status: statusFilter ? [statusFilter] : [] }));
   }, [statusFilter]);
-
-  // After loading finishes, restore scroll to saved position
-  React.useEffect(() => {
-    if (wasLoadingRef.current && !isLoadingMore) {
-      const container = scrollContainerRef.current;
-      if (container) {
-        container.scrollTop = savedScrollRef.current;
-      }
-    }
-    wasLoadingRef.current = isLoadingMore;
-  }, [isLoadingMore]);
-
-  // IntersectionObserver for infinite scroll
-  React.useEffect(() => {
-    if (isLoading || !onLoadMore || !hasMore) return;
-
-    const sentinel = sentinelRef.current;
-    const container = scrollContainerRef.current;
-    if (!sentinel) return;
-
-    // On mobile the page scrolls (not the inner container), so use viewport as root
-    const isMobile = typeof window !== 'undefined' && !window.matchMedia('(min-width: 1440px)').matches;
-    const root = isMobile ? null : container;
-    if (!root && !isMobile) return;
-
-    let hasSeenExit = false;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-
-        if (!entry.isIntersecting) {
-          hasSeenExit = true;
-          return;
-        }
-
-        if (!hasSeenExit) return;
-        if (isLoadingMore) return;
-
-        if (container) savedScrollRef.current = container.scrollTop;
-        onLoadMore();
-      },
-      {
-        root,
-        rootMargin: '0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [isLoading, onLoadMore, hasMore, isLoadingMore]);
 
   function handleFilterChange(key: string, values: string[]) {
     if (key === 'date') {
@@ -204,7 +156,7 @@ export default function ListCalendarView({
         <div className={styles.empty}>Нет публикаций в этом периоде</div>
       ) : (
 
-      <div className={styles.scrollContainer} ref={scrollContainerRef}>
+      <div className={styles.scrollContainer}>
         <div className={styles.desktopList}>
           {filteredPosts.map((post) => {
             const sourceDate = getSourceDate(post);
@@ -286,7 +238,7 @@ export default function ListCalendarView({
           </div>
         )}
         {hasMore && !isLoadingMore && (
-          <div ref={sentinelRef} className={styles.scrollSentinel} />
+          <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
         )}
       </div>
       )}

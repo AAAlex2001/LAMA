@@ -63,19 +63,12 @@ export default function CalendarPageConnected() {
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
   const [mobileActiveFilters, setMobileActiveFilters] = React.useState<Record<string, string[]>>({});
 
-  const mainRef = React.useRef<HTMLElement | null>(null);
-  const listScrollRestoreRef = React.useRef<{ pending: boolean; sawLoading: boolean; top: number }>({
-    pending: false,
-    sawLoading: false,
-    top: 0,
-  });
-
   React.useEffect(() => {
     setMobileActiveFilters({});
   }, [calendar.currentView]);
 
   React.useEffect(() => {
-    const main = mainRef.current || (mainRef.current = document.querySelector('main'));
+    const main = document.querySelector('main');
     if (main) main.scrollTop = 0;
     dispatch(fetchCalendarData());
   }, [
@@ -92,28 +85,7 @@ export default function CalendarPageConnected() {
     dispatch(fetchDayCounts());
   }, [calendar.countsMonthAnchor, dispatch]);
 
-  React.useEffect(() => {
-    const restore = listScrollRestoreRef.current;
-    if (!restore.pending) return;
-    if (calendar.isLoadingMore) {
-      restore.sawLoading = true;
-      return;
-    }
-    if (restore.sawLoading) {
-      const main = mainRef.current || (mainRef.current = document.querySelector('main'));
-      if (main) {
-        main.scrollTop = restore.top;
-      }
-      restore.pending = false;
-      restore.sawLoading = false;
-    }
-  }, [calendar.isLoadingMore]);
-
   const handleLoadMoreList = React.useCallback(() => {
-    const main = mainRef.current || (mainRef.current = document.querySelector('main'));
-    listScrollRestoreRef.current.pending = true;
-    listScrollRestoreRef.current.sawLoading = false;
-    listScrollRestoreRef.current.top = main?.scrollTop ?? 0;
     dispatch(fetchMoreListPosts());
   }, [dispatch]);
 

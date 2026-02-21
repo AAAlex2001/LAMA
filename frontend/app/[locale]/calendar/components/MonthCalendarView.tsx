@@ -7,6 +7,7 @@ import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
 import ListFilterBar from './ListFilterBar';
+import { useInView } from '../store/useInView';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 import { applyPostFilters } from '../utils/filterPosts';
 import {
@@ -56,13 +57,22 @@ export default function MonthCalendarView({
   mobileActiveFilters,
 }: MonthCalendarViewProps) {
   const [statusFilter, setStatusFilter] = React.useState<string | null>(null);
-  const scrollContainerRef = React.useRef<HTMLElement | null>(null);
-  const sentinelRef = React.useRef<HTMLDivElement>(null);
-  const wasLoadingRef = React.useRef(false);
-  const savedScrollRef = React.useRef(0);
 
   const dayKey = formatDateOnly(sidebarDate);
   const dayPosts = weekItems[dayKey] || [];
+  const isDayLoading = !!dayLoadingMap[dayKey];
+  const hasDayMore = !!dayHasMoreMap[dayKey];
+
+  const { ref: sentinelRef, inView } = useInView({
+    threshold: 0,
+    skip: !hasDayMore || isDayLoading,
+  });
+
+  React.useEffect(() => {
+    if (inView && hasDayMore && !isDayLoading) {
+      onLoadMoreDay(dayKey);
+    }
+  }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dayKey]);
 
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
   const filterConfigs = React.useMemo(() => buildFilterConfigs(dayPosts, {}), [dayPosts]);
@@ -78,49 +88,6 @@ export default function MonthCalendarView({
     if (!statusFilter) return allFilteredPosts;
     return allFilteredPosts.filter((p) => p.status === statusFilter);
   }, [allFilteredPosts, statusFilter]);
-
-  React.useEffect(() => {
-    const isDayLoading = !!dayLoadingMap[dayKey];
-    if (wasLoadingRef.current && !isDayLoading) {
-      const container = scrollContainerRef.current || (scrollContainerRef.current = document.querySelector('main'));
-      if (container) container.scrollTop = savedScrollRef.current;
-    }
-    wasLoadingRef.current = isDayLoading;
-  }, [dayLoadingMap, dayKey]);
-
-  React.useEffect(() => {
-    const isDayLoading = !!dayLoadingMap[dayKey];
-    const hasDayMore = !!dayHasMoreMap[dayKey];
-    if (!hasDayMore) return;
-
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    let hasSeenExit = false;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-
-        if (!entry.isIntersecting) {
-          hasSeenExit = true;
-          return;
-        }
-
-        if (!hasSeenExit) return;
-        if (isDayLoading) return;
-
-        const container = scrollContainerRef.current || (scrollContainerRef.current = document.querySelector('main'));
-        savedScrollRef.current = container?.scrollTop ?? 0;
-        onLoadMoreDay(dayKey);
-      },
-      { root: null, rootMargin: '0px', threshold: 0 },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [dayKey, dayLoadingMap, dayHasMoreMap, onLoadMoreDay]);
 
   if (isLoading) {
     return (
@@ -209,8 +176,8 @@ export default function MonthCalendarView({
               <Loader size={20} color="blue" />
             </div>
           )}
-          {!!dayHasMoreMap[dayKey] && !dayLoadingMap[dayKey] && (
-            <div ref={sentinelRef} className={styles.scrollSentinel} />
+          {hasDayMore && !isDayLoading && (
+            <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
           )}
         </div>
       </div>

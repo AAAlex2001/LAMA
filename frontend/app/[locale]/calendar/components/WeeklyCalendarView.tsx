@@ -5,6 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
+import { useInView } from '../store/useInView';
 import {
   DAY_NAMES_SHORT,
   getWeekStart,
@@ -29,6 +30,26 @@ interface WeeklyCalendarViewProps {
   onDayClick?: (date: Date) => void;
 }
 
+function DaySentinel({
+  dateKey,
+  isLoading,
+  onReachEnd,
+}: {
+  dateKey: string;
+  isLoading: boolean;
+  onReachEnd: (dateKey: string) => void;
+}) {
+  const { ref, inView } = useInView({ threshold: 0, skip: isLoading });
+
+  React.useEffect(() => {
+    if (inView && !isLoading) {
+      onReachEnd(dateKey);
+    }
+  }, [inView, isLoading, onReachEnd, dateKey]);
+
+  return <div ref={ref as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />;
+}
+
 export default function WeeklyCalendarView({
   weekItems,
   selectedDate,
@@ -43,10 +64,6 @@ export default function WeeklyCalendarView({
   onDayClick,
 }: WeeklyCalendarViewProps) {
   const weekStart = getWeekStart(selectedDate);
-  const cardsRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
-  const sentinelRefs = React.useRef<Record<string, HTMLDivElement | null>>({});
-  const wasLoadingRef = React.useRef<Record<string, boolean>>({});
-  const savedScrollRef = React.useRef<Record<string, number>>({});
 
   const weekDays = (() => {
     if (visibleDates?.length) {
@@ -60,68 +77,6 @@ export default function WeeklyCalendarView({
     }
     return days;
   })();
-
-  React.useEffect(() => {
-    if (!dayLoading) return;
-    Object.keys(wasLoadingRef.current).forEach((dateKey) => {
-      if (wasLoadingRef.current[dateKey] && !dayLoading[dateKey]) {
-        const container = cardsRefs.current[dateKey];
-        if (container) {
-          container.scrollTop = savedScrollRef.current[dateKey] ?? 0;
-        }
-      }
-    });
-    weekDays.forEach((d) => {
-      const dk = formatDateOnly(d);
-      wasLoadingRef.current[dk] = !!dayLoading[dk];
-    });
-  }, [dayLoading, weekDays]);
-
-  React.useEffect(() => {
-    if (!onReachEnd) return;
-
-    const observers: IntersectionObserver[] = [];
-    const exitTracker: Record<string, boolean> = {};
-
-    Object.entries(sentinelRefs.current).forEach(([dateKey, sentinel]) => {
-      if (!sentinel) return;
-      const container = cardsRefs.current[dateKey];
-      if (!container) return;
-
-      exitTracker[dateKey] = false;
-
-      const observer = new IntersectionObserver(
-        (entries) => {
-          const entry = entries[0];
-          if (!entry) return;
-
-          if (!entry.isIntersecting) {
-            exitTracker[dateKey] = true;
-            return;
-          }
-
-          if (!exitTracker[dateKey]) return;
-          if (dayLoading?.[dateKey]) return;
-          if (!dayHasMore?.[dateKey]) return;
-
-          savedScrollRef.current[dateKey] = container.scrollTop;
-          onReachEnd(dateKey);
-        },
-        {
-          root: container,
-          rootMargin: '0px',
-          threshold: 0,
-        },
-      );
-
-      observer.observe(sentinel);
-      observers.push(observer);
-    });
-
-    return () => {
-      observers.forEach((obs) => obs.disconnect());
-    };
-  }, [onReachEnd, dayLoading, dayHasMore, weekDays]);
 
   return (
     <div className={styles.weeklyView}>
@@ -175,9 +130,6 @@ export default function WeeklyCalendarView({
             <div
               className={cardsClasses}
               data-date-key={dateKey}
-              ref={(el) => {
-                cardsRefs.current[dateKey] = el;
-              }}
             >
               {isLoading ? (
                 <div className={styles.dayLoader}>
@@ -199,12 +151,11 @@ export default function WeeklyCalendarView({
                       <Loader size={16} color="blue" />
                     </div>
                   )}
-                  {!!dayHasMore?.[dateKey] && !dayLoading?.[dateKey] && (
-                    <div
-                      ref={(el) => {
-                        sentinelRefs.current[dateKey] = el;
-                      }}
-                      className={styles.scrollSentinel}
+                  {!!dayHasMore?.[dateKey] && !dayLoading?.[dateKey] && onReachEnd && (
+                    <DaySentinel
+                      dateKey={dateKey}
+                      isLoading={!!dayLoading?.[dateKey]}
+                      onReachEnd={onReachEnd}
                     />
                   )}
                 </>

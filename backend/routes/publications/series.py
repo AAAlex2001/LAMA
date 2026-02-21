@@ -15,7 +15,7 @@ from backend.routes.publications.dependencies import get_series_service
 router = APIRouter(prefix="/series")
 
 
-@router.post("/", response_model=PublicationSeriesResponse, status_code=201)
+@router.post("", response_model=PublicationSeriesResponse, status_code=201)
 async def create_series(
     data: PublicationSeriesCreate,
     service: SeriesService = Depends(get_series_service),

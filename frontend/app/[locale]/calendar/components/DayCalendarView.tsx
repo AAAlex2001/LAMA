@@ -6,6 +6,7 @@ import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
+import { useInView } from '../store/useInView';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 import { applyPostFilters } from '../utils/filterPosts';
 import styles from './day-calendar-view.module.scss';
@@ -34,10 +35,14 @@ export default function DayCalendarView({
   mobileActiveFilters,
 }: DayCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
-  const scrollContainerRef = React.useRef<HTMLDivElement>(null);
-  const sentinelRef = React.useRef<HTMLDivElement>(null);
-  const wasLoadingRef = React.useRef(false);
-  const savedScrollRef = React.useRef(0);
+
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+
+  React.useEffect(() => {
+    if (inView && hasMore && !isLoadingMore && onLoadMore) {
+      onLoadMore();
+    }
+  }, [inView, hasMore, isLoadingMore, onLoadMore]);
 
   const filterConfigs = React.useMemo(() => buildFilterConfigs(posts, {}), [posts]);
   const filteredPosts = React.useMemo(
@@ -52,52 +57,6 @@ export default function DayCalendarView({
   function handleStatusChange(status: string | null) {
     handleFilterChange('status', status ? [status] : []);
   }
-
-  React.useEffect(() => {
-    if (wasLoadingRef.current && !isLoadingMore) {
-      const container = scrollContainerRef.current;
-      if (container) {
-        container.scrollTop = savedScrollRef.current;
-      }
-    }
-    wasLoadingRef.current = isLoadingMore;
-  }, [isLoadingMore]);
-
-  React.useEffect(() => {
-    if (!onLoadMore || !hasMore) return;
-
-    const sentinel = sentinelRef.current;
-    const container = scrollContainerRef.current;
-    if (!sentinel || !container) return;
-
-    let hasSeenExit = false;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry) return;
-
-        if (!entry.isIntersecting) {
-          hasSeenExit = true;
-          return;
-        }
-
-        if (!hasSeenExit) return;
-        if (isLoadingMore) return;
-
-        savedScrollRef.current = container.scrollTop;
-        onLoadMore();
-      },
-      {
-        root: container,
-        rootMargin: '0px',
-        threshold: 0,
-      },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [onLoadMore, hasMore, isLoadingMore]);
 
   if (isLoading) {
     return (
@@ -156,7 +115,7 @@ export default function DayCalendarView({
       {filteredPosts.length === 0 ? (
         <div className={styles.empty}>Нет публикаций на этот день</div>
       ) : (
-        <div className={styles.scrollContainer} ref={scrollContainerRef}>
+        <div className={styles.scrollContainer}>
           <div className={styles.list}>
             {filteredPosts.map((post) => (
               <CalendarCard
@@ -172,7 +131,7 @@ export default function DayCalendarView({
             </div>
           )}
           {hasMore && !isLoadingMore && (
-            <div ref={sentinelRef} className={styles.scrollSentinel} />
+            <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
           )}
         </div>
       )}
