@@ -11,7 +11,7 @@ export function extractPlainText(html: string): string {
 }
 
 export function hasSupportedFormatting(html: string): boolean {
-  return /<\/?(?:a|b|i|s|u|code|pre|tg-spoiler)>/i.test(html || '');
+  return /<\/?(?:strong|em|b|i|s|u|code|pre|tg-spoiler)[\s>\/]|<a\b/i.test(html || '');
 }
 
 export function buildInlineKeyboard(rows: ButtonRow[]): InlineKeyboard | undefined {

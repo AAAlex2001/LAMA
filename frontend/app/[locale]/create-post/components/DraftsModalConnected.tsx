@@ -9,6 +9,7 @@ import * as draftsSlice from '../store/slices/drafts';
 import * as uiSlice from '../store/slices/ui';
 import { loadDraftIntoStore, fetchMoreDrafts, deleteDraftThunk, searchDrafts, fetchDrafts } from '../store/thunks';
 import type { Draft, MediaFile } from '../store/types';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 function getMediaType(url: string): 'image' | 'video' | 'document' {
   const ext = url.split('.').pop()?.toLowerCase() || '';
@@ -31,6 +32,7 @@ function draftToMediaFiles(draft: Draft): MediaFile[] {
 
 export default function DraftsModalConnected() {
   const dispatch = useAppDispatch();
+  const { showSuccess } = useNotifications();
   const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
 
   const isOpen = useAppSelector(state => state.ui.showDraftsModal);
@@ -90,7 +92,7 @@ export default function DraftsModalConnected() {
         selectedDraftId={draftsState.selectedDraftId}
         onSearchQueryChange={(q) => dispatch(draftsSlice.setSearchQuery(q))}
         onLoadMore={() => dispatch(fetchMoreDrafts())}
-        onDelete={(id) => dispatch(deleteDraftThunk(id))}
+        onDelete={(id) => dispatch(deleteDraftThunk(id)).then(() => showSuccess('Черновик удалён'))}
         onSelect={(draft: Draft) => {
           loadDraftIntoStore(draft, dispatch);
           dispatch(uiSlice.setShowDraftsModal(false));

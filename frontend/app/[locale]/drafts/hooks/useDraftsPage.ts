@@ -6,6 +6,7 @@ import { fetchDrafts, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks'
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { Draft, MediaFile, Tag, TagsResponse } from '@/app/[locale]/create-post/store/types';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 type SortKey = 'date' | 'tags' | 'source' | null;
 
@@ -30,6 +31,7 @@ function draftToMediaFiles(draft: Draft): MediaFile[] {
 
 export function useDraftsPage() {
   const dispatch = useAppDispatch();
+  const { showSuccess } = useNotifications();
   const drafts = useAppSelector(state => state.drafts.items);
   const isLoading = useAppSelector(state => state.drafts.isLoading);
   const isLoadingMore = useAppSelector(state => state.drafts.isLoadingMore);
@@ -115,7 +117,7 @@ export function useDraftsPage() {
 
   const confirmDelete = () => {
     if (deleteConfirmId !== null) {
-      dispatch(deleteDraftThunk(deleteConfirmId));
+      dispatch(deleteDraftThunk(deleteConfirmId)).then(() => showSuccess('Черновик удалён'));
       setDeleteConfirmId(null);
     }
   };

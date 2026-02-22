@@ -235,12 +235,46 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
 
   const editor = useEditor({
     immediatelyRender: false,
+    editorProps: {
+      transformPastedHTML(html) {
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        div.querySelectorAll('h1,h2,h3,h4,h5,h6').forEach(el => {
+          const p = document.createElement('p');
+          p.innerHTML = el.innerHTML;
+          el.replaceWith(p);
+        });
+        div.querySelectorAll('li').forEach(el => {
+          const p = document.createElement('p');
+          p.innerHTML = el.innerHTML;
+          el.replaceWith(p);
+        });
+        div.querySelectorAll('ul,ol').forEach(el => {
+          const frag = document.createDocumentFragment();
+          while (el.firstChild) frag.appendChild(el.firstChild);
+          el.replaceWith(frag);
+        });
+        div.querySelectorAll('blockquote').forEach(el => {
+          const frag = document.createDocumentFragment();
+          while (el.firstChild) frag.appendChild(el.firstChild);
+          el.replaceWith(frag);
+        });
+        div.querySelectorAll('hr').forEach(el => el.remove());
+        return div.innerHTML;
+      },
+    },
     extensions: [
       StarterKit.configure({
         codeBlock: false,
         code: false,
         link: false,
         underline: false,
+        heading: false,
+        blockquote: false,
+        bulletList: false,
+        orderedList: false,
+        listItem: false,
+        horizontalRule: false,
       }),
       MonospaceCode,
       CustomCodeBlock.configure({
