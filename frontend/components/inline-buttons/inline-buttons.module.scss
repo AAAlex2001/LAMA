@@ -7,7 +7,6 @@
   width: 100%;
 }
 
-/* Таблица кнопок */
 .tableContainer {
   display: flex;
   flex-direction: column;
@@ -15,26 +14,25 @@
   gap: 0;
   width: 100%;
   overflow-x: auto;
-  
+
   &::-webkit-scrollbar {
     height: 8px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: #f1f1f1;
     border-radius: 4px;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
   }
-  
+
   &::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
 }
-
 
 .tableBody {
   display: flex;
@@ -120,7 +118,6 @@
   }
 }
 
-/* Редакторы кнопок */
 .editors {
   display: flex;
   flex-direction: column;
@@ -137,14 +134,26 @@
   width: 100%;
 }
 
-.editorHeader {
+.editorTopRow {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
 }
 
 .buttonLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 12px 10px;
+  gap: 10px;
+  width: 81px;
+  height: 41px;
+  filter: drop-shadow(0px 2px 12px rgba(1, 42, 249, 0.05));
+  border-radius: 10px;
+  flex-shrink: 0;
+  box-sizing: border-box;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 14px;
@@ -154,17 +163,47 @@
 }
 
 .typeDropdown {
-  min-width: auto;
+  width: 138px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-radius: 12px;
 }
 
-.editorFields {
+.callbackActionDropdown {
+  width: 217px;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.editorBottomColumn {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.fullWidthInput {
+  width: 100%;
+}
+
+.editorBottomRow {
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   width: 100%;
 
-  @media (min-width: 768px) {
+  @media (min-width: 1440px) {
     flex-direction: row;
+    align-items: center;
+  }
+}
+
+.bottomInput {
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    min-width: 0;
   }
 }

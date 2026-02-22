@@ -15,6 +15,7 @@ export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly'
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
 export type ButtonTypeOption = 'url' | 'hidden_text' | 'callback';
+export type CallbackActionOption = 'send_dm' | 'reply_in_chat' | 'track_click';
 
 export const TAG_COLORS: TagColor[] = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'];
 export interface ChannelsContentProps {
@@ -92,6 +93,11 @@ export interface ButtonTypeContentProps {
   onButtonTypeChange?: (value: ButtonTypeOption) => void;
 }
 
+export interface CallbackActionContentProps {
+  callbackActionValue: CallbackActionOption;
+  onCallbackActionChange?: (value: CallbackActionOption) => void;
+}
+
 export interface DropdownProps {
   label: string;
   placeholder?: string;
@@ -104,7 +110,7 @@ export interface DropdownProps {
   onAddNew?: () => void;
   addNewLabel?: string;
   className?: string;
-  variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete' | 'button-type';
+  variant?: 'channels' | 'tags' | 'repeat' | 'auto-delete' | 'button-type' | 'callback-action';
   recentTags?: ApiTag[];
   searchResults?: ApiTag[];
   tagInputValue?: string;
@@ -157,7 +163,8 @@ export interface DropdownProps {
   loading?: boolean;
   buttonTypeValue?: ButtonTypeOption;
   onButtonTypeChange?: (value: ButtonTypeOption) => void;
-  // Для контроля состояния открытия извне (accordion behavior)
+  callbackActionValue?: CallbackActionOption;
+  onCallbackActionChange?: (value: CallbackActionOption) => void;
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
 }

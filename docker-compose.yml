@@ -19,8 +19,6 @@ services:
       - "-c"
       - "work_mem=16MB"
     ports:
-      # Пробрасывать порт Postgres наружу небезопасно в публичной сети.
-      # Привязываем проброс только к localhost, чтобы избежать внешних сканов.
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data

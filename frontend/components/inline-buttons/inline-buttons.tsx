@@ -5,9 +5,10 @@ import styles from './inline-buttons.module.scss';
 import Input from '@/components/input';
 import Button from '@/components/button/button';
 import { PlusIcon } from '@/components/icons';
-import Dropdown, { ButtonTypeOption } from '@/components/dropdown/dropdown';
+import Dropdown, { ButtonTypeOption, CallbackActionOption } from '@/components/dropdown/dropdown';
 
 export type ButtonType = 'url' | 'callback' | 'hidden_text';
+export type CallbackAction = 'send_dm' | 'reply_in_chat' | 'track_click';
 
 export interface InlineButton {
   id: string;
@@ -15,7 +16,11 @@ export interface InlineButton {
   type: ButtonType;
   url?: string;
   callback_data?: string;
+  callback_action?: CallbackAction;
+  callback_response?: string;
   hidden_text?: string;
+  hidden_text_subscribed?: string;
+  hidden_text_unsubscribed?: string;
 }
 
 export interface ButtonRow {
@@ -135,76 +140,114 @@ interface ButtonEditorProps {
 }
 
 function ButtonEditor({ rowId, button, number, onUpdate }: ButtonEditorProps) {
-  const getPlaceholder = (): string => {
-    switch (button.type) {
-      case 'url':
-        return 'Введите URL';
-      case 'hidden_text':
-        return 'Введите скрытый текст';
-      case 'callback':
-        return 'Введите callback data';
-    }
-  };
-
-  const getSecondFieldValue = (): string => {
-    switch (button.type) {
-      case 'url':
-        return button.url || '';
-      case 'hidden_text':
-        return button.hidden_text || '';
-      case 'callback':
-        return button.callback_data || '';
-    }
-  };
-
-  const handleSecondFieldChange = (value: string) => {
-    switch (button.type) {
-      case 'url':
-        onUpdate(rowId, button.id, { url: value });
-        break;
-      case 'hidden_text':
-        onUpdate(rowId, button.id, { hidden_text: value });
-        break;
-      case 'callback':
-        onUpdate(rowId, button.id, { callback_data: value });
-        break;
-    }
-  };
-
   const handleTypeChange = (newType: ButtonTypeOption) => {
     onUpdate(rowId, button.id, {
       type: newType as ButtonType,
       url: newType === 'url' ? button.url : undefined,
-      hidden_text: newType === 'hidden_text' ? button.hidden_text : undefined,
-      callback_data: newType === 'callback' ? button.callback_data : undefined,
+      hidden_text: undefined,
+      hidden_text_subscribed: newType === 'hidden_text' ? button.hidden_text_subscribed : undefined,
+      hidden_text_unsubscribed: newType === 'hidden_text' ? button.hidden_text_unsubscribed : undefined,
+      callback_data: undefined,
+      callback_action: newType === 'callback' ? (button.callback_action || 'send_dm') : undefined,
+      callback_response: newType === 'callback' ? button.callback_response : undefined,
     });
   };
 
+  const handleCallbackActionChange = (action: CallbackActionOption) => {
+    onUpdate(rowId, button.id, { callback_action: action as CallbackAction });
+  };
+
+  const topRow = (
+    <div className={styles.editorTopRow}>
+      <div className={styles.buttonLabel}>
+        Кнопка {number}
+      </div>
+      <Dropdown
+        variant="button-type"
+        label="Тип кнопки"
+        buttonTypeValue={button.type as ButtonTypeOption}
+        onButtonTypeChange={handleTypeChange}
+        className={styles.typeDropdown}
+      />
+    </div>
+  );
+
+  if (button.type === 'hidden_text') {
+    return (
+      <div className={styles.editor}>
+        {topRow}
+        <div className={styles.editorBottomColumn}>
+          <Input
+            value={button.text}
+            onChange={value => onUpdate(rowId, button.id, { text: value })}
+            placeholder="Текст кнопки"
+            className={styles.fullWidthInput}
+          />
+          <div className={styles.editorBottomRow}>
+            <Input
+              value={button.hidden_text_subscribed || ''}
+              onChange={value => onUpdate(rowId, button.id, { hidden_text_subscribed: value })}
+              placeholder="Текст для подписчиков"
+              className={styles.bottomInput}
+            />
+            <Input
+              value={button.hidden_text_unsubscribed || ''}
+              onChange={value => onUpdate(rowId, button.id, { hidden_text_unsubscribed: value })}
+              placeholder="Текст для не подписчиков"
+              className={styles.bottomInput}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (button.type === 'callback') {
+    return (
+      <div className={styles.editor}>
+        {topRow}
+        <div className={styles.editorBottomColumn}>
+          <Input
+            value={button.text}
+            onChange={value => onUpdate(rowId, button.id, { text: value })}
+            placeholder="Текст кнопки"
+            className={styles.fullWidthInput}
+          />
+          <div className={styles.editorBottomRow}>
+            <Dropdown
+              variant="callback-action"
+              label="Действие после клика"
+              callbackActionValue={(button.callback_action || 'send_dm') as CallbackActionOption}
+              onCallbackActionChange={handleCallbackActionChange}
+              className={styles.callbackActionDropdown}
+            />
+            <Input
+              value={button.callback_response || ''}
+              onChange={value => onUpdate(rowId, button.id, { callback_response: value })}
+              placeholder="Текст ответа"
+              className={styles.bottomInput}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.editor}>
-      <div className={styles.editorHeader}>
-        <span className={styles.buttonLabel}>Кнопка {number}</span>
-        <Dropdown
-          variant="button-type"
-          label="Тип кнопки"
-          buttonTypeValue={button.type as ButtonTypeOption}
-          onButtonTypeChange={handleTypeChange}
-          className={styles.typeDropdown}
-        />
-      </div>
-
-      <div className={styles.editorFields}>
+      {topRow}
+      <div className={styles.editorBottomRow}>
         <Input
           value={button.text}
           onChange={value => onUpdate(rowId, button.id, { text: value })}
           placeholder="Текст кнопки"
-          className={styles.fieldInput}
+          className={styles.bottomInput}
         />
         <Input
-          value={getSecondFieldValue()}
-          onChange={handleSecondFieldChange}
-          placeholder={getPlaceholder()}
-          className={styles.fieldInput}
+          value={button.url || ''}
+          onChange={value => onUpdate(rowId, button.id, { url: value })}
+          placeholder="Введите URL"
+          className={styles.bottomInput}
         />
       </div>
     </div>

@@ -10,16 +10,18 @@ import { TagsContent } from './variants/tags';
 import { RepeatContent, type RepeatViewMode } from './variants/repeat';
 import { AutoDeleteContent } from './variants/auto-delete';
 import { ButtonTypeContent } from './variants/button-type';
+import { CallbackActionContent } from './variants/callback-action';
 
 import type {
   RepeatOption,
   AutoDeleteOption,
   TagColor,
   ButtonTypeOption,
+  CallbackActionOption,
   DropdownProps,
 } from './types';
 
-export type { RepeatOption, AutoDeleteOption, TagColor, ButtonTypeOption };
+export type { RepeatOption, AutoDeleteOption, TagColor, ButtonTypeOption, CallbackActionOption };
 export { TAG_COLORS} from './types';
 
 export default function Dropdown({
@@ -87,6 +89,8 @@ export default function Dropdown({
   loading = false,
   buttonTypeValue = 'url',
   onButtonTypeChange,
+  callbackActionValue = 'send_dm',
+  onCallbackActionChange,
   isOpen: controlledIsOpen,
   onToggle: controlledOnToggle,
 }: DropdownProps) {
@@ -102,6 +106,24 @@ export default function Dropdown({
 
   // Используем контролируемое состояние если передано, иначе внутреннее
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+
+  // Закрытие по клику вне dropdown
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        if (controlledOnToggle) {
+          controlledOnToggle(false);
+        } else {
+          setInternalIsOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, controlledOnToggle]);
 
   const handleToggle = () => {
     const willOpen = !isOpen;
@@ -217,15 +239,29 @@ export default function Dropdown({
           />
         );
 
+      case 'callback-action':
+        return (
+          <CallbackActionContent
+            callbackActionValue={callbackActionValue}
+            onCallbackActionChange={onCallbackActionChange}
+          />
+        );
+
       default:
         return null;
     }
   };
 
+  const isCompact = variant === 'button-type' || variant === 'callback-action';
+
   return (
     <div
       ref={dropdownRef}
-      className={classNames(styles.dropdown, { [styles.open]: isOpen }, className)}
+      className={classNames(
+        styles.dropdown,
+        { [styles.open]: isOpen, [styles.compact]: isCompact },
+        className,
+      )}
     >
       <div
         className={styles.header}
