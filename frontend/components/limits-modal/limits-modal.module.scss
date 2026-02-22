@@ -1,0 +1,162 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px 24px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 30px;
+  align-self: stretch;
+}
+
+.title {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  text-align: center;
+  color: #383f45;
+  margin: 0;
+  align-self: stretch;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  gap: 10px;
+  align-self: stretch;
+}
+
+.sectionTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  align-self: stretch;
+}
+
+.addBtn {
+  align-self: stretch;
+  border-radius: 12px !important;
+
+  > * {
+    border-radius: 12px !important;
+    height: 37px !important;
+    min-height: 37px !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+}
+
+.addBtnFull {
+  pointer-events: none;
+
+  span[class*='counter'] {
+    color: #e33326 !important;
+  }
+}
+
+.upgradeText {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  background-image: linear-gradient(
+    90deg,
+    #3b82f6 0%,
+    #2f67c3 50%,
+    #295aaa 75%,
+    #26539d 87.5%,
+    #244f96 93.75%,
+    #234c90 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  align-self: stretch;
+}
+
+.itemList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0;
+  align-self: stretch;
+}
+
+.item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  gap: 16px;
+  align-self: stretch;
+}
+
+.itemName {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deleteWrap {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
+.deleteBtn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  padding: 0;
+
+  svg path {
+    stroke: #b0b4b8;
+    transition: stroke 0.2s;
+  }
+
+  &:hover {
+    svg path {
+      stroke: #e33326;
+    }
+  }
+}

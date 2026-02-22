@@ -3,13 +3,14 @@
 import React from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import {
-  ArrowsSpinIcon,
   AudioIcon,
   CalendarReactionsIcon,
+  CalendarRepeatIcon,
   CalendarViewsIcon,
   DocIcon,
   GifIcon,
   PhotoIcon,
+  QuizIcon,
   VideoIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
@@ -46,6 +47,7 @@ interface ListCalendarViewProps {
 
 function MediaIcons({ post }: { post: Draft }) {
   const mediaTypes = post.media_urls?.length ? getMediaFilterTypes(post.media_urls) : new Set<string>();
+  const hasQuiz = !!post.poll_data?.question;
   return (
     <div className={styles.mediaIcons}>
       {mediaTypes.has('photo') && <PhotoIcon width={18} height={18} color="#B0B4B8" />}
@@ -53,6 +55,7 @@ function MediaIcons({ post }: { post: Draft }) {
       {mediaTypes.has('audio') && <AudioIcon width={18} height={18} color="#B0B4B8" />}
       {mediaTypes.has('doc') && <DocIcon width={18} height={18} color="#B0B4B8" />}
       {mediaTypes.has('gif') && <GifIcon width={18} height={18} color="#B0B4B8" />}
+      {hasQuiz && <QuizIcon width={18} height={18} color="#B0B4B8" />}
     </div>
   );
 }
@@ -201,7 +204,7 @@ export default function ListCalendarView({
 
                 <div className={styles.statusBlock}>
                   <span className={styles.status}>{getStatusLabel(post.status)}</span>
-                  {hasRepeat(post) && <ArrowsSpinIcon width={14} height={14} color="#B0B4B8" />}
+                  {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} color="#B0B4B8" />}
                 </div>
 
                 <div className={styles.stats}>

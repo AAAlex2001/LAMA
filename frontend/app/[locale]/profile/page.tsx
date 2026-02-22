@@ -9,6 +9,7 @@ import Toggle from '@/components/toggle/toggle';
 import Input from '@/components/input';
 import Modal from '@/components/modal';
 import Button from '@/components/button/button';
+import LimitsModal from '@/components/limits-modal/limits-modal';
 import NotificationAccordion from '@/components/notification-accordion';
 import { EditNameIcon, TrashIcon, FlagRuIcon, FlagGbIcon, FlagRsIcon } from '@/components/icons';
 import { getTimeZones } from '@vvo/tzdb';
@@ -110,6 +111,7 @@ export default function ProfilePage() {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isLimitsModalOpen, setIsLimitsModalOpen] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -202,7 +204,7 @@ export default function ProfilePage() {
                     <span className={styles.planActiveDate}>до 15 декабря 2025</span>
                   </div>
                 </div>
-                <div className={styles.planLimits}>
+                <div className={styles.planLimits} onClick={() => setIsLimitsModalOpen(true)} style={{ cursor: 'pointer' }}>
                   <span className={styles.planLimitsTitle}>Доступные лимиты</span>
                   <div className={styles.usageList}>
                     <UsageLine label="Каналы/чаты" current={3} total={5} />
@@ -218,39 +220,37 @@ export default function ProfilePage() {
                   <p className={styles.sectionDesc}>Управление данными для входа в аккаунт</p>
                 </div>
                 <div className={styles.securityInputs}>
-                  <Input
-                    label="Электронная почта"
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="username@example.com"
-                    variant="white"
-                    className={styles.inputWhite}
-                    disabled
-                    icons={[
-                      {
-                        icon: <EditNameIcon />,
-                        className: styles.inputIcon,
-                        onClick: () => setIsEmailModalOpen(true),
-                      },
-                    ]}
-                  />
-                  <Input
-                    label="Пароль"
-                    type="password"
-                    value={password}
-                    onChange={setPassword}
-                    placeholder="*******************"
-                    variant="white"
-                    className={styles.inputWhite}
-                    disabled
-                    icons={[
-                      {
-                        icon: <EditNameIcon />,
-                        className: styles.inputIcon,
-                        onClick: () => setIsPasswordModalOpen(true),
-                      },
-                    ]}
-                  />
+                  <div
+                    className={styles.inputClickable}
+                    onClick={() => setIsEmailModalOpen(true)}
+                  >
+                    <Input
+                      label="Электронная почта"
+                      value={email}
+                      onChange={setEmail}
+                      placeholder="username@example.com"
+                      variant="white"
+                      className={styles.inputWhite}
+                      disabled
+                      icons={[{ icon: <EditNameIcon />, className: styles.inputIcon }]}
+                    />
+                  </div>
+                  <div
+                    className={styles.inputClickable}
+                    onClick={() => setIsPasswordModalOpen(true)}
+                  >
+                    <Input
+                      label="Пароль"
+                      type="password"
+                      value={password}
+                      onChange={setPassword}
+                      placeholder="*******************"
+                      variant="white"
+                      className={styles.inputWhite}
+                      disabled
+                      icons={[{ icon: <EditNameIcon />, className: styles.inputIcon }]}
+                    />
+                  </div>
                 </div>
               </section>
             </div>
@@ -507,6 +507,42 @@ export default function ProfilePage() {
               </button>
             </div>
           </section>
+          <LimitsModal
+            isOpen={isLimitsModalOpen}
+            onClose={() => setIsLimitsModalOpen(false)}
+            sections={[
+              {
+                title: 'Каналы/чаты',
+                items: [
+                  { id: '1', name: 'Канал 1' },
+                  { id: '2', name: 'Канал 2' },
+                  { id: '3', name: 'Канал 3' },
+                ],
+                current: 3,
+                total: 5,
+              },
+              {
+                title: 'Боты',
+                items: [
+                  { id: '1', name: 'Бот 1' },
+                  { id: '2', name: 'Бот 2' },
+                  { id: '3', name: 'Бот 3' },
+                ],
+                current: 3,
+                total: 5,
+              },
+              {
+                title: 'RSS-ленты/репостеры',
+                items: [
+                  { id: '1', name: 'RSS 1' },
+                  { id: '2', name: 'RSS 2' },
+                  { id: '3', name: 'RSS 3' },
+                ],
+                current: 3,
+                total: 3,
+              },
+            ]}
+          />
           <Modal
             isOpen={isLogoutModalOpen}
             onClose={() => setIsLogoutModalOpen(false)}

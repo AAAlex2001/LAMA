@@ -291,9 +291,18 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  border-radius: 8px;
+  padding: 8px;
+  margin: -8px;
+  transition: background 0.2s;
+  cursor: pointer;
 
   @media (min-width: 1440px) {
-    margin-top: 32px;
+    margin-top: calc(32px - 8px);
+  }
+
+  &:hover {
+    background: #EBF2FE;
   }
 }
 
@@ -437,6 +446,20 @@
   cursor: default;
 }
 
+.inputClickable {
+  width: 100%;
+  cursor: pointer;
+
+  :global(input) {
+    cursor: pointer;
+    pointer-events: none;
+  }
+
+  :global(button) {
+    pointer-events: none;
+  }
+}
+
 .inputIcon :global(svg) {
   width: 24px;
   height: 24px;
@@ -445,9 +468,10 @@
 
 .inputIcon :global(path) {
   stroke: #858585;
+  transition: stroke 0.2s;
 }
 
-.inputIcon:hover :global(path) {
+.inputClickable:hover .inputIcon :global(path) {
   stroke: #3b82f6;
 }
 
