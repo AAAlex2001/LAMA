@@ -1,12 +1,16 @@
 export type InlineButtonType = 'url' | 'callback' | 'hidden_text';
 
+export type CallbackAction = 'send_dm' | 'reply_in_chat' | 'track_click';
+
 export interface InlineButton {
   id: string;
   text: string;
   type: InlineButtonType;
   url?: string;
-  callback_data?: string;
-  hidden_text?: string;
+  callback_action?: CallbackAction;
+  callback_response?: string;
+  hidden_text_subscribed?: string;
+  hidden_text_unsubscribed?: string;
 }
 
 export interface ButtonRow {
@@ -18,8 +22,10 @@ export interface InlineKeyboardButton {
   text: string;
   type: InlineButtonType;
   url?: string;
-  callback_data?: string;
-  hidden_text?: string;
+  callback_action?: CallbackAction;
+  callback_response?: string;
+  hidden_text_subscribed?: string;
+  hidden_text_unsubscribed?: string;
 }
 
 export interface InlineKeyboard {

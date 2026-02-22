@@ -4,7 +4,6 @@ from backend.models.publications import Publication
 
 
 def prepare_inline_keyboard_data(publication: Publication) -> Optional[dict]:
-    """Prepare inline keyboard payload and inject callback_data for hidden_text buttons."""
     if not publication.inline_keyboard:
         return None
 
@@ -30,11 +29,16 @@ def prepare_inline_keyboard_data(publication: Publication) -> Optional[dict]:
                 continue
 
             btn_type = btn.get("type")
-            hidden_text = btn.get("hidden_text")
 
-            if btn_type == "hidden_text" or hidden_text:
+            if btn_type == "hidden_text":
                 button_id = btn.get("id") or f"{row_idx}-{btn_idx}"
-                callback_data = btn.get("callback_data") or f"hidden_text:{publication.id}:{button_id}"
+                callback_data = f"hidden_text:{publication.id}:{button_id}"
+                prepared_btn = {**btn, "callback_data": callback_data}
+                prepared_btn.pop("url", None)
+                prepared_row.append(prepared_btn)
+            elif btn_type == "callback":
+                button_id = btn.get("id") or f"{row_idx}-{btn_idx}"
+                callback_data = f"callback:{publication.id}:{button_id}"
                 prepared_btn = {**btn, "callback_data": callback_data}
                 prepared_btn.pop("url", None)
                 prepared_row.append(prepared_btn)

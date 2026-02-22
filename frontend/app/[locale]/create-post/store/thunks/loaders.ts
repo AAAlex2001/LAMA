@@ -166,8 +166,10 @@ export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
         text: btn.text || '',
         type: btn.type || 'url',
         url: btn.url || '',
-        callback_data: btn.callback_data || '',
-        hidden_text: btn.hidden_text || '',
+        callback_action: btn.callback_action || undefined,
+        callback_response: btn.callback_response || '',
+        hidden_text_subscribed: btn.hidden_text_subscribed || '',
+        hidden_text_unsubscribed: btn.hidden_text_unsubscribed || '',
       })),
     }));
     dispatch(setRows(rows));

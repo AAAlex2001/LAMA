@@ -18,7 +18,10 @@ export function buildInlineKeyboard(rows: ButtonRow[]): InlineKeyboard | undefin
   const buttons = rows
     .map(row => row.buttons.filter(btn => btn.text?.trim()).map(btn => ({
       text: btn.text, type: btn.type, url: btn.url,
-      callback_data: btn.callback_data, hidden_text: btn.hidden_text,
+      hidden_text_subscribed: btn.hidden_text_subscribed,
+      hidden_text_unsubscribed: btn.hidden_text_unsubscribed,
+      callback_action: btn.callback_action,
+      callback_response: btn.callback_response,
     })))
     .filter(row => row.length > 0);
   return buttons.length > 0 ? { buttons } : undefined;
@@ -210,14 +213,13 @@ export function validateInlineButtons(rows: ButtonRow[], isOpen: boolean): strin
     }
 
     if (btn.type === 'callback') {
-      const data = btn.callback_data?.trim() || '';
-      if (!data) return 'Заполните callback для кнопки';
-      if (data.length > 64) return 'Callback для кнопки не должен превышать 64 символа';
+      if (!btn.callback_action) return 'Выберите действие для кнопки';
     }
 
     if (btn.type === 'hidden_text') {
-      const hidden = btn.hidden_text?.trim() || '';
-      if (!hidden) return 'Заполните скрытый текст для кнопки';
+      const sub = btn.hidden_text_subscribed?.trim() || '';
+      const unsub = btn.hidden_text_unsubscribed?.trim() || '';
+      if (!sub && !unsub) return 'Заполните текст для подписчиков или не подписчиков';
     }
   }
 

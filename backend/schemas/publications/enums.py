@@ -44,3 +44,9 @@ class InlineButtonType(str, Enum):
     URL = "url"
     CALLBACK = "callback"
     HIDDEN_TEXT = "hidden_text"
+
+
+class CallbackActionType(str, Enum):
+    SEND_DM = "send_dm"
+    REPLY_IN_CHAT = "reply_in_chat"
+    TRACK_CLICK = "track_click"

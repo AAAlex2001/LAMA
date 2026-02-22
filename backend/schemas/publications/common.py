@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict
 
-from backend.schemas.publications.enums import InlineButtonType
+from backend.schemas.publications.enums import InlineButtonType, CallbackActionType
 
 
 class InlineButton(BaseModel):
@@ -12,7 +12,10 @@ class InlineButton(BaseModel):
     text: str
     url: Optional[str] = None
     callback_data: Optional[str] = None
-    hidden_text: Optional[str] = None
+    hidden_text_subscribed: Optional[str] = None
+    hidden_text_unsubscribed: Optional[str] = None
+    callback_action: Optional[CallbackActionType] = None
+    callback_response: Optional[str] = None
 
 
 class InlineKeyboard(BaseModel):

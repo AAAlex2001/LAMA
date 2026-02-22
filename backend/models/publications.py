@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column, Index
+from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column, Index, BigInteger
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
@@ -204,4 +204,18 @@ class TextTemplate(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
     
     owner = relationship("User", back_populates="text_templates")
+
+
+class ButtonClick(Base):
+    __tablename__ = 'button_clicks'
+    __table_args__ = (
+        Index('ix_button_clicks_pub_btn', 'publication_id', 'button_id'),
+        Index('ix_button_clicks_pub_btn_user', 'publication_id', 'button_id', 'user_id', unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    publication_id: Mapped[int] = mapped_column(Integer, ForeignKey('publications.id', ondelete='CASCADE'), index=True)
+    button_id: Mapped[str] = mapped_column(String(64))
+    user_id: Mapped[int] = mapped_column(BigInteger)
+    clicked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

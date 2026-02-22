@@ -31,7 +31,7 @@ from backend.models.channels import (
 )
 from backend.models.landing import LandingSection, LandingContent
 from backend.models.publications import (
-    Publication, PublicationSeries, Tag, TelegramMessage, PublicationNotification
+    Publication, PublicationSeries, Tag, TelegramMessage, PublicationNotification, ButtonClick
 )
 
 # this is the Alembic Config object

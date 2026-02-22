@@ -15,10 +15,8 @@ export interface InlineButton {
   text: string;
   type: ButtonType;
   url?: string;
-  callback_data?: string;
   callback_action?: CallbackAction;
   callback_response?: string;
-  hidden_text?: string;
   hidden_text_subscribed?: string;
   hidden_text_unsubscribed?: string;
 }
@@ -144,10 +142,8 @@ function ButtonEditor({ rowId, button, number, onUpdate }: ButtonEditorProps) {
     onUpdate(rowId, button.id, {
       type: newType as ButtonType,
       url: newType === 'url' ? button.url : undefined,
-      hidden_text: undefined,
       hidden_text_subscribed: newType === 'hidden_text' ? button.hidden_text_subscribed : undefined,
       hidden_text_unsubscribed: newType === 'hidden_text' ? button.hidden_text_unsubscribed : undefined,
-      callback_data: undefined,
       callback_action: newType === 'callback' ? (button.callback_action || 'send_dm') : undefined,
       callback_response: newType === 'callback' ? button.callback_response : undefined,
     });
