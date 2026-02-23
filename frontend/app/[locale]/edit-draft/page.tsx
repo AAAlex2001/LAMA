@@ -68,8 +68,10 @@ function EditDraftPageContent() {
   const draftId = searchParams?.get('draft');
   const sharedFrom = searchParams?.get('from');
   const shareTokenParam = searchParams?.get('token');
+  const skipSharedModal = searchParams?.get('skipSharedModal') === '1';
   const [showSharedDraftModal, setShowSharedDraftModal] = useState(false);
   const [showExpiredLinkModal, setShowExpiredLinkModal] = useState(false);
+  const previewingFromSharedRef = useRef(false);
 
   const generateShareToken = async () => {
     if (!draftId || isGeneratingToken) return;
@@ -116,10 +118,11 @@ function EditDraftPageContent() {
   const shareModalShownRef = useRef(false);
 
   useEffect(() => {
+    if (skipSharedModal) return;
     if (sharedFrom && !isDraftLoading) {
       setShowSharedDraftModal(true);
     }
-  }, [sharedFrom, isDraftLoading]);
+  }, [sharedFrom, isDraftLoading, skipSharedModal]);
 
   useEffect(() => {
     if (!shareTokenParam) return;
@@ -132,11 +135,22 @@ function EditDraftPageContent() {
       return;
     }
 
-    if (loadedViaShareToken) {
+    if (loadedViaShareToken && !skipSharedModal) {
       setShowSharedDraftModal(true);
       shareModalShownRef.current = true;
     }
-  }, [shareTokenParam, isDraftLoading, draftLoadError, loadedViaShareToken]);
+  }, [shareTokenParam, isDraftLoading, draftLoadError, loadedViaShareToken, skipSharedModal]);
+
+  const showPreviewModal = useAppSelector(state => state.ui.showPreviewModal);
+  const prevShowPreviewRef = useRef(false);
+
+  useEffect(() => {
+    if (prevShowPreviewRef.current && !showPreviewModal && previewingFromSharedRef.current) {
+      previewingFromSharedRef.current = false;
+      setShowSharedDraftModal(true);
+    }
+    prevShowPreviewRef.current = showPreviewModal;
+  }, [showPreviewModal]);
 
   const headerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
@@ -389,6 +403,7 @@ function EditDraftPageContent() {
           if (ok && shareTokenParam) await consumeShareToken(shareTokenParam);
         }}
         onPreview={() => {
+          previewingFromSharedRef.current = true;
           setShowSharedDraftModal(false);
           dispatch(uiSlice.setShowPreviewModal(true));
         }}

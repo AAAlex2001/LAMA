@@ -136,6 +136,10 @@ export default function CalendarPageConnected() {
       dispatch(setSelectedDate(calendar.sidebarDate));
     }
     dispatch(setCurrentView(view));
+    const anchor = `${calendar.selectedDate.slice(0, 7)}-01`;
+    if (calendar.countsMonthAnchor !== anchor) {
+      dispatch(setCountsMonthAnchor(anchor));
+    }
   }
 
   const previewData = previewPost ? getPreviewData(previewPost) : null;

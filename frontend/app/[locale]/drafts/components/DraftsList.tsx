@@ -11,6 +11,7 @@ interface DraftsListProps {
   isLoading: boolean;
   isInitialDraftsLoaded: boolean;
   showInlineLoader: boolean;
+  hasTagFilter: boolean;
   onPreview: (draft: Draft) => void;
   onShare: (draft: Draft) => void;
   onDelete: (draft: Draft) => void;
@@ -22,6 +23,7 @@ export default function DraftsList({
   isLoading,
   isInitialDraftsLoaded,
   showInlineLoader,
+  hasTagFilter,
   onPreview,
   onShare,
   onDelete,
@@ -31,8 +33,14 @@ export default function DraftsList({
     return (
       <div className={styles.emptyDraftsState}>
         <div className={styles.emptyDraftsTextWrap}>
-          <h3 className={styles.emptyDraftsTitle}>Нет черновиков</h3>
-          <p className={styles.emptyDraftsSubtitle}>Сохраняйте идеи и заготовки — позже их можно превратить в публикации</p>
+          <h3 className={styles.emptyDraftsTitle}>
+            {hasTagFilter ? 'Черновики с выбранными тегами не найдены' : 'Нет черновиков'}
+          </h3>
+          <p className={styles.emptyDraftsSubtitle}>
+            {hasTagFilter
+              ? 'Попробуйте изменить фильтр по тегам'
+              : 'Сохраняйте идеи и заготовки — позже их можно превратить в публикации'}
+          </p>
         </div>
         <Button
           text="Создать черновик"

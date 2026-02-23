@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDrafts, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks';
+import { setSortOrder } from '@/app/[locale]/create-post/store/slices/drafts';
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { Draft, MediaFile, Tag, TagsResponse } from '@/app/[locale]/create-post/store/types';
@@ -36,73 +38,71 @@ export function useDraftsPage() {
   const isLoading = useAppSelector(state => state.drafts.isLoading);
   const isLoadingMore = useAppSelector(state => state.drafts.isLoadingMore);
   const hasMore = useAppSelector(state => state.drafts.hasMore);
+  const sortOrder = useAppSelector(state => state.drafts.sortOrder);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
   const [openSort, setOpenSort] = useState<SortKey>(null);
   const defaultSortByDate = 'Сначала новые';
   const defaultSortByTags = 'По тегам';
   const defaultSortBySource = 'По источнику';
-  const [sortByDate, setSortByDate] = useState(defaultSortByDate);
+  const [sortByDate, setSortByDateLocal] = useState(defaultSortByDate);
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
   const [sortBySource, setSortBySource] = useState(defaultSortBySource);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
-  const [allTags, setAllTags] = useState<Tag[]>([]);
   const [isInitialDraftsLoaded, setIsInitialDraftsLoaded] = useState(false);
   const initialLoadCompletedRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sortBarRef = useRef<HTMLDivElement>(null);
   const mobileFilterRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    let isMounted = true;
+  function setSortByDate(value: string) {
+    setSortByDateLocal(value);
+    const newOrder = value === 'Сначала старые' ? 'asc' as const : 'desc' as const;
+    dispatch(setSortOrder(newOrder));
+  }
 
-    const loadDrafts = async () => {
-      await dispatch(fetchDrafts({ tagIds: selectedTagIds }));
-      if (isMounted && !initialLoadCompletedRef.current) {
+  useQuery({
+    queryKey: ['drafts', sortOrder, selectedTagIds],
+    queryFn: async () => {
+      const result = await dispatch(fetchDrafts({ tagIds: selectedTagIds })).unwrap();
+      if (!initialLoadCompletedRef.current) {
         initialLoadCompletedRef.current = true;
         setIsInitialDraftsLoaded(true);
       }
-    };
+      return result;
+    },
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  });
 
-    loadDrafts();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [dispatch, selectedTagIds]);
+  const { data: allTags = [] } = useQuery({
+    queryKey: ['drafts-tags'],
+    queryFn: async () => {
+      const response = await apiRequest<TagsResponse>('/publications/tags/?page=1&page_size=100');
+      return response.items || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 
   useEffect(() => {
-    const loadTags = async () => {
-      try {
-        const queryParams = new URLSearchParams({
-          page: '1',
-          page_size: '100',
-        });
-        const response = await apiRequest<TagsResponse>(`/publications/tags/?${queryParams}`);
-        setAllTags(response.items || []);
-      } catch {
-        setAllTags([]);
-      }
-    };
-    loadTags();
-  }, []);
+    const scrollContainer = document.querySelector('main');
+    if (!scrollContainer) return;
 
-  const handleScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const { scrollHeight, scrollTop, clientHeight } = document.documentElement;
-    if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !isLoadingMore) {
-      dispatch(fetchMoreDrafts());
+    function handleScroll() {
+      if (!scrollContainer) return;
+      const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
+      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !isLoadingMore) {
+        dispatch(fetchMoreDrafts());
+      }
     }
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [dispatch, hasMore, isLoadingMore]);
 
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
-
-  useEffect(() => {
     if (!openSort && !mobileFilterOpen) return;
-    const handleClickOutside = (event: MouseEvent) => {
+    function handleClickOutside(event: MouseEvent) {
       const target = event.target as Node;
       const inSortBar = sortBarRef.current?.contains(target);
       const inMobileFilter = mobileFilterRef.current?.contains(target);
@@ -110,17 +110,17 @@ export function useDraftsPage() {
         setOpenSort(null);
         setMobileFilterOpen(false);
       }
-    };
+    }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openSort, mobileFilterOpen]);
 
-  const confirmDelete = () => {
+  function confirmDelete() {
     if (deleteConfirmId !== null) {
       dispatch(deleteDraftThunk(deleteConfirmId)).then(() => showSuccess('Черновик удалён'));
       setDeleteConfirmId(null);
     }
-  };
+  }
 
   const previewData = previewDraft ? (() => {
     const channel = previewDraft.channels?.[0];
@@ -151,35 +151,41 @@ export function useDraftsPage() {
   const token = getAccessToken() || undefined;
   const showPageLoader = !isInitialDraftsLoaded || (isLoading && drafts.length === 0);
 
+  const visibleDrafts = selectedTagIds.length === 0
+    ? drafts
+    : drafts.filter((draft) => {
+      const draftTagIds = draft.tags?.map((tag) => tag.id) || [];
+      return selectedTagIds.some((tagId) => draftTagIds.includes(tagId));
+    });
+
   const [shareDraft, setShareDraft] = useState<Draft | null>(null);
 
-  const handleShare = (draft: Draft) => {
+  function handleShare(draft: Draft) {
     setShareDraft(draft);
-  };
+  }
 
-  const handleEdit = (draft: Draft) => {
+  function handleEdit(draft: Draft) {
     window.location.href = `edit-draft?draft=${draft.id}`;
-  };
+  }
 
   const dateOptions = ['Сначала новые', 'Сначала старые'];
   const sourceOptions = [defaultSortBySource, 'Все', 'Из парсера', 'Созданы мной'];
-  const fallbackTagOptions = (() => {
-    const tagMap = new Map<number, { id: number; name: string; latestAt: number }>();
-    drafts.forEach((draft) => {
-      const timestamp = new Date(draft.updated_at || draft.created_at).getTime();
-      draft.tags?.forEach((tag) => {
-        const existing = tagMap.get(tag.id);
-        if (!existing || timestamp > existing.latestAt) {
-          tagMap.set(tag.id, { id: tag.id, name: tag.name, latestAt: timestamp });
-        }
-      });
-    });
-    return Array.from(tagMap.values()).sort((a, b) => b.latestAt - a.latestAt);
-  })();
 
   const tagOptions = allTags.length > 0
-    ? allTags.map((tag) => ({ id: tag.id, name: tag.name }))
-    : fallbackTagOptions;
+    ? allTags.map((tag: Tag) => ({ id: tag.id, name: tag.name }))
+    : (() => {
+        const tagMap = new Map<number, { id: number; name: string; latestAt: number }>();
+        drafts.forEach((draft) => {
+          const timestamp = new Date(draft.updated_at || draft.created_at).getTime();
+          draft.tags?.forEach((tag) => {
+            const existing = tagMap.get(tag.id);
+            if (!existing || timestamp > existing.latestAt) {
+              tagMap.set(tag.id, { id: tag.id, name: tag.name, latestAt: timestamp });
+            }
+          });
+        });
+        return Array.from(tagMap.values()).sort((a, b) => b.latestAt - a.latestAt);
+      })();
 
   const isDateActive = sortByDate !== defaultSortByDate;
   const isTagsActive = selectedTagIds.length > 0;
@@ -190,20 +196,8 @@ export function useDraftsPage() {
       ? (tagOptions.find((tag) => tag.id === selectedTagIds[0])?.name || defaultSortByTags)
       : `${defaultSortByTags} (${selectedTagIds.length})`;
 
-  const sortedDrafts = (() => {
-    if (sortByDate === 'Сначала новые' || sortByDate === 'Сначала старые') {
-      const isDesc = sortByDate === 'Сначала новые';
-      return [...drafts].sort((a, b) => {
-        const aTime = new Date(a.updated_at || a.created_at).getTime();
-        const bTime = new Date(b.updated_at || b.created_at).getTime();
-        return isDesc ? bTime - aTime : aTime - bTime;
-      });
-    }
-    return drafts;
-  })();
-
   return {
-    drafts: sortedDrafts,
+    drafts: visibleDrafts,
     isLoading,
     isLoadingMore,
     hasMore,

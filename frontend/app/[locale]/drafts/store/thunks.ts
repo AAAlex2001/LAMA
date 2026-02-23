@@ -15,34 +15,44 @@ import {
 
 const PAGE_SIZE = 30;
 
-const filterDraftsByTagIds = (items: DraftListResponse['items'], tagIds: number[]) => {
-  if (tagIds.length === 0) return items;
-  return items.filter((draft) =>
-    draft.tags?.some((tag) => tagIds.includes(tag.id))
-  );
-};
+function areTagIdsEqual(left: number[], right: number[]) {
+  if (left.length !== right.length) return false;
+  return left.every((value, index) => value === right[index]);
+}
 
 export const fetchDrafts = createAsyncThunk(
   'draftsPage/fetchDrafts',
-  async (params: { tagIds?: number[] } = {}, { dispatch, rejectWithValue }) => {
+  async (params: { tagIds?: number[] } = {}, { dispatch, getState, rejectWithValue }) => {
+    const requestedTagIds = params.tagIds ?? [];
+    const requestedSortOrder = (getState() as RootState).drafts.sortOrder;
+
+    dispatch(setTagIdsFilter(requestedTagIds));
     dispatch(setIsLoading(true));
     try {
-      const tagIds = params.tagIds ?? [];
       const queryParams = new URLSearchParams({
         status: 'draft',
         page: '1',
         page_size: String(PAGE_SIZE),
+        sort_order: requestedSortOrder,
       });
-      tagIds.forEach((id) => queryParams.append('tag_ids', String(id)));
+      requestedTagIds.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
         `/publications?${queryParams}`
       );
-      const filteredItems = filterDraftsByTagIds(response.items, tagIds);
-      dispatch(setDrafts(filteredItems));
-      dispatch(setTagIdsFilter(tagIds));
+
+      const currentState = (getState() as RootState).drafts;
+      const isStaleResponse =
+        currentState.sortOrder !== requestedSortOrder
+        || !areTagIdsEqual(currentState.tagIdsFilter, requestedTagIds);
+
+      if (isStaleResponse) {
+        return response.items;
+      }
+
+      dispatch(setDrafts(response.items));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(1));
-      return filteredItems;
+      return response.items;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки черновиков');
     } finally {
@@ -55,7 +65,7 @@ export const fetchMoreDrafts = createAsyncThunk(
   'draftsPage/fetchMoreDrafts',
   async (_, { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState;
-    const { page, isLoadingMore, hasMore, tagIdsFilter } = state.drafts;
+    const { page, isLoadingMore, hasMore, tagIdsFilter, sortOrder } = state.drafts;
 
     if (isLoadingMore || !hasMore) return;
 
@@ -66,16 +76,16 @@ export const fetchMoreDrafts = createAsyncThunk(
         status: 'draft',
         page: String(nextPage),
         page_size: String(PAGE_SIZE),
+        sort_order: sortOrder,
       });
       tagIdsFilter.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
         `/publications?${queryParams}`
       );
-      const filteredItems = filterDraftsByTagIds(response.items, tagIdsFilter);
-      dispatch(appendDrafts(filteredItems));
+      dispatch(appendDrafts(response.items));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(nextPage));
-      return filteredItems;
+      return response.items;
     } catch (err) {
       return rejectWithValue(err instanceof Error ? err.message : 'Ошибка загрузки');
     } finally {

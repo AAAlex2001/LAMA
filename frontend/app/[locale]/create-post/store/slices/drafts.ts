@@ -10,6 +10,7 @@ interface DraftsState {
   tagIdsFilter: number[];
   selectedDraftId: number | null;
   page: number;
+  sortOrder: 'asc' | 'desc';
 }
 
 const initialState: DraftsState = {
@@ -21,6 +22,7 @@ const initialState: DraftsState = {
   tagIdsFilter: [],
   selectedDraftId: null,
   page: 1,
+  sortOrder: 'desc',
 };
 
 const draftsSlice = createSlice({
@@ -59,6 +61,9 @@ const draftsSlice = createSlice({
     setPage: (state, action: PayloadAction<number>) => {
       state.page = action.payload;
     },
+    setSortOrder: (state, action: PayloadAction<'asc' | 'desc'>) => {
+      state.sortOrder = action.payload;
+    },
     resetDrafts: () => initialState,
   },
 });
@@ -74,6 +79,7 @@ export const {
   setTagIdsFilter,
   setSelectedDraftId,
   setPage,
+  setSortOrder,
   resetDrafts,
 } = draftsSlice.actions;
 

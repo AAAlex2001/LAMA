@@ -27,7 +27,8 @@ function DraftsPageContent() {
   const [sharedDraft, setSharedDraft] = React.useState<any | null>(null);
   const [showSharedDraftModal, setShowSharedDraftModal] = React.useState(false);
   const [showExpiredLinkModal, setShowExpiredLinkModal] = React.useState(false);
-  
+  const [previewingFromShared, setPreviewingFromShared] = React.useState(false);
+
   const {
     drafts,
     isLoading,
@@ -69,12 +70,12 @@ function DraftsPageContent() {
     defaultSortBySource,
   } = useDraftsPage();
 
-  const clearTokenFromUrl = React.useCallback(() => {
+  function clearTokenFromUrl() {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     url.searchParams.delete('token');
     router.replace(url.pathname + url.search, { scroll: false });
-  }, [router]);
+  }
 
   React.useEffect(() => {
     const tokenParam = searchParams?.get('token');
@@ -104,17 +105,17 @@ function DraftsPageContent() {
     };
 
     fetchSharedDraft();
-  }, [searchParams, sharedToken, clearTokenFromUrl]);
+  }, [searchParams, sharedToken]);
 
-  const consumeShareToken = async (token: string) => {
+  async function consumeShareToken(tokenVal: string) {
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/shared/${token}/consume`, { method: 'POST' });
+      await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/shared/${tokenVal}/consume`, { method: 'POST' });
     } catch {
       // ignore
     }
-  };
+  }
 
-  const saveSharedDraftToMyDrafts = async (): Promise<number | null> => {
+  async function saveSharedDraftToMyDrafts(): Promise<number | null> {
     if (!sharedDraft || !sharedToken) return null;
 
     const accessToken = localStorage.getItem('lamaplanner_access_token');
@@ -124,37 +125,35 @@ function DraftsPageContent() {
     }
 
     try {
+      const hasMedia = sharedDraft.media_urls?.length > 0;
+      const hasPoll = !!sharedDraft.poll_data?.question;
+      let contentType = sharedDraft.content_type;
+      if (!contentType) {
+        if (hasPoll) {
+          contentType = sharedDraft.poll_data?.is_quiz ? 'quiz' : 'poll';
+        } else if (hasMedia) {
+          contentType = 'media';
+        } else {
+          contentType = 'text';
+        }
+      }
+
       const payload = {
-        content_type: sharedDraft.content_type,
+        content_type: contentType,
         text_content: sharedDraft.text_content,
         formatted_content: sharedDraft.formatted_content,
-        media_urls: sharedDraft.media_urls,
-        media_thumbnail_urls: sharedDraft.media_thumbnail_urls,
-        media_file_ids: sharedDraft.media_file_ids,
-        media_blur: sharedDraft.media_blur,
+        media_urls: sharedDraft.media_urls || [],
+        media_thumbnail_urls: sharedDraft.media_thumbnail_urls || [],
+        media_file_ids: sharedDraft.media_file_ids || [],
+        media_blur: sharedDraft.media_blur || [],
         inline_keyboard: sharedDraft.inline_keyboard,
         poll_data: sharedDraft.poll_data,
-        pin_message: sharedDraft.pin_message,
-        disable_notification: sharedDraft.disable_notification,
-        disable_web_page_preview: sharedDraft.disable_web_page_preview,
-        reply_to_post_id: sharedDraft.reply_to_post_id,
-        auto_delete_hours: sharedDraft.auto_delete_hours,
-        auto_delete_delay_seconds: sharedDraft.auto_delete_delay_seconds,
-        repeat_interval: sharedDraft.repeat_interval,
-        repeat_custom_days: sharedDraft.repeat_custom_days,
-        repeat_custom_hours: sharedDraft.repeat_custom_hours,
-        repeat_custom_unit: sharedDraft.repeat_custom_unit,
-        repeat_custom_value: sharedDraft.repeat_custom_value,
-        repeat_weekdays: sharedDraft.repeat_weekdays,
-        repeat_month_days: sharedDraft.repeat_month_days,
-        repeat_year_month: sharedDraft.repeat_year_month,
-        repeat_year_days: sharedDraft.repeat_year_days,
-        repeat_end_time: sharedDraft.repeat_end_time,
+        pin_message: sharedDraft.pin_message ?? false,
+        disable_notification: sharedDraft.disable_notification ?? false,
+        disable_web_page_preview: sharedDraft.disable_web_page_preview ?? false,
         scheduled_time: null,
         timezone: sharedDraft.timezone,
-        series_id: null,
-        series_order: null,
-        channel_ids: (sharedDraft.channels || []).map((ch: any) => ch.id),
+        channel_ids: [],
         tag_names: (sharedDraft.tags || []).map((t: any) => t.name),
         tag_colors: (sharedDraft.tags || []).map((t: any) => t.color),
       };
@@ -169,11 +168,11 @@ function DraftsPageContent() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed');
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || 'Failed');
       }
 
       const created = await response.json();
-
       const createdId = typeof created?.id === 'number' ? created.id : null;
 
       await consumeShareToken(sharedToken);
@@ -181,11 +180,11 @@ function DraftsPageContent() {
       setShowSharedDraftModal(false);
 
       return createdId;
-    } catch {
-      showError('Ошибка сохранения черновика');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Ошибка сохранения черновика');
       return null;
     }
-  };
+  }
 
   React.useEffect(() => {
     if (!shareDraft) {
@@ -197,11 +196,11 @@ function DraftsPageContent() {
     const generateTokenAndGetLink = async () => {
       setIsGeneratingShareLink(true);
       try {
-        const token = localStorage.getItem('lamaplanner_access_token');
+        const accessToken = localStorage.getItem('lamaplanner_access_token');
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${shareDraft.id}/share`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           }
         });
@@ -256,6 +255,7 @@ function DraftsPageContent() {
             isLoading={isLoading}
             isInitialDraftsLoaded={isInitialDraftsLoaded}
             showInlineLoader={isLoadingMore}
+            hasTagFilter={selectedTagIds.length > 0}
             onPreview={(draft) => setPreviewDraft(draft)}
             onShare={handleShare}
             onDelete={(draft) => setDeleteConfirmId(draft.id)}
@@ -270,7 +270,13 @@ function DraftsPageContent() {
         onConfirmDelete={confirmDelete}
         previewData={previewData}
         isPreviewOpen={!!previewDraft}
-        onClosePreview={() => setPreviewDraft(null)}
+        onClosePreview={() => {
+          setPreviewDraft(null);
+          if (previewingFromShared) {
+            setPreviewingFromShared(false);
+            setShowSharedDraftModal(true);
+          }
+        }}
         token={token}
       />
 
@@ -341,14 +347,14 @@ function DraftsPageContent() {
             window.location.href = '/drafts';
           }
         }}
-        onPublish={async () => {
-          const id = await saveSharedDraftToMyDrafts();
-          if (id) {
-            window.location.href = `/edit-draft?draft=${id}`;
-          }
+        onPublish={() => {
+          if (!sharedToken) return;
+          setShowSharedDraftModal(false);
+          window.location.href = `/edit-draft?token=${encodeURIComponent(sharedToken)}&skipSharedModal=1`;
         }}
         onPreview={() => {
           if (sharedDraft) {
+            setPreviewingFromShared(true);
             setShowSharedDraftModal(false);
             setPreviewDraft(sharedDraft);
           }
