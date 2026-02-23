@@ -26,49 +26,6 @@
   }
 }
 
-.mobileMiniTabs {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  width: 328px;
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-.mobileMiniTab {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 9px;
-  min-height: 23px;
-  border: none;
-  border-radius: 25px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.mobileMiniTabActive {
-  background: rgba(59, 130, 246, 0.1);
-}
-
-.mobileMiniTabText {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  text-align: center;
-  color: #1A1A1A;
-  white-space: nowrap;
-}
-
-.filterBarWrap {
-  display: flex;
-  width: 100%;
-  justify-content: flex-end;
-}
-
 .createWrap {
   width: 100%;
 }

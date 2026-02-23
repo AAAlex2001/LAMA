@@ -16,6 +16,13 @@
   }
 }
 
+.tooltipTop {
+  @media (min-width: 1440px) {
+    top: auto;
+    bottom: calc(100% + 8px);
+  }
+}
+
 .content {
   display: flex;
   flex-direction: row;
@@ -46,6 +53,19 @@
   height: 8px;
   margin-bottom: -3px;
   order: -1;
+}
+
+.arrowTipTop {
+  margin-bottom: 0;
+  margin-top: -3px;
+  order: 1;
+
+  .arrow {
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 0;
+    border-top: 8px solid #EBF2FE;
+  }
 }
 
 .arrow {

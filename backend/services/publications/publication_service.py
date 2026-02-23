@@ -5,20 +5,29 @@ import pytz
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.publications import PublicationNotification
+from backend.models.publications import Publication, PublicationNotification
 from backend.models.channels import ChannelGroup as Channel
-from backend.schemas.publications.ai import AIEditRequest
-from backend.schemas.publications.publication_response import CalendarEntry, DayCount, PublicationResponse
+from backend.schemas.publications.ai import AIGenerateRequest, AIEditRequest
+from backend.schemas.publications.enums import PublicationStatus, ContentType
+from backend.schemas.publications.publication_response import (
+    CalendarEntry,
+    DayCount,
+    PublicationResponse,
+)
 from backend.schemas.publications.publishing import (
     EditPublishedRequest,
     PublishResult,
     EditMessageResult,
     DeleteMessageResult,
 )
+from backend.schemas.publications.templates import TextTemplateCreate, TextTemplateUpdate
 from backend.services.channel import ChannelService
+from backend.services.publications.publication_create_service import PublicationCreateService
 from backend.services.publications.publication_query_service import PublicationQueryService
 from backend.services.publications.publication_update_service import PublicationUpdateService
 from backend.services.publications.calendar_service import CalendarService
+from backend.services.publications.sharing_service import SharingService
+from backend.services.publications.template_service import TemplateService
 from backend.services.publications.ai_service import AIService
 from backend.services.publications.series_service import SeriesService
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
@@ -28,13 +37,16 @@ from backend.config import get_bot
 
 
 class PublicationService:
-    """Orchestrator for publication operations that require cross-service logic."""
+    """Main orchestrator for all publication operations."""
 
     def __init__(self, db: AsyncSession, openai_api_key: Optional[str] = None):
         self.db = db
+        self.creator = PublicationCreateService(db)
         self.query = PublicationQueryService(db)
         self.updater = PublicationUpdateService(db)
         self.calendar = CalendarService(db)
+        self.sharing = SharingService(db)
+        self.templates = TemplateService(db)
         self.ai = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
 
@@ -44,13 +56,50 @@ class PublicationService:
     async def bot_for_channel(self, channel: Channel) -> RateLimitedBot:
         return get_bot()
 
-    # ── Publication CRUD (with logic) ──
+    # ── Publication CRUD ──
+
+    async def create_publication(self, data, owner_id: int):
+        return await self.creator.create_publication(data, owner_id)
 
     async def get_publication(self, publication_id: int, owner_id: Optional[int] = None):
         publication = await self.query.get_publication(publication_id, owner_id)
         if not publication:
             raise HTTPException(status_code=404, detail="Publication not found")
         return publication
+
+    async def get_publications(
+        self,
+        owner_id: Optional[int] = None,
+        status: Optional[PublicationStatus] = None,
+        content_type: Optional[ContentType] = None,
+        channel_id: Optional[int] = None,
+        tag_names: Optional[List[str]] = None,
+        tag_ids: Optional[List[int]] = None,
+        series_id: Optional[int] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        search: Optional[str] = None,
+        sort_order: Optional[str] = None,
+        date_mode: Optional[str] = "scheduled",
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[Publication]:
+        return await self.query.get_publications(
+            owner_id=owner_id,
+            status=status,
+            content_type=content_type,
+            channel_id=channel_id,
+            tag_names=tag_names,
+            tag_ids=tag_ids,
+            series_id=series_id,
+            start_date=start_date,
+            end_date=end_date,
+            search=search,
+            sort_order=sort_order,
+            date_mode=date_mode,
+            skip=skip,
+            limit=limit,
+        )
 
     async def update_publication(self, publication_id: int, data, owner_id: Optional[int] = None):
         publication = await self.get_publication(publication_id, owner_id)
@@ -84,10 +133,53 @@ class PublicationService:
             for date_str, pubs in grouped.items()
         ]
 
-    async def get_day_counts(self, start: datetime, end: datetime, owner_id: Optional[int] = None) -> List[DayCount]:
-        return await self.calendar.get_day_counts(start, end, owner_id)
+    async def get_day_counts(
+        self,
+        start: datetime,
+        end: datetime,
+        owner_id: Optional[int] = None,
+        mode: str = "scheduled",
+    ) -> List[DayCount]:
+        return await self.calendar.get_day_counts(start, end, owner_id, mode)
 
-    # ── AI (with logic) ──
+    # ── Series ──
+
+    async def create_series(self, name: str, description: Optional[str] = None, reply_to_previous: bool = True):
+        series_service = SeriesService(self.db)
+        return await series_service.create_series(name, description, reply_to_previous)
+
+    # ── Sharing ──
+
+    async def generate_share_token(self, publication_id: int, owner_id: int):
+        return await self.sharing.generate_share_token(publication_id, owner_id)
+
+    async def get_publication_by_share_token(self, token: str):
+        return await self.sharing.get_publication_by_share_token(token)
+
+    async def consume_share_token(self, token: str):
+        return await self.sharing.consume_share_token(token)
+
+    # ── Templates ──
+
+    async def create_text_template(self, user_id: int, data: TextTemplateCreate):
+        return await self.templates.create_text_template(user_id, data)
+
+    async def get_text_templates(self, user_id: int, search=None, skip: int = 0, limit: int = 100):
+        return await self.templates.get_text_templates(user_id, search, skip, limit)
+
+    async def get_text_template_by_id(self, template_id: int, user_id: int):
+        return await self.templates.get_text_template_by_id(template_id, user_id)
+
+    async def update_text_template(self, template_id: int, user_id: int, data: TextTemplateUpdate):
+        return await self.templates.update_text_template(template_id, user_id, data)
+
+    async def delete_text_template(self, template_id: int, user_id: int):
+        return await self.templates.delete_text_template(template_id, user_id)
+
+    # ── AI ──
+
+    async def generate_with_ai(self, request: AIGenerateRequest) -> str:
+        return await self.ai.generate_content(request)
 
     async def edit_with_ai(self, request: AIEditRequest, owner_id: Optional[int] = None):
         publication = await self.get_publication(request.publication_id, owner_id=owner_id)
@@ -98,6 +190,13 @@ class PublicationService:
         publication.ai_generated = True
         await self.db.commit()
         return publication
+
+    async def edit_text_with_ai(self, text: str, instruction: str) -> str:
+        return await self.ai.edit_content(text, instruction)
+
+    async def edit_text_with_ai_stream(self, text: str, instruction: str):
+        async for chunk in self.ai.edit_content_stream(text, instruction):
+            yield chunk
 
     # ── Notification helper ──
 

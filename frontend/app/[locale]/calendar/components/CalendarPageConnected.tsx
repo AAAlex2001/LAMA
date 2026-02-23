@@ -2,11 +2,14 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import PostPreviewModal from '@/components/post-preview-modal';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import CalendarHeader from './CalendarHeader';
 import CalendarMainContent from './CalendarMainContent';
 import CalendarMobilePopup from './CalendarMobilePopup';
+import CalendarPostModal from './CalendarPostModal';
 import {
   useAppDispatch,
   useAppSelector,
@@ -28,6 +31,7 @@ import {
   selectListRangeEndObj,
   selectIsGridView,
   selectMobileFilterConfigs,
+  removeItem,
 } from '../store';
 import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts } from '../store/thunks';
 import { navigateStep, sidebarDateChange } from '../store/thunks/navigation';
@@ -39,11 +43,14 @@ import {
   getMonthLabel,
   isSameDay,
 } from '../utils/calendar-helpers';
+import { buildFilterConfigs } from '../utils/buildFilterConfigs';
+import { applyPostFilters } from '../utils/filterPosts';
 import styles from '../calendar.module.scss';
 
 export default function CalendarPageConnected() {
   const router = useRouter();
   const dispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotifications();
 
   const calendar = useAppSelector((state) => state.calendar);
   const selectedDate = useAppSelector(selectSelectedDateObj);
@@ -61,6 +68,7 @@ export default function CalendarPageConnected() {
 
   const [showMobile, setShowMobile] = React.useState(false);
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
+  const [selectedPost, setSelectedPost] = React.useState<Draft | null>(null);
   const [mobileActiveFilters, setMobileActiveFilters] = React.useState<Record<string, string[]>>({});
 
   React.useEffect(() => {
@@ -70,24 +78,44 @@ export default function CalendarPageConnected() {
   React.useEffect(() => {
     const main = document.querySelector('main');
     if (main) main.scrollTop = 0;
-    dispatch(fetchCalendarData());
-  }, [
-    calendar.currentView,
-    calendar.selectedDate,
-    calendar.listRangeStart,
-    calendar.listRangeEnd,
-    calendar.listSortOrder,
-    calendar.listStatusFilter,
-    dispatch,
-  ]);
+  }, [calendar.currentView, calendar.selectedDate]);
 
-  React.useEffect(() => {
-    dispatch(fetchDayCounts());
-  }, [calendar.countsMonthAnchor, dispatch]);
+  useQuery({
+    queryKey: [
+      'calendar-data',
+      calendar.currentView,
+      calendar.selectedDate,
+      calendar.listRangeStart,
+      calendar.listRangeEnd,
+      calendar.listSortOrder,
+      calendar.listStatusFilter,
+    ],
+    queryFn: async () => dispatch(fetchCalendarData()).unwrap(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  });
 
-  const handleLoadMoreList = React.useCallback(() => {
+  useQuery({
+    queryKey: ['calendar-day-counts', calendar.countsMonthAnchor],
+    queryFn: async () => dispatch(fetchDayCounts()).unwrap(),
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  function handleLoadMoreList() {
     dispatch(fetchMoreListPosts());
-  }, [dispatch]);
+  }
+
+  function handleHeaderArrowClick(direction: 'prev' | 'next') {
+    const isMobile = window.matchMedia('(max-width: 1439px)').matches;
+    if (calendar.currentView === 'week' && isMobile) {
+      setShowMobile(true);
+      return;
+    }
+    dispatch(navigateStep(direction));
+  }
 
   function handleMobileFilterChange(key: string, values: string[]) {
     if (key === 'date') {
@@ -99,7 +127,113 @@ export default function CalendarPageConnected() {
     setMobileActiveFilters((prev) => ({ ...prev, [key]: values }));
   }
 
+  function handleViewChange(view: typeof calendar.currentView) {
+    if (
+      view === 'day'
+      && (calendar.currentView === 'week' || calendar.currentView === 'month')
+      && calendar.sidebarDate !== calendar.selectedDate
+    ) {
+      dispatch(setSelectedDate(calendar.sidebarDate));
+    }
+    dispatch(setCurrentView(view));
+  }
+
   const previewData = previewPost ? getPreviewData(previewPost) : null;
+
+  const nonListFilterSourcePosts =
+    calendar.currentView === 'day'
+      ? sortedPosts
+      : calendar.currentView === 'week' || calendar.currentView === 'month'
+        ? Object.values(calendar.weekItems).flat()
+        : [] as Draft[];
+
+  const desktopFilterConfigs =
+    calendar.currentView === 'list' ? [] : buildFilterConfigs(nonListFilterSourcePosts, {});
+
+  const filteredSortedPosts =
+    calendar.currentView === 'list' ? sortedPosts : applyPostFilters(sortedPosts, mobileActiveFilters);
+
+  const filteredWeekItems: Record<string, Draft[]> =
+    calendar.currentView === 'list'
+      ? calendar.weekItems
+      : Object.fromEntries(
+        Object.entries(calendar.weekItems).map(([dateKey, posts]) => [
+          dateKey,
+          applyPostFilters(posts, mobileActiveFilters),
+        ]),
+      );
+
+  const filteredMobilePosts =
+    calendar.currentView === 'list' ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
+
+  function handlePostClick(post: Draft) {
+    setSelectedPost(post);
+  }
+
+  function handlePreviewFromModal() {
+    if (!selectedPost) return;
+    setPreviewPost(selectedPost);
+    setSelectedPost(null);
+  }
+
+  function handleEditFromModal() {
+    if (!selectedPost) return;
+    window.location.href = `/edit-draft?draft=${selectedPost.id}`;
+  }
+
+  async function handleDeleteFromModal() {
+    if (!selectedPost) return;
+    const token = localStorage.getItem('lamaplanner_access_token');
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${selectedPost.id}`,
+        {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Не удалось удалить публикацию');
+      }
+
+      dispatch(removeItem(selectedPost.id));
+      setSelectedPost(null);
+      showSuccess('Публикация удалена');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Ошибка удаления публикации');
+    }
+  }
+
+  async function handleShareFromModal() {
+    if (!selectedPost) return;
+    const token = localStorage.getItem('lamaplanner_access_token');
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${selectedPost.id}/share`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error('Не удалось сгенерировать ссылку');
+      }
+
+      const data = await response.json();
+      const link = `${window.location.origin}/drafts?token=${data.share_token}`;
+      await navigator.clipboard.writeText(link);
+      showSuccess('Ссылка скопирована');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Ошибка шаринга');
+    }
+  }
 
   return (
     <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''}`}>
@@ -115,9 +249,9 @@ export default function CalendarPageConnected() {
             }
             dispatch(setListDateRange({ start: formatDateOnly(range.start), end: formatDateOnly(range.end) }));
           }}
-          onPrevDay={() => dispatch(navigateStep('prev'))}
-          onNextDay={() => dispatch(navigateStep('next'))}
-          onViewChange={(view) => dispatch(setCurrentView(view))}
+          onPrevDay={() => handleHeaderArrowClick('prev')}
+          onNextDay={() => handleHeaderArrowClick('next')}
+          onViewChange={handleViewChange}
           onOpenCalendarPopup={() => setShowMobile(true)}
           gridPostCounts={gridPostCounts}
           onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}
@@ -126,15 +260,18 @@ export default function CalendarPageConnected() {
           mobileFilterConfigs={mobileFilterConfigs}
           mobileActiveFilters={mobileActiveFilters}
           onMobileFilterChange={handleMobileFilterChange}
+          desktopFilterConfigs={desktopFilterConfigs}
+          desktopActiveFilters={mobileActiveFilters}
+          onDesktopFilterChange={handleMobileFilterChange}
         />
 
         <CalendarMainContent
-          weekItems={calendar.weekItems}
+          weekItems={filteredWeekItems}
           selectedDate={selectedDate}
           sidebarDate={sidebarDate}
           isLoading={calendar.isLoading}
           currentView={calendar.currentView}
-          sortedPosts={sortedPosts}
+          sortedPosts={filteredSortedPosts}
           isGridView={isGridView}
           isLoadingMore={calendar.isLoadingMore}
           hasMore={calendar.hasMore}
@@ -145,7 +282,7 @@ export default function CalendarPageConnected() {
           dayHasMoreMap={dayHasMoreMap}
           mobileActiveFilters={mobileActiveFilters}
           onMobileFilterChange={handleMobileFilterChange}
-          onEdit={(post) => setPreviewPost(post)}
+          onEdit={handlePostClick}
           onAddPost={(date) => router.push(buildCreatePostUrl(date))}
           onLoadMoreDay={(dateKey) => dispatch(fetchMoreDayPosts(dateKey))}
           onLoadMoreList={handleLoadMoreList}
@@ -164,7 +301,7 @@ export default function CalendarPageConnected() {
         currentView={calendar.currentView}
         isGridView={isGridView}
         gridPostCounts={gridPostCounts}
-        mobilePosts={mobilePosts}
+        mobilePosts={filteredMobilePosts}
         isTodaySelected={isSameDay(selectedDate, new Date())}
         listTitle={String(selectedDate.getFullYear())}
         mobileGridTitle={calendar.currentView === 'month' ? getMonthLabel(selectedDate) : formatDayTitle(sidebarDate)}
@@ -176,7 +313,7 @@ export default function CalendarPageConnected() {
         onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}
         onOpenPost={(post) => {
           setShowMobile(false);
-          setPreviewPost(post);
+          handlePostClick(post);
         }}
       />
 
@@ -194,6 +331,16 @@ export default function CalendarPageConnected() {
           inlineKeyboard={previewData.inlineKeyboard}
         />
       )}
+
+      <CalendarPostModal
+        isOpen={!!selectedPost}
+        post={selectedPost}
+        onClose={() => setSelectedPost(null)}
+        onPreview={handlePreviewFromModal}
+        onShare={handleShareFromModal}
+        onDelete={handleDeleteFromModal}
+        onEdit={handleEditFromModal}
+      />
     </div>
   );
 }

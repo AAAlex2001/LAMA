@@ -47,14 +47,14 @@ export default function ListDateRangePicker({ value, onChange, postCounts, onMon
     return () => document.removeEventListener('keydown', onEsc);
   }, [open]);
 
-  const selectedDateKeys = React.useMemo(() => {
-    if (!draftStart || !draftEnd) {
-      if (!draftStart) return [] as string[];
-      return [
+  let selectedDateKeys: string[] = [];
+  if (!draftStart || !draftEnd) {
+    if (draftStart) {
+      selectedDateKeys = [
         `${draftStart.getFullYear()}-${String(draftStart.getMonth() + 1).padStart(2, '0')}-${String(draftStart.getDate()).padStart(2, '0')}`,
       ];
     }
-
+  } else {
     const start = draftStart <= draftEnd ? draftStart : draftEnd;
     const end = draftStart <= draftEnd ? draftEnd : draftStart;
     const keys: string[] = [];
@@ -68,8 +68,8 @@ export default function ListDateRangePicker({ value, onChange, postCounts, onMon
       cursor.setDate(cursor.getDate() + 1);
     }
 
-    return keys;
-  }, [draftStart?.getTime(), draftEnd?.getTime()]);
+    selectedDateKeys = keys;
+  }
 
   function handleDatePick(date: Date) {
     if (!draftStart || (draftStart && draftEnd)) {

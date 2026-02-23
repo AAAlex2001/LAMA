@@ -9,6 +9,19 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       state.isLoading = true;
     })
     .addCase(fetchCalendarData.fulfilled, (state, action) => {
+      const request = action.payload.request;
+      const isStaleResponse =
+        request.view !== state.currentView
+        || request.selectedDate !== state.selectedDate
+        || request.listRangeStart !== state.listRangeStart
+        || request.listRangeEnd !== state.listRangeEnd
+        || request.listSortOrder !== state.listSortOrder
+        || request.listStatusFilter !== state.listStatusFilter;
+
+      if (isStaleResponse) {
+        return;
+      }
+
       state.isLoading = false;
       if (action.payload.type === 'grid') {
         const weekItems: Record<string, Draft[]> = {};
@@ -16,7 +29,6 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
-          state.monthPostCounts[r.dateKey] = r.items.length;
         }
         state.weekItems = weekItems;
         state.dayPageState = dayPageState;
@@ -62,6 +74,10 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
     })
 
     .addCase(fetchDayCounts.fulfilled, (state, action) => {
-      state.monthPostCounts = action.payload;
+      if (action.payload.anchor !== state.countsMonthAnchor) {
+        return;
+      }
+      state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
+      state.monthPostCounts = action.payload.counts;
     });
 }

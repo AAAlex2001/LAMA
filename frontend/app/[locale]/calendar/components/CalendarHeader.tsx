@@ -23,6 +23,9 @@ interface CalendarHeaderProps {
   mobileFilterConfigs: FilterConfig[];
   mobileActiveFilters: Record<string, string[]>;
   onMobileFilterChange: (key: string, values: string[]) => void;
+  desktopFilterConfigs?: FilterConfig[];
+  desktopActiveFilters?: Record<string, string[]>;
+  onDesktopFilterChange?: (key: string, values: string[]) => void;
 }
 
 const MONTH_NAMES_RU = [
@@ -90,6 +93,9 @@ export default function CalendarHeader({
   mobileFilterConfigs,
   mobileActiveFilters,
   onMobileFilterChange,
+  desktopFilterConfigs = [],
+  desktopActiveFilters = {},
+  onDesktopFilterChange,
 }: CalendarHeaderProps) {
   const [sortPopupOpen, setSortPopupOpen] = React.useState(false);
   const sortWrapperRef = React.useRef<HTMLDivElement>(null);
@@ -178,6 +184,17 @@ export default function CalendarHeader({
           </div>
         )}
       </div>
+
+      {currentView !== 'list' && desktopFilterConfigs.length > 0 && onDesktopFilterChange && (
+        <div className={styles.desktopFilterRow}>
+          <ListFilterBar
+            filters={desktopFilterConfigs}
+            activeFilters={desktopActiveFilters}
+            onFilterChange={onDesktopFilterChange}
+            hideMobileTrigger
+          />
+        </div>
+      )}
     </div>
   );
 }

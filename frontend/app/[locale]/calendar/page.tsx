@@ -1,8 +1,13 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { CalendarProvider } from './store/provider';
 import { AppLayout } from '@/components/app-layout';
-import { CalendarPageConnected } from './components';
+
+const CalendarPageConnected = dynamic(
+  () => import('./components/CalendarPageConnected'),
+  { ssr: false },
+);
 
 export default function CalendarPage() {
   return (

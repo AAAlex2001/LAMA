@@ -51,16 +51,28 @@ class CalendarService:
         start_date: datetime,
         end_date: datetime,
         owner_id: Optional[int] = None,
+        mode: str = "scheduled",
     ) -> List[DayCount]:
-        date_expr = func.date(Publication.scheduled_time)
+        normalized_mode = (mode or "scheduled").lower()
+
+        if normalized_mode == "published":
+            date_field = Publication.published_time
+            status_filter = Publication.status.in_(
+                [DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]
+            )
+        else:
+            date_field = Publication.scheduled_time
+            status_filter = Publication.status.notin_([DBPublicationStatus.DELETED])
+
+        date_expr = func.date(date_field)
         query = (
             select(date_expr.label("day"), func.count().label("cnt"))
             .where(
                 and_(
-                    Publication.scheduled_time.isnot(None),
-                    Publication.scheduled_time >= start_date,
-                    Publication.scheduled_time <= end_date,
-                    Publication.status.notin_([DBPublicationStatus.DELETED]),
+                    date_field.isnot(None),
+                    date_field >= start_date,
+                    date_field <= end_date,
+                    status_filter,
                 )
             )
             .group_by(date_expr)

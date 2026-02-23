@@ -74,13 +74,11 @@ export default function CalendarMainContent({
             <MonthGridView
               selectedDate={selectedDate}
               sidebarDate={sidebarDate}
-              weekItems={weekItems}
+              postCounts={gridPostCounts}
               onDayClick={onSidebarDateChange}
-              onEdit={onEdit}
             />
             <MonthlySidebar
               sidebarDate={sidebarDate}
-              weekItems={weekItems}
               onEdit={onEdit}
             />
           </div>
@@ -97,7 +95,6 @@ export default function CalendarMainContent({
             onLoadMoreDay={onLoadMoreDay}
             dayLoadingMap={dayLoadingMap}
             dayHasMoreMap={dayHasMoreMap}
-            mobileActiveFilters={mobileActiveFilters}
           />
         </>
       ) : isGridView ? (
@@ -153,7 +150,6 @@ export default function CalendarMainContent({
               onEdit={onEdit}
               onAddPost={onAddPost}
               selectedDate={selectedDate}
-              mobileActiveFilters={mobileActiveFilters}
             />
           </div>
 

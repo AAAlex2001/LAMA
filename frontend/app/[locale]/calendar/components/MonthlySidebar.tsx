@@ -4,13 +4,15 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import Loader from '@/components/loader';
 import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import { useInView } from '../store/useInView';
 import {
   formatDayTitle,
   formatTime,
   getPreviewText,
   getSourceDate,
-  sortPostsByTime,
   formatDateOnly,
   buildCreatePostUrl,
 } from '../utils/calendar-helpers';
@@ -18,35 +20,94 @@ import styles from './monthly-sidebar.module.scss';
 
 interface MonthlySidebarProps {
   sidebarDate: Date;
-  weekItems: Record<string, Draft[]>;
   onEdit: (post: Draft) => void;
 }
 
-type TabFilter = 'all' | 'scheduled' | 'published';
-
-const TAB_LABELS: Record<TabFilter, string> = {
-  all: 'Все',
-  scheduled: 'По расписанию',
-  published: 'Опубликовано',
-};
-
 export default function MonthlySidebar({
   sidebarDate,
-  weekItems,
   onEdit,
 }: MonthlySidebarProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = React.useState<TabFilter>('all');
+  const cacheRef = React.useRef<Record<string, { items: Draft[]; page: number; hasMore: boolean }>>({});
+  const [posts, setPosts] = React.useState<Draft[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+  const [page, setPage] = React.useState(1);
+  const [hasMore, setHasMore] = React.useState(false);
+  const pageSize = 20;
 
   const dateKey = formatDateOnly(sidebarDate);
-  const dayPosts = weekItems[dateKey] || [];
-  const sortedPosts = sortPostsByTime(dayPosts);
   const dayTitle = formatDayTitle(sidebarDate);
 
-  const filteredPosts = React.useMemo(() => {
-    if (activeTab === 'all') return sortedPosts;
-    return sortedPosts.filter((p) => p.status === activeTab);
-  }, [sortedPosts, activeTab]);
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0, skip: isLoadingMore || !hasMore });
+
+  async function loadDayPosts(targetPage: number, append: boolean) {
+    const params = new URLSearchParams({
+      page: String(targetPage),
+      page_size: String(pageSize),
+      start_date: `${dateKey}T00:00:00`,
+      end_date: `${dateKey}T23:59:59`,
+      sort_order: 'desc',
+    });
+
+    const response = await apiRequest<{ items: Draft[] }>(`/publications?${params}`);
+    const loaded = response.items || [];
+    setPosts((prev) => {
+      const next = append ? [...prev, ...loaded] : loaded;
+      cacheRef.current[dateKey] = {
+        items: next,
+        page: targetPage,
+        hasMore: loaded.length === pageSize,
+      };
+      return next;
+    });
+    setPage(targetPage);
+    setHasMore(loaded.length === pageSize);
+  }
+
+  React.useEffect(() => {
+    let isActive = true;
+
+    const cached = cacheRef.current[dateKey];
+    if (cached) {
+      setPosts(cached.items);
+      setPage(cached.page);
+      setHasMore(cached.hasMore);
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setIsLoading(true);
+    setIsLoadingMore(false);
+    setPosts([]);
+    setPage(1);
+    setHasMore(false);
+
+    loadDayPosts(1, false)
+      .catch(() => {
+        if (!isActive) return;
+        setPosts([]);
+        setHasMore(false);
+      })
+      .finally(() => {
+        if (isActive) setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [dateKey]);
+
+  React.useEffect(() => {
+    if (!inView || !hasMore || isLoadingMore || isLoading) return;
+
+    setIsLoadingMore(true);
+    loadDayPosts(page + 1, true)
+      .finally(() => setIsLoadingMore(false));
+  }, [inView, hasMore, isLoadingMore, isLoading, page, dateKey]);
 
   return (
     <div className={styles.sidebar}>
@@ -63,25 +124,17 @@ export default function MonthlySidebar({
         />
       </div>
 
-      <div className={styles.tabsRow}>
-        {(Object.keys(TAB_LABELS) as TabFilter[]).map((tab) => (
-          <button
-            key={tab}
-            className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {TAB_LABELS[tab]}
-          </button>
-        ))}
-      </div>
-
       <div className={styles.postsSection}>
         <div className={styles.postsList}>
           <div className={styles.postsInner}>
-            {filteredPosts.length === 0 ? (
+            {isLoading ? (
+              <div className={styles.dayLoader}>
+                <Loader size={20} color="blue" />
+              </div>
+            ) : posts.length === 0 ? (
               <div className={styles.emptyDay}>Нет публикаций</div>
             ) : (
-              filteredPosts.map((post) => {
+              posts.map((post) => {
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
@@ -102,6 +155,16 @@ export default function MonthlySidebar({
                   </div>
                 );
               })
+            )}
+
+            {isLoadingMore && (
+              <div className={styles.dayLoader}>
+                <Loader size={16} color="blue" />
+              </div>
+            )}
+
+            {hasMore && !isLoadingMore && !isLoading && (
+              <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}
           </div>
         </div>

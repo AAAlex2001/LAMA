@@ -26,8 +26,9 @@ async def get_calendar(
 async def get_day_counts(
     start_date: datetime = Query(...),
     end_date: datetime = Query(...),
+    mode: str = Query("scheduled"),
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user),
 ):
-    counts = await service.get_day_counts(start_date, end_date, owner_id=current_user.id)
+    counts = await service.get_day_counts(start_date, end_date, owner_id=current_user.id, mode=mode)
     return {"counts": counts}

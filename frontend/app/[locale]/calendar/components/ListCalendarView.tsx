@@ -83,14 +83,12 @@ export default function ListCalendarView({
     }
   }, [inView, hasMore, isLoadingMore, onLoadMore]);
 
-  const filterConfigs = React.useMemo(
-    () => buildFilterConfigs(posts, { withDateSort: true, withStatusFilter: true, withStatsFilters: true }),
-    [posts],
-  );
-  const filteredPosts = React.useMemo(
-    () => applyPostFilters(posts, activeFilters, mobileActiveFilters),
-    [posts, activeFilters, mobileActiveFilters],
-  );
+  const filterConfigs = buildFilterConfigs(posts, {
+    withDateSort: true,
+    withStatusFilter: true,
+    withStatsFilters: true,
+  });
+  const filteredPosts = applyPostFilters(posts, activeFilters, mobileActiveFilters);
 
   React.useEffect(() => {
     setActiveFilters((prev) => ({ ...prev, date: dateSortOrder ? [dateSortOrder === 'desc' ? 'new' : 'old'] : [] }));

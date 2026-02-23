@@ -7,6 +7,7 @@
 
   @media (min-width: 1440px) {
     flex-direction: row;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: 16px;
   }
@@ -255,6 +256,17 @@
 
   @media (min-width: 1440px) {
     cursor: default;
+  }
+}
+
+.desktopFilterRow {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    width: 100%;
+    order: 2;
+    flex-basis: 100%;
   }
 }
 

@@ -136,29 +136,18 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 0;
-  gap: 4px;
+  gap: 0;
   width: 100%;
 }
 
 .statsRow {
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   padding: 0;
   gap: 4px;
-  width: 100%;
-  height: 18px;
-}
-
-.statsRowBottom {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0;
-  gap: 4px;
-  width: 100%;
+  width: auto;
   height: 18px;
 }
 
@@ -168,17 +157,7 @@
   align-items: center;
   padding: 0;
   gap: 4px;
-  flex: 1;
-}
-
-.statItemRight {
-  display: flex;
-  flex-direction: row;
-  justify-content: flex-end;
-  align-items: center;
-  padding: 0;
-  gap: 4px;
-  flex: 1;
+  flex: 0 0 auto;
 }
 
 .statValueBlue {
@@ -187,36 +166,4 @@
   font-size: 12px;
   line-height: 15px;
   color: #3B82F6;
-}
-
-.statValueGreen {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  color: #34C759;
-}
-
-.statValueGray {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  color: #CED2D6;
-}
-
-.statValueOrange {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  color: #FF8D28;
-}
-
-.statValueMuted {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  color: #B0B4B8;
 }

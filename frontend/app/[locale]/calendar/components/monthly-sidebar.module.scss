@@ -45,44 +45,6 @@
   }
 }
 
-.tabsRow {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  width: 100%;
-}
-
-.tab {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 4px 12px;
-  gap: 10px;
-  border: none;
-  background: transparent;
-  border-radius: 25px;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  line-height: 15px;
-  text-align: center;
-  color: #1A1A1A;
-  transition: background 0.15s ease;
-  white-space: nowrap;
-
-  &:hover {
-    background: rgba(59, 130, 246, 0.05);
-  }
-}
-
-.tabActive {
-  background: rgba(59, 130, 246, 0.1);
-}
-
 .postsSection {
   display: flex;
   flex-direction: column;
@@ -193,4 +155,10 @@
   align-items: center;
   padding: 12px 0;
   width: 100%;
+}
+
+.scrollSentinel {
+  width: 100%;
+  height: 1px;
+  flex-shrink: 0;
 }

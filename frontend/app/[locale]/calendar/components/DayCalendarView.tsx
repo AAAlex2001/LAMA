@@ -5,10 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
-import ListFilterBar from './ListFilterBar';
 import { useInView } from '../store/useInView';
-import { buildFilterConfigs } from '../utils/buildFilterConfigs';
-import { applyPostFilters } from '../utils/filterPosts';
 import styles from './day-calendar-view.module.scss';
 
 interface DayCalendarViewProps {
@@ -20,7 +17,6 @@ interface DayCalendarViewProps {
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
   selectedDate: Date;
-  mobileActiveFilters?: Record<string, string[]>;
 }
 
 export default function DayCalendarView({
@@ -32,10 +28,7 @@ export default function DayCalendarView({
   onEdit,
   onAddPost,
   selectedDate,
-  mobileActiveFilters,
 }: DayCalendarViewProps) {
-  const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
-
   const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
 
   React.useEffect(() => {
@@ -43,20 +36,6 @@ export default function DayCalendarView({
       onLoadMore();
     }
   }, [inView, hasMore, isLoadingMore, onLoadMore]);
-
-  const filterConfigs = React.useMemo(() => buildFilterConfigs(posts, {}), [posts]);
-  const filteredPosts = React.useMemo(
-    () => applyPostFilters(posts, activeFilters, mobileActiveFilters),
-    [posts, activeFilters, mobileActiveFilters],
-  );
-  const handleFilterChange = React.useCallback(
-    (key: string, values: string[]) => setActiveFilters((prev) => ({ ...prev, [key]: values })),
-    [],
-  );
-
-  function handleStatusChange(status: string | null) {
-    handleFilterChange('status', status ? [status] : []);
-  }
 
   if (isLoading) {
     return (
@@ -69,38 +48,6 @@ export default function DayCalendarView({
   return (
     <div className={styles.dayWrap}>
       <div className={styles.mobileControls}>
-        <div className={styles.mobileMiniTabs}>
-          {[
-            { key: 'all', label: 'Все', status: null as string | null },
-            { key: 'scheduled', label: 'Запланированные', status: 'scheduled' as string | null },
-            { key: 'published', label: 'Опубликованные', status: 'published' as string | null },
-          ].map((tab) => {
-            const activeStatus = activeFilters['status']?.[0] || null;
-            const isActive = activeStatus === tab.status;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                className={isActive ? `${styles.mobileMiniTab} ${styles.mobileMiniTabActive}` : styles.mobileMiniTab}
-                onClick={() => handleStatusChange(tab.status)}
-              >
-                <span className={styles.mobileMiniTabText}>{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {filterConfigs.length > 0 && (
-          <div className={styles.filterBarWrap}>
-            <ListFilterBar
-              filters={filterConfigs}
-              activeFilters={activeFilters}
-              onFilterChange={handleFilterChange}
-              hideMobileTrigger
-            />
-          </div>
-        )}
-
         <div className={styles.createWrap}>
           <Button
             text="Создать публикацию"
@@ -112,12 +59,12 @@ export default function DayCalendarView({
         </div>
       </div>
 
-      {filteredPosts.length === 0 ? (
+      {posts.length === 0 ? (
         <div className={styles.empty}>Нет публикаций на этот день</div>
       ) : (
         <div className={styles.scrollContainer}>
           <div className={styles.list}>
-            {filteredPosts.map((post) => (
+            {posts.map((post) => (
               <CalendarCard
                 key={post.id}
                 post={post}

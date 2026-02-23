@@ -20,6 +20,7 @@ export interface CalendarState {
   listRangeEnd: string | null;
   currentView: CalendarView;
   monthPostCounts: Record<string, number>;
+  monthPostCountsCache: Record<string, Record<string, number>>;
   countsMonthAnchor: string;
   currentRangeKey: string;
   currentPage: number;
@@ -42,6 +43,7 @@ export const initialState: CalendarState = {
   listRangeEnd: null,
   currentView: 'day',
   monthPostCounts: {},
+  monthPostCountsCache: {},
   countsMonthAnchor: todayStr,
   currentRangeKey: '',
   currentPage: 1,
@@ -60,6 +62,8 @@ const calendarSlice = createSlice({
       state.selectedDate = action.payload;
       state.sidebarDate = action.payload;
       state.countsMonthAnchor = `${action.payload.slice(0, 7)}-01`;
+      const monthKey = action.payload.slice(0, 7);
+      state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
     },
     setSidebarDate: (state, action: PayloadAction<string>) => {
       state.sidebarDate = action.payload;
@@ -83,6 +87,8 @@ const calendarSlice = createSlice({
     },
     setCountsMonthAnchor: (state, action: PayloadAction<string>) => {
       state.countsMonthAnchor = action.payload;
+      const monthKey = action.payload.slice(0, 7);
+      state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
     },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);

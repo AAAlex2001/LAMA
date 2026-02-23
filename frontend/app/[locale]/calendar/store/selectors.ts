@@ -46,6 +46,10 @@ export const selectGridPostCounts = createSelector(
     (s: RootState) => s.calendar.items,
   ],
   (monthCounts, weekItems, currentView, selectedDate, items) => {
+    if (currentView === 'month') {
+      return { ...monthCounts };
+    }
+
     const merged: Record<string, number> = {};
     const allKeys = new Set([...Object.keys(monthCounts), ...Object.keys(weekItems)]);
     for (const key of allKeys) {

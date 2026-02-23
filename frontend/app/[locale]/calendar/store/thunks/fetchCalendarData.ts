@@ -6,9 +6,18 @@ import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calen
 
 type GridDayResult = { dateKey: string; items: Draft[]; hasMore: boolean };
 
+type CalendarRequestMeta = {
+  view: RootState['calendar']['currentView'];
+  selectedDate: string;
+  listRangeStart: string | null;
+  listRangeEnd: string | null;
+  listSortOrder: RootState['calendar']['listSortOrder'];
+  listStatusFilter: string | null;
+};
+
 type FetchDataResult =
-  | { type: 'grid'; keys: string[]; results: GridDayResult[] }
-  | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string };
+  | { type: 'grid'; keys: string[]; results: GridDayResult[]; request: CalendarRequestMeta }
+  | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string; request: CalendarRequestMeta };
 
 export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state: RootState }>(
   'calendar/fetchData',
@@ -16,6 +25,14 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
     const s = getState().calendar;
     const date = parseDate(s.selectedDate);
     const view = s.currentView;
+    const request: CalendarRequestMeta = {
+      view,
+      selectedDate: s.selectedDate,
+      listRangeStart: s.listRangeStart,
+      listRangeEnd: s.listRangeEnd,
+      listSortOrder: s.listSortOrder,
+      listStatusFilter: s.listStatusFilter,
+    };
 
     if (view === 'week' || view === 'month') {
       const keys = getVisibleDayKeys(view, date);
@@ -30,7 +47,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
           return { dateKey, items: res.items, hasMore: res.items.length === pageSize };
         }),
       );
-      return { type: 'grid', keys, results };
+      return { type: 'grid', keys, results, request };
     }
 
     let startDate: string, endDate: string;
@@ -58,6 +75,6 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;
 
-    return { type: 'list', items: res.items, hasMore: res.items.length === pageSize, rangeKey };
+    return { type: 'list', items: res.items, hasMore: res.items.length === pageSize, rangeKey, request };
   },
 );

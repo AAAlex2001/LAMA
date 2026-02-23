@@ -59,6 +59,7 @@ class PublicationQueryService:
         end_date: Optional[datetime] = None,
         search: Optional[str] = None,
         sort_order: Optional[str] = None,
+        date_mode: Optional[str] = "scheduled",
         skip: int = 0,
         limit: int = 100,
     ) -> List[Publication]:
@@ -71,10 +72,12 @@ class PublicationQueryService:
 
         id_query = self.apply_filters(
             id_query, status, content_type, channel_id, tag_names, tag_ids,
-            series_id, start_date, end_date, search, owner_id,
+            series_id, start_date, end_date, search, owner_id, date_mode,
         )
 
-        source_date = func.coalesce(Publication.scheduled_time, Publication.updated_at, Publication.created_at)
+        normalized_mode = (date_mode or "scheduled").lower()
+        primary_date = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
+        source_date = func.coalesce(primary_date, Publication.updated_at, Publication.created_at)
         order_asc = (sort_order or "").lower() == "asc"
         order_expr = source_date.asc() if order_asc else source_date.desc()
         id_tie = Publication.id.asc() if order_asc else Publication.id.desc()
@@ -97,18 +100,28 @@ class PublicationQueryService:
 
     def apply_filters(self, id_query, status, content_type, channel_id,
                        tag_names, tag_ids, series_id, start_date, end_date,
-                       search, owner_id):
+                       search, owner_id, date_mode: Optional[str] = "scheduled"):
         filters = []
+        normalized_mode = (date_mode or "scheduled").lower()
+        date_field = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
+
         if status:
             filters.append(Publication.status == DBPublicationStatus[status.value.upper()])
+        elif normalized_mode == "published":
+            filters.append(
+                Publication.status.in_([
+                    DBPublicationStatus.PUBLISHED,
+                    DBPublicationStatus.PARTIAL_SUCCESS,
+                ])
+            )
         if content_type:
             filters.append(Publication.content_type == DBContentType[content_type.value.upper()])
         if series_id:
             filters.append(Publication.series_id == series_id)
         if start_date:
-            filters.append(Publication.scheduled_time >= start_date)
+            filters.append(date_field >= start_date)
         if end_date:
-            filters.append(Publication.scheduled_time <= end_date)
+            filters.append(date_field <= end_date)
         if filters:
             id_query = id_query.where(and_(*filters))
 
