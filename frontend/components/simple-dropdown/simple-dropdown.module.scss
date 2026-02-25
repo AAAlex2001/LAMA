@@ -150,3 +150,169 @@
   line-height: 15px;
   color: #6B6B6B;
 }
+
+.sortBarWrapper {
+  width: auto;
+  position: relative;
+  display: inline-block;
+}
+
+.sortBarContainer {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  position: relative;
+  width: auto;
+  background: transparent;
+}
+
+.sortBarTab {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 4px 12px;
+  gap: 6px;
+  justify-content: space-between;
+  border-radius: 25px;
+  cursor: pointer;
+  order: 0;
+  transition: all 0.2s ease;
+}
+
+.sortBarTabPicked {
+  min-width: 138px;
+  background: #3B82F61A;
+  justify-content: space-between;
+}
+
+.sortBarTabText {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 100%;
+  color: #1A1A1A;
+  white-space: nowrap;
+}
+
+.sortBarTabIcon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+.sortBarTabClear {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex: none;
+  order: 2;
+  flex-grow: 0;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.sortBarMenu {
+  box-sizing: border-box;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px 8px;
+  gap: 0px;
+  width: 138px;
+  background: linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), #FFFFFF;
+  border-radius: 8px;
+  flex: none;
+  order: 1;
+  z-index: 10;
+  flex-grow: 0;
+}
+
+.sortBarMenuHeader {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0px 8px;
+  gap: 10px;
+}
+
+.sortBarTabHeader {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px;
+  gap: 10px;
+  width: 122px;
+  height: 24px;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex: none;
+  order: 0;
+  align-self: stretch;
+  flex-grow: 0;
+  margin: 0 auto;
+}
+
+.sortBarMenuItems {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0px;
+  width: 122px;
+  height: 96px;
+  flex: none;
+  order: 1;
+  align-self: stretch;
+  flex-grow: 0;
+}
+
+.sortBarMenuItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 0px;
+  gap: 8px;
+  width: 111px;
+  height: 32px;
+  cursor: pointer;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.sortBarMenuItemLabel {
+  width: auto;
+  height: 15px;
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #383F45;
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}

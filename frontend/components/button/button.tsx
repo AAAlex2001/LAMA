@@ -5,6 +5,7 @@ import styles from "./button.module.scss";
 import Loader from '@/components/loader';
 
 import classNames from "classnames";
+import Link from 'next/link';
 
 interface ButtonProps {
   text: string;
@@ -112,7 +113,7 @@ export default function Button({
   if (href) {
     return (
       <div className={wrapperClasses}>
-        <a 
+        <Link 
           href={href} 
           target={target}
           rel={rel}
@@ -121,7 +122,7 @@ export default function Button({
           onMouseLeave={onMouseLeave}
         >
           {buttonContent}
-        </a>
+        </Link>
       </div>
     );
   }

@@ -1,0 +1,10 @@
+.controlButton {
+  width: 100px;
+}
+
+.controls {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: flex-end;
+}

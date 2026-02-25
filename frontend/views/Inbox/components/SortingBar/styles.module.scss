@@ -1,0 +1,52 @@
+.sortingBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.directButton {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.sortingControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  justify-content: center;
+}
+
+.sortingLabel {
+  font-size: 12px;
+  line-height: 24px;
+  color: var(--color-lama-black);
+  white-space: nowrap;
+}
+
+.filterControls {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.filterLabel {
+  font-size: 12px;
+  line-height: 100%;
+  color: var(--color-lama-black);
+  cursor: pointer;
+  transition: color 0.2s;
+  border-radius: 25px;
+  padding: 4px 12px;
+  
+  &:hover {
+    background: #3B82F61A;
+  }
+}
+
+.filterLabelActive {
+  background: #3B82F61A;
+  font-weight: 400;
+}

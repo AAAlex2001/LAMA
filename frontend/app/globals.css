@@ -3,11 +3,18 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-lama-blue-gradient: linear-gradient(to bottom, #3B82F6, #2F67C3, #295AA9, #26539D, #244F96, #234C90);
+  --color-lama-blue: #3B82F6;
+  --color-gray-input: #B0B4B8;
+  --color-lama-black: #383F45;
+  --color-black: #1A1A1A;
+  --color-light-gray: #F0F4FA;
+  --color-lama-dark-gray: #636E78;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-light-gray);
+  --color-foreground: var(--color-lama-black);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -18,8 +25,8 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-light-gray);
+  color: var(--color-lama-black);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
   max-width: 100vw;

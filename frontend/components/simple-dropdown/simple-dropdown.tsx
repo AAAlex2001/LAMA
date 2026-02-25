@@ -3,9 +3,10 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import classNames from 'classnames';
 import styles from './simple-dropdown.module.scss';
-import { ChevronDownIcon } from '@/components/icons';
+import { ChevronDownIcon, CloseIcon } from '@/components/icons';
 import Button from '@/components/button/button';
 import SearchBar from '@/components/search-bar/search-bar';
+import Checkbox from '@/components/checkbox/checkbox';
 
 interface DropdownItem {
   value: string;
@@ -22,6 +23,10 @@ interface SimpleDropdownProps {
   onSelect?: (value: string) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
+  variant?: 'default' | 'sortBar';
+  selectedValue?: string;
+  onClear?: () => void;
+  sortBarMenuContent?: ReactNode;
 }
 
 export default function SimpleDropdown({
@@ -33,6 +38,10 @@ export default function SimpleDropdown({
   onSelect,
   searchable = false,
   searchPlaceholder = 'Поиск',
+  variant = 'default',
+  selectedValue,
+  onClear,
+  sortBarMenuContent,
 }: SimpleDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,9 +68,18 @@ export default function SimpleDropdown({
 
   const handleSelect = (nextValue: string) => {
     onSelect?.(nextValue);
-    setIsOpen(false);
-    setSearchQuery('');
+    if (variant !== 'sortBar') {
+      setIsOpen(false);
+      setSearchQuery('');
+    }
   };
+
+  const handleClear = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClear?.();
+  };
+
+  const isPicked = variant === 'sortBar' && !!selectedValue;
 
   const filteredItems = (items || []).filter((item) => {
     if (!searchable || !searchQuery.trim()) return true;
@@ -71,6 +89,72 @@ export default function SimpleDropdown({
       item.value.toLowerCase().includes(query)
     );
   });
+
+  if (variant === 'sortBar') {
+    return (
+      <div className={classNames(styles.wrapper, styles.sortBarWrapper, className)} ref={rootRef}>
+        <div className={styles.sortBarContainer}>
+          <button
+            type="button"
+            className={classNames(
+              styles.sortBarTab,
+              {
+                [styles.sortBarTabOpened]: isOpen,
+                [styles.sortBarTabPicked]: isPicked,
+              }
+            )}
+            onClick={handleToggle}
+            aria-label={ariaLabel}
+          >
+            <span className={styles.sortBarTabText}>{value}</span>
+            <span className={styles.sortBarTabIcon} aria-hidden="true">
+              <ChevronDownIcon
+                className={classNames(styles.chevron, { [styles.chevronOpen]: isOpen })}
+                width={8}
+                height={8}
+                color="#1A1A1A"
+              />
+            </span>
+            {isPicked && onClear && (
+              <span className={styles.sortBarTabClear} onClick={handleClear} aria-hidden="true">
+                <CloseIcon
+                  width={16}
+                  height={16}
+                  color="#3B82F6"
+                />
+              </span>
+            )}
+          </button>
+
+          {isOpen && (items?.length || sortBarMenuContent) && (
+            <div className={styles.sortBarMenu}>
+              <div className={styles.sortBarMenuItems}>
+                {sortBarMenuContent ? (
+                  sortBarMenuContent
+                ) : (
+                  filteredItems.map((item) => (
+                    <div
+                      key={item.value}
+                      className={styles.sortBarMenuItem}
+                      onClick={() => handleSelect(item.value)}
+                      role="option"
+                    >
+                      <Checkbox
+                        variant="radio"
+                        checked={selectedValue === item.value}
+                        onChange={() => handleSelect(item.value)}
+                      />
+                      <span className={styles.sortBarMenuItemLabel}>{item.label}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={classNames(styles.wrapper, className)} ref={rootRef}>
