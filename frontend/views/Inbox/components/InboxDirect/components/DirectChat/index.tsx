@@ -48,22 +48,148 @@ const mockMessages: (MessageProps & { date: Date })[] = [
     type: 'outgoing',
     mediaItems: [
       {
-        type: 'video',
-        src: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4',
+        type: 'image',
+        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
       },
       {
-        type: 'file',
-        src: 'https://via.placeholder.com/800/50C878/FFFFFF?text=Image+1',
+        type: 'image',
+        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
       },
       {
-        type: 'video',
-        src: 'https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_2mb.mp4',
-      },
-      {
-        type: 'file',
-        src: 'https://via.placeholder.com/800/F39C12/FFFFFF?text=Image+2',
+        type: 'image',
+        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
       },
     ],
+    date: new Date(),
+  },
+  {
+    type: 'incoming',
+    text: 'Check out this video I recorded!',
+    mediaItems: [
+      {
+        type: 'video',
+        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-1.mp4',
+        id: 'video-1',
+      },
+    ],
+    time: '16:45',
+    date: new Date(),
+  },
+  {
+    type: 'outgoing',
+    mediaItems: [
+      {
+        type: 'video',
+        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-2.mp4',
+        id: 'video-2',
+      },
+    ],
+    time: '16:46',
+    date: new Date(),
+  },
+  {
+    type: 'incoming',
+    text: 'Here are some documents for you to review',
+    mediaItems: [
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/report-2024.pdf',
+        id: 'file-1',
+      },
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/presentation.pptx',
+        id: 'file-2',
+      },
+    ],
+    time: '16:50',
+    date: new Date(),
+  },
+  {
+    type: 'outgoing',
+    mediaItems: [
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/spreadsheet.xlsx',
+        id: 'file-3',
+      },
+    ],
+    time: '16:52',
+    date: new Date(),
+  },
+  {
+    type: 'incoming',
+    text: 'Mixed media message with images and videos',
+    mediaItems: [
+      {
+        type: 'image',
+        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
+        id: 'img-1',
+      },
+      {
+        type: 'video',
+        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-3.mp4',
+        id: 'video-3',
+      },
+      {
+        type: 'image',
+        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
+        id: 'img-2',
+      },
+    ],
+    time: '17:00',
+    date: new Date(),
+  },
+  {
+    type: 'outgoing',
+    text: 'Here is a document with some text',
+    mediaItems: [
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/document.docx',
+        id: 'file-4',
+      },
+    ],
+    time: '17:05',
+    date: new Date(),
+  },
+  {
+    type: 'incoming',
+    mediaItems: [
+      {
+        type: 'video',
+        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-4.mp4',
+        id: 'video-4',
+      },
+      {
+        type: 'video',
+        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-5.mp4',
+        id: 'video-5',
+      },
+    ],
+    time: '17:10',
+    date: new Date(),
+  },
+  {
+    type: 'outgoing',
+    mediaItems: [
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/data.csv',
+        id: 'file-5',
+      },
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/notes.txt',
+        id: 'file-6',
+      },
+      {
+        type: 'file',
+        src: 'https://storage.yandexcloud.net/lamaplanner/documents/archive.zip',
+        id: 'file-7',
+      },
+    ],
+    time: '17:15',
     date: new Date(),
   },
 ];
