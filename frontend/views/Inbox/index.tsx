@@ -1,12 +1,14 @@
 'use client';
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmptyState from "./components/EmptyState";
 import InboxList from "./components/InboxList";
 import SortingBar from "./components/SortingBar";
 import styles from "./styles.module.scss";
 import { IInboxItem } from "./components/InboxList/components/ListElement";
+import { ListHeaderType } from "./components/InboxList/components/ListHeader";
+import InboxDirect from "./components/InboxDirect";
 
 type SortInput = {
   field: string;
@@ -16,6 +18,9 @@ type SortInput = {
 const InboxView = () => {
   const searchParams = useSearchParams();
   const { push } = useRouter();
+
+  const [selectedFilter, setSelectedFilter] = useState<ListHeaderType>("all");
+  const [currentView, setCurrentView] = useState<"list" | "direct">("list");
 
   const sort: SortInput | null = useMemo( () => {
     if ( !searchParams ) {
@@ -305,8 +310,9 @@ const InboxView = () => {
   }
   return (
     <div className={styles.container}>
-      <SortingBar />
-      <InboxList data={data} />
+      <SortingBar selectedFilter={selectedFilter} setSelectedFilter={setSelectedFilter} currentView={currentView} setCurrentView={setCurrentView} />
+      {currentView === "list" && <InboxList data={data} type={selectedFilter} />}
+      {currentView === "direct" && <InboxDirect />}
     </div>
   )
 }

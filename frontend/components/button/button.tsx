@@ -18,7 +18,8 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
-  variant?: 'default' | 'templateCard' | 'inlineButton' | 'outlined-red' | 'delete';
+  type?: 'destructive' | 'primary' | 'secondary' | 'gradient';
+  variant?: 'default' | 'template' | 'outline' | 'invertOutline' | 'templateCard' | 'inlineButton' | 'outlined-red' | 'delete';
   icon?: ReactNode;
   loading?: boolean;
   counter?: string;
@@ -39,6 +40,7 @@ export default function Button({
   active = false,
   fullWidth = false,
   size = 'default',
+  // type = 'primary',
   variant = 'default',
   icon,
   loading = false,
@@ -106,6 +108,14 @@ export default function Button({
         [styles.outlinedRedButton]: variant === 'outlined-red',
         [styles.outlinedRedButtonHovered]: variant === 'outlined-red' && hovered,
         [styles.deleteButton]: variant === 'delete',
+        // [styles.typeDestructive]: type === 'destructive',
+        // [styles.typePrimary]: type === 'primary',
+        // [styles.typeSecondary]: type === 'secondary',
+        // [styles.typeGradient]: type === 'gradient',
+        [styles.variantDefault]: variant === 'default',
+        [styles.variantTemplate]: variant === 'template',
+        [styles.variantOutline]: variant === 'outline',
+        [styles.variantInvertOutline]: variant === 'invertOutline',
         [styles.disabled]: disabled,
       }
   );

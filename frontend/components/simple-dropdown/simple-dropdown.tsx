@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import classNames from 'classnames';
 import styles from './simple-dropdown.module.scss';
-import { ChevronDownIcon, CloseIcon } from '@/components/icons';
+import { ChevronDownIcon, SortClearIcon } from '@/components/icons';
 import Button from '@/components/button/button';
 import SearchBar from '@/components/search-bar/search-bar';
 import Checkbox from '@/components/checkbox/checkbox';
@@ -99,7 +99,6 @@ export default function SimpleDropdown({
             className={classNames(
               styles.sortBarTab,
               {
-                [styles.sortBarTabOpened]: isOpen,
                 [styles.sortBarTabPicked]: isPicked,
               }
             )}
@@ -107,21 +106,14 @@ export default function SimpleDropdown({
             aria-label={ariaLabel}
           >
             <span className={styles.sortBarTabText}>{value}</span>
-            <span className={styles.sortBarTabIcon} aria-hidden="true">
-              <ChevronDownIcon
-                className={classNames(styles.chevron, { [styles.chevronOpen]: isOpen })}
-                width={8}
-                height={8}
-                color="#1A1A1A"
-              />
-            </span>
+            <ChevronDownIcon 
+              className={classNames(styles.sortBarChevron, { [styles.sortBarChevronOpen]: isOpen })} 
+              width={8} 
+              height={8} 
+            />
             {isPicked && onClear && (
               <span className={styles.sortBarTabClear} onClick={handleClear} aria-hidden="true">
-                <CloseIcon
-                  width={16}
-                  height={16}
-                  color="#3B82F6"
-                />
+                <SortClearIcon />
               </span>
             )}
           </button>

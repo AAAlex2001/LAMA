@@ -20,6 +20,7 @@ export interface IInboxItem {
   blockReason?: string; 
   inviteCode?: string; 
   hasDot?: boolean;
+  isChecked?: boolean;
 }
 
 interface ListElementProps {

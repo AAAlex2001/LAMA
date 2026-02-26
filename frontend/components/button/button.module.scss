@@ -8,6 +8,11 @@
   background: transparent;
   padding: 0;
   display: flex;
+  
+  &.fullWidthWrapper {
+    width: 100%;
+    flex: 1;
+  }
 }
 
 .button {
@@ -164,12 +169,14 @@
 }
 
 .fullWidthWrapper {
-  display: block;
+  display: flex;
+  flex: 1;
   width: 100%;
 }
 
 .fullWidthButton {
   display: flex;
+  flex: 1;
   width: 100%;
   justify-content: center;
 }
@@ -403,3 +410,191 @@
     }
   }
 }
+
+// // Type styles - Color schemes
+// .typePrimary {
+//   // Primary type uses the default gradient blue colors
+//   // This is the default behavior, so no override needed
+// }
+
+// .typeSecondary {
+//   background-image: linear-gradient(white, white), linear-gradient(90deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+  
+//   .buttonText {
+//     background-image: linear-gradient(90deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+//   }
+
+//   &:not(.templateCardButton):not(.inlineButton):not(.outlinedRedButton):not(.deleteButton):hover {
+//     background: linear-gradient(90deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+//   }
+
+//   &.active {
+//     background: linear-gradient(90deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+
+//     &::before {
+//       background: linear-gradient(270deg, #6B7280 0%, #4B5563 50%, #374151 100%);
+//     }
+//   }
+// }
+
+// .typeDestructive {
+//   background-image: linear-gradient(white, white), linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+  
+//   .buttonText {
+//     background-image: linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+//   }
+
+//   &:not(.templateCardButton):not(.inlineButton):not(.outlinedRedButton):not(.deleteButton):hover {
+//     background: linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+//   }
+
+//   &.active {
+//     background: linear-gradient(90deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+
+//     &::before {
+//       background: linear-gradient(270deg, #EF4444 0%, #DC2626 50%, #B91C1C 100%);
+//     }
+//   }
+// }
+
+// .typeGradient {
+//   // Gradient type uses the default blue gradient
+//   // This matches the primary/default behavior
+// }
+
+// // Variant styles - Button styles
+// .variantDefault {
+//   // Default variant uses the standard button style
+//   // This is the default behavior
+// }
+
+// .variantTemplate {
+//   background: #F0F4FA;
+//   background-image: none;
+//   border: none;
+//   width: 100%;
+//   justify-content: center;
+
+//   .buttonText {
+//     background: none;
+//     -webkit-background-clip: unset;
+//     background-clip: unset;
+//     color: #383F45;
+//     font-size: 14px;
+//     line-height: 28px;
+//   }
+
+//   .buttonIcon svg {
+//     width: 24px;
+//     height: 24px;
+//   }
+
+//   &:hover {
+//     background: #CBDBFF;
+
+//     .buttonText {
+//       color: #383F45;
+//     }
+//   }
+
+//   &.active {
+//     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+
+//     &::before {
+//       background: linear-gradient(270deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+//     }
+
+//     .buttonText {
+//       color: white;
+//     }
+
+//     &:hover {
+//       .buttonText {
+//         color: white;
+//       }
+//     }
+//   }
+// }
+
+// .variantOutline {
+//   background: #FFFFFF;
+//   background-image: none;
+//   border: 1px solid #CED2D6;
+//   box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+
+//   .buttonText {
+//     background: none;
+//     -webkit-background-clip: unset;
+//     background-clip: unset;
+//     color: #383F45;
+//   }
+
+//   &:hover {
+//     background: #F9FAFB;
+//     border-color: #3B82F6;
+
+//     .buttonText {
+//       color: #3B82F6;
+//     }
+
+//     svg path {
+//       stroke: #3B82F6;
+//     }
+//   }
+
+//   &.active {
+//     background: #3B82F6;
+//     border-color: #3B82F6;
+
+//     .buttonText {
+//       color: white;
+//     }
+
+//     svg path {
+//       stroke: white;
+//     }
+//   }
+// }
+
+// .variantInvertOutline {
+//   background: transparent;
+//   background-image: none;
+//   border: 1px solid #FFFFFF;
+
+//   .buttonText {
+//     background: none;
+//     -webkit-background-clip: unset;
+//     background-clip: unset;
+//     color: #FFFFFF;
+//   }
+
+//   svg path {
+//     stroke: #FFFFFF;
+//   }
+
+//   &:hover {
+//     background: rgba(255, 255, 255, 0.1);
+//     border-color: #FFFFFF;
+
+//     .buttonText {
+//       color: #FFFFFF;
+//     }
+
+//     svg path {
+//       stroke: #FFFFFF;
+//     }
+//   }
+
+//   &.active {
+//     background: #FFFFFF;
+//     border-color: #FFFFFF;
+
+//     .buttonText {
+//       color: #3B82F6;
+//     }
+
+//     svg path {
+//       stroke: #3B82F6;
+//     }
+//   }
+// }

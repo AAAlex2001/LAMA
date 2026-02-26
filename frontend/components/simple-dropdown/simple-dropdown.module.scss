@@ -117,7 +117,7 @@
   gap: 10px;
   width: 100%;
   height: 35px;
-  background: #FFFFFF;
+  background: white;
   border-radius: 10px;
   border: none;
   cursor: pointer;
@@ -174,71 +174,85 @@
   align-items: center;
   padding: 4px 12px;
   gap: 6px;
-  justify-content: space-between;
+  height: 24px;
   border-radius: 25px;
+  background: white;
+  border: none;
   cursor: pointer;
   order: 0;
   transition: all 0.2s ease;
 }
 
 .sortBarTabPicked {
-  min-width: 138px;
   background: #3B82F61A;
-  justify-content: space-between;
 }
 
 .sortBarTabText {
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 12px;
-  line-height: 100%;
-  color: #1A1A1A;
+  line-height: 15px;
+  color: var(--color-lama-black);
   white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.sortBarTabIcon {
-  width: 16px;
-  height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  order: 1;
-  flex-grow: 0;
+.sortBarChevron {
+  color: var(--color-lama-black);
+  flex-shrink: 0;
+  transform: rotate(0deg);
+  transition: transform 0.2s ease;
+}
+
+.sortBarChevronOpen {
+  transform: rotate(180deg);
 }
 
 .sortBarTabClear {
-  width: 16px;
-  height: 16px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  flex: none;
-  order: 2;
-  flex-grow: 0;
-  
-  &:hover {
-    opacity: 0.8;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+
+  svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+
+  &:hover svg path:first-child {
+    fill: var(--color-lama-blue);
+    stroke: var(--color-lama-blue);
+  }
+
+  &:hover svg path:last-child {
+    stroke: var(--color-background);
   }
 }
 
 .sortBarMenu {
-  box-sizing: border-box;
   position: absolute;
   top: calc(100% + 8px);
   left: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 0px 8px;
-  gap: 0px;
-  width: 138px;
-  background: linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), #FFFFFF;
+  padding: 0 8px;
+  gap: 0;
+  width: 160px;
+  max-width: 160px;
+  max-height: 170px;
+  overflow-y: auto;
+  background: #3B82F61A;
   border-radius: 8px;
-  flex: none;
-  order: 1;
-  z-index: 10;
-  flex-grow: 0;
+  z-index: 20;
+
+  @media (min-width: 1440px) {
+    left: 50%;
+    transform: translateX(-50%);
+  }
 }
 
 .sortBarMenuHeader {
@@ -306,7 +320,6 @@
 .sortBarMenuItemLabel {
   width: auto;
   height: 15px;
-  font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
   font-size: 12px;

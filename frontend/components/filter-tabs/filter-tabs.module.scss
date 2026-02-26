@@ -1,0 +1,24 @@
+.filterTabs {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.filterTab {
+  font-size: 12px;
+  line-height: 100%;
+  color: var(--color-lama-black);
+  cursor: pointer;
+  transition: color 0.2s;
+  border-radius: 25px;
+  padding: 4px 12px;
+  
+  &:hover {
+    background: #3B82F61A;
+  }
+}
+
+.filterTabActive {
+  background: #3B82F61A;
+  font-weight: 400;
+}

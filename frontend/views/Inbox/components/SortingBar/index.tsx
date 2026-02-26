@@ -1,26 +1,48 @@
 'use client';
 
-import { FC, useState } from "react";
+import { FC, useState, useMemo } from "react";
 import Button from "@/components/button/button";
 import SimpleDropdown from "@/components/simple-dropdown/simple-dropdown";
+import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import styles from "./styles.module.scss";
-import classNames from "classnames";
+import { ListHeaderType } from "../InboxList/components/ListHeader";
 
-const SortingBar: FC = () => {
-  const [sortByTime, setSortByTime] = useState<string>("");
-  const [sortByStatus, setSortByStatus] = useState<string>("");
-  const [sortBySource, setSortBySource] = useState<string>("");
-  const [selectedFilter, setSelectedFilter] = useState<string>("all");
+interface SortingBarProps {
+  selectedFilter: ListHeaderType;
+  setSelectedFilter: (filter: ListHeaderType) => void;
+  currentView: "list" | "direct";
+  setCurrentView: (view: "list" | "direct") => void;
+}
+
+type SortOptionType = 'time' | 'source' | 'status' | 'type';
+
+interface SortOption {
+  type: SortOptionType;
+  label: string;
+  value: string;
+  items: Array<{ value: string; label: string }>;
+}
+
+const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, currentView, setCurrentView}: SortingBarProps ) => {
+  // Inbox list sorting values
+  const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
+    time: "",
+    source: "",
+    status: "",
+    type: "",
+  });
+
+  // Chat/direct sorting values (separate from inbox)
+  const [chatSortValues, setChatSortValues] = useState<Record<SortOptionType, string>>({
+    time: "",
+    source: "",
+    status: "",
+    type: "",
+  });
 
   const timeOptions = [
     { value: "newest", label: "Сначала новые" },
     { value: "oldest", label: "Сначала старые" },
-  ];
-
-  const statusOptions = [
-    { value: "default", label: "По умолчанию" },
-    { value: "new", label: "Новые" },
-    { value: "processed", label: "Обработанные" },
   ];
 
   const sourceOptions = [
@@ -30,6 +52,121 @@ const SortingBar: FC = () => {
     { value: "automation", label: "Автоматизация" },
   ];
 
+  const statusOptions = [
+    { value: "default", label: "По умолчанию" },
+    { value: "new", label: "Новые" },
+    { value: "processed", label: "Обработанные" },
+  ];
+
+  const chatStatusOptions = [
+    { value: "all", label: "Все" },
+    { value: "unread", label: "Непрочитанные" },
+    { value: "read", label: "Прочитанные" },
+  ];
+
+  const typeOptions = [
+    { value: "all", label: "Все" },
+    { value: "bot", label: "Бот" },
+    { value: "channel", label: "Канал" },
+    { value: "system", label: "Система" },
+  ];
+
+  const filterSortConfig: Record<ListHeaderType, SortOptionType[]> = {
+    all: ['time', 'source', 'status'],
+    moderation: ['time', 'source'],
+    system: ['time', 'source'],
+    automation: ['time', 'type'],
+  };
+
+  const availableSortOptions = useMemo(() => {
+    if (currentView === "direct") {
+      return [
+        {
+          type: 'time' as SortOptionType,
+          label: 'По активности',
+          value: chatSortValues.time,
+          items: timeOptions,
+        },
+        {
+          type: 'status' as SortOptionType,
+          label: 'По статусу',
+          value: chatSortValues.status,
+          items: chatStatusOptions,
+        },
+      ];
+    }
+    
+    const sortTypes = filterSortConfig[selectedFilter];
+    
+    return sortTypes.map((sortType): SortOption => {
+      switch (sortType) {
+        case 'time':
+          return {
+            type: 'time',
+            label: 'По времени',
+            value: sortValues.time,
+            items: timeOptions,
+          };
+        case 'source':
+          return {
+            type: 'source',
+            label: 'По источнику',
+            value: sortValues.source,
+            items: sourceOptions,
+          };
+        case 'status':
+          return {
+            type: 'status',
+            label: 'По статусу',
+            value: sortValues.status,
+            items: statusOptions,
+          };
+        case 'type':
+          return {
+            type: 'type',
+            label: 'По типу',
+            value: sortValues.type,
+            items: typeOptions,
+          };
+        default:
+          return {
+            type: 'time',
+            label: 'По времени',
+            value: sortValues.time,
+            items: timeOptions,
+          };
+      }
+    });
+  }, [selectedFilter, sortValues, chatSortValues, currentView]);
+
+  const handleSortChange = (sortType: SortOptionType, value: string) => {
+    setSortValues(prev => ({
+      ...prev,
+      [sortType]: value,
+    }));
+  };
+
+  const handleSortClear = (sortType: SortOptionType) => {
+    setSortValues(prev => ({
+      ...prev,
+      [sortType]: "",
+    }));
+  };
+
+  const handleChatSortChange = (sortType: SortOptionType, value: string) => {
+    setChatSortValues(prev => ({
+      ...prev,
+      [sortType]: value,
+    }));
+  };
+
+  const handleChatSortClear = (sortType: SortOptionType) => {
+    setChatSortValues(prev => ({
+      ...prev,
+      [sortType]: "",
+    }));
+  };
+
   const filterOptions = [
     { id: "all", label: "Все" },
     { id: "moderation", label: "Модерация" },
@@ -37,11 +174,41 @@ const SortingBar: FC = () => {
     { id: "automation", label: "Автоматизация" },
   ];
 
+  if (currentView === "direct") {
+    return (
+      <div className={styles.sortingBar}>
+        <Button
+          text="Inbox"
+          onClick={() => setCurrentView("list")}
+          showArrow={false}
+          variant="default"
+          active={currentView === "direct"}
+        />
+        <div className={styles.sortingControls}>
+          <span className={styles.sortingLabel}>Сортировка:</span>
+          
+          {availableSortOptions.map((option) => (
+            <SimpleDropdown
+              key={option.type}
+              value={option.label}
+              items={option.items}
+              selectedValue={option.value}
+              onSelect={(value) => handleChatSortChange(option.type, value)}
+              onClear={() => handleChatSortClear(option.type)}
+              variant="sortBar"
+              className={styles.dropdown}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.sortingBar}>
       <Button
         text="Директ"
-        onClick={() => {}}
+        onClick={() => setCurrentView("direct")}
         showArrow={false}
         variant="default"
         active
@@ -50,48 +217,26 @@ const SortingBar: FC = () => {
       <div className={styles.sortingControls}>
         <span className={styles.sortingLabel}>Сортировка:</span>
         
-        <SimpleDropdown
-          value="По времени"
-          items={timeOptions}
-          selectedValue={sortByTime}
-          onSelect={(value) => setSortByTime(value)}
-          onClear={() => setSortByTime("")}
-          variant="sortBar"
-          className={styles.dropdown}
-        />
-        
-        <SimpleDropdown
-          value="По статусу"
-          items={statusOptions}
-          selectedValue={sortByStatus}
-          onSelect={(value) => setSortByStatus(value)}
-          onClear={() => setSortByStatus("")}
-          variant="sortBar"
-          className={styles.dropdown}
-        />
-        
-        <SimpleDropdown
-          value="По источнику"
-          items={sourceOptions}
-          selectedValue={sortBySource}
-          onSelect={(value) => setSortBySource(value)}
-          onClear={() => setSortBySource("")}
-          variant="sortBar"
-          className={styles.dropdown}
-        />
-      </div>
-
-      <div className={styles.filterControls}>
-        {filterOptions.map((option) => (
-          <span
-            key={option.id}
-            className={classNames(styles.filterLabel, { [styles.filterLabelActive]: selectedFilter === option.id })}
-            onClick={() => setSelectedFilter(option.id)}
-          >
-            {option.label}
-          </span>
+        {availableSortOptions.map((option) => (
+          <SimpleDropdown
+            key={option.type}
+            value={option.label}
+            items={option.items}
+            selectedValue={option.value}
+            onSelect={(value) => handleSortChange(option.type, value)}
+            onClear={() => handleSortClear(option.type)}
+            variant="sortBar"
+            className={styles.dropdown}
+          />
         ))}
       </div>
+
+      <FilterTabs
+        options={filterOptions}
+        selectedFilter={selectedFilter}
+        onFilterChange={(filterId) => setSelectedFilter(filterId as ListHeaderType)}
+        className={styles.filterControls}
+      />
     </div>
   );
 };

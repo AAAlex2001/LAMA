@@ -1,0 +1,149 @@
+.incomingWrapper {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  align-self: flex-start;
+  max-width: 100%;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #F0F4FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.incomingBubble {
+  background: #F1F5FB;
+  border-radius: 16px 16px 16px 0;
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .messageText {
+    color: #383F45;
+  }
+}
+
+.incomingTime {
+  font-size: 14px;
+  color: #383F45;
+  align-self: flex-end;
+}
+
+.outgoingWrapper {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.outgoingBubble {
+  background: var(--color-lama-blue);
+  border-radius: 16px 16px 0 16px;
+  padding: 10px 20px;
+  margin-left: 50px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .messageText {
+    color: #F1F5FB;
+  }
+}
+
+.messageText {
+  font-size: 14px;
+  line-height: 20px;
+  margin: 0;
+}
+
+.outgoingMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.msgActions {
+  display: flex;
+  align-items: center;
+}
+
+.msgAction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.65;
+  }
+}
+
+.outgoingTime {
+  font-size: 14px;
+  color: #F1F5FB;
+  line-height: 20px;
+}
+
+.mediaGrid {
+  display: flex;
+  gap: 8px;
+}
+
+.mediaCell {
+  width: 110px;
+  height: 110px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.videoThumb {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #7BAFD4 0%, #4A80AC 60%, #3B6F9A 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playOverlay {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fileThumb {
+  width: 100%;
+  height: 100%;
+  background: #F0F4FA;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.systemMessage {
+  text-align: center;
+  width: 100%;
+  .systemMessageText {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--color-lama-gray);
+    line-height: 1;
+  }
+}

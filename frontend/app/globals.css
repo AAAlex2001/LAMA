@@ -5,11 +5,15 @@
   --foreground: #171717;
   --color-lama-blue-gradient: linear-gradient(to bottom, #3B82F6, #2F67C3, #295AA9, #26539D, #244F96, #234C90);
   --color-lama-blue: #3B82F6;
+  --color-lama-light-blue: #EBF2FE;
+
   --color-gray-input: #B0B4B8;
   --color-lama-black: #383F45;
   --color-black: #1A1A1A;
   --color-light-gray: #F0F4FA;
   --color-lama-dark-gray: #636E78;
+  --color-lama-gray: #858585;
+  --color-lama-destructive: #E33326;
 }
 
 @theme inline {

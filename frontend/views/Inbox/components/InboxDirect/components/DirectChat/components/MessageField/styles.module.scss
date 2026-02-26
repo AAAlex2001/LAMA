@@ -1,0 +1,76 @@
+.messageField {
+  flex-shrink: 0;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 10px;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 4px 16 0 #3B82F61A;
+  &:focus-within {
+    border-width: 1px;
+    border-color: var(--color-lama-blue);
+    margin: -1px
+  }
+}
+
+.input {
+  flex: 1;
+  outline: none;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 100%;
+  color: var(--color-lama-black);
+  background: transparent;
+
+  &::placeholder {
+    color: #A6ACBF;
+  }
+}
+
+.attachButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-lama-blue);
+  }
+}
+
+.blue {
+  color: var(--color-lama-blue);
+}
+
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  margin-top: 16px;
+  gap: 10px;
+  width: 100%;
+}
+
+.actionBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 28px;
+  color: var(--color-lama-black);
+  background: #F0F4FA;
+}

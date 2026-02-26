@@ -65,3 +65,6 @@ export { default as CalendarCheckIcon } from './calendar-check-icon';
 export { default as CalendarRepeatIcon } from './calendar-repeat-icon';
 export { default as CalendarReactionsIcon } from './calendar-reactions-icon';
 export { default as CalendarViewsIcon } from './calendar-views-icon';
+export { default as PinIcon } from './pin-icon';
+export { default as BlockedIcon } from './blocked-icon';
+export { default as ChatChevronIcon } from './chat-chevron-icon';

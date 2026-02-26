@@ -1,13 +1,13 @@
 .element {
   display: grid;
-  grid-template-columns: 30px 120px 140px 120px 180px 300px 500px;
+  grid-template-columns: 30px 120px 140px 120px 180px 300px 1fr;
   align-items: flex-start;
   height: 34px;
   border-bottom: 1px solid rgba(59, 130, 246, 0.1);
   width: 100%;
   background: white;
   border-radius: 8px;
-  padding: 8px 0;
+  align-items: center;
   padding-left: 8px;
 }
 

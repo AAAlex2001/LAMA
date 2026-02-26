@@ -8,3 +8,10 @@
   gap: 20px;
   justify-content: flex-end;
 }
+
+.moderationWrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  justify-content: space-between;
+}

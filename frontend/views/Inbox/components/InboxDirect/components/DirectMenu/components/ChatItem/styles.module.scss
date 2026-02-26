@@ -1,0 +1,152 @@
+.chatItem {
+  width: 100%;
+  align-items: center;
+  min-height: 35px;
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid transparent;
+  color: var(--color-lama-black);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &.chatItemWithCheckbox {
+    cursor: default;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.checkboxWrapper {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.chatItemCurrent {
+  background: var(--color-lama-blue);
+  color: white;
+  border-color: var(--color-lama-blue);
+
+  &:hover {
+    background: var(--color-lama-blue);
+  }
+}
+
+.paddingLeft {
+  padding-left: 20px !important;
+}
+
+.chatItemPinned {
+  background: #EBF2FE;
+  border-color: transparent;
+  color: var(--color-lama-black);
+}
+
+.chatItemBlocked {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-lama-black);
+}
+
+.chatItemContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  position: relative;
+}
+
+.chatItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 100%;
+}
+
+.chatItemName {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  color: inherit;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.chatItemUsername {
+  font-size: 14px;
+  color: inherit;
+  opacity: 0.9;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.chatItemMessagePreview {
+  font-size: 14px;
+  color: inherit;
+  overflow: hidden;
+  opacity: 0.9;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.chatItemTime {
+  font-size: 12px;
+  color: inherit;
+  white-space: nowrap;
+  display: flex;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.unreadBadge {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  background: #3B82F666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  flex-shrink: 0;
+
+  span {
+    font-size: 12px;
+    font-weight: 400;
+    color: #202224;
+    line-height: 100%;
+  }
+}
+
+.blockedIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  opacity: 0.6;
+}
+
+.itemHeader {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
