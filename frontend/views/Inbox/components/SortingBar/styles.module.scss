@@ -31,3 +31,11 @@
   flex-shrink: 0;
 }
 
+.mobileWrapper {
+  align-items: center;
+  display: flex;
+  @media(min-width: 768px) {
+    display: none;
+  }
+  gap: 10px;
+}

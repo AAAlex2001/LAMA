@@ -1,8 +1,9 @@
 'use client'
 
-import Button from "@/components/button/button";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
+import { Button } from "@/components/new-button";
 import { FC, useEffect, useState } from "react";
+import buttonStyles from "@/components/new-button/styles.module.scss";
 
 import styles from "./styles.module.scss";
 
@@ -13,10 +14,12 @@ interface ListHeaderProps {
   setIsChecking: (isChecking: boolean) => void;
   isChecking: boolean;
   onSelectAll?: () => void;
+  isSelectedAll?: boolean;
+  checkedItems?: number;
 }
 
 
-const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll }: ListHeaderProps) => {
+const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems }: ListHeaderProps) => {
   const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   
   const filterOptionsModeration = [
@@ -40,23 +43,54 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
   switch (type) {
     case 'all':
       return (
-        <div>
+        <div className={styles.headerWrapper}>
+          {
+            isChecking ? (
+              <div className={styles.selectedItems}>
+                <span>Выбрано {checkedItems} уведомление</span>
+              </div>
+            ) : <div />
+          }
+          {
+            isChecking && (
+              <div className={styles.actions}>
+                <Button variant="ghost" intent="neutral" size="transparent">
+                  Прочитать
+                </Button>
+                <Button variant="ghost" intent="neutral" size="transparent">
+                  Игнорировать
+                </Button>
+                <Button variant="ghost" intent="neutral" size="transparent">
+                  Удалить
+                </Button>
+                <Button variant="ghost" intent="neutral" size="transparent">
+                  Заблокировать
+                </Button>
+                <Button variant="ghost" intent="neutral" size="transparent">
+                  Разблокировать
+                </Button>
+              </div>
+            )
+          }
           <div className={styles.controls}>    
             <Button 
-              text="Выбрать все" 
-              variant="inlineButton" 
-              showArrow={false} 
+              variant="outline" 
+              intent={isSelectedAll ? "primary" : "neutral"}
+              size="sm"
               onClick={onSelectAll} 
               className={styles.controlButton}
-            />
+            >
+              <span>Выбрать все</span>
+            </Button>
             <Button 
-              text="Выбрать" 
-              variant="inlineButton" 
-              showArrow={false} 
-              active={isChecking} 
+              variant="outline" 
+              intent={isChecking ? "primary" : "neutral"}
+              size="sm"  
               onClick={() => setIsChecking(!isChecking)} 
               className={styles.controlButton}
-            />
+            >
+              <span>Выбрать</span>
+            </Button>
           </div>
         </div>
       )
@@ -69,8 +103,20 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
             onFilterChange={setSelectedSubFilter}
           />
           <div className={styles.controls}>
-            <Button text="Созданные ссылки-приглашения" variant="default" showArrow={false} className={styles.controlButton}/>
-            <Button text="Создать ссылку-приглашение" variant="default" active showArrow={false} className={styles.controlButton}/>
+            <Button 
+              variant="outline" 
+              intent="gradient"
+              size="lg"
+            >
+              <span className={buttonStyles.label}>Созданные ссылки-приглашения</span>
+            </Button>
+            <Button 
+              variant="fill" 
+              intent="gradient"
+              size="lg"
+            >
+              <span>Создать ссылку-приглашение</span>
+            </Button>
           </div>
         </div>
       )
@@ -87,9 +133,27 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               onFilterChange={setSelectedSubFilter}
             />
           <div className={styles.controls}>    
-            <Button text="Создать автоответ" variant="default" active showArrow={false} className={styles.controlButton} />
-            <Button text="Создать триггер" variant="default" active showArrow={false} className={styles.controlButton} />
-            <Button text="Создать компаду" variant="default" active showArrow={false} className={styles.controlButton} />
+            <Button 
+              variant="fill" 
+              intent="gradient"
+              size="lg"
+            >
+              <span className={buttonStyles.label}>Создать автоответ</span>
+            </Button>
+            <Button 
+              variant="fill" 
+              intent="gradient"
+              size="lg"
+            >
+              <span className={buttonStyles.label}>Создать триггер</span>
+            </Button>
+            <Button 
+              variant="fill" 
+              intent="gradient"
+              size="lg"
+            >
+              <span className={buttonStyles.label}>Создать компаду</span>
+            </Button>
           </div>
         </div>
       )
@@ -97,20 +161,23 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
       return (
         <div className={styles.controls}>    
           <Button 
-            text="Выбрать все" 
-            variant="inlineButton" 
-            showArrow={false} 
+            variant="outline" 
+            intent="neutral"
+            size="sm"
             onClick={onSelectAll} 
             className={styles.controlButton}
-          />
+          >
+            <span>Выбрать все</span>
+          </Button>
           <Button 
-            text="Выбрать" 
-            variant="inlineButton" 
-            showArrow={false} 
-            active={isChecking}
+            variant="outline" 
+            intent={isChecking ? "gradient" : "neutral"}
+            size="sm"  
             onClick={() => setIsChecking(!isChecking)} 
             className={styles.controlButton}
-          />
+          >
+            <span>Выбрать</span>
+          </Button>
         </div>
       )
   }

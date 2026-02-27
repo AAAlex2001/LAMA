@@ -1,11 +1,13 @@
 'use client';
 
 import { FC, useState, useMemo } from "react";
-import Button from "@/components/button/button";
 import SimpleDropdown from "@/components/simple-dropdown/simple-dropdown";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
+import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
 import { ListHeaderType } from "../InboxList/components/ListHeader";
+import { FilterSortIcon } from "@/components/icons";
+import { Button } from "@/components/new-button";
 
 interface SortingBarProps {
   selectedFilter: ListHeaderType;
@@ -176,68 +178,104 @@ const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, cu
 
   if (currentView === "direct") {
     return (
-      <div className={styles.sortingBar}>
-        <Button
-          text="Inbox"
-          onClick={() => setCurrentView("list")}
-          showArrow={false}
-          variant="default"
-          active={currentView === "direct"}
-        />
-        <div className={styles.sortingControls}>
-          <span className={styles.sortingLabel}>Сортировка:</span>
-          
-          {availableSortOptions.map((option) => (
-            <SimpleDropdown
-              key={option.type}
-              value={option.label}
-              items={option.items}
-              selectedValue={option.value}
-              onSelect={(value) => handleChatSortChange(option.type, value)}
-              onClear={() => handleChatSortClear(option.type)}
-              variant="sortBar"
-              className={styles.dropdown}
-            />
-          ))}
-        </div>
-      </div>
+      <>
+        <DesktopWrapper>
+          <div className={styles.sortingBar}>
+            <Button
+              onClick={() => setCurrentView("list")}
+              variant="fill"
+              intent="gradient"
+              size="lg"
+              style={{ width: '100px' }}
+            >
+              Директ
+            </Button>
+            <div className={styles.sortingControls}>
+              <span className={styles.sortingLabel}>Сортировка:</span>
+              
+              {availableSortOptions.map((option) => (
+                <SimpleDropdown
+                  key={option.type}
+                  value={option.label}
+                  items={option.items}
+                  selectedValue={option.value}
+                  onSelect={(value) => handleChatSortChange(option.type, value)}
+                  onClear={() => handleChatSortClear(option.type)}
+                  variant="sortBar"
+                  className={styles.dropdown}
+                />
+              ))}
+            </div>
+          </div>
+        </DesktopWrapper>
+        <MobileWrapper className={styles.mobileWrapper}>
+          <Button
+            onClick={() => setCurrentView("direct")}
+            variant="fill"
+            intent="gradient"
+            size="lg"
+            style={{ width: '100%' }}
+          >
+            Инбокс
+          </Button>
+          <FilterSortIcon width={24} height={24} />
+        </MobileWrapper>
+      </>
     );
   }
 
   return (
-    <div className={styles.sortingBar}>
-      <Button
-        text="Директ"
-        onClick={() => setCurrentView("direct")}
-        showArrow={false}
-        variant="default"
-        active
-      />
-      
-      <div className={styles.sortingControls}>
-        <span className={styles.sortingLabel}>Сортировка:</span>
-        
-        {availableSortOptions.map((option) => (
-          <SimpleDropdown
-            key={option.type}
-            value={option.label}
-            items={option.items}
-            selectedValue={option.value}
-            onSelect={(value) => handleSortChange(option.type, value)}
-            onClear={() => handleSortClear(option.type)}
-            variant="sortBar"
-            className={styles.dropdown}
-          />
-        ))}
-      </div>
+    <>
+      <DesktopWrapper>
+        <div className={styles.sortingBar}>
+          <Button
+            onClick={() => setCurrentView("direct")}
+            variant="fill"
+            size="lg"
+            intent="gradient"
+            style={{ width: '100px', minWidth: '100px' }}
+          >
+            Inbox
+          </Button>
+          <div className={styles.sortingControls}>
+            <span className={styles.sortingLabel}>Сортировка:</span>
+            
+            {availableSortOptions.map((option) => (
+              <SimpleDropdown
+                key={option.type}
+                value={option.label}
+                items={option.items}
+                selectedValue={option.value}
+                onSelect={(value) => handleSortChange(option.type, value)}
+                onClear={() => handleSortClear(option.type)}
+                variant="sortBar"
+                className={styles.dropdown}
+              />
+            ))}
+          </div>
 
-      <FilterTabs
-        options={filterOptions}
-        selectedFilter={selectedFilter}
-        onFilterChange={(filterId) => setSelectedFilter(filterId as ListHeaderType)}
-        className={styles.filterControls}
-      />
-    </div>
+          <FilterTabs
+            options={filterOptions}
+            selectedFilter={selectedFilter}
+            onFilterChange={(filterId) => setSelectedFilter(filterId as ListHeaderType)}
+            className={styles.filterControls}
+          />
+        </div>
+      </DesktopWrapper>
+
+        <MobileWrapper className={styles.mobileWrapper}>
+          <Button
+            onClick={() => setCurrentView("direct")}
+            variant="fill"
+            intent="gradient"
+            style={{ width: '100%' }}
+            size="lg"
+          >
+            Директ
+          </Button>
+          <FilterSortIcon width={24} height={24} />
+        </MobileWrapper>
+    </>
   );
 };
 

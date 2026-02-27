@@ -6,7 +6,9 @@ const InboxDirect = () => {
   return (
     <div className={styles.inboxDirect}>
       <DirectChat />
-      <DirectMenu />
+      <div className={styles.directMenuWrapper}>
+        <DirectMenu />
+      </div>
     </div>
   )
 }

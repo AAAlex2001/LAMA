@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, useState, useRef, useEffect } from "react";
 import ListElement from "./components/ListElement";
 import styles from "./styles.module.scss";
 import ListHeader, { ListHeaderType } from "./components/ListHeader";
@@ -12,6 +12,31 @@ interface InboxListProps {
 const InboxList: FC<InboxListProps> = ( { data, type } ) => {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
+  const [isLastElementVisible, setIsLastElementVisible] = useState(false);
+  const lastElementRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!lastElementRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsLastElementVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '0px',
+      }
+    );
+
+    observer.observe(lastElementRef.current);
+
+    return () => {
+      if (lastElementRef.current) {
+        observer.unobserve(lastElementRef.current);
+      }
+    };
+  }, [data]);
+
   const handleCheck = (id: string) => {
     const newCheckedItems = new Set(checkedItems);
     if (newCheckedItems.has(id)) {
@@ -35,19 +60,39 @@ const InboxList: FC<InboxListProps> = ( { data, type } ) => {
       }
     }
   }
+
+  const handleSetIsChanging = (isChanging: boolean) => {
+    if (!isChanging) {
+      setCheckedItems(new Set());
+    }
+    setIsChecking(isChanging);
+  }
+
   return (
     <div className={styles.container}>
-      <ListHeader type={type} setIsChecking={setIsChecking} isChecking={isChecking} onSelectAll={handleSelectAll}/>
+      <ListHeader 
+        type={type} 
+        setIsChecking={handleSetIsChanging} 
+        isChecking={isChecking} 
+        onSelectAll={handleSelectAll}
+        isSelectedAll={checkedItems.size > 0 && checkedItems.size === data.length}
+        checkedItems={checkedItems.size}
+      />
       <div className={styles.list}>
-        {data.map((item) => (
-          <ListElement 
+        {data.map((item, index) => (
+          <div 
             key={item.id} 
-            item={item} 
-            isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined} 
-            onCheck={() => handleCheck(item.id.toString())} 
-          />
+            ref={index === data.length - 1 ? lastElementRef : null}
+          >
+            <ListElement 
+              item={item} 
+              isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined} 
+              onCheck={() => handleCheck(item.id.toString())} 
+            />
+          </div>
         ))}
       </div>
+      {!isLastElementVisible && <div className={styles.bottomGradient} />}
     </div>
   )
 }

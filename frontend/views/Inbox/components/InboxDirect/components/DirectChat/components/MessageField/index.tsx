@@ -5,7 +5,7 @@ import PaperclipIcon from '@/components/icons/paperclip-icon';
 import InlineButtonIcon from '@/components/icons/inline-button-icon';
 import TemplatesIcon from '@/components/icons/templates-icon';
 import MediaPreview from '@/components/media-preview';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import { useState } from 'react';
@@ -127,23 +127,25 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          <button 
-            className={styles.attachButton} 
-            type="button"
+          <Button
+            variant="ghost"
+            intent="neutral"
+            size="transparent"
             onClick={() => fileInputRef.current?.click()}
             disabled={!canAddMedia}
           >
-            <PaperclipIcon width={22} height={22} color="currentColor"/>
-          </button>
-          { !!value && 
-            <button 
-              className={`${styles.attachButton} ${styles.blue}`} 
-              type="button"
+            <PaperclipIcon width={22} height={22} color="currentColor" />
+          </Button>
+          {!!value && (
+            <Button
+              variant="ghost"
+              intent="primary"
+              size="transparent"
               onClick={handleSendMessage}
             >
               <SendIcon width={22} height={22} />
-            </button>
-          }
+            </Button>
+          )}
         </div>
         <InlineButtons
           isOpen={inlineButtonsOpen}
@@ -154,38 +156,29 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
           onDeleteButton={deleteInlineButton}
         />
         <div className={styles.actionsRow}>
-          <Button 
-            text="Кнопки" 
-            fullWidth 
-            icon={
-              <InlineButtonIcon 
-                width={24} 
-                height={24} 
-                color="#383F45" 
-              />
-            } 
-            showArrow={false} 
-            variant="templateCard" 
-            size="small"
-            active={inlineButtonsOpen}
-            disabled={!canShowInlineButtons}
+          <Button
+            variant={inlineButtonsOpen ? 'fill' : 'tag'}
+            intent={inlineButtonsOpen ? 'gradient' : 'primary'}
             onClick={handleToggleInlineButtons}
-          />
-          <Button 
-            text="Шаблоны" 
-            fullWidth 
-            icon={
-              <TemplatesIcon 
-                width={24} 
-                height={24} 
-                color="#383F45" 
-              />
-            } 
-            showArrow={false} 
-            variant="templateCard" 
-            size="small"
+            disabled={!canShowInlineButtons}
+            style={{ flex: 1 }}
+          >
+            <InlineButtonIcon
+              width={24}
+              height={24}
+              color={inlineButtonsOpen ? '#FFFFFF' : '#383F45'}
+            />
+            Кнопки
+          </Button>
+          <Button
+            variant="tag"
+            intent="primary"
             onClick={handleOpenTemplatesModal}
-          />
+            style={{ flex: 1 }}
+          >
+            <TemplatesIcon width={24} height={24} color="#383F45" />
+            Шаблоны
+          </Button>
         </div>
       </div>
       <TextTemplatesModal

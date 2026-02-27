@@ -5,19 +5,27 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 16px;
-  padding: 24px;
   gap: 16px;
   overflow: hidden;
   min-height: 0;
+  padding: 16px 10px;
+  @media(min-width: 768px) {
+    padding: 24px;
+  }
 }
 
 .header {
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding-bottom: 24px;
   border-bottom: 1px solid #3B82F61A;
   flex-shrink: 0;
+  padding-bottom: 16px;
+  gap: 10px;
+  
+  @media(min-width: 768px) {
+    gap: 24px;
+    padding-bottom: 24px;
+  }
 }
 
 .backButton {
@@ -41,17 +49,23 @@
 }
 
 .userName {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1;
   color: #000000;
+  @media(min-width: 768px) {
+    font-size: 16px;
+  }
 }
 
 .botName {
-  font-size: 16px;
   font-weight: 500;
   line-height: 1;
   color: #858585;
+  font-size: 14px;
+  @media(min-width: 768px) {
+    font-size: 16px;
+  }
 }
 
 .headerActionsWrapper {

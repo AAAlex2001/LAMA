@@ -215,7 +215,7 @@ const InboxView = () => {
       title: 'Блокировка',
       username: 'Имя пользователя',
       blockReason: 'Стоп-слово',
-      hasDot: true,
+      hasUnread: true,
     },
     {
       id: 18,
@@ -226,7 +226,7 @@ const InboxView = () => {
       username: 'Имя пользователя',
       blockReason: 'Стоп-слово',
       status: 'unblocked',
-      hasDot: true,
+      hasUnread: true,
     },
     {
       id: 19,
@@ -236,7 +236,7 @@ const InboxView = () => {
       title: 'Блокировка',
       username: 'Имя пользователя',
       blockReason: 'Правило Х',
-      hasDot: true,
+      hasUnread: true,
     },
     {
       id: 20,
@@ -247,7 +247,7 @@ const InboxView = () => {
       username: 'Имя пользователя',
       blockReason: 'Правило Х',
       status: 'unblocked',
-      hasDot: true,
+      hasUnread: true,
     },
     // System Notifications
     {
@@ -257,7 +257,7 @@ const InboxView = () => {
       date: '26.12.25 14:00',
       title: 'Уведомление',
       description: 'Вышла новая функция на платформе. Попробовать...',
-      hasDot: true,
+      hasUnread: true,
     },
     // System Triggers
     {
@@ -268,7 +268,7 @@ const InboxView = () => {
       title: 'Триггер',
       username: 'Имя пользователя',
       description: 'Вступление в канал',
-      hasDot: true,
+      hasUnread: true,
     },
     // System Auto-replies
     {
@@ -309,7 +309,7 @@ const InboxView = () => {
     )
   }
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${currentView === "list" ? styles.list : styles.direct}`}>
       <SortingBar selectedFilter={selectedFilter} setSelectedFilter={setSelectedFilter} currentView={currentView} setCurrentView={setCurrentView} />
       {currentView === "list" && <InboxList data={data} type={selectedFilter} />}
       {currentView === "direct" && <InboxDirect />}

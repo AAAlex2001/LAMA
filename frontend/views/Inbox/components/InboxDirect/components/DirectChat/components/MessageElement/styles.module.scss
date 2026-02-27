@@ -32,7 +32,8 @@
 
 .incomingTime {
   font-size: 14px;
-  color: #383F45;
+  color: var(--color-lama-black);
+  opacity: 0.95;
   align-self: flex-end;
 }
 
@@ -94,13 +95,34 @@
   font-size: 14px;
   color: #F1F5FB;
   line-height: 20px;
+  opacity: 0.95;
 }
 
 .mediaContainer {
   display: flex;
   flex-direction: column;
+  position: relative;
   gap: 8px;
   max-width: 100%;
+}
+
+.mediaTime {
+  font-size: 14px;
+  color: #F1F5FB;
+  opacity: 0;
+  line-height: 20px;
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  background: var(--color-lama-gray);
+  border-radius: 10px;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.mediaContainer:hover .mediaTime {
+  opacity: 0.5;
 }
 
 .systemMessage {
@@ -111,5 +133,15 @@
     font-weight: 500;
     color: var(--color-lama-gray);
     line-height: 1;
+  }
+}
+
+.avatarWrapper {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  @media(min-width: 768px) {
+    display: block;
   }
 }

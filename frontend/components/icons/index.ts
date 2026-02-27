@@ -68,3 +68,4 @@ export { default as CalendarViewsIcon } from './calendar-views-icon';
 export { default as PinIcon } from './pin-icon';
 export { default as BlockedIcon } from './blocked-icon';
 export { default as ChatChevronIcon } from './chat-chevron-icon';
+export { default as CheckListIcon } from './check-list-icon';

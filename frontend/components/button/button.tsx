@@ -29,6 +29,9 @@ interface ButtonProps {
   onMouseLeave?: () => void;
 }
 
+/**
+ * @deprecated This component is deprecated and should not be used in new code.
+ */
 export default function Button({ 
   text, 
   href, 

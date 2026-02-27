@@ -5,7 +5,7 @@
 .controls {
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  gap: 10px;
   justify-content: flex-end;
 }
 
@@ -14,4 +14,27 @@
   flex-direction: row;
   gap: 20px;
   justify-content: space-between;
+}
+
+.actions {
+  display: flex;
+  gap: 20px;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 14px;
+}
+
+.headerWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  color: #858585
+}
+
+.selectedItems {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 14px;
+  color: var(--color-gray-input);
 }

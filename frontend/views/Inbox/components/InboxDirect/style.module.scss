@@ -4,3 +4,13 @@
   height: 100%;
   min-height: 0;
 }
+
+.directMenuWrapper {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  display: none;
+  @media(min-width: 768px) {
+    display: block;
+  }
+}

@@ -81,6 +81,8 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
 
   const mediaRuns = createMediaRuns(mediaFiles, objectUrls);
 
+  const isOutgoing = type === 'outgoing';
+
   if (type === 'system') {
     return (
       <div className={styles.systemMessage}>
@@ -89,11 +91,38 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
     );
   }
 
+  if (mediaRuns.length > 0 && !text && type) {
+    return (
+      <div className={isOutgoing ? styles.outgoingWrapper : styles.incomingWrapper}>
+        { 
+         !isOutgoing && <div className={styles.avatarWrapper}>
+            <div className={styles.avatar}>
+              <UserIcon width={22} height={22} color="#B0B4B8" />
+            </div>
+          </div>
+        }
+        <div className={styles.mediaContainer}>
+          {mediaRuns.map((run, idx) =>
+            run.kind === 'visual' ? (
+              <MediaPreview key={`visual-${idx}`} items={run.items} />
+            ) : (
+              <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
+            )
+          )}
+          {time && <span className={styles.mediaTime}>{time}</span>}
+        </div>
+      </div>
+    );
+
+  }
+
   if (type === 'incoming') {
     return (
       <div className={styles.incomingWrapper}>
-        <div className={styles.avatar}>
-          <UserIcon width={22} height={22} color="#B0B4B8" />
+        <div className={styles.avatarWrapper}>
+          <div className={styles.avatar}>
+            <UserIcon width={22} height={22} color="#B0B4B8" />
+          </div>
         </div>
         <div className={styles.incomingBubble}>
           <div className={styles.mediaContainer}>

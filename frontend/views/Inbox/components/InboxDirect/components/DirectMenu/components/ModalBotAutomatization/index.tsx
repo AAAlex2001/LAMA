@@ -2,9 +2,10 @@
 
 import { useState, useMemo } from 'react';
 import ModalBase from '@/components/modal-base';
-import Button from '@/components/button/button';
 import ChatItem, { ChatProps } from '../ChatItem';
 import styles from './style.module.scss';
+import { Button } from '@/components/new-button';
+import buttonStyles from '@/components/new-button/styles.module.scss';
 
 interface ModalBotAutomatizationProps {
   chats?: ChatProps[];
@@ -60,11 +61,13 @@ export default function ModalBotAutomatization({
     <ModalBase>
       <ModalBase.Trigger asChild>
         <Button
-          text="Автоматизация ботов"
-          fullWidth
-          active
-          showArrow={false}
-        />
+          variant="fill"
+          intent="gradient"
+          size="lg"
+          style={{ width: '100%' }}
+        >
+          Автоматизация ботов
+        </Button>
       </ModalBase.Trigger>
       <ModalBase.Content size="md">
         <ModalBase.Header>
@@ -73,12 +76,13 @@ export default function ModalBotAutomatization({
         <ModalBase.Body className={styles.body}>
           <div className={styles.selectWrapper}>
             <Button
-              text="Выбрать все"
               onClick={handleSelectAll}
-              variant="inlineButton"
-              showArrow={false}
-              size="small"
-            />
+              variant="outline"
+              intent="neutral"
+              size="sm"
+            >
+              Выбрать все
+            </Button>
           </div>
           <div className={styles.chatList}>
             {chats.map((chat) => (
@@ -95,22 +99,25 @@ export default function ModalBotAutomatization({
         <ModalBase.Footer>
           <div className={styles.actionButtons}>
             <Button
-              text="Создать массовое сообщение"
               onClick={handleMassMessage}
-              showArrow={false}
-              fullWidth
-              active={selectedChatIds.size > 0}
+              variant="fill"
+              intent="gradient"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={selectedChatIds.size === 0}
-            />
+            >
+              Создать массовое сообщение
+            </Button>
             <Button
-              text="Создать триггер"
               onClick={handleTrigger}
               variant="outline"
-              showArrow={false}
-              fullWidth
-              active={selectedChatIds.size > 0}
+              intent="gradient"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={selectedChatIds.size === 0}
-            />
+            >
+              <span className={buttonStyles.label}>Создать триггер</span>
+            </Button>
           </div>
         </ModalBase.Footer>
       </ModalBase.Content>

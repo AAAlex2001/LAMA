@@ -9,3 +9,14 @@
   flex-direction: column;
   gap: 4px;
 }
+
+.bottomGradient {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 140px;
+  background: linear-gradient(360deg, #F1F5FB 7.95%, rgba(255, 255, 255, 0) 64.11%);
+  pointer-events: none;
+  z-index: 10;
+}
