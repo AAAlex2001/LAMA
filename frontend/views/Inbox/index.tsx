@@ -52,7 +52,6 @@ const InboxView = () => {
   };
 
   const data: IInboxItem[] = [
-    // Bot Commands
     {
       id: 1,
       type: 'bot',
@@ -311,8 +310,8 @@ const InboxView = () => {
   return (
     <div className={`${styles.container} ${currentView === "list" ? styles.list : styles.direct}`}>
       <SortingBar selectedFilter={selectedFilter} setSelectedFilter={setSelectedFilter} currentView={currentView} setCurrentView={setCurrentView} />
-      {currentView === "list" && <InboxList data={data} type={selectedFilter} />}
-      {currentView === "direct" && <InboxDirect />}
+        {currentView === "list" && <InboxList data={data} type={selectedFilter} />}
+        {currentView === "direct" && <InboxDirect onClose={() => setCurrentView("list")} />}
     </div>
   )
 }

@@ -1,15 +1,41 @@
-.modalContent {
-  padding: 24px;
-  max-width: 500px;
-  width: 100%;
-  position: relative;
-}
-
 .headerWrapper {
   position: absolute;
   top: 16px;
   right: 16px;
   z-index: 10;
+}
+
+.headerContent {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin: 5px;
+  background: #3B82F666;
+  flex-shrink: 0;
+}
+
+.bulletWrapper {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .closeButton {
@@ -43,6 +69,26 @@
   padding: 0;
 }
 
+.radioOptionWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.radioLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-lama-black);
+}
+
+.radioSubLabel {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-gray-input);
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -50,11 +96,10 @@
 }
 
 .sectionTitle {
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 20px;
-  color: #383F45;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #1A1A1A;
   margin: 0;
 }
 
@@ -74,12 +119,12 @@
 }
 
 .reasonLabel {
-  color: #858585;
+  color: #383F45;
 }
 
 .reasonValue {
   color: #383F45;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .blockTypeOptions {
@@ -208,11 +253,10 @@
 }
 
 .toggleLabel {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
+  font-weight: 500;
   font-size: 14px;
-  line-height: 20px;
-  color: #383F45;
+  line-height: 17px;
+  color: var(--color-lama-black);
 }
 
 .footer {

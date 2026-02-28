@@ -10,6 +10,8 @@ interface TimePickerProps {
   onHoursChange: (hours: number) => void;
   onMinutesChange: (minutes: number) => void;
   selectedDate?: Date | null;
+  notShowQuickTimes?: boolean;
+  notShowHint?: boolean;
 }
 
 function isSameDay(a: Date, b: Date): boolean {
@@ -26,6 +28,8 @@ export default function TimePicker({
   onHoursChange,
   onMinutesChange,
   selectedDate,
+  notShowQuickTimes = false,
+  notShowHint = false,
 }: TimePickerProps) {
   const now = new Date();
   const isToday = selectedDate ? isSameDay(selectedDate, now) : false;
@@ -77,20 +81,22 @@ export default function TimePicker({
           </div>
         </div>
       </div>
-      <div className={styles.quickTimeButtons}>
-        <div className={styles.quickTimeButtonsRow}>
-          {quickTimes.map((time) => (
-            <button
-              key={time.label}
-              className={styles.quickTimeButton}
-              onClick={() => handleQuickTime(time.hours, time.minutes)}
-            >
-              {time.label}
-            </button>
-          ))}
+      {!notShowQuickTimes && 
+        <div className={styles.quickTimeButtons}>
+          <div className={styles.quickTimeButtonsRow}>
+            {quickTimes.map((time) => (
+              <button
+                key={time.label}
+                className={styles.quickTimeButton}
+                onClick={() => handleQuickTime(time.hours, time.minutes)}
+              >
+                {time.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className={styles.hint}>Расширенные настройки доступны в меню</div>
+      }
+      {!notShowHint && <div className={styles.hint}>Расширенные настройки доступны в меню</div>}
     </div>
   );
 }

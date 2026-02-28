@@ -1,0 +1,64 @@
+.modalContent {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+.detailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.detailRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+}
+
+.detailLabel {
+  font-size: 14px;
+  line-height: 20px;
+  color: #858585;
+  min-width: 120px;
+  flex-shrink: 0;
+}
+
+.detailValue {
+  font-size: 14px;
+  line-height: 20px;
+  color: #383F45;
+  font-weight: 400;
+  flex: 1;
+}
+
+.footer {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.cancelButton {
+  border-radius: 10px;
+  min-width: 100px;
+}
+
+.confirmButton {
+  border-radius: 10px;
+  min-width: 100px;
+}

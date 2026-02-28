@@ -4,9 +4,9 @@ import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import Checkbox from '@/components/checkbox/checkbox';
 import Toggle from '@/components/toggle/toggle';
-import Button from '@/components/button/button';
 import { WheelPicker } from '@/components/wheel-picker';
 import styles from './styles.module.scss';
+import { Button } from '@/components/new-button';
 
 interface BlockModalProps {
   isOpen: boolean;
@@ -77,50 +77,54 @@ export default function BlockModal({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content className={styles.modalContent} size="sm">
-        <div className={styles.headerWrapper}>
-          <ModalBase.Close className={styles.closeButton}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </ModalBase.Close>
-        </div>
-        <ModalBase.Header>
-          <ModalBase.Title className={styles.title}>Причина блокировки</ModalBase.Title>
+      <ModalBase.Content size="sm">
+        <ModalBase.Header className={styles.header}>
+          <div className={styles.headerContent}>
+            <ModalBase.Title className={styles.title}>Причина блокировки</ModalBase.Title>
+            <ModalBase.Close />
+          </div>
+          <div className={styles.reasonList}>
+            <div className={styles.reasonItem}>
+              <div className={styles.bulletWrapper}>
+                <div className={styles.bullet} />
+                <span className={styles.reasonLabel}>Стоп-слово:</span>
+              </div>
+              <span className={styles.reasonValue}>"{stopWord}"</span>
+            </div>
+            <div className={styles.reasonItem}>
+              <div className={styles.bulletWrapper}>
+                <div className={styles.bullet} />
+                <span className={styles.reasonLabel}>Сообщение:</span>
+              </div>
+              <span className={styles.reasonValue}>"{message}"</span>
+            </div>
+          </div>
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.body}>
           <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Причина блокировки</h3>
-            <div className={styles.reasonList}>
-              <div className={styles.reasonItem}>
-                <span className={styles.reasonLabel}>Стоп-слово:</span>
-                <span className={styles.reasonValue}>"{stopWord}"</span>
-              </div>
-              <div className={styles.reasonItem}>
-                <span className={styles.reasonLabel}>Сообщение:</span>
-                <span className={styles.reasonValue}>"{message}"</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.section}>
             <h3 className={styles.sectionTitle}>Тип блокировки</h3>
             <div className={styles.blockTypeOptions}>
-              <Checkbox
-                checked={blockType === 'ban'}
-                onChange={() => setBlockType('ban')}
-                variant="radio"
-                label="Заблокировать /ban"
-                className={styles.radioOption}
-              />
-              <Checkbox
+              <div className={styles.radioOptionWrapper}>
+                <Checkbox
+                  checked={blockType === 'ban'}
+                  onChange={() => setBlockType('ban')}
+                  variant="radio"
+                  className={styles.radioOption}
+                />
+                <span className={styles.radioLabel}>Заблокировать</span>
+                <span className={styles.radioSubLabel}>/ban</span>
+              </div>
+              <div className={styles.radioOptionWrapper}>
+                <Checkbox
                 checked={blockType === 'mute'}
                 onChange={() => setBlockType('mute')}
                 variant="radio"
-                label="Тишина /mute"
                 className={styles.radioOption}
-              />
+                />
+                <span className={styles.radioLabel}>Тишина</span>
+                <span className={styles.radioSubLabel}>/mute</span>
+              </div>
             </div>
           </div>
 
@@ -145,22 +149,12 @@ export default function BlockModal({
                       min={0}
                       max={365}
                     />
-                    <div className={styles.separatorColumn}>
-                      <span className={styles.separator}>&nbsp;</span>
-                      <span className={styles.activeSeparator}>:</span>
-                      <span className={styles.separator}>:</span>
-                    </div>
                     <WheelPicker
                       value={hours}
                       onChange={setHours}
                       min={0}
                       max={23}
                     />
-                    <div className={styles.separatorColumn}>
-                      <span className={styles.separator}>&nbsp;</span>
-                      <span className={styles.activeSeparator}>:</span>
-                      <span className={styles.separator}>:</span>
-                    </div>
                     <WheelPicker
                       value={minutes}
                       onChange={setMinutes}
@@ -200,11 +194,15 @@ export default function BlockModal({
 
         <ModalBase.Footer className={styles.footer}>
           <Button
-            text="Сохранить изменения"
             onClick={handleSave}
-            variant="default"
-            fullWidth
-          />
+            variant="fill"
+            intent="gradient"
+            size="md"
+            loading={false}
+            disabled={false}
+          >
+            <span className={styles.buttonLabel}>Сохранить изменения</span>
+          </Button>
         </ModalBase.Footer>
       </ModalBase.Content>
     </ModalBase>

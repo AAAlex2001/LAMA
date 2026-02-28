@@ -68,6 +68,11 @@ const InboxList: FC<InboxListProps> = ( { data, type } ) => {
     setIsChecking(isChanging);
   }
 
+  const handleOnHold = (id: string) => {
+    setIsChecking(true);
+    setCheckedItems(new Set([id]));
+  }
+
   return (
     <div className={styles.container}>
       <ListHeader 
@@ -87,7 +92,9 @@ const InboxList: FC<InboxListProps> = ( { data, type } ) => {
             <ListElement 
               item={item} 
               isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined} 
-              onCheck={() => handleCheck(item.id.toString())} 
+              onCheck={() => handleCheck(item.id.toString())}
+              onHold={() => handleOnHold(item.id.toString())}
+              type={type}
             />
           </div>
         ))}

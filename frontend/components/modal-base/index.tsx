@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import classNames from 'classnames';
 import styles from './styles.module.scss';
+import CloseIcon from '../icons/close-icon';
 
 interface ModalContextValue {
   isOpen: boolean;
@@ -136,9 +137,10 @@ interface ModalContentProps {
   children: ReactNode;
   className?: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  padding?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-const ModalContent = ({ children, className, size = 'md' }: ModalContentProps) => {
+const ModalContent = ({ children, className, size = 'md', padding = 'md' }: ModalContentProps) => {
   const { isOpen, close } = useModalContext();
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -159,6 +161,7 @@ const ModalContent = ({ children, className, size = 'md' }: ModalContentProps) =
         className={classNames(
           styles.modal,
           styles[`modal-${size}`],
+          styles[`modal-padding-${padding}`],
           className
         )}
         onClick={handleContentClick}
@@ -237,7 +240,7 @@ const ModalClose = ({ children, className, asChild }: ModalCloseProps) => {
       className={classNames(styles.close, className)}
       aria-label="Close modal"
     >
-      {children || '×'}
+      {children || <CloseIcon width={28} height={28} color="#383F45" />}
     </button>
   );
 };

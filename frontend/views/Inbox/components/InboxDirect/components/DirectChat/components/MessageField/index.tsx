@@ -157,8 +157,9 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
         />
         <div className={styles.actionsRow}>
           <Button
-            variant={inlineButtonsOpen ? 'fill' : 'tag'}
+            variant='tag'
             intent={inlineButtonsOpen ? 'gradient' : 'primary'}
+            size="sm"
             onClick={handleToggleInlineButtons}
             disabled={!canShowInlineButtons}
             style={{ flex: 1 }}

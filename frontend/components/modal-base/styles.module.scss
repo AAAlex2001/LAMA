@@ -27,7 +27,7 @@
   max-width: calc(100vw - 32px);
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 20px 8px;
+  padding: 24px 26px;
   line-height: 100%;
   display: flex;
   flex-direction: column;
@@ -65,6 +65,22 @@
   width: 700px;
 }
 
+.modal-padding-sm {
+  padding: 20px 10px;
+}
+
+.modal-padding-md {
+  padding: 24px 26px;
+}
+
+.modal-padding-lg {
+  padding: 40px 48px;
+}
+
+.modal-padding-xl {
+  padding: 64px 72px;
+}
+
 .trigger {
   background: none;
   border: none;
@@ -85,9 +101,9 @@
 }
 
 .title {
-  font-weight: 600;
+  font-weight: 500;
   font-size: 16px;
-  line-height: 28px;
+  line-height: 100%;
   color: var(--color-lama-black);
   flex: 1;
 }
@@ -111,8 +127,8 @@
   font-size: 24px;
   line-height: 1;
   color: #858585;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;

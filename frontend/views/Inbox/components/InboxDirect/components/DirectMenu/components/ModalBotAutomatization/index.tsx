@@ -69,7 +69,7 @@ export default function ModalBotAutomatization({
           Автоматизация ботов
         </Button>
       </ModalBase.Trigger>
-      <ModalBase.Content size="md">
+      <ModalBase.Content size="md" padding="sm">
         <ModalBase.Header>
           <ModalBase.Title>Выберите бота (-ов) для автоматизации</ModalBase.Title>
         </ModalBase.Header>

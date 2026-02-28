@@ -1,9 +1,16 @@
 import styles from "./styles.module.scss";
 import ChatItem, { ChatProps } from "./components/ChatItem";
-import Button from "@/components/button/button";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
+import { FC } from "react";
 
-const DirectMenu = () => {
+interface DirectMenuProps {
+  onChatOpen: (chatId: number) => void;
+}
+
+const DirectMenu:FC<DirectMenuProps> = ({ onChatOpen }) => {
+  const handleClick = (chatId: number)=>{
+    onChatOpen(chatId);
+  }
   const currentChat: ChatProps = {
     id: 1,
     name: "Назв бота",
@@ -11,6 +18,7 @@ const DirectMenu = () => {
     messagePreview: "Превь...",
     time: "8:38",
     isCurrent: true,
+    onClick: ()=> handleClick(1),
   };
 
   const pinnedChats: ChatProps[] = [
@@ -22,6 +30,7 @@ const DirectMenu = () => {
       time: "8:38",
       isPinned: true,
       unreadCount: 3,
+      onClick: ()=> handleClick(2),
     },
     {
       id: 3,
@@ -31,6 +40,7 @@ const DirectMenu = () => {
       time: "8:38",
       isPinned: true,
       unreadCount: 3,
+      onClick: ()=> handleClick(3),
     },
   ];
 
@@ -41,6 +51,7 @@ const DirectMenu = () => {
       username: "Username",
       messagePreview: "Превь...",
       time: "8:38",
+      onClick: ()=> handleClick(4),
     },
     {
       id: 5,
@@ -48,6 +59,7 @@ const DirectMenu = () => {
       username: "Username",
       time: "8:38",
       isBlocked: true,
+      onClick: ()=> handleClick(5),
     },
   ];
 

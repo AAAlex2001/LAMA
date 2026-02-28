@@ -1,0 +1,56 @@
+.filterTabs {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.filterTab {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 25px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 100%;
+  color: #1A1A1A;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: #3B82F61A;
+  }
+}
+
+.filterTabActive {
+  background: #3B82F61A;
+  font-weight: 500;
+}
+
+.filterTabLabel {
+  color: inherit;
+  font-weight: 500;
+  width: 100%;
+  text-align: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 4px;
+  border-radius: 25px;
+  background: #B1CDFB;
+  color: white;
+  font-size: 12px;
+  line-height: 100%;
+  font-weight: 400;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.badgeActive {
+  background: #3B82F6;
+  color: #FFFFFF;
+}

@@ -264,46 +264,48 @@ $shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   filter: none;
 
   &.primary {
-    color: $blue;
-
     &:hover:not(:disabled):not(.loading) {
+      color: $blue;
       background: rgba($blue, 0.08);
     }
   }
 
   &.gradient {
     .label {
-      background: $blue-gradient;
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      &:hover {
+        background: rgba($blue, 0.08);
+      }
     }
 
     &:hover:not(:disabled):not(.loading) {
       background: rgba($blue, 0.08);
+
+      .label {
+        background: $blue-gradient;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
     }
   }
 
   &.destructive {
-    color: $red;
-
     &:hover:not(:disabled):not(.loading) {
+      color: $red;
       background: rgba($red, 0.08);
     }
   }
 
   &.neutral {
-    color: $neutral;
-
     &:hover:not(:disabled):not(.loading) {
+      color: $neutral;
       background: rgba($neutral, 0.08);
     }
   }
 
   &.white {
-    color: #fff;
-
     &:hover:not(:disabled):not(.loading) {
+      color: #fff;
       background: rgba(#fff, 0.1);
     }
   }

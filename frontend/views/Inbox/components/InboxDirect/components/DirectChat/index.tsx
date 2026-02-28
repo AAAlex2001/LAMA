@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, FC } from 'react';
 import styles from './styles.module.scss';
 import MessageElement, { MessageProps } from './components/MessageElement';
 import MessageField from './components/MessageField';
@@ -60,6 +60,7 @@ const mockMessages: (MessageProps & { date: Date })[] = [
         src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
       },
     ],
+    time: '16:23',
     date: new Date(),
   },
   {
@@ -194,9 +195,11 @@ const mockMessages: (MessageProps & { date: Date })[] = [
   },
 ];
 
+interface DirectChatProps {
+  onClose?: () => void;
+}
 
-
-const DirectChat = () => {
+const DirectChat:FC<DirectChatProps> = ({ onClose }) => {
   const [isPinned, setIsPinned] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [message, setMessage] = useState('');
@@ -224,7 +227,7 @@ const DirectChat = () => {
   return (
     <div className={styles.directChat}>
       <div className={styles.header}>
-        <button className={styles.backButton} type="button">
+        <button className={styles.backButton} type="button" onClick={onClose}>
           <ChatChevronIcon width={32} height={32} />
         </button>
         <div className={styles.userInfo}>

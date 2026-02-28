@@ -1,0 +1,204 @@
+.modalContent {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  justify-content: space-between;
+  gap: 0;
+  align-items: center;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sectionTitle {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: var(--color-lama-black);
+}
+
+.channelsCount {
+  font-size: 12px;
+  line-height: 100%;
+  color: #CED2D6 !important;
+  font-weight: 400 !important;
+  margin-top: 4px;
+}
+
+.sectionDescription {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-gray-input);
+}
+
+.searchContainer {
+  width: 100%;
+}
+
+.channelsList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.channelItem {
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  gap: 16px
+}
+
+.channelItemName {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-lama-black);
+  font-weight: 400;
+}
+
+.connectNewButton {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  color: #3B82F6;
+  text-align: left;
+  width: fit-content;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #2563EB;
+  }
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.toggleLabel {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-lama-black);
+  font-weight: 500;
+}
+
+.limitInput {
+  margin-top: 8px;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.radioGroupItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.dateTimeContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.datePickerContainer {
+  width: 100%;
+}
+
+.withConfirm {
+  color: var(--color-gray-input);
+}
+
+.timePickerContainer {
+  width: 100%;
+}
+
+.submitButtonContainer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.submitButton {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.confirmDetailsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.confirmDetailRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.confirmDetailLabel {
+  font-size: 16px;
+  line-height: 19px;
+  color: #1A1A1A;
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
+.confirmDetailValue {
+  font-size: 16px;
+  line-height: 20px;
+  color: #1A1A1A;
+  font-weight: 400;
+  flex: 1;
+}
+
+.confirmFooter {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.confirmBackButton,
+.confirmSubmitButton {
+  border-radius: 10px;
+  min-width: 100px;
+}

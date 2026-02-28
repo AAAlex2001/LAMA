@@ -158,10 +158,10 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
           <div className={styles.outgoingMeta}>
             <div className={styles.msgActions}>
               <button className={styles.msgAction}>
-                <EditIcon width={24} height={24} color="#F1F5FB" />
+                <EditIcon width={20} height={20} color="#F1F5FB" />
               </button>
               <button className={styles.msgAction} onClick={handleDeleteClick}>
-                <TrashIcon width={24} height={24} color="#F1F5FB" />
+                <TrashIcon width={20} height={20} color="#F1F5FB" />
               </button>
             </div>
             {time && <span className={styles.outgoingTime}>{time}</span>}

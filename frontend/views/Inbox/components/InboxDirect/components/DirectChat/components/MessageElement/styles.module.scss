@@ -109,7 +109,7 @@
 .mediaTime {
   font-size: 14px;
   color: #F1F5FB;
-  opacity: 0;
+  opacity: 0.5;
   line-height: 20px;
   position: absolute;
   bottom: 8px;
@@ -119,10 +119,6 @@
   border-radius: 10px;
   transition: opacity 0.2s ease;
   pointer-events: none;
-}
-
-.mediaContainer:hover .mediaTime {
-  opacity: 0.5;
 }
 
 .systemMessage {

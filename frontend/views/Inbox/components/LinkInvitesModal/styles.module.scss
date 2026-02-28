@@ -1,0 +1,55 @@
+.modalContent {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.heading {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 100%;
+  color: #1A1A1A;
+  margin: 0;
+  text-align: center;
+}
+
+.createButtonContainer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.createButton {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.searchContainer {
+  width: 100%;
+}
+
+.linksList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  max-height: 350px;
+  overflow-y: auto;
+}
+
+.emptyState {
+  padding: 40px 20px;
+  text-align: center;
+  color: #858585;
+  font-size: 14px;
+  line-height: 20px;
+}

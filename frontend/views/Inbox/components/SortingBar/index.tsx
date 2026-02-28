@@ -26,7 +26,6 @@ interface SortOption {
 }
 
 const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, currentView, setCurrentView}: SortingBarProps ) => {
-  // Inbox list sorting values
   const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
     time: "",
     source: "",
@@ -34,7 +33,6 @@ const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, cu
     type: "",
   });
 
-  // Chat/direct sorting values (separate from inbox)
   const [chatSortValues, setChatSortValues] = useState<Record<SortOptionType, string>>({
     time: "",
     source: "",
@@ -210,7 +208,7 @@ const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, cu
         </DesktopWrapper>
         <MobileWrapper className={styles.mobileWrapper}>
           <Button
-            onClick={() => setCurrentView("direct")}
+            onClick={() => setCurrentView("list")}
             variant="fill"
             intent="gradient"
             size="lg"
@@ -218,7 +216,9 @@ const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, cu
           >
             Инбокс
           </Button>
-          <FilterSortIcon width={24} height={24} />
+          <Button variant="ghost" intent="neutral" size="transparent">
+            <FilterSortIcon width={24} height={24} />
+          </Button>
         </MobileWrapper>
       </>
     );
@@ -262,19 +262,28 @@ const SortingBar: FC<SortingBarProps> = ( {selectedFilter, setSelectedFilter, cu
           />
         </div>
       </DesktopWrapper>
-
-        <MobileWrapper className={styles.mobileWrapper}>
+      <MobileWrapper className={styles.mobileWrapperTabs}>
+        <FilterTabs
+          options={filterOptions}
+          selectedFilter={selectedFilter}
+          onFilterChange={(filterId) => setSelectedFilter(filterId as ListHeaderType)}
+          className={styles.filterControls}
+        />
+        <div className={styles.mobileWrapper}>
           <Button
             onClick={() => setCurrentView("direct")}
             variant="fill"
             intent="gradient"
             style={{ width: '100%' }}
             size="lg"
-          >
+            >
             Директ
           </Button>
-          <FilterSortIcon width={24} height={24} />
-        </MobileWrapper>
+          <Button variant="ghost" intent="neutral" size="transparent">
+            <FilterSortIcon width={24} height={24} />
+          </Button>
+        </div>
+      </MobileWrapper>
     </>
   );
 };

@@ -29,13 +29,32 @@
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  overflow-x: auto;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
 }
 
 .mobileWrapper {
   align-items: center;
   display: flex;
-  @media(min-width: 768px) {
+  @media(min-width: 1440px) {
     display: none;
   }
   gap: 10px;
+}
+
+.mobileWrapperTabs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  @media(min-width: 1440px) {
+    display: none;
+  }
 }

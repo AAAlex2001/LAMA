@@ -6,6 +6,9 @@ import { Button } from "@/components/new-button";
 import buttonStyles from "@/components/new-button/styles.module.scss";
 import { CheckListIcon } from "@/components/icons";
 import BlockModal, { BlockModalData } from "@/views/Inbox/components/BlockModal";
+import { useLongPress } from "./hooks/useLongPress";
+import { ListHeaderType } from "../ListHeader";
+
 export type InboxItemType = 'bot' | 'channel' | 'system';
 export type EventType = 'command' | 'message' | 'comment' | 'application' | 'link' | 'block' | 'notification' | 'trigger' | 'auto-reply' | 'error';
 export type EventStatus = 'pending' | 'completed' | 'accepted' | 'declined' | 'unblocked' | 'replied' | 'conected';
@@ -28,6 +31,7 @@ export interface IInboxItem {
 interface ListElementProps {
   item: IInboxItem;
   isChecked?: boolean;
+  type?: ListHeaderType;
   // @todo: make onAction 
   onCheck?: (id: number) => void;
   onBlock?: (id: number, blockData?: BlockModalData) => void;
@@ -38,11 +42,13 @@ interface ListElementProps {
   onUnblock?: (id: number) => void;
   onSettings?: (id: number) => void;
   onReplyInBot?: (id: number) => void;
+  onHold?: (id: number) => void;
 }
 
 const ListElement: FC<ListElementProps> = ({ 
   item, 
-  isChecked, 
+  isChecked,
+  type,
   onCheck,
   onBlock,
   onDelete,
@@ -52,12 +58,24 @@ const ListElement: FC<ListElementProps> = ({
   onUnblock,
   onSettings,
   onReplyInBot,
+  onHold,
 }) => {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
+
+  const [isHolding, setIsHolding] = useState(false);
 
   const handleBlockClick = () => {
     setIsBlockModalOpen(true);
   };
+
+  const longPressProps = useLongPress({
+    duration: 800, 
+    onLongPress: () => onHold?.(item.id),
+    onHoldStart: () => setIsHolding(true),
+    onHoldCancel: () => setIsHolding(false),
+  });
+
+  const shouldEnableLongPress = type === 'all';
 
   const handleBlockSave = (data: BlockModalData) => {
     onBlock?.(item.id, data);
@@ -88,10 +106,21 @@ const ListElement: FC<ListElementProps> = ({
     return <span className={styles.eventType}>{eventTypeMap[item.eventType]}</span>;
   };
 
-  const renderActions = () => {
+  const renderActions = (isMobile?: boolean) => {
     if (item.eventType === 'command') {
       if (item.status === 'completed') {
-        return <CheckListIcon width={24} height={24} color="#3B82F6" />;
+        return (
+          <>
+            <MobileWrapper className={styles.fullWidthMobile}>
+              <div className={styles.alignRightCheck}>
+                <CheckListIcon width={24} height={24} color="#3B82F6" />
+              </div>
+            </MobileWrapper>
+            <DesktopWrapper>
+              <CheckListIcon width={24} height={24} color="#3B82F6" />
+            </DesktopWrapper>
+          </>
+        );
       }
       return (
         <div className={styles.actionButtons}>
@@ -100,8 +129,8 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onBlock?.(item.id)}
-            className={styles.actionButton}
-            style={{ width: '136px' }}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
+            style={{ width: isMobile ? '100%' : '136px' }}
           >
             <span className={buttonStyles.label}>Заблокировать</span>
           </Button >
@@ -110,7 +139,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onDelete?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Удалить</span>
           </Button>
@@ -132,8 +161,8 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onBlock?.(item.id)}
-            className={styles.actionButton}
-            style={{ width: '136px' }}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
+            style={{ width: isMobile ? '100%' : '136px' }}
           >
             <span className={buttonStyles.label}>Заблокировать</span>
           </Button >
@@ -152,8 +181,8 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onReply?.(item.id)}
-            className={styles.actionButton}
-            style={{ width: '136px' }}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
+            style={{ width: isMobile ? '100%' : '136px' }}
           >
             <span className={buttonStyles.label}>Ответить</span>
           </Button>
@@ -175,8 +204,8 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onAccept?.(item.id)}
-            className={styles.actionButton}
-            style={{ width: '136px' }}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
+            style={{ width: isMobile ? '100%' : '136px' }}
           >
             <span className={buttonStyles.label}>Принять</span>
           </Button>
@@ -185,7 +214,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onDecline?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
@@ -204,8 +233,8 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onAccept?.(item.id)}
-            className={styles.actionButton}
-            style={{ width: '136px' }}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
+            style={{ width: isMobile ? '100%' : '136px' }}
           >
             <span className={buttonStyles.label}>Принять</span>
           </Button>
@@ -214,7 +243,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onDecline?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
@@ -233,7 +262,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onUnblock?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Разблокировать</span>
           </Button>
@@ -242,7 +271,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={handleBlockClick}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Настройки</span>
           </Button>
@@ -269,7 +298,7 @@ const ListElement: FC<ListElementProps> = ({
             intent="primary"
             size="md"
             onClick={() => onReplyInBot?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
@@ -285,14 +314,13 @@ const ListElement: FC<ListElementProps> = ({
             intent="destructive"
             size="md"
             onClick={() => onSettings?.(item.id)}
-            className={styles.actionButton}
+            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
           >
             <span className={buttonStyles.label}>Ошибка доступа</span>
           </Button>
         </div>
       );
     }
-
     return null;
   };
 
@@ -306,7 +334,7 @@ const ListElement: FC<ListElementProps> = ({
         onSave={handleBlockSave}
       />
       <DesktopWrapper>
-        <div className={`${styles.element} ${item.hasUnread ? styles.unread : ''}`}>
+        <div className={`${styles.element} ${item.hasUnread ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>
           <div className={styles.gridCell}>
             {isChecked !== undefined ? (
               <Checkbox checked={isChecked} onChange={() => onCheck?.(item.id)} />
@@ -331,7 +359,11 @@ const ListElement: FC<ListElementProps> = ({
         </div>
       </DesktopWrapper>
       <MobileWrapper>
-        <div className={`${styles.elementMobileWrapper} ${item.hasUnread ? styles.unread : ''}`}>
+        <div 
+          className={`${styles.elementMobileWrapper} ${item.hasUnread ? styles.unread : ''} ${isHolding ? styles.holding : ''} ${isChecked ? styles.checked : ''}`} 
+          {...(shouldEnableLongPress ? longPressProps : {})}
+        >
+          <div className={styles.holdOverlay} />
           <div>
             {isChecked !== undefined ? (
                 <Checkbox checked={isChecked} onChange={() => onCheck?.(item.id)} />
@@ -360,13 +392,13 @@ const ListElement: FC<ListElementProps> = ({
                     {item.username}
                   </div>
                 </div>
-                <div className={styles.description}>
+                <div className={styles.descriptionMobile}>
                   {item.description}
                 </div>
               </div>
             </div>
             <div className={styles.actionsRow}>
-              {renderActions()}
+              {renderActions(true)}
             </div>
           </div>
         </div>

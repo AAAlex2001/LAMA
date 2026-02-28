@@ -9,6 +9,7 @@
   border-radius: 8px;
   align-items: center;
   padding-left: 8px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .gridCell {
@@ -32,6 +33,8 @@
   padding: 16px;
   border-radius: 8px;
   background: #FFFFFF80;
+  position: relative;
+  transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .nameContent {
@@ -148,6 +151,7 @@
   padding-left: 0;
   width: 100%;
   margin-top: 8px;
+  flex: 1;
 }
 
 .actionButtons {
@@ -155,10 +159,16 @@
   flex-direction: row;
   align-items: center;
   gap: 8px;
+  width: 100%;
+  flex: 1;
 }
 
 .actionButton {
   min-width: auto;
+}
+
+.actionButtonMobile {
+  flex: 1;
 }
 
 .description {
@@ -196,4 +206,44 @@
 
 .checkIcon {
   flex-shrink: 0;
+}
+
+.holdOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.holding .holdOverlay {
+  opacity: 1;
+}
+
+.descriptionMobile {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 14px;
+  color: #383F45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.fullWidthMobile {
+  width: 100%;
+  flex: 1;
+}
+
+.alignRightCheck {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 }

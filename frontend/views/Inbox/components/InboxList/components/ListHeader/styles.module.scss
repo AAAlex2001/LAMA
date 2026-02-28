@@ -38,3 +38,77 @@
   line-height: 14px;
   color: var(--color-gray-input);
 }
+
+.selectedItemsMobile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.mobileHide {
+  display: none;
+}
+
+.mobileFlex {
+  @media (max-width: 768px) {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+  }
+}
+
+.mobileActions {
+  position: fixed;
+  display: flex;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #FFFFFF;
+  padding: 20px 10px 30px;
+  border-top: 1px solid #3B82F61A;
+  z-index: 1000;
+}
+
+.centeringWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.moderationWrapperMobile {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+}
+
+.controlsMobile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.filterTabsMobile {
+  display: flex;
+  flex-wrap: nowrap;
+  text-wrap: nowrap;
+  overflow-x: auto;
+  width: 100%;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+}
