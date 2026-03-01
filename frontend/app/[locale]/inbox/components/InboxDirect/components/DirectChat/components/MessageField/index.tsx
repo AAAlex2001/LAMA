@@ -15,6 +15,7 @@ import { useTemplates } from './hooks/useTemplates';
 import { SendIcon } from '@/components/icons';
 import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
+import classNames from 'classnames';
 
 interface MessageFieldProps {
   value: string;
@@ -147,7 +148,7 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
             </Button>
           )}
         </div>
-        <div style={{ paddingTop: inlineButtonsOpen ? '16px' : '0' }}>
+        <div className={classNames(styles.inlineButtonsContainer, { [styles.inlineOpen]: inlineButtonsOpen })}>
           <InlineButtons
             isOpen={inlineButtonsOpen}
             rows={inlineButtonRows}
