@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/app-layout";
-import InboxView from "@/views/Inbox";
+import InboxView from "@/app/[locale]/inbox/InboxView";
 
 const InboxPage = async () => {
   return (

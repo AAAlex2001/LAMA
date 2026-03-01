@@ -5,7 +5,7 @@ import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers"
 import { Button } from "@/components/new-button";
 import buttonStyles from "@/components/new-button/styles.module.scss";
 import { CheckListIcon } from "@/components/icons";
-import BlockModal, { BlockModalData } from "@/views/Inbox/components/BlockModal";
+import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/BlockModal";
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
 
