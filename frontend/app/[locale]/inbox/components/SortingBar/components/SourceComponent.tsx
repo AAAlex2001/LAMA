@@ -1,5 +1,4 @@
 import { FC } from "react";
-import classNames from "classnames";
 import Checkbox from "@/components/checkbox/checkbox";
 import SearchBar from "@/components/search-bar/search-bar";
 import styles from "../styles.module.scss";
@@ -55,14 +54,12 @@ const SourceContent: FC<SourceContentProps> = ({
         {options.map((opt) => (
           <div
             key={opt.key}
-            className={classNames(styles.sourceOption, {
-              [styles.sourceOptionDisabled]: isDefault,
-            })}
+            className={styles.sourceOption}
           >
             <Checkbox
               checked={opt.checked}
               onChange={(checked) => {
-                if (!isDefault) opt.onChange(checked);
+                opt.onChange(checked);
               }}
             />
             <span className={styles.sourceOptionLabel}>{opt.label}</span>
@@ -76,7 +73,6 @@ const SourceContent: FC<SourceContentProps> = ({
         const sharedSearchOption = checkedOptions.find((opt) => opt.list?.isSharedSearch);
         
         if (hasSharedSearch && sharedSearchOption) {
-          // Render shared search bar once, then render all lists
           return (
             <>
               <div className={styles.channelSearch}>
@@ -95,14 +91,11 @@ const SourceContent: FC<SourceContentProps> = ({
                         <div
                           key={item}
                           className={styles.channelItem}
-                          onClick={() => {
-                            if (!isDefault) opt.list!.onItemToggle(item);
-                          }}
                         >
                           <Checkbox
                             checked={isSelected}
                             onChange={() => {
-                              if (!isDefault) opt.list!.onItemToggle(item);
+                              opt.list!.onItemToggle(item);
                             }}
                           />
                           <span className={styles.channelItemLabel}>{item}</span>
@@ -116,7 +109,6 @@ const SourceContent: FC<SourceContentProps> = ({
           );
         }
         
-        // Render individual search bars for each option
         return checkedOptions.map((opt) => (
           <div key={`${opt.key}-list`}>
             <div className={styles.channelSearch}>
@@ -134,13 +126,13 @@ const SourceContent: FC<SourceContentProps> = ({
                     key={item}
                     className={styles.channelItem}
                     onClick={() => {
-                      if (!isDefault) opt.list!.onItemToggle(item);
+                      opt.list!.onItemToggle(item);
                     }}
                   >
                     <Checkbox
                       checked={isSelected}
                       onChange={() => {
-                        if (!isDefault) opt.list!.onItemToggle(item);
+                        opt.list!.onItemToggle(item);
                       }}
                     />
                     <span className={styles.channelItemLabel}>{item}</span>

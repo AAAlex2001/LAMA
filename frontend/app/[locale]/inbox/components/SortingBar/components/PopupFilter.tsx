@@ -58,7 +58,6 @@ const PopupFilter: FC<PopupFilterProps> = ({
   return (
     <div className={styles.popupFilter} ref={popupRef}>
       <div className={styles.popupFilterContent}>
-        <div className={styles.popupFilterLabel}>Сортировка:</div>
         <div className={styles.popupFilterOptions}>
           {availableSortOptions.map((option) => (
             <SortDropdown

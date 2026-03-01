@@ -3,12 +3,22 @@
   display: inline-block;
   width: auto;
   transition: width 0.2s ease;
+
+  @media (max-width: 1439px) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
 }
 
 .wrapperOpen {
-  // Allow wrapper to expand when custom content is provided
   width: max-content;
   max-width: 400px;
+
+  @media (max-width: 1439px) {
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .button {
@@ -58,13 +68,12 @@
 }
 
 .buttonOpen {
-  background: #3B82F6A1;
+  background: #3b82f61a;
   border-radius: 8px 8px 0px 0px;
 }
 
-// Active state - blue tag/button
 .buttonActive {
-  background: #3B82F6;
+  background: #3b82f61a;
   padding: 4px 8px 4px 12px;
   justify-content: space-between;
 
@@ -111,16 +120,25 @@
   gap: 0;
   width: 100%;
   max-width: 400px;
-  background: #3B82F6A1;
+  background: #3b82f61a;
   border-radius: 0px 0px 8px 8px;
   z-index: 20;
   overflow: visible; 
-  // box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
 
   @media (min-width: 1440px) {
     left: 50%;
     transform: translateX(-50%);
   }
+}
+
+.menuMobile {
+  position: static;
+  top: auto;
+  left: auto;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  margin-top: 0;
 }
 
 .menuItems {
@@ -130,7 +148,7 @@
   padding: 0;
   width: 100%;
   gap: 0;
-  overflow: visible; // Allow custom content to be fully visible
+  overflow: visible;
 }
 
 .menuItem {

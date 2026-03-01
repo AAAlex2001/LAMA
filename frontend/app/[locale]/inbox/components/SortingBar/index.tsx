@@ -73,13 +73,10 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
 
   const [sourceBots, setSourceBots] = useState(false);
 
-  // Shared search state for source filters
   const [sourceSharedSearch, setSourceSharedSearch] = useState("");
 
-  // Shared search state for source system filters
   const [sourceSystemSharedSearch, setSourceSystemSharedSearch] = useState("");
 
-  // Filtered lists for source filters
   const filteredSourceChannels = useMemo(() => {
     if (!sourceSharedSearch) return allChannels;
     return allChannels.filter(c => c.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
@@ -90,7 +87,6 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
     return allChats.filter(c => c.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
   }, [sourceSharedSearch]);
 
-  // Filtered lists for source system filters
   const filteredSystems = useMemo(() => {
     if (!sourceSystemSharedSearch) return allSystems;
     return allSystems.filter(s => s.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
@@ -213,7 +209,6 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
   const [selectedTypeSystems, setSelectedTypeSystems] = useState<Set<string>>(new Set());
   const allTypeSystems = ["Type System 1", "Type System 2", "Type System 3"];
 
-  // Shared search state for type filters
   const [typeSharedSearch, setTypeSharedSearch] = useState("");
 
   const filteredBots = useMemo(() => {

@@ -5,6 +5,7 @@ import classNames from 'classnames';
 import styles from './styles.module.scss';
 import { ChevronDownIcon, SortClearIcon } from '@/components/icons';
 import Checkbox from '@/components/checkbox/checkbox';
+import { MobileWrapper, DesktopWrapper } from '@/components/responsive-wrappers';
 
 export interface SortDropdownOption {
   value: string;
@@ -118,33 +119,66 @@ const SortDropdown: FC<SortDropdownProps> = ({
       </button>
 
       {isOpen && (
-        <div className={styles.menu} ref={menuRef}>
-          <div className={styles.menuItems}>
-            {menuContent || children ? (
-              menuContent || children
-            ) : (
-              options.map((option) => {
-                const isSelected = currentValue === option.value;
-                return (
-                  <div
-                    key={option.value}
-                    className={styles.menuItem}
-                    onClick={() => handleSelect(option.value)}
-                    role="option"
-                    aria-selected={isSelected}
-                  >
-                    <Checkbox
-                      variant="radio"
-                      checked={isSelected}
-                      onChange={() => handleSelect(option.value)}
-                    />
-                    <span className={styles.menuItemLabel}>{option.label}</span>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
+        <>
+          <DesktopWrapper>
+            <div className={styles.menu} ref={menuRef}>
+              <div className={styles.menuItems}>
+                {menuContent || children ? (
+                  menuContent || children
+                ) : (
+                  options.map((option) => {
+                    const isSelected = currentValue === option.value;
+                    return (
+                      <div
+                        key={option.value}
+                        className={styles.menuItem}
+                        onClick={() => handleSelect(option.value)}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        <Checkbox
+                          variant="radio"
+                          checked={isSelected}
+                          onChange={() => handleSelect(option.value)}
+                        />
+                        <span className={styles.menuItemLabel}>{option.label}</span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </DesktopWrapper>
+          <MobileWrapper>
+            <div className={classNames(styles.menu, styles.menuMobile)} ref={menuRef}>
+              <div className={styles.menuItems}>
+                {menuContent || children ? (
+                  menuContent || children
+                ) : (
+                  options.map((option) => {
+                    const isSelected = currentValue === option.value;
+                    return (
+                      <div
+                        key={option.value}
+                        className={styles.menuItem}
+                        onClick={() => handleSelect(option.value)}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        <Checkbox
+                          variant="radio"
+                          checked={isSelected}
+                          onChange={() => handleSelect(option.value)}
+                        />
+                        <span className={styles.menuItemLabel}>{option.label}</span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </MobileWrapper>
+        </>
       )}
     </div>
   );
