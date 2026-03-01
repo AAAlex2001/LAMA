@@ -10,6 +10,7 @@ import { createObjectUrls, revokeObjectUrls, createMediaRuns } from '@/component
 import MediaPreview from '@/components/post-preview-modal/media-preview/media-preview';
 import type { MediaFile } from '@/components/media-preview';
 import DocumentsPreview from '@/components/post-preview-modal/documents-preview/documents-preview';
+import { DesktopWrapper } from '@/components/responsive-wrappers';
 
 export interface MediaItem {
   type: 'video' | 'file' | 'image';
@@ -94,13 +95,15 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
   if (mediaRuns.length > 0 && !text && type) {
     return (
       <div className={isOutgoing ? styles.outgoingWrapper : styles.incomingWrapper}>
-        { 
-         !isOutgoing && <div className={styles.avatarWrapper}>
-            <div className={styles.avatar}>
-              <UserIcon width={22} height={22} color="#B0B4B8" />
+        <DesktopWrapper>
+          { 
+          !isOutgoing && <div className={styles.avatarWrapper}>
+              <div className={styles.avatar}>
+                <UserIcon width={22} height={22} color="#B0B4B8" />
+              </div>
             </div>
-          </div>
-        }
+          }
+        </DesktopWrapper>
         <div className={styles.mediaContainer}>
           {mediaRuns.map((run, idx) =>
             run.kind === 'visual' ? (
@@ -119,11 +122,13 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
   if (type === 'incoming') {
     return (
       <div className={styles.incomingWrapper}>
-        <div className={styles.avatarWrapper}>
-          <div className={styles.avatar}>
-            <UserIcon width={22} height={22} color="#B0B4B8" />
+        <DesktopWrapper>
+          <div className={styles.avatarWrapper}>
+            <div className={styles.avatar}>
+              <UserIcon width={22} height={22} color="#B0B4B8" />
+            </div>
           </div>
-        </div>
+        </DesktopWrapper>
         <div className={styles.incomingBubble}>
           <div className={styles.mediaContainer}>
             {mediaRuns.map((run, idx) =>

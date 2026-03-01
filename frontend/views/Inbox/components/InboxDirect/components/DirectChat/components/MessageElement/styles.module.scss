@@ -46,7 +46,6 @@
   background: var(--color-lama-blue);
   border-radius: 16px 16px 0 16px;
   padding: 10px 20px;
-  margin-left: 50px;
   max-width: 100%;
   display: flex;
   flex-direction: column;
@@ -54,6 +53,9 @@
 
   .messageText {
     color: #F1F5FB;
+  }
+  @media(min-width: 1440px) {
+    margin-left: 50px;
   }
 }
 
