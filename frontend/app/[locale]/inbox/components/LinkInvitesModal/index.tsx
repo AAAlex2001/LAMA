@@ -116,12 +116,12 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
             <div className={styles.createButtonContainer}>
               <Button
                 variant="fill"
-                intent="primary"
+                intent="gradient"
                 size="lg"
                 onClick={handleCreateLink}
                 className={styles.createButton}
               >
-                Создать ссылку-приглашение
+                <span>Создать ссылку-приглашение</span>
               </Button>
             </div>
           )}
