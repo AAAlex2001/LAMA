@@ -147,14 +147,16 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
             </Button>
           )}
         </div>
-        <InlineButtons
-          isOpen={inlineButtonsOpen}
-          rows={inlineButtonRows}
-          onAddRow={addInlineButtonRow}
-          onAddColumn={addInlineButtonColumn}
-          onUpdateButton={updateInlineButton}
-          onDeleteButton={deleteInlineButton}
-        />
+        <div style={{ paddingTop: inlineButtonsOpen ? '16px' : '0' }}>
+          <InlineButtons
+            isOpen={inlineButtonsOpen}
+            rows={inlineButtonRows}
+            onAddRow={addInlineButtonRow}
+            onAddColumn={addInlineButtonColumn}
+            onUpdateButton={updateInlineButton}
+            onDeleteButton={deleteInlineButton}
+          />
+        </div>
         <div className={styles.actionsRow}>
           <Button
             variant='tag'
