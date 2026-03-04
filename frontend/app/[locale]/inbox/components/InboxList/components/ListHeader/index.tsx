@@ -9,6 +9,9 @@ import styles from "./styles.module.scss";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
 import LinkInvitesModal, { InvitationLink } from "../../../LinkInvitesModal";
 import CreateInviteLinkModal from "../../../CreateInviteLinkModal";
+import CreateAutoRepliesModal from "../../../CreateAutoRepliesModal";
+import CreateTriggersModal from "../../../CreateTriggersModal";
+import CreateCommandModal from "../../../CreateCommandModal";
 
 export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
@@ -19,14 +22,18 @@ interface ListHeaderProps {
   onSelectAll?: () => void;
   isSelectedAll?: boolean;
   checkedItems?: number;
+  botId?: number;
 }
 
 
-const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems }: ListHeaderProps) => {
+const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems, botId = 1 }: ListHeaderProps) => {
   const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
-  const [isCreateIviteModalOpen, setIsCreateIviteModalOpen] = useState(false);
-  const [editingIvite, setEditingIvite] = useState<InvitationLink | null>(null);
+  const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
+  const [editingInvite, setEditingInvite] = useState<InvitationLink | null>(null);
+  const [isAutoReplyModalOpen, setIsAutoReplyModalOpen] = useState(false);
+  const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
+  const [isCommandModalOpen, setIsCommandModalOpen] = useState(false);
 
   const filterOptionsModeration = [
     { id: "all", label: "Все" },
@@ -159,8 +166,8 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               isOpen={isLinksModalOpen} 
               onOpenChange={setIsLinksModalOpen}
               onEditLink={(link) => {
-                setEditingIvite(link);
-                setIsCreateIviteModalOpen(true);
+                setEditingInvite(link);
+                setIsCreateInviteModalOpen(true);
               }}
             />
             <div className={styles.moderationWrapper}>
@@ -183,8 +190,8 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                   intent="gradient"
                   size="md"
                   onClick={() => {
-                    setEditingIvite(null);
-                    setIsCreateIviteModalOpen(true);
+                    setEditingInvite(null);
+                    setIsCreateInviteModalOpen(true);
                   }}
                 >
                   <span>Создать ссылку-приглашение</span>
@@ -197,12 +204,12 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               isOpen={isLinksModalOpen} 
               onOpenChange={setIsLinksModalOpen}
               onCreateLink={() => {
-                setEditingIvite(null);
-                setIsCreateIviteModalOpen(true);
+                setEditingInvite(null);
+                setIsCreateInviteModalOpen(true);
               }}
               onEditLink={(link) => {
-                setEditingIvite(link);
-                setIsCreateIviteModalOpen(true);
+                setEditingInvite(link);
+                setIsCreateInviteModalOpen(true);
               }}
             />
             <div className={`${styles.moderationWrapperMobile} ${styles.mobileFlex}`}>
@@ -226,14 +233,16 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
             </div>
           </MobileWrapper>
           <CreateInviteLinkModal 
-            isOpen={isCreateIviteModalOpen} 
+            isOpen={isCreateInviteModalOpen} 
+            onCreateLink={() => {}}
             onOpenChange={(open) => {
-              setIsCreateIviteModalOpen(open);
+              setIsCreateInviteModalOpen(open);
               if (!open) {
-                setEditingIvite(null);
+                setEditingInvite(null);
               }
             }}
-            editingIvite={editingIvite}
+            linkId={parseInt(editingInvite?.id ?? '0', 10)}
+            channelId={parseInt(editingInvite?.channelId ?? '0', 10)}
           />
         </>
       )
@@ -256,6 +265,7 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                   variant="fill" 
                   intent="gradient"
                   size="md"
+                  onClick={() => setIsAutoReplyModalOpen(true)}
                 >
                   <span className={buttonStyles.label}>Создать автоответ</span>
                 </Button>
@@ -263,6 +273,7 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                   variant="fill" 
                   intent="gradient"
                   size="md"
+                  onClick={() => setIsTriggerModalOpen(true)}
                 >
                   <span className={buttonStyles.label}>Создать триггер</span>
                 </Button>
@@ -270,8 +281,9 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                   variant="fill" 
                   intent="gradient"
                   size="md"
+                  onClick={() => setIsCommandModalOpen(true)}
                 >
-                  <span className={buttonStyles.label}>Создать компаду</span>
+                  <span className={buttonStyles.label}>Создать команду</span>
                 </Button>
               </div>
             </div>
@@ -298,6 +310,21 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               </div>
             </div>
           </MobileWrapper>
+          <CreateAutoRepliesModal
+            isOpen={isAutoReplyModalOpen}
+            onOpenChange={setIsAutoReplyModalOpen}
+            botId={botId}
+          />
+          <CreateTriggersModal
+            isOpen={isTriggerModalOpen}
+            onOpenChange={setIsTriggerModalOpen}
+            botId={botId}
+          />
+          <CreateCommandModal
+            isOpen={isCommandModalOpen}
+            onOpenChange={setIsCommandModalOpen}
+            botId={botId}
+          />
         </>
       )
     default:

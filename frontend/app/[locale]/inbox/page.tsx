@@ -1,10 +1,13 @@
 import { AppLayout } from "@/components/app-layout";
 import InboxView from "@/app/[locale]/inbox/InboxView";
+import { InboxProvider } from "./store/provider";
 
 const InboxPage = async () => {
   return (
     <AppLayout pageTitle="Входящие">
-      <InboxView />
+      <InboxProvider>
+        <InboxView />
+      </InboxProvider>
     </AppLayout>
   )
 }

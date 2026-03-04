@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
 import SearchBar from '@/components/search-bar/search-bar';
 import FilterTabsWithBadges from './components/FilterTabsWithBadges';
 import InvitationLinkItem from './components/InvitationLinkItem';
 import styles from './styles.module.scss';
+import { useAppSelector, useAppDispatch, fetchAllInviteLinksThunk } from '../../store';
+import type { InviteLink } from '@/types';
 
 export interface InvitationLink {
   id: string;
@@ -25,50 +27,6 @@ export interface InvitationLink {
   channelId?: string;
 }
 
-const MOCK_LINKS: InvitationLink[] = [
-  {
-    id: '1',
-    url: 'http://FgdJGfofhgFgdJGfofhgFgdJGfofhgFgdJGfofhg',
-    channelName: 'Назв канала',
-    expirationDate: '12.05.25',
-    usedCount: 40,
-    maxUses: 100,
-    isActive: true,
-  },
-  {
-    id: '2',
-    url: 'http://FgdJGfofhgFgdJGfofhgFgdJGfofhgFgdJGfofhg',
-    channelName: 'Назв канала',
-    usedCount: 40,
-    isActive: true,
-  },
-  {
-    id: '3',
-    url: 'http://FgdJGfofhgFgdJGfofhgFgdJGfofhgFgdJGfofhg',
-    channelName: 'Назв канала',
-    expirationDate: '12.05.25',
-    usedCount: 40,
-    maxUses: 100,
-    isActive: true,
-  },
-  {
-    id: '4',
-    url: 'http://FgdJGfofhgFgdJGfofhgFgdJGfofhgFgdJGfofhg',
-    channelName: 'Назв канала',
-    usedCount: 40,
-    isActive: true,
-  },
-  {
-    id: '5',
-    url: 'http://FgdJGfofhgFgdJGfofhgFgdJGfofhgFgdJGfofhg',
-    channelName: 'Назв канала',
-    expirationDate: '12.05.25',
-    usedCount: 40,
-    maxUses: 100,
-    isActive: false,
-  },
-];
-
 interface LinkInvitesModalProps {
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
@@ -77,17 +35,90 @@ interface LinkInvitesModalProps {
   onEditLink?: (link: InvitationLink) => void;
 }
 
+const getFilterOptions = (
+  allCount: number,
+  activeCount: number,
+  expiredCount: number
+) => [
+  { id: 'all', label: 'Все', count: allCount, style: { flex: 1 } },
+  { id: 'active', label: 'Актуальные', count: activeCount, style: { width: '107px' } },
+  { id: 'expired', label: 'Истекшие', count: expiredCount, style: { width: '94px' } },
+];
+
+const mapInviteLinkToInvitationLink = (link: InviteLink, channelName?: string): InvitationLink => {
+  const expireDate = link.expire_date 
+    ? new Date(link.expire_date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    : undefined;
+  
+  const creationDate = link.created_at
+    ? new Date(link.created_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    : undefined;
+
+  return {
+    id: link.id.toString(),
+    url: link.invite_link,
+    channelName: channelName || `Channel ${link.channel_id}`,
+    expirationDate: expireDate,
+    usedCount: link.member_count,
+    maxUses: link.member_limit > 0 ? link.member_limit : undefined,
+    isActive: !(link.is_revoked || (link.expire_date ? new Date(link.expire_date) < new Date() : false)),
+    verifiedCount: link.pending_join_request_count,
+    creationDate,
+    linkName: link.name,
+    linkType: link.creates_join_request ? 'closed' : 'open',
+    channelId: link.channel_id.toString(),
+  };
+};
+
 const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
   isOpen,
   onOpenChange,
-  links = MOCK_LINKS,
+  links: propLinks,
   onCreateLink,
   onEditLink,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'expired'>('all');
 
-  const filteredLinks = links.filter((link) => {
+  const dispatch = useAppDispatch();
+  const channels = useAppSelector((state) => state.channels.channels);
+  const inviteLinksState = useAppSelector((state) => state.inbox.inviteLinks);
+  const inviteLinksLoadingState = useAppSelector((state) => state.inbox.inviteLinksLoading);
+  
+  const channelNameMap = useMemo(
+    () => new Map(channels.map((ch) => [ch.id, ch.title])),
+    [channels]
+  );
+
+  useEffect(() => {
+    if (isOpen && channels.length > 0) {
+      dispatch(fetchAllInviteLinksThunk());
+    }
+  }, [isOpen, channels.length, dispatch]);
+
+  const allInviteLinks = useMemo(() => {
+    const allLinks: InviteLink[] = [];
+    Object.entries(inviteLinksState).forEach(([channelId, links]) => {
+      allLinks.push(...links);
+    });
+    return allLinks;
+  }, [inviteLinksState]);
+
+  const isLoading = useMemo(() => {
+    return Object.values(inviteLinksLoadingState).some(loading => loading === true);
+  }, [inviteLinksLoadingState]);
+
+  const mappedLinks = useMemo(() => {
+    if (allInviteLinks && allInviteLinks.length > 0) {
+      return allInviteLinks.map((link) => {
+        const channelName = channelNameMap.get(link.channel_id) || '';
+        return mapInviteLinkToInvitationLink(link, channelName);
+      });
+    }
+    return propLinks;
+  }, [allInviteLinks, channelNameMap, propLinks]);
+
+  const filteredLinks = mappedLinks?.filter((link) => {
     const matchesSearch =
       link.channelName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       link.url.toLowerCase().includes(searchQuery.toLowerCase());
@@ -100,9 +131,9 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
     return matchesSearch && matchesFilter;
   });
 
-  const allCount = links.length;
-  const activeCount = links.filter((link) => link.isActive).length;
-  const expiredCount = links.filter((link) => !link.isActive).length;
+  const allCount = mappedLinks?.length || 0;
+  const activeCount = mappedLinks?.filter((link) => link.isActive).length || 0;
+  const expiredCount = mappedLinks?.filter((link) => !link.isActive).length || 0;
 
   const handleCreateLink = onCreateLink ? () => {
     onCreateLink?.();
@@ -137,20 +168,18 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
           </div>
 
           <FilterTabsWithBadges
-            options={[
-              { id: 'all', label: 'Все', count: allCount, style: { flex: 1 } },
-              { id: 'active', label: 'Актуальные', count: activeCount, style: { width: '107px' } },
-              { id: 'expired', label: 'Истекшие', count: expiredCount, style: { width: '94px' } },
-            ]}
+            options={getFilterOptions(allCount, activeCount, expiredCount)}
             selectedFilter={selectedFilter}
             onFilterChange={(filterId) => setSelectedFilter(filterId as 'all' | 'active' | 'expired')}
           />
 
           <div className={styles.linksList}>
-            {filteredLinks.length === 0 ? (
+            {isLoading ? (
+              <div className={styles.emptyState}>Загрузка...</div>
+            ) : !filteredLinks?.length ? (
               <div className={styles.emptyState}>Нет ссылок-приглашений</div>
             ) : (
-              filteredLinks.map((link) => (
+              filteredLinks?.map((link) => (
                 <InvitationLinkItem
                   key={link.id}
                   link={link}

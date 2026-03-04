@@ -15,13 +15,12 @@ import { CallbackActionContent } from './variants/callback-action';
 import type {
   RepeatOption,
   AutoDeleteOption,
-  TagColor,
   ButtonTypeOption,
   CallbackActionOption,
   DropdownProps,
 } from './types';
 
-export type { RepeatOption, AutoDeleteOption, TagColor, ButtonTypeOption, CallbackActionOption };
+export type { RepeatOption, AutoDeleteOption, ButtonTypeOption, CallbackActionOption };
 export { TAG_COLORS} from './types';
 
 export default function Dropdown({

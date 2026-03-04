@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import EmptyState from "./components/EmptyState";
 import InboxList from "./components/InboxList";
@@ -9,6 +9,8 @@ import styles from "./styles.module.scss";
 import { IInboxItem } from "./components/InboxList/components/ListElement";
 import { ListHeaderType } from "./components/InboxList/components/ListHeader";
 import InboxDirect from "./components/InboxDirect";
+import { useAppDispatch } from "./store";
+import { fetchChannelsThunk } from "./store";
 
 type SortInput = {
   field: string;
@@ -18,9 +20,14 @@ type SortInput = {
 const InboxView = () => {
   const searchParams = useSearchParams();
   const { push } = useRouter();
+  const dispatch = useAppDispatch();
 
   const [selectedFilter, setSelectedFilter] = useState<ListHeaderType>("all");
   const [currentView, setCurrentView] = useState<"list" | "direct">("list");
+
+  useEffect(() => {
+    dispatch(fetchChannelsThunk({}));
+  }, [dispatch]);
 
   const sort: SortInput | null = useMemo( () => {
     if ( !searchParams ) {

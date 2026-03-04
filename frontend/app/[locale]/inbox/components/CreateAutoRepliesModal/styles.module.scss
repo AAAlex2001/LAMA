@@ -1,0 +1,109 @@
+.modalContent {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalHeader {
+  justify-content: space-between;
+  gap: 0;
+  align-items: center;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sectionTitle {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: var(--color-lama-black);
+}
+
+.sectionDescription {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-gray-input);
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.toggleLabel {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-lama-black);
+  font-weight: 500;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.radioGroupItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.channelItemName {
+  font-size: 14px;
+  line-height: 17px;
+  color: var(--color-lama-black);
+  font-weight: 400;
+}
+
+.keywordRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.removeButton {
+  flex-shrink: 0;
+}
+
+.addButton {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.submitButtonContainer {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 8px;
+}
+
+.submitButton {
+  width: 100%;
+  border-radius: 10px;
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}

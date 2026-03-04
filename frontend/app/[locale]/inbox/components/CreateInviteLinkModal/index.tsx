@@ -1,14 +1,32 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
+import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
-import InviteForm from './InviteForm';
-import ConfirmInviteStep from './ConfirmInviteStep';
+import InviteForm from './components/InviteForm';
+import ConfirmInviteStep from './components/ConfirmInviteStep';
 import { InvitationLink } from '../LinkInvitesModal';
+import { ChannelBasic } from '@/types';
+import { 
+  useCreateInviteLink,
+  useAppSelector,
+  useAppDispatch,
+  setModalOpen,
+  setStep,
+  setEditingLinkIds,
+  populateFormFromInviteLink,
+  resetForm,
+  patchInviteLinkThunk,
+  fetchInviteLinkByIdThunk,
+  buildPreviewData,
+  inboxStore,
+} from '../../store';
+import { selectChannels } from '../../store/selectors';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
-export interface Channel {
+export interface ChannelSimple {
   id: string;
   name: string;
 }
@@ -16,9 +34,9 @@ export interface Channel {
 interface CreateInviteLinkModalProps {
   isOpen?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
-  channels?: Channel[];
+  channels?: ChannelSimple[];
   onCreateLink?: (data: InviteLinkData) => void;
-  editingIvite?: InvitationLink | null;
+  editingInvite?: InvitationLink | null;
 }
 
 export interface InviteLinkData {
@@ -28,198 +46,169 @@ export interface InviteLinkData {
   limitCount?: number;
   linkType: 'open' | 'closed';
   validityPeriod: 'indefinite' | 'date';
-  expirationDate?: Date;
+  expirationDate?: string;
   expirationHours?: number;
   expirationMinutes?: number;
   connectionMethod: 'protection' | 'normal';
   loginMethod: 'direct' | 'bot';
-  // For closed links
   joiningText?: string;
   applicationMethod?: 'direct' | 'bot';
   hasCaptcha?: boolean;
 }
 
-// Mock data for testing
-const MOCK_CHANNELS: Channel[] = [
-  { id: '1', name: 'Общий канал' },
-  { id: '2', name: 'Разработка' },
-  { id: '3', name: 'Дизайн' },
-  { id: '4', name: 'Маркетинг' },
-  { id: '5', name: 'Поддержка клиентов' },
-  { id: '6', name: 'Аналитика' },
-  { id: '7', name: 'Новости' },
-  { id: '8', name: 'Обсуждения' },
-];
-
-const CreateInviteLinkModal: React.FC<CreateInviteLinkModalProps> = ({
+const CreateInviteLinkModal: React.FC<{
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+  onCreateLink: (data: InviteLinkData) => void;
+  linkId?: number;
+  channelId?: number;
+}> = ({
   isOpen,
   onOpenChange,
-  channels = [],
   onCreateLink,
-  editingIvite,
+  linkId = undefined,
+  channelId = undefined,
 }) => {
-  const channelsToUse = channels.length > 0 ? channels : MOCK_CHANNELS;
+  const dispatch = useAppDispatch();
+  const channelsState = useAppSelector(selectChannels);
+  const modalState = useAppSelector((state) => state.createInviteLinkModal);
+  const { showSuccess, showError } = useNotifications();
+  const [isFetchingLink, setIsFetchingLink] = useState(false);
+  const [isUpdatingLink, setIsUpdatingLink] = useState(false);
+  
+  const channelsOptions = channelsState.map(ch => ({
+    id: ch.id,
+    title: ch.title,
+    members_count: ch.members_count,
+    photo_url: ch.photo_url,
+    selected: ch.selected,
+  })) satisfies ChannelBasic[];
+  
   const maxChannels = 10;
-  const [channelSearch, setChannelSearch] = useState('');
-  const [selectedChannelId, setSelectedChannelId] = useState<string>('');
-  const [linkName, setLinkName] = useState('');
-  const [hasLimit, setHasLimit] = useState(false);
-  const [limitCount, setLimitCount] = useState<string>('');
-  const [linkType, setLinkType] = useState<'open' | 'closed'>('open');
-  const [validityPeriod, setValidityPeriod] = useState<'indefinite' | 'date'>('indefinite');
-  const [expirationDate, setExpirationDate] = useState<Date | null>(null);
-  const [expirationHours, setExpirationHours] = useState(0);
-  const [expirationMinutes, setExpirationMinutes] = useState(20);
-  const [connectionMethod, setConnectionMethod] = useState<'protection' | 'normal'>('protection');
-  const [loginMethod, setLoginMethod] = useState<'direct' | 'bot'>('direct');
-  const [joiningText, setJoiningText] = useState('');
-  const [applicationMethod, setApplicationMethod] = useState<'direct' | 'bot'>('direct');
-  const [hasCaptcha, setHasCaptcha] = useState(false);
-
-  const [step, setStep] = useState<'form' | 'confirm'>('form');
-  const [previewData, setPreviewData] = useState<InviteLinkData | null>(null);
-
-  React.useEffect(() => {
-    if (editingIvite) {
-      setStep('confirm');
-      if (editingIvite.channelId) {
-        setSelectedChannelId(editingIvite.channelId);
+  
+  useEffect(() => {
+    dispatch(setModalOpen(isOpen));
+    
+    if (isOpen) {
+      if (linkId && channelId) {
+        dispatch(setStep('confirm'));
+      } else {
+        dispatch(setStep('form'));
       }
-      
-      if (editingIvite.linkName) {
-        setLinkName(editingIvite.linkName);
-      }
-      
-      if (editingIvite.linkType) {
-        setLinkType(editingIvite.linkType);
-      }
-      
-      if (editingIvite.loginMethod) {
-        setLoginMethod(editingIvite.loginMethod);
-      }
-      
-      if (editingIvite.hasCaptcha !== undefined) {
-        setHasCaptcha(editingIvite.hasCaptcha);
-      }
-      
-      if (editingIvite.maxUses !== undefined) {
-        setHasLimit(true);
-        setLimitCount(editingIvite.maxUses.toString());
-      }
-      
-      if (editingIvite.expirationDate) {
-        setValidityPeriod('date');
-        const dateParts = editingIvite.expirationDate.split('.');
-        if (dateParts.length === 3) {
-          const day = parseInt(dateParts[0], 10);
-          const month = parseInt(dateParts[1], 10) - 1; // Month is 0-indexed
-          const year = 2000 + parseInt(dateParts[2], 10); // Assuming YY format
-          const parsedDate = new Date(year, month, day);
-          if (!isNaN(parsedDate.getTime())) {
-            setExpirationDate(parsedDate);
-          }
-        }
-      }
-      
-      const initialData: InviteLinkData = {
-        channelId: editingIvite.channelId || '',
-        linkName: editingIvite.linkName || '',
-        hasLimit: editingIvite.maxUses !== undefined,
-        limitCount: editingIvite.maxUses,
-        linkType: editingIvite.linkType || 'open',
-        validityPeriod: editingIvite.expirationDate ? 'date' : 'indefinite',
-        expirationDate: editingIvite.expirationDate ? (() => {
-          const dateParts = editingIvite.expirationDate!.split('.');
-          if (dateParts.length === 3) {
-            const day = parseInt(dateParts[0], 10);
-            const month = parseInt(dateParts[1], 10) - 1;
-            const year = 2000 + parseInt(dateParts[2], 10);
-            const parsedDate = new Date(year, month, day);
-            return !isNaN(parsedDate.getTime()) ? parsedDate : undefined;
-          }
-          return undefined;
-        })() : undefined,
-        expirationHours: editingIvite.expirationDate ? 0 : undefined,
-        expirationMinutes: editingIvite.expirationDate ? 0 : undefined,
-        connectionMethod: 'protection',
-        loginMethod: editingIvite.loginMethod || 'direct',
-        joiningText: editingIvite.linkType === 'closed' ? '' : undefined,
-        applicationMethod: editingIvite.linkType === 'closed' ? 'direct' : undefined,
-        hasCaptcha: editingIvite.linkType === 'closed' ? (editingIvite.hasCaptcha || false) : undefined,
-      };
-      
-      setPreviewData(initialData);
     }
-  }, [editingIvite]);
-
-  React.useEffect(() => {
-    if (channelsToUse.length > 0 && !selectedChannelId && !editingIvite) {
-      setSelectedChannelId(channelsToUse[0].id);
+  }, [isOpen, linkId, channelId, dispatch]);
+  
+  useEffect(() => {
+    if (linkId && channelId) {
+      if (!isNaN(channelId) && !isNaN(linkId)) {
+        setIsFetchingLink(true);
+        dispatch(setEditingLinkIds({ linkId, channelId }));
+        dispatch(fetchInviteLinkByIdThunk({ channelId, linkId }))
+          .unwrap()
+          .then((inviteLink) => {
+            dispatch(populateFormFromInviteLink(inviteLink));
+            dispatch(buildPreviewData());
+          })
+          .catch((error) => {
+            console.error('Failed to fetch invite link:', error);
+          })
+          .finally(() => {
+            setIsFetchingLink(false);
+          });
+      }
+    } else if (!linkId && !channelId) {
+      dispatch(setEditingLinkIds(null));
+      setIsFetchingLink(false);
     }
-  }, [channelsToUse, selectedChannelId, editingIvite]);
-
-  const buildInviteData = (): InviteLinkData => ({
-    channelId: selectedChannelId,
-    linkName,
-    hasLimit,
-    limitCount: hasLimit ? parseInt(limitCount) : undefined,
-    linkType,
-    validityPeriod,
-    expirationDate: validityPeriod === 'date' && expirationDate ? expirationDate : undefined,
-    expirationHours: validityPeriod === 'date' ? expirationHours : undefined,
-    expirationMinutes: validityPeriod === 'date' ? expirationMinutes : undefined,
-    connectionMethod,
-    loginMethod,
-    joiningText: linkType === 'closed' ? joiningText : undefined,
-    applicationMethod: linkType === 'closed' ? applicationMethod : undefined,
-    hasCaptcha: linkType === 'closed' ? hasCaptcha : undefined,
-  });
-
-  const handleSubmit = () => {
-    const data = buildInviteData();
-    setPreviewData(data);
-    setStep('confirm');
-  };
-
-  const handleConfirm = () => {
+  }, [linkId, channelId, dispatch]);
+  
+  const handleEditingConfirm = async () => {
+    if (!linkId || !channelId) return;
+    
+    dispatch(buildPreviewData());
+    const previewData = inboxStore.getState().createInviteLinkModal.previewData;
+    
     if (!previewData) return;
-    onCreateLink?.(previewData);
-    onOpenChange?.(false);
-  };
 
-  const handleBack = () => {
-    setStep('form');
+    setIsUpdatingLink(true);
+    try {
+      let expireDate: string | undefined;
+      if (previewData.validityPeriod === 'date' && previewData.expirationDate) {
+        const expirationDateTime = new Date(previewData.expirationDate);
+        expirationDateTime.setHours(previewData.expirationHours || 0);
+        expirationDateTime.setMinutes(previewData.expirationMinutes || 0);
+        expirationDateTime.setSeconds(0);
+        expirationDateTime.setMilliseconds(0);
+        expireDate = expirationDateTime.toISOString();
+      }
+
+      const patchData = {
+        name: previewData.linkName || '',
+        expire_date: expireDate || null,
+        member_limit: previewData.hasLimit && previewData.limitCount ? previewData.limitCount : 0,
+        creates_join_request: previewData.linkType === 'closed',
+      };
+
+      await dispatch(patchInviteLinkThunk({
+        channelId,
+        inviteLinkId: linkId,
+        patchData,
+      })).unwrap();
+
+      showSuccess('Ссылка-приглашение успешно обновлена');
+      onCreateLink?.(previewData);
+      onOpenChange?.(false);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось обновить ссылку-приглашение';
+      showError(errorMessage);
+    } finally {
+      setIsUpdatingLink(false);
+    }
   };
 
   const handleReset = () => {
-    setChannelSearch('');
-    setLinkName('');
-    setHasLimit(false);
-    setLimitCount('');
-    setLinkType('open');
-    setValidityPeriod('indefinite');
-    setExpirationDate(null);
-    setExpirationHours(0);
-    setExpirationMinutes(20);
-    setConnectionMethod('protection');
-    setLoginMethod('direct');
-    setJoiningText('');
-    setApplicationMethod('direct');
-    setHasCaptcha(false);
-    setStep('form');
-    setPreviewData(null);
+    dispatch(resetForm());
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isOpen) {
       handleReset();
     }
   }, [isOpen]);
 
-  const selectedChannel = channelsToUse.find((channel) => channel.id === selectedChannelId);
+  const selectedChannel = channelsOptions.find((channel) => 
+    channel.id.toString() === modalState.selectedChannelId
+  ) as ChannelBasic | undefined;
 
   const handleEdit = () => {
-    setStep('form');
+    dispatch(setStep('form'));
+  };
+
+  const createInviteLinkMutation = useCreateInviteLink();
+
+  const handleConfirm = async () => {
+    if (!modalState.previewData) return;
+    
+    try {
+      await createInviteLinkMutation.mutate(modalState.previewData, {
+        onSuccess: () => {
+          showSuccess('Ссылка-приглашение успешно создана');
+          onCreateLink?.(modalState.previewData!);
+          onOpenChange?.(false);
+        },
+        onError: (error) => {
+          const errorMessage = error instanceof Error ? error.message : 'Не удалось создать ссылку-приглашение';
+          showError(errorMessage);
+        },
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать ссылку-приглашение';
+      showError(errorMessage);
+    }
+  };
+
+  const handleBack = () => {
+    dispatch(setStep('form'));
   };
 
   const handleOpenChange = (open: boolean) => {
@@ -234,73 +223,44 @@ const CreateInviteLinkModal: React.FC<CreateInviteLinkModalProps> = ({
       <ModalBase.Content size="md" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>
-            {step === 'form'
-              ? (editingIvite ? 'Редактирование ссылки-приглашения' : 'Создание ссылки-приглашения')
-              : (editingIvite ? 'Подтверждение редактирования ссылки-приглашения' : 'Подтверждение ссылки-приглашения')}
+            {modalState.step === 'form'
+              ? (modalState.editingLinkId ? 'Редактирование ссылки-приглашения' : 'Создание ссылки-приглашения')
+              : (modalState.editingLinkId ? 'Подтверждение редактирования ссылки-приглашения' : 'Подтверждение ссылки-приглашения')}
           </ModalBase.Title>
-          {step === 'form' && <ModalBase.Close/>}
+          {modalState.step === 'form' && <ModalBase.Close/>}
         </ModalBase.Header>
 
-        {step === 'form' && (
+        {isFetchingLink ? (
           <ModalBase.Body className={styles.modalBody}>
-            <InviteForm
-              channels={channelsToUse}
-              maxChannels={maxChannels}
-              channelSearch={channelSearch}
-              onChannelSearchChange={setChannelSearch}
-              selectedChannelId={selectedChannelId}
-              onChannelSelect={setSelectedChannelId}
-              linkName={linkName}
-              onLinkNameChange={setLinkName}
-              hasLimit={hasLimit}
-              onHasLimitChange={setHasLimit}
-              limitCount={limitCount}
-              onLimitCountChange={setLimitCount}
-              linkType={linkType}
-              onLinkTypeChange={setLinkType}
-              validityPeriod={validityPeriod}
-              onValidityPeriodChange={setValidityPeriod}
-              expirationDate={expirationDate}
-              onExpirationDateChange={setExpirationDate}
-              expirationHours={expirationHours}
-              onExpirationHoursChange={setExpirationHours}
-              expirationMinutes={expirationMinutes}
-              onExpirationMinutesChange={setExpirationMinutes}
-              connectionMethod={connectionMethod}
-              onConnectionMethodChange={setConnectionMethod}
-              loginMethod={loginMethod}
-              onLoginMethodChange={setLoginMethod}
-              joiningText={joiningText}
-              onJoiningTextChange={setJoiningText}
-              applicationMethod={applicationMethod}
-              onApplicationMethodChange={setApplicationMethod}
-              hasCaptcha={hasCaptcha}
-              onHasCaptchaChange={setHasCaptcha}
-            />
-
-            <div className={styles.submitButtonContainer}>
-              <Button
-                variant="fill"
-                intent="gradient"
-                size="lg"
-                onClick={handleSubmit}
-                className={styles.submitButton}
-              >
-                Продолжить
-              </Button>
+            <div className={styles.loaderContainer}>
+              <Loader size={32} color="blue" />
             </div>
           </ModalBase.Body>
-        )}
+        ) : (
+          <>
+            {modalState.step === 'form' && (
+              <ModalBase.Body className={styles.modalBody}>
+                <InviteForm
+                  channels={channelsOptions}
+                  maxChannels={maxChannels}
+                  onEditingConfirm={handleEditingConfirm}
+                />
+              </ModalBase.Body>
+            )}
 
-        {step === 'confirm' && previewData && (
-          <ConfirmInviteStep
-            previewData={previewData}
-            selectedChannel={selectedChannel}
-            onBack={handleBack}
-            onConfirm={handleConfirm}
-            onEdit={handleEdit}
-            editingIvite={editingIvite}
-          />
+            {modalState.step === 'confirm' && modalState.previewData && (
+              <ConfirmInviteStep
+                previewData={modalState.previewData}
+                selectedChannel={selectedChannel}
+                onBack={handleBack}
+                onConfirm={modalState.editingLinkId ? handleEditingConfirm : handleConfirm}
+                onEdit={handleEdit}
+                onClose={() => onOpenChange(false)}
+                isEditing={!!modalState.editingLinkId}
+                isLoading={modalState.editingLinkId ? isUpdatingLink : createInviteLinkMutation.isLoading}
+              />
+            )}
+          </>
         )}
       </ModalBase.Content>
     </ModalBase>

@@ -61,26 +61,15 @@ export interface PollData {
   is_quiz?: boolean;
 }
 
-export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
+import type { TagColor, Tag, TagsResponse, ChannelBasic, ChannelOption, ChannelsResponse, SyncChannelRequest, SyncChannelResponse } from '@/types';
+
+export type { TagColor, Tag, TagsResponse, ChannelOption, ChannelsResponse, SyncChannelRequest, SyncChannelResponse };
+export type Channel = ChannelBasic;
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 
-export interface ChannelOption {
-  id: string;
-  label: string;
-  checked?: boolean;
-  members_count?: number;
-  photo_url?: string;
-}
-
-export interface Tag {
-  id: number;
-  name: string;
-  color?: string;
-  created_at: string;
-}
 
 export interface PostSnapshot {
   text: string;
@@ -149,38 +138,6 @@ export interface PublicationResponse {
   status: string;
 }
 
-export interface ChannelsResponse {
-  items?: Channel[];
-  total?: number;
-}
-
-export interface Channel {
-  id: number;
-  title: string;
-  selected?: boolean;
-  members_count?: number;
-  photo_url?: string;
-  username?: string;
-  invite_link?: string;
-}
-
-export interface SyncChannelRequest {
-  token: string;
-  telegram_id?: number;
-  username?: string;
-  invite_link?: string;
-}
-
-export interface SyncChannelResponse {
-  success: boolean;
-  message?: string;
-  channel?: Channel;
-}
-
-export interface TagsResponse {
-  items?: Tag[];
-  total?: number;
-}
 
 export interface UploadedFile {
   url: string;
@@ -228,7 +185,7 @@ export interface Draft {
   poll_data?: PollData;
   created_at: string;
   updated_at: string;
-  channels: Channel[];
+  channels: ChannelBasic[];
   tags: Tag[];
   /** Server fields available on calendar/list responses */
   scheduled_time?: string;
@@ -286,7 +243,7 @@ export interface Post {
   created_at: string;
   updated_at: string;
   published_at: string;
-  channels: Channel[];
+  channels: ChannelBasic[];
   tags: Tag[];
 }
 

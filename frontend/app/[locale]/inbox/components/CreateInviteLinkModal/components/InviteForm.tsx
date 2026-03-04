@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Checkbox } from '@/components/checkbox';
 import { DatePicker } from '@/components/date-picker';
@@ -9,81 +9,98 @@ import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';
-import styles from './styles.module.scss';
-import { Channel } from './index';
+import CreateChannel from '@/components/create-channel/create-channel';
+import styles from '../styles.module.scss';
+import { ChannelBasic } from '@/types';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
+import {
+  useAppDispatch,
+  useAppSelector,
+  setChannelSearch,
+  setSelectedChannelId,
+  setLinkName,
+  setHasLimit,
+  setLimitCount,
+  setLinkType,
+  setValidityPeriod,
+  setExpirationDate,
+  setExpirationHours,
+  setExpirationMinutes,
+  setConnectionMethod,
+  setLoginMethod,
+  setJoiningText,
+  setApplicationMethod,
+  setHasCaptcha,
+  buildPreviewData,
+  setStep,
+  addChannelThunk,
+  fetchChannelsThunk,
+} from '../../../store';
 
 interface InviteFormProps {
-  channels: Channel[];
+  channels: ChannelBasic[];
   maxChannels: number;
-  channelSearch: string;
-  onChannelSearchChange: (value: string) => void;
-  selectedChannelId: string;
-  onChannelSelect: (channelId: string) => void;
-  linkName: string;
-  onLinkNameChange: (value: string) => void;
-  hasLimit: boolean;
-  onHasLimitChange: (value: boolean) => void;
-  limitCount: string;
-  onLimitCountChange: (value: string) => void;
-  linkType: 'open' | 'closed';
-  onLinkTypeChange: (type: 'open' | 'closed') => void;
-  validityPeriod: 'indefinite' | 'date';
-  onValidityPeriodChange: (period: 'indefinite' | 'date') => void;
-  expirationDate: Date | null;
-  onExpirationDateChange: (date: Date | null) => void;
-  expirationHours: number;
-  onExpirationHoursChange: (hours: number) => void;
-  expirationMinutes: number;
-  onExpirationMinutesChange: (minutes: number) => void;
-  connectionMethod: 'protection' | 'normal';
-  onConnectionMethodChange: (method: 'protection' | 'normal') => void;
-  loginMethod: 'direct' | 'bot';
-  onLoginMethodChange: (method: 'direct' | 'bot') => void;
-  joiningText: string;
-  onJoiningTextChange: (value: string) => void;
-  applicationMethod: 'direct' | 'bot';
-  onApplicationMethodChange: (method: 'direct' | 'bot') => void;
-  hasCaptcha: boolean;
-  onHasCaptchaChange: (value: boolean) => void;
+  onEditingConfirm?: () => void;
 }
 
 const InviteForm: React.FC<InviteFormProps> = ({
   channels,
   maxChannels,
-  channelSearch,
-  onChannelSearchChange,
-  selectedChannelId,
-  onChannelSelect,
-  linkName,
-  onLinkNameChange,
-  hasLimit,
-  onHasLimitChange,
-  limitCount,
-  onLimitCountChange,
-  linkType,
-  onLinkTypeChange,
-  validityPeriod,
-  onValidityPeriodChange,
-  expirationDate,
-  onExpirationDateChange,
-  expirationHours,
-  onExpirationHoursChange,
-  expirationMinutes,
-  onExpirationMinutesChange,
-  connectionMethod,
-  onConnectionMethodChange,
-  loginMethod,
-  onLoginMethodChange,
-  joiningText,
-  onJoiningTextChange,
-  applicationMethod,
-  onApplicationMethodChange,
-  hasCaptcha,
-  onHasCaptchaChange,
+  onEditingConfirm,
 }) => {
+  const dispatch = useAppDispatch();
+  const modalState = useAppSelector((state) => state.createInviteLinkModal);
+  const channelsState = useAppSelector((state) => state.channels);
+  const { showSuccess, showError } = useNotifications();
+  const [showCreateChannel, setShowCreateChannel] = useState(false);
+  
+  const {
+    channelSearch,
+    selectedChannelId,
+    linkName,
+    hasLimit,
+    limitCount,
+    linkType,
+    validityPeriod,
+    expirationDate: expirationDateString,
+    expirationHours,
+    expirationMinutes,
+    connectionMethod,
+    loginMethod,
+    applicationMethod,
+    hasCaptcha,
+    editingLinkId,
+  } = modalState;
+  
+  const expirationDate = expirationDateString ? new Date(expirationDateString) : null;
   const filteredChannels = channels.filter((channel) =>
-    channel.name.toLowerCase().includes(channelSearch.toLowerCase())
+    channel.title.toLowerCase().includes(channelSearch.toLowerCase())
   );
+
+  const handleSubmit = () => {
+      if (editingLinkId && onEditingConfirm) {
+        onEditingConfirm();
+      } else {
+        dispatch(buildPreviewData());
+        dispatch(setStep('confirm'));
+      }
+  };
+
+  const handleAddChannel = async (link: string) => {
+    try {
+      await dispatch(addChannelThunk(link)).unwrap();
+      await dispatch(fetchChannelsThunk({ force: true }));
+      showSuccess('Канал успешно подключен');
+      setShowCreateChannel(false);
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось подключить канал';
+      showError(errorMessage);
+      return false;
+    }
+  };
+
+  const isSubmitDisabled = !linkName?.trim() || !selectedChannelId;
 
   return (
     <>
@@ -93,7 +110,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
           <SearchBar
             placeholder="Поиск по каналам"
             value={channelSearch}
-            onChange={onChannelSearchChange}
+            onChange={(value) => dispatch(setChannelSearch(value))}
           />
         </div>
         <div className={styles.channelsList}>
@@ -101,10 +118,10 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <div key={channel.id} className={styles.channelItem}>
               <Checkbox
                 variant="radio"
-                checked={selectedChannelId === channel.id}
-                onChange={() => onChannelSelect(channel.id)}
+                checked={selectedChannelId === channel.id.toString()}
+                onChange={() => dispatch(setSelectedChannelId(channel.id.toString()))}
               />
-              <span className={styles.channelItemName}>{channel.name}</span>
+              <span className={styles.channelItemName}>{channel.title}</span>
             </div>
           ))}
           <Button 
@@ -113,6 +130,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             intent="gradient"
             size="lg"
             style={{ width: '100%', gap: "10px" }}
+            onClick={() => setShowCreateChannel(true)}
           >
             <span className={buttonStyles.label}>Подключить новый</span>
             <span className={styles.channelsCount}>{`${channels.length}/${maxChannels}`}</span>
@@ -125,21 +143,21 @@ const InviteForm: React.FC<InviteFormProps> = ({
         <Input
           placeholder="Например"
           value={linkName}
-          onChange={onLinkNameChange}
+          onChange={(value) => dispatch(setLinkName(value))}
         />
       </div>
 
       <div className={styles.section}>
         <div className={styles.toggleRow}>
           <span className={styles.toggleLabel}>Лимит по количеству вступлений</span>
-          <Toggle checked={hasLimit} onChange={onHasLimitChange} />
+          <Toggle checked={hasLimit} onChange={(value) => dispatch(setHasLimit(value))} />
         </div>
         {hasLimit && (
           <Input
             type="text"
             placeholder="Например, 100"
             value={limitCount?.toString() || ''}
-            onChange={onLimitCountChange}
+            onChange={(value) => dispatch(setLimitCount(value))}
           />
         )}
       </div>
@@ -151,7 +169,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={linkType === 'open'}
-              onChange={() => onLinkTypeChange('open')}
+              onChange={() => dispatch(setLinkType('open'))}
             />
             <span className={styles.channelItemName}>Открытая</span>
           </div>
@@ -159,7 +177,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={linkType === 'closed'}
-              onChange={() => onLinkTypeChange('closed')}
+              onChange={() => dispatch(setLinkType('closed'))}
             />
             <span className={styles.channelItemName}>Закрытая <span className={styles.withConfirm}>(с подтверждением)</span></span>
           </div>
@@ -173,7 +191,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={validityPeriod === 'indefinite'}
-              onChange={() => onValidityPeriodChange('indefinite')}
+              onChange={() => dispatch(setValidityPeriod('indefinite'))}
             />
             <span className={styles.channelItemName}>Бессрочно</span>
           </div>
@@ -181,7 +199,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={validityPeriod === 'date'}
-              onChange={() => onValidityPeriodChange('date')}
+              onChange={() => dispatch(setValidityPeriod('date'))}
             />
             <span className={styles.channelItemName}>До даты</span>
           </div>
@@ -191,7 +209,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <div className={styles.datePickerContainer}>
               <DatePicker
                 value={expirationDate || undefined}
-                onChange={(date) => onExpirationDateChange(date)}
+                onChange={(date) => dispatch(setExpirationDate(date ? date.toISOString() : null))}
                 locale="ru"
                 minDate={null}
               />
@@ -200,8 +218,8 @@ const InviteForm: React.FC<InviteFormProps> = ({
               <TimePicker
                 hours={expirationHours}
                 minutes={expirationMinutes}
-                onHoursChange={onExpirationHoursChange}
-                onMinutesChange={onExpirationMinutesChange}
+                onHoursChange={(hours) => dispatch(setExpirationHours(hours))}
+                onMinutesChange={(minutes) => dispatch(setExpirationMinutes(minutes))}
                 selectedDate={expirationDate || null}
                 notShowQuickTimes
                 notShowHint
@@ -218,7 +236,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={connectionMethod === 'protection'}
-              onChange={() => onConnectionMethodChange('protection')}
+              onChange={() => dispatch(setConnectionMethod('protection'))}
             />
             <span className={styles.channelItemName}>Защита</span>
           </div>
@@ -226,7 +244,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={connectionMethod === 'normal'}
-              onChange={() => onConnectionMethodChange('normal')}
+              onChange={() => dispatch(setConnectionMethod('normal'))}
             />
             <span className={styles.channelItemName}>Обычная</span>
           </div>
@@ -240,7 +258,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={loginMethod === 'direct'}
-              onChange={() => onLoginMethodChange('direct')}
+              onChange={() => dispatch(setLoginMethod('direct'))}
             />
             <span className={styles.channelItemName}>Прямая ссылка</span>
           </div>
@@ -248,7 +266,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={loginMethod === 'bot'}
-              onChange={() => onLoginMethodChange('bot')}
+              onChange={() => dispatch(setLoginMethod('bot'))}
             />
             <span className={styles.channelItemName}>Через приветственного бота</span>
           </div>
@@ -271,7 +289,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
                 <Checkbox
                   variant="radio"
                   checked={applicationMethod === 'direct'}
-                  onChange={() => onApplicationMethodChange('direct')}
+                  onChange={() => dispatch(setApplicationMethod('direct'))}
                 />
                 <span className={styles.channelItemName}>Прямая заявка</span>
               </div>
@@ -279,7 +297,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
                 <Checkbox
                   variant="radio"
                   checked={applicationMethod === 'bot'}
-                  onChange={() => onApplicationMethodChange('bot')}
+                  onChange={() => dispatch(setApplicationMethod('bot'))}
                 />
                 <span className={styles.channelItemName}>Через приветственного бота</span>
               </div>
@@ -291,12 +309,37 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <div className={styles.radioGroupItem}>
               <Checkbox
                 checked={hasCaptcha}
-                onChange={onHasCaptchaChange}
+                onChange={(value) => dispatch(setHasCaptcha(value))}
               />
               <span className={styles.channelItemName}>Капча перед подачей заявки</span>
             </div>
           </div>
         </>
+      )}
+
+      <div className={styles.submitButtonContainer}>
+        <Button
+          variant="fill"
+          intent="gradient"
+          size="lg"
+          onClick={handleSubmit}
+          className={styles.submitButton}
+          disabled={isSubmitDisabled}
+        >
+          {editingLinkId ? 'Сохранить изменения' : 'Продолжить'}
+        </Button>
+      </div>
+
+      {showCreateChannel && (
+        <div className={styles.createChannelModalOverlay} onClick={() => setShowCreateChannel(false)}>
+          <div className={styles.createChannelModalContent} onClick={e => e.stopPropagation()}>
+            <CreateChannel
+              onSubmit={handleAddChannel}
+              onCancel={() => setShowCreateChannel(false)}
+              loading={channelsState.syncing}
+            />
+          </div>
+        </div>
       )}
     </>
   );

@@ -1,0 +1,193 @@
+import { configureStore } from '@reduxjs/toolkit';
+import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
+import inboxReducer from './slices/inbox';
+import channelsReducer from './slices/channels';
+import createInviteLinkModalReducer from './slices/createInviteLinkModal';
+import autoRepliesReducer from './slices/autoReplies';
+import commandsReducer from './slices/commands';
+import triggersReducer from './slices/triggers';
+import createTriggerModalReducer from './slices/createTriggerModal';
+import createAutoReplyModalReducer from './slices/createAutoReplyModal';
+import createCommandModalReducer from './slices/createCommandModal';
+
+export const inboxStore = configureStore({
+  reducer: { 
+    inbox: inboxReducer,
+    channels: channelsReducer,
+    createInviteLinkModal: createInviteLinkModalReducer,
+    autoReplies: autoRepliesReducer,
+    commands: commandsReducer,
+    triggers: triggersReducer,
+    createTriggerModal: createTriggerModalReducer,
+    createAutoReplyModal: createAutoReplyModalReducer,
+    createCommandModal: createCommandModalReducer,
+  },
+  devTools: process.env.NODE_ENV !== 'production',
+});
+
+export type RootState = ReturnType<typeof inboxStore.getState>;
+export type AppDispatch = typeof inboxStore.dispatch;
+
+export const useAppDispatch = () => useDispatch<AppDispatch>();
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+export type { InboxView, SortInput, InboxState } from './slices/inbox';
+export {
+  setSelectedFilter,
+  setCurrentView,
+  setSort,
+  removeItem,
+  updateItem,
+  addInviteLink,
+  setInviteLinksLoading,
+  setInviteLinks,
+  updateInviteLink,
+  removeInviteLink,
+} from './slices/inbox';
+export {
+  selectFilteredItems,
+  selectSortedItems,
+  selectChannels,
+  selectChannelsLoading,
+  selectChannelsPagination,
+  selectInviteLinks,
+  selectInviteLinksTotal,
+  selectInviteLinksLoading,
+} from './selectors';
+export type { InviteLink, InviteLinksResponse } from '@/types';
+export { useCreateInviteLink } from './hooks/useCreateInviteLink';
+export {
+  setChannels,
+  addChannel,
+  updateChannel,
+  removeChannel,
+  toggleChannelSelected,
+  selectAllChannels,
+  deselectAllChannels,
+  setLoading,
+  setSyncing,
+  setError,
+  setTotal,
+  clearError,
+  resetChannels,
+} from './slices/channels';
+export { 
+  fetchChannelsThunk, 
+  addChannelThunk, 
+  deleteChannelThunk 
+} from '@/app/[locale]/create-post/store/thunks/channels';
+
+export {
+  createInviteLinkThunk,
+  fetchInviteLinksThunk,
+  fetchAllInviteLinksThunk,
+  patchInviteLinkThunk,
+  fetchInviteLinkByIdThunk,
+  deleteInviteLinkThunk,
+} from './thunks/inviteLinks';
+export type { PatchInviteLinkRequest } from './thunks/inviteLinks';
+export {
+  setModalOpen,
+  setStep,
+  setChannelSearch,
+  setSelectedChannelId,
+  setLinkName,
+  setHasLimit,
+  setLimitCount,
+  setLinkType,
+  setValidityPeriod,
+  setExpirationDate,
+  setExpirationHours,
+  setExpirationMinutes,
+  setConnectionMethod,
+  setLoginMethod,
+  setJoiningText,
+  setApplicationMethod,
+  setHasCaptcha,
+  setPreviewData,
+  setEditingLinkIds,
+  populateFormFromInviteLink,
+  resetForm,
+  buildPreviewData,
+} from './slices/createInviteLinkModal';
+export type { CreateInviteLinkModalState, ModalStep } from './slices/createInviteLinkModal';
+export {
+  setAutoReplies,
+  addAutoReply,
+  updateAutoReply,
+  removeAutoReply,
+  resetAutoReplies,
+} from './slices/autoReplies';
+export type { AutoReply, AutoReplyCreate } from './slices/autoReplies';
+export {
+  setCommands,
+  addCommand,
+  updateCommand,
+  removeCommand,
+  resetCommands,
+} from './slices/commands';
+export type { BotCommand, BotCommandCreate } from './slices/commands';
+export {
+  setTriggers,
+  addTrigger,
+  updateTrigger,
+  removeTrigger,
+  resetTriggers,
+} from './slices/triggers';
+export type { Trigger, TriggerCreate, TriggerType, ActionType, ChatType } from './slices/triggers';
+export {
+  fetchAutoRepliesThunk,
+  createAutoReplyThunk,
+} from './thunks/autoReplies';
+export type { FetchAutoRepliesParams } from './thunks/autoReplies';
+export {
+  fetchCommandsThunk,
+  createCommandThunk,
+} from './thunks/commands';
+export type { FetchCommandsParams } from './thunks/commands';
+export {
+  fetchTriggersThunk,
+  createTriggerThunk,
+} from './thunks/triggers';
+export type { FetchTriggersParams } from './thunks/triggers';
+export {
+  setModalOpen as setCreateTriggerModalOpen,
+  setName as setTriggerName,
+  setTriggerType,
+  setActionType,
+  setActionText,
+  setActionMediaUrl,
+  setActionMediaType,
+  setActionButtons,
+  setActionDurationMinutes,
+  setDelayMinutes,
+  setChatType,
+  setIsActive as setTriggerIsActive,
+  resetForm as resetTriggerForm,
+} from './slices/createTriggerModal';
+export type { CreateTriggerModalState, TriggerTypeEnum, ActionTypeEnum } from './slices/createTriggerModal';
+export {
+  setModalOpen as setCreateAutoReplyModalOpen,
+  setKeywords,
+  setKeyword,
+  addKeyword,
+  removeKeyword,
+  setResponseText,
+  setResponseMediaUrl,
+  setResponseMediaType,
+  setScope as setAutoReplyScope,
+  setIsActive as setAutoReplyIsActive,
+  resetForm as resetAutoReplyForm,
+} from './slices/createAutoReplyModal';
+export type { CreateAutoReplyModalState } from './slices/createAutoReplyModal';
+export {
+  setModalOpen as setCreateCommandModalOpen,
+  setCommand,
+  setDescription,
+  setResponseText as setCommandResponseText,
+  setResponseMediaUrl as setCommandResponseMediaUrl,
+  setResponseMediaType as setCommandResponseMediaType,
+  setScope as setCommandScope,
+  setIsActive as setCommandIsActive,
+  resetForm as resetCommandForm,
+} from './slices/createCommandModal';
+export type { CreateCommandModalState } from './slices/createCommandModal';

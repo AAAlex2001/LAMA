@@ -36,7 +36,6 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
   };
 
   const handleDeleteConfirm = () => {
-    console.log('Delete message');
     setIsDeleteModalOpen(false);
   };
 

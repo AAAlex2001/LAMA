@@ -10,8 +10,8 @@ import { setChannels as setChannelSelections } from '../slices/channels';
 import { addTag, clearTags } from '../slices/settings';
 import { fetchChannelsThunk } from './channels';
 import { fetchTagsThunk } from './tags';
-import type { TagColor } from '../types';
-import { TAG_COLORS } from '@/components/dropdown/types';
+import type { TagColor } from '@/types';
+import { TAG_COLORS } from '@/types';
 
 export const loadChannels = createAsyncThunk(
   'createPost/loadChannels',

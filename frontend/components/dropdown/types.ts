@@ -1,23 +1,17 @@
+import { ApiTag, TagColor } from '@/types';
+
+export { TAG_COLORS } from '@/types';
 export interface DropdownOption {
   id: string;
   label: string;
   checked?: boolean;
 }
 
-export interface ApiTag {
-  id: number;
-  name: string;
-  created_at: string;
-  color?: string;
-}
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
-export type TagColor = '#FAC7C7' | '#FDE57E' | '#B8F1D2' | '#B8DBF1' | '#B8B9F1';
 export type ButtonTypeOption = 'url' | 'hidden_text' | 'callback';
 export type CallbackActionOption = 'send_dm' | 'reply_in_chat' | 'track_click';
-
-export const TAG_COLORS: TagColor[] = ['#FAC7C7', '#FDE57E', '#B8F1D2', '#B8DBF1', '#B8B9F1'];
 export interface ChannelsContentProps {
   options: DropdownOption[];
   showSearch: boolean;
