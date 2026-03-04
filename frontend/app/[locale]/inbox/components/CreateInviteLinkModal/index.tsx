@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import ModalBase from '@/components/modal-base';
-import { Button } from '@/components/new-button';
 import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 import InviteForm from './components/InviteForm';
@@ -22,8 +21,8 @@ import {
   fetchInviteLinkByIdThunk,
   buildPreviewData,
   inboxStore,
+  selectChannels,
 } from '../../store';
-import { selectChannels } from '../../store/selectors';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 export interface ChannelSimple {

@@ -1,7 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './index';
 import type { IInboxItem } from '../components/InboxList/components/ListElement';
-import type { ListHeaderType } from '../components/InboxList/components/ListHeader';
 
 export const selectInbox = (s: RootState) => s.inbox;
 

@@ -1,7 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import inboxReducer from './slices/inbox';
-import channelsReducer from './slices/channels';
 import createInviteLinkModalReducer from './slices/createInviteLinkModal';
 import autoRepliesReducer from './slices/autoReplies';
 import commandsReducer from './slices/commands';
@@ -9,6 +8,7 @@ import triggersReducer from './slices/triggers';
 import createTriggerModalReducer from './slices/createTriggerModal';
 import createAutoReplyModalReducer from './slices/createAutoReplyModal';
 import createCommandModalReducer from './slices/createCommandModal';
+import channelsReducer from '@/app/[locale]/create-post/store/slices/channels';
 
 export const inboxStore = configureStore({
   reducer: { 
@@ -69,7 +69,7 @@ export {
   setTotal,
   clearError,
   resetChannels,
-} from './slices/channels';
+} from '@/app/[locale]/create-post/store/slices/channels';
 export { 
   fetchChannelsThunk, 
   addChannelThunk, 
