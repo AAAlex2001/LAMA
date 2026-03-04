@@ -1,5 +1,6 @@
 import { ApiTag, TagColor } from '@/types';
 
+export type { TagColor, ApiTag };
 export { TAG_COLORS } from '@/types';
 export interface DropdownOption {
   id: string;
