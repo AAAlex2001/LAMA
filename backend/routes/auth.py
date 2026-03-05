@@ -3,6 +3,7 @@
 """
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Header, Request
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -24,6 +25,8 @@ from backend.schemas.auth import (
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+http_bearer = HTTPBearer(auto_error=False)
+
 
 # ============================================================================
 # Dependency
@@ -39,19 +42,18 @@ async def get_auth_service(db: AsyncSession = Depends(get_db)):
 
 
 async def get_current_user(
-    authorization: Optional[str] = Header(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(http_bearer),
     service: AuthService = Depends(get_auth_service)
 ) -> User:
     """Получить текущего авторизованного пользователя"""
-    if not authorization or not authorization.startswith("Bearer "):
+    if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    
-    token = authorization.replace("Bearer ", "")
-    user = await service.verify_access_token(token)
-    
+
+    user = await service.verify_access_token(credentials.credentials)
+
     if not user:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
-    
+
     return user
 
 

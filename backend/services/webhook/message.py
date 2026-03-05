@@ -44,12 +44,13 @@ class MessageHandler:
         """Обработка сообщения"""
         text_content = message.text or message.caption
         chat_type = message.chat.type if message.chat else None
+        logger.info(f"Processing message from chat {message.chat.id}, type={chat_type}, bot_id={self.bot_model.id}, text={text_content[:50] if text_content else 'none'}")
 
         try:
             async with get_bot_session() as telegram_bot:
                 # Удаление системных сообщений
                 auto_delete_service = ChannelAutoDeleteService(self.db)
-                if await auto_delete_service.delete_if_system_message(telegram_bot, message):
+                if await auto_delete_service.delete_if_system(telegram_bot, message):
                     return
 
                 # Проверка ночного режима
@@ -310,6 +311,8 @@ class MessageHandler:
             chat_type=chat_type
         )
 
+        logger.info(f"Auto-reply lookup: bot_id={self.bot_model.id}, text={text_content[:50]}, chat_type={chat_type}, found={auto_reply is not None}")
+
         if auto_reply:
             await self.send_auto_reply_response(telegram_bot, message, auto_reply)
 
@@ -356,7 +359,7 @@ class MessageHandler:
                 reply_to_message_id=message.message_id
             )
 
-            await auto_delete_service.delete_if_command_message(telegram_bot, message)
+            await auto_delete_service.delete_if_command(telegram_bot, message)
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
@@ -368,7 +371,7 @@ class MessageHandler:
             )
 
             if handled:
-                await auto_delete_service.delete_if_command_message(telegram_bot, message)
+                await auto_delete_service.delete_if_command(telegram_bot, message)
             return
 
         command_service = BotCommandService(self.db)
@@ -390,11 +393,11 @@ class MessageHandler:
             )
 
             await self.send_command_response(telegram_bot, message, command)
-            await auto_delete_service.delete_if_command_message(telegram_bot, message)
+            await auto_delete_service.delete_if_command(telegram_bot, message)
             return
 
         # Команда не найдена, но удаляем исходное сообщение
-        await auto_delete_service.delete_if_command_message(telegram_bot, message)
+        await auto_delete_service.delete_if_command(telegram_bot, message)
 
     def build_shortcode_context(self, message: Message) -> Dict[str, Any]:
         """Построить контекст для шорткодов"""
@@ -474,3 +477,4 @@ class MessageHandler:
             media_type=auto_reply.response_media_type,
             buttons=auto_reply.response_buttons,
         )
+
