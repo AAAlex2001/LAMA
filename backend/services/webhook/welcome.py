@@ -1,6 +1,7 @@
 """
 Обработчик приветственных сообщений для webhook
 """
+
 import logging
 
 from aiogram.types import ChatJoinRequest, Message
@@ -27,22 +28,26 @@ class WelcomeHandler:
         Отправляется в личные сообщения
         """
         try:
-            async with get_bot_session() as telegram_bot:
-                message = await self.welcome_service.handle_join_request_welcome(
-                    telegram_bot=telegram_bot,
-                    bot_model=self.bot_model,
-                    join_request=join_request,
+            async with get_bot_session(self.bot_model.token) as telegram_bot:
+                message = (
+                    await self.welcome_service.handle_join_request_welcome(
+                        telegram_bot=telegram_bot,
+                        bot_model=self.bot_model,
+                        join_request=join_request,
+                    )
                 )
 
                 if message:
                     logger.info(
-                        f"Welcome sent for join request: user={join_request.from_user.id}, "
+                        f"Welcome sent for join request: "
+                        f"user={join_request.from_user.id}, "
                         f"chat={join_request.chat.id}"
                     )
 
         except Exception as e:
             logger.error(
-                f"Failed to send join request welcome: {e}", exc_info=True)
+                f"Failed to send join request welcome: {e}", exc_info=True
+            )
 
     async def handle_new_member(
         self,
@@ -54,34 +59,45 @@ class WelcomeHandler:
         Отправляется в группу (может быть в топик)
         """
         try:
-            async with get_bot_session() as telegram_bot:
+            async with get_bot_session(self.bot_model.token) as telegram_bot:
                 # Определяем топик:
-                # 1. Если в настройках бота указан конкретный топик (welcome_message_thread_id),
-                #    то отправляем ВСЕГДА в него (независимо от того, куда добавили участника)
-                # 2. Если не указан (None), то отправляем в тот топик, куда добавили участника
+                # 1. Если указан конкретный топик (welcome_message_thread_id),
+                #    то отправляем ВСЕГДА в него
+                # 2. Если не указан (None), отправляем в топик, куда добавили
                 message_thread_id = self.bot_model.welcome_message_thread_id
                 if message_thread_id is None:
                     message_thread_id = getattr(
-                        message, "message_thread_id", None)
+                        message, "message_thread_id", None
+                    )
 
-                sent_message = await self.welcome_service.handle_member_joined_welcome(
-                    telegram_bot=telegram_bot,
-                    bot_model=self.bot_model,
-                    user_id=new_member_user.id,
-                    chat_id=message.chat.id,
-                    user_first_name=new_member_user.first_name,
-                    user_username=getattr(new_member_user, "username", None),
-                    user_last_name=getattr(new_member_user, "last_name", None),
-                    chat_title=message.chat.title if message.chat else None,
-                    message_thread_id=message_thread_id,
+                sent_message = (
+                    await self.welcome_service.handle_member_joined_welcome(
+                        telegram_bot=telegram_bot,
+                        bot_model=self.bot_model,
+                        user_id=new_member_user.id,
+                        chat_id=message.chat.id,
+                        user_first_name=new_member_user.first_name,
+                        user_username=getattr(
+                            new_member_user, "username", None
+                        ),
+                        user_last_name=getattr(
+                            new_member_user, "last_name", None
+                        ),
+                        chat_title=(
+                            message.chat.title if message.chat else None
+                        ),
+                        message_thread_id=message_thread_id,
+                    )
                 )
 
                 if sent_message:
                     logger.info(
-                        f"Welcome sent for new member: user={new_member_user.id}, "
+                        f"Welcome sent for new member: "
+                        f"user={new_member_user.id}, "
                         f"chat={message.chat.id}, thread={message_thread_id}"
                     )
 
         except Exception as e:
             logger.error(
-                f"Failed to send new member welcome: {e}", exc_info=True)
+                f"Failed to send new member welcome: {e}", exc_info=True
+            )

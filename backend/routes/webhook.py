@@ -16,8 +16,10 @@ logger = logging.getLogger(__name__)
 
 
 @router.post("/telegram/webhook")
+@router.post("/telegram/webhook/{bot_token}")
 async def telegram_webhook(
     request: Request,
+    bot_token: Optional[str] = None,
     x_telegram_bot_api_secret_token: Optional[str] = Header(None),
 ):
     """
@@ -39,6 +41,9 @@ async def telegram_webhook(
         return {"ok": True}
 
     # Запускаем обработку в фоне
-    asyncio.create_task(WebhookDispatcher.dispatch(update))
+    if not bot_token:
+        import os
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    asyncio.create_task(WebhookDispatcher.dispatch(update, bot_token))
 
     return {"ok": True}

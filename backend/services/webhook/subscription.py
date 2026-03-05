@@ -1,6 +1,7 @@
 """
 Обработчик подписок на каналы
 """
+
 import asyncio
 import logging
 
@@ -11,7 +12,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.bot import BotService
 from backend.services.bot.triggers import TriggerService
-from backend.models.bots import Bot as BotModel, PendingJoinApproval, TriggerType
+from backend.models.bots import (
+    Bot as BotModel,
+    PendingJoinApproval,
+    TriggerType,
+)
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -29,7 +34,6 @@ class SubscriptionHandler:
     async def process(self, chat_member: ChatMemberUpdated) -> None:
         """Обработка изменения статуса участника канала"""
         new_status = chat_member.new_chat_member.status
-        old_status = chat_member.old_chat_member.status if chat_member.old_chat_member else None
 
         user_id = chat_member.from_user.id
         channel_id = chat_member.chat.id
@@ -39,14 +43,11 @@ class SubscriptionHandler:
             await self.handle_subscription(chat_member, user_id, channel_id)
 
         # Пользователь отписался от канала (можно добавить триггер если нужно)
-        # if old_status in {"member", "administrator", "creator"} and new_status in {"left", "kicked"}:
+        # if new_status in {"left", "kicked"}:
         #     pass
 
     async def handle_subscription(
-        self,
-        chat_member: ChatMemberUpdated,
-        user_id: int,
-        channel_id: int
+        self, chat_member: ChatMemberUpdated, user_id: int, channel_id: int
     ) -> None:
         """Обработка подписки на канал"""
         try:
@@ -76,32 +77,37 @@ class SubscriptionHandler:
 
             # Одобряем все заявки батчем
             if approved_pendings:
-                async with get_bot_session() as telegram_bot:
+                async with get_bot_session(
+                    self.bot_model.token
+                ) as telegram_bot:
                     for pending in approved_pendings:
                         try:
                             await asyncio.wait_for(
                                 telegram_bot.approve_chat_join_request(
                                     chat_id=pending.chat_id,
-                                    user_id=pending.user_id
+                                    user_id=pending.user_id,
                                 ),
-                                timeout=TELEGRAM_API_TIMEOUT
+                                timeout=TELEGRAM_API_TIMEOUT,
                             )
 
-                            # Триггер JOIN_REQUEST_APPROVED после автоматического одобрения
+                            # Триггер JOIN_REQUEST_APPROVED
                             await self.trigger_service.fire_event(
                                 bot_id=self.bot_model.id,
                                 trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
                                 user_id=pending.user_id,
                                 chat_id=pending.chat_id,
                                 telegram_bot=telegram_bot,
-                                chat_type='private',
-                                context={"auto_approved": True,
-                                    "channel_id": channel_id}
+                                chat_type="private",
+                                context={
+                                    "auto_approved": True,
+                                    "channel_id": channel_id,
+                                },
                             )
 
                         except (TelegramAPIError, asyncio.TimeoutError) as e:
                             logger.warning(
-                                f"Failed to approve join request: {e}")
+                                f"Failed to approve join request: {e}"
+                            )
 
                         # Удаляем обработанный pending
                         await self.db.delete(pending)
