@@ -46,7 +46,12 @@ class CRUDBotService:
         existing_bot = await self.get_bot_by_telegram_id(bot_info.id, owner_id=owner_id)
 
         if existing_bot:
-            raise ValueError(f"You have already registered this bot")
+            raise ValueError("You have already registered this bot")
+
+        # Если бот уже существует глобально (мастер-бот) — возвращаем его, не создаём дубль
+        global_existing = await self.get_bot_by_telegram_id(bot_info.id)
+        if global_existing:
+            return global_existing
 
         # Создаём бота в БД
         bot = BotModel(
