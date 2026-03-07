@@ -1,0 +1,23 @@
+.modalContent {
+  max-width: 500px;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+}
+
+.modalBody {
+  padding: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.footer {
+  display: flex;
+  gap: 12px;
+}
