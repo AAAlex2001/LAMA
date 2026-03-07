@@ -7,7 +7,7 @@ from backend.models.direct import DirectChat
 from backend.models.bots import BotMessage, Bot, MessageType
 from backend.schemas.bots.messages import SendMessageRequest
 from backend.schemas.direct.message import EditMessageRequest
-from backend.services.telegram_client import RateLimitedBot
+from backend.services.webhook.base import get_bot_session
 from backend.websockets.manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -38,16 +38,15 @@ class DirectMessageService:
         if not chat or not bot:
             return None
 
-        client = RateLimitedBot(bot.token)
-        
         tg_response = None
         try:
-            if request.media_url and request.media_type:
-                if request.media_type == MessageType.PHOTO:
-                    tg_response = await client.send_photo(chat_id=tg_chat_id, photo=request.media_url, caption=request.text_content)
-            elif request.text_content:
-                tg_response = await client.send_message(chat_id=tg_chat_id, text=request.text_content)
-                
+            async with get_bot_session(bot.token) as client:
+                if request.media_url and request.media_type:
+                    if request.media_type == MessageType.PHOTO:
+                        tg_response = await client.send_photo(chat_id=tg_chat_id, photo=request.media_url, caption=request.text_content)
+                elif request.text_content:
+                    tg_response = await client.send_message(chat_id=tg_chat_id, text=request.text_content)
+
             if not tg_response:
                 return None
         except Exception as e:
@@ -87,30 +86,30 @@ class DirectMessageService:
         
         msg, bot = row[0], row[1]
         
-        client = RateLimitedBot(bot.token)
         try:
-            if request.text_content:
-                if msg.message_type == MessageType.TEXT:
-                    await client.edit_message_text(
-                        text=request.text_content, 
-                        chat_id=msg.chat_id, 
-                        message_id=msg.telegram_message_id
+            async with get_bot_session(bot.token) as client:
+                if request.text_content:
+                    if msg.message_type == MessageType.TEXT:
+                        await client.edit_message_text(
+                            text=request.text_content,
+                            chat_id=msg.chat_id,
+                            message_id=msg.telegram_message_id,
+                        )
+                    else:
+                        await client.edit_message_caption(
+                            caption=request.text_content,
+                            chat_id=msg.chat_id,
+                            message_id=msg.telegram_message_id,
+                        )
+
+                    msg.text_content = request.text_content
+                    await self.db.commit()
+                    await self.db.refresh(msg)
+
+                    await ws_manager.broadcast_chat_update(
+                        user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,
+                        event_type="message_edited", payload={"message_id": msg.id}
                     )
-                else:
-                    await client.edit_message_caption(
-                        caption=request.text_content, 
-                        chat_id=msg.chat_id, 
-                        message_id=msg.telegram_message_id
-                    )
-                
-                msg.text_content = request.text_content
-                await self.db.commit()
-                await self.db.refresh(msg)
-                
-                await ws_manager.broadcast_chat_update(
-                    user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,
-                    event_type="message_edited", payload={"message_id": msg.id}
-                )
         except Exception as e:
             logger.error(f"Error editing message via Direct API: {e}", exc_info=True)
             return None
@@ -128,12 +127,12 @@ class DirectMessageService:
             
         msg, bot = row[0], row[1]
         
-        client = RateLimitedBot(bot.token)
         try:
-            await client.delete_message(chat_id=msg.chat_id, message_id=msg.telegram_message_id)
+            async with get_bot_session(bot.token) as client:
+                await client.delete_message(chat_id=msg.chat_id, message_id=msg.telegram_message_id)
             await self.db.delete(msg)
             await self.db.commit()
-            
+
             await ws_manager.broadcast_chat_update(
                 user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,
                 event_type="message_deleted", payload={"message_id": msg.id}
