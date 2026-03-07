@@ -13,6 +13,9 @@ from backend.services.bot.triggers import TriggerService
 from backend.services.bot.shortcodes import ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType
 from backend.utils import build_keyboard
+from backend.services.inbox.action_service import InboxActionService
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +156,33 @@ class CommandProcessor:
                 message=message,
                 telegram_bot=self.telegram_bot
             )
+
+            try:
+                inbox_service = InboxActionService(self.db)
+                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_id = channel_obj.id if channel_obj else None
+                
+                await inbox_service.create_event(event_data={
+                    "owner_id": self.bot_model.owner_id,
+                    "category": InboxCategory.AUTOMATION,
+                    "entity_type": EntityType.BOT,
+                    "event_type": EventType.BOT_COMMAND,
+                    "bot_id": self.bot_model.id,
+                    "channel_id": channel_id,
+                    "tg_user_id": message.from_user.id if message.from_user else None,
+                    "tg_username": message.from_user.username if message.from_user else None,
+                    "status": EventStatus.PROCESSED if handled else EventStatus.NEW,
+                    "description": f"Command {command_text} called in chat {message.chat.id}",
+                    "payload": {
+                        "command": command_text,
+                        "full_text": text_content,
+                        "message_id": message.message_id,
+                        "chat_id": message.chat.id,
+                        "handled": handled
+                    }
+                })
+            except Exception as e:
+                logger.error(f"Failed to create inbox event for command {command_text}: {e}", exc_info=True)
 
             if handled:
                 await auto_delete_service.delete_if_command(
