@@ -52,6 +52,7 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
       setBotToken('');
       setError(null);
       onSuccess?.(data);
+      setBotDescription('');
       onOpenChange(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Не удалось подключить бота';
@@ -66,6 +67,7 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
     if (!isLoading) {
       setBotToken('');
       setError(null);
+      setBotDescription('');
       onOpenChange(false);
     }
   };
