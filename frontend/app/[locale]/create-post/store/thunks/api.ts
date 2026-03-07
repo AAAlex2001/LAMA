@@ -6,17 +6,22 @@ export function getAuthToken(): string | null {
     : null;
 }
 
-export async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+interface ApiRequestOptions extends RequestInit {
+  skipApiPrefix?: boolean;
+}
+
+export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
+  const { skipApiPrefix, ...fetchOptions } = options;
+  const url = skipApiPrefix ? endpoint : `${API_BASE_URL}${endpoint}`;
   const token = getAuthToken();
   
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
+    ...fetchOptions.headers,
   };
 
-  const response = await fetch(url, { ...options, headers });
+  const response = await fetch(url, { ...fetchOptions, headers });
   
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));

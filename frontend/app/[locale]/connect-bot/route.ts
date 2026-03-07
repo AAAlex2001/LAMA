@@ -3,14 +3,15 @@ import { NextRequest, NextResponse } from 'next/server';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 const TELEGRAM_BOT_API_SECRET_TOKEN = process.env.TELEGRAM_BOT_API_SECRET_TOKEN || '';
 
-interface SyncBotRequest {
+interface BotRequest {
   token: string;
+  description: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { botToken } = body;
+    const { botToken, botDescription } = body;
 
     if (!botToken || typeof botToken !== 'string' || !botToken.trim()) {
       return NextResponse.json(
@@ -19,7 +20,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get auth token from Authorization header
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.startsWith('Bearer ') 
       ? authHeader.replace('Bearer ', '') 
@@ -52,38 +52,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const syncEndpoint = `${API_BASE_URL}/bots/sync`;
-    const syncRequest: SyncBotRequest = {
+    const botEndpoint = `${API_BASE_URL}/bots`;
+    const botRequest: BotRequest = {
       token: botToken.trim(),
+      description: botDescription.trim(),
     };
 
-    const syncResponse = await fetch(syncEndpoint, {
+    const botResponse = await fetch(botEndpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(syncRequest),
+      body: JSON.stringify(botRequest),
     });
 
-    if (!syncResponse.ok) {
-      const errorData = await syncResponse.json().catch(() => ({}));
+    if (!botResponse.ok) {
+      const errorData = await botResponse.json().catch(() => ({}));
       return NextResponse.json(
         {
           success: true,
-          message: 'Bot connected but sync failed',
-          syncError: errorData.detail || errorData.message || 'Failed to sync bot',
+          message: 'Bot created but connection failed',
+          botError: errorData.detail || errorData.message || 'Failed to create bot',
         },
         { status: 200 }
       );
     }
 
-    const syncData = await syncResponse.json();
+    const botData = await botResponse.json();
 
     return NextResponse.json({
       success: true,
-      message: 'Bot connected and synced successfully',
-      syncData,
+      message: 'Bot connected and created successfully',
+      botData,
     });
   } catch (error) {
     console.error('Error connecting bot:', error);

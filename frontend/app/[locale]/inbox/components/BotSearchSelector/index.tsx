@@ -56,7 +56,7 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
   };
 
   const handleConnectSuccess = async (data: any) => {
-    await dispatch(addBot(data.syncData.bot));
+    await dispatch(addBot(data.botData));
   };
 
   const filteredBots = useMemo(() => {
@@ -103,20 +103,20 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
               <Loader size={32} color="blue" />
             </div>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            intent="gradient"
-            size="lg"
-            style={{ width: '100%', gap: '10px' }}
-            onClick={handleOpenConnectModal}
-          >
-            <span className={buttonStyles.label}>{createButtonLabel}</span>
-            {maxBots !== undefined && (
-              <span className={styles.botsCount}>{`${bots.length}/${maxBots}`}</span>
-            )}
-          </Button>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          intent="gradient"
+          size="lg"
+          style={{ width: '100%', gap: '10px' }}
+          onClick={handleOpenConnectModal}
+        >
+          <span className={buttonStyles.label}>{createButtonLabel}</span>
+          {maxBots !== undefined && (
+            <span className={styles.botsCount}>{`${bots.length}/${maxBots}`}</span>
+          )}
+        </Button>
       </div>
       <ConnectBotModal
         isOpen={isConnectModalOpen}

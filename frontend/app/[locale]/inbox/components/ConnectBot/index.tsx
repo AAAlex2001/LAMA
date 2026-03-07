@@ -5,7 +5,7 @@ import ModalBase from '@/components/modal-base';
 import Input from '@/components/input';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { getAuthToken } from '@/app/[locale]/create-post/store/thunks/api';
+import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import styles from './styles.module.scss';
 
 interface ConnectBotModalProps {
@@ -21,6 +21,7 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
 }) => {
   const { showSuccess, showError } = useNotifications();
   const [botToken, setBotToken] = useState('');
+  const [botDescription, setBotDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,27 +37,16 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
     setIsLoading(true);
 
     try {
-      const token = getAuthToken();
-      const response = await fetch('/connect-bot', {
+      const data = await apiRequest<{ botError?: string }>('/connect-bot', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ botToken: botToken.trim() }),
+        skipApiPrefix: true,
+        body: JSON.stringify({ botToken: botToken.trim(), botDescription: botDescription.trim() }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Не удалось подключить бота');
-      }
-
-      const data = await response.json();
       
-      if (data.syncError) {
-        showError(`Бот подключен, но синхронизация не удалась: ${data.syncError}`);
+      if (data.botError) {
+        showError(`Бот создан, но подключение не удалось: ${data.botError}`);
       } else {
-        showSuccess('Бот успешно подключен и синхронизирован');
+        showSuccess('Бот успешно создан и подключен');
       }
       
       setBotToken('');
@@ -98,6 +88,14 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
               error={error}
               disabled={isLoading}
               autoFocus
+            />
+            <Input
+              label="Описание бота"
+              placeholder="Введите описание бота"
+              value={botDescription}
+              onChange={setBotDescription}
+              error={error}
+              disabled={isLoading}
             />
             <ModalBase.Footer className={styles.footer}>
               <Button
