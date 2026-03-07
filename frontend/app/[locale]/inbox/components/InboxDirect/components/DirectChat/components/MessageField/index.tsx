@@ -8,7 +8,7 @@ import MediaPreview from '@/components/media-preview';
 import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
-import { useState } from 'react';
+import { useState, forwardRef, useImperativeHandle } from 'react';
 import { useMessageMedia } from './hooks/useMessageMedia';
 import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
@@ -16,6 +16,14 @@ import { SendIcon } from '@/components/icons';
 import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import classNames from 'classnames';
+import type { MediaFile } from '@/components/media-preview';
+import type { ButtonRow } from '@/components/inline-buttons/inline-buttons';
+
+export interface MessageFieldRef {
+  mediaFiles: MediaFile[];
+  inlineButtonRows: ButtonRow[];
+  handleClearMedia: () => void;
+}
 
 interface MessageFieldProps {
   value: string;
@@ -23,7 +31,7 @@ interface MessageFieldProps {
   onSendMessage: () => Promise<void>;
 }
 
-const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => {
+const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, onChange, onSendMessage }, ref) => {
   const {
     mediaFiles,
     fileInputRef,
@@ -63,6 +71,12 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
   const { showSuccess } = useNotifications();
 
   const canShowInlineButtons = mediaFiles.length <= 1;
+
+  useImperativeHandle(ref, () => ({
+    mediaFiles,
+    inlineButtonRows,
+    handleClearMedia,
+  }), [mediaFiles, inlineButtonRows, handleClearMedia]);
 
   const handleToggleInlineButtons = () => {
     toggleInlineButtons();
@@ -137,7 +151,7 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
           >
             <PaperclipIcon width={22} height={22} color="currentColor" />
           </Button>
-          {!!value && (
+          {(!!value || mediaFiles.length > 0) && (
             <Button
               variant="ghost"
               intent="primary"
@@ -202,6 +216,8 @@ const MessageField = ({ value, onChange, onSendMessage }: MessageFieldProps) => 
       />
     </>
   );
-};
+});
+
+MessageField.displayName = 'MessageField';
 
 export default MessageField;

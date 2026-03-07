@@ -75,7 +75,9 @@ export const sendMessageThunk = createAsyncThunk(
   'globalMessages/sendMessage',
   async (params: SendMessageParams, { rejectWithValue }) => {
     const { botId, data } = params;
-    
+
+    console.log('data', data);
+    console.log('botId', botId);
     try {
       const message = await apiRequest<BotMessageResponse>(
         `/bots/${botId}/messages`,
@@ -84,6 +86,7 @@ export const sendMessageThunk = createAsyncThunk(
           body: JSON.stringify(data),
         }
       );
+      console.log('message', message);
       
       return message;
     } catch (error) {

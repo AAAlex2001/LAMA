@@ -8,7 +8,6 @@ import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';
 import { useAppSelector } from '@/app/[locale]/inbox/store';
 import { selectBots } from '@/app/[locale]/inbox/store/selectors';
-import EmptyState from '@/app/[locale]/inbox/components/EmptyState';
 import CreateTriggersModal from '@/app/[locale]/inbox/components/CreateTriggersModal';
 import CreateGlobalMessageModal from '@/app/[locale]/inbox/components/CreateGlobalMesssageModal';
 

@@ -1,227 +1,214 @@
 'use client';
 
-import { useState, useRef, FC } from 'react';
+import { useState, useRef, useEffect, useMemo, FC } from 'react';
 import styles from './styles.module.scss';
-import MessageElement, { MessageProps } from './components/MessageElement';
-import MessageField from './components/MessageField';
+import MessageElement from './components/MessageElement';
+import MessageField, { type MessageFieldRef } from './components/MessageField';
 import { BlockedIcon, ChatChevronIcon, PinIcon } from '@/components/icons';
 import classNames from 'classnames';
 import { useDateSeparator } from './useDateSeparator';
+import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
+import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
 
-const mockMessages: (MessageProps & { date: Date })[] = [
-  {
-    type: 'incoming',
-    text: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters.',
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters.',
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters.',
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters.',
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'system',
-    text: 'It is a .',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    text: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters.',
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    mediaItems: [
-      {
-        type: 'image',
-        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
-      },
-      {
-        type: 'image',
-        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
-      },
-      {
-        type: 'image',
-        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
-      },
-    ],
-    time: '16:23',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'Check out this video I recorded!',
-    mediaItems: [
-      {
-        type: 'video',
-        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-1.mp4',
-        id: 'video-1',
-      },
-    ],
-    time: '16:45',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    mediaItems: [
-      {
-        type: 'video',
-        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-2.mp4',
-        id: 'video-2',
-      },
-    ],
-    time: '16:46',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'Here are some documents for you to review',
-    mediaItems: [
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/report-2024.pdf',
-        id: 'file-1',
-      },
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/presentation.pptx',
-        id: 'file-2',
-      },
-    ],
-    time: '16:50',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    mediaItems: [
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/spreadsheet.xlsx',
-        id: 'file-3',
-      },
-    ],
-    time: '16:52',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    text: 'Mixed media message with images and videos',
-    mediaItems: [
-      {
-        type: 'image',
-        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
-        id: 'img-1',
-      },
-      {
-        type: 'video',
-        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-3.mp4',
-        id: 'video-3',
-      },
-      {
-        type: 'image',
-        src: 'https://storage.yandexcloud.net/lamaplanner/thumbnails/6ba4e973-71a8-4ac6-980f-f4584e2d157b-thumb.jpg',
-        id: 'img-2',
-      },
-    ],
-    time: '17:00',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    text: 'Here is a document with some text',
-    mediaItems: [
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/document.docx',
-        id: 'file-4',
-      },
-    ],
-    time: '17:05',
-    date: new Date(),
-  },
-  {
-    type: 'incoming',
-    mediaItems: [
-      {
-        type: 'video',
-        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-4.mp4',
-        id: 'video-4',
-      },
-      {
-        type: 'video',
-        src: 'https://storage.yandexcloud.net/lamaplanner/videos/sample-video-5.mp4',
-        id: 'video-5',
-      },
-    ],
-    time: '17:10',
-    date: new Date(),
-  },
-  {
-    type: 'outgoing',
-    mediaItems: [
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/data.csv',
-        id: 'file-5',
-      },
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/notes.txt',
-        id: 'file-6',
-      },
-      {
-        type: 'file',
-        src: 'https://storage.yandexcloud.net/lamaplanner/documents/archive.zip',
-        id: 'file-7',
-      },
-    ],
-    time: '17:15',
-    date: new Date(),
-  },
-];
+function formatMessageTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function mapMessageType(msg: BotMessageResponse): 'incoming' | 'outgoing' | 'system' {
+  return msg.is_incoming ? 'incoming' : 'outgoing';
+}
+
+function mapMediaItems(msg: BotMessageResponse) {
+  if (!msg.media_url) return undefined;
+  const typeMap: Record<string, 'image' | 'video' | 'file'> = {
+    PHOTO: 'image',
+    VIDEO: 'video',
+    DOCUMENT: 'file',
+    AUDIO: 'file',
+    ANIMATION: 'video',
+  };
+  return [{
+    type: typeMap[msg.message_type] || 'file',
+    src: msg.media_url,
+    id: String(msg.id),
+  }];
+}
 
 interface DirectChatProps {
   onClose?: () => void;
 }
 
-const DirectChat:FC<DirectChatProps> = ({ onClose }) => {
-  const [isPinned, setIsPinned] = useState(false);
-  const [isBlocked, setIsBlocked] = useState(false);
+const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
+  const {
+    activeChat,
+    activeChatId,
+    sendMessage,
+    pinChat,
+    unpinChat,
+    blockChat,
+    unblockChat,
+    deleteMessage,
+    fetchMessages,
+  } = useDirectChat();
+
+  const tgChatId = activeChat?.tg_chat_id ?? 0;
+  const { messages, loading } = useDirectMessages(tgChatId);
+
   const [message, setMessage] = useState('');
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const prevMessagesRef = useRef<string>('');
+  const messageFieldRef = useRef<MessageFieldRef>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+
+  const isPinned = activeChat?.is_pinned ?? false;
+  const isBlocked = activeChat?.is_blocked ?? false;
+
+  const userName = activeChat
+    ? [activeChat.tg_first_name, activeChat.tg_last_name].filter(Boolean).join(' ') || activeChat.tg_username || ''
+    : '';
+
+  useEffect(() => {
+    if (activeChat) {
+      fetchMessages({ botId: activeChat.bot_id, tgChatId: activeChat.tg_chat_id });
+      prevMessagesRef.current = '';
+    }
+  }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
+
+  const scrollToBottom = () => {
+    if (messageListRef.current) {
+      requestAnimationFrame(() => {
+        if (messageListRef.current) {
+          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
+        }
+      });
+    }
+  };
+
+  useEffect(() => {
+    const el = messageListRef.current;
+    if (!el) return;
+
+    const sentinel = bottomRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isNearBottomRef.current = entry.isIntersecting;
+      },
+      { root: el, threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
+  const lastMessageId = messages[0]?.id;
+  useEffect(() => {
+    if (!loading && lastMessageId && isNearBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [lastMessageId, loading]);
+
+  const messagesWithDate = useMemo(
+    () => {
+      const reversedMessages = [...messages].reverse();
+      return reversedMessages.map((msg) => ({
+        ...msg,
+        date: new Date(msg.created_at),
+      }));
+    },
+    [messages]
+  );
 
   const { visibleDate, showDateSeparator } = useDateSeparator({
-    messages: mockMessages,
+    messages: messagesWithDate,
     messageListRef,
     messageRefs,
   });
 
   const handleSendMessage = async () => {
-    console.log('send message');
+    if (!activeChat) return;
+    
+    const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
+    const hasText = message.trim().length > 0;
+    const hasMedia = mediaFiles.length > 0;
+    
+    if (!hasText && !hasMedia) return;
+    
+    let mediaUrl: string | undefined;
+    let mediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | undefined;
+    
+    if (hasMedia && mediaFiles[0].file && !mediaFiles[0].url) {
+      try {
+        const uploaded = await uploadMediaFile(mediaFiles[0].file);
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+        
+        const fileType = mediaFiles[0].type;
+        if (fileType === 'image') {
+          mediaType = 'PHOTO';
+        } else if (fileType === 'video') {
+          mediaType = 'VIDEO';
+        } else {
+          mediaType = 'DOCUMENT';
+        }
+      } catch (error) {
+        console.error('Failed to upload media:', error);
+        return;
+      }
+    } else if (hasMedia && mediaFiles[0].url) {
+      mediaUrl = mediaFiles[0].url;
+      const fileType = mediaFiles[0].type;
+      if (fileType === 'image') {
+        mediaType = 'PHOTO';
+      } else if (fileType === 'video') {
+        mediaType = 'VIDEO';
+      } else {
+        mediaType = 'DOCUMENT';
+      }
+    }
+    
+    sendMessage({
+      text_content: hasText ? message : undefined,
+      media_url: mediaUrl,
+      media_type: mediaType,
+    });
+    
+    setMessage('');
+    scrollToBottom();
   };
 
   const handlePinChat = async () => {
-    console.log('pin chat');
+    if (!activeChatId) return;
+    if (isPinned) {
+      await unpinChat(activeChatId);
+    } else {
+      await pinChat(activeChatId);
+    }
   };
 
   const handleBlockChat = async () => {
-    console.log('block chat');
+    if (!activeChatId) return;
+    if (isBlocked) {
+      await unblockChat(activeChatId);
+    } else {
+      await blockChat(activeChatId);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: number) => {
+    if (!activeChat) return;
+    await deleteMessage({
+      messageId,
+      chatId: activeChat.tg_chat_id,
+    });
   };
 
   return (
@@ -231,21 +218,20 @@ const DirectChat:FC<DirectChatProps> = ({ onClose }) => {
           <ChatChevronIcon width={32} height={32} />
         </button>
         <div className={styles.userInfo}>
-          <span className={styles.userName}>Имя пользователя</span>
-          <span className={styles.botName}>Через бота @LamaBot</span>
+          <span className={styles.userName}>{userName}</span>
         </div>
         <div className={styles.headerActionsWrapper}>
           <div className={styles.headerActions}>
-            <button 
-              className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })} 
+            <button
+              className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
               type="button"
               onClick={handlePinChat}
             >
               <PinIcon width={16} height={16} />
             </button>
-            <button 
-              className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })} 
-              type="button" 
+            <button
+              className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
+              type="button"
               onClick={handleBlockChat}
             >
               <BlockedIcon width={16} height={16} />
@@ -259,18 +245,36 @@ const DirectChat:FC<DirectChatProps> = ({ onClose }) => {
         </div>
       )}
       <div className={styles.messageList} ref={messageListRef}>
-        {mockMessages.map((msg, i) => (
+        {loading && <div className={styles.loadingMessages}>Загрузка...</div>}
+        {!loading && messagesWithDate.length === 0 && (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateContent}>
+              <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
+              <p className={styles.emptyStateSubtitle}>
+                Выберите один из чатов в списке
+              </p>
+            </div>
+          </div>
+        )}
+        {messagesWithDate.map((msg, i) => (
           <div
-            key={i}
+            key={msg.id}
             ref={(el) => {
               messageRefs.current[i] = el;
             }}
           >
-            <MessageElement {...msg} />
+            <MessageElement
+              type={mapMessageType(msg)}
+              text={msg.text_content || undefined}
+              mediaItems={mapMediaItems(msg)}
+              time={formatMessageTime(msg.created_at)}
+              onDelete={() => handleDeleteMessage(msg.id)}
+            />
           </div>
         ))}
+        <div ref={bottomRef} />
       </div>
-      <MessageField value={message} onChange={setMessage} onSendMessage={handleSendMessage} />
+      <MessageField ref={messageFieldRef} value={message} onChange={setMessage} onSendMessage={handleSendMessage} />
     </div>
   );
 };

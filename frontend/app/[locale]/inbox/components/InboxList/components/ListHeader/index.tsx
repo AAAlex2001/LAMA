@@ -24,10 +24,11 @@ interface ListHeaderProps {
   isSelectedAll?: boolean;
   checkedItems?: number;
   botId?: number;
+  onBulkAction?: (action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => void;
 }
 
 
-const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems }: ListHeaderProps) => {
+const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems, onBulkAction }: ListHeaderProps) => {
   const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
@@ -71,19 +72,19 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               {
                 isChecking && (
                   <div className={styles.actions}>
-                    <Button variant="ghost" intent="gradient" size="transparent">
+                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
                       <span className={buttonStyles.label}>Прочитать</span>
                     </Button>
-                    <Button variant="ghost" intent="gradient" size="transparent">
+                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
                       <span className={buttonStyles.label}>Игнорировать</span>
                     </Button>
-                    <Button variant="ghost" intent="destructive" size="transparent">
+                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
                       Удалить
                     </Button>
-                    <Button variant="ghost" intent="destructive" size="transparent">
+                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                       Заблокировать
                     </Button>
-                    <Button variant="ghost" intent="gradient" size="transparent">
+                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                       <span className={buttonStyles.label}>Разблокировать</span>
                     </Button>
                   </div>
@@ -139,19 +140,19 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                 </div>
               </div>
               <div className={styles.mobileActions}>
-                <Button variant="ghost" intent="gradient" size="transparent">
+                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
                   <span className={buttonStyles.label}>Прочитать</span>
                 </Button>
-                <Button variant="ghost" intent="gradient" size="transparent">
+                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
                   <span className={buttonStyles.label}>Игнорировать</span>
                 </Button>
-                <Button variant="ghost" intent="destructive" size="transparent">
+                <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
                   Удалить
                 </Button>
-                <Button variant="ghost" intent="destructive" size="transparent">
+                <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                   Заблокировать
                 </Button>
-                <Button variant="ghost" intent="gradient" size="transparent">
+                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                   <span className={buttonStyles.label}>Разблокировать</span>
                 </Button>
               </div>

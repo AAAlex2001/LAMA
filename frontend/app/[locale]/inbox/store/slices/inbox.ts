@@ -1,7 +1,14 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { IInboxItem } from '../../components/InboxList/components/ListElement';
-import type { ListHeaderType } from '../../components/InboxList/components/ListHeader';
 import type { InviteLink } from '../types';
+import {
+  fetchInboxEventsThunk,
+  bulkInboxActionThunk,
+  specificInboxActionThunk,
+} from '../thunks/inboxEvents';
+import type {
+  InboxEventResponse,
+  EventStatus as BackendEventStatus,
+} from '../thunks/inboxEvents';
 
 export type InboxView = 'list' | 'direct';
 
@@ -10,11 +17,25 @@ export type SortInput = {
   direction: 'asc' | 'desc';
 } | null;
 
+export type ListFilterType = 'all' | 'moderation' | 'system' | 'automation';
+
 export interface InboxState {
-  items: IInboxItem[];
-  selectedFilter: ListHeaderType;
+  items: InboxEventResponse[];
+  itemsLoading: boolean;
+  itemsError: string | null;
+  itemsTotal: number;
+  itemsOffset: number;
+  itemsHasMore: boolean;
+
+  selectedFilter: ListFilterType;
   currentView: InboxView;
   sort: SortInput;
+  sortDir: 'new' | 'old';
+  statusFilter: 'new' | 'processed' | 'ignored' | null;
+
+  bulkActionLoading: boolean;
+  specificActionLoading: boolean;
+
   inviteLinks: Record<number, InviteLink[]>;
   inviteLinksTotal: Record<number, number>;
   inviteLinksLoading: Record<number, boolean>;
@@ -22,9 +43,21 @@ export interface InboxState {
 
 const initialState: InboxState = {
   items: [],
+  itemsLoading: true,
+  itemsError: null,
+  itemsTotal: 0,
+  itemsOffset: 0,
+  itemsHasMore: true,
+
   selectedFilter: 'all',
   currentView: 'list',
   sort: null,
+  sortDir: 'new',
+  statusFilter: null,
+
+  bulkActionLoading: false,
+  specificActionLoading: false,
+
   inviteLinks: {},
   inviteLinksTotal: {},
   inviteLinksLoading: {},
@@ -34,8 +67,12 @@ const inboxSlice = createSlice({
   name: 'inbox',
   initialState,
   reducers: {
-    setSelectedFilter(state, action: PayloadAction<ListHeaderType>) {
+    setSelectedFilter(state, action: PayloadAction<ListFilterType>) {
       state.selectedFilter = action.payload;
+      // Reset pagination on filter change
+      state.items = [];
+      state.itemsOffset = 0;
+      state.itemsHasMore = true;
     },
     setCurrentView(state, action: PayloadAction<InboxView>) {
       state.currentView = action.payload;
@@ -43,10 +80,22 @@ const inboxSlice = createSlice({
     setSort(state, action: PayloadAction<SortInput>) {
       state.sort = action.payload;
     },
+    setSortDir(state, action: PayloadAction<'new' | 'old'>) {
+      state.sortDir = action.payload;
+      state.items = [];
+      state.itemsOffset = 0;
+      state.itemsHasMore = true;
+    },
+    setStatusFilter(state, action: PayloadAction<'new' | 'processed' | 'ignored' | null>) {
+      state.statusFilter = action.payload;
+      state.items = [];
+      state.itemsOffset = 0;
+      state.itemsHasMore = true;
+    },
     removeItem(state, action: PayloadAction<number>) {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
-    updateItem(state, action: PayloadAction<IInboxItem>) {
+    updateItem(state, action: PayloadAction<InboxEventResponse>) {
       const index = state.items.findIndex((item) => item.id === action.payload.id);
       if (index !== -1) {
         state.items[index] = action.payload;
@@ -90,12 +139,90 @@ const inboxSlice = createSlice({
       }
     },
   },
+  extraReducers: (builder) => {
+    // Fetch inbox events
+    builder
+      .addCase(fetchInboxEventsThunk.pending, (state) => {
+        state.itemsLoading = true;
+        state.itemsError = null;
+      })
+      .addCase(fetchInboxEventsThunk.fulfilled, (state, action) => {
+        state.itemsLoading = false;
+        const { offset = 0, limit = 50 } = action.meta.arg;
+        const response = action.payload;
+
+        if (offset > 0) {
+          const existingIds = new Set(state.items.map((i) => i.id));
+          const newItems = response.items.filter((i) => !existingIds.has(i.id));
+          state.items = [...state.items, ...newItems];
+        } else {
+          state.items = response.items;
+        }
+
+        state.itemsTotal = response.total;
+        state.itemsOffset = offset + response.items.length;
+        state.itemsHasMore = response.items.length >= limit;
+      })
+      .addCase(fetchInboxEventsThunk.rejected, (state, action) => {
+        state.itemsLoading = false;
+        state.itemsError = action.payload as string;
+      });
+
+    // Bulk action
+    builder
+      .addCase(bulkInboxActionThunk.pending, (state) => {
+        state.bulkActionLoading = true;
+      })
+      .addCase(bulkInboxActionThunk.fulfilled, (state, action) => {
+        state.bulkActionLoading = false;
+        const { params } = action.payload;
+
+        if (params.action === 'delete') {
+          if (params.apply_to_all) {
+            state.items = [];
+          } else {
+            const idsToRemove = new Set(params.event_ids);
+            state.items = state.items.filter((item) => !idsToRemove.has(item.id));
+          }
+        } else if (params.action === 'read' || params.action === 'ignore') {
+          const idsToUpdate = new Set(params.event_ids);
+          const newStatus: BackendEventStatus = params.action === 'read' ? 'processed' : 'ignored';
+          state.items = state.items.map((item) =>
+            idsToUpdate.has(item.id) || params.apply_to_all
+              ? { ...item, status: newStatus, is_new: false }
+              : item
+          );
+        }
+      })
+      .addCase(bulkInboxActionThunk.rejected, (state) => {
+        state.bulkActionLoading = false;
+      });
+
+    builder
+      .addCase(specificInboxActionThunk.pending, (state) => {
+        state.specificActionLoading = true;
+      })
+      .addCase(specificInboxActionThunk.fulfilled, (state, action) => {
+        state.specificActionLoading = false;
+        const { eventId } = action.payload;
+        const item = state.items.find((i) => i.id === eventId);
+        if (item) {
+          item.status = 'processed';
+          item.is_new = false;
+        }
+      })
+      .addCase(specificInboxActionThunk.rejected, (state) => {
+        state.specificActionLoading = false;
+      });
+  },
 });
 
 export const {
   setSelectedFilter,
   setCurrentView,
   setSort,
+  setSortDir,
+  setStatusFilter,
   removeItem,
   updateItem,
   addInviteLink,

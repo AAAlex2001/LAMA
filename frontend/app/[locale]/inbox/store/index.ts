@@ -10,6 +10,7 @@ import createAutoReplyModalReducer from './slices/createAutoReplyModal';
 import createCommandModalReducer from './slices/createCommandModal';
 import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
 import botsReducer from './slices/bots';
+import directChatReducer from './slices/directChat';
 import channelsReducer from '@/app/[locale]/create-post/store/slices/channels';
 
 export const inboxStore = configureStore({
@@ -25,6 +26,7 @@ export const inboxStore = configureStore({
     createCommandModal: createCommandModalReducer,
     createGlobalMessageModal: createGlobalMessageModalReducer,
     bots: botsReducer,
+    directChat: directChatReducer,
   },
   devTools: process.env.NODE_ENV !== 'production',
 });
@@ -34,11 +36,13 @@ export type AppDispatch = typeof inboxStore.dispatch;
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
-export type { InboxView, SortInput, InboxState } from './slices/inbox';
+export type { InboxView, SortInput, InboxState, ListFilterType } from './slices/inbox';
 export {
   setSelectedFilter,
   setCurrentView,
   setSort,
+  setSortDir,
+  setStatusFilter,
   removeItem,
   updateItem,
   addInviteLink,
@@ -48,8 +52,37 @@ export {
   removeInviteLink,
 } from './slices/inbox';
 export {
+  fetchInboxEventsThunk,
+  bulkInboxActionThunk,
+  specificInboxActionThunk,
+} from './thunks/inboxEvents';
+export type {
+  InboxCategory,
+  EntityType as InboxEntityType,
+  EventType as InboxEventType,
+  EventStatus as InboxEventStatus,
+  SortDir as InboxSortDir,
+  BulkActionType,
+  InboxEventResponse,
+  InboxListResponse,
+  FetchInboxEventsParams,
+  BulkActionParams,
+  SpecificActionParams,
+} from './thunks/inboxEvents';
+export {
   selectFilteredItems,
   selectSortedItems,
+  selectInboxItems,
+  selectInboxItemsLoading,
+  selectInboxItemsError,
+  selectInboxItemsTotal,
+  selectInboxItemsHasMore,
+  selectInboxItemsOffset,
+  selectBulkActionLoading,
+  selectSpecificActionLoading,
+  selectSelectedFilter,
+  selectSortDir,
+  selectStatusFilter,
   selectChannels,
   selectChannelsLoading,
   selectChannelsPagination,
@@ -238,3 +271,48 @@ export {
   sendMessageThunk,
 } from './thunks/globalMessages';
 export type { FetchMessagesParams, SendMessageParams, SendMessageRequest, BotMessageResponse, BotMessageListResponse } from './thunks/globalMessages';
+export {
+  setActiveChatId,
+  clearMessages,
+  wsMessageReceived,
+  setWsConnected,
+  setSendingMessage,
+  resetDirectChat,
+} from './slices/directChat';
+export type { DirectChatState } from './slices/directChat';
+export {
+  fetchDirectChatsThunk,
+  fetchDirectMessagesThunk,
+  sendDirectMessageThunk,
+  updateDirectChatThunk,
+  editDirectMessageThunk,
+  deleteDirectMessageThunk,
+} from './thunks/directChat';
+export type {
+  DirectChatResponse,
+  BotMessageResponse as DirectBotMessageResponse,
+  DirectChatListResponse,
+  ChatHistoryResponse,
+  MessageType as DirectMessageType,
+  FetchDirectChatsParams,
+  FetchDirectMessagesParams,
+  SendDirectMessageParams,
+  EditDirectMessageParams,
+  DeleteDirectMessageParams,
+  UpdateDirectChatParams,
+} from './thunks/directChat';
+export {
+  selectDirectChats,
+  selectDirectChatsLoading,
+  selectDirectChatsError,
+  selectActiveChatId,
+  selectActiveChat,
+  selectPinnedChats,
+  selectUnpinnedChats,
+  selectDirectMessages,
+  selectDirectMessagesLoading,
+  selectDirectMessagesHasMore,
+  selectSendingMessage,
+  selectWsConnected,
+} from './selectors';
+export { useDirectChat, useDirectMessages } from './hooks/useDirectChat';

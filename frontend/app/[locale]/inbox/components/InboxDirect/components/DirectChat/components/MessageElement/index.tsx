@@ -24,9 +24,10 @@ export interface MessageProps {
   text?: string;
   mediaItems?: MediaItem[];
   time?: string;
+  onDelete?: () => void;
 }
 
-const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
+const MessageElement = ({ type, text, mediaItems, time, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -37,6 +38,7 @@ const MessageElement = ({ type, text, mediaItems, time }: MessageProps) => {
 
   const handleDeleteConfirm = () => {
     setIsDeleteModalOpen(false);
+    onDelete?.();
   };
 
   const handleDeleteCancel = () => {

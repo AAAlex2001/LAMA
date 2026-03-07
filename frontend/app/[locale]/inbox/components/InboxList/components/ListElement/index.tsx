@@ -8,107 +8,92 @@ import { CheckListIcon } from "@/components/icons";
 import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/BlockModal";
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
+import type { InboxEventResponse, EventType } from "../../../../store/thunks/inboxEvents";
 
-export type InboxItemType = 'bot' | 'channel' | 'system';
-export type EventType = 'command' | 'message' | 'comment' | 'application' | 'link' | 'block' | 'notification' | 'trigger' | 'auto-reply' | 'error';
-export type EventStatus = 'pending' | 'completed' | 'accepted' | 'declined' | 'unblocked' | 'replied' | 'conected';
+const SOURCE_LABELS: Record<string, string> = {
+  bot: 'Бот',
+  channel: 'Канал',
+  system: 'Системные',
+};
 
-export interface IInboxItem {
-  id: number;
-  type: InboxItemType;
-  eventType: EventType;
-  date: string;
-  title: string;
-  username?: string;
-  description?: string;
-  status?: EventStatus;
-  blockReason?: string; 
-  inviteCode?: string; 
-  isChecked?: boolean;
-  hasUnread?: boolean;
+const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  bot_message: 'Сообщение',
+  bot_command: 'Команда',
+  bot_error: 'Ошибка',
+  channel_comment: 'Комментарий',
+  channel_join_request: 'Заявка',
+  channel_link_join: 'Ссылка',
+  channel_ban: 'Блокировка',
+  system_notification: 'Уведомление',
+  system_trigger: 'Триггер',
+  system_autoreply: 'Автоответ',
+  system_update: 'Обновление',
+};
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}.${month} ${hours}:${minutes}`;
 }
 
 interface ListElementProps {
-  item: IInboxItem;
+  item: InboxEventResponse;
   isChecked?: boolean;
   type?: ListHeaderType;
-  // @todo: make onAction 
-  onCheck?: (id: number) => void;
-  onBlock?: (id: number, blockData?: BlockModalData) => void;
-  onDelete?: (id: number) => void;
-  onReply?: (id: number) => void;
-  onAccept?: (id: number) => void;
-  onDecline?: (id: number) => void;
-  onUnblock?: (id: number) => void;
-  onSettings?: (id: number) => void;
-  onReplyInBot?: (id: number) => void;
-  onHold?: (id: number) => void;
+  onCheck?: () => void;
+  onHold?: () => void;
+  onSpecificAction?: (eventId: number, actionType: string, payload?: Record<string, unknown>) => void;
 }
 
-const ListElement: FC<ListElementProps> = ({ 
-  item, 
+const ListElement: FC<ListElementProps> = ({
+  item,
   isChecked,
   type,
   onCheck,
-  onBlock,
-  onDelete,
-  onReply,
-  onAccept,
-  onDecline,
-  onUnblock,
-  onSettings,
-  onReplyInBot,
   onHold,
+  onSpecificAction,
 }) => {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
-
   const [isHolding, setIsHolding] = useState(false);
 
-  const handleBlockClick = () => {
-    setIsBlockModalOpen(true);
-  };
-
   const longPressProps = useLongPress({
-    duration: 800, 
-    onLongPress: () => onHold?.(item.id),
+    duration: 800,
+    onLongPress: () => onHold?.(),
     onHoldStart: () => setIsHolding(true),
     onHoldCancel: () => setIsHolding(false),
   });
 
   const shouldEnableLongPress = type === 'all';
+  const isProcessed = item.status === 'processed';
+
+  const handleAction = (actionType: string, payload?: Record<string, unknown>) => {
+    onSpecificAction?.(item.id, actionType, payload);
+  };
 
   const handleBlockSave = (data: BlockModalData) => {
-    onBlock?.(item.id, data);
+    handleAction('block', data as unknown as Record<string, unknown>);
     setIsBlockModalOpen(false);
   };
-  const renderSource = () => {
-    const sourceText = item.type === 'bot' ? 'Бот' : item.type === 'channel' ? 'Канал' : 'Системные';
-    return (
-      <div className={styles.source}>
-        <span>{sourceText}</span>
-      </div>
-    );
-  };
 
-  const renderEventType = () => {
-    const eventTypeMap: Record<EventType, string> = {
-      'command': 'Команда',
-      'message': 'Сообщение',
-      'comment': 'Комментарий',
-      'application': 'Заявка',
-      'link': 'Ссылка',
-      'block': 'Блокировка',
-      'notification': 'Уведомление',
-      'trigger': 'Триггер',
-      'auto-reply': 'Автоответ',
-      'error': 'Ошибка',
-    };
-    return <span className={styles.eventType}>{eventTypeMap[item.eventType]}</span>;
-  };
+  const renderSource = () => (
+    <div className={styles.source}>
+      <span>{SOURCE_LABELS[item.entity_type] || item.entity_type}</span>
+    </div>
+  );
+
+  const renderEventType = () => (
+    <span className={styles.eventType}>{EVENT_TYPE_LABELS[item.event_type] || item.event_type}</span>
+  );
 
   const renderActions = (isMobile?: boolean) => {
-    if (item.eventType === 'command') {
-      if (item.status === 'completed') {
+    const btnClass = `${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`;
+    const btnWidth = isMobile ? '100%' : '136px';
+
+    if (item.event_type === 'bot_command') {
+      if (isProcessed) {
         return (
           <>
             <MobileWrapper className={styles.fullWidthMobile}>
@@ -124,23 +109,10 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onBlock?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-            style={{ width: isMobile ? '100%' : '136px' }}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Заблокировать</span>
-          </Button >
-          <Button 
-            variant="outline" 
-            intent="primary"
-            size="md"
-            onClick={() => onDelete?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          </Button>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('delete')} className={btnClass}>
             <span className={buttonStyles.label}>Удалить</span>
           </Button>
           <span className={styles.checkIcon}>
@@ -150,205 +122,144 @@ const ListElement: FC<ListElementProps> = ({
       );
     }
 
-    if (item.eventType === 'message') {
-      if (item.status === 'replied') {
+    if (item.event_type === 'bot_message') {
+      if (isProcessed) {
         return <div className={styles.statusText}>Ответ отправлен</div>;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onBlock?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-            style={{ width: isMobile ? '100%' : '136px' }}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Заблокировать</span>
-          </Button >
+          </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'comment') {
-      if (item.status === 'replied') {
+    if (item.event_type === 'channel_comment') {
+      if (isProcessed) {
         return <div className={styles.statusText}>Ответ отправлен</div>;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onReply?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-            style={{ width: isMobile ? '100%' : '136px' }}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Ответить</span>
           </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'application') {
-      if (item.status === 'accepted') {
+    if (item.event_type === 'channel_join_request') {
+      if (isProcessed) {
         return <div className={styles.statusText}>Принята</div>;
       }
-      if (item.status === 'declined') {
+      if (item.status === 'ignored') {
         return <div className={`${styles.statusText} ${styles.declined}`}>Отклонена</div>;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onAccept?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-            style={{ width: isMobile ? '100%' : '136px' }}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button 
-            variant="outline" 
-            intent="primary"
-            size="md"
-            onClick={() => onDecline?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('decline')} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'link') {
-      if (item.status === 'conected') {
+    if (item.event_type === 'channel_link_join') {
+      if (isProcessed) {
         return null;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onAccept?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-            style={{ width: isMobile ? '100%' : '136px' }}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button 
-            variant="outline" 
-            intent="primary"
-            size="md"
-            onClick={() => onDecline?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('decline')} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'block') {
-      if (item.status === 'unblocked') {
+    if (item.event_type === 'channel_ban') {
+      if (isProcessed) {
         return <span className={styles.statusText}>Разблокирован</span>;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onUnblock?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unblock')} className={btnClass}>
             <span className={buttonStyles.label}>Разблокировать</span>
           </Button>
-          <Button 
-            variant="outline" 
-            intent="primary"
-            size="md"
-            onClick={handleBlockClick}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="outline" intent="primary" size="md" onClick={() => setIsBlockModalOpen(true)} className={btnClass}>
             <span className={buttonStyles.label}>Настройки</span>
           </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'notification') {
+    if (item.event_type === 'system_notification' || item.event_type === 'system_update') {
       return null;
     }
 
-    if (item.eventType === 'trigger') {
+    if (item.event_type === 'system_trigger') {
       return null;
     }
 
-    if (item.eventType === 'auto-reply') {
-      if (item.status === 'replied') {
+    if (item.event_type === 'system_autoreply') {
+      if (isProcessed) {
         return <span className={styles.statusText}>Ответ отправлен</span>;
       }
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="fill" 
-            intent="primary"
-            size="md"
-            onClick={() => onReplyInBot?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply_in_bot')} className={btnClass}>
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
       );
     }
 
-    if (item.eventType === 'error') {
+    if (item.event_type === 'bot_error') {
       return (
         <div className={styles.actionButtons}>
-          <Button 
-            variant="outline" 
-            intent="destructive"
-            size="md"
-            onClick={() => onSettings?.(item.id)}
-            className={`${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`}
-          >
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('settings')} className={btnClass}>
             <span className={buttonStyles.label}>Ошибка доступа</span>
           </Button>
         </div>
       );
     }
+
     return null;
   };
+
+  const dateStr = formatDate(item.created_at);
 
   return (
     <>
       <BlockModal
         isOpen={isBlockModalOpen}
         onOpenChange={setIsBlockModalOpen}
-        stopWord={item.blockReason || 'spam'}
-        message={item.description || 'Купи сейчас...'}
+        stopWord={(item.payload?.block_reason as string) || 'spam'}
+        message={item.description || ''}
         onSave={handleBlockSave}
       />
       <DesktopWrapper>
-        <div className={`${styles.element} ${item.hasUnread ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>
+        <div className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>
           <div className={styles.gridCell}>
             {isChecked !== undefined ? (
-              <Checkbox checked={isChecked} onChange={() => onCheck?.(item.id)} />
-            ) : item.hasUnread ? (
+              <Checkbox checked={isChecked} onChange={() => onCheck?.()} />
+            ) : item.is_new ? (
               <span className={styles.dot} />
             ) : null}
           </div>
           <div className={styles.gridCell}>{renderSource()}</div>
           <div className={styles.gridCell}>
-            <span className={styles.dateTime}>{item.date}</span>
+            <span className={styles.dateTime}>{dateStr}</span>
           </div>
           <div className={styles.gridCell}>{renderEventType()}</div>
           <div className={styles.gridCell}>
-            <span className={styles.username}>{item.username || 'Имя пользователя'}</span>
+            <span className={styles.username}>{item.tg_username || 'Имя пользователя'}</span>
           </div>
           <div className={styles.gridCell}>
             <span className={styles.commandPath}>{item.description}</span>
@@ -359,14 +270,14 @@ const ListElement: FC<ListElementProps> = ({
         </div>
       </DesktopWrapper>
       <MobileWrapper>
-        <div 
-          className={`${styles.elementMobileWrapper} ${item.hasUnread ? styles.unread : ''} ${isHolding ? styles.holding : ''} ${isChecked ? styles.checked : ''}`} 
+        <div
+          className={`${styles.elementMobileWrapper} ${item.is_new ? styles.unread : ''} ${isHolding ? styles.holding : ''} ${isChecked ? styles.checked : ''}`}
           {...(shouldEnableLongPress ? longPressProps : {})}
         >
           <div className={styles.holdOverlay} />
           <div>
             {isChecked !== undefined ? (
-                <Checkbox checked={isChecked} onChange={() => onCheck?.(item.id)} />
+                <Checkbox checked={isChecked} onChange={() => onCheck?.()} />
               ): null
             }
           </div>
@@ -374,13 +285,13 @@ const ListElement: FC<ListElementProps> = ({
             <div className={styles.wrapperMobile}>
               <div className={styles.nameContent}>
                 <div className={styles.source}>
-                  { item.hasUnread && isChecked === undefined ? (
+                  { item.is_new && isChecked === undefined ? (
                     <span className={styles.dot} />
                   ) : null}
                   {renderSource()}
                 </div>
                 <div className={styles.dateTime}>
-                  {item.date}
+                  {dateStr}
                 </div>
               </div>
               <div className={styles.descriptionContent}>
@@ -389,7 +300,7 @@ const ListElement: FC<ListElementProps> = ({
                     {renderEventType()}
                   </div>
                   <div className={styles.username}>
-                    {item.username}
+                    {item.tg_username}
                   </div>
                 </div>
                 <div className={styles.descriptionMobile}>
@@ -404,7 +315,6 @@ const ListElement: FC<ListElementProps> = ({
         </div>
       </MobileWrapper>
     </>
-
   );
 }
 

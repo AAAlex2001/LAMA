@@ -16,6 +16,8 @@ interface SortingBarProps {
   setSelectedFilter: (filter: ListHeaderType) => void;
   currentView: "list" | "direct";
   setCurrentView: (view: "list" | "direct") => void;
+  onTimeSortChange?: (sort: 'new' | 'old') => void;
+  onStatusFilterChange?: (status: 'new' | 'processed' | 'ignored' | null) => void;
 }
 
 type SortOptionType = 'time' | 'source' | 'sourceSystem' | 'status' | 'type';
@@ -37,7 +39,7 @@ const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>
   });
 };
 
-const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, currentView, setCurrentView }) => {
+const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, currentView, setCurrentView, onTimeSortChange, onStatusFilterChange }) => {
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const filterButtonRef = useRef<HTMLDivElement>(null);
 
@@ -394,10 +396,28 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
     setSortValues(prev => ({ ...prev, [sortType]: value }));
+    if (sortType === 'time') {
+      const dir = value === 'oldest' ? 'old' : 'new';
+      onTimeSortChange?.(dir);
+    }
+    if (sortType === 'status') {
+      const statusMap: Record<string, 'new' | 'processed' | null> = {
+        'new': 'new',
+        'processed': 'processed',
+        'default': null,
+      };
+      onStatusFilterChange?.(statusMap[value] ?? null);
+    }
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
     setSortValues(prev => ({ ...prev, [sortType]: "" }));
+    if (sortType === 'time') {
+      onTimeSortChange?.('new');
+    }
+    if (sortType === 'status') {
+      onStatusFilterChange?.(null);
+    }
   };
 
   const handleChatSortChange = (sortType: SortOptionType, value: string) => {
@@ -427,7 +447,7 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
               size="lg"
               style={{ width: '100px' }}
             >
-              Директ
+              Инбокс
             </Button>
             <div className={styles.sortingControls}>
               <span className={styles.sortingLabel}>Сортировка:</span>
@@ -491,7 +511,7 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
             intent="gradient"
             style={{ width: '100px', minWidth: '100px' }}
           >
-            Inbox
+            Директ
           </Button>
           <div className={styles.sortingControls}>
             <span className={styles.sortingLabel}>Сортировка:</span>

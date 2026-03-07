@@ -1,67 +1,55 @@
+'use client';
+
 import styles from "./styles.module.scss";
-import ChatItem, { ChatProps } from "./components/ChatItem";
+import ChatItem from "./components/ChatItem";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
-import { FC } from "react";
+import { FC, useEffect } from "react";
+import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+
+function getChatDisplayName(chat: DirectChatResponse): string {
+  if (chat.tg_first_name || chat.tg_last_name) {
+    return [chat.tg_first_name, chat.tg_last_name].filter(Boolean).join(' ');
+  }
+  return chat.tg_username || `Chat ${chat.tg_chat_id}`;
+}
+
+function formatChatTime(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
 
 interface DirectMenuProps {
   onChatOpen: (chatId: number) => void;
 }
 
-const DirectMenu:FC<DirectMenuProps> = ({ onChatOpen }) => {
-  const handleClick = (chatId: number)=>{
+const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
+  const {
+    activeChatId,
+    pinnedChats,
+    unpinnedChats,
+    chatsLoading,
+    fetchChats,
+    setActiveChat,
+  } = useDirectChat();
+
+  useEffect(() => {
+    fetchChats();
+  }, [fetchChats]);
+
+  const handleClick = (chatId: number) => {
+    setActiveChat(chatId);
     onChatOpen(chatId);
-  }
-  const currentChat: ChatProps = {
-    id: 1,
-    name: "Назв бота",
-    username: "Username",
-    messagePreview: "Превь...",
-    time: "8:38",
-    isCurrent: true,
-    onClick: ()=> handleClick(1),
   };
 
-  const pinnedChats: ChatProps[] = [
-    {
-      id: 2,
-      name: "Назв бота",
-      username: "Username",
-      messagePreview: "Превью...",
-      time: "8:38",
-      isPinned: true,
-      unreadCount: 3,
-      onClick: ()=> handleClick(2),
-    },
-    {
-      id: 3,
-      name: "Назв бота",
-      username: "Username",
-      messagePreview: "Превью...",
-      time: "8:38",
-      isPinned: true,
-      unreadCount: 3,
-      onClick: ()=> handleClick(3),
-    },
-  ];
+  const activeChat = activeChatId !== null
+    ? [...pinnedChats, ...unpinnedChats].find((c) => c.id === activeChatId)
+    : null;
 
-  const allChats: ChatProps[] = [
-    {
-      id: 4,
-      name: "Назв бота",
-      username: "Username",
-      messagePreview: "Превь...",
-      time: "8:38",
-      onClick: ()=> handleClick(4),
-    },
-    {
-      id: 5,
-      name: "Назв бота",
-      username: "Username",
-      time: "8:38",
-      isBlocked: true,
-      onClick: ()=> handleClick(5),
-    },
-  ];
+  const hasNoChats = !chatsLoading && !activeChat && pinnedChats.length === 0 && unpinnedChats.length === 0;
 
   return (
     <div className={styles.directMenu}>
@@ -71,31 +59,76 @@ const DirectMenu:FC<DirectMenuProps> = ({ onChatOpen }) => {
         </div>
       </div>
       <div className={styles.directMenuContent}>
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Текущий чат</h3>
-          <div className={styles.chatList}>
-            <ChatItem {...currentChat} />
+        {hasNoChats ? (
+          <div className={styles.emptyState}>
+            <div className={styles.emptyStateContent}>
+              <h3 className={styles.emptyStateTitle}>Чатов пока нет</h3>
+              <p className={styles.emptyStateSubtitle}>
+                Здесь будут отображаться ваши чаты
+              </p>
+            </div>
           </div>
-        </div>
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Закрепленные чаты</h3>
-          <div className={styles.chatList}>
-            {pinnedChats.map((chat) => (
-              <ChatItem key={chat.id} {...chat} />
-            ))}
-          </div>
-        </div>
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Все чаты</h3>
-          <div className={styles.chatList}>
-            {allChats.map((chat) => (
-              <ChatItem key={chat.id} {...chat} />
-            ))}
-          </div>
-        </div>
+        ) : (
+          <>
+            {activeChat && (
+              <div className={styles.section}>
+                <h3 className={styles.sectionTitle}>Текущий чат</h3>
+                <div className={styles.chatList}>
+                  <ChatItem
+                    id={activeChat.id}
+                    name={getChatDisplayName(activeChat)}
+                    username={activeChat.tg_username || undefined}
+                    messagePreview={activeChat.last_message_preview || undefined}
+                    time={formatChatTime(activeChat.last_message_at || activeChat.updated_at)}
+                    isCurrent={true}
+                    onClick={() => handleClick(activeChat.id)}
+                  />
+                </div>
+              </div>
+            )}
+            {pinnedChats.length > 0 && (
+              <div className={styles.section}>
+                <h3 className={styles.sectionTitle}>Закрепленные чаты</h3>
+                <div className={styles.chatList}>
+                  {pinnedChats.map((chat) => (
+                    <ChatItem
+                      key={chat.id}
+                      id={chat.id}
+                      name={getChatDisplayName(chat)}
+                      username={chat.tg_username || undefined}
+                      messagePreview={chat.last_message_preview || undefined}
+                      time={formatChatTime(chat.last_message_at || chat.updated_at)}
+                      isPinned={true}
+                      unreadCount={chat.unread_count}
+                      onClick={() => handleClick(chat.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className={styles.section}>
+              <h3 className={styles.sectionTitle}>Все чаты</h3>
+              <div className={styles.chatList}>
+                {chatsLoading && <div>Загрузка...</div>}
+                {!chatsLoading && unpinnedChats.map((chat) => (
+                  <ChatItem
+                    key={chat.id}
+                    id={chat.id}
+                    name={getChatDisplayName(chat)}
+                    username={chat.tg_username || undefined}
+                    messagePreview={chat.last_message_preview || undefined}
+                    time={formatChatTime(chat.last_message_at || chat.updated_at)}
+                    isBlocked={chat.is_blocked}
+                    onClick={() => handleClick(chat.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-    </div>  
-  )
-}
+    </div>
+  );
+};
 
 export default DirectMenu;

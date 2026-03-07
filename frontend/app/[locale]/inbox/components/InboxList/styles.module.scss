@@ -10,6 +10,13 @@
   gap: 4px;
 }
 
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
 .bottomGradient {
   position: fixed;
   bottom: 0;
