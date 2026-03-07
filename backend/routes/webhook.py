@@ -15,11 +15,10 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-@router.post("/telegram/webhook")
 @router.post("/telegram/webhook/{bot_token}")
 async def telegram_webhook(
     request: Request,
-    bot_token: Optional[str] = None,
+    bot_token: str,
     x_telegram_bot_api_secret_token: Optional[str] = Header(None),
 ):
     """
@@ -28,8 +27,8 @@ async def telegram_webhook(
     - Параллельная обработка независимых задач
     - Graceful error handling
     """
-    # Валидация секрета
-    if x_telegram_bot_api_secret_token != TELEGRAM_WEBHOOK_SECRET:
+    # Валидация секрета (если задан)
+    if TELEGRAM_WEBHOOK_SECRET and x_telegram_bot_api_secret_token != TELEGRAM_WEBHOOK_SECRET:
         raise HTTPException(status_code=401, detail="invalid secret")
 
     # Парсинг payload

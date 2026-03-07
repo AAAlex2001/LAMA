@@ -7,6 +7,7 @@ from backend.services.telegram_client import RateLimitedBot
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 TELEGRAM_WEBHOOK_SECRET = os.getenv("TELEGRAM_WEBHOOK_SECRET", "")
+PUBLIC_DOMAIN = os.getenv("PUBLIC_DOMAIN", "https://lamaplanner.com")
 
 # Cloud Storage (S3-compatible: AWS S3, Yandex Object Storage, DigitalOcean Spaces, Cloudflare R2)
 USE_CLOUD_STORAGE = os.getenv("USE_CLOUD_STORAGE", "false").lower() == "true"

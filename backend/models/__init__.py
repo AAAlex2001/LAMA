@@ -19,6 +19,7 @@ def load_models() -> None:
         "backend.models.channels",
         "backend.models.publications",
         "backend.models.landing",
+        "backend.models.inbox",
     )
 
     for module_name in modules:
