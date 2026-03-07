@@ -16,7 +16,11 @@ from backend.services.channel import (
     FloodService,
 )
 from backend.models.channels import ActionType
-from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT, DB_QUERY_TIMEOUT
+from backend.services.webhook.base import (
+    get_bot_session,
+    TELEGRAM_API_TIMEOUT,
+    DB_QUERY_TIMEOUT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +28,9 @@ logger = logging.getLogger(__name__)
 class ModerationHandler:
     """Обработчик модерации сообщений"""
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, bot_model):
         self.db = db
+        self.bot_model = bot_model
 
     async def process(self, message: Message) -> None:
         """Обработка модерации сообщения"""
@@ -33,10 +38,11 @@ class ModerationHandler:
             text_content = message.text or message.caption
 
             # Проверка антифлуда (только для групп с from_user)
-            if message.chat.type in {"group", "supergroup"} and message.from_user:
+            if (message.chat.type in {"group", "supergroup"}
+                    and message.from_user):
                 flood_service = FloodService(self.db)
                 is_flood, flood_action, flood_mute = await asyncio.wait_for(
-                    flood_service.check_flood_by_telegram_id(
+                    flood_service.check_by_telegram_id(
                         telegram_id=message.chat.id,
                         user_id=message.from_user.id,
                     ),
@@ -49,12 +55,13 @@ class ModerationHandler:
 
             # Проверка антиспама (ссылки)
             antispam_service = AntispamService(self.db)
-            should_block, action, mute_duration, reason = await asyncio.wait_for(
-                antispam_service.check_antispam_by_telegram_id(
-                    message.chat.id, text_content or ""
-                ),
-                timeout=DB_QUERY_TIMEOUT
-            )
+            should_block, action, mute_duration, reason = \
+                await asyncio.wait_for(
+                    antispam_service.check_by_telegram_id(
+                        message.chat.id, text_content or ""
+                    ),
+                    timeout=DB_QUERY_TIMEOUT
+                )
 
             if should_block:
                 await self.apply_action(message, action, mute_duration)
@@ -70,7 +77,9 @@ class ModerationHandler:
             )
 
             if rule:
-                await self.apply_action(message, rule.action, rule.mute_duration_minutes)
+                await self.apply_action(
+                    message, rule.action, rule.mute_duration_minutes
+                )
 
         except asyncio.TimeoutError:
             logger.warning(
@@ -89,7 +98,7 @@ class ModerationHandler:
             return
 
         try:
-            async with get_bot_session() as bot:
+            async with get_bot_session(self.bot_model.token) as bot:
                 # Удаляем сообщение
                 try:
                     await asyncio.wait_for(
@@ -114,13 +123,16 @@ class ModerationHandler:
                     await self.unmute_user(bot, message)
 
         except asyncio.TimeoutError:
+            uid = message.from_user.id if message.from_user else 'unknown'
             logger.warning(
-                f"Moderation action timeout for user {message.from_user.id if message.from_user else 'unknown'}")
+                f"Moderation action timeout for user {uid}")
         except Exception as e:
             logger.error(
                 f"Failed to apply moderation action: {e}", exc_info=True)
 
-    async def mute_user(self, bot, message: Message, mute_duration: Optional[int]) -> None:
+    async def mute_user(
+        self, bot, message: Message, mute_duration: Optional[int]
+    ) -> None:
         """Заглушить пользователя"""
         if not message.from_user:
             return
