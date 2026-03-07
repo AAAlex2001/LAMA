@@ -66,7 +66,7 @@ app.include_router(landing_router, prefix=api_prefix)
 app.include_router(upload_router, prefix=api_prefix)
 app.include_router(media_upload_router, prefix=api_prefix)
 app.include_router(link_preview_router, prefix=api_prefix)
-app.include_router(inbox_router, prefix=api_prefix)
+app.include_router(inbox_router, prefix=f"{api_prefix}/inbox", tags=["inbox"])
 app.include_router(direct_router, prefix=f"{api_prefix}/direct")
 
 upload_dir = Path("uploads/landing")

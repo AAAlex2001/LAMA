@@ -5,13 +5,30 @@ from typing import Optional
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.direct.chat import DirectChatListResponse, DirectChatUpdate, DirectChatResponse
+from backend.schemas.direct.chat import DirectChatListResponse, DirectChatUpdate, DirectChatResponse, DirectChatCreate
 from backend.services.direct.chat_service import DirectChatService
 
 router = APIRouter(prefix="/chats", tags=["Direct / Chats"])
 
 def get_direct_chat_service(db: AsyncSession = Depends(get_db)) -> DirectChatService:
     return DirectChatService(db)
+
+@router.post("", response_model=DirectChatResponse)
+async def create_chat(
+    data: DirectChatCreate,
+    current_user: User = Depends(get_current_user),
+    chat_service: DirectChatService = Depends(get_direct_chat_service)
+):
+    """Создание / получение чата вручную."""
+    chat = await chat_service.get_or_create_chat(
+        bot_id=data.bot_id,
+        tg_chat_id=data.tg_chat_id,
+        tg_user_id=data.tg_user_id,
+        tg_username=data.tg_username,
+        tg_first_name=data.tg_first_name,
+        tg_last_name=data.tg_last_name
+    )
+    return chat
 
 @router.get("", response_model=DirectChatListResponse)
 async def get_chats(

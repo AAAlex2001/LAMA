@@ -22,7 +22,6 @@ class InboxEventCreate(InboxEventBase):
 class InboxEventResponse(InboxEventBase):
     id: int
     created_at: datetime
-    updated_at: datetime
     is_new: bool
 
     class Config:
