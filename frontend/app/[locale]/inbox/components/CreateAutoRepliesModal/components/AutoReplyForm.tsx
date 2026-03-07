@@ -112,7 +112,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
         selectedBotIds={selectedBotIds}
         onBotToggle={(botId) => dispatch(toggleSelectedBotId(botId))}
         isLoading={botsLoading}
-        maxBots={maxBots}
+        // maxBots={maxBots}
         onShowCreateBot={onShowCreateBot}
       />
       <div className={styles.section}>
