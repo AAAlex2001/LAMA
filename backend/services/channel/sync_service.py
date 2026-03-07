@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
-from backend.services.bot.bots import BotService
+from backend.services.bot.bot_service import BotService
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 

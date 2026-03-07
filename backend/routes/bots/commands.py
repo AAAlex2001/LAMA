@@ -11,7 +11,7 @@ from backend.schemas.bots import (
 )
 from backend.services.bot.bot_service import BotService
 from backend.services.bot.commands import BotCommandService
-from backend.routes.bots.dependencies import get_bot_service, get_command_service
+from backend.routes.bots.dependencies import get_bot_service, get_bot_command_service
 
 router = APIRouter()
 
@@ -20,7 +20,7 @@ async def create_command(
         bot_id: int,
         data: BotCommandCreate,
         bot_service: BotService = Depends(get_bot_service),
-        command_service: BotCommandService = Depends(get_command_service),      
+        command_service: BotCommandService = Depends(get_bot_command_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Создать команду для бота"""
@@ -42,7 +42,7 @@ async def get_commands(
         bot_id: int,
         is_active: Optional[bool] = None,
         bot_service: BotService = Depends(get_bot_service),
-        command_service: BotCommandService = Depends(get_command_service),      
+        command_service: BotCommandService = Depends(get_bot_command_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Получить список команд бота"""
@@ -61,7 +61,7 @@ async def get_commands(
 async def get_command(
         bot_id: int,
         command_id: int,
-        command_service: BotCommandService = Depends(get_command_service),      
+        command_service: BotCommandService = Depends(get_bot_command_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Получить команду по ID"""
@@ -76,7 +76,7 @@ async def update_command(
         bot_id: int,
         command_id: int,
         data: BotCommandUpdate,
-        command_service: BotCommandService = Depends(get_command_service),      
+        command_service: BotCommandService = Depends(get_bot_command_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Обновить команду"""
@@ -94,7 +94,7 @@ async def update_command(
 async def delete_command(
         bot_id: int,
         command_id: int,
-        command_service: BotCommandService = Depends(get_command_service),      
+        command_service: BotCommandService = Depends(get_bot_command_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Удалить команду"""
