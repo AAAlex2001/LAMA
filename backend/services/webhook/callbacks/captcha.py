@@ -4,8 +4,7 @@ from sqlalchemy import select
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 
-from backend.services.bot import CaptchaService
-from backend.services.bot.triggers import TriggerService
+from backend.services.bot import CaptchaService, TriggerService
 from backend.models.bots import PendingApproval, TriggerType
 from backend.services.webhook.base import get_bot_session
 from backend.services.webhook.welcome import WelcomeHandler
@@ -36,7 +35,7 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             return
 
         captcha_service = CaptchaService(self.db)
-        is_correct, reason = await captcha_service.check_captcha_answer(
+        is_correct, reason = await captcha_service.check_answer(
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 
@@ -100,7 +99,7 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             return
 
         captcha_service = CaptchaService(self.db)
-        is_correct, reason = await captcha_service.check_captcha_answer(
+        is_correct, reason = await captcha_service.check_answer(
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 

@@ -6,9 +6,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService
-from backend.services.bot.auto_reply import AutoReplyService
-from backend.services.bot.triggers import TriggerService
-from backend.services.bot.shortcodes import ShortcodeProcessor
+from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
@@ -118,7 +116,7 @@ class TextProcessor:
         )
 
         auto_reply_service = AutoReplyService(self.db)
-        auto_reply = await auto_reply_service.find_auto_reply_by_text(
+        auto_reply = await auto_reply_service.find_by_text(
             self.bot_model.id,
             text_content,
             chat_type=chat_type

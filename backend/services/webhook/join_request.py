@@ -14,8 +14,8 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import BotService, CaptchaService
-from backend.services.bot.triggers import TriggerService
+from backend.services.bot import CaptchaService, TriggerService
+from backend.services.bot.bot_settings import BotSettingsService
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -37,7 +37,7 @@ class JoinRequestHandler:
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
-        self.bot_service = BotService(db)
+        self.settings_service = BotSettingsService(db)
         self.trigger_service = TriggerService(db)
         self.welcome_handler = WelcomeHandler(db, bot_model)
 
@@ -74,7 +74,7 @@ class JoinRequestHandler:
                 )
 
                 should_approve, missing = (
-                    await self.bot_service.check_approval_criteria(
+                    await self.settings_service.check_approval_criteria(
                         self.bot_model, user_id
                     )
                 )
@@ -150,14 +150,14 @@ class JoinRequestHandler:
 
         try:
             captcha_service = CaptchaService(self.db)
-            question, answer = captcha_service.generate_captcha()
+            question, answer = captcha_service.generate()
 
-            pending = await captcha_service.create_pending_approval(
+            pending = await captcha_service.create_pending(
                 bot_id=self.bot_model.id,
                 user_id=join_request.from_user.id,
                 chat_id=join_request.chat.id,
-                captcha_question=question,
-                captcha_answer=answer,
+                question=question,
+                answer=answer,
             )
 
             correct = int(answer)

@@ -7,10 +7,7 @@ from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService
-from backend.services.bot import BotCommandService
-from backend.services.bot.moderation_triggers import ModerationTriggerService
-from backend.services.bot.triggers import TriggerService
-from backend.services.bot.shortcodes import ShortcodeProcessor
+from backend.services.bot import BotCommandService, ModerationTriggerService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType
 from backend.utils import build_keyboard
 from backend.services.inbox.action_service import InboxActionService
@@ -151,10 +148,10 @@ class CommandProcessor:
 
         if command_text.lower() in MODERATION_COMMANDS:
             moderation_trigger_service = ModerationTriggerService(self.db)
-            handled = await moderation_trigger_service.handle_moderation_command(  # noqa: E501
+            handled = await moderation_trigger_service.handle_command(
                 command=command_text,
                 message=message,
-                telegram_bot=self.telegram_bot
+                telegram_bot=self.telegram_bot,
             )
 
             try:
@@ -191,7 +188,7 @@ class CommandProcessor:
             return
 
         command_service = BotCommandService(self.db)
-        command = await command_service.find_command_by_text(
+        command = await command_service.find_by_text(
             self.bot_model.id,
             command_text,
             chat_type=chat_type
