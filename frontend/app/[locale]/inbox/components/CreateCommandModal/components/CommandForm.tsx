@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
@@ -18,8 +18,16 @@ import {
   setCommandResponseMediaType,
   setCommandScope,
   setCommandIsActive,
+  setCommandBotSearch,
+  toggleCommandSelectedBotId,
   resetCommandForm,
 } from '../../../store';
+import BotSearchSelector from '../../BotSearchSelector';
+import { selectBots, selectBotsLoading } from '../../../store/selectors';
+import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
+import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
+import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
 
 interface CommandFormProps {
   onSubmit: (data: CommandFormData) => void;
@@ -29,6 +37,11 @@ interface CommandFormProps {
 const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createCommandModal);
+  const bots = useAppSelector((state) => selectBots(state));
+  const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const botSearch = formState.botSearch;
+  const selectedBotIds = new Set(formState.selectedBotIds);
+  const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
 
   useEffect(() => {
     dispatch(setCreateCommandModalOpen(true));
@@ -37,27 +50,60 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
     };
   }, [dispatch]);
 
-  const handleSubmit = () => {
-    if (!formState.command.trim() || !formState.response_text.trim()) {
+  const handleSubmit = async () => {
+    if (!formState.command.trim() || !formState.response_text.trim() || selectedBotIds.size === 0) {
       return;
     }
 
+    const { limitedMediaFiles, inlineButtonRows } = responseTextSectionRef.current || { limitedMediaFiles: [], inlineButtonRows: [] };
+
+    let mediaUrl = formState.response_media_url.trim();
+    
+    if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
+      try {
+        const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+      } catch (error) {
+        console.error('Failed to upload media:', error);
+        return;
+      }
+    }
+
+    const inlineButtons = buildInlineKeyboard(inlineButtonRows);
     onSubmit({
       command: formState.command.trim(),
       description: formState.description.trim(),
       response_text: formState.response_text.trim(),
-      response_media_url: formState.response_media_url.trim() || undefined,
+      response_media_url: mediaUrl || undefined,
       response_media_type: formState.response_media_type,
-      response_buttons: {},
+      response_buttons: inlineButtons,
       scope: formState.scope,
       is_active: formState.is_active,
+      botIds: Array.from(selectedBotIds).map(id => parseInt(id)),
     });
   };
 
-  const isSubmitDisabled = !formState.command.trim() || !formState.response_text.trim();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const isSubmitDisabled = !formState.command.trim() || !formState.response_text.trim() || selectedBotIds.size === 0;
 
   return (
     <>
+      <BotSearchSelector
+        bots={bots || []}
+        searchValue={botSearch}
+        onSearchChange={(value) => dispatch(setCommandBotSearch(value))}
+        selectedBotIds={selectedBotIds}
+        onBotToggle={(botId) => dispatch(toggleCommandSelectedBotId(botId))}
+        isLoading={botsLoading}
+      />
+
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Команда</div>
         <Input
@@ -76,63 +122,14 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
         />
       </div>
 
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Текст ответа</div>
-        <Input
-          placeholder="Текст ответа на команду"
-          value={formState.response_text}
-          onChange={(value) => dispatch(setCommandResponseText(value))}
-        />
-      </div>
-
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Тип медиа</div>
-        <div className={styles.radioGroup}>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={formState.response_media_type === 'TEXT'}
-              onChange={() => dispatch(setCommandResponseMediaType('TEXT'))}
-            />
-            <span className={styles.channelItemName}>Текст</span>
-          </div>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={formState.response_media_type === 'IMAGE'}
-              onChange={() => dispatch(setCommandResponseMediaType('IMAGE'))}
-            />
-            <span className={styles.channelItemName}>Изображение</span>
-          </div>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={formState.response_media_type === 'VIDEO'}
-              onChange={() => dispatch(setCommandResponseMediaType('VIDEO'))}
-            />
-            <span className={styles.channelItemName}>Видео</span>
-          </div>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={formState.response_media_type === 'DOCUMENT'}
-              onChange={() => dispatch(setCommandResponseMediaType('DOCUMENT'))}
-            />
-            <span className={styles.channelItemName}>Документ</span>
-          </div>
-        </div>
-      </div>
-
-      {formState.response_media_type !== 'TEXT' && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>URL медиа</div>
-          <Input
-            placeholder="https://example.com/media.jpg"
-            value={formState.response_media_url}
-            onChange={(value) => dispatch(setCommandResponseMediaUrl(value))}
-          />
-        </div>
-      )}
+      <ResponseTextSection
+        ref={responseTextSectionRef}
+        responseText={formState.response_text}
+        onResponseTextChange={(value) => dispatch(setCommandResponseText(value))}
+        onKeyDown={handleKeyDown}
+        onMediaTypeChange={(mediaType) => dispatch(setCommandResponseMediaType(mediaType))}
+        onMediaUrlChange={(mediaUrl) => dispatch(setCommandResponseMediaUrl(mediaUrl))}
+      />
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Область действия</div>

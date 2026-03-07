@@ -6,9 +6,11 @@ export interface CreateCommandModalState {
   description: string;
   response_text: string;
   response_media_url: string;
-  response_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+  response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   scope: 'PRIVATE' | 'PUBLIC';
   is_active: boolean;
+  botSearch: string;
+  selectedBotIds: string[];
 }
 
 const initialState: CreateCommandModalState = {
@@ -20,6 +22,8 @@ const initialState: CreateCommandModalState = {
   response_media_type: 'TEXT',
   scope: 'PRIVATE',
   is_active: true,
+  botSearch: '',
+  selectedBotIds: [],
 };
 
 const createCommandModalSlice = createSlice({
@@ -44,7 +48,7 @@ const createCommandModalSlice = createSlice({
     setResponseMediaUrl(state, action: PayloadAction<string>) {
       state.response_media_url = action.payload;
     },
-    setResponseMediaType(state, action: PayloadAction<'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'>) {
+    setResponseMediaType(state, action: PayloadAction<'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT'>) {
       state.response_media_type = action.payload;
     },
     setScope(state, action: PayloadAction<'PRIVATE' | 'PUBLIC'>) {
@@ -52,6 +56,21 @@ const createCommandModalSlice = createSlice({
     },
     setIsActive(state, action: PayloadAction<boolean>) {
       state.is_active = action.payload;
+    },
+    setBotSearch(state, action: PayloadAction<string>) {
+      state.botSearch = action.payload;
+    },
+    toggleSelectedBotId(state, action: PayloadAction<string>) {
+      const botId = action.payload;
+      const index = state.selectedBotIds.indexOf(botId);
+      if (index === -1) {
+        state.selectedBotIds.push(botId);
+      } else {
+        state.selectedBotIds.splice(index, 1);
+      }
+    },
+    setSelectedBotIds(state, action: PayloadAction<string[]>) {
+      state.selectedBotIds = action.payload;
     },
     resetForm(state) {
       Object.assign(state, initialState);
@@ -68,6 +87,9 @@ export const {
   setResponseMediaType,
   setScope,
   setIsActive,
+  setBotSearch,
+  toggleSelectedBotId,
+  setSelectedBotIds,
   resetForm,
 } = createCommandModalSlice.actions;
 

@@ -6,56 +6,81 @@ import ChatItem, { ChatProps } from '../ChatItem';
 import styles from './style.module.scss';
 import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';
+import { useAppSelector } from '@/app/[locale]/inbox/store';
+import { selectBots } from '@/app/[locale]/inbox/store/selectors';
+import EmptyState from '@/app/[locale]/inbox/components/EmptyState';
+import CreateTriggersModal from '@/app/[locale]/inbox/components/CreateTriggersModal';
+import CreateGlobalMessageModal from '@/app/[locale]/inbox/components/CreateGlobalMesssageModal';
+
+export interface BotProps {
+  id: number;
+  name: string;
+  time: string;
+}
 
 interface ModalBotAutomatizationProps {
-  chats?: ChatProps[];
+  bots?: BotProps[];
   onMassMessage?: (selectedChatIds: number[]) => void;
   onTrigger?: (selectedChatIds: number[]) => void;
 }
 
-const defaultChats: ChatProps[] = [
-  { id: 1, name: 'Назв бота', username: 'Username', time: '8:38' },
-  { id: 2, name: 'Назв бота', username: 'Username', time: '8:38' },
-  { id: 3, name: 'Назв бота', username: 'Username', time: '8:38' },
-  { id: 4, name: 'Назв бота', username: 'Username', time: '8:38' },
-];
+function formatDateTime(isoDateString: string): string {
+  const date = new Date(isoDateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+}
 
 export default function ModalBotAutomatization({
-  chats = defaultChats,
   onMassMessage,
   onTrigger,
 }: ModalBotAutomatizationProps) {
-  const [selectedChatIds, setSelectedChatIds] = useState<Set<number>>(new Set());
+
+  const bots = useAppSelector(selectBots)
+  const [selectedBotIds, setSelectedBotIds] = useState<Set<number>>(new Set());
+  const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
+  const [isGlobalMessageModalOpen, setIsGlobalMessageModalOpen] = useState(false);
 
   const allSelected = useMemo(() => {
-    return chats.length > 0 && selectedChatIds.size === chats.length;
-  }, [chats.length, selectedChatIds.size]);
+    return bots.length > 0 && selectedBotIds.size === bots.length;
+  }, [bots.length, selectedBotIds.size]);
 
   const handleChatToggle = (chatId: number) => {
-    const newSelected = new Set(selectedChatIds);
+    const newSelected = new Set(selectedBotIds);
     if (newSelected.has(chatId)) {
       newSelected.delete(chatId);
     } else {
       newSelected.add(chatId);
     }
-    setSelectedChatIds(newSelected);
+    setSelectedBotIds(newSelected);
   };
 
   const handleSelectAll = () => {
     if (allSelected) {
-      setSelectedChatIds(new Set());
+      setSelectedBotIds(new Set());
     } else {
-      setSelectedChatIds(new Set(chats.map(chat => chat.id)));
+      setSelectedBotIds(new Set(bots.map(bot => bot.id)));
     }
   };
 
   const handleMassMessage = () => {
-    onMassMessage?.(Array.from(selectedChatIds));
+    if (selectedBotIds.size > 0) {
+      setIsGlobalMessageModalOpen(true);
+    }
   };
 
   const handleTrigger = () => {
-    onTrigger?.(Array.from(selectedChatIds));
+    if (selectedBotIds.size > 0) {
+      setIsTriggerModalOpen(true);
+    }
   };
+
+  const selectedBots = useMemo(() => {
+    return bots.filter(bot => selectedBotIds.has(bot.id));
+  }, [bots, selectedBotIds]);
 
   return (
     <ModalBase>
@@ -74,27 +99,38 @@ export default function ModalBotAutomatization({
           <ModalBase.Title>Выберите бота (-ов) для автоматизации</ModalBase.Title>
         </ModalBase.Header>
         <ModalBase.Body className={styles.body}>
-          <div className={styles.selectWrapper}>
-            <Button
-              onClick={handleSelectAll}
-              variant="outline"
-              intent="neutral"
-              size="sm"
-            >
-              Выбрать все
-            </Button>
-          </div>
-          <div className={styles.chatList}>
-            {chats.map((chat) => (
-              <ChatItem
-                key={chat.id}
-                {...chat}
-                showCheckbox={true}
-                checked={selectedChatIds.has(chat.id)}
-                onCheckChange={() => handleChatToggle(chat.id)}
-              />
-            ))}
-          </div>
+          {!bots.length && (
+            <div className={styles.emptyState}>
+              Добавьте ботов, чтобы использовать автоматизацию
+            </div>
+          )}
+          {!!bots.length && (
+            <>
+              <div className={styles.selectWrapper}>
+                <Button
+                  onClick={handleSelectAll}
+                  variant="outline"
+                  intent={allSelected ? "primary" : "neutral"}
+                  size="sm"
+                >
+                  <span>{!allSelected ? 'Выбрать все' : 'Снять выбор'}</span>
+                </Button>
+              </div>
+              <div className={styles.chatList}>
+                {bots.map((bot) => (
+                  <ChatItem
+                    key={bot.id}
+                    id={bot.id}
+                    name={bot.username}
+                    time={formatDateTime(bot.created_at)}
+                    showCheckbox={true}
+                    checked={selectedBotIds.has(bot.id)}
+                    onCheckChange={() => handleChatToggle(bot.id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </ModalBase.Body>
         <ModalBase.Footer>
           <div className={styles.actionButtons}>
@@ -104,7 +140,7 @@ export default function ModalBotAutomatization({
               intent="gradient"
               size="lg"
               style={{ width: '100%' }}
-              disabled={selectedChatIds.size === 0}
+              disabled={selectedBotIds.size === 0}
             >
               Создать массовое сообщение
             </Button>
@@ -114,13 +150,31 @@ export default function ModalBotAutomatization({
               intent="gradient"
               size="lg"
               style={{ width: '100%' }}
-              disabled={selectedChatIds.size === 0}
+              disabled={selectedBotIds.size === 0}
             >
               <span className={buttonStyles.label}>Создать триггер</span>
             </Button>
           </div>
         </ModalBase.Footer>
       </ModalBase.Content>
+      <CreateTriggersModal
+        isOpen={isTriggerModalOpen}
+        onOpenChange={setIsTriggerModalOpen}
+        bots={selectedBots}
+        onSuccess={() => {
+          setIsTriggerModalOpen(false);
+          onTrigger?.(Array.from(selectedBotIds));
+        }}
+      />
+      <CreateGlobalMessageModal
+        isOpen={isGlobalMessageModalOpen}
+        onOpenChange={setIsGlobalMessageModalOpen}
+        bots={selectedBots}
+        onSuccess={() => {
+          setIsGlobalMessageModalOpen(false);
+          onMassMessage?.(Array.from(selectedBotIds));
+        }}
+      />
     </ModalBase>
   );
 }

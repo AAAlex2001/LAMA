@@ -3,10 +3,11 @@ import Checkbox from "@/components/checkbox/checkbox";
 import styles from "./styles.module.scss";
 import classNames from "classnames";
 
+
 export interface ChatProps {
   id: number;
   name: string;
-  username: string;
+  username?: string;
   avatar?: string;
   messagePreview?: string;
   time: string;
@@ -23,7 +24,7 @@ export interface ChatProps {
 const ChatItem = (chat: ChatProps) => {
   const {
     name,
-    username,
+    username = '',
     messagePreview,
     time,
     isCurrent = false,

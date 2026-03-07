@@ -1,0 +1,55 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sectionTitle {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: var(--color-lama-black);
+}
+
+.messageField {
+  flex-shrink: 0;
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 16px;
+  
+}
+
+.input {
+  flex: 1;
+  outline: none;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 100%;
+  color: var(--color-lama-black);
+  background: transparent;
+
+  &::placeholder {
+    color: #A6ACBF;
+  }
+}
+
+.actionsRow {
+  display: flex;
+  align-items: stretch;
+  margin-top: 16px;
+  gap: 10px;
+  width: 100%;
+}
+
+.inlineButtonsContainer {
+  padding-top: 0;
+}
+
+.inlineOpen {
+  padding-top: 12px;
+}

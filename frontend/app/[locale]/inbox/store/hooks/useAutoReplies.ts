@@ -13,7 +13,7 @@ export function useAutoReplies(params: FetchAutoRepliesParams) {
       const result = await dispatch(fetchAutoRepliesThunk(params)).unwrap();
       return result;
     },
-    staleTime: 30 * 1000, // 30 seconds
+    staleTime: 30 * 1000,
   });
 }
 
@@ -22,12 +22,11 @@ export function useCreateAutoReply() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ botId, data }: { botId: number; data: AutoReplyCreate }) => {
-      return await dispatch(createAutoReplyThunk({ botId, data })).unwrap();
+    mutationFn: async ({ botIds, data }: { botIds: number[]; data: AutoReplyCreate }) => {
+      return await dispatch(createAutoReplyThunk({ botIds, data })).unwrap();
     },
     onSuccess: (_, variables) => {
-      // Invalidate and refetch auto replies queries
-      queryClient.invalidateQueries({ queryKey: ['autoReplies', variables.botId] });
+      queryClient.invalidateQueries({ queryKey: ['autoReplies', variables.botIds] });
     },
   });
 }

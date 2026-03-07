@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import type { MediaFile } from '@/components/media-preview';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
@@ -51,9 +51,9 @@ export function useMessageMedia() {
     setMediaFiles(prev => prev.filter(f => f.id !== id));
   };
 
-  const handleClearMedia = () => {
+  const handleClearMedia = useCallback(() => {
     setMediaFiles([]);
-  };
+  }, []);
 
   const handleToggleBlur = (id: string) => {
     setMediaFiles(prev => prev.map(f => 

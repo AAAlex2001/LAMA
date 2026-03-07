@@ -9,7 +9,7 @@ import styles from "./styles.module.scss";
 import { IInboxItem } from "./components/InboxList/components/ListElement";
 import { ListHeaderType } from "./components/InboxList/components/ListHeader";
 import InboxDirect from "./components/InboxDirect";
-import { useAppDispatch } from "./store";
+import { fetchBotsThunk, useAppDispatch } from "./store";
 import { fetchChannelsThunk } from "./store";
 
 type SortInput = {
@@ -27,6 +27,7 @@ const InboxView = () => {
 
   useEffect(() => {
     dispatch(fetchChannelsThunk({}));
+    dispatch(fetchBotsThunk({}));
   }, [dispatch]);
 
   const sort: SortInput | null = useMemo( () => {

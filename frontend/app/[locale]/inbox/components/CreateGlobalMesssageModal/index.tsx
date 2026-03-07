@@ -2,70 +2,70 @@
 
 import React, { useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
-import { Button } from '@/components/new-button';
 import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
-import TriggerForm from './components/TriggerForm';
+import GlobalMessageForm from './components/GlobalMessageForm';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useCreateTrigger } from '../../store/hooks';
+import { useSendGlobalMessage } from '../../store/hooks/useGlobalMessages';
 import { useAppDispatch } from '../../store';
-import { setCreateTriggerModalOpen, resetTriggerForm, setTriggerSelectedBotIds } from '../../store';
-import type { TriggerCreate } from '../../store/slices/triggers';
+import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds } from '../../store';
+import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
-interface CreateTriggersModalProps {
+interface CreateGlobalMessageModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  botId?: number;
   bots?: Array<{ id: number; username?: string; title?: string }>;
   onSuccess?: () => void;
 }
 
-export interface TriggerFormData extends TriggerCreate {
+export interface GlobalMessageFormData {
   botIds: number[];
+  text_content?: string;
+  media_url?: string;
+  inline_keyboard?: InlineKeyboard;
+  chat_id?: number;
 }
 
-const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
+const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
   isOpen,
   onOpenChange,
-  botId = 1,
   bots,
   onSuccess,
 }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const createTrigger = useCreateTrigger();
+  const sendMessage = useSendGlobalMessage();
 
   useEffect(() => {
-    dispatch(setCreateTriggerModalOpen(isOpen));
+    dispatch(setCreateGlobalMessageModalOpen(isOpen));
     if (!isOpen) {
-      dispatch(resetTriggerForm());
+      dispatch(resetGlobalMessageForm());
     } else if (bots && bots.length > 0) {
       const botIds = bots.map(bot => bot.id.toString());
-      dispatch(setTriggerSelectedBotIds(botIds));
+      dispatch(setGlobalMessageSelectedBotIds(botIds));
     }
   }, [isOpen, dispatch, bots]);
 
-  const handleSubmit = async (data: TriggerFormData) => {
+  const handleSubmit = async (data: GlobalMessageFormData) => {
     try {
-      const { botIds, ...triggerData } = data;
-      const botIdsToUse = botIds.length > 0 ? botIds : (botId ? [botId] : []);
+      const { botIds, ...messageData } = data;
       
-      if (botIdsToUse.length === 0) {
+      if (botIds.length === 0) {
         showError('Выберите хотя бы одного бота');
         return;
       }
 
-      const promises = botIdsToUse.map(botId =>
-        createTrigger.mutateAsync({ botId, data: triggerData })
+      const promises = botIds.map(botId =>
+        sendMessage.mutateAsync({ botId, data: messageData })
       );
 
       await Promise.all(promises);
       
-      showSuccess(`Триггер успешно создан для ${botIdsToUse.length} ${botIdsToUse.length === 1 ? 'бота' : 'ботов'}`);
+      showSuccess(`Сообщение успешно отправлено для ${botIds.length} ${botIds.length === 1 ? 'бота' : 'ботов'}`);
       onSuccess?.();
       onOpenChange(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать триггер';
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
       showError(errorMessage);
     }
   };
@@ -74,20 +74,19 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
       <ModalBase.Content size="md" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
-          <ModalBase.Title>Создание триггера</ModalBase.Title>
+          <ModalBase.Title>Отправка сообщения</ModalBase.Title>
           <ModalBase.Close />
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.modalBody}>
-          {createTrigger.isPending ? (
+          {sendMessage.isPending ? (
             <div className={styles.loaderContainer}>
               <Loader size={32} color="blue" />
             </div>
           ) : (
-            <TriggerForm 
+            <GlobalMessageForm 
               onSubmit={handleSubmit} 
-              onCancel={() => onOpenChange(false)}
-              bots={bots}
+              onCancel={() => onOpenChange(false)} 
               hideSearchBar={!!bots}
             />
           )}
@@ -97,4 +96,4 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
   );
 };
 
-export default CreateTriggersModal;
+export default CreateGlobalMessageModal;

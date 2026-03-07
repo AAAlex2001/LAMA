@@ -53,11 +53,12 @@ export const fetchAutoRepliesThunk = createAsyncThunk(
 export const createAutoReplyThunk = createAsyncThunk(
   'autoReplies/createAutoReply',
   async (
-    { botId, data }: { botId: number; data: AutoReplyCreate },
+    { botIds, data }: { botIds: number[]; data: AutoReplyCreate },
     { dispatch, rejectWithValue }
   ) => {
     dispatch(setLoading(true));
     dispatch(setError(null));
+    const botId = botIds[0];
     
     try {
       const autoReply = await apiRequest<AutoReply>(

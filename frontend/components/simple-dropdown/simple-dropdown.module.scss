@@ -127,6 +127,19 @@
   }
 }
 
+.menuItemSelected {
+  background: rgba(59, 130, 246, 0.1) !important;
+  
+  .itemLabel {
+    color: #3B82F6;
+    font-weight: 500;
+  }
+  
+  &:hover {
+    background: rgba(59, 130, 246, 0.15) !important;
+  }
+}
+
 .itemIcon {
   display: inline-flex;
   align-items: center;

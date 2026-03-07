@@ -26,7 +26,6 @@ export function useCreateCommand() {
       return await dispatch(createCommandThunk({ botId, data })).unwrap();
     },
     onSuccess: (_, variables) => {
-      // Invalidate and refetch commands queries
       queryClient.invalidateQueries({ queryKey: ['commands', variables.botId] });
     },
   });

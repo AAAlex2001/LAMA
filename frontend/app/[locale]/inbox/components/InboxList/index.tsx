@@ -89,8 +89,8 @@ const InboxList: FC<InboxListProps> = ( { data, type } ) => {
             key={item.id} 
             ref={index === data.length - 1 ? lastElementRef : null}
           >
-            <ListElement 
-              item={item} 
+            <ListElement
+              item={item}
               isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined} 
               onCheck={() => handleCheck(item.id.toString())}
               onHold={() => handleOnHold(item.id.toString())}

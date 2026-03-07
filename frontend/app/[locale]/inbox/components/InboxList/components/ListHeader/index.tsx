@@ -12,6 +12,7 @@ import CreateInviteLinkModal from "../../../CreateInviteLinkModal";
 import CreateAutoRepliesModal from "../../../CreateAutoRepliesModal";
 import CreateTriggersModal from "../../../CreateTriggersModal";
 import CreateCommandModal from "../../../CreateCommandModal";
+import AutomatizationModal from "../../../AutomatizationModal";
 
 export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
@@ -26,7 +27,7 @@ interface ListHeaderProps {
 }
 
 
-const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems, botId = 1 }: ListHeaderProps) => {
+const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems }: ListHeaderProps) => {
   const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
@@ -34,6 +35,7 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
   const [isAutoReplyModalOpen, setIsAutoReplyModalOpen] = useState(false);
   const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
   const [isCommandModalOpen, setIsCommandModalOpen] = useState(false);
+  const [isAutomatizationModalOpen, setIsAutomatizationModalOpen] = useState(false);
 
   const filterOptionsModeration = [
     { id: "all", label: "Все" },
@@ -296,6 +298,7 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
                   intent="gradient"
                   size="lg"
                   style={{ width: '100%' }}
+                  onClick={() => setIsAutomatizationModalOpen(true)}
                 >
                   <span className={buttonStyles.label}>Автоматизация действий</span>
                 </Button>
@@ -310,20 +313,24 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               </div>
             </div>
           </MobileWrapper>
+          <AutomatizationModal
+            isOpen={isAutomatizationModalOpen}
+            onOpenChange={setIsAutomatizationModalOpen}
+            onOpenAutoReply={() => setIsAutoReplyModalOpen(true)}
+            onOpenTrigger={() => setIsTriggerModalOpen(true)}
+            onOpenCommand={() => setIsCommandModalOpen(true)}
+          />
           <CreateAutoRepliesModal
             isOpen={isAutoReplyModalOpen}
             onOpenChange={setIsAutoReplyModalOpen}
-            botId={botId}
           />
           <CreateTriggersModal
             isOpen={isTriggerModalOpen}
             onOpenChange={setIsTriggerModalOpen}
-            botId={botId}
           />
           <CreateCommandModal
             isOpen={isCommandModalOpen}
             onOpenChange={setIsCommandModalOpen}
-            botId={botId}
           />
         </>
       )

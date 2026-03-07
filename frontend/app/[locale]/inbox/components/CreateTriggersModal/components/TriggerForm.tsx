@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
 import { Checkbox } from '@/components/checkbox';
+import SimpleDropdown from '@/components/simple-dropdown/simple-dropdown';
 import styles from '../styles.module.scss';
 import type { TriggerFormData } from '../index';
 import {
@@ -22,14 +23,24 @@ import {
   setDelayMinutes,
   setChatType,
   setTriggerIsActive,
+  setTriggerBotSearch,
+  toggleTriggerSelectedBotId,
   resetTriggerForm,
   type TriggerTypeEnum,
   type ActionTypeEnum,
 } from '../../../store';
+import BotSearchSelector from '../../BotSearchSelector';
+import { selectBots, selectBotsLoading } from '../../../store/selectors';
+import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
+import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
+import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
 
 interface TriggerFormProps {
   onSubmit: (data: TriggerFormData) => void;
   onCancel: () => void;
+  bots?: Array<{ id: number; username?: string; title?: string }>;
+  hideSearchBar?: boolean;
 }
 
 const TRIGGER_TYPE_LABELS: Record<TriggerTypeEnum, string> = {
@@ -53,9 +64,15 @@ const ACTION_TYPE_LABELS: Record<ActionTypeEnum, string> = {
   BAN_USER: 'Забанить пользователя',
 };
 
-const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel }) => {
+const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: propsBots, hideSearchBar = false }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createTriggerModal);
+  const storeBots = useAppSelector((state) => selectBots(state));
+  const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const bots = propsBots || storeBots;
+  const botSearch = formState.botSearch;
+  const selectedBotIds = new Set(formState.selectedBotIds);
+  const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
 
   useEffect(() => {
     dispatch(setCreateTriggerModalOpen(true));
@@ -64,25 +81,41 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel }) => {
     };
   }, [dispatch]);
 
-  const buildActionData = (): Record<string, unknown> => {
+  const buildActionData = async (): Promise<Record<string, unknown>> => {
     const actionData: Record<string, unknown> = {};
+    const { limitedMediaFiles, inlineButtonRows } = responseTextSectionRef.current || { limitedMediaFiles: [], inlineButtonRows: [] };
     
     switch (formState.action_type) {
-      case 'SEND_MESSAGE':
+      case 'SEND_MESSAGE':{
         actionData.text = formState.action_text;
-        if (formState.action_buttons) {
-          try {
-            actionData.buttons = JSON.parse(formState.action_buttons);
-          } catch {
-            actionData.buttons = {};
-          }
+        const inlineButtons = buildInlineKeyboard(inlineButtonRows);
+        if (inlineButtons) {
+          actionData.buttons = inlineButtons;
         }
         break;
+      }
       case 'SEND_MEDIA':
-        actionData.media_url = formState.action_media_url;
+        let mediaUrl = formState.action_media_url.trim();
+        
+        if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
+          try {
+            const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
+            const baseUrl = API_BASE_URL.replace('/api', '') ;
+            mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+          } catch (error) {
+            console.error('Failed to upload media:', error);
+            throw error;
+          }
+        }
+        
+        actionData.media_url = mediaUrl;
         actionData.media_type = formState.action_media_type;
         if (formState.action_text) {
           actionData.text = formState.action_text;
+        }
+        const inlineButtons = buildInlineKeyboard(inlineButtonRows);
+        if (inlineButtons) {
+          actionData.buttons = inlineButtons;
         }
         break;
       case 'MUTE_USER':
@@ -91,40 +124,75 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel }) => {
         break;
       case 'ADD_TO_GROUP':
       case 'REMOVE_FROM_GROUP':
-        // No additional data needed
         break;
     }
     
     return actionData;
   };
 
-  const handleSubmit = () => {
-    if (!formState.name.trim()) {
+  const handleSubmit = async () => {
+    if (!formState.name.trim() || selectedBotIds.size === 0) {
       return;
     }
 
-    onSubmit({
-      name: formState.name.trim(),
-      trigger_type: formState.trigger_type,
-      action_type: formState.action_type,
-      action_data: buildActionData(),
-      delay_minutes: formState.delay_minutes,
-      delivery_window: {},
-      filters: {},
-      chat_type: formState.chat_type,
-      is_active: formState.is_active,
-    });
+    try {
+      const actionData = await buildActionData();
+      
+      onSubmit({
+        name: formState.name.trim(),
+        trigger_type: formState.trigger_type,
+        action_type: formState.action_type,
+        action_data: actionData,
+        delay_minutes: formState.delay_minutes,
+        delivery_window: {},
+        filters: {},
+        chat_type: formState.chat_type,
+        is_active: formState.is_active,
+        botIds: Array.from(selectedBotIds).map(id => parseInt(id)),
+      });
+    } catch (error) {
+      console.error('Failed to submit trigger:', error);
+    }
   };
 
-  const isSubmitDisabled = !formState.name.trim();
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
+    }
+  };
+
+  const isSubmitDisabled = !formState.name.trim() || selectedBotIds.size === 0;
 
   const showTextField = formState.action_type === 'SEND_MESSAGE' || formState.action_type === 'SEND_MEDIA';
-  const showMediaFields = formState.action_type === 'SEND_MEDIA';
-  const showButtonsField = formState.action_type === 'SEND_MESSAGE';
   const showDurationField = formState.action_type === 'MUTE_USER' || formState.action_type === 'BAN_USER';
+
+  const triggerTypeItems = (Object.keys(TRIGGER_TYPE_LABELS) as TriggerTypeEnum[]).map((triggerType) => ({
+    value: triggerType,
+    label: TRIGGER_TYPE_LABELS[triggerType],
+  }));
+
+  const actionTypeItems = (Object.keys(ACTION_TYPE_LABELS) as ActionTypeEnum[]).map((actionType) => ({
+    value: actionType,
+    label: ACTION_TYPE_LABELS[actionType],
+  }));
+
+  const selectedTriggerTypeLabel = TRIGGER_TYPE_LABELS[formState.trigger_type] || '';
+  const selectedActionTypeLabel = ACTION_TYPE_LABELS[formState.action_type] || '';
 
   return (
     <>
+      {!hideSearchBar && (
+        <BotSearchSelector
+          bots={bots || []}
+          searchValue={botSearch}
+          onSearchChange={(value) => dispatch(setTriggerBotSearch(value))}
+          selectedBotIds={selectedBotIds}
+          onBotToggle={(botId) => dispatch(toggleTriggerSelectedBotId(botId))}
+          isLoading={botsLoading}
+        />
+      )}
+
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Название триггера</div>
         <Input
@@ -136,101 +204,31 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel }) => {
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Тип триггера</div>
-        <div className={styles.radioGroup}>
-          {(Object.keys(TRIGGER_TYPE_LABELS) as TriggerTypeEnum[]).map((triggerType) => (
-            <div key={triggerType} className={styles.radioGroupItem}>
-              <Checkbox
-                variant="radio"
-                checked={formState.trigger_type === triggerType}
-                onChange={() => dispatch(setTriggerType(triggerType))}
-              />
-              <span className={styles.channelItemName}>{TRIGGER_TYPE_LABELS[triggerType]}</span>
-            </div>
-          ))}
-        </div>
+        <SimpleDropdown
+          value={selectedTriggerTypeLabel}
+          items={triggerTypeItems}
+          onSelect={(value) => dispatch(setTriggerType(value as TriggerTypeEnum))}
+        />
       </div>
 
       <div className={styles.section}>
         <div className={styles.sectionTitle}>Тип действия</div>
-        <div className={styles.radioGroup}>
-          {(Object.keys(ACTION_TYPE_LABELS) as ActionTypeEnum[]).map((actionType) => (
-            <div key={actionType} className={styles.radioGroupItem}>
-              <Checkbox
-                variant="radio"
-                checked={formState.action_type === actionType}
-                onChange={() => dispatch(setActionType(actionType))}
-              />
-              <span className={styles.channelItemName}>{ACTION_TYPE_LABELS[actionType]}</span>
-            </div>
-          ))}
-        </div>
+        <SimpleDropdown
+          value={selectedActionTypeLabel}
+          items={actionTypeItems}
+          onSelect={(value) => dispatch(setActionType(value as ActionTypeEnum))}
+        />
       </div>
 
       {showTextField && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Текст сообщения</div>
-          <Input
-            placeholder="Текст сообщения"
-            value={formState.action_text}
-            onChange={(value) => dispatch(setActionText(value))}
-          />
-        </div>
-      )}
-
-      {showMediaFields && (
-        <>
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>Тип медиа</div>
-            <div className={styles.radioGroup}>
-              <div className={styles.radioGroupItem}>
-                <Checkbox
-                  variant="radio"
-                  checked={formState.action_media_type === 'IMAGE'}
-                  onChange={() => dispatch(setActionMediaType('IMAGE'))}
-                />
-                <span className={styles.channelItemName}>Изображение</span>
-              </div>
-              <div className={styles.radioGroupItem}>
-                <Checkbox
-                  variant="radio"
-                  checked={formState.action_media_type === 'VIDEO'}
-                  onChange={() => dispatch(setActionMediaType('VIDEO'))}
-                />
-                <span className={styles.channelItemName}>Видео</span>
-              </div>
-              <div className={styles.radioGroupItem}>
-                <Checkbox
-                  variant="radio"
-                  checked={formState.action_media_type === 'DOCUMENT'}
-                  onChange={() => dispatch(setActionMediaType('DOCUMENT'))}
-                />
-                <span className={styles.channelItemName}>Документ</span>
-              </div>
-            </div>
-          </div>
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>URL медиа</div>
-            <Input
-              placeholder="https://example.com/media.jpg"
-              value={formState.action_media_url}
-              onChange={(value) => dispatch(setActionMediaUrl(value))}
-            />
-          </div>
-        </>
-      )}
-
-      {showButtonsField && (
-        <div className={styles.section}>
-          <div className={styles.sectionTitle}>Кнопки (JSON)</div>
-          <div className={styles.sectionDescription}>
-            JSON объект с кнопками. Например: {"{"}"inline_keyboard": [[{"{"}"text": "Кнопка", "url": "https://example.com"{"}"}]]{"}"}
-          </div>
-          <Input
-            placeholder='{"inline_keyboard": [[{"text": "Кнопка", "url": "https://example.com"}]]}'
-            value={formState.action_buttons}
-            onChange={(value) => dispatch(setActionButtons(value))}
-          />
-        </div>
+        <ResponseTextSection
+          ref={responseTextSectionRef}
+          responseText={formState.action_text}
+          onResponseTextChange={(value) => dispatch(setActionText(value))}
+          onKeyDown={handleKeyDown}
+          onMediaTypeChange={(mediaType) => dispatch(setActionMediaType(mediaType))}
+          onMediaUrlChange={(mediaUrl) => dispatch(setActionMediaUrl(mediaUrl))}
+        />
       )}
 
       {showDurationField && (

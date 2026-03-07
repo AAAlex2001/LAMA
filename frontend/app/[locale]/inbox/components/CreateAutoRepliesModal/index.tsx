@@ -9,20 +9,21 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useCreateAutoReply } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
 import { setCreateAutoReplyModalOpen, resetAutoReplyForm } from '../../store';
+import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 interface CreateAutoRepliesModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  botId: number;
   onSuccess?: () => void;
 }
 
 export interface AutoReplyFormData {
+  botIds: number[];
   keywords: string[];
   response_text: string;
   response_media_url?: string;
-  response_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  response_buttons?: Record<string, unknown>;
+  response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'PUBLIC';
   is_active: boolean;
 }
@@ -30,7 +31,6 @@ export interface AutoReplyFormData {
 const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
   isOpen,
   onOpenChange,
-  botId,
   onSuccess,
 }) => {
   const dispatch = useAppDispatch();
@@ -46,22 +46,25 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
 
   const handleSubmit = async (data: AutoReplyFormData) => {
     try {
-      await createAutoReply.mutateAsync(
-        { botId, data },
-        {
-          onSuccess: () => {
-            showSuccess('Автоответ успешно создан');
-            onSuccess?.();
-            onOpenChange(false);
-          },
-          onError: (error) => {
-            const errorMessage = error instanceof Error ? error.message : 'Не удалось создать автоответ';
-            showError(errorMessage);
-          },
-        }
+      const { botIds, ...autoReplyData } = data;
+      
+      if (botIds.length === 0) {
+        showError('Выберите хотя бы одного бота');
+        return;
+      }
+
+      const promises = botIds.map(botId =>
+        createAutoReply.mutateAsync({ botIds: [botId], data: autoReplyData })
       );
+
+      await Promise.all(promises);
+      
+      showSuccess(`Автоответ успешно создан для ${botIds.length} ${botIds.length === 1 ? 'бота' : 'ботов'}`);
+      onSuccess?.();
+      onOpenChange(false);
     } catch (error) {
-      // Error is handled in onError callback
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать автоответ';
+      showError(errorMessage);
     }
   };
 

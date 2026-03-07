@@ -115,3 +115,13 @@ export const selectInviteLinksLoading = (channelId: number) => createSelector(
   [(s: RootState) => s.inbox.inviteLinksLoading],
   (inviteLinksLoading) => inviteLinksLoading[channelId] || false,
 );
+
+export const selectBots = createSelector(
+  [(s: RootState) => s.bots.bots],
+  (bots) => bots,
+);
+
+export const selectBotsLoading = createSelector(
+  [(s: RootState) => s.bots.loading],
+  (loading) => loading,
+);

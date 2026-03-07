@@ -41,7 +41,7 @@ export default function AppSidebar() {
     { id: 'drafts', icon: <DraftsIcon width={24} height={24} />, label: 'Черновики', href: `/${locale}/drafts` },
     { id: 'channels', icon: <ChannelsIcon width={24} height={24} />, label: 'Управление каналами', disabled: true },
     { id: 'bots', icon: <BotsIcon width={24} height={24} />, label: 'Управление ботами', disabled: true },
-    { id: 'inbox', icon: <InboxIcon width={24} height={24} />, label: 'Входящие сообщения', href: `/${locale}/inbox` },
+    { id: 'inbox', icon: <InboxIcon width={24} height={24} />, label: 'Входящие', href: `/${locale}/inbox` },
     { id: 'parser', icon: <ParserIcon width={24} height={24} />, label: 'Парсер контента', disabled: true },
     { id: 'wallet', icon: <WalletIcon width={24} height={24} />, label: 'Рекламный кабинет', disabled: true },
   ];

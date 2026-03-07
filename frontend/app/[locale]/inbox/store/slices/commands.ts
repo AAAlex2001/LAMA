@@ -1,3 +1,4 @@
+import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BotCommand {
@@ -7,8 +8,8 @@ export interface BotCommand {
   description: string;
   response_text: string;
   response_media_url?: string;
-  response_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  response_buttons?: Record<string, unknown>;
+  response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'PUBLIC';
   is_active: boolean;
   created_at: string;
@@ -20,8 +21,8 @@ export interface BotCommandCreate {
   description: string;
   response_text: string;
   response_media_url?: string;
-  response_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  response_buttons?: Record<string, unknown>;
+  response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'PUBLIC';
   is_active: boolean;
 }

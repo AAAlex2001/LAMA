@@ -62,6 +62,8 @@ export default function SimpleDropdown({
 
   const handleSelect = (nextValue: string) => {
     onSelect?.(nextValue);
+    setIsOpen(false);
+    setSearchQuery('');
   };
 
   const handleClear = (e: React.MouseEvent) => {
@@ -124,18 +126,22 @@ export default function SimpleDropdown({
             </>
           )}
           <div className={styles.menuItems}>
-            {filteredItems.map((item) => (
-              <button
-                key={item.value}
-                type="button"
-                className={styles.menuItem}
-                onClick={() => handleSelect(item.value)}
-                role="option"
-              >
-                {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
-                <span className={styles.itemLabel}>{item.label}</span>
-              </button>
-            ))}
+            {filteredItems.map((item) => {
+              const isSelected = item.label === value;
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  className={classNames(styles.menuItem, { [styles.menuItemSelected]: isSelected })}
+                  onClick={() => handleSelect(item.value)}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  {item.icon && <span className={styles.itemIcon}>{item.icon}</span>}
+                  <span className={styles.itemLabel}>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

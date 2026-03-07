@@ -8,7 +8,6 @@ export interface DropdownOption {
   checked?: boolean;
 }
 
-
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
 export type ButtonTypeOption = 'url' | 'hidden_text' | 'callback';

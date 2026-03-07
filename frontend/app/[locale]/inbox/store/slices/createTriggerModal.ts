@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { TriggerType, ActionType, ChatType } from './triggers';
+import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 export type TriggerTypeEnum = 
   | 'JOIN_REQUEST_CREATED'
@@ -25,15 +26,16 @@ export interface CreateTriggerModalState {
   name: string;
   trigger_type: TriggerTypeEnum;
   action_type: ActionTypeEnum;
-  // Action data fields
   action_text: string;
   action_media_url: string;
-  action_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  action_buttons: string; // JSON string for buttons
+  action_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  action_buttons: InlineKeyboard | undefined;
   action_duration_minutes: number;
   delay_minutes: number;
   chat_type: ChatType;
   is_active: boolean;
+  botSearch: string;
+  selectedBotIds: string[];
 }
 
 const initialState: CreateTriggerModalState = {
@@ -44,11 +46,13 @@ const initialState: CreateTriggerModalState = {
   action_text: '',
   action_media_url: '',
   action_media_type: 'TEXT',
-  action_buttons: '',
+  action_buttons: undefined,
   action_duration_minutes: 0,
   delay_minutes: 0,
   chat_type: 'BOTH',
   is_active: true,
+  botSearch: '',
+  selectedBotIds: [],
 };
 
 const createTriggerModalSlice = createSlice({
@@ -69,11 +73,10 @@ const createTriggerModalSlice = createSlice({
     },
     setActionType(state, action: PayloadAction<ActionTypeEnum>) {
       state.action_type = action.payload;
-      // Reset action data fields when action type changes
       state.action_text = '';
       state.action_media_url = '';
       state.action_media_type = 'TEXT';
-      state.action_buttons = '';
+      state.action_buttons = undefined;
       state.action_duration_minutes = 0;
     },
     setActionText(state, action: PayloadAction<string>) {
@@ -82,10 +85,10 @@ const createTriggerModalSlice = createSlice({
     setActionMediaUrl(state, action: PayloadAction<string>) {
       state.action_media_url = action.payload;
     },
-    setActionMediaType(state, action: PayloadAction<'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT'>) {
+    setActionMediaType(state, action: PayloadAction<'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT'>) {
       state.action_media_type = action.payload;
     },
-    setActionButtons(state, action: PayloadAction<string>) {
+    setActionButtons(state, action: PayloadAction<InlineKeyboard>) {
       state.action_buttons = action.payload;
     },
     setActionDurationMinutes(state, action: PayloadAction<number>) {
@@ -99,6 +102,21 @@ const createTriggerModalSlice = createSlice({
     },
     setIsActive(state, action: PayloadAction<boolean>) {
       state.is_active = action.payload;
+    },
+    setBotSearch(state, action: PayloadAction<string>) {
+      state.botSearch = action.payload;
+    },
+    toggleSelectedBotId(state, action: PayloadAction<string>) {
+      const botId = action.payload;
+      const index = state.selectedBotIds.indexOf(botId);
+      if (index === -1) {
+        state.selectedBotIds.push(botId);
+      } else {
+        state.selectedBotIds.splice(index, 1);
+      }
+    },
+    setSelectedBotIds(state, action: PayloadAction<string[]>) {
+      state.selectedBotIds = action.payload;
     },
     resetForm(state) {
       Object.assign(state, initialState);
@@ -119,6 +137,9 @@ export const {
   setDelayMinutes,
   setChatType,
   setIsActive,
+  setBotSearch,
+  toggleSelectedBotId,
+  setSelectedBotIds,
   resetForm,
 } = createTriggerModalSlice.actions;
 

@@ -334,17 +334,27 @@ $shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   }
 
   &.gradient {
-    background: rgba($blue, 0.1);
+    background: $blue-gradient;
 
-    .label {
-      background: $blue-gradient;
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+    background: $blue-gradient;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    z-index: 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: $blue-gradient-r;
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
     }
 
     &:hover:not(:disabled):not(.loading) {
-      background: rgba($blue, 0.16);
+      background: $blue-gradient-r;
     }
   }
 

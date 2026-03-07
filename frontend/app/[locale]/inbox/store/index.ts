@@ -8,6 +8,8 @@ import triggersReducer from './slices/triggers';
 import createTriggerModalReducer from './slices/createTriggerModal';
 import createAutoReplyModalReducer from './slices/createAutoReplyModal';
 import createCommandModalReducer from './slices/createCommandModal';
+import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
+import botsReducer from './slices/bots';
 import channelsReducer from '@/app/[locale]/create-post/store/slices/channels';
 
 export const inboxStore = configureStore({
@@ -21,6 +23,8 @@ export const inboxStore = configureStore({
     createTriggerModal: createTriggerModalReducer,
     createAutoReplyModal: createAutoReplyModalReducer,
     createCommandModal: createCommandModalReducer,
+    createGlobalMessageModal: createGlobalMessageModalReducer,
+    bots: botsReducer,
   },
   devTools: process.env.NODE_ENV !== 'production',
 });
@@ -162,6 +166,9 @@ export {
   setDelayMinutes,
   setChatType,
   setIsActive as setTriggerIsActive,
+  setBotSearch as setTriggerBotSearch,
+  toggleSelectedBotId as toggleTriggerSelectedBotId,
+  setSelectedBotIds as setTriggerSelectedBotIds,
   resetForm as resetTriggerForm,
 } from './slices/createTriggerModal';
 export type { CreateTriggerModalState, TriggerTypeEnum, ActionTypeEnum } from './slices/createTriggerModal';
@@ -176,6 +183,9 @@ export {
   setResponseMediaType,
   setScope as setAutoReplyScope,
   setIsActive as setAutoReplyIsActive,
+  setBotSearch,
+  toggleSelectedBotId,
+  setSelectedBotIds,
   resetForm as resetAutoReplyForm,
 } from './slices/createAutoReplyModal';
 export type { CreateAutoReplyModalState } from './slices/createAutoReplyModal';
@@ -188,6 +198,43 @@ export {
   setResponseMediaType as setCommandResponseMediaType,
   setScope as setCommandScope,
   setIsActive as setCommandIsActive,
+  setBotSearch as setCommandBotSearch,
+  toggleSelectedBotId as toggleCommandSelectedBotId,
+  setSelectedBotIds as setCommandSelectedBotIds,
   resetForm as resetCommandForm,
 } from './slices/createCommandModal';
 export type { CreateCommandModalState } from './slices/createCommandModal';
+export {
+  setBots,
+  addBot,
+  updateBot,
+  removeBot,
+  setLoading as setBotsLoading,
+  setError as setBotsError,
+  clearError as clearBotsError,
+  setPagination as setBotsPagination,
+  resetBots,
+} from './slices/bots';
+export type { Bot, BotCreate, BotStatus } from './slices/bots';
+export {
+  fetchBotsThunk,
+  createBotThunk,
+} from './thunks/bots';
+export type { FetchBotsParams, BotListResponse } from './thunks/bots';
+export {
+  setModalOpen as setCreateGlobalMessageModalOpen,
+  setTextContent,
+  setMediaUrl,
+  setMediaType,
+  setBotSearch as setGlobalMessageBotSearch,
+  toggleSelectedBotId as toggleGlobalMessageSelectedBotId,
+  setSelectedBotIds as setGlobalMessageSelectedBotIds,
+  setChatId,
+  resetForm as resetGlobalMessageForm,
+} from './slices/createGlobalMessageModal';
+export type { CreateGlobalMessageModalState } from './slices/createGlobalMessageModal';
+export {
+  fetchMessagesThunk,
+  sendMessageThunk,
+} from './thunks/globalMessages';
+export type { FetchMessagesParams, SendMessageParams, SendMessageRequest, BotMessageResponse, BotMessageListResponse } from './thunks/globalMessages';

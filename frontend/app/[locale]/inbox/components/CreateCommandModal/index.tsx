@@ -9,11 +9,12 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useCreateCommand } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
 import { setCreateCommandModalOpen, resetCommandForm } from '../../store';
+import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 interface CreateCommandModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  botId: number;
+  botId?: number;
   onSuccess?: () => void;
 }
 
@@ -22,16 +23,17 @@ export interface CommandFormData {
   description: string;
   response_text: string;
   response_media_url?: string;
-  response_media_type: 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
-  response_buttons?: Record<string, unknown>;
+  response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'PUBLIC';
   is_active: boolean;
+  botIds: number[];
 }
 
 const CreateCommandModal: React.FC<CreateCommandModalProps> = ({
   isOpen,
   onOpenChange,
-  botId,
+  botId = 1,
   onSuccess,
 }) => {
   const dispatch = useAppDispatch();
@@ -47,21 +49,26 @@ const CreateCommandModal: React.FC<CreateCommandModalProps> = ({
 
   const handleSubmit = async (data: CommandFormData) => {
     try {
-      await createCommand.mutateAsync(
-        { botId, data },
-        {
-          onSuccess: () => {
-            showSuccess('Команда успешно создана');
-            onSuccess?.();
-            onOpenChange(false);
-          },
-          onError: (error) => {
-            const errorMessage = error instanceof Error ? error.message : 'Не удалось создать команду';
-            showError(errorMessage);
-          },
-        }
+      const { botIds, ...commandData } = data;
+      const botIdsToUse = botIds.length > 0 ? botIds : (botId ? [botId] : []);
+      
+      if (botIdsToUse.length === 0) {
+        showError('Выберите хотя бы одного бота');
+        return;
+      }
+
+      const promises = botIdsToUse.map(botId =>
+        createCommand.mutateAsync({ botId, data: commandData })
       );
+
+      await Promise.all(promises);
+      
+      showSuccess(`Команда успешно создана для ${botIdsToUse.length} ${botIdsToUse.length === 1 ? 'бота' : 'ботов'}`);
+      onSuccess?.();
+      onOpenChange(false);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать команду';
+      showError(errorMessage);
     }
   };
 

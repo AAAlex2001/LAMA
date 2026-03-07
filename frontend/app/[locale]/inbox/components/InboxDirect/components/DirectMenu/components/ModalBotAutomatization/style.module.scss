@@ -24,6 +24,17 @@
   }
 }
 
+.emptyState {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px 20px;
+  color: #9ca3af;
+  font-size: 14px;
+  line-height: 17px;
+}
+
 .chatList {
   display: flex;
   flex-direction: column;
