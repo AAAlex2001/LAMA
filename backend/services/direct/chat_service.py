@@ -1,6 +1,6 @@
 from typing import Tuple, List, Optional, Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, and_
+from sqlalchemy import select, func, desc, and_, update
 from datetime import datetime, timezone
 
 from backend.models.direct import DirectChat
@@ -65,49 +65,92 @@ class DirectChatService:
         limit: int = 50,
         bot_id: Optional[int] = None
     ) -> Tuple[List[Dict[str, Any]], int]:
-        """Получить список чатов с превью последнего сообщения."""
-        query = (
-            select(DirectChat)
-            .join(Bot, DirectChat.bot_id == Bot.id)
-            .where(Bot.owner_id == owner_id)
+        """Получить список чатов с превью последнего сообщения (1 запрос вместо N+1)."""
+        base_filter = [Bot.owner_id == owner_id]
+        if bot_id:
+            base_filter.append(DirectChat.bot_id == bot_id)
+
+        last_msg_sq = (
+            select(
+                BotMessage.bot_id,
+                BotMessage.chat_id,
+                func.max(BotMessage.created_at).label("last_msg_at"),
+            )
+            .group_by(BotMessage.bot_id, BotMessage.chat_id)
+            .subquery("last_msg_sq")
         )
 
-        if bot_id:
-            query = query.where(DirectChat.bot_id == bot_id)
+        last_msg_data = (
+            select(
+                BotMessage.bot_id,
+                BotMessage.chat_id,
+                BotMessage.text_content,
+                BotMessage.message_type,
+                BotMessage.created_at.label("last_message_at"),
+            )
+            .join(
+                last_msg_sq,
+                and_(
+                    BotMessage.bot_id == last_msg_sq.c.bot_id,
+                    BotMessage.chat_id == last_msg_sq.c.chat_id,
+                    BotMessage.created_at == last_msg_sq.c.last_msg_at,
+                ),
+            )
+            .subquery("last_msg_data")
+        )
 
-        count_query = select(func.count()).select_from(query.subquery())
+        query = (
+            select(
+                DirectChat,
+                last_msg_data.c.text_content.label("_last_text"),
+                last_msg_data.c.message_type.label("_last_type"),
+                last_msg_data.c.last_message_at.label("_last_at"),
+            )
+            .join(Bot, DirectChat.bot_id == Bot.id)
+            .outerjoin(
+                last_msg_data,
+                and_(
+                    DirectChat.bot_id == last_msg_data.c.bot_id,
+                    DirectChat.tg_chat_id == last_msg_data.c.chat_id,
+                ),
+            )
+            .where(and_(*base_filter))
+        )
+
+        count_query = select(func.count()).select_from(
+            select(DirectChat.id)
+            .join(Bot, DirectChat.bot_id == Bot.id)
+            .where(and_(*base_filter))
+            .subquery()
+        )
         total = (await self.db.execute(count_query)).scalar() or 0
 
         query = query.order_by(desc(DirectChat.is_pinned), desc(DirectChat.updated_at))
         query = query.offset(skip).limit(limit)
 
-        chats_result = await self.db.execute(query)
-        chats = chats_result.scalars().all()
+        rows = (await self.db.execute(query)).all()
 
         enriched_chats = []
-        for chat in chats:
-            msg_query = select(BotMessage).where(
-                and_(BotMessage.bot_id == chat.bot_id, BotMessage.chat_id == chat.tg_chat_id)
-            ).order_by(desc(BotMessage.created_at)).limit(1)
-            
-            last_msg = (await self.db.execute(msg_query)).scalar_one_or_none()
-            
+        for row in rows:
+            chat = row[0]
+            last_text = row[1]
+            last_type = row[2]
+            last_at = row[3]
+
             preview = None
-            last_dt = None
-            if last_msg:
-                if last_msg.message_type == MessageType.TEXT:
-                    preview = last_msg.text_content
-                elif last_msg.message_type == MessageType.PHOTO:
-                    preview = "🖼 Фотография"
-                elif last_msg.message_type == MessageType.VIDEO:
-                    preview = "🎥 Видео"
-                elif last_msg.message_type == MessageType.DOCUMENT:
-                    preview = "📄 Документ"
+            if last_at is not None:
+                if last_type == MessageType.TEXT or last_type == MessageType.TEXT.value:
+                    preview = last_text
+                elif last_type == MessageType.PHOTO or last_type == MessageType.PHOTO.value:
+                    preview = "Фотография"
+                elif last_type == MessageType.VIDEO or last_type == MessageType.VIDEO.value:
+                    preview = "Видео"
+                elif last_type == MessageType.DOCUMENT or last_type == MessageType.DOCUMENT.value:
+                    preview = "Документ"
                 else:
                     preview = "Медиа"
-                last_dt = last_msg.created_at
 
-            chat_dict = {
+            enriched_chats.append({
                 "id": chat.id,
                 "bot_id": chat.bot_id,
                 "tg_chat_id": chat.tg_chat_id,
@@ -121,30 +164,35 @@ class DirectChatService:
                 "created_at": chat.created_at,
                 "updated_at": chat.updated_at,
                 "last_message_preview": preview,
-                "last_message_at": last_dt
-            }
-            enriched_chats.append(chat_dict)
-            
+                "last_message_at": last_at,
+            })
+
         return enriched_chats, total
 
     async def get_chat_messages(
         self,
         bot_id: int,
         tg_chat_id: int,
+        owner_id: int,
         skip: int = 0,
         limit: int = 50
     ) -> Tuple[List[BotMessage], int]:
-        """Получить историю сообщений в чате."""
+        """Получить историю сообщений в чате (с проверкой владельца)."""
+        bot_check = select(Bot.id).where(and_(Bot.id == bot_id, Bot.owner_id == owner_id))
+        bot_exists = (await self.db.execute(bot_check)).scalar_one_or_none()
+        if not bot_exists:
+            return [], 0
+
         query = select(BotMessage).where(
             and_(BotMessage.bot_id == bot_id, BotMessage.chat_id == tg_chat_id)
         )
-        
+
         count_query = select(func.count()).select_from(query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0
 
         query = query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
         messages = (await self.db.execute(query)).scalars().all()
-        
+
         return list(messages), total
 
     async def update_chat_status(
@@ -163,30 +211,50 @@ class DirectChatService:
 
         for key, value in update_data.model_dump(exclude_unset=True).items():
             setattr(chat, key, value)
-            
+
         await self.db.commit()
         await self.db.refresh(chat)
-        
+
         await ws_manager.broadcast_chat_update(
-            user_id=owner_id, 
-            bot_id=chat.bot_id, 
-            chat_id=chat.tg_chat_id, 
-            event_type="chat_updated", 
+            user_id=owner_id,
+            bot_id=chat.bot_id,
+            chat_id=chat.tg_chat_id,
+            event_type="chat_updated",
             payload={"action": "status_update", "chat_id": chat.id}
         )
-        
+
         return chat
 
-    async def increment_unread(self, bot_id: int, tg_chat_id: int) -> Optional[DirectChat]:
-        """Увеличить счетчик непрочитанных сообщений."""
-        query = select(DirectChat).where(
-            and_(DirectChat.bot_id == bot_id, DirectChat.tg_chat_id == tg_chat_id)
+    async def reset_unread(self, bot_id: int, tg_chat_id: int, owner_id: int) -> bool:
+        """Сбросить счетчик непрочитанных (с проверкой владельца)."""
+        stmt = (
+            update(DirectChat)
+            .where(
+                and_(
+                    DirectChat.bot_id == bot_id,
+                    DirectChat.tg_chat_id == tg_chat_id,
+                    DirectChat.bot_id.in_(
+                        select(Bot.id).where(Bot.owner_id == owner_id)
+                    ),
+                )
+            )
+            .values(unread_count=0)
         )
-        chat = (await self.db.execute(query)).scalar_one_or_none()
-        if chat:
-            chat.unread_count += 1
-            chat.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
-            await self.db.refresh(chat)
-            return chat
-        return None
+        result = await self.db.execute(stmt)
+        await self.db.commit()
+        return result.rowcount > 0
+
+    async def increment_unread(self, bot_id: int, tg_chat_id: int) -> None:
+        """Атомарно увеличить счетчик непрочитанных сообщений."""
+        stmt = (
+            update(DirectChat)
+            .where(
+                and_(DirectChat.bot_id == bot_id, DirectChat.tg_chat_id == tg_chat_id)
+            )
+            .values(
+                unread_count=DirectChat.unread_count + 1,
+                updated_at=datetime.now(timezone.utc),
+            )
+        )
+        await self.db.execute(stmt)
+        await self.db.commit()

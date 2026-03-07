@@ -1,9 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_
 from typing import Optional
 
 from backend.database import get_db
 from backend.models.auth import User
+from backend.models.bots import Bot
 from backend.routes.auth import get_current_user
 from backend.schemas.direct.chat import DirectChatListResponse, DirectChatUpdate, DirectChatResponse, DirectChatCreate
 from backend.services.direct.chat_service import DirectChatService
@@ -20,6 +22,12 @@ async def create_chat(
     chat_service: DirectChatService = Depends(get_direct_chat_service)
 ):
     """Создание / получение чата вручную."""
+    bot_check = await chat_service.db.execute(
+        select(Bot.id).where(and_(Bot.id == data.bot_id, Bot.owner_id == current_user.id))
+    )
+    if not bot_check.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Бот не найден или нет доступа")
+
     chat = await chat_service.get_or_create_chat(
         bot_id=data.bot_id,
         tg_chat_id=data.tg_chat_id,

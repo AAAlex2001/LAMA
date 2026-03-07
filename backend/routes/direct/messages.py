@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
-
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
 from backend.schemas.bots.messages import SendMessageRequest, BotMessageResponse
 from backend.schemas.direct.message import EditMessageRequest, ChatHistoryResponse
-from backend.schemas.direct.chat import DirectChatUpdate
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
 
@@ -29,13 +26,11 @@ async def get_chat_messages(
     chat_service: DirectChatService = Depends(get_chat_service)
 ):
     """История сообщений в чате."""
-    messages, total = await chat_service.get_chat_messages(bot_id, tg_chat_id, skip, limit)
-    
-    await chat_service.update_chat_status(
-        chat_id=(await chat_service.get_or_create_chat(bot_id, tg_chat_id)).id,
-        owner_id=current_user.id,
-        update_data=DirectChatUpdate(unread_count=0)
+    messages, total = await chat_service.get_chat_messages(
+        bot_id, tg_chat_id, owner_id=current_user.id, skip=skip, limit=limit
     )
+
+    await chat_service.reset_unread(bot_id, tg_chat_id, owner_id=current_user.id)
 
     return {
         "items": messages,
