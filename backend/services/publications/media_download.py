@@ -16,6 +16,8 @@ MAX_IMAGE_PIXELS = 10_000_000
 
 async def download_media(url: str) -> Tuple[bytes, str]:
     """Скачивает файл по URL."""
+    if url.startswith('/uploads/'):
+        return open('/app' + url, 'rb').read(), url.split('/')[-1]
     parsed = urlparse(url)
     filename = parsed.path.split("/")[-1] or "media"
 

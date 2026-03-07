@@ -6,6 +6,7 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import PUBLIC_DOMAIN, TELEGRAM_WEBHOOK_SECRET
 from backend.models.bots import Bot as BotModel, BotStatus
 from backend.schemas.bots import BotCreate, BotUpdate
 
@@ -20,6 +21,15 @@ class CRUDBotService:
         try:
             temp_bot = Bot(token=data.token)
             bot_info = await temp_bot.get_me()
+            
+            # Автоматически ставим вебхук на наш сервер
+            webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{data.token}"
+            await temp_bot.set_webhook(
+                url=webhook_url,
+                secret_token=TELEGRAM_WEBHOOK_SECRET if TELEGRAM_WEBHOOK_SECRET else None,
+                allowed_updates=["message", "edited_message", "callback_query", "chat_member", "my_chat_member", "chat_join_request"]
+            )
+            
             bot_description_info = None
             bot_short_description_info = None
             try:
@@ -179,6 +189,15 @@ class CRUDBotService:
         try:
             temp_bot = Bot(token=token)
             bot_info = await temp_bot.get_me()
+            
+            # Автоматически ставим вебхук на наш сервер
+            webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
+            await temp_bot.set_webhook(
+                url=webhook_url,
+                secret_token=TELEGRAM_WEBHOOK_SECRET if TELEGRAM_WEBHOOK_SECRET else None,
+                allowed_updates=["message", "edited_message", "callback_query", "chat_member", "my_chat_member", "chat_join_request"]
+            )
+            
             bot_description_info = None
             bot_short_description_info = None
             try:
