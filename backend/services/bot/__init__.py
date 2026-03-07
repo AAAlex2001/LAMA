@@ -1,4 +1,4 @@
-from backend.services.bot.bots import BotService
+from backend.services.bot.bot_service import BotService
 from backend.services.bot.captcha import CaptchaService
 from backend.services.bot.commands import BotCommandService
 from backend.services.bot.auto_reply import AutoReplyService

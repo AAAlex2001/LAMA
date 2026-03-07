@@ -20,7 +20,6 @@ from backend.models.publications import (
 from backend.services.bot.recurring_messages import RecurringMessageService
 from backend.services.bot.triggers import TriggerService
 from backend.services.publications import PublicationService
-from backend.tasks.bot_polling import process_bot_updates as polling_process_bot_updates
 from backend.tasks.channel_backup import process_instant_backups as channel_process_instant_backups
 
 logger = logging.getLogger(__name__)
@@ -230,17 +229,12 @@ async def process_repeating_publications_async() -> str:
     return f"queued_republish:{len(ids)}"
 
 
-@celery_app.task(name="backend.celery.tasks.process_bot_updates")
-def process_bot_updates() -> str:
     """Обработать обновления ботов в режиме polling."""
 
-    return run(process_bot_updates_async())
 
 
-async def process_bot_updates_async() -> str:
     """Async-реализация обработки обновлений ботов."""
 
-    await polling_process_bot_updates()
     return "bot_updates_ok"
 
 

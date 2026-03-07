@@ -33,7 +33,6 @@ celery_app.conf.update(
     ),
     task_routes={
         "backend.celery.tasks.publish_publication": {"queue": "high"},
-        "backend.celery.tasks.process_bot_updates": {"queue": "high"},
         "backend.celery.tasks.process_scheduled_publications": {"queue": "default"},
         "backend.celery.tasks.process_auto_delete": {"queue": "default"},
         "backend.celery.tasks.process_scheduled_triggers": {"queue": "default"},
@@ -55,10 +54,6 @@ celery_app.conf.update(
         "process-instant-backups": {
             "task": "backend.celery.tasks.process_instant_backups",
             "schedule": timedelta(minutes=2),
-        },
-        "process-bot-updates": {
-            "task": "backend.celery.tasks.process_bot_updates",
-            "schedule": timedelta(seconds=3),
         },
         "process-scheduled-triggers": {
             "task": "backend.celery.tasks.process_scheduled_triggers",

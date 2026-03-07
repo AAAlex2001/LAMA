@@ -38,7 +38,7 @@ async def sync_bot(
         raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")   
 
 
-@router.get("", response_model=BotListResponse)
+@router.get("/", response_model=BotListResponse)
 async def get_bots(
         status: Optional[BotStatus] = None,
         page: int = 1,
@@ -66,7 +66,7 @@ async def get_bots(
     )
 
 
-@router.post("", response_model=BotResponse, status_code=201)
+@router.post("/", response_model=BotResponse, status_code=201)
 async def create_bot(
         data: BotCreate,
         service: BotService = Depends(get_bot_service),

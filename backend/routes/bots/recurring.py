@@ -9,7 +9,7 @@ from backend.schemas.bots import (
     RecurringMessageListResponse,
 )
 from backend.services.bot.recurring_messages import RecurringMessageService
-from backend.routes.bots.dependencies import get_recurring_service
+from backend.routes.bots.dependencies import get_recurring_message_service
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ async def list_recurring_messages(
         bot_id: int,
         skip: int = 0,
         limit: int = Query(default=100, le=100),
-        service: RecurringMessageService = Depends(get_recurring_service),      
+        service: RecurringMessageService = Depends(get_recurring_message_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Список повторяющихся сообщений бота"""   
@@ -36,7 +36,7 @@ async def list_recurring_messages(
 async def create_recurring_message(
         bot_id: int,
         data: RecurringMessageCreate,
-        service: RecurringMessageService = Depends(get_recurring_service),      
+        service: RecurringMessageService = Depends(get_recurring_message_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Создать повторяющееся сообщение"""
@@ -50,7 +50,7 @@ async def create_recurring_message(
 async def get_recurring_message(
         bot_id: int,
         message_id: int,
-        service: RecurringMessageService = Depends(get_recurring_service),      
+        service: RecurringMessageService = Depends(get_recurring_message_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Получить повторяющееся сообщение"""        
@@ -65,7 +65,7 @@ async def update_recurring_message(
         bot_id: int,
         message_id: int,
         data: RecurringMessageUpdate,
-        service: RecurringMessageService = Depends(get_recurring_service),      
+        service: RecurringMessageService = Depends(get_recurring_message_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Обновить повторяющееся сообщение"""        
@@ -83,7 +83,7 @@ async def update_recurring_message(
 async def delete_recurring_message(
         bot_id: int,
         message_id: int,
-        service: RecurringMessageService = Depends(get_recurring_service),      
+        service: RecurringMessageService = Depends(get_recurring_message_service),      
         current_user: User = Depends(get_current_user)
 ):
     """Удалить повторяющееся сообщение"""
