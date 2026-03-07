@@ -1,3 +1,5 @@
+import os
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.websockets.manager import ws_manager
@@ -15,7 +17,8 @@ async def direct_websocket_endpoint(
     """
     WebSocket подключение для получения обновлений чатов Директа.
     """
-    token_service = TokenService(db)
+    jwt_secret = os.getenv("JWT_SECRET", "")
+    token_service = TokenService(db, jwt_secret)
     user = await token_service.verify_access_token(token)
     
     if not user:

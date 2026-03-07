@@ -10,8 +10,7 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import BotService
-from backend.services.bot.triggers import TriggerService
+from backend.services.bot import TriggerService
 from backend.models.bots import (
     Bot as BotModel,
     PendingJoinApproval,
@@ -28,7 +27,6 @@ class SubscriptionHandler:
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
-        self.bot_service = BotService(db)
         self.trigger_service = TriggerService(db)
 
     async def process(self, chat_member: ChatMemberUpdated) -> None:

@@ -1,39 +1,9 @@
-﻿from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
-import enum
 
 from backend.models.base import Base
-
-class InboxCategory(str, enum.Enum):
-    MODERATION = "moderation"
-    SYSTEM = "system"
-    AUTOMATION = "automation"
-
-class EntityType(str, enum.Enum):
-    BOT = "bot"
-    CHANNEL = "channel"
-    SYSTEM = "system"
-
-class EventType(str, enum.Enum):
-    BOT_MESSAGE = "bot_message"
-    BOT_COMMAND = "bot_command"
-    BOT_ERROR = "bot_error"
-
-    CHANNEL_COMMENT = "channel_comment"
-    CHANNEL_JOIN_REQUEST = "channel_join_request"
-    CHANNEL_LINK_JOIN = "channel_link_join"
-    CHANNEL_BAN = "channel_ban"
-
-    SYSTEM_NOTIFICATION = "system_notification"
-    SYSTEM_TRIGGER = "system_trigger"
-    SYSTEM_AUTOREPLY = "system_autoreply"
-    SYSTEM_UPDATE = "system_update"
-
-class EventStatus(str, enum.Enum):
-    NEW = "new"
-    PROCESSED = "processed"
-    IGNORED = "ignored"
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 class InboxEvent(Base):
     __tablename__ = "inbox_events"
@@ -54,6 +24,6 @@ class InboxEvent(Base):
     status = Column(SQLEnum(EventStatus, name="eventstatus", create_type=False), default=EventStatus.NEW, nullable=False, index=True)
     description = Column(Text, nullable=True)
 
-    payload = Column(JSONB, default={}, nullable=False)
+    payload = Column(JSONB, default=dict, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)

@@ -17,8 +17,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
-from backend.services.bot.recurring_messages import RecurringMessageService
-from backend.services.bot.triggers import TriggerService
+from backend.services.bot import RecurringMessageService, TriggerService
 from backend.services.publications import PublicationService
 from backend.tasks.channel_backup import process_instant_backups as channel_process_instant_backups
 
@@ -190,7 +189,7 @@ async def process_recurring_messages_async() -> str:
         pending = await service.get_pending(limit=50)
         for msg in pending:
             try:
-                await service.send_message(msg, telegram_bot)
+                await service.send(msg, telegram_bot)
             except Exception as exc:
                 logger.error("recurring_message_failed: %s", exc)
         return f"processed_recurring:{len(pending)}"

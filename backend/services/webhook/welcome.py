@@ -8,7 +8,7 @@ from aiogram.types import ChatJoinRequest, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
-from backend.services.bot.welcome import WelcomeService
+from backend.services.bot import WelcomeService
 from backend.services.webhook.base import get_bot_session
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class WelcomeHandler:
         try:
             async with get_bot_session(self.bot_model.token) as telegram_bot:
                 message = (
-                    await self.welcome_service.handle_join_request_welcome(
+                    await self.welcome_service.handle_join_request(
                         telegram_bot=telegram_bot,
                         bot_model=self.bot_model,
                         join_request=join_request,
@@ -71,7 +71,7 @@ class WelcomeHandler:
                     )
 
                 sent_message = (
-                    await self.welcome_service.handle_member_joined_welcome(
+                    await self.welcome_service.handle_member_joined(
                         telegram_bot=telegram_bot,
                         bot_model=self.bot_model,
                         user_id=new_member_user.id,

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
-from backend.services.bot.bot_service import BotService
+from backend.services.bot import BotService
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 
@@ -39,7 +39,7 @@ class SyncService:
 
         if token and not bot_id:
             bot_service = BotService(self.db)
-            bot_model = await bot_service.sync_bot_from_telegram(token, owner_id=owner_id)
+            bot_model = await bot_service.sync_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
 
         bot_model = await self.get_bot_model(bot_id, owner_id)

@@ -7,8 +7,7 @@ from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import CaptchaService
-from backend.services.bot.triggers import TriggerService
+from backend.services.bot import CaptchaService, TriggerService
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -77,13 +76,13 @@ class MemberProcessor:
 
         try:
             captcha_service = CaptchaService(self.db)
-            question, answer = captcha_service.generate_captcha()
-            pending = await captcha_service.create_pending_approval(
+            question, answer = captcha_service.generate()
+            pending = await captcha_service.create_pending(
                 bot_id=self.bot_model.id,
                 user_id=new_member.id,
                 chat_id=message.chat.id,
-                captcha_question=question,
-                captcha_answer=answer,
+                question=question,
+                answer=answer,
             )
 
             try:

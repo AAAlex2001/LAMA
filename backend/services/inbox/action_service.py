@@ -1,4 +1,4 @@
-﻿import logging
+import logging
 from typing import List, Optional
 from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,7 +6,7 @@ from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot
 from backend.models.channels import ChannelGroup
 from backend.schemas.inbox.enums import EventStatus, BulkActionType
-from backend.services.telegram_client import RateLimitedBot
+from backend.services.webhook.base import get_bot_session
 
 logger = logging.getLogger(__name__)
 
@@ -49,24 +49,24 @@ class InboxActionService:
             query = select(InboxEvent).where(base_where)
             result = await self.db.execute(query)
             events = result.scalars().all()
-            
+
             for event in events:
                 if not (event.tg_user_id and event.bot_id and event.channel_id):
                     continue
-                
+
                 bot = await self.db.get(Bot, event.bot_id)
                 channel = await self.db.get(ChannelGroup, event.channel_id)
-                
+
                 if not (bot and channel and channel.telegram_id):
                     continue
 
-                client = RateLimitedBot(bot.token)
                 try:
-                    if action == BulkActionType.BLOCK:
-                        await client.ban_chat_member(channel.telegram_id, event.tg_user_id)
-                    else:
-                        await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
-                    
+                    async with get_bot_session(bot.token) as client:
+                        if action == BulkActionType.BLOCK:
+                            await client.ban_chat_member(channel.telegram_id, event.tg_user_id)
+                        else:
+                            await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
+
                     event.status = EventStatus.PROCESSED
                     modified_count += 1
                 except Exception as e:
@@ -93,27 +93,25 @@ class InboxActionService:
         """Execute a specific action on an inbox event (accept, reject, reply, etc)"""
         bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None
         channel = await self.db.get(ChannelGroup, event.channel_id) if event.channel_id else None
-        
+
         if not bot or not channel or not channel.telegram_id:
             logger.warning(f"Cannot execute {action_type} for event {event.id}: missing bot/channel details.")
             return False
 
-        client = RateLimitedBot(bot.token)
-        success = False
-
         try:
-            if action_type == "accept":
-                success = await client.approve_chat_join_request(channel.telegram_id, event.tg_user_id)
-            elif action_type == "reject":
-                success = await client.decline_chat_join_request(channel.telegram_id, event.tg_user_id)
-            else:
-                logger.warning(f"Unknown action_type {action_type} for inbox event {event.id}.")
-                return False
+            async with get_bot_session(bot.token) as client:
+                if action_type == "accept":
+                    success = await client.approve_chat_join_request(channel.telegram_id, event.tg_user_id)
+                elif action_type == "reject":
+                    success = await client.decline_chat_join_request(channel.telegram_id, event.tg_user_id)
+                else:
+                    logger.warning(f"Unknown action_type {action_type} for inbox event {event.id}.")
+                    return False
 
             if success:
                 event.status = EventStatus.PROCESSED
                 await self.db.commit()
-            
+
             return success
         except Exception as e:
             logger.error(f"Failed to execute {action_type} for event {event.id}: {str(e)}", exc_info=True)

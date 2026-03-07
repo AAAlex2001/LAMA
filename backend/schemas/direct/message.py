@@ -1,15 +1,10 @@
-from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 from pydantic import BaseModel
 
-from backend.models.bots import MessageType
 from backend.schemas.bots.messages import BotMessageResponse
 
 class EditMessageRequest(BaseModel):
     text_content: Optional[str] = None
-
-class DeleteMessageRequest(BaseModel):
-    pass
 
 class ChatHistoryResponse(BaseModel):
     items: List[BotMessageResponse]
