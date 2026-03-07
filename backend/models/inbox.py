@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text
+﻿from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 import enum
@@ -16,27 +16,24 @@ class EntityType(str, enum.Enum):
     SYSTEM = "system"
 
 class EventType(str, enum.Enum):
-    # ==== БОТЫ ====
     BOT_MESSAGE = "bot_message"
     BOT_COMMAND = "bot_command"
     BOT_ERROR = "bot_error"
 
-    # ==== КАНАЛЫ ====
     CHANNEL_COMMENT = "channel_comment"
     CHANNEL_JOIN_REQUEST = "channel_join_request"
     CHANNEL_LINK_JOIN = "channel_link_join"
     CHANNEL_BAN = "channel_ban"
 
-    # ==== СИСТЕМА ====
     SYSTEM_NOTIFICATION = "system_notification"
     SYSTEM_TRIGGER = "system_trigger"
     SYSTEM_AUTOREPLY = "system_autoreply"
     SYSTEM_UPDATE = "system_update"
 
 class EventStatus(str, enum.Enum):
-    NEW = "new"              # Ожидают / Новое
-    PROCESSED = "processed"  # Обработанные
-    IGNORED = "ignored"      # Для игнорируемых
+    NEW = "new"
+    PROCESSED = "processed"
+    IGNORED = "ignored"
 
 class InboxEvent(Base):
     __tablename__ = "inbox_events"
@@ -44,30 +41,19 @@ class InboxEvent(Base):
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Классификация уведомления (Вкладки и фильтры)
     category = Column(SQLEnum(InboxCategory, name="inboxcategory", create_type=False), nullable=False, index=True)
     entity_type = Column(SQLEnum(EntityType, name="entitytype", create_type=False), nullable=False)
     event_type = Column(SQLEnum(EventType, name="eventtype", create_type=False), nullable=False)
 
-    # Привязка к конкретному боту или каналу
     bot_id = Column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=True)
-    channel_id = Column(Integer, ForeignKey("channels.id", ondelete="CASCADE"), nullable=True)
+    channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=True)
 
-    # Данные о пользователе телеграма (с которым связано событие)
     tg_user_id = Column(BigInteger, nullable=True)
     tg_username = Column(String, nullable=True)
 
-    # Статус (Новое/Обработанное/Игнор)
     status = Column(SQLEnum(EventStatus, name="eventstatus", create_type=False), default=EventStatus.NEW, nullable=False, index=True)
-    
-    # Описание для системы или текст сообщения/комментария
     description = Column(Text, nullable=True)
-    
-    # Специфические данные в формате JSON (например: 
-    #   для бана: {"reason": "Спам", "duration": "forever"}
-    #   для заявки: {"link_id": 12, "link_name": "Реклама"}
-    #   для сообщений: {"chat_id": 1234567, "message_id": 777}
+
     payload = Column(JSONB, default={}, nullable=False)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
