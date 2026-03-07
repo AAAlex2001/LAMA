@@ -14,6 +14,8 @@ from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeS
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT, get_bot_session
 from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
+from backend.services.direct.chat_service import DirectChatService
+from backend.services.direct.message_service import DirectMessageService
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,25 @@ class MessageHandler:
         )
 
         try:
+            if chat_type == "private" and message.from_user:
+                chat_svc = DirectChatService(self.db)
+                msg_svc = DirectMessageService(self.db)
+
+                await chat_svc.get_or_create_chat(
+                    bot_id=self.bot_model.id,
+                    tg_chat_id=message.chat.id,
+                    tg_user_id=message.from_user.id,
+                    tg_username=message.from_user.username,
+                    tg_first_name=message.from_user.first_name,
+                    tg_last_name=message.from_user.last_name
+                )
+                await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
+                await msg_svc.save_incoming_message(
+                    bot_id=self.bot_model.id,
+                    owner_id=self.bot_model.owner_id,
+                    message=message.model_dump()
+                )
+
             async with get_bot_session(self.bot_model.token) as telegram_bot:
                 # Удаление системных сообщений
                 auto_delete_service = ChannelAutoDeleteService(self.db)
