@@ -88,24 +88,16 @@ async def execute_specific_action(
 ):
     """
     Execute specific action: reply, accept, reject, unban, edit_ban
-    Note: Requires integration with separate domain logic (Channel/Bot APIs)
     """
     event = await action_service.get_event(event_id, current_user.id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
-        
-    # TODO: Switch actions internally and call bot/channel services
-    # e.g., if request.action_type == "reply": Call Bot Service to send message
-    # Here we just mark as processed and return success as a placeholder
-    
-    await action_service.execute_bulk_action(
-        owner_id=current_user.id,
-        event_ids=[event_id],
-        action="read"
+
+    success = await action_service.execute_specific_action(
+        event=event,
+        action_type=request.action_type,
+        payload=request.payload
     )
 
-    return {
-        "status": "success", 
-        "message": f"Action {request.action_type} executed",
-        "action_payload_returned": request.payload
-    }
+    if not success:
+        raise HTTPException(status_code=400, detail=f"Failed to execute action {request.action_type}")

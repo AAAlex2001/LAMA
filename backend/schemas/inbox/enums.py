@@ -1,4 +1,4 @@
-from enum import Enum
+﻿from enum import Enum
 
 class InboxCategory(str, Enum):
     MODERATION = "moderation"
@@ -24,8 +24,8 @@ class EventType(str, Enum):
     SYSTEM_UPDATE = "system_update"
 
 class EventStatus(str, Enum):
-    NEW = "new"  # ожидают
-    PROCESSED = "processed" # обработанные
+    NEW = "new"
+    PROCESSED = "processed"
     IGNORED = "ignored"
 
 class SortDir(str, Enum):

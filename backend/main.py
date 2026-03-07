@@ -25,7 +25,8 @@ from backend.routes.landing import router as landing_router
 from backend.routes.upload import router as upload_router
 from backend.routes.media_upload import router as media_upload_router
 from backend.routes.link_preview import router as link_preview_router
-from backend.routes.inbox import router as inbox_routerfrom backend.routes.direct import direct_router
+from backend.routes.inbox.crud import router as inbox_router
+from backend.routes.direct import direct_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
