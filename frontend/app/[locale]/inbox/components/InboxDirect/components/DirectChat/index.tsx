@@ -6,6 +6,7 @@ import MessageElement from './components/MessageElement';
 import MessageField, { type MessageFieldRef } from './components/MessageField';
 import { BlockedIcon, ChatChevronIcon, PinIcon } from '@/components/icons';
 import classNames from 'classnames';
+import Loader from '@/components/loader/loader';
 import { useDateSeparator } from './useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
@@ -208,6 +209,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   const handleStartEdit = useCallback((msg: BotMessageResponse & { date: Date }) => {
     setEditingMessage({ id: msg.id, text: msg.text_content || '' });
     setMessage(msg.text_content || '');
+    messageFieldRef.current?.handleClearMedia();
   }, []);
 
   const handleCancelEdit = useCallback(() => {
@@ -264,7 +266,11 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
         </div>
       )}
       <div className={styles.messageList} ref={messageListRef}>
-        {loading && <div className={styles.loadingMessages}>Загрузка...</div>}
+        {loading && (
+          <div className={styles.loadingMessages}>
+            <Loader />
+          </div>
+        )}
         {!loading && messagesWithDate.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyStateContent}>

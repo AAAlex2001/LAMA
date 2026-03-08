@@ -143,7 +143,13 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
         type="file"
         multiple
         accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-        onChange={handleFileUpload}
+        onChange={(e) => {
+          if (!editingMessage) {
+            handleFileUpload(e);
+          } else {
+            e.target.value = '';
+          }
+        }}
         style={{ display: 'none' }}
       />
       <div className={styles.messageField}>
@@ -174,7 +180,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
             intent="neutral"
             size="transparent"
             onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddMedia}
+            disabled={!canAddMedia || !!editingMessage}
           >
             <PaperclipIcon width={22} height={22} color="currentColor" />
           </Button>
