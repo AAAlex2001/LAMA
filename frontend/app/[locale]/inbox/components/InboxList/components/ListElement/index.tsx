@@ -163,7 +163,7 @@ const ListElement: FC<ListElementProps> = ({
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('decline')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
@@ -179,7 +179,7 @@ const ListElement: FC<ListElementProps> = ({
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('decline')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
@@ -192,7 +192,7 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unblock')} className={btnClass}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unban')} className={btnClass}>
             <span className={buttonStyles.label}>Разблокировать</span>
           </Button>
           <Button variant="outline" intent="primary" size="md" onClick={() => setIsBlockModalOpen(true)} className={btnClass}>

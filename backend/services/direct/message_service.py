@@ -150,12 +150,18 @@ class DirectMessageService:
         message_id = message.get("message_id")
         
         msg_type = MessageType.TEXT
+        media_file_id = None
         if "photo" in message:
             msg_type = MessageType.PHOTO
+            photos = message["photo"]
+            if photos:
+                media_file_id = photos[-1].get("file_id")
         elif "video" in message:
             msg_type = MessageType.VIDEO
+            media_file_id = message["video"].get("file_id")
         elif "document" in message:
             msg_type = MessageType.DOCUMENT
+            media_file_id = message["document"].get("file_id")
 
         msg = BotMessage(
             bot_id=bot_id,
@@ -164,6 +170,7 @@ class DirectMessageService:
             user_id=user_id,
             message_type=msg_type,
             text_content=text,
+            media_file_id=media_file_id,
             is_incoming=True,
             raw_data=message
         )

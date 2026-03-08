@@ -147,7 +147,7 @@ class CommandProcessor:
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
-            moderation_trigger_service = ModerationTriggerService(self.db)
+            moderation_trigger_service = ModerationTriggerService()
             handled = await moderation_trigger_service.handle_command(
                 command=command_text,
                 message=message,
@@ -158,26 +158,64 @@ class CommandProcessor:
                 inbox_service = InboxActionService(self.db)
                 channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
-                
-                await inbox_service.create_event(event_data={
-                    "owner_id": self.bot_model.owner_id,
-                    "category": InboxCategory.AUTOMATION,
-                    "entity_type": EntityType.BOT,
-                    "event_type": EventType.BOT_COMMAND,
-                    "bot_id": self.bot_model.id,
-                    "channel_id": channel_id,
-                    "tg_user_id": message.from_user.id if message.from_user else None,
-                    "tg_username": message.from_user.username if message.from_user else None,
-                    "status": EventStatus.PROCESSED if handled else EventStatus.NEW,
-                    "description": f"Command {command_text} called in chat {message.chat.id}",
-                    "payload": {
-                        "command": command_text,
-                        "full_text": text_content,
-                        "message_id": message.message_id,
-                        "chat_id": message.chat.id,
-                        "handled": handled
-                    }
-                })
+                cmd = command_text.lower()
+
+                if cmd in ("/ban", "/mute", "/unban", "/unmute"):
+                    target_user_id, target_name = moderation_trigger_service.extract_target(message)
+                    parts = message.text.split() if message.text else []
+                    duration_minutes = moderation_trigger_service.parse_time(
+                        parts[-1] if len(parts) > 1 else "0"
+                    )
+                    is_unbanned = cmd in ("/unban", "/unmute")
+                    ban_type = "mute" if cmd in ("/mute", "/unmute") else "ban"
+
+                    await inbox_service.create_event(event_data={
+                        "owner_id": self.bot_model.owner_id,
+                        "category": InboxCategory.MODERATION,
+                        "entity_type": EntityType.CHANNEL,
+                        "event_type": EventType.CHANNEL_BAN,
+                        "bot_id": self.bot_model.id,
+                        "channel_id": channel_id,
+                        "tg_user_id": target_user_id,
+                        "tg_username": target_name,
+                        "status": EventStatus.PROCESSED,
+                        "description": (
+                            f"{'Разбан' if is_unbanned else 'Бан'} "
+                            f"{'(mute)' if ban_type == 'mute' else ''} "
+                            f"{target_name or target_user_id} "
+                            f"командой {command_text}"
+                        ).strip(),
+                        "payload": {
+                            "ban_type": ban_type,
+                            "is_unbanned": is_unbanned,
+                            "duration_minutes": duration_minutes,
+                            "command": command_text,
+                            "chat_id": message.chat.id,
+                            "message_id": message.message_id,
+                            "issuer_user_id": message.from_user.id if message.from_user else None,
+                            "issuer_username": message.from_user.username if message.from_user else None,
+                        }
+                    })
+                else:
+                    await inbox_service.create_event(event_data={
+                        "owner_id": self.bot_model.owner_id,
+                        "category": InboxCategory.AUTOMATION,
+                        "entity_type": EntityType.BOT,
+                        "event_type": EventType.BOT_COMMAND,
+                        "bot_id": self.bot_model.id,
+                        "channel_id": channel_id,
+                        "tg_user_id": message.from_user.id if message.from_user else None,
+                        "tg_username": message.from_user.username if message.from_user else None,
+                        "status": EventStatus.PROCESSED if handled else EventStatus.NEW,
+                        "description": f"Command {command_text} called in chat {message.chat.id}",
+                        "payload": {
+                            "command": command_text,
+                            "full_text": text_content,
+                            "message_id": message.message_id,
+                            "chat_id": message.chat.id,
+                            "handled": handled,
+                        }
+                    })
             except Exception as e:
                 logger.error(f"Failed to create inbox event for command {command_text}: {e}", exc_info=True)
 

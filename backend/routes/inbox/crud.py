@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Query, HTTPException
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
-from backend.schemas.inbox.events import InboxListResponse, BulkActionRequest, SpecificActionRequest
+from backend.schemas.inbox.events import InboxListResponse, BulkActionRequest, SpecificActionRequest, SpecificActionResult
 from backend.schemas.inbox.enums import InboxCategory, EventStatus, SortDir, EntityType, EventType
 from backend.services.inbox.query_service import InboxQueryService
 from backend.services.inbox.action_service import InboxActionService
@@ -79,7 +79,7 @@ async def bulk_inbox_action(
     return {"status": "success", "affected_rows": affected}
 
 
-@router.post("/{event_id}/action")
+@router.post("/{event_id}/action", response_model=SpecificActionResult)
 async def execute_specific_action(
     event_id: int,
     request: SpecificActionRequest,
@@ -87,17 +87,29 @@ async def execute_specific_action(
     action_service: InboxActionService = Depends(get_inbox_action_service)
 ):
     """
-    Execute specific action: reply, accept, reject, unban, edit_ban
+    Execute specific action on an inbox event.
+
+    action_type values:
+      mark_resolved   — пометить как обработанное
+      reply           — вернуть bot_id/tg_user_id/chat_id для перехода в Direct
+      accept          — принять заявку на вступление
+      reject          — отклонить заявку на вступление
+      unban           — разбанить пользователя в канале
+      block           — забанить пользователя в канале
+      delete_message  — удалить вызвавшее сообщение
+      change_ban      — изменить бан (payload: ban_type, duration_seconds, everywhere)
     """
     event = await action_service.get_event(event_id, current_user.id)
     if not event:
         raise HTTPException(status_code=404, detail="Event not found")
 
-    success = await action_service.execute_specific_action(
+    result = await action_service.execute_specific_action(
         event=event,
         action_type=request.action_type,
         payload=request.payload
     )
 
-    if not success:
+    if result is None:
         raise HTTPException(status_code=400, detail=f"Failed to execute action {request.action_type}")
+
+    return result

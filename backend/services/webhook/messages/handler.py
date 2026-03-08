@@ -16,6 +16,8 @@ from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
+from backend.services.inbox.action_service import InboxActionService
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,42 @@ class MessageHandler:
                     owner_id=self.bot_model.owner_id,
                     message=message.model_dump()
                 )
+
+                is_command = bool(text_content and text_content.startswith("/"))
+                if not is_command:
+                    try:
+                        inbox_service = InboxActionService(self.db)
+                        preview = text_content[:100] if text_content else "(медиа)"
+                        sender = message.from_user.username or str(message.from_user.id)
+
+                        media_file_id = None
+                        if message.photo:
+                            media_file_id = message.photo[-1].file_id
+                        elif message.video:
+                            media_file_id = message.video.file_id
+                        elif message.document:
+                            media_file_id = message.document.file_id
+
+                        await inbox_service.create_event({
+                            "owner_id": self.bot_model.owner_id,
+                            "category": InboxCategory.AUTOMATION,
+                            "entity_type": EntityType.BOT,
+                            "event_type": EventType.BOT_MESSAGE,
+                            "bot_id": self.bot_model.id,
+                            "tg_user_id": message.from_user.id,
+                            "tg_username": message.from_user.username,
+                            "status": EventStatus.NEW,
+                            "description": f"Сообщение от @{sender}: {preview}",
+                            "payload": {
+                                "message_id": message.message_id,
+                                "chat_id": message.chat.id,
+                                "text": text_content[:500] if text_content else None,
+                                "first_name": message.from_user.first_name,
+                                "media_file_id": media_file_id,
+                            },
+                        })
+                    except Exception as e:
+                        logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
 
             async with get_bot_session(self.bot_model.token) as telegram_bot:
                 # Удаление системных сообщений

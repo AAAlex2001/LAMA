@@ -13,6 +13,7 @@ from backend.schemas.inbox.events import (
     InboxListResponse,
     BulkActionRequest,
     SpecificActionRequest,
+    SpecificActionResult,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "InboxListResponse",
     "BulkActionRequest",
     "SpecificActionRequest",
+    "SpecificActionResult",
 ]

@@ -70,6 +70,15 @@ export interface SpecificActionParams {
   payload?: Record<string, unknown>;
 }
 
+export interface SpecificActionResult {
+  status: string;
+  bot_id?: number | null;
+  tg_user_id?: number | null;
+  chat_id?: number | null;
+  affected_channels?: number[] | null;
+  eventId: number;
+}
+
 export const fetchInboxEventsThunk = createAsyncThunk(
   'inboxEvents/fetch',
   async (params: FetchInboxEventsParams, { rejectWithValue }) => {
