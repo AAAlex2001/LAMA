@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Any, List, Optional
 import logging
 from aiogram.enums import ParseMode
@@ -21,60 +22,75 @@ class DirectMessageService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    def _get_request_media_urls(self, request: SendMessageRequest) -> List[str]:
+    def get_request_media_urls(self, request: SendMessageRequest) -> List[str]:
         if request.media_urls:
             return [url for url in request.media_urls if url]
         if request.media_url:
             return [request.media_url]
         return []
 
-    def _message_get(self, message: Message | dict, key: str, default: Any = None) -> Any:
+    def message_get(self, message: Message | dict, key: str, default: Any = None) -> Any:
         if isinstance(message, dict):
             return message.get(key, default)
         return getattr(message, key, default)
 
-    def _extract_incoming_media(self, message: Message | dict) -> tuple[MessageType, Optional[str]]:
-        photo = self._message_get(message, "photo")
-        if photo:
-            if isinstance(photo, list) and photo:
-                last_photo = photo[-1]
-                file_id = last_photo.get("file_id") if isinstance(last_photo, dict) else getattr(last_photo, "file_id", None)
-                return MessageType.PHOTO, file_id
-            return MessageType.PHOTO, None
+    def extract_nested_id(self, value: Any, key: str = "id") -> Optional[int]:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            nested_value = value.get(key)
+        else:
+            nested_value = getattr(value, key, None)
+        if nested_value is None:
+            return None
+        return int(nested_value)
 
-        video = self._message_get(message, "video")
-        if video:
-            file_id = video.get("file_id") if isinstance(video, dict) else getattr(video, "file_id", None)
-            return MessageType.VIDEO, file_id
+    def extract_file_id_from_entity(self, entity: Any) -> Optional[str]:
+        if entity is None:
+            return None
+        if isinstance(entity, dict):
+            file_id = entity.get("file_id")
+        else:
+            file_id = getattr(entity, "file_id", None)
+        return str(file_id) if file_id else None
 
-        document = self._message_get(message, "document")
-        if document:
-            file_id = document.get("file_id") if isinstance(document, dict) else getattr(document, "file_id", None)
-            return MessageType.DOCUMENT, file_id
+    def extract_file_id_from_collection(self, collection: Any) -> Optional[str]:
+        if not collection:
+            return None
+        if isinstance(collection, Sequence) and not isinstance(collection, (str, bytes, bytearray)):
+            last_item = collection[-1]
+            return self.extract_file_id_from_entity(last_item)
+        return self.extract_file_id_from_entity(collection)
 
-        audio = self._message_get(message, "audio")
-        if audio:
-            file_id = audio.get("file_id") if isinstance(audio, dict) else getattr(audio, "file_id", None)
-            return MessageType.AUDIO, file_id
+    def get_raw_message_data(self, message: Message | dict) -> dict:
+        if isinstance(message, dict):
+            return message
+        return message.model_dump(mode="python", by_alias=True)
 
-        voice = self._message_get(message, "voice")
-        if voice:
-            file_id = voice.get("file_id") if isinstance(voice, dict) else getattr(voice, "file_id", None)
-            return MessageType.VOICE, file_id
+    def extract_incoming_media(self, message: Message | dict) -> tuple[MessageType, Optional[str]]:
+        raw_data = self.get_raw_message_data(message)
 
-        animation = self._message_get(message, "animation")
-        if animation:
-            file_id = animation.get("file_id") if isinstance(animation, dict) else getattr(animation, "file_id", None)
-            return MessageType.ANIMATION, file_id
+        photo = self.message_get(message, "photo") or raw_data.get("photo")
+        photo_file_id = self.extract_file_id_from_collection(photo)
+        if photo or photo_file_id:
+            return MessageType.PHOTO, photo_file_id
 
-        sticker = self._message_get(message, "sticker")
-        if sticker:
-            file_id = sticker.get("file_id") if isinstance(sticker, dict) else getattr(sticker, "file_id", None)
-            return MessageType.STICKER, file_id
+        for field_name, message_type in (
+            ("video", MessageType.VIDEO),
+            ("document", MessageType.DOCUMENT),
+            ("audio", MessageType.AUDIO),
+            ("voice", MessageType.VOICE),
+            ("animation", MessageType.ANIMATION),
+            ("sticker", MessageType.STICKER),
+        ):
+            entity = self.message_get(message, field_name) or raw_data.get(field_name)
+            file_id = self.extract_file_id_from_entity(entity)
+            if entity or file_id:
+                return message_type, file_id
 
         return MessageType.TEXT, None
 
-    def _detect_media_type(self, media_url: str) -> MessageType:
+    def detect_media_type(self, media_url: str) -> MessageType:
         if is_document_url(media_url):
             return MessageType.DOCUMENT
         if is_audio_url(media_url):
@@ -83,7 +99,7 @@ class DirectMessageService:
             return MessageType.VIDEO
         return MessageType.PHOTO
 
-    def _extract_media_file_id(self, message: Message, message_type: MessageType) -> Optional[str]:
+    def extract_media_file_id(self, message: Message, message_type: MessageType) -> Optional[str]:
         if message_type == MessageType.PHOTO and message.photo:
             return message.photo[-1].file_id
         if message_type == MessageType.VIDEO and message.video:
@@ -100,7 +116,7 @@ class DirectMessageService:
             return message.sticker.file_id
         return None
 
-    def _extract_message_type(self, message: Message, fallback: MessageType = MessageType.TEXT) -> MessageType:
+    def extract_message_type(self, message: Message, fallback: MessageType = MessageType.TEXT) -> MessageType:
         if message.photo:
             return MessageType.PHOTO
         if message.video:
@@ -119,7 +135,7 @@ class DirectMessageService:
             return MessageType.TEXT if not any([message.photo, message.video, message.document, message.audio, message.voice, message.animation, message.sticker]) else fallback
         return fallback
 
-    def _build_media_item(self, media_url: str, caption: Optional[str]):
+    def build_media_item(self, media_url: str, caption: Optional[str]):
         parse_mode = ParseMode.HTML if caption else None
 
         if is_document_url(media_url):
@@ -130,7 +146,7 @@ class DirectMessageService:
             return InputMediaVideo(media=media_url, caption=caption, parse_mode=parse_mode)
         return InputMediaPhoto(media=media_url, caption=caption, parse_mode=parse_mode)
 
-    async def _save_outgoing_message(
+    async def save_outgoing_message(
         self,
         bot_id: int,
         tg_chat_id: int,
@@ -138,7 +154,7 @@ class DirectMessageService:
         fallback_type: MessageType,
         fallback_media_url: Optional[str],
     ) -> BotMessage:
-        message_type = self._extract_message_type(tg_message, fallback_type)
+        message_type = self.extract_message_type(tg_message, fallback_type)
         msg = BotMessage(
             bot_id=bot_id,
             telegram_message_id=tg_message.message_id,
@@ -146,7 +162,7 @@ class DirectMessageService:
             user_id=None,
             message_type=message_type,
             text_content=tg_message.text or tg_message.caption,
-            media_file_id=self._extract_media_file_id(tg_message, message_type),
+            media_file_id=self.extract_media_file_id(tg_message, message_type),
             media_url=fallback_media_url,
             is_incoming=False,
             raw_data=tg_message.model_dump(),
@@ -155,7 +171,7 @@ class DirectMessageService:
         await self.db.flush()
         return msg
 
-    async def _broadcast_new_message(self, owner_id: int, bot_id: int, tg_chat_id: int, message_id: int) -> None:
+    async def broadcast_new_message(self, owner_id: int, bot_id: int, tg_chat_id: int, message_id: int) -> None:
         await ws_manager.broadcast_chat_update(
             user_id=owner_id,
             bot_id=bot_id,
@@ -164,7 +180,7 @@ class DirectMessageService:
             payload={"message_id": message_id},
         )
 
-    async def _resolve_media_url(self, bot_token: str, media_file_id: Optional[str]) -> Optional[str]:
+    async def resolve_media_url(self, bot_token: str, media_file_id: Optional[str]) -> Optional[str]:
         """Преобразовать file_id Telegram в прямой URL файла."""
         if not media_file_id:
             return None
@@ -179,7 +195,7 @@ class DirectMessageService:
             logger.error(f"Error resolving media URL for file_id={media_file_id}: {e}", exc_info=True)
             return None
 
-    async def _get_chat_and_bot(self, bot_id: int, tg_chat_id: int, owner_id: int):
+    async def get_chat_and_bot(self, bot_id: int, tg_chat_id: int, owner_id: int):
         """Получить чат и бота с проверкой прав владельца."""
         query = select(DirectChat, Bot).join(Bot, DirectChat.bot_id == Bot.id).where(
             and_(
@@ -195,23 +211,23 @@ class DirectMessageService:
 
     async def send_message(self, bot_id: int, tg_chat_id: int, owner_id: int, request: SendMessageRequest) -> List[BotMessage]:
         """Отправить сообщение пользователю от лица бота."""
-        chat, bot = await self._get_chat_and_bot(bot_id, tg_chat_id, owner_id)
+        chat, bot = await self.get_chat_and_bot(bot_id, tg_chat_id, owner_id)
         if not chat or not bot:
             return []
 
-        media_urls = self._get_request_media_urls(request)
+        media_urls = self.get_request_media_urls(request)
         tg_responses: List[Message] = []
         try:
             async with get_bot_session(bot.token) as client:
                 if len(media_urls) > 1:
                     media_group = [
-                        self._build_media_item(media_url, request.text_content if index == 0 else None)
+                        self.build_media_item(media_url, request.text_content if index == 0 else None)
                         for index, media_url in enumerate(media_urls[:10])
                     ]
                     tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group))
                 elif len(media_urls) == 1:
                     media_url = media_urls[0]
-                    message_type = request.media_type or self._detect_media_type(media_url)
+                    message_type = request.media_type or self.detect_media_type(media_url)
 
                     if message_type == MessageType.PHOTO:
                         tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content)]
@@ -245,9 +261,9 @@ class DirectMessageService:
 
         for index, tg_response in enumerate(tg_responses):
             fallback_url = fallback_urls[index] if index < len(fallback_urls) else None
-            fallback_type = request.media_type or (self._detect_media_type(fallback_url) if fallback_url else MessageType.TEXT)
+            fallback_type = request.media_type or (self.detect_media_type(fallback_url) if fallback_url else MessageType.TEXT)
             saved_messages.append(
-                await self._save_outgoing_message(
+                await self.save_outgoing_message(
                     bot_id=bot.id,
                     tg_chat_id=tg_chat_id,
                     tg_message=tg_response,
@@ -259,7 +275,7 @@ class DirectMessageService:
         await self.db.commit()
         for message in saved_messages:
             await self.db.refresh(message)
-            await self._broadcast_new_message(owner_id, bot_id, tg_chat_id, message.id)
+            await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, message.id)
 
         return saved_messages
 
@@ -332,24 +348,26 @@ class DirectMessageService:
 
     async def save_incoming_message(self, bot_id: int, owner_id: int, message: Message | dict) -> Optional[BotMessage]:
         """Сохранить новое входящее сообщение из вебхука."""
-        chat = self._message_get(message, "chat") or {}
-        from_user = self._message_get(message, "from_user")
+        raw_data = self.get_raw_message_data(message)
+        chat = self.message_get(message, "chat") or {}
+        from_user = self.message_get(message, "from_user")
         if from_user is None:
-            from_user = self._message_get(message, "from") or {}
+            from_user = self.message_get(message, "from") or raw_data.get("from") or raw_data.get("from_user") or {}
 
-        chat_id = chat.get("id") if isinstance(chat, dict) else getattr(chat, "id", None)
-        user_id = from_user.get("id") if isinstance(from_user, dict) else getattr(from_user, "id", None)
-        text = self._message_get(message, "text") or self._message_get(message, "caption")
-        message_id = self._message_get(message, "message_id")
-        raw_data = message if isinstance(message, dict) else message.model_dump()
+        chat_id = self.extract_nested_id(chat) or self.extract_nested_id(raw_data.get("chat"))
+        user_id = self.extract_nested_id(from_user) or self.extract_nested_id(raw_data.get("from")) or self.extract_nested_id(raw_data.get("from_user"))
+        text = self.message_get(message, "text") or self.message_get(message, "caption")
+        message_id = self.message_get(message, "message_id")
+        if message_id is None:
+            message_id = raw_data.get("message_id")
 
         bot = await self.db.get(Bot, bot_id)
         if not bot:
             return None
 
-        msg_type, media_file_id = self._extract_incoming_media(message)
+        msg_type, media_file_id = self.extract_incoming_media(message)
 
-        media_url = await self._resolve_media_url(bot.token, media_file_id)
+        media_url = await self.resolve_media_url(bot.token, media_file_id)
 
         msg = BotMessage(
             bot_id=bot_id,
