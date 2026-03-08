@@ -180,10 +180,39 @@ class InboxActionService:
                     if not (channel and channel.telegram_id and event.tg_user_id):
                         return None
 
-                    await client.unban_chat_member(
-                        chat_id=channel.telegram_id,
-                        user_id=event.tg_user_id,
-                    )
+                    if str(channel.telegram_id).startswith("-"):
+                        try:
+                            await client.restrict_chat_member(
+                                chat_id=channel.telegram_id,
+                                user_id=event.tg_user_id,
+                                permissions=ChatPermissions(
+                                    can_send_messages=True,
+                                    can_send_audios=True,
+                                    can_send_documents=True,
+                                    can_send_photos=True,
+                                    can_send_videos=True,
+                                    can_send_video_notes=True,
+                                    can_send_voice_notes=True,
+                                    can_send_polls=True,
+                                    can_send_other_messages=True,
+                                    can_add_web_page_previews=True,
+                                    can_change_info=True,
+                                    can_invite_users=True,
+                                    can_pin_messages=True,
+                                    can_manage_topics=True,
+                                )
+                            )
+                        except Exception as e:
+                            logger.warning(f"Не удалось снять мут через restrict_chat_member, пробуем unban: {e}")
+                            try:
+                                await client.unban_chat_member(
+                                    chat_id=channel.telegram_id,
+                                    user_id=event.tg_user_id,
+                                    only_if_banned=True
+                                )
+                            except Exception as unban_e:
+                                logger.error(f"Ошибка при unban_chat_member: {unban_e}")
+
                     new_payload = dict(event.payload or {})
                     new_payload["is_unbanned"] = True
                     event.payload = new_payload
@@ -199,10 +228,15 @@ class InboxActionService:
                     if not (channel and channel.telegram_id and event.tg_user_id):
                         return None
 
-                    await client.ban_chat_member(
-                        chat_id=channel.telegram_id,
-                        user_id=event.tg_user_id,
-                    )
+                    if str(channel.telegram_id).startswith("-"):
+                        try:
+                            await client.ban_chat_member(
+                                chat_id=channel.telegram_id,
+                                user_id=event.tg_user_id,
+                            )
+                        except Exception as e:
+                            logger.error(f"Не удалось забанить пользователя в канале {channel.telegram_id}: {e}")
+
                     event.status = EventStatus.PROCESSED
                     await self.db.commit()
                     return SpecificActionResult(status="blocked")
