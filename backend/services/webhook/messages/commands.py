@@ -147,7 +147,7 @@ class CommandProcessor:
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
-            moderation_trigger_service = ModerationTriggerService(self.db)
+            moderation_trigger_service = ModerationTriggerService()
             handled = await moderation_trigger_service.handle_command(
                 command=command_text,
                 message=message,
