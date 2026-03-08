@@ -26,6 +26,8 @@ export const selectSortDir = (s: RootState) => s.inbox.sortDir;
 
 export const selectStatusFilter = (s: RootState) => s.inbox.statusFilter;
 
+export const selectEventTypeFilter = (s: RootState) => s.inbox.eventTypeFilter;
+
 export const selectFilteredItems = createSelector(
   [
     (s: RootState) => s.inbox.items,

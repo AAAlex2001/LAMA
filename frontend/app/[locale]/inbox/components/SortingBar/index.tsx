@@ -17,6 +17,7 @@ interface SortingBarProps {
   setCurrentView: (view: "list" | "direct") => void;
   onTimeSortChange?: (sort: 'new' | 'old') => void;
   onStatusFilterChange?: (status: 'new' | 'processed' | 'ignored' | null) => void;
+  onEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
 }
 
 type SortOptionType = 'time' | 'source' | 'sourceSystem' | 'status' | 'type';
@@ -38,7 +39,7 @@ const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>
   });
 };
 
-const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, currentView, setCurrentView, onTimeSortChange, onStatusFilterChange }) => {
+const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, currentView, setCurrentView, onTimeSortChange, onStatusFilterChange, onEventTypeFilterChange }) => {
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
   const filterButtonRef = useRef<HTMLDivElement>(null);
@@ -294,6 +295,13 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
     { value: "read", label: "Прочитанные" },
   ];
 
+  const typeOptions = [
+    { value: "all", label: "Все" },
+    { value: "system_autoreply", label: "Автоответ" },
+    { value: "system_trigger", label: "Триггер" },
+    { value: "bot_command", label: "Команды" },
+  ];
+
   const filterSortConfig: Record<ListHeaderType, SortOptionType[]> = {
     all: ['time', 'source', 'status'],
     moderation: ['time', 'source'],
@@ -374,14 +382,8 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
             type: 'type',
             label: 'По типу',
             value: sortValues.type,
-            width: "240px",
-            content: (
-              <SourceContent
-                isDefault={typeDefault}
-                onDefaultChange={setTypeDefault}
-                options={typeFilterOptions}
-              />
-            ),
+            items: typeOptions,
+            width: "138px",
           };
         default:
           return {
@@ -393,7 +395,7 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
           };
       }
     });
-  }, [selectedFilter, sortValues, chatSortValues, currentView, sourceDefault, sourceFilterOptions, typeDefault, typeFilterOptions]);
+  }, [selectedFilter, sortValues, chatSortValues, currentView, sourceDefault, sourceFilterOptions, typeDefault, typeOptions]);
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
     setSortValues(prev => ({ ...prev, [sortType]: value }));
@@ -409,6 +411,15 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
       };
       onStatusFilterChange?.(statusMap[value] ?? null);
     }
+    if (sortType === 'type') {
+      const typeMap: Record<string, 'system_autoreply' | 'system_trigger' | 'bot_command' | null> = {
+        'system_autoreply': 'system_autoreply',
+        'system_trigger': 'system_trigger',
+        'bot_command': 'bot_command',
+        'all': null,
+      };
+      onEventTypeFilterChange?.(typeMap[value] ?? null);
+    }
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
@@ -418,6 +429,9 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
     }
     if (sortType === 'status') {
       onStatusFilterChange?.(null);
+    }
+    if (sortType === 'type') {
+      onEventTypeFilterChange?.(null);
     }
   };
 

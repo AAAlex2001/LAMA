@@ -15,8 +15,10 @@ import {
   selectSortDir,
   selectStatusFilter,
   selectSelectedFilter,
+  selectEventTypeFilter,
   setSortDir,
   setStatusFilter,
+  setEventTypeFilter,
   setCurrentView,
   setActiveChatId,
   fetchDirectChatsThunk,
@@ -36,6 +38,7 @@ interface InboxListProps {
   onHandlersReady?: (handlers: {
     handleTimeSortChange: (sort: 'new' | 'old') => void;
     handleStatusFilterChange: (status: 'new' | 'processed' | 'ignored' | null) => void;
+    handleEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
   }) => void;
 }
 
@@ -46,6 +49,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
+  const eventTypeFilter = useAppSelector(selectEventTypeFilter);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);
@@ -61,14 +65,19 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     dispatch(setStatusFilter(status));
   }, [dispatch]);
 
+  const handleEventTypeFilterChange = useCallback((eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => {
+    dispatch(setEventTypeFilter(eventType));
+  }, [dispatch]);
+
   useEffect(() => {
     if (onHandlersReady) {
       onHandlersReady({
         handleTimeSortChange,
         handleStatusFilterChange,
+        handleEventTypeFilterChange,
       });
     }
-  }, [onHandlersReady, handleTimeSortChange, handleStatusFilterChange]);
+  }, [onHandlersReady, handleTimeSortChange, handleStatusFilterChange, handleEventTypeFilterChange]);
 
   useEffect(() => {
     const category = CATEGORY_MAP[selectedFilter];
@@ -76,10 +85,11 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
       category: category as any,
       status: statusFilter ?? undefined,
       sort: sortDir,
+      event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
       offset: 0,
       limit: 50,
     }));
-  }, [dispatch, selectedFilter, sortDir, statusFilter]);
+  }, [dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter]);
 
   useEffect(() => {
     if (!lastElementRef.current) return;
@@ -176,6 +186,8 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         isSelectedAll={checkedItems.size > 0 && checkedItems.size === data.length}
         checkedItems={checkedItems.size}
         onBulkAction={handleBulkAction}
+        automationSubFilter={eventTypeFilter}
+        onAutomationSubFilterChange={handleEventTypeFilterChange}
       />
       <div className={styles.list}>
         {data.map((item, index) => (

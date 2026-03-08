@@ -4,6 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.inbox import InboxEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, SortDir, EventType
 
+
+AUTOMATION_EVENT_TYPES = (
+    EventType.BOT_COMMAND,
+    EventType.SYSTEM_TRIGGER,
+    EventType.SYSTEM_AUTOREPLY,
+)
+
 class InboxQueryService:
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -28,6 +35,10 @@ class InboxQueryService:
         if category:
             stmt = stmt.where(InboxEvent.category == category)
             count_stmt = count_stmt.where(InboxEvent.category == category)
+
+            if category == InboxCategory.AUTOMATION and not event_types:
+                stmt = stmt.where(InboxEvent.event_type.in_(AUTOMATION_EVENT_TYPES))
+                count_stmt = count_stmt.where(InboxEvent.event_type.in_(AUTOMATION_EVENT_TYPES))
             
         if status:
             stmt = stmt.where(InboxEvent.status == status)

@@ -76,7 +76,7 @@ class MessageHandler:
 
                         await inbox_service.create_event({
                             "owner_id": self.bot_model.owner_id,
-                            "category": InboxCategory.AUTOMATION,
+                            "category": InboxCategory.MODERATION,
                             "entity_type": EntityType.BOT,
                             "event_type": EventType.BOT_MESSAGE,
                             "bot_id": self.bot_model.id,
