@@ -32,6 +32,7 @@ export interface InboxState {
   sort: SortInput;
   sortDir: 'new' | 'old';
   statusFilter: 'new' | 'processed' | 'ignored' | null;
+  eventTypeFilter: 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
 
   bulkActionLoading: boolean;
   specificActionLoading: boolean;
@@ -54,6 +55,7 @@ const initialState: InboxState = {
   sort: null,
   sortDir: 'new',
   statusFilter: null,
+  eventTypeFilter: null,
 
   bulkActionLoading: false,
   specificActionLoading: false,
@@ -69,6 +71,7 @@ const inboxSlice = createSlice({
   reducers: {
     setSelectedFilter(state, action: PayloadAction<ListFilterType>) {
       state.selectedFilter = action.payload;
+      state.eventTypeFilter = null;
       state.items = [];
       state.itemsOffset = 0;
       state.itemsHasMore = true;
@@ -87,6 +90,12 @@ const inboxSlice = createSlice({
     },
     setStatusFilter(state, action: PayloadAction<'new' | 'processed' | 'ignored' | null>) {
       state.statusFilter = action.payload;
+      state.items = [];
+      state.itemsOffset = 0;
+      state.itemsHasMore = true;
+    },
+    setEventTypeFilter(state, action: PayloadAction<'system_autoreply' | 'system_trigger' | 'bot_command' | null>) {
+      state.eventTypeFilter = action.payload;
       state.items = [];
       state.itemsOffset = 0;
       state.itemsHasMore = true;
@@ -220,6 +229,7 @@ export const {
   setSort,
   setSortDir,
   setStatusFilter,
+  setEventTypeFilter,
   removeItem,
   updateItem,
   addInviteLink,

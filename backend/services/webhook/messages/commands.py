@@ -43,6 +43,68 @@ class CommandProcessor:
             "bot": {"first_name": self.bot_model.first_name}
         }
 
+    def normalize_command(self, command_text: str) -> str:
+        """Нормализовать команду вида /cmd@botname -> /cmd."""
+        normalized = command_text.strip().lower()
+        bot_username = (self.bot_model.username or "").lower()
+
+        if bot_username and normalized.endswith(f"@{bot_username}"):
+            return normalized[: -(len(bot_username) + 1)]
+
+        return normalized
+
+    def get_chat_display_name(self, message: Message) -> str:
+        """Получить читаемое имя чата для описания события."""
+        if message.chat.type == "private":
+            if message.from_user and message.from_user.username:
+                return f"личный чат с @{message.from_user.username}"
+            if message.from_user and message.from_user.full_name:
+                return f"личный чат с {message.from_user.full_name}"
+            return "личный чат"
+
+        if message.chat.title:
+            return f'чат "{message.chat.title}"'
+
+        if message.chat.username:
+            return f"чат @{message.chat.username}"
+
+        return f"чат {message.chat.id}"
+
+    async def create_command_inbox_event(
+        self,
+        message: Message,
+        command_text: str,
+        text_content: str,
+        handled: bool,
+    ) -> None:
+        """Записать использование команды в inbox."""
+        inbox_service = InboxActionService(self.db)
+        channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+        channel_id = channel_obj.id if channel_obj else None
+        chat_name = self.get_chat_display_name(message)
+
+        await inbox_service.create_event(event_data={
+            "owner_id": self.bot_model.owner_id,
+            "category": InboxCategory.AUTOMATION,
+            "entity_type": EntityType.BOT,
+            "event_type": EventType.BOT_COMMAND,
+            "bot_id": self.bot_model.id,
+            "channel_id": channel_id,
+            "tg_user_id": message.from_user.id if message.from_user else None,
+            "tg_username": message.from_user.username if message.from_user else None,
+            "status": EventStatus.NEW,
+            "description": f"Команда {command_text} вызвана в {chat_name}",
+            "payload": {
+                "command": command_text,
+                "full_text": text_content,
+                "message_id": message.message_id,
+                "chat_id": message.chat.id,
+                "chat_title": message.chat.title,
+                "chat_username": message.chat.username,
+                "handled": handled,
+            }
+        })
+
     async def send_response(
         self,
         chat_id: int,
@@ -103,7 +165,8 @@ class CommandProcessor:
         auto_delete_service: ChannelAutoDeleteService
     ) -> None:
         """Обработка команды"""
-        command_text = text_content.split()[0]
+        raw_command_text = text_content.split()[0]
+        command_text = self.normalize_command(raw_command_text)
         user_id = message.from_user.id if message.from_user else 0
         if command_text.lower() == "/start":
             # Получаем URL фронтенда
@@ -197,25 +260,12 @@ class CommandProcessor:
                         }
                     })
                 else:
-                    await inbox_service.create_event(event_data={
-                        "owner_id": self.bot_model.owner_id,
-                        "category": InboxCategory.AUTOMATION,
-                        "entity_type": EntityType.BOT,
-                        "event_type": EventType.BOT_COMMAND,
-                        "bot_id": self.bot_model.id,
-                        "channel_id": channel_id,
-                        "tg_user_id": message.from_user.id if message.from_user else None,
-                        "tg_username": message.from_user.username if message.from_user else None,
-                        "status": EventStatus.NEW,
-                        "description": f"Command {command_text} called in chat {message.chat.id}",
-                        "payload": {
-                            "command": command_text,
-                            "full_text": text_content,
-                            "message_id": message.message_id,
-                            "chat_id": message.chat.id,
-                            "handled": handled,
-                        }
-                    })
+                    await self.create_command_inbox_event(
+                        message=message,
+                        command_text=command_text,
+                        text_content=text_content,
+                        handled=handled,
+                    )
             except Exception as e:
                 logger.error(f"Failed to create inbox event for command {command_text}: {e}", exc_info=True)
 
@@ -242,6 +292,16 @@ class CommandProcessor:
                 chat_type=message.chat.type if message.chat else None,
                 context={"command": command_text}
             )
+
+            try:
+                await self.create_command_inbox_event(
+                    message=message,
+                    command_text=command_text,
+                    text_content=text_content,
+                    handled=True,
+                )
+            except Exception as e:
+                logger.error(f"Failed to create inbox event for custom command {command_text}: {e}", exc_info=True)
 
             await self.send_command_response(message, command)
             await auto_delete_service.delete_if_command(

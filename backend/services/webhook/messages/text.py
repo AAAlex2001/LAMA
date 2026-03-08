@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.channel import ChannelAutoDeleteService
 from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
+from backend.services.inbox.action_service import InboxActionService
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
 
@@ -105,7 +108,7 @@ class TextProcessor:
             return
 
         user_id = message.from_user.id if message.from_user else 0
-        await self.trigger_service.fire_event(
+        triggered_count = await self.trigger_service.fire_event(
             bot_id=self.bot_model.id,
             trigger_type=TriggerType.USER_MESSAGE,
             user_id=user_id,
@@ -114,6 +117,33 @@ class TextProcessor:
             chat_type=message.chat.type if message.chat else None,
             context={"text": text_content[:100]}
         )
+
+        if triggered_count > 0:
+            try:
+                inbox_service = InboxActionService(self.db)
+                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_id = channel_obj.id if channel_obj else None
+
+                await inbox_service.create_event({
+                    "owner_id": self.bot_model.owner_id,
+                    "category": InboxCategory.AUTOMATION,
+                    "entity_type": EntityType.BOT,
+                    "event_type": EventType.SYSTEM_TRIGGER,
+                    "bot_id": self.bot_model.id,
+                    "channel_id": channel_id,
+                    "tg_user_id": message.from_user.id if message.from_user else None,
+                    "tg_username": message.from_user.username if message.from_user else None,
+                    "status": EventStatus.NEW,
+                    "description": f"Сработал триггер для сообщения в чате {message.chat.id}",
+                    "payload": {
+                        "chat_id": message.chat.id,
+                        "message_id": message.message_id,
+                        "text": text_content,
+                        "triggered_count": triggered_count,
+                    },
+                })
+            except Exception as e:
+                logger.error(f"Failed to create inbox event for trigger execution: {e}", exc_info=True)
 
         auto_reply_service = AutoReplyService(self.db)
         auto_reply = await auto_reply_service.find_by_text(
@@ -130,3 +160,30 @@ class TextProcessor:
 
         if auto_reply:
             await self.send_auto_reply_response(message, auto_reply)
+
+            try:
+                inbox_service = InboxActionService(self.db)
+                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_id = channel_obj.id if channel_obj else None
+
+                await inbox_service.create_event({
+                    "owner_id": self.bot_model.owner_id,
+                    "category": InboxCategory.AUTOMATION,
+                    "entity_type": EntityType.BOT,
+                    "event_type": EventType.SYSTEM_AUTOREPLY,
+                    "bot_id": self.bot_model.id,
+                    "channel_id": channel_id,
+                    "tg_user_id": message.from_user.id if message.from_user else None,
+                    "tg_username": message.from_user.username if message.from_user else None,
+                    "status": EventStatus.NEW,
+                    "description": f"Сработал автоответ для сообщения в чате {message.chat.id}",
+                    "payload": {
+                        "chat_id": message.chat.id,
+                        "message_id": message.message_id,
+                        "text": text_content,
+                        "auto_reply_id": auto_reply.id,
+                        "keywords": auto_reply.keywords,
+                    },
+                })
+            except Exception as e:
+                logger.error(f"Failed to create inbox event for auto reply execution: {e}", exc_info=True)

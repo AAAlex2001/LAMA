@@ -42,8 +42,27 @@ class DirectMessageService:
         try:
             async with get_bot_session(bot.token) as client:
                 if request.media_url and request.media_type:
-                    if request.media_type == MessageType.PHOTO:
+                    media_type_value = request.media_type.value if hasattr(request.media_type, "value") else request.media_type
+                    
+                    if media_type_value == "PHOTO":
                         tg_response = await client.send_photo(chat_id=tg_chat_id, photo=request.media_url, caption=request.text_content)
+                    elif media_type_value == "VIDEO":
+                        tg_response = await client.send_video(chat_id=tg_chat_id, video=request.media_url, caption=request.text_content)
+                    elif media_type_value == "DOCUMENT":
+                        tg_response = await client.send_document(chat_id=tg_chat_id, document=request.media_url, caption=request.text_content)
+                    elif media_type_value == "AUDIO":
+                        tg_response = await client.send_audio(chat_id=tg_chat_id, audio=request.media_url, caption=request.text_content)
+                    elif media_type_value == "VOICE":
+                        tg_response = await client.send_voice(chat_id=tg_chat_id, voice=request.media_url, caption=request.text_content)
+                    elif media_type_value == "ANIMATION":
+                        tg_response = await client.send_animation(chat_id=tg_chat_id, animation=request.media_url, caption=request.text_content)
+                    elif media_type_value == "STICKER":
+                        tg_response = await client.send_sticker(chat_id=tg_chat_id, sticker=request.media_url)
+                    else:
+                        if request.text_content:
+                            tg_response = await client.send_message(chat_id=tg_chat_id, text=request.text_content)
+                        else:
+                            return None
                 elif request.text_content:
                     tg_response = await client.send_message(chat_id=tg_chat_id, text=request.text_content)
 

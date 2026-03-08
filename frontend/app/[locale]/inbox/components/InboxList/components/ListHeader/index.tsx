@@ -16,6 +16,8 @@ import AutomatizationModal from "../../../AutomatizationModal";
 
 export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
+type AutomationEventType = 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
+
 interface ListHeaderProps {
   type: ListHeaderType;
   setIsChecking: (isChecking: boolean) => void;
@@ -25,10 +27,22 @@ interface ListHeaderProps {
   checkedItems?: number;
   botId?: number;
   onBulkAction?: (action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => void;
+  automationSubFilter?: AutomationEventType;
+  onAutomationSubFilterChange?: (filter: AutomationEventType) => void;
 }
 
 
-const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSelectAll, isSelectedAll, checkedItems, onBulkAction }: ListHeaderProps) => {
+const ListHeader: FC<ListHeaderProps> = ({
+  type,
+  setIsChecking,
+  isChecking,
+  onSelectAll,
+  isSelectedAll,
+  checkedItems,
+  onBulkAction,
+  automationSubFilter,
+  onAutomationSubFilterChange,
+}: ListHeaderProps) => {
   const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
@@ -51,6 +65,36 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
     { id: "trigger", label: "Триггер" },
     { id: "commands", label: "Команды" },
   ];
+
+  const selectedAutomationSubFilter = (() => {
+    switch (automationSubFilter) {
+      case 'system_autoreply':
+        return 'auto-reply';
+      case 'system_trigger':
+        return 'trigger';
+      case 'bot_command':
+        return 'commands';
+      default:
+        return 'all';
+    }
+  })();
+
+  const handleAutomationFilterChange = (filterId: string) => {
+    switch (filterId) {
+      case 'auto-reply':
+        onAutomationSubFilterChange?.('system_autoreply');
+        break;
+      case 'trigger':
+        onAutomationSubFilterChange?.('system_trigger');
+        break;
+      case 'commands':
+        onAutomationSubFilterChange?.('bot_command');
+        break;
+      default:
+        onAutomationSubFilterChange?.(null);
+        break;
+    }
+  };
 
   useEffect(() => {
     setSelectedSubFilter("all");
@@ -260,8 +304,8 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
             <div className={styles.moderationWrapper}>
               <FilterTabs
                   options={filterOptionsAutomation}
-                  selectedFilter={selectedSubFilter}
-                  onFilterChange={setSelectedSubFilter}
+                  selectedFilter={selectedAutomationSubFilter}
+                  onFilterChange={handleAutomationFilterChange}
                 />
               <div className={styles.controls}>    
                 <Button 
@@ -307,8 +351,8 @@ const ListHeader: FC<ListHeaderProps> = ({ type, setIsChecking, isChecking, onSe
               <div className={styles.filterTabsMobileWrapper}>
                 <FilterTabs
                   options={filterOptionsAutomation}
-                  selectedFilter={selectedSubFilter}
-                  onFilterChange={setSelectedSubFilter}
+                  selectedFilter={selectedAutomationSubFilter}
+                  onFilterChange={handleAutomationFilterChange}
                   className={styles.filterTabsMobile}
                 />
               </div>
