@@ -8,11 +8,12 @@ import MediaPreview from '@/components/media-preview';
 import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
-import { useState, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useMessageMedia } from './hooks/useMessageMedia';
 import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
-import { SendIcon } from '@/components/icons';
+import { SendIcon, CloseIcon } from '@/components/icons';
+import EditIcon from '@/components/icons/edit-icon';
 import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import classNames from 'classnames';
@@ -29,9 +30,12 @@ interface MessageFieldProps {
   value: string;
   onChange: (value: string) => void;
   onSendMessage: () => Promise<void>;
+  editingMessage?: { id: number; text: string } | null;
+  onCancelEdit?: () => void;
 }
 
-const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, onChange, onSendMessage }, ref) => {
+const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, onChange, onSendMessage, editingMessage, onCancelEdit }, ref) => {
+  const inputRef = useRef<HTMLInputElement>(null);
   const {
     mediaFiles,
     fileInputRef,
@@ -69,6 +73,12 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
 
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const { showSuccess } = useNotifications();
+
+  useEffect(() => {
+    if (editingMessage) {
+      inputRef.current?.focus();
+    }
+  }, [editingMessage]);
 
   const canShowInlineButtons = mediaFiles.length <= 1;
 
@@ -114,6 +124,10 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
       e.preventDefault();
       handleSendMessage();
     }
+    if (e.key === 'Escape' && editingMessage) {
+      e.preventDefault();
+      onCancelEdit?.();
+    }
   };
 
   return (
@@ -133,8 +147,21 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
         style={{ display: 'none' }}
       />
       <div className={styles.messageField}>
+        {editingMessage && (
+          <div className={styles.editBar}>
+            <EditIcon width={18} height={18} color="var(--color-lama-blue)" />
+            <div className={styles.editBarContent}>
+              <span className={styles.editBarLabel}>Редактирование</span>
+              <span className={styles.editBarText}>{editingMessage.text}</span>
+            </div>
+            <button className={styles.editBarClose} type="button" onClick={onCancelEdit}>
+              <CloseIcon width={18} height={18} />
+            </button>
+          </div>
+        )}
         <div className={styles.inputRow}>
           <input
+            ref={inputRef}
             className={styles.input}
             type="text"
             placeholder="Сообщение..."

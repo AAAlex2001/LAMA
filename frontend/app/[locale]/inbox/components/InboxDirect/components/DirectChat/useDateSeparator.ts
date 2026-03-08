@@ -5,13 +5,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 function formatDate(date: Date): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const messageDate = new Date(date);
   messageDate.setHours(0, 0, 0, 0);
-  
+
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  
+
   if (messageDate.getTime() === today.getTime()) {
     return 'Сегодня';
   } else if (messageDate.getTime() === yesterday.getTime()) {
@@ -27,104 +27,66 @@ function formatDate(date: Date): string {
 interface UseDateSeparatorProps {
   messages: Array<{ date: Date }>;
   messageListRef: React.RefObject<HTMLDivElement | null> | React.RefObject<HTMLDivElement>;
-  messageRefs: React.MutableRefObject<(HTMLDivElement | null)[]>;
+  messageRefs: React.RefObject<(HTMLDivElement | null)[]>;
 }
 
 export function useDateSeparator({ messages, messageListRef, messageRefs }: UseDateSeparatorProps) {
   const [visibleDate, setVisibleDate] = useState<string | null>(null);
   const [showDateSeparator, setShowDateSeparator] = useState(false);
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const scrollEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const findLowestVisibleMessage = useCallback(() => {
+  const findTopVisibleMessage = useCallback(() => {
     if (!messageListRef.current) return;
 
     const container = messageListRef.current;
     const containerRect = container.getBoundingClientRect();
-    const viewportBottom = containerRect.bottom;
 
-    let lowestVisibleIndex = -1;
-    let lowestBottom = -Infinity;
+    let topVisibleIndex = -1;
+    let topmost = Infinity;
 
     messageRefs.current.forEach((ref, index) => {
       if (!ref) return;
-      
       const rect = ref.getBoundingClientRect();
-      if (rect.top < viewportBottom && rect.bottom > containerRect.top) {
-        if (rect.bottom > lowestBottom) {
-          lowestBottom = rect.bottom;
-          lowestVisibleIndex = index;
+      if (rect.top < containerRect.bottom && rect.bottom > containerRect.top) {
+        if (rect.top < topmost) {
+          topmost = rect.top;
+          topVisibleIndex = index;
         }
       }
     });
 
-    if (lowestVisibleIndex >= 0 && messages[lowestVisibleIndex]) {
-      const date = formatDate(messages[lowestVisibleIndex].date);
+    if (topVisibleIndex >= 0 && messages[topVisibleIndex]) {
+      const date = formatDate(messages[topVisibleIndex].date);
       setVisibleDate(date);
       setShowDateSeparator(true);
+
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+      hideTimeoutRef.current = setTimeout(() => {
+        setShowDateSeparator(false);
+      }, 5000);
     }
   }, [messages, messageListRef, messageRefs]);
-
-  const scheduleHide = useCallback(() => {
-    if (hideTimeoutRef.current) {
-      clearTimeout(hideTimeoutRef.current);
-    }
-    hideTimeoutRef.current = setTimeout(() => {
-      setShowDateSeparator(false);
-    }, 2000);
-  }, []);
 
   useEffect(() => {
     if (!messageListRef.current) return;
 
     const container = messageListRef.current;
-    
-    // let scrollTimeout: NodeJS.Timeout;
+
     const handleScroll = () => {
-      findLowestVisibleMessage();
-      
-      if (scrollEndTimeoutRef.current) {
-        clearTimeout(scrollEndTimeoutRef.current);
-      }
-      
-      scrollEndTimeoutRef.current = setTimeout(() => {
-        scheduleHide();
-      }, 150);
+      findTopVisibleMessage();
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
 
-    const observer = new IntersectionObserver(
-      () => {
-        findLowestVisibleMessage();
-      },
-      {
-        root: container,
-        rootMargin: '0px',
-        threshold: [0, 0.1, 0.5, 1],
-      }
-    );
-
-    const timeoutId = setTimeout(() => {
-      messageRefs.current.forEach((ref) => {
-        if (ref) observer.observe(ref);
-      });
-      findLowestVisibleMessage();
-    }, 100);
-
     return () => {
-      // clearTimeout(scrollTimeout);
-      clearTimeout(timeoutId);
-      if (scrollEndTimeoutRef.current) {
-        clearTimeout(scrollEndTimeoutRef.current);
-      }
       container.removeEventListener('scroll', handleScroll);
-      observer.disconnect();
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
       }
     };
-  }, [findLowestVisibleMessage, scheduleHide, messages.length]);
+  }, [findTopVisibleMessage]);
 
   return {
     visibleDate,

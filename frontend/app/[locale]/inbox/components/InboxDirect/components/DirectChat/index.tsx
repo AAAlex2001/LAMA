@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, FC } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback, FC } from 'react';
 import styles from './styles.module.scss';
 import MessageElement from './components/MessageElement';
 import MessageField, { type MessageFieldRef } from './components/MessageField';
@@ -52,6 +52,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     unpinChat,
     blockChat,
     unblockChat,
+    editMessage,
     deleteMessage,
     fetchMessages,
   } = useDirectChat();
@@ -60,12 +61,14 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   const { messages, loading } = useDirectMessages(tgChatId);
 
   const [message, setMessage] = useState('');
+  const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prevMessagesRef = useRef<string>('');
   const messageFieldRef = useRef<MessageFieldRef>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
+  const shouldScrollAfterSendRef = useRef(false);
 
   const isPinned = activeChat?.is_pinned ?? false;
   const isBlocked = activeChat?.is_blocked ?? false;
@@ -80,16 +83,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
       prevMessagesRef.current = '';
     }
   }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
-
-  const scrollToBottom = () => {
-    if (messageListRef.current) {
-      requestAnimationFrame(() => {
-        if (messageListRef.current) {
-          messageListRef.current.scrollTop = messageListRef.current.scrollHeight;
-        }
-      });
-    }
-  };
 
   useEffect(() => {
     const el = messageListRef.current;
@@ -111,8 +104,9 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
   const lastMessageId = messages[0]?.id;
   useEffect(() => {
-    if (!loading && lastMessageId && isNearBottomRef.current) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!loading && lastMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+      shouldScrollAfterSendRef.current = false;
     }
   }, [lastMessageId, loading]);
 
@@ -182,7 +176,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     });
     
     setMessage('');
-    scrollToBottom();
+    shouldScrollAfterSendRef.current = true;
   };
 
   const handlePinChat = async () => {
@@ -209,6 +203,31 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
       messageId,
       chatId: activeChat.tg_chat_id,
     });
+  };
+
+  const handleStartEdit = useCallback((msg: BotMessageResponse & { date: Date }) => {
+    setEditingMessage({ id: msg.id, text: msg.text_content || '' });
+    setMessage(msg.text_content || '');
+  }, []);
+
+  const handleCancelEdit = useCallback(() => {
+    setEditingMessage(null);
+    setMessage('');
+  }, []);
+
+  const handleSendOrEdit = async () => {
+    if (editingMessage) {
+      const trimmed = message.trim();
+      if (!trimmed || trimmed === editingMessage.text) {
+        handleCancelEdit();
+        return;
+      }
+      await editMessage({ messageId: editingMessage.id, text_content: trimmed });
+      setEditingMessage(null);
+      setMessage('');
+      return;
+    }
+    await handleSendMessage();
   };
 
   return (
@@ -268,13 +287,21 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
               text={msg.text_content || undefined}
               mediaItems={mapMediaItems(msg)}
               time={formatMessageTime(msg.created_at)}
+              onEdit={!msg.is_incoming ? () => handleStartEdit(msg) : undefined}
               onDelete={() => handleDeleteMessage(msg.id)}
             />
           </div>
         ))}
         <div ref={bottomRef} />
       </div>
-      <MessageField ref={messageFieldRef} value={message} onChange={setMessage} onSendMessage={handleSendMessage} />
+      <MessageField
+        ref={messageFieldRef}
+        value={message}
+        onChange={setMessage}
+        onSendMessage={handleSendOrEdit}
+        editingMessage={editingMessage}
+        onCancelEdit={handleCancelEdit}
+      />
     </div>
   );
 };

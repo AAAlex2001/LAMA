@@ -46,7 +46,6 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
-  const chats = useAppSelector(selectDirectChats);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);

@@ -24,10 +24,11 @@ export interface MessageProps {
   text?: string;
   mediaItems?: MediaItem[];
   time?: string;
+  onEdit?: () => void;
   onDelete?: () => void;
 }
 
-const MessageElement = ({ type, text, mediaItems, time, onDelete }: MessageProps) => {
+const MessageElement = ({ type, text, mediaItems, time, onEdit, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -163,7 +164,7 @@ const MessageElement = ({ type, text, mediaItems, time, onDelete }: MessageProps
           {text && <p className={styles.messageText}>{text}</p>}
           <div className={styles.outgoingMeta}>
             <div className={styles.msgActions}>
-              <button className={styles.msgAction}>
+              <button className={styles.msgAction} onClick={onEdit}>
                 <EditIcon width={20} height={20} color="#F1F5FB" />
               </button>
               <button className={styles.msgAction} onClick={handleDeleteClick}>
