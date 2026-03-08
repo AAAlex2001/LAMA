@@ -5,6 +5,10 @@ import classNames from 'classnames';
 import styles from './styles.module.scss';
 import type { InvitationLink } from '../../index';
 import UserIconOutline from '@/components/icons/user-icon-outline';
+import CopyIcon from '@/components/icons/copy-icon';
+import PreviewArrowIcon from '@/components/icons/preview-arrow-icon';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
+import { Button } from '@/components/new-button';
 
 interface InvitationLinkItemProps {
   link: InvitationLink;
@@ -12,12 +16,24 @@ interface InvitationLinkItemProps {
 }
 
 const InvitationLinkItem: React.FC<InvitationLinkItemProps> = ({ link, onEdit }) => {
+  const { showSuccess } = useNotifications();
   const displayUrl = link.url;
   const usageText = link.maxUses
     ? `${link.usedCount}/${link.maxUses}`
     : `${link.usedCount}`;
 
   const isExpired = !link.isActive;
+
+  const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(link.url);
+    showSuccess('Ссылка скопирована!');
+  };
+
+  const handleOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    window.open(link.url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <button 
@@ -32,6 +48,19 @@ const InvitationLinkItem: React.FC<InvitationLinkItemProps> = ({ link, onEdit })
         <div className={styles.urlWrapper}>
           <div className={styles.bullet} />
           <div className={styles.url}>{displayUrl}</div>
+          <div className={styles.actionButtons}>
+            <Button
+              className={styles.actionButton}
+              onClick={handleCopy}
+              variant="ghost"
+              intent="neutral"
+              size="sm"
+              title="Копировать ссылку"
+              aria-label="Копировать ссылку"
+            >
+              <CopyIcon width={16} height={16} color="var(--color-gray-input)" />
+            </Button>
+          </div>
         </div>
         <div className={styles.linkDetails}>
           <span className={styles.channelName}>{link.channelName}</span>

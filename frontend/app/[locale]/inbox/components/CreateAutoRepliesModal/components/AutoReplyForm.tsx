@@ -176,8 +176,8 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
           <div className={styles.radioGroupItem}>
             <Checkbox
               variant="radio"
-              checked={formState.scope === 'PUBLIC'}
-              onChange={() => dispatch(setAutoReplyScope('PUBLIC'))}
+              checked={formState.scope === 'GROUPS'}
+              onChange={() => dispatch(setAutoReplyScope('GROUPS'))}
             />
             <span className={styles.channelItemName}>Публичные чаты</span>
           </div>

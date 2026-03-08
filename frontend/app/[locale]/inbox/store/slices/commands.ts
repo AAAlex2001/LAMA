@@ -10,7 +10,7 @@ export interface BotCommand {
   response_media_url?: string;
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   response_buttons?: InlineKeyboard;
-  scope: 'PRIVATE' | 'PUBLIC';
+  scope: 'PRIVATE' | 'GROUPS';
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -23,7 +23,7 @@ export interface BotCommandCreate {
   response_media_url?: string;
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   response_buttons?: InlineKeyboard;
-  scope: 'PRIVATE' | 'PUBLIC';
+  scope: 'PRIVATE' | 'GROUPS';
   is_active: boolean;
 }
 

@@ -145,8 +145,8 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
           <div className={styles.radioGroupItem}>
             <Checkbox
               variant="radio"
-              checked={formState.scope === 'PUBLIC'}
-              onChange={() => dispatch(setCommandScope('PUBLIC'))}
+              checked={formState.scope === 'GROUPS'}
+              onChange={() => dispatch(setCommandScope('GROUPS'))}
             />
             <span className={styles.channelItemName}>Публичные чаты</span>
           </div>

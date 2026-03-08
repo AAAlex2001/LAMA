@@ -7,7 +7,7 @@ export interface CreateCommandModalState {
   response_text: string;
   response_media_url: string;
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
-  scope: 'PRIVATE' | 'PUBLIC';
+  scope: 'PRIVATE' | 'GROUPS';
   is_active: boolean;
   botSearch: string;
   selectedBotIds: string[];
@@ -51,7 +51,7 @@ const createCommandModalSlice = createSlice({
     setResponseMediaType(state, action: PayloadAction<'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT'>) {
       state.response_media_type = action.payload;
     },
-    setScope(state, action: PayloadAction<'PRIVATE' | 'PUBLIC'>) {
+    setScope(state, action: PayloadAction<'PRIVATE' | 'GROUPS'>) {
       state.scope = action.payload;
     },
     setIsActive(state, action: PayloadAction<boolean>) {
