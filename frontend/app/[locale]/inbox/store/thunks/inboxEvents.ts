@@ -100,7 +100,7 @@ export const fetchInboxEventsThunk = createAsyncThunk(
       queryParams.append('offset', String(offset));
 
       const response = await apiRequest<InboxListResponse>(
-        `/inbox`,
+        `/inbox?${queryParams.toString()}`,
         { method: 'GET' }
       );
 
@@ -136,13 +136,21 @@ export const bulkInboxActionThunk = createAsyncThunk(
   }
 );
 
+export interface SpecificActionResponse {
+  status: string;
+  bot_id?: number;
+  tg_user_id?: number;
+  chat_id?: number;
+  affected_channels?: unknown;
+}
+
 export const specificInboxActionThunk = createAsyncThunk(
   'inboxEvents/specificAction',
   async (params: SpecificActionParams, { rejectWithValue }) => {
     const { eventId, action_type, payload } = params;
 
     try {
-      await apiRequest(
+      const response = await apiRequest<SpecificActionResponse>(
         `/inbox/${eventId}/action`,
         {
           method: 'POST',
@@ -150,7 +158,7 @@ export const specificInboxActionThunk = createAsyncThunk(
         }
       );
 
-      return params;
+      return { ...params, response };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка выполнения действия';
       return rejectWithValue(errorMessage);

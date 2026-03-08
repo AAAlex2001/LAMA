@@ -1,13 +1,12 @@
 'use client';
 
-import { FC, useState, useMemo, useRef } from "react";
+import React, { FC, useState, useMemo, useRef } from "react";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
 import { ListHeaderType } from "../InboxList/components/ListHeader";
-import { FilterSortIcon } from "@/components/icons";
+import { FilterSortIcon, ChevronDownIcon, SortClearIcon } from "@/components/icons";
 import { Button } from "@/components/new-button";
-import SortDropdown from "@/components/sort-dropdown";
 import SourceContent, { SourceFilterOption } from "./components/SourceComponent";
 import PopupFilter from "./components/PopupFilter";
 
@@ -41,7 +40,9 @@ const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>
 
 const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, currentView, setCurrentView, onTimeSortChange, onStatusFilterChange }) => {
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
+  const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
   const filterButtonRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
     time: "",
@@ -428,6 +429,47 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
     setChatSortValues(prev => ({ ...prev, [sortType]: "" }));
   };
 
+  function getButtonText(option: SortOption): string {
+    if (!option.value) return option.label;
+    if (option.items) {
+      const selectedItem = option.items.find((item) => item.value === option.value);
+      return selectedItem?.label || option.label;
+    }
+    return option.label;
+  }
+
+  function clearFilter(sortType: SortOptionType, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (currentView === "direct") {
+      handleChatSortClear(sortType);
+    } else {
+      handleSortClear(sortType);
+    }
+    setOpenFilter(null);
+  }
+
+  function toggleOption(option: SortOption, value: string) {
+    if (currentView === "direct") {
+      handleChatSortChange(option.type, value);
+    } else {
+      handleSortChange(option.type, value);
+    }
+    if (!option.content) {
+      setOpenFilter(null);
+    }
+  }
+
+  React.useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (!barRef.current?.contains(target)) {
+        setOpenFilter(null);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const filterOptions = [
     { id: "all", label: "Все" },
     { id: "moderation", label: "Модерация" },
@@ -439,7 +481,7 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
     return (
       <>
         <DesktopWrapper>
-          <div className={styles.sortingBar}>
+          <div className={styles.sortingBar} ref={barRef}>
             <Button
               onClick={() => setCurrentView("list")}
               variant="fill"
@@ -449,21 +491,65 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
             >
               Инбокс
             </Button>
-            <div className={styles.sortingControls}>
-              <span className={styles.sortingLabel}>Сортировка:</span>
-              {availableSortOptions.map((option) => (
-                <SortDropdown
-                  key={option.type}
-                  label={option.label}
-                  options={option.items}
-                  selectedValue={option.value}
-                  onSelect={(value: string) => handleChatSortChange(option.type, value)}
-                  onClear={() => handleChatSortClear(option.type)}
-                  width={option.width}
-                >
-                  {option.content}
-                </SortDropdown>
-              ))}
+            <div className={styles.sortBarDesktop}>
+              <span className={styles.sortLabel}>Сортировка:</span>
+              <div className={styles.sortGroup}>
+                {availableSortOptions.map((option) => {
+                  const isActive = !!option.value;
+                  const isOpen = openFilter === option.type;
+
+                  return (
+                    <div key={option.type} className={styles.sortDropdown}>
+                      <button
+                        type="button"
+                        className={isActive ? `${styles.sortButton} ${styles.sortButtonActive}` : styles.sortButton}
+                        onClick={() => setOpenFilter(isOpen ? null : option.type)}
+                      >
+                        <span className={styles.sortButtonText}>{getButtonText(option)}</span>
+                        <ChevronDownIcon className={styles.sortChevron} width={16} height={16} />
+                        {isActive && (
+                          <span className={styles.sortClear} onClick={(event) => clearFilter(option.type, event)}>
+                            <SortClearIcon />
+                          </span>
+                        )}
+                      </button>
+
+                      {isOpen && (
+                        <div className={styles.sortMenu} style={option.width ? { width: typeof option.width === 'number' ? `${option.width}px` : option.width, minWidth: typeof option.width === 'number' ? `${option.width}px` : option.width } : undefined}>
+                          {option.items ? (
+                            option.items.map((item) => {
+                              const checked = option.value === item.value;
+                              return (
+                                <button
+                                  key={item.value}
+                                  type="button"
+                                  className={styles.sortOption}
+                                  onClick={() => toggleOption(option, item.value)}
+                                >
+                                  <span
+                                    className={
+                                      checked
+                                        ? `${styles.sortRadio} ${styles.sortRadioActive}`
+                                        : styles.sortRadio
+                                    }
+                                  >
+                                    <span className={styles.sortRadioDot} />
+                                  </span>
+                                  <span className={styles.sortOptionText}>{item.label}</span>
+                                </button>
+                              );
+                            })
+                          ) : option.content ? (
+                            <div className={styles.sortMenuContent}>
+                              {option.content}
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </DesktopWrapper>
@@ -503,7 +589,7 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
   return (
     <>
       <DesktopWrapper>
-        <div className={styles.sortingBar}>
+        <div className={styles.sortingBar} ref={barRef}>
           <Button
             onClick={() => setCurrentView("direct")}
             variant="fill"
@@ -513,21 +599,65 @@ const SortingBar: FC<SortingBarProps> = ({ selectedFilter, setSelectedFilter, cu
           >
             Директ
           </Button>
-          <div className={styles.sortingControls}>
-            <span className={styles.sortingLabel}>Сортировка:</span>
-            {availableSortOptions.map((option) => (
-              <SortDropdown
-                key={option.type}
-                label={option.label}
-                options={option.items}
-                selectedValue={option.value}
-                onSelect={(value: string) => handleSortChange(option.type, value)}
-                onClear={() => handleSortClear(option.type)}
-                width={option.width}
-              >
-                {option.content}
-              </SortDropdown>
-            ))}
+          <div className={styles.sortBarDesktop}>
+            <span className={styles.sortLabel}>Сортировка:</span>
+            <div className={styles.sortGroup}>
+              {availableSortOptions.map((option) => {
+                const isActive = !!option.value;
+                const isOpen = openFilter === option.type;
+
+                return (
+                  <div key={option.type} className={styles.sortDropdown}>
+                    <button
+                      type="button"
+                      className={isActive ? `${styles.sortButton} ${styles.sortButtonActive}` : styles.sortButton}
+                      onClick={() => setOpenFilter(isOpen ? null : option.type)}
+                    >
+                      <span className={styles.sortButtonText}>{getButtonText(option)}</span>
+                      <ChevronDownIcon className={styles.sortChevron} width={16} height={16} />
+                      {isActive && (
+                        <span className={styles.sortClear} onClick={(event) => clearFilter(option.type, event)}>
+                          <SortClearIcon />
+                        </span>
+                      )}
+                    </button>
+
+                    {isOpen && (
+                      <div className={styles.sortMenu}>
+                        {option.items ? (
+                          option.items.map((item) => {
+                            const checked = option.value === item.value;
+                            return (
+                              <button
+                                key={item.value}
+                                type="button"
+                                className={styles.sortOption}
+                                onClick={() => toggleOption(option, item.value)}
+                              >
+                                <span
+                                  className={
+                                    checked
+                                      ? `${styles.sortRadio} ${styles.sortRadioActive}`
+                                      : styles.sortRadio
+                                  }
+                                >
+                                  <span className={styles.sortRadioDot} />
+                                </span>
+                                <span className={styles.sortOptionText}>{item.label}</span>
+                              </button>
+                            );
+                          })
+                        ) : option.content ? (
+                          <div className={styles.sortMenuContent}>
+                            {option.content}
+                          </div>
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
           <FilterTabs
             options={filterOptions}

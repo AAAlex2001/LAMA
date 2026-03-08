@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '../index';
 import {
   selectDirectChats,
@@ -41,6 +42,9 @@ import { directChatWs, type WsEvent } from '../services/directChatWs';
 export function useDirectChat() {
   const dispatch = useAppDispatch();
   const handlersSetRef = useRef(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const chatIdFromUrlRef = useRef<number | null>(null);
 
   const chats = useAppSelector(selectDirectChats);
   const chatsLoading = useAppSelector(selectDirectChatsLoading);
@@ -51,17 +55,13 @@ export function useDirectChat() {
   const unpinnedChats = useAppSelector(selectUnpinnedChats);
   const sendingMessage = useAppSelector(selectSendingMessage);
 
-  // Set up WS handlers once
   useEffect(() => {
     if (handlersSetRef.current) return;
     handlersSetRef.current = true;
 
     directChatWs.setHandlers(
-      // onEvent - handle WebSocket events from backend
       (event: WsEvent) => {
         if (event.type === 'message_new') {
-          // When a new message is received, refetch messages for that chat
-          // This ensures we get the full message data
           dispatch(fetchDirectMessagesThunk({
             botId: event.bot_id,
             tgChatId: event.chat_id,
@@ -69,7 +69,6 @@ export function useDirectChat() {
             limit: 50,
           }));
         } else if (event.type === 'message_edited' || event.type === 'message_deleted') {
-          // For edited/deleted messages, refetch to get updated state
           dispatch(fetchDirectMessagesThunk({
             botId: event.bot_id,
             tgChatId: event.chat_id,
@@ -77,11 +76,9 @@ export function useDirectChat() {
             limit: 50,
           }));
         } else if (event.type === 'chat_updated') {
-          // Refetch chats list when a chat is updated
           dispatch(fetchDirectChatsThunk({}));
         }
       },
-      // onStatus
       (connected) => {
         dispatch(setWsConnected(connected));
       }
@@ -92,7 +89,35 @@ export function useDirectChat() {
     };
   }, [dispatch]);
 
-  // Connect/disconnect WS when active chat changes
+  useEffect(() => {
+    const chatIdParam = searchParams?.get('chat_id');
+    if (chatIdParam) {
+      const chatId = parseInt(chatIdParam, 10);
+      if (!isNaN(chatId) && chatId > 0) {
+        chatIdFromUrlRef.current = chatId;
+        if (chats.length === 0 && !chatsLoading) {
+          dispatch(fetchDirectChatsThunk({}));
+        }
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('chat_id');
+          router.replace(url.pathname + url.search, { scroll: false });
+        }
+      }
+    }
+  }, [searchParams, router, chats.length, chatsLoading, dispatch]);
+
+  useEffect(() => {
+    if (chatIdFromUrlRef.current && chats.length > 0 && !chatsLoading) {
+      const chatId = chatIdFromUrlRef.current;
+      const chat = chats.find((c) => c.tg_chat_id === chatId);
+      if (chat && activeChatId !== chat.id) {
+        dispatch(setActiveChatId(chat.id));
+      }
+      chatIdFromUrlRef.current = null;
+    }
+  }, [chats, chatsLoading, activeChatId, dispatch]);
+
   useEffect(() => {
     if (activeChat) {
       directChatWs.connect(activeChat.bot_id, activeChat.tg_chat_id);
@@ -139,14 +164,13 @@ export function useDirectChat() {
       const sendParams: SendDirectMessageParams = {
         botId: activeChat.bot_id,
         tgChatId: activeChat.tg_chat_id,
-        chat_id: activeChat.tg_chat_id, // Backend requires chat_id in the body
+        chat_id: activeChat.tg_chat_id, 
         ...params,
       };
 
       dispatch(sendDirectMessageThunk(sendParams))
         .then((result) => {
           if (sendDirectMessageThunk.fulfilled.match(result)) {
-            // Message sent successfully, add it to the messages list
             dispatch(wsMessageReceived({
               tgChatId: activeChat.tg_chat_id,
               message: result.payload,

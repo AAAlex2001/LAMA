@@ -68,6 +68,7 @@ export type {
   FetchInboxEventsParams,
   BulkActionParams,
   SpecificActionParams,
+  SpecificActionResponse,
 } from './thunks/inboxEvents';
 export {
   selectFilteredItems,

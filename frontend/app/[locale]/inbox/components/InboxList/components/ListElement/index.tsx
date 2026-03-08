@@ -9,6 +9,7 @@ import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/Bloc
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
 import type { InboxEventResponse, EventType } from "../../../../store/thunks/inboxEvents";
+import { useRouter } from "next/navigation";
 
 const SOURCE_LABELS: Record<string, string> = {
   bot: 'Бот',
@@ -45,7 +46,7 @@ interface ListElementProps {
   type?: ListHeaderType;
   onCheck?: () => void;
   onHold?: () => void;
-  onSpecificAction?: (eventId: number, actionType: string, payload?: Record<string, unknown>) => void;
+  onSpecificAction?: (eventId: number, actionType: string, payload?: Record<string, unknown>) => any;
 }
 
 const ListElement: FC<ListElementProps> = ({
@@ -58,6 +59,7 @@ const ListElement: FC<ListElementProps> = ({
 }) => {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
+  const router = useRouter();
 
   const longPressProps = useLongPress({
     duration: 800,
@@ -69,8 +71,9 @@ const ListElement: FC<ListElementProps> = ({
   const shouldEnableLongPress = type === 'all';
   const isProcessed = item.status === 'processed';
 
-  const handleAction = (actionType: string, payload?: Record<string, unknown>) => {
-    onSpecificAction?.(item.id, actionType, payload);
+  const handleAction = async (actionType: string, payload?: Record<string, unknown>) => {
+    const response = await onSpecificAction?.(item.id, actionType, payload);
+    router.push(`/inbox?chat_id=${response?.payload?.response?.chat_id}`);
   };
 
   const handleBlockSave = (data: BlockModalData) => {
@@ -128,8 +131,8 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} className={btnClass} style={{ width: btnWidth }}>
-            <span className={buttonStyles.label}>Заблокировать</span>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Ответить</span>
           </Button>
         </div>
       );

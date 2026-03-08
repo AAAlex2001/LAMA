@@ -144,7 +144,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   }, [dispatch, checkedItems]);
 
   const handleSpecificAction = useCallback((eventId: number, actionType: string, payload?: Record<string, unknown>) => {
-    dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
+    return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
   }, [dispatch]);
 
   console.log(itemsLoading, 'itemsLoading');

@@ -4,60 +4,27 @@ import type { InboxEventResponse } from './thunks/inboxEvents';
 
 export const selectInbox = (s: RootState) => s.inbox;
 
-export const selectInboxItems = createSelector(
-  [(s: RootState) => s.inbox.items],
-  (items) => items,
-);
+export const selectInboxItems = (s: RootState) => s.inbox.items;
 
-export const selectInboxItemsLoading = createSelector(
-  [(s: RootState) => s.inbox.itemsLoading],
-  (loading) => loading,
-);
+export const selectInboxItemsLoading = (s: RootState) => s.inbox.itemsLoading;
 
-export const selectInboxItemsError = createSelector(
-  [(s: RootState) => s.inbox.itemsError],
-  (error) => error,
-);
+export const selectInboxItemsError = (s: RootState) => s.inbox.itemsError;
 
-export const selectInboxItemsTotal = createSelector(
-  [(s: RootState) => s.inbox.itemsTotal],
-  (total) => total,
-);
+export const selectInboxItemsTotal = (s: RootState) => s.inbox.itemsTotal;
 
-export const selectInboxItemsHasMore = createSelector(
-  [(s: RootState) => s.inbox.itemsHasMore],
-  (hasMore) => hasMore,
-);
+export const selectInboxItemsHasMore = (s: RootState) => s.inbox.itemsHasMore;
 
-export const selectInboxItemsOffset = createSelector(
-  [(s: RootState) => s.inbox.itemsOffset],
-  (offset) => offset,
-);
+export const selectInboxItemsOffset = (s: RootState) => s.inbox.itemsOffset;
 
-export const selectBulkActionLoading = createSelector(
-  [(s: RootState) => s.inbox.bulkActionLoading],
-  (loading) => loading,
-);
+export const selectBulkActionLoading = (s: RootState) => s.inbox.bulkActionLoading;
 
-export const selectSpecificActionLoading = createSelector(
-  [(s: RootState) => s.inbox.specificActionLoading],
-  (loading) => loading,
-);
+export const selectSpecificActionLoading = (s: RootState) => s.inbox.specificActionLoading;
 
-export const selectSelectedFilter = createSelector(
-  [(s: RootState) => s.inbox.selectedFilter],
-  (filter) => filter,
-);
+export const selectSelectedFilter = (s: RootState) => s.inbox.selectedFilter;
 
-export const selectSortDir = createSelector(
-  [(s: RootState) => s.inbox.sortDir],
-  (sortDir) => sortDir,
-);
+export const selectSortDir = (s: RootState) => s.inbox.sortDir;
 
-export const selectStatusFilter = createSelector(
-  [(s: RootState) => s.inbox.statusFilter],
-  (statusFilter) => statusFilter,
-);
+export const selectStatusFilter = (s: RootState) => s.inbox.statusFilter;
 
 export const selectFilteredItems = createSelector(
   [
@@ -117,15 +84,9 @@ export const selectSortedItems = createSelector(
   },
 );
 
-export const selectChannels = createSelector(
-  [(s: RootState) => s.channels.channels],
-  (channels) => channels,
-);
+export const selectChannels = (s: RootState) => s.channels.channels;
 
-export const selectChannelsLoading = createSelector(
-  [(s: RootState) => s.channels.loading],
-  (loading) => loading,
-);
+export const selectChannelsLoading = (s: RootState) => s.channels.loading;
 
 export const selectChannelsPagination = createSelector(
   [
@@ -149,35 +110,17 @@ export const selectInviteLinksLoading = (channelId: number) => createSelector(
   (inviteLinksLoading) => inviteLinksLoading[channelId] || false,
 );
 
-export const selectBots = createSelector(
-  [(s: RootState) => s.bots.bots],
-  (bots) => bots,
-);
+export const selectBots = (s: RootState) => s.bots.bots;
 
-export const selectBotsLoading = createSelector(
-  [(s: RootState) => s.bots.loading],
-  (loading) => loading,
-);
+export const selectBotsLoading = (s: RootState) => s.bots.loading;
 
-export const selectDirectChats = createSelector(
-  [(s: RootState) => s.directChat.chats],
-  (chats) => chats,
-);
+export const selectDirectChats = (s: RootState) => s.directChat.chats;
 
-export const selectDirectChatsLoading = createSelector(
-  [(s: RootState) => s.directChat.chatsLoading],
-  (loading) => loading,
-);
+export const selectDirectChatsLoading = (s: RootState) => s.directChat.chatsLoading;
 
-export const selectDirectChatsError = createSelector(
-  [(s: RootState) => s.directChat.chatsError],
-  (error) => error,
-);
+export const selectDirectChatsError = (s: RootState) => s.directChat.chatsError;
 
-export const selectActiveChatId = createSelector(
-  [(s: RootState) => s.directChat.activeChatId],
-  (id) => id,
-);
+export const selectActiveChatId = (s: RootState) => s.directChat.activeChatId;
 
 export const selectActiveChat = createSelector(
   [
@@ -222,12 +165,6 @@ export const selectDirectMessagesHasMore = (tgChatId: number) => createSelector(
   (hasMore) => hasMore[tgChatId] || false,
 );
 
-export const selectSendingMessage = createSelector(
-  [(s: RootState) => s.directChat.sendingMessage],
-  (sending) => sending,
-);
+export const selectSendingMessage = (s: RootState) => s.directChat.sendingMessage;
 
-export const selectWsConnected = createSelector(
-  [(s: RootState) => s.directChat.wsConnected],
-  (connected) => connected,
-);
+export const selectWsConnected = (s: RootState) => s.directChat.wsConnected;

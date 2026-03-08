@@ -71,7 +71,6 @@ const directChatSlice = createSlice({
       }
       const exists = state.messages[tgChatId].some((m) => m.id === message.id);
       if (!exists) {
-        // Insert message in sorted position (descending by created_at)
         const messages = state.messages[tgChatId];
         const messageTime = new Date(message.created_at).getTime();
         let insertIndex = messages.length;
@@ -84,15 +83,13 @@ const directChatSlice = createSlice({
         }
         messages.splice(insertIndex, 0, message);
       } else {
-        // Update existing message in place
         const idx = state.messages[tgChatId].findIndex((m) => m.id === message.id);
         if (idx !== -1) {
           state.messages[tgChatId][idx] = message;
-          // Re-sort to maintain order after update
           state.messages[tgChatId].sort((a, b) => {
             const timeA = new Date(a.created_at).getTime();
             const timeB = new Date(b.created_at).getTime();
-            return timeB - timeA; // Descending order
+            return timeB - timeA;
           });
         }
       }
@@ -146,18 +143,16 @@ const directChatSlice = createSlice({
           const existing = state.messages[tgChatId] || [];
           const existingIds = new Set(existing.map((m) => m.id));
           const newMessages = response.items.filter((m) => !existingIds.has(m.id));
-          // Merge and sort in descending order (newest first)
           state.messages[tgChatId] = [...existing, ...newMessages].sort((a, b) => {
             const timeA = new Date(a.created_at).getTime();
             const timeB = new Date(b.created_at).getTime();
-            return timeB - timeA; // Descending order
+            return timeB - timeA;
           });
         } else {
-          // Sort in descending order (newest first)
           state.messages[tgChatId] = [...response.items].sort((a, b) => {
             const timeA = new Date(a.created_at).getTime();
             const timeB = new Date(b.created_at).getTime();
-            return timeB - timeA; // Descending order
+            return timeB - timeA;
           });
         }
 
@@ -187,11 +182,10 @@ const directChatSlice = createSlice({
           const idx = chatMessages.findIndex((m) => m.id === updated.id);
           if (idx !== -1) {
             chatMessages[idx] = updated;
-            // Re-sort to maintain order after update
             chatMessages.sort((a, b) => {
               const timeA = new Date(a.created_at).getTime();
               const timeB = new Date(b.created_at).getTime();
-              return timeB - timeA; // Descending order
+              return timeB - timeA;
             });
             break;
           }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import InboxList from "./components/InboxList";
 import SortingBar from "./components/SortingBar";
 import styles from "./styles.module.scss";
@@ -18,6 +19,7 @@ import type { ListFilterType } from "./store";
 
 const InboxView = () => {
   const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
 
   const selectedFilter = useAppSelector((s) => s.inbox.selectedFilter);
   const currentView = useAppSelector((s) => s.inbox.currentView);
@@ -30,6 +32,13 @@ const InboxView = () => {
     dispatch(fetchChannelsThunk({}));
     dispatch(fetchBotsThunk({}));
   }, [dispatch]);
+
+  useEffect(() => {
+    const chatIdParam = searchParams?.get('chat_id');
+    if (chatIdParam && currentView !== 'direct') {
+      dispatch(setCurrentView('direct'));
+    }
+  }, [searchParams, currentView, dispatch]);
 
   const handleFilterChange = (filter: ListHeaderType) => {
     dispatch(setSelectedFilter(filter as ListFilterType));

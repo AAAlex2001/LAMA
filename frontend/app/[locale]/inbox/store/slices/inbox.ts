@@ -69,7 +69,6 @@ const inboxSlice = createSlice({
   reducers: {
     setSelectedFilter(state, action: PayloadAction<ListFilterType>) {
       state.selectedFilter = action.payload;
-      // Reset pagination on filter change
       state.items = [];
       state.itemsOffset = 0;
       state.itemsHasMore = true;
@@ -140,7 +139,6 @@ const inboxSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    // Fetch inbox events
     builder
       .addCase(fetchInboxEventsThunk.pending, (state) => {
         state.itemsLoading = true;
@@ -168,7 +166,6 @@ const inboxSlice = createSlice({
         state.itemsError = action.payload as string;
       });
 
-    // Bulk action
     builder
       .addCase(bulkInboxActionThunk.pending, (state) => {
         state.bulkActionLoading = true;
