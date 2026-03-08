@@ -12,7 +12,7 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 're
 import { useMessageMedia } from './hooks/useMessageMedia';
 import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
-import { SendIcon, CloseIcon } from '@/components/icons';
+import { SendIcon, CloseIcon, ReplyIcon } from '@/components/icons';
 import EditIcon from '@/components/icons/edit-icon';
 import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -32,9 +32,11 @@ interface MessageFieldProps {
   onSendMessage: () => Promise<void>;
   editingMessage?: { id: number; text: string } | null;
   onCancelEdit?: () => void;
+  replyingTo?: { id: number; text: string } | null;
+  onCancelReply?: () => void;
 }
 
-const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, onChange, onSendMessage, editingMessage, onCancelEdit }, ref) => {
+const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, onChange, onSendMessage, editingMessage, onCancelEdit, replyingTo, onCancelReply }, ref) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const {
     mediaFiles,
@@ -75,10 +77,10 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
   const { showSuccess } = useNotifications();
 
   useEffect(() => {
-    if (editingMessage) {
+    if (editingMessage || replyingTo) {
       inputRef.current?.focus();
     }
-  }, [editingMessage]);
+  }, [editingMessage, replyingTo]);
 
   const canShowInlineButtons = mediaFiles.length <= 1;
 
@@ -124,9 +126,14 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
       e.preventDefault();
       handleSendMessage();
     }
-    if (e.key === 'Escape' && editingMessage) {
-      e.preventDefault();
-      onCancelEdit?.();
+    if (e.key === 'Escape') {
+      if (editingMessage) {
+        e.preventDefault();
+        onCancelEdit?.();
+      } else if (replyingTo) {
+        e.preventDefault();
+        onCancelReply?.();
+      }
     }
   };
 
@@ -161,6 +168,18 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
               <span className={styles.editBarText}>{editingMessage.text}</span>
             </div>
             <button className={styles.editBarClose} type="button" onClick={onCancelEdit}>
+              <CloseIcon width={18} height={18} />
+            </button>
+          </div>
+        )}
+        {!editingMessage && replyingTo && (
+          <div className={styles.replyBar}>
+            <ReplyIcon width={18} height={18} color="var(--color-lama-blue)" />
+            <div className={styles.editBarContent}>
+              <span className={styles.editBarLabel}>Ответ</span>
+              <span className={styles.editBarText}>{replyingTo.text}</span>
+            </div>
+            <button className={styles.editBarClose} type="button" onClick={onCancelReply}>
               <CloseIcon width={18} height={18} />
             </button>
           </div>

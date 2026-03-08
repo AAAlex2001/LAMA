@@ -5,6 +5,7 @@ import styles from './styles.module.scss';
 import EditIcon from '@/components/icons/edit-icon';
 import TrashIcon from '@/components/icons/trash-icon';
 import UserIcon from '@/components/icons/user-icon';
+import { ReplyIcon } from '@/components/icons';
 import DeleteConfirmationModal from '@/components/modal';
 import { createObjectUrls, revokeObjectUrls, createMediaRuns } from '@/components/post-preview-modal/store';
 import MediaPreview from '@/components/post-preview-modal/media-preview/media-preview';
@@ -25,10 +26,11 @@ export interface MessageProps {
   mediaItems?: MediaItem[];
   time?: string;
   onEdit?: () => void;
+  onReply?: () => void;
   onDelete?: () => void;
 }
 
-const MessageElement = ({ type, text, mediaItems, time, onEdit, onDelete }: MessageProps) => {
+const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -142,7 +144,14 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onDelete }: Mess
             )}
           </div>
           {text && <p className={styles.messageText}>{text}</p>}
-          {time && <span className={styles.incomingTime}>{time}</span>}
+          <div className={styles.incomingMeta}>
+            {onReply && (
+              <button className={styles.incomingReplyAction} onClick={onReply} type="button">
+                <ReplyIcon width={18} height={18} />
+              </button>
+            )}
+            {time && <span className={styles.incomingTime}>{time}</span>}
+          </div>
         </div>
       </div>
     );

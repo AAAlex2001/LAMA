@@ -56,6 +56,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     editMessage,
     deleteMessage,
     fetchMessages,
+    replyToMessageId,
+    setReplyToMessageId,
   } = useDirectChat();
 
   const tgChatId = activeChat?.tg_chat_id ?? 0;
@@ -63,6 +65,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
   const [message, setMessage] = useState('');
   const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{ id: number; text: string } | null>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prevMessagesRef = useRef<string>('');
@@ -110,6 +113,16 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
       shouldScrollAfterSendRef.current = false;
     }
   }, [lastMessageId, loading]);
+
+  useEffect(() => {
+    if (replyToMessageId && messages.length > 0) {
+      const msg = messages.find((m) => m.telegram_message_id === replyToMessageId);
+      if (msg) {
+        setReplyingTo({ id: msg.telegram_message_id, text: msg.text_content || '' });
+      }
+      setReplyToMessageId(null);
+    }
+  }, [replyToMessageId, messages, setReplyToMessageId]);
 
   const messagesWithDate = useMemo(
     () => {
@@ -174,9 +187,11 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
       text_content: hasText ? message : undefined,
       media_url: mediaUrl,
       media_type: mediaType,
+      reply_to_message_id: replyingTo?.id,
     });
-    
+
     setMessage('');
+    setReplyingTo(null);
     shouldScrollAfterSendRef.current = true;
   };
 
@@ -208,6 +223,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
   const handleStartEdit = useCallback((msg: BotMessageResponse & { date: Date }) => {
     setEditingMessage({ id: msg.id, text: msg.text_content || '' });
+    setReplyingTo(null);
     setMessage(msg.text_content || '');
     messageFieldRef.current?.handleClearMedia();
   }, []);
@@ -215,6 +231,15 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   const handleCancelEdit = useCallback(() => {
     setEditingMessage(null);
     setMessage('');
+  }, []);
+
+  const handleStartReply = useCallback((msg: BotMessageResponse & { date: Date }) => {
+    setReplyingTo({ id: msg.telegram_message_id, text: msg.text_content || '' });
+    setEditingMessage(null);
+  }, []);
+
+  const handleCancelReply = useCallback(() => {
+    setReplyingTo(null);
   }, []);
 
   const handleSendOrEdit = async () => {
@@ -294,6 +319,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
               mediaItems={mapMediaItems(msg)}
               time={formatMessageTime(msg.created_at)}
               onEdit={!msg.is_incoming ? () => handleStartEdit(msg) : undefined}
+              onReply={msg.is_incoming ? () => handleStartReply(msg) : undefined}
               onDelete={() => handleDeleteMessage(msg.id)}
             />
           </div>
@@ -307,6 +333,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
         onSendMessage={handleSendOrEdit}
         editingMessage={editingMessage}
         onCancelEdit={handleCancelEdit}
+        replyingTo={replyingTo}
+        onCancelReply={handleCancelReply}
       />
     </div>
   );

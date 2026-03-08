@@ -74,7 +74,12 @@ const ListElement: FC<ListElementProps> = ({
   const handleAction = async (actionType: string, payload?: Record<string, unknown>) => {
     const response = await onSpecificAction?.(item.id, actionType, payload);
     if (actionType === 'reply') {
-      router.push(`/inbox?chat_id=${response?.payload?.response?.chat_id}`);
+      const chatId = response?.payload?.response?.chat_id;
+      const messageId = item.payload?.telegram_message_id;
+      const url = messageId
+        ? `/inbox?chat_id=${chatId}&message_id=${messageId}`
+        : `/inbox?chat_id=${chatId}`;
+      router.push(url);
     }
   };
 

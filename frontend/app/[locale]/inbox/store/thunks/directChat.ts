@@ -73,6 +73,7 @@ export interface SendDirectMessageParams {
   media_url?: string;
   media_type?: MessageType;
   buttons?: Record<string, unknown>;
+  reply_to_message_id?: number;
 }
 
 export interface EditDirectMessageParams {

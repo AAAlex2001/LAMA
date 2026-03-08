@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '../index';
 import {
@@ -45,6 +45,8 @@ export function useDirectChat() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const chatIdFromUrlRef = useRef<number | null>(null);
+  const messageIdFromUrlRef = useRef<number | null>(null);
+  const [replyToMessageId, setReplyToMessageId] = useState<number | null>(null);
 
   const chats = useAppSelector(selectDirectChats);
   const chatsLoading = useAppSelector(selectDirectChatsLoading);
@@ -95,12 +97,20 @@ export function useDirectChat() {
       const chatId = parseInt(chatIdParam, 10);
       if (!isNaN(chatId) && chatId > 0) {
         chatIdFromUrlRef.current = chatId;
+        const messageIdParam = searchParams?.get('message_id');
+        if (messageIdParam) {
+          const msgId = parseInt(messageIdParam, 10);
+          if (!isNaN(msgId) && msgId > 0) {
+            messageIdFromUrlRef.current = msgId;
+          }
+        }
         if (chats.length === 0 && !chatsLoading) {
           dispatch(fetchDirectChatsThunk({}));
         }
         if (typeof window !== 'undefined') {
           const url = new URL(window.location.href);
           url.searchParams.delete('chat_id');
+          url.searchParams.delete('message_id');
           router.replace(url.pathname + url.search, { scroll: false });
         }
       }
@@ -113,6 +123,10 @@ export function useDirectChat() {
       const chat = chats.find((c) => c.tg_chat_id === chatId);
       if (chat && activeChatId !== chat.id) {
         dispatch(setActiveChatId(chat.id));
+      }
+      if (messageIdFromUrlRef.current) {
+        setReplyToMessageId(messageIdFromUrlRef.current);
+        messageIdFromUrlRef.current = null;
       }
       chatIdFromUrlRef.current = null;
     }
@@ -153,6 +167,7 @@ export function useDirectChat() {
       media_url?: string;
       media_type?: MessageType;
       buttons?: Record<string, unknown>;
+      reply_to_message_id?: number;
     }) => {
       if (!activeChat) {
         console.warn('No active chat, cannot send message');
@@ -160,11 +175,11 @@ export function useDirectChat() {
       }
 
       dispatch(setSendingMessage(true));
-      
+
       const sendParams: SendDirectMessageParams = {
         botId: activeChat.bot_id,
         tgChatId: activeChat.tg_chat_id,
-        chat_id: activeChat.tg_chat_id, 
+        chat_id: activeChat.tg_chat_id,
         ...params,
       };
 
@@ -243,6 +258,7 @@ export function useDirectChat() {
     pinnedChats,
     unpinnedChats,
     sendingMessage,
+    replyToMessageId,
 
     setActiveChat,
     fetchChats,
@@ -255,6 +271,7 @@ export function useDirectChat() {
     unblockChat,
     editMessage,
     deleteMessage,
+    setReplyToMessageId,
   };
 }
 
