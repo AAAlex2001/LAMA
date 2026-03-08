@@ -17,6 +17,10 @@ import {
   selectSelectedFilter,
   setSortDir,
   setStatusFilter,
+  setCurrentView,
+  setActiveChatId,
+  fetchDirectChatsThunk,
+  selectDirectChats,
 } from "../../store";
 import type { ListFilterType } from "../../store";
 
@@ -42,6 +46,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
+  const chats = useAppSelector(selectDirectChats);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);
@@ -143,9 +148,28 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     setIsChecking(false);
   }, [dispatch, checkedItems]);
 
-  const handleSpecificAction = useCallback((eventId: number, actionType: string, payload?: Record<string, unknown>) => {
-    dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
-  }, [dispatch]);
+  const handleSpecificAction = useCallback(async (eventId: number, actionType: string, payload?: Record<string, unknown>) => {
+    try {
+      const result = await dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload })).unwrap();
+
+      if (actionType === 'reply' && result.bot_id && result.tg_user_id) {
+        let targetChatId: number | null = null;
+        const existing = chats.find(c => c.bot_id === result.bot_id && c.tg_chat_id === result.tg_user_id);
+        if (existing) {
+          targetChatId = existing.id;
+        } else {
+          const fetched = await dispatch(fetchDirectChatsThunk({})).unwrap();
+          const found = fetched.items.find(c => c.bot_id === result.bot_id && c.tg_chat_id === result.tg_user_id);
+          if (found) targetChatId = found.id;
+        }
+
+        dispatch(setActiveChatId(targetChatId));
+        dispatch(setCurrentView('direct'));
+      }
+    } catch {
+      // ошибка уже обработана внутри thunk
+    }
+  }, [dispatch, chats]);
 
   console.log(itemsLoading, 'itemsLoading');
   console.log(isEmpty, 'isEmpty');

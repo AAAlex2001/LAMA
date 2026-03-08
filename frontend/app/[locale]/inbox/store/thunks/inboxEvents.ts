@@ -70,6 +70,15 @@ export interface SpecificActionParams {
   payload?: Record<string, unknown>;
 }
 
+export interface SpecificActionResult {
+  status: string;
+  bot_id?: number | null;
+  tg_user_id?: number | null;
+  chat_id?: number | null;
+  affected_channels?: number[] | null;
+  eventId: number;
+}
+
 export const fetchInboxEventsThunk = createAsyncThunk(
   'inboxEvents/fetch',
   async (params: FetchInboxEventsParams, { rejectWithValue }) => {
@@ -142,7 +151,7 @@ export const specificInboxActionThunk = createAsyncThunk(
     const { eventId, action_type, payload } = params;
 
     try {
-      await apiRequest(
+      const result = await apiRequest<SpecificActionResult>(
         `/inbox/${eventId}/action`,
         {
           method: 'POST',
@@ -150,7 +159,7 @@ export const specificInboxActionThunk = createAsyncThunk(
         }
       );
 
-      return params;
+      return { ...result, eventId };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка выполнения действия';
       return rejectWithValue(errorMessage);
