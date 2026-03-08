@@ -178,7 +178,7 @@ class CommandProcessor:
                         "channel_id": channel_id,
                         "tg_user_id": target_user_id,
                         "tg_username": target_name,
-                        "status": EventStatus.PROCESSED,
+                        "status": EventStatus.NEW,
                         "description": (
                             f"{'Разбан' if is_unbanned else 'Бан'} "
                             f"{'(mute)' if ban_type == 'mute' else ''} "
@@ -206,7 +206,7 @@ class CommandProcessor:
                         "channel_id": channel_id,
                         "tg_user_id": message.from_user.id if message.from_user else None,
                         "tg_username": message.from_user.username if message.from_user else None,
-                        "status": EventStatus.PROCESSED if handled else EventStatus.NEW,
+                        "status": EventStatus.NEW,
                         "description": f"Command {command_text} called in chat {message.chat.id}",
                         "payload": {
                             "command": command_text,

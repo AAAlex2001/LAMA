@@ -39,6 +39,7 @@ class MessageHandler:
         )
 
         try:
+            saved_msg = None
             if chat_type == "private" and message.from_user:
                 chat_svc = DirectChatService(self.db)
                 msg_svc = DirectMessageService(self.db)
@@ -52,7 +53,7 @@ class MessageHandler:
                     tg_last_name=message.from_user.last_name
                 )
                 await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
-                await msg_svc.save_incoming_message(
+                saved_msg = await msg_svc.save_incoming_message(
                     bot_id=self.bot_model.id,
                     owner_id=self.bot_model.owner_id,
                     message=message.model_dump()
@@ -95,6 +96,17 @@ class MessageHandler:
                         logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
 
             async with get_bot_session(self.bot_model.token) as telegram_bot:
+                if saved_msg and saved_msg.media_file_id and not saved_msg.media_url:
+                    try:
+                        tg_file = await telegram_bot.get_file(saved_msg.media_file_id)
+                        if tg_file.file_path:
+                            saved_msg.media_url = (
+                                f"https://api.telegram.org/file/"
+                                f"bot{self.bot_model.token}/{tg_file.file_path}"
+                            )
+                            await self.db.commit()
+                    except Exception as e:
+                        logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
                 # Удаление системных сообщений
                 auto_delete_service = ChannelAutoDeleteService(self.db)
                 if await auto_delete_service.delete_if_system(telegram_bot, message):
