@@ -56,7 +56,7 @@ class MessageHandler:
                 saved_msg = await msg_svc.save_incoming_message(
                     bot_id=self.bot_model.id,
                     owner_id=self.bot_model.owner_id,
-                    message=message.model_dump()
+                    message=message
                 )
 
                 is_command = bool(text_content and text_content.startswith("/"))

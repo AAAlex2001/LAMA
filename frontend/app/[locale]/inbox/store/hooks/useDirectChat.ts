@@ -162,16 +162,17 @@ export function useDirectChat() {
   );
 
   const sendMessage = useCallback(
-    (params: {
+    async (params: {
       text_content?: string;
       media_url?: string;
+      media_urls?: string[];
       media_type?: MessageType;
       buttons?: Record<string, unknown>;
       reply_to_message_id?: number;
     }) => {
       if (!activeChat) {
         console.warn('No active chat, cannot send message');
-        return;
+        return null;
       }
 
       dispatch(setSendingMessage(true));
@@ -183,19 +184,21 @@ export function useDirectChat() {
         ...params,
       };
 
-      dispatch(sendDirectMessageThunk(sendParams))
-        .then((result) => {
-          if (sendDirectMessageThunk.fulfilled.match(result)) {
+      try {
+        const result = await dispatch(sendDirectMessageThunk(sendParams));
+        if (sendDirectMessageThunk.fulfilled.match(result)) {
+          for (const message of result.payload.items) {
             dispatch(wsMessageReceived({
               tgChatId: activeChat.tg_chat_id,
-              message: result.payload,
+              message,
             }));
           }
-          dispatch(setSendingMessage(false));
-        })
-        .catch(() => {
-          dispatch(setSendingMessage(false));
-        });
+          return result.payload.items;
+        }
+        return null;
+      } finally {
+        dispatch(setSendingMessage(false));
+      }
     },
     [dispatch, activeChat]
   );

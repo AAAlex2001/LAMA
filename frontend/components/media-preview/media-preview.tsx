@@ -10,6 +10,7 @@ export interface MediaFile {
   type: 'image' | 'video' | 'document';
   file?: File;
   url?: string;
+  name?: string;
   preview_url?: string;
   thumbnail_url?: string | null;
   blur?: boolean;

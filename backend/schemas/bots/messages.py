@@ -13,6 +13,7 @@ class SendMessageRequest(BaseModel):
     chat_id: int
     text_content: Optional[str] = None
     media_url: Optional[str] = None
+    media_urls: Optional[List[str]] = None
     media_type: Optional[MessageType] = None
     buttons: Optional[Dict[str, Any]] = None
 
@@ -27,10 +28,17 @@ class BotMessageResponse(BaseModel):
     text_content: Optional[str]
     media_file_id: Optional[str]
     media_url: Optional[str]
+    media_group_id: Optional[str] = None
+    media_name: Optional[str] = None
+    media_size: Optional[int] = None
     is_incoming: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+class BotMessageBatchResponse(BaseModel):
+    """Схема ответа пакетной отправки сообщений бота"""
+    items: List[BotMessageResponse]
 
 class BotMessageListResponse(BaseModel):
     """Схема списка сообщений бота"""

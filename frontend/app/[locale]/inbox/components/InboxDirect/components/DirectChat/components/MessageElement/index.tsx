@@ -18,6 +18,8 @@ export interface MediaItem {
   src?: string;
   file?: File;
   id?: string;
+  name?: string;
+  size?: number;
 }
 
 export interface MessageProps {
@@ -54,6 +56,8 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
       type: (item.type === 'image' ? 'image' : item.type === 'video' ? 'video' : 'document') as 'image' | 'video' | 'document',
       file: item.file,
       url: item.src,
+      name: item.name,
+      size: item.size,
     }));
 
   const filesNeedingUrls = mediaFiles.filter((m) => m.file && (m.type === 'image' || m.type === 'video' || m.type === 'document'));
@@ -172,14 +176,20 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
           </div>
           {text && <p className={styles.messageText}>{text}</p>}
           <div className={styles.outgoingMeta}>
-            <div className={styles.msgActions}>
-              <button className={styles.msgAction} onClick={onEdit}>
-                <EditIcon width={20} height={20} color="#F1F5FB" />
-              </button>
-              <button className={styles.msgAction} onClick={handleDeleteClick}>
-                <TrashIcon width={20} height={20} color="#F1F5FB" />
-              </button>
-            </div>
+            {(onEdit || onDelete) && (
+              <div className={styles.msgActions}>
+                {onEdit && (
+                  <button className={styles.msgAction} onClick={onEdit}>
+                    <EditIcon width={20} height={20} color="#F1F5FB" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button className={styles.msgAction} onClick={handleDeleteClick}>
+                    <TrashIcon width={20} height={20} color="#F1F5FB" />
+                  </button>
+                )}
+              </div>
+            )}
             {time && <span className={styles.outgoingTime}>{time}</span>}
           </div>
         </div>

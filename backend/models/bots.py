@@ -158,6 +158,51 @@ class BotMessage(Base):
     # Relationships
     bot = relationship("Bot", back_populates="messages")
 
+    @property
+    def media_group_id(self) -> Optional[str]:
+        if not self.raw_data:
+            return None
+
+        media_group_id = self.raw_data.get("media_group_id")
+        if media_group_id is None:
+            return None
+
+        return str(media_group_id)
+
+    @property
+    def media_name(self) -> Optional[str]:
+        if not self.raw_data:
+            return None
+
+        document = self.raw_data.get("document")
+        if document and document.get("file_name"):
+            return str(document["file_name"])
+
+        audio = self.raw_data.get("audio")
+        if audio:
+            if audio.get("file_name"):
+                return str(audio["file_name"])
+            if audio.get("title"):
+                return str(audio["title"])
+
+        voice = self.raw_data.get("voice")
+        if voice and voice.get("file_unique_id"):
+            return f"voice_{voice['file_unique_id']}"
+
+        return None
+
+    @property
+    def media_size(self) -> Optional[int]:
+        if not self.raw_data:
+            return None
+
+        for key in ("document", "audio", "voice", "video", "animation"):
+            media = self.raw_data.get(key)
+            if media and media.get("file_size") is not None:
+                return int(media["file_size"])
+
+        return None
+
 
 class CommandScope(str, enum.Enum):
     """Область работы команды"""

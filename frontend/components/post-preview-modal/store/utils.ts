@@ -38,6 +38,7 @@ export function formatBytes(size?: number): string {
 
 export function getDocumentName(m: MediaFile): string {
   if (m.file?.name) return m.file.name;
+  if (m.name) return m.name;
   try {
     const raw = m.url || '';
     const last = raw.split('/').pop() || '';

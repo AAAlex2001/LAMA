@@ -24,8 +24,7 @@ function mapMessageType(msg: BotMessageResponse): 'incoming' | 'outgoing' | 'sys
   return msg.is_incoming ? 'incoming' : 'outgoing';
 }
 
-function mapMediaItems(msg: BotMessageResponse) {
-  if (!msg.media_url) return undefined;
+function mapMediaItems(messages: BotMessageResponse[]) {
   const typeMap: Record<string, 'image' | 'video' | 'file'> = {
     PHOTO: 'image',
     VIDEO: 'video',
@@ -33,11 +32,30 @@ function mapMediaItems(msg: BotMessageResponse) {
     AUDIO: 'file',
     ANIMATION: 'video',
   };
-  return [{
-    type: typeMap[msg.message_type] || 'file',
-    src: msg.media_url,
-    id: String(msg.id),
-  }];
+
+  const items = messages
+    .filter((msg) => Boolean(msg.media_url) || msg.message_type === 'DOCUMENT' || msg.message_type === 'AUDIO')
+    .map((msg) => ({
+      type: typeMap[msg.message_type] || 'file',
+      src: msg.media_url || undefined,
+      id: String(msg.id),
+      name: msg.media_name || undefined,
+      size: msg.media_size || undefined,
+    }));
+
+  return items.length > 0 ? items : undefined;
+}
+
+interface RenderedMessageGroup {
+  id: string;
+  date: Date;
+  time: string;
+  type: 'incoming' | 'outgoing' | 'system';
+  text?: string;
+  mediaItems?: ReturnType<typeof mapMediaItems>;
+  onEdit?: () => void;
+  onReply?: () => void;
+  onDelete?: () => void;
 }
 
 interface DirectChatProps {
@@ -124,95 +142,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     }
   }, [replyToMessageId, messages, setReplyToMessageId]);
 
-  const messagesWithDate = useMemo(
-    () => {
-      const reversedMessages = [...messages].reverse();
-      return reversedMessages.map((msg) => ({
-        ...msg,
-        date: new Date(msg.created_at),
-      }));
-    },
-    [messages]
-  );
-
-  const { visibleDate, showDateSeparator } = useDateSeparator({
-    messages: messagesWithDate,
-    messageListRef,
-    messageRefs,
-  });
-
-  const handleSendMessage = async () => {
-    if (!activeChat) return;
-    
-    const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
-    const hasText = message.trim().length > 0;
-    const hasMedia = mediaFiles.length > 0;
-    
-    if (!hasText && !hasMedia) return;
-    
-    let mediaUrl: string | undefined;
-    let mediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | undefined;
-    
-    if (hasMedia && mediaFiles[0].file && !mediaFiles[0].url) {
-      try {
-        const uploaded = await uploadMediaFile(mediaFiles[0].file);
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
-        
-        const fileType = mediaFiles[0].type;
-        if (fileType === 'image') {
-          mediaType = 'PHOTO';
-        } else if (fileType === 'video') {
-          mediaType = 'VIDEO';
-        } else {
-          mediaType = 'DOCUMENT';
-        }
-      } catch (error) {
-        console.error('Failed to upload media:', error);
-        return;
-      }
-    } else if (hasMedia && mediaFiles[0].url) {
-      mediaUrl = mediaFiles[0].url;
-      const fileType = mediaFiles[0].type;
-      if (fileType === 'image') {
-        mediaType = 'PHOTO';
-      } else if (fileType === 'video') {
-        mediaType = 'VIDEO';
-      } else {
-        mediaType = 'DOCUMENT';
-      }
-    }
-    
-    sendMessage({
-      text_content: hasText ? message : undefined,
-      media_url: mediaUrl,
-      media_type: mediaType,
-      reply_to_message_id: replyingTo?.id,
-    });
-
-    setMessage('');
-    setReplyingTo(null);
-    shouldScrollAfterSendRef.current = true;
-  };
-
-  const handlePinChat = async () => {
-    if (!activeChatId) return;
-    if (isPinned) {
-      await unpinChat(activeChatId);
-    } else {
-      await pinChat(activeChatId);
-    }
-  };
-
-  const handleBlockChat = async () => {
-    if (!activeChatId) return;
-    if (isBlocked) {
-      await unblockChat(activeChatId);
-    } else {
-      await blockChat(activeChatId);
-    }
-  };
-
   const handleDeleteMessage = async (messageId: number) => {
     if (!activeChat) return;
     await deleteMessage({
@@ -242,6 +171,123 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     setReplyingTo(null);
   }, []);
 
+  const renderedMessages = useMemo<RenderedMessageGroup[]>(() => {
+    const reversedMessages = [...messages].reverse();
+    const groups: Array<{ messages: BotMessageResponse[] }> = [];
+
+    for (const msg of reversedMessages) {
+      const lastGroup = groups[groups.length - 1];
+      const canAppendToGroup = Boolean(
+        msg.media_group_id &&
+        lastGroup &&
+        lastGroup.messages[0]?.media_group_id === msg.media_group_id &&
+        lastGroup.messages[0]?.is_incoming === msg.is_incoming
+      );
+
+      if (canAppendToGroup && lastGroup) {
+        lastGroup.messages.push(msg);
+      } else {
+        groups.push({ messages: [msg] });
+      }
+    }
+
+    return groups.map(({ messages: groupedMessages }) => {
+      const primaryMessage = groupedMessages.find((msg) => msg.text_content)?.media_group_id
+        ? groupedMessages.find((msg) => msg.text_content) || groupedMessages[0]
+        : groupedMessages[0];
+      const latestMessage = groupedMessages[groupedMessages.length - 1];
+      const text = groupedMessages.find((msg) => msg.text_content)?.text_content || undefined;
+
+      return {
+        id: primaryMessage.media_group_id || String(primaryMessage.id),
+        date: new Date(primaryMessage.created_at),
+        time: formatMessageTime(latestMessage.created_at),
+        type: mapMessageType(primaryMessage),
+        text,
+        mediaItems: mapMediaItems(groupedMessages),
+        onEdit: !primaryMessage.is_incoming && groupedMessages.length === 1
+          ? () => handleStartEdit({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
+          : undefined,
+        onReply: primaryMessage.is_incoming
+          ? () => handleStartReply({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
+          : undefined,
+        onDelete: groupedMessages.length === 1
+          ? () => handleDeleteMessage(primaryMessage.id)
+          : undefined,
+      };
+    });
+  }, [messages, handleStartEdit, handleStartReply]);
+
+  const { visibleDate, showDateSeparator } = useDateSeparator({
+    messages: renderedMessages,
+    messageListRef,
+    messageRefs,
+  });
+
+  const handleSendMessage = async () => {
+    if (!activeChat) return;
+    
+    const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
+    const hasText = message.trim().length > 0;
+    const hasMedia = mediaFiles.length > 0;
+    
+    if (!hasText && !hasMedia) return;
+
+    try {
+      if (hasMedia) {
+        const mediaUrls: string[] = [];
+
+        for (const mediaFile of mediaFiles) {
+          let mediaUrl = mediaFile.url;
+
+          if (mediaFile.file && !mediaUrl) {
+            const uploaded = await uploadMediaFile(mediaFile.file);
+            const baseUrl = API_BASE_URL.replace('/api', '');
+            mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+          }
+
+          if (mediaUrl) {
+            mediaUrls.push(mediaUrl);
+          }
+        }
+
+        await sendMessage({
+          text_content: hasText ? message : undefined,
+          media_urls: mediaUrls,
+        });
+      } else {
+        await sendMessage({
+          text_content: message,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send direct message:', error);
+      return;
+    }
+    
+    setMessage('');
+    messageFieldRef.current?.handleClearMedia();
+    setReplyingTo(null);
+    shouldScrollAfterSendRef.current = true;
+  };
+
+  const handlePinChat = async () => {
+    if (!activeChatId) return;
+    if (isPinned) {
+      await unpinChat(activeChatId);
+    } else {
+      await pinChat(activeChatId);
+    }
+  };
+
+  const handleBlockChat = async () => {
+    if (!activeChatId) return;
+    if (isBlocked) {
+      await unblockChat(activeChatId);
+    } else {
+      await blockChat(activeChatId);
+    }
+  };
   const handleSendOrEdit = async () => {
     if (editingMessage) {
       const trimmed = message.trim();
@@ -296,7 +342,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
             <Loader />
           </div>
         )}
-        {!loading && messagesWithDate.length === 0 && (
+        {!loading && renderedMessages.length === 0 && (
           <div className={styles.emptyState}>
             <div className={styles.emptyStateContent}>
               <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
@@ -306,7 +352,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
             </div>
           </div>
         )}
-        {messagesWithDate.map((msg, i) => (
+        {renderedMessages.map((msg, i) => (
           <div
             key={msg.id}
             ref={(el) => {
@@ -314,13 +360,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
             }}
           >
             <MessageElement
-              type={mapMessageType(msg)}
-              text={msg.text_content || undefined}
-              mediaItems={mapMediaItems(msg)}
-              time={formatMessageTime(msg.created_at)}
-              onEdit={!msg.is_incoming ? () => handleStartEdit(msg) : undefined}
-              onReply={msg.is_incoming ? () => handleStartReply(msg) : undefined}
-              onDelete={() => handleDeleteMessage(msg.id)}
+              type={msg.type}
+              text={msg.text}
+              mediaItems={msg.mediaItems}
+              time={msg.time}
+              onEdit={msg.onEdit}
+              onReply={msg.onReply}
+              onDelete={msg.onDelete}
             />
           </div>
         ))}

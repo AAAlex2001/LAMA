@@ -39,8 +39,15 @@ export interface BotMessageResponse {
   text_content: string | null;
   media_file_id: string | null;
   media_url: string | null;
+  media_group_id: string | null;
+  media_name: string | null;
+  media_size: number | null;
   is_incoming: boolean;
   created_at: string;
+}
+
+export interface BotMessageBatchResponse {
+  items: BotMessageResponse[];
 }
 
 export interface ChatHistoryResponse {
@@ -71,6 +78,7 @@ export interface SendDirectMessageParams {
   chat_id: number;
   text_content?: string;
   media_url?: string;
+  media_urls?: string[];
   media_type?: MessageType;
   buttons?: Record<string, unknown>;
   reply_to_message_id?: number;
@@ -146,7 +154,7 @@ export const sendDirectMessageThunk = createAsyncThunk(
     const { botId, tgChatId, ...body } = params;
 
     try {
-      const response = await apiRequest<BotMessageResponse>(
+      const response = await apiRequest<BotMessageBatchResponse>(
         `/direct/chats/${botId}/${tgChatId}/messages`,
         {
           method: 'POST',

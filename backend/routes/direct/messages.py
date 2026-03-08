@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.bots.messages import SendMessageRequest, BotMessageResponse
+from backend.schemas.bots.messages import SendMessageRequest, BotMessageResponse, BotMessageBatchResponse
 from backend.schemas.direct.message import EditMessageRequest, ChatHistoryResponse
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
@@ -39,7 +39,7 @@ async def get_chat_messages(
         "page_size": limit
     }
 
-@router.post("/chats/{bot_id}/{tg_chat_id}/messages", response_model=BotMessageResponse)
+@router.post("/chats/{bot_id}/{tg_chat_id}/messages", response_model=BotMessageBatchResponse)
 async def send_message(
     bot_id: int,
     tg_chat_id: int,
@@ -48,10 +48,10 @@ async def send_message(
     msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Отправка нового сообщения пользователю."""
-    msg = await msg_service.send_message(bot_id, tg_chat_id, current_user.id, request)
-    if not msg:
+    messages = await msg_service.send_message(bot_id, tg_chat_id, current_user.id, request)
+    if not messages:
         raise HTTPException(status_code=400, detail="Не удалось отправить сообщение")
-    return msg
+    return {"items": messages}
 
 @router.patch("/messages/{message_id}", response_model=BotMessageResponse)
 async def edit_message(
