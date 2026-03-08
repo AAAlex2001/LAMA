@@ -39,3 +39,17 @@ class BulkActionRequest(BaseModel):
 class SpecificActionRequest(BaseModel):
     action_type: str
     payload: Optional[Dict[str, Any]] = None
+
+class SpecificActionResult(BaseModel):
+    """Типизированный ответ на выполнение действия над inbox-событием.
+
+    Поле status всегда заполнено. Остальные поля заполняются только
+    для соответствующих типов действий:
+      - reply: bot_id, tg_user_id, chat_id
+      - change_ban: affected_channels
+    """
+    status: str
+    bot_id: Optional[int] = None
+    tg_user_id: Optional[int] = None
+    chat_id: Optional[int] = None
+    affected_channels: Optional[List[int]] = None

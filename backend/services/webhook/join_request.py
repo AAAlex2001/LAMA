@@ -27,6 +27,9 @@ from backend.models.bots import (
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.webhook.base import get_bot_session
 from backend.utils.keyboard import build_keyboard
+from backend.services.inbox.action_service import InboxActionService
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 logger = logging.getLogger(__name__)
 
@@ -91,10 +94,11 @@ class JoinRequestHandler:
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
                     logger.info(
-                        f"MANUAL mode detected for bot {self.bot_model.id}, "
-                        f"calling handle_manual_mode"
+                        f"Ручной режим одобрения для бота {self.bot_model.id}, "
+                        f"отправляем капчу"
                     )
                     await self.handle_manual_mode(telegram_bot, join_request)
+                    await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
 
                 elif (
@@ -125,6 +129,11 @@ class JoinRequestHandler:
                                     join_request.from_user.first_name
                                 ),
                             },
+                        )
+                        await self.create_join_event(
+                            join_request,
+                            status=EventStatus.PROCESSED,
+                            join_state="auto_approved",
                         )
 
         except Exception as e:
@@ -226,6 +235,61 @@ class JoinRequestHandler:
 
         except TelegramAPIError as e:
             logger.warning(f"Subscription requirements send failed: {e}")
+
+    async def create_join_event(
+        self,
+        join_request: ChatJoinRequest,
+        status: EventStatus = EventStatus.NEW,
+        join_state: str = "pending",
+    ) -> None:
+        """Создать событие CHANNEL_JOIN_REQUEST в инбоксе."""
+        try:
+            channel = await get_channel_by_telegram_id(self.db, join_request.chat.id)
+            channel_id = channel.id if channel else None
+
+            link_id = None
+            link_name = None
+            requires_approval = True
+            if hasattr(join_request, "invite_link") and join_request.invite_link:
+                tg_link_url = join_request.invite_link.invite_link
+                link_result = await self.db.execute(
+                    select(ChatInviteLink).where(ChatInviteLink.invite_link == tg_link_url)
+                )
+                db_link = link_result.scalar_one_or_none()
+                if db_link:
+                    link_id = db_link.id
+                    link_name = db_link.name
+                    requires_approval = db_link.creates_join_request
+
+            inbox_service = InboxActionService(self.db)
+            await inbox_service.create_event({
+                "owner_id": self.bot_model.owner_id,
+                "category": InboxCategory.MODERATION,
+                "entity_type": EntityType.CHANNEL,
+                "event_type": EventType.CHANNEL_JOIN_REQUEST,
+                "bot_id": self.bot_model.id,
+                "channel_id": channel_id,
+                "tg_user_id": join_request.from_user.id,
+                "tg_username": join_request.from_user.username,
+                "status": status,
+                "description": (
+                    f"Заявка от @{join_request.from_user.username or join_request.from_user.id} "
+                    f"на вступление в {join_request.chat.title}"
+                ),
+                "payload": {
+                    "join_state": join_state,
+                    "requires_approval": requires_approval,
+                    "link_id": link_id,
+                    "link_name": link_name,
+                    "link_url": join_request.invite_link.invite_link if (
+                        hasattr(join_request, "invite_link") and join_request.invite_link
+                    ) else None,
+                    "chat_title": join_request.chat.title,
+                    "first_name": join_request.from_user.first_name,
+                },
+            })
+        except Exception as e:
+            logger.error(f"Failed to create join_request inbox event: {e}", exc_info=True)
 
     async def update_invite_link_metrics(self, invite_link_url: str) -> None:
         """Обновить метрику pending_join_request_count для invite link"""
