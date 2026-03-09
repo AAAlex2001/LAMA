@@ -31,11 +31,18 @@ export const createInviteLinkThunk = createAsyncThunk(
         expireDate = expirationDateTime.toISOString();
       }
 
+      const protectionType = data.hasCaptcha || data.connectionMethod === 'protection' ? 'captcha' : 'none';
+      const entryMethod = data.linkType === 'closed'
+        ? (data.applicationMethod || 'direct')
+        : (data.loginMethod || 'direct');
+
       const requestBody = {
         name: data.linkName || '',
         expire_date: expireDate || null,
         member_limit: data.hasLimit && data.limitCount ? data.limitCount : 0,
         creates_join_request: data.linkType === 'closed',
+        protection_type: protectionType,
+        entry_method: entryMethod,
       };
 
       const inviteLink = await apiRequest<InviteLink>(
@@ -146,6 +153,8 @@ export interface PatchInviteLinkRequest {
   expire_date?: string | null;
   member_limit?: number;
   creates_join_request?: boolean;
+  protection_type?: 'none' | 'captcha';
+  entry_method?: 'direct' | 'bot';
 }
 
 export const patchInviteLinkThunk = createAsyncThunk(
@@ -180,6 +189,12 @@ export const patchInviteLinkThunk = createAsyncThunk(
       }
       if (patchData.creates_join_request !== undefined) {
         requestBody.creates_join_request = patchData.creates_join_request;
+      }
+      if (patchData.protection_type !== undefined) {
+        requestBody.protection_type = patchData.protection_type;
+      }
+      if (patchData.entry_method !== undefined) {
+        requestBody.entry_method = patchData.entry_method;
       }
 
       const updatedInviteLink = await apiRequest<InviteLink>(

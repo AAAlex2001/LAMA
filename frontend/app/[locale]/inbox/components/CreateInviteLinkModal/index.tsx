@@ -141,11 +141,18 @@ const CreateInviteLinkModal: React.FC<{
         expireDate = expirationDateTime.toISOString();
       }
 
+      const protectionType = previewData.hasCaptcha || previewData.connectionMethod === 'protection' ? 'captcha' as const : 'none' as const;
+      const entryMethod = previewData.linkType === 'closed'
+        ? (previewData.applicationMethod || 'direct') as 'direct' | 'bot'
+        : (previewData.loginMethod || 'direct') as 'direct' | 'bot';
+
       const patchData = {
         name: previewData.linkName || '',
         expire_date: expireDate || null,
         member_limit: previewData.hasLimit && previewData.limitCount ? previewData.limitCount : 0,
         creates_join_request: previewData.linkType === 'closed',
+        protection_type: protectionType,
+        entry_method: entryMethod,
       };
 
       await dispatch(patchInviteLinkThunk({

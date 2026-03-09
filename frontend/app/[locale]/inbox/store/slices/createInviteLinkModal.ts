@@ -180,6 +180,20 @@ const createInviteLinkModalSlice = createSlice({
         state.validityPeriod = 'indefinite';
         state.expirationDate = null;
       }
+
+      if (inviteLink.protection_type === 'captcha') {
+        state.connectionMethod = 'protection';
+        state.hasCaptcha = true;
+      } else {
+        state.connectionMethod = 'normal';
+        state.hasCaptcha = false;
+      }
+
+      if (inviteLink.entry_method) {
+        const method = inviteLink.entry_method as 'direct' | 'bot';
+        state.loginMethod = method;
+        state.applicationMethod = method;
+      }
     },
     
     resetForm(state) {

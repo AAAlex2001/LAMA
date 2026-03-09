@@ -41,8 +41,8 @@ const getFilterOptions = (
   expiredCount: number
 ) => [
   { id: 'all', label: 'Все', count: allCount, style: { flex: 1 } },
-  { id: 'active', label: 'Актуальные', count: activeCount, style: { width: '107px' } },
-  { id: 'expired', label: 'Истекшие', count: expiredCount, style: { width: '94px' } },
+  { id: 'active', label: 'Актуальные', count: activeCount, style: { flex: 1 } },
+  { id: 'expired', label: 'Истекшие', count: expiredCount, style: { flex: 1 } },
 ];
 
 const mapInviteLinkToInvitationLink = (link: InviteLink, channelName?: string): InvitationLink => {
@@ -66,6 +66,8 @@ const mapInviteLinkToInvitationLink = (link: InviteLink, channelName?: string): 
     creationDate,
     linkName: link.name,
     linkType: link.creates_join_request ? 'closed' : 'open',
+    loginMethod: (link.entry_method as 'direct' | 'bot') || 'direct',
+    hasCaptcha: link.protection_type === 'captcha',
     channelId: link.channel_id.toString(),
   };
 };
