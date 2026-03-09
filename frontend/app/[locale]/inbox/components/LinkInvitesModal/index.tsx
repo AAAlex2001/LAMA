@@ -151,6 +151,7 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
                 size="lg"
                 onClick={handleCreateLink}
                 className={styles.createButton}
+                style={{ width: '100%' }}
               >
                 <span>Создать ссылку-приглашение</span>
               </Button>
