@@ -8,6 +8,7 @@ from aiogram.types import ChatPermissions
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot
 from backend.models.channels import ChannelGroup
+from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType
 from backend.schemas.inbox.events import SpecificActionResult
 from backend.services.webhook.base import get_bot_session
@@ -115,8 +116,9 @@ class InboxActionService:
           accept          — принять заявку на вступление в канал
           reject          — отклонить заявку на вступление в канал
           unban           — разбанить пользователя в канале
-          block           — забанить пользователя в канале
+          block           — забанить пользователя в канале или заблокировать DirectChat
           delete_message  — удалить вызвавшее сообщение из чата
+          delete_and_block — удалить сообщение + заблокировать пользователя
           change_ban      — изменить тип/срок бана (payload: ban_type, duration_seconds, everywhere)
         """
         payload = payload or {}
@@ -222,10 +224,19 @@ class InboxActionService:
                     return SpecificActionResult(status="unbanned")
 
                 if action_type == "block":
-                    channel = (
-                        await self.db.get(ChannelGroup, event.channel_id)
-                        if event.channel_id else None
-                    )
+                    if not event.channel_id:
+                        dm_chat_id = (event.payload or {}).get("chat_id")
+                        if dm_chat_id and event.bot_id:
+                            await self.db.execute(
+                                update(DirectChat)
+                                .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == dm_chat_id)
+                                .values(is_blocked=True)
+                            )
+                        event.status = EventStatus.PROCESSED
+                        await self.db.commit()
+                        return SpecificActionResult(status="blocked")
+
+                    channel = await self.db.get(ChannelGroup, event.channel_id)
                     if not (channel and channel.telegram_id and event.tg_user_id):
                         return None
 
@@ -241,6 +252,39 @@ class InboxActionService:
                     event.status = EventStatus.PROCESSED
                     await self.db.commit()
                     return SpecificActionResult(status="blocked")
+
+                if action_type == "delete_and_block":
+                    msg_chat_id = (event.payload or {}).get("chat_id")
+                    msg_id = (event.payload or {}).get("message_id")
+
+                    if msg_chat_id and msg_id:
+                        try:
+                            await client.delete_message(chat_id=msg_chat_id, message_id=msg_id)
+                        except Exception as e:
+                            logger.warning(f"delete_and_block: не удалось удалить сообщение: {e}")
+
+                    if not event.channel_id:
+                        if msg_chat_id and event.bot_id:
+                            await self.db.execute(
+                                update(DirectChat)
+                                .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == msg_chat_id)
+                                .values(is_blocked=True)
+                            )
+                    else:
+                        channel = await self.db.get(ChannelGroup, event.channel_id)
+                        if channel and channel.telegram_id and event.tg_user_id:
+                            if str(channel.telegram_id).startswith("-"):
+                                try:
+                                    await client.ban_chat_member(
+                                        chat_id=channel.telegram_id,
+                                        user_id=event.tg_user_id,
+                                    )
+                                except Exception as e:
+                                    logger.error(f"delete_and_block: бан не удался: {e}")
+
+                    event.status = EventStatus.PROCESSED
+                    await self.db.commit()
+                    return SpecificActionResult(status="deleted_and_blocked")
 
                 if action_type == "delete_message":
                     msg_chat_id = (event.payload or {}).get("chat_id")

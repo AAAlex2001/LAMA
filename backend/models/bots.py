@@ -151,6 +151,7 @@ class BotMessage(Base):
 
     # Направление
     is_incoming: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)  # True = от пользователя, False = от бота
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)   # True = системное (триггер/команда/авто-ответ)
     
     # Метаданные
     raw_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Полные данные сообщения

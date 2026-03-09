@@ -361,7 +361,11 @@ class ChatInviteLink(Base):
     # Для подписных ссылок
     subscription_period: Mapped[Optional[int]] = mapped_column(Integer)
     subscription_price: Mapped[Optional[int]] = mapped_column(Integer)
-    
+
+    # Настройки защиты и входа (хранятся в нашей БД, не в Telegram)
+    protection_type: Mapped[Optional[str]] = mapped_column(String(32), default="none")    # none | captcha
+    entry_method: Mapped[Optional[str]] = mapped_column(String(32), default="direct")     # direct | bot
+
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

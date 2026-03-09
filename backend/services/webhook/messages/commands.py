@@ -1,4 +1,5 @@
 import logging
+import json
 import os
 from typing import Optional, Dict, Any
 
@@ -8,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService
 from backend.services.bot import BotCommandService, ModerationTriggerService, TriggerService, ShortcodeProcessor
-from backend.models.bots import Bot as BotModel, TriggerType, MessageType
+from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.utils import build_keyboard
 from backend.services.inbox.action_service import InboxActionService
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
@@ -52,6 +53,21 @@ class CommandProcessor:
             return normalized[: -(len(bot_username) + 1)]
 
         return normalized
+
+    async def save_system_message(self, chat_id: int, text: str) -> None:
+        """Сохранить системное сообщение в БД (для DM чатов)."""
+        msg = BotMessage(
+            bot_id=self.bot_model.id,
+            telegram_message_id=0,
+            chat_id=chat_id,
+            user_id=None,
+            message_type=MessageType.TEXT,
+            text_content=json.dumps({"type": "system", "text": text}, ensure_ascii=False),
+            is_incoming=False,
+            is_system=True,
+        )
+        self.db.add(msg)
+        await self.db.commit()
 
     def get_chat_display_name(self, message: Message) -> str:
         """Получить читаемое имя чата для описания события."""
@@ -304,6 +320,16 @@ class CommandProcessor:
                 logger.error(f"Failed to create inbox event for custom command {command_text}: {e}", exc_info=True)
 
             await self.send_command_response(message, command)
+
+            if message.chat.type == "private":
+                try:
+                    await self.save_system_message(
+                        chat_id=message.chat.id,
+                        text=f'Сработала команда "{command_text}"',
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to save system message for command: {e}", exc_info=True)
+
             await auto_delete_service.delete_if_command(
                 self.telegram_bot, message
             )

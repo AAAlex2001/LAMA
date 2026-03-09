@@ -96,8 +96,9 @@ async def execute_specific_action(
       accept          — принять заявку на вступление
       reject          — отклонить заявку на вступление
       unban           — разбанить пользователя в канале
-      block           — забанить пользователя в канале
+      block           — заблокировать (в канале или в DirectChat)
       delete_message  — удалить вызвавшее сообщение
+      delete_and_block — удалить сообщение + заблокировать пользователя
       change_ban      — изменить бан (payload: ban_type, duration_seconds, everywhere)
     """
     event = await action_service.get_event(event_id, current_user.id)

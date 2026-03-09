@@ -43,15 +43,19 @@ async def get_chats(
     bot_id: Optional[int] = Query(None, description="Фильтр по боту"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    sort: str = Query("new", description="new — сначала новые | old — сначала старые"),
+    unread: Optional[str] = Query(None, description="unread | read"),
     current_user: User = Depends(get_current_user),
     chat_service: DirectChatService = Depends(get_direct_chat_service)
 ):
-    """История чатов."""
+    """История чатов с фильтрацией и сортировкой."""
     chats, total = await chat_service.get_chats_for_user(
         owner_id=current_user.id,
         skip=skip,
         limit=limit,
-        bot_id=bot_id
+        bot_id=bot_id,
+        sort=sort,
+        unread_filter=unread,
     )
     return {
         "items": chats,
