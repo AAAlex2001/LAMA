@@ -1,4 +1,5 @@
 import logging
+import json
 from typing import Optional, Dict, Any
 
 from aiogram.types import Message
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService
 from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
-from backend.models.bots import Bot as BotModel, TriggerType, MessageType
+from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
 from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
@@ -38,6 +39,21 @@ class TextProcessor:
             },
             "bot": {"first_name": self.bot_model.first_name}
         }
+
+    async def save_system_message(self, chat_id: int, text: str) -> None:
+        """Сохранить системное сообщение в БД (для DM чатов)."""
+        msg = BotMessage(
+            bot_id=self.bot_model.id,
+            telegram_message_id=0,
+            chat_id=chat_id,
+            user_id=None,
+            message_type=MessageType.TEXT,
+            text_content=json.dumps({"type": "system", "text": text}, ensure_ascii=False),
+            is_incoming=False,
+            is_system=True,
+        )
+        self.db.add(msg)
+        await self.db.commit()
 
     async def send_response(
         self,
@@ -119,6 +135,15 @@ class TextProcessor:
         )
 
         if triggered_count > 0:
+            if message.chat.type == "private":
+                try:
+                    await self.save_system_message(
+                        chat_id=message.chat.id,
+                        text=f"Сработал триггер ({triggered_count})",
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to save system message for trigger: {e}", exc_info=True)
+
             try:
                 inbox_service = InboxActionService(self.db)
                 channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
@@ -160,6 +185,16 @@ class TextProcessor:
 
         if auto_reply:
             await self.send_auto_reply_response(message, auto_reply)
+
+            if message.chat.type == "private":
+                try:
+                    matched = ", ".join(auto_reply.keywords) if auto_reply.keywords else ""
+                    await self.save_system_message(
+                        chat_id=message.chat.id,
+                        text=f'Сработал автоответ "{matched}"',
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to save system message for auto-reply: {e}", exc_info=True)
 
             try:
                 inbox_service = InboxActionService(self.db)

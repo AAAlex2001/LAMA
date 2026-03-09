@@ -11,17 +11,22 @@ from backend.routes.bots.dependencies import get_bot_service, get_bot_messaging_
 router = APIRouter()
 
 
-@router.post("/{bot_id}/messages", response_model=BotMessageResponse, status_code=201)
+@router.post("/{bot_id}/messages", status_code=201)
 async def send_message(
     bot_id: int,
     data: SendMessageRequest,
     messaging: BotMessagingService = Depends(get_bot_messaging_service),
     current_user: User = Depends(get_current_user),
 ):
-    """Отправить сообщение от имени бота."""
+    """Отправить сообщение от имени бота. Если chat_id не указан — рассылка всем пользователям."""
     try:
+        if data.chat_id is None:
+            return await messaging.broadcast(bot_id, data, owner_id=current_user.id)
+
         await messaging.send(bot_id, data, owner_id=current_user.id)
-        messages, _ = await messaging.get_list(bot_id=bot_id, chat_id=data.chat_id, is_incoming=False, skip=0, limit=1)
+        messages, _ = await messaging.get_list(
+            bot_id=bot_id, chat_id=data.chat_id, is_incoming=False, skip=0, limit=1,
+        )
         if messages:
             return messages[0]
         raise HTTPException(status_code=500, detail="Message sent but not saved")

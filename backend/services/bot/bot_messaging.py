@@ -6,7 +6,8 @@ from aiogram.types import Message
 from aiogram.exceptions import TelegramAPIError
 
 from backend.models.bots import Bot as BotModel, BotMessage, BotStatus, MessageType
-from backend.schemas.bots import SendMessageRequest
+from backend.models.direct import DirectChat
+from backend.schemas.bots.messages import SendMessageRequest, BroadcastResult, BroadcastResponse
 from backend.services.bot_provider import resolve_for_bot_id
 from backend.utils.keyboard import build_keyboard
 
@@ -161,3 +162,57 @@ class BotMessagingService:
         if not bot:
             raise ValueError("Bot not found")
         return bot
+
+    async def broadcast(
+        self, bot_id: int, data: SendMessageRequest,
+        owner_id: Optional[int] = None,
+    ) -> BroadcastResponse:
+        """Рассылка сообщения всем незаблокированным чатам бота."""
+        bot = await self.get_bot_or_raise(bot_id, owner_id)
+        if bot.status != BotStatus.ACTIVE:
+            raise ValueError("Bot is not active")
+
+        rows = await self.db.execute(
+            select(DirectChat.tg_chat_id)
+            .where(DirectChat.bot_id == bot_id, DirectChat.is_blocked == False)
+        )
+        chat_ids = [row[0] for row in rows.all()]
+
+        telegram_bot = await resolve_for_bot_id(self.db, bot_id)
+        reply_markup = build_keyboard(data.buttons) if data.buttons else None
+
+        results: List[BroadcastResult] = []
+        for chat_id in chat_ids:
+            single = SendMessageRequest(
+                chat_id=chat_id,
+                text_content=data.text_content,
+                media_url=data.media_url,
+                media_type=data.media_type,
+                buttons=data.buttons,
+            )
+            try:
+                message = await self.dispatch_telegram(telegram_bot, single, reply_markup)
+                file_id = message.photo[-1].file_id if message.photo else None
+                await self.save(
+                    bot_id=bot.id,
+                    telegram_message_id=message.message_id,
+                    chat_id=chat_id,
+                    user_id=None,
+                    message_type=data.media_type or MessageType.TEXT,
+                    text_content=data.text_content,
+                    media_file_id=file_id,
+                    media_url=data.media_url,
+                    is_incoming=False,
+                    raw_data=message.model_dump(mode="json"),
+                )
+                results.append(BroadcastResult(chat_id=chat_id, success=True))
+            except Exception as e:
+                results.append(BroadcastResult(chat_id=chat_id, success=False, error=str(e)))
+
+        sent = sum(1 for r in results if r.success)
+        return BroadcastResponse(
+            total=len(results),
+            sent=sent,
+            failed=len(results) - sent,
+            results=results,
+        )

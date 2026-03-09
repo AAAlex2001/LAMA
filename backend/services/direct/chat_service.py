@@ -1,6 +1,6 @@
 from typing import Tuple, List, Optional, Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc, and_, update
+from sqlalchemy import select, func, desc, asc, and_, update
 from datetime import datetime, timezone
 
 from backend.models.direct import DirectChat
@@ -68,12 +68,18 @@ class DirectChatService:
         owner_id: int,
         skip: int = 0,
         limit: int = 50,
-        bot_id: Optional[int] = None
+        bot_id: Optional[int] = None,
+        sort: str = "new",
+        unread_filter: Optional[str] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """Получить список чатов с превью последнего сообщения (1 запрос вместо N+1)."""
         base_filter = [Bot.owner_id == owner_id]
         if bot_id:
             base_filter.append(DirectChat.bot_id == bot_id)
+        if unread_filter == "unread":
+            base_filter.append(DirectChat.unread_count > 0)
+        elif unread_filter == "read":
+            base_filter.append(DirectChat.unread_count == 0)
 
         last_msg_sq = (
             select(
@@ -132,7 +138,10 @@ class DirectChatService:
         )
         total = (await self.db.execute(count_query)).scalar() or 0
 
-        query = query.order_by(desc(DirectChat.is_pinned), desc(DirectChat.updated_at))
+        query = query.order_by(
+            desc(DirectChat.is_pinned),
+            asc(DirectChat.updated_at) if sort == "old" else desc(DirectChat.updated_at),
+        )
         query = query.offset(skip).limit(limit)
 
         rows = (await self.db.execute(query)).all()

@@ -9,8 +9,8 @@ from backend.models.bots import MessageType
 # ============================================================================
 
 class SendMessageRequest(BaseModel):
-    """Схема запроса отправки сообщения"""
-    chat_id: int
+    """Схема запроса отправки сообщения. chat_id=None → рассылка всем."""
+    chat_id: Optional[int] = None
     text_content: Optional[str] = None
     media_url: Optional[str] = None
     media_urls: Optional[List[str]] = None
@@ -34,6 +34,7 @@ class BotMessageResponse(BaseModel):
     media_size: Optional[int] = None
     reply_to_message_id: Optional[int] = None
     is_incoming: bool
+    is_system: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -49,3 +50,18 @@ class BotMessageListResponse(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class BroadcastResult(BaseModel):
+    """Результат отправки одному чату."""
+    chat_id: int
+    success: bool
+    error: Optional[str] = None
+
+
+class BroadcastResponse(BaseModel):
+    """Результат рассылки всем чатам бота."""
+    total: int
+    sent: int
+    failed: int
+    results: List[BroadcastResult]

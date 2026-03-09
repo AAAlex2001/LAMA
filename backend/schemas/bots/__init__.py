@@ -52,7 +52,9 @@ from .welcome import (
 from .messages import (
     SendMessageRequest,
     BotMessageResponse,
-    BotMessageListResponse
+    BotMessageListResponse,
+    BroadcastResult,
+    BroadcastResponse,
 )
 
 __all__ = [
@@ -62,5 +64,5 @@ __all__ = [
     "TriggerCreate", "TriggerUpdate", "TriggerResponse", "TriggerListResponse",
     "RecurringMessageCreate", "RecurringMessageUpdate", "RecurringMessageResponse", "RecurringMessageListResponse",
     "AutoApprovalUpdate", "AutoApprovalResponse", "WelcomeSettingsUpdate", "WelcomeSettingsResponse",
-    "SendMessageRequest", "BotMessageResponse", "BotMessageListResponse"
+    "SendMessageRequest", "BotMessageResponse", "BotMessageListResponse", "BroadcastResult", "BroadcastResponse",
 ]

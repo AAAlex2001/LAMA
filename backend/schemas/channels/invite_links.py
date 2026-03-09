@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 
 
@@ -9,6 +9,8 @@ class InviteLinkCreate(BaseModel):
     expire_date: Optional[datetime] = None
     member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: bool = False
+    protection_type: Literal["none", "captcha"] = "none"
+    entry_method: Literal["direct", "bot"] = "direct"
 
 
 class InviteLinkUpdate(BaseModel):
@@ -17,6 +19,8 @@ class InviteLinkUpdate(BaseModel):
     expire_date: Optional[datetime] = None
     member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: Optional[bool] = None
+    protection_type: Optional[Literal["none", "captcha"]] = None
+    entry_method: Optional[Literal["direct", "bot"]] = None
 
 
 class InviteLinkResponse(BaseModel):
@@ -37,6 +41,8 @@ class InviteLinkResponse(BaseModel):
     member_count: int
     subscription_period: Optional[int]
     subscription_price: Optional[int]
+    protection_type: Optional[str] = "none"
+    entry_method: Optional[str] = "direct"
     created_at: datetime
     updated_at: datetime
 

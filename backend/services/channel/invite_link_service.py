@@ -59,6 +59,8 @@ class InviteLinkService:
             member_limit=tg_link.member_limit,
             pending_join_request_count=tg_link.pending_join_request_count or 0,
             member_count=0,
+            protection_type=data.protection_type,
+            entry_method=data.entry_method,
         )
         self.db.add(link)
         await self.db.commit()
@@ -104,6 +106,10 @@ class InviteLinkService:
             invite_link.member_limit = data.member_limit
         if data.creates_join_request is not None:
             invite_link.creates_join_request = data.creates_join_request
+        if data.protection_type is not None:
+            invite_link.protection_type = data.protection_type
+        if data.entry_method is not None:
+            invite_link.entry_method = data.entry_method
         invite_link.pending_join_request_count = tg_link.pending_join_request_count or 0
 
         await self.db.commit()
