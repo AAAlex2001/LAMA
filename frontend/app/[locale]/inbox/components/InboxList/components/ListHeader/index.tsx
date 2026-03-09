@@ -54,9 +54,9 @@ const ListHeader: FC<ListHeaderProps> = ({
 
   const filterOptionsModeration = [
     { id: "all", label: "Все" },
-    { id: "waiting", label: "Ожидают" },
+    { id: "new", label: "Ожидают" },
     { id: "processed", label: "Обработанные" },
-    { id: "blocked", label: "Заблокированные" },
+    { id: "ingnored", label: "Заблокированные" },
   ];
 
   const filterOptionsAutomation = [

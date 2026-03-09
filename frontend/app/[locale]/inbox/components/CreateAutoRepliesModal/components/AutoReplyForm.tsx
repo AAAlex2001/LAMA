@@ -199,6 +199,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
           onClick={handleSubmit}
           className={styles.submitButton}
           disabled={isSubmitDisabled}
+          style={{ width: '100%' }}
         >
           Создать автоответ
         </Button>
