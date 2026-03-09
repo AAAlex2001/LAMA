@@ -5,15 +5,22 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 16px;
+  height: 100%;
+  min-height: 0;
   gap: 16px;
   overflow: hidden;
-  min-height: 0;
   padding: 16px 10px;
   @media(min-width: 1440px) {
     padding: 24px;
   }
 }
-
+.directChatWrapper {
+  display: flex;
+  flex-direction: column;
+  height: 80vh; 
+  padding-bottom: 10px;
+  width: 100%;
+}
 .header {
   display: flex;
   align-items: center;
@@ -123,8 +130,8 @@
 }
 
 .destructive {
-  color: var(--color-lama-red);
-  border-color: var(--color-lama-red);
+  color: var(--color-lama-destructive);
+  border-color: var(--color-lama-destructive);
 }
 
 .loadingMessages {
@@ -144,8 +151,7 @@
 .messageList {
   flex: 1;
   overflow-y: auto;
-  max-height: 40vh;
-  min-height: 40vh;
+  min-height: 0;  
   position: relative;
   display: flex;
   flex-direction: column;

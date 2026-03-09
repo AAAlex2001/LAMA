@@ -138,7 +138,7 @@ const ListElement: FC<ListElementProps> = ({
       return (
         <div className={styles.actionButtons}>
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
-            <span className={buttonStyles.label}>Ответить</span>
+            <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
       );
@@ -151,7 +151,7 @@ const ListElement: FC<ListElementProps> = ({
       return (
         <div className={styles.actionButtons}>
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
-            <span className={buttonStyles.label}>Ответить</span>
+            <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
       );

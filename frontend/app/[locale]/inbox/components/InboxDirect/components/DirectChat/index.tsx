@@ -203,96 +203,100 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   }, [inputMode, editMessage, handleSendMessage]);
 
   return (
-    <div className={styles.directChat}>
-      <div className={styles.header}>
-        <button className={styles.backButton} type="button" onClick={onClose}>
-          <ChatChevronIcon width={32} height={32} />
-        </button>
-        <div className={styles.userInfo}>
-          <span className={styles.userName}>{userName}</span>
-          <span className={styles.botName}>{activeChat?.bot_username}</span>
-        </div>
-        <div className={styles.headerActionsWrapper}>
-          <div className={styles.headerActions}>
-            <button
-              className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
-              type="button"
-              onClick={handleTogglePin}
-            >
-              <PinIcon width={16} height={16} />
-            </button>
-            <button
-              className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
-              type="button"
-              onClick={handleToggleBlock}
-            >
-              <BlockedIcon width={16} height={16} />
-            </button>
+    <div className={styles.directChatWrapper}>
+      <div className={styles.directChat}>
+        <div className={styles.header}>
+          <button className={styles.backButton} type="button" onClick={onClose}>
+            <ChatChevronIcon width={32} height={32} />
+          </button>
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{userName}</span>
+            <span className={styles.botName}>{activeChat?.bot_username}</span>
           </div>
-        </div>
-      </div>
-      {showDateSeparator && visibleDate && (
-        <div className={styles.dateSeparator}>
-          <span>{visibleDate}</span>
-        </div>
-      )}
-      <div className={styles.messageList} ref={scroll.messageListRef}>
-        {loading && messages.length === 0 && (
-          <div className={styles.loadingMessages}>
-            <Loader />
-          </div>
-        )}
-        {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
-        {loading && messages.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
-            <Loader size={20} />
-          </div>
-        )}
-        {!loading && renderedMessages.length === 0 && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyStateContent}>
-              <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
-              <p className={styles.emptyStateSubtitle}>
-                Выберите один из чатов в списке
-              </p>
+          <div className={styles.headerActionsWrapper}>
+            <div className={styles.headerActions}>
+              <button
+                className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
+                type="button"
+                onClick={handleTogglePin}
+              >
+                <PinIcon width={16} height={16} />
+              </button>
+              <button
+                className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
+                type="button"
+                onClick={handleToggleBlock}
+              >
+                <BlockedIcon width={16} height={16} />
+              </button>
             </div>
           </div>
-        )}
-        {renderedMessages.map((msg, i) => (
-          <div
-            key={msg.id}
-            ref={(el) => {
-              messageRefs.current[i] = el;
-            }}
-          >
-            <MessageElement
-              type={msg.type}
-              text={msg.text}
-              mediaItems={msg.mediaItems}
-              time={msg.time}
-              userPhoto={activeChat?.tg_photo_url ?? undefined}
-              replyTo={msg.replyToMessageId && replyLookup.has(msg.replyToMessageId) ? {
-                text: replyLookup.get(msg.replyToMessageId)!.text,
-                onClick: () => scrollToMessage(msg.replyToMessageId!),
-              } : undefined}
-              onEdit={msg.onEdit}
-              onReply={msg.onReply}
-              onDelete={msg.onDelete}
-            />
+        </div>
+        {showDateSeparator && visibleDate && (
+          <div className={styles.dateSeparator}>
+            <span>{visibleDate}</span>
           </div>
-        ))}
-        <div ref={scroll.bottomRef} />
+        )}
+        <div className={styles.messageList} ref={scroll.messageListRef}>
+          {loading && messages.length === 0 && (
+            <div className={styles.loadingMessages}>
+              <Loader />
+            </div>
+          )}
+          {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
+          {loading && messages.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
+              <Loader size={20} />
+            </div>
+          )}
+          {!loading && renderedMessages.length === 0 && (
+            <div className={styles.emptyState}>
+              <div className={styles.emptyStateContent}>
+                <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
+                <p className={styles.emptyStateSubtitle}>
+                  Выберите один из чатов в списке
+                </p>
+              </div>
+            </div>
+          )}
+          {renderedMessages.map((msg, i) => (
+            <div
+              key={msg.id}
+              ref={(el) => {
+                messageRefs.current[i] = el;
+              }}
+            >
+              <MessageElement
+                type={msg.type}
+                text={msg.text}
+                mediaItems={msg.mediaItems}
+                time={msg.time}
+                userPhoto={activeChat?.tg_photo_url ?? undefined}
+                replyTo={msg.replyToMessageId && replyLookup.has(msg.replyToMessageId) ? {
+                  text: replyLookup.get(msg.replyToMessageId)!.text,
+                  onClick: () => scrollToMessage(msg.replyToMessageId!),
+                } : undefined}
+                onEdit={msg.onEdit}
+                onReply={msg.onReply}
+                onDelete={msg.onDelete}
+              />
+            </div>
+          ))}
+          <div ref={scroll.bottomRef} />
+        </div>
+        {!isBlocked && (
+          <MessageField
+            ref={messageFieldRef}
+            value={inputMode.message}
+            onChange={inputMode.setMessage}
+            onSendMessage={handleSendOrEdit}
+            editingMessage={inputMode.editingMessage}
+            onCancelEdit={inputMode.cancelEdit}
+            replyingTo={inputMode.replyingTo}
+            onCancelReply={inputMode.cancelReply}
+          />
+        )}
       </div>
-      <MessageField
-        ref={messageFieldRef}
-        value={inputMode.message}
-        onChange={inputMode.setMessage}
-        onSendMessage={handleSendOrEdit}
-        editingMessage={inputMode.editingMessage}
-        onCancelEdit={inputMode.cancelEdit}
-        replyingTo={inputMode.replyingTo}
-        onCancelReply={inputMode.cancelReply}
-      />
     </div>
   );
 };

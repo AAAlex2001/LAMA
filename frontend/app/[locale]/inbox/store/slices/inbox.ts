@@ -70,11 +70,13 @@ const inboxSlice = createSlice({
   initialState,
   reducers: {
     setSelectedFilter(state, action: PayloadAction<ListFilterType>) {
-      state.selectedFilter = action.payload;
-      state.eventTypeFilter = null;
-      state.items = [];
-      state.itemsOffset = 0;
-      state.itemsHasMore = true;
+      if (state.selectedFilter !== action.payload) {
+        state.selectedFilter = action.payload;
+        state.eventTypeFilter = null;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
     },
     setCurrentView(state, action: PayloadAction<InboxView>) {
       state.currentView = action.payload;
@@ -83,22 +85,28 @@ const inboxSlice = createSlice({
       state.sort = action.payload;
     },
     setSortDir(state, action: PayloadAction<'new' | 'old'>) {
-      state.sortDir = action.payload;
-      state.items = [];
-      state.itemsOffset = 0;
-      state.itemsHasMore = true;
+      if (state.sortDir !== action.payload) {
+        state.sortDir = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
     },
     setStatusFilter(state, action: PayloadAction<'new' | 'processed' | 'ignored' | null>) {
-      state.statusFilter = action.payload;
-      state.items = [];
-      state.itemsOffset = 0;
-      state.itemsHasMore = true;
+      if (state.statusFilter !== action.payload) {
+        state.statusFilter = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
     },
     setEventTypeFilter(state, action: PayloadAction<'system_autoreply' | 'system_trigger' | 'bot_command' | null>) {
-      state.eventTypeFilter = action.payload;
-      state.items = [];
-      state.itemsOffset = 0;
-      state.itemsHasMore = true;
+      if (state.eventTypeFilter !== action.payload) {
+        state.eventTypeFilter = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
     },
     removeItem(state, action: PayloadAction<number>) {
       state.items = state.items.filter((item) => item.id !== action.payload);

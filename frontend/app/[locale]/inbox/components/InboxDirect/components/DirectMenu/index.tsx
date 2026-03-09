@@ -99,6 +99,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     messagePreview={activeChat.last_message_preview || undefined}
                     time={formatChatTime(activeChat.last_message_at || activeChat.updated_at)}
                     isCurrent={true}
+                    isBlocked={activeChat.is_blocked}
                     onClick={() => handleClick(activeChat.id)}
                   />
                 </div>
@@ -117,6 +118,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                       messagePreview={chat.last_message_preview || undefined}
                       time={formatChatTime(chat.last_message_at || chat.updated_at)}
                       isPinned={true}
+                      isBlocked={chat.is_blocked}
                       unreadCount={chat.unread_count}
                       onClick={() => handleClick(chat.id)}
                     />
