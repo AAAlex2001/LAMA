@@ -19,6 +19,10 @@
     opacity: 0.6;
   }
 
+  &:hover:not(:disabled):not(.chatItemCurrent):not(.chatItemWithCheckbox) {
+    background: #EBF2FE;
+  }
+
   &.chatItemWithCheckbox {
     cursor: default;
 

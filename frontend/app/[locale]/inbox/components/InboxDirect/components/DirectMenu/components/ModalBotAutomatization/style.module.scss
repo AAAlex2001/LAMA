@@ -24,6 +24,13 @@
   }
 }
 
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 .emptyState {
   display: flex;
   justify-content: center;

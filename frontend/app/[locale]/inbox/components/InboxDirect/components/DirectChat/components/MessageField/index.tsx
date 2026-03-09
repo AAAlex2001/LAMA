@@ -75,6 +75,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
 
   const [showTemplatesModal, setShowTemplatesModal] = useState(false);
   const { showSuccess } = useNotifications();
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
     if (editingMessage || replyingTo) {
@@ -115,7 +116,14 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
   };
 
   const handleSendMessage = async () => {
-    await onSendMessage();
+    setIsSendingMessage(true);
+    try {
+      await onSendMessage();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSendingMessage(false);
+    }
     onChange('');
 
     handleClearMedia();
@@ -209,6 +217,8 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
               intent="primary"
               size="transparent"
               onClick={handleSendMessage}
+              disabled={isSendingMessage}
+              loading={isSendingMessage}
             >
               <SendIcon width={22} height={22} />
             </Button>
