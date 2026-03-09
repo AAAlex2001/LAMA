@@ -52,6 +52,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
               size="md"
               onClick={handleAutoReplyClick}
               className={styles.button}
+              style={{ width: '100%' }}
             >
               <span className={buttonStyles.label}>Создать автоответ</span>
             </Button>
@@ -61,6 +62,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
               size="md"
               onClick={handleTriggerClick}
               className={styles.button}
+              style={{ width: '100%' }}
             >
               <span className={buttonStyles.label}>Создать триггер</span>
             </Button>
@@ -70,6 +72,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
               size="md"
               onClick={handleCommandClick}
               className={styles.button}
+              style={{ width: '100%' }}
             >
               <span className={buttonStyles.label}>Создать команду</span>
             </Button>
