@@ -75,12 +75,18 @@ const SourceContent: FC<SourceContentProps> = ({
         const hasSharedSearch = checkedOptions.some((opt) => opt.list?.isSharedSearch);
         const sharedSearchOption = checkedOptions.find((opt) => opt.list?.isSharedSearch);
         
-        // Combine all items from checked options into one list
-        const combinedItems = checkedOptions.flatMap((opt) => 
-          opt.list!.items.map((item) => ({
-            item,
-            option: opt,
-          }))
+        const seen = new Set<string>();
+        const combinedItems = checkedOptions.flatMap((opt) =>
+          opt.list!.items
+            .filter((item) => {
+              if (seen.has(item)) return false;
+              seen.add(item);
+              return true;
+            })
+            .map((item) => ({
+              item,
+              option: opt,
+            }))
         );
         
         if (hasSharedSearch && sharedSearchOption) {

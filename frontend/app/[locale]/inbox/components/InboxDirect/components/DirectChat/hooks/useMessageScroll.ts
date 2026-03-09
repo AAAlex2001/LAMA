@@ -10,9 +10,9 @@ export interface MessageScrollOpts {
 }
 
 export interface MessageScrollReturn {
-  messageListRef: React.RefObject<HTMLDivElement>;
-  bottomRef: React.RefObject<HTMLDivElement>;
-  topSentinelRef: React.RefObject<HTMLDivElement>;
+  messageListRef: React.RefObject<HTMLDivElement | null>;
+  bottomRef: React.RefObject<HTMLDivElement | null>;
+  topSentinelRef: React.RefObject<HTMLDivElement | null>;
   markShouldScroll: () => void;
 }
 
@@ -93,9 +93,9 @@ export function useMessageScroll({
   };
 
   return {
-    messageListRef: messageListRef as React.RefObject<HTMLDivElement>,
-    bottomRef: bottomRef as React.RefObject<HTMLDivElement>,
-    topSentinelRef: topSentinelRef as React.RefObject<HTMLDivElement>,
+    messageListRef,
+    bottomRef,
+    topSentinelRef,
     markShouldScroll,
   };
 }

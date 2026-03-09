@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useState, useMemo, useRef, useCallback } from "react";
+import React, { FC, useState, useMemo, useRef, useCallback, useEffect } from "react";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
@@ -61,13 +61,12 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   const channelNames = useMemo(() => channels.map((c) => c.title), [channels]);
   const botNames = useMemo(() => bots.map((b) => b.title || b.username), [bots]);
 
-  // Default values for each filter type
   const defaultValues: Record<SortOptionType, string> = {
     time: "",
     source: "",
     sourceSystem: "",
     status: "default",
-    type: "all",
+    type: "",
   };
 
   const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
@@ -137,6 +136,105 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     if (!sourceSystemSharedSearch) return botNames;
     return botNames.filter(b => b.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
   }, [sourceSystemSharedSearch, botNames]);
+
+  // --- Type filter state (Автоответы / Триггер / Команды → bots) ---
+  const [typeDefault, setTypeDefault] = useState(true);
+
+  const [typeAutoReply, setTypeAutoReply] = useState(false);
+  const [typeTrigger, setTypeTrigger] = useState(false);
+  const [typeCommand, setTypeCommand] = useState(false);
+  const [selectedTypeBots, setSelectedTypeBots] = useState<Set<string>>(new Set());
+
+  const [typeSharedSearch, setTypeSharedSearch] = useState("");
+
+  const handleTypeAutoReplyChange = useCallback((checked: boolean) => {
+    setTypeAutoReply(checked);
+    if (checked) {
+      setTypeDefault(false);
+    } else {
+      if (!typeTrigger && !typeCommand) {
+        setTypeDefault(true);
+        setSelectedTypeBots(new Set());
+      }
+    }
+  }, [typeTrigger, typeCommand]);
+
+  const handleTypeTriggerChange = useCallback((checked: boolean) => {
+    setTypeTrigger(checked);
+    if (checked) {
+      setTypeDefault(false);
+    } else {
+      if (!typeAutoReply && !typeCommand) {
+        setTypeDefault(true);
+        setSelectedTypeBots(new Set());
+      }
+    }
+  }, [typeAutoReply, typeCommand]);
+
+  const handleTypeCommandChange = useCallback((checked: boolean) => {
+    setTypeCommand(checked);
+    if (checked) {
+      setTypeDefault(false);
+    } else {
+      if (!typeAutoReply && !typeTrigger) {
+        setTypeDefault(true);
+        setSelectedTypeBots(new Set());
+      }
+    }
+  }, [typeAutoReply, typeTrigger]);
+
+  const filteredTypeBots = useMemo(() => {
+    if (!typeSharedSearch) return botNames;
+    return botNames.filter(b => b.toLowerCase().includes(typeSharedSearch.toLowerCase()));
+  }, [typeSharedSearch, botNames]);
+
+  const typeFilterOptions: SourceFilterOption[] = useMemo(() => [
+    {
+      key: "autoreply",
+      label: "Автоответы",
+      checked: typeAutoReply,
+      onChange: handleTypeAutoReplyChange,
+      list: {
+        searchPlaceholder: "Введите название бота",
+        searchValue: typeSharedSearch,
+        isSharedSearch: true,
+        onSearchChange: setTypeSharedSearch,
+        items: filteredTypeBots,
+        selectedItems: selectedTypeBots,
+        onItemToggle: toggleSetItem(setSelectedTypeBots),
+      },
+    },
+    {
+      key: "trigger",
+      label: "Триггер",
+      checked: typeTrigger,
+      onChange: handleTypeTriggerChange,
+      list: {
+        searchPlaceholder: "Введите название бота",
+        searchValue: typeSharedSearch,
+        isSharedSearch: true,
+        onSearchChange: setTypeSharedSearch,
+        items: filteredTypeBots,
+        selectedItems: selectedTypeBots,
+        onItemToggle: toggleSetItem(setSelectedTypeBots),
+      },
+    },
+    {
+      key: "command",
+      label: "Команды",
+      checked: typeCommand,
+      onChange: handleTypeCommandChange,
+      list: {
+        searchPlaceholder: "Введите название бота",
+        searchValue: typeSharedSearch,
+        isSharedSearch: true,
+        onSearchChange: setTypeSharedSearch,
+        items: filteredTypeBots,
+        selectedItems: selectedTypeBots,
+        onItemToggle: toggleSetItem(setSelectedTypeBots),
+      },
+    },
+  ], [typeAutoReply, typeTrigger, typeCommand, typeSharedSearch, filteredTypeBots, selectedTypeBots, handleTypeAutoReplyChange, handleTypeTriggerChange, handleTypeCommandChange]);
 
   const sourceFilterOptions: SourceFilterOption[] = useMemo(() => [
     {
@@ -216,13 +314,6 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     { value: "processed", label: "Обработанные" },
   ];
 
-  const typeOptions = [
-    { value: "all", label: "Все" },
-    { value: "system_autoreply", label: "Автоответ" },
-    { value: "system_trigger", label: "Триггер" },
-    { value: "bot_command", label: "Команды" },
-  ];
-
   const filterSortConfig: Record<ListHeaderType, SortOptionType[]> = {
     all: ['time', 'source', 'status'],
     moderation: ['time', 'source'],
@@ -284,8 +375,14 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
             type: 'type',
             label: 'По типу',
             value: sortValues.type,
-            items: typeOptions,
-            width: "138px",
+            width: "240px",
+            content: (
+              <SourceContent
+                isDefault={typeDefault}
+                onDefaultChange={setTypeDefault}
+                options={typeFilterOptions}
+              />
+            ),
           };
         default:
           return {
@@ -297,7 +394,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
           };
       }
     });
-  }, [selectedFilter, sortValues, sourceDefault, sourceFilterOptions, sourceSystemDefault, sourceSystemFilterOptions]);
+  }, [selectedFilter, sortValues, sourceDefault, sourceFilterOptions, sourceSystemDefault, sourceSystemFilterOptions, typeDefault, typeFilterOptions]);
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
     setSortValues(prev => ({ ...prev, [sortType]: value }));
@@ -313,23 +410,12 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       };
       onStatusFilterChange?.(statusMap[value] ?? null);
     }
-    if (sortType === 'type') {
-      const typeMap: Record<string, 'system_autoreply' | 'system_trigger' | 'bot_command' | null> = {
-        'system_autoreply': 'system_autoreply',
-        'system_trigger': 'system_trigger',
-        'bot_command': 'bot_command',
-        'all': null,
-      };
-      onEventTypeFilterChange?.(typeMap[value] ?? null);
-    }
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
-    // Reset to default value for the filter type
     const defaultValue = defaultValues[sortType];
     setSortValues(prev => ({ ...prev, [sortType]: defaultValue }));
     
-    // Trigger callbacks for filters that need them
     if (sortType === 'time') {
       onTimeSortChange?.('new');
     }
@@ -338,17 +424,16 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
     if (sortType === 'type') {
       onEventTypeFilterChange?.(null);
+      dispatch(setEntityIds(null));
     }
   };
 
-  // Check if a value is the default for a filter type
   const isDefaultValue = (sortType: SortOptionType, value: string): boolean => {
     return value === defaultValues[sortType];
   };
 
   function getButtonText(option: SortOption): string {
     if (!option.value) return option.label;
-    // If value is default, show just the label (not the default option label)
     if (isDefaultValue(option.type, option.value)) {
       return option.label;
     }
@@ -364,6 +449,8 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     handleSortClear(sortType);
     
     if (sortType === 'source' || sortType === 'sourceSystem') {
+      setSourceChannels(false);
+      setSourceBots(false);
       setSelectedChannels(new Set());
       setSelectedBots(new Set());
       setSourceSharedSearch("");
@@ -373,7 +460,17 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       dispatch(setEntityIds(null));
       dispatch(setSearch(null));
     }
-    
+
+    if (sortType === 'type') {
+      setTypeAutoReply(false);
+      setTypeTrigger(false);
+      setTypeCommand(false);
+      setSelectedTypeBots(new Set());
+      setTypeSharedSearch("");
+      setTypeDefault(true);
+      dispatch(setEntityIds(null));
+    }
+
     setOpenFilter(null);
   }
 
@@ -383,6 +480,19 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       setOpenFilter(null);
     }
   }
+
+  const applyTypeFilters = useCallback(() => {
+    if (selectedTypeBots.size > 0 && !typeDefault) {
+      const botIds = bots
+        .filter(b => selectedTypeBots.has(b.title || b.username))
+        .map(b => b.id);
+      dispatch(setEntityIds(botIds.length > 0 ? botIds : null));
+    } else if (typeDefault) {
+      dispatch(setEntityIds(null));
+    }
+
+    dispatch(setSearch(typeSharedSearch.trim() || null));
+  }, [selectedTypeBots, bots, typeDefault, typeSharedSearch, dispatch]);
 
   const applySourceFilters = useCallback(() => {
     const entityIds: number[] = [];
@@ -421,6 +531,31 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     dispatch(setSearch(searchValue || null));
   }, [selectedChannels, selectedBots, channels, bots, sourceSharedSearch, sourceSystemSharedSearch, selectedFilter, sourceDefault, sourceSystemDefault, dispatch]);
 
+  useEffect(() => {
+    setSortValues({
+      time: defaultValues.time,
+      source: defaultValues.source,
+      sourceSystem: defaultValues.sourceSystem,
+      status: defaultValues.status,
+      type: defaultValues.type,
+    });
+    setSourceDefault(true);
+    setSourceSystemDefault(true);
+    setSourceChannels(false);
+    setSourceBots(false);
+    setSelectedChannels(new Set());
+    setSelectedBots(new Set());
+    setSourceSharedSearch("");
+    setSourceSystemSharedSearch("");
+    setTypeDefault(true);
+    setTypeAutoReply(false);
+    setTypeTrigger(false);
+    setTypeCommand(false);
+    setSelectedTypeBots(new Set());
+    setTypeSharedSearch("");
+    setOpenFilter(null);
+  }, [selectedFilter]);
+
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
@@ -428,12 +563,15 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         if (openFilter === 'source' || openFilter === 'sourceSystem') {
           applySourceFilters();
         }
+        if (openFilter === 'type') {
+          applyTypeFilters();
+        }
         setOpenFilter(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [openFilter, applySourceFilters]);
+  }, [openFilter, applySourceFilters, applyTypeFilters]);
 
   const filterOptions = [
     { id: "all", label: "Все" },
@@ -464,6 +602,8 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
                   isActive = !sourceDefault && (selectedChannels.size > 0 || selectedBots.size > 0 || !!sourceSharedSearch);
                 } else if (option.type === 'sourceSystem') {
                   isActive = !sourceSystemDefault && (selectedChannels.size > 0 || selectedBots.size > 0 || !!sourceSystemSharedSearch);
+                } else if (option.type === 'type') {
+                  isActive = !typeDefault && (selectedTypeBots.size > 0 || !!typeSharedSearch);
                 } else {
                   isActive = !!option.value && !isDefaultValue(option.type, option.value);
                 }

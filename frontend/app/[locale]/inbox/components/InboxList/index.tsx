@@ -24,7 +24,7 @@ import {
   setStatusFilter,
   setEventTypeFilter,
 } from "../../store";
-import type { ListFilterType } from "../../store";
+import type { ListFilterType, InboxEventResponse } from "../../store";
 
 const CATEGORY_MAP: Record<ListFilterType, string | undefined> = {
   all: undefined,
@@ -85,7 +85,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   }, [onHandlersReady, handleTimeSortChange, handleStatusFilterChange, handleEventTypeFilterChange]);
 
   useEffect(() => {
-    const category = CATEGORY_MAP[selectedFilter];
+    const category = CATEGORY_MAP[selectedFilter as ListFilterType];
     dispatch(fetchInboxEventsThunk({
       category: category as any,
       status: statusFilter ?? undefined,
@@ -122,7 +122,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
 
   useEffect(() => {
     if (isLastElementVisible && itemsHasMore && !itemsLoading && data.length > 0) {
-      const category = CATEGORY_MAP[selectedFilter];
+      const category = CATEGORY_MAP[selectedFilter as ListFilterType];
       dispatch(fetchInboxEventsThunk({
         category: category as any,
         status: statusFilter ?? undefined,
@@ -146,9 +146,9 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     setCheckedItems(newCheckedItems);
   }
   const handleSelectAll = () => {
-    const allIds = new Set(data.map(item => item.id.toString()));
+    const allIds = new Set<string>(data.map((item: InboxEventResponse) => item.id.toString()));
     const allSelected = allIds.size > 0 && allIds.size === checkedItems.size &&
-      Array.from(allIds).every(id => checkedItems.has(id));
+      Array.from(allIds).every((id: string) => checkedItems.has(id));
 
     if (allSelected) {
       setCheckedItems(new Set());
@@ -204,13 +204,15 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         onBulkAction={handleBulkAction}
         automationSubFilter={eventTypeFilter}
         onAutomationSubFilterChange={handleEventTypeFilterChange}
+        moderationSubFilter={statusFilter}
+        onModerationSubFilterChange={handleStatusFilterChange}
       />
       {isEmpty ? (
         <EmptyState />
       ) : (
         <>
           <div className={styles.list}>
-            {data.map((item, index) => (
+            {data.map((item: InboxEventResponse, index: number) => (
               <div
                 key={item.id}
                 ref={index === data.length - 1 ? lastElementRef : null}

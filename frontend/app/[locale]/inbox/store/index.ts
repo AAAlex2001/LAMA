@@ -75,6 +75,7 @@ export type {
   SpecificActionResponse,
 } from './thunks/inboxEvents';
 export {
+  selectInbox,
   selectFilteredItems,
   selectSortedItems,
   selectInboxItems,

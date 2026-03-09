@@ -2,7 +2,7 @@
 
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import { Button } from "@/components/new-button";
-import { FC, useEffect, useState } from "react";
+import { FC, useState } from "react";
 import buttonStyles from "@/components/new-button/styles.module.scss";
 
 import styles from "./styles.module.scss";
@@ -18,6 +18,8 @@ export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
 type AutomationEventType = 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
 
+type ModerationStatusType = 'new' | 'processed' | 'ignored' | null;
+
 interface ListHeaderProps {
   type: ListHeaderType;
   setIsChecking: (isChecking: boolean) => void;
@@ -29,6 +31,8 @@ interface ListHeaderProps {
   onBulkAction?: (action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => void;
   automationSubFilter?: AutomationEventType;
   onAutomationSubFilterChange?: (filter: AutomationEventType) => void;
+  moderationSubFilter?: ModerationStatusType;
+  onModerationSubFilterChange?: (filter: ModerationStatusType) => void;
 }
 
 
@@ -42,8 +46,9 @@ const ListHeader: FC<ListHeaderProps> = ({
   onBulkAction,
   automationSubFilter,
   onAutomationSubFilterChange,
+  moderationSubFilter,
+  onModerationSubFilterChange,
 }: ListHeaderProps) => {
-  const [selectedSubFilter, setSelectedSubFilter] = useState<string>("all");
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState<InvitationLink | null>(null);
@@ -96,9 +101,35 @@ const ListHeader: FC<ListHeaderProps> = ({
     }
   };
 
-  useEffect(() => {
-    setSelectedSubFilter("all");
-  }, [type]);
+  const selectedModerationSubFilter = (() => {
+    switch (moderationSubFilter) {
+      case 'new':
+        return 'new';
+      case 'processed':
+        return 'processed';
+      case 'ignored':
+        return 'ingnored';
+      default:
+        return 'all';
+    }
+  })();
+
+  const handleModerationFilterChange = (filterId: string) => {
+    switch (filterId) {
+      case 'new':
+        onModerationSubFilterChange?.('new');
+        break;
+      case 'processed':
+        onModerationSubFilterChange?.('processed');
+        break;
+      case 'ingnored':
+        onModerationSubFilterChange?.('ignored');
+        break;
+      default:
+        onModerationSubFilterChange?.(null);
+        break;
+    }
+  };
 
   switch (type) {
     case 'all':
@@ -220,8 +251,8 @@ const ListHeader: FC<ListHeaderProps> = ({
             <div className={styles.moderationWrapper}>
               <FilterTabs
                 options={filterOptionsModeration}
-                selectedFilter={selectedSubFilter}
-                onFilterChange={setSelectedSubFilter}
+                selectedFilter={selectedModerationSubFilter}
+                onFilterChange={handleModerationFilterChange}
               />
               <div className={styles.controls}>
                 <Button 
@@ -262,8 +293,8 @@ const ListHeader: FC<ListHeaderProps> = ({
             <div className={`${styles.moderationWrapperMobile} ${styles.mobileFlex}`}>
               <FilterTabs
                 options={filterOptionsModeration}
-                selectedFilter={selectedSubFilter}
-                onFilterChange={setSelectedSubFilter} 
+                selectedFilter={selectedModerationSubFilter}
+                onFilterChange={handleModerationFilterChange} 
                 className={styles.filterTabsMobile}
               />
               <div className={styles.controlsMobile}>

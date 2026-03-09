@@ -7,7 +7,7 @@ import SearchBar from '@/components/search-bar/search-bar';
 import FilterTabsWithBadges from './components/FilterTabsWithBadges';
 import InvitationLinkItem from './components/InvitationLinkItem';
 import styles from './styles.module.scss';
-import { useAppSelector, useAppDispatch, fetchAllInviteLinksThunk } from '../../store';
+import { useAppSelector, useAppDispatch, fetchAllInviteLinksThunk, selectInbox } from '../../store';
 import type { InviteLink } from '@/types';
 
 export interface InvitationLink {
@@ -84,8 +84,9 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
 
   const dispatch = useAppDispatch();
   const channels = useAppSelector((state) => state.channels.channels);
-  const inviteLinksState = useAppSelector((state) => state.inbox.inviteLinks);
-  const inviteLinksLoadingState = useAppSelector((state) => state.inbox.inviteLinksLoading);
+  const inboxState = useAppSelector(selectInbox);
+  const inviteLinksState: Record<number, InviteLink[]> = inboxState.inviteLinks;
+  const inviteLinksLoadingState: Record<number, boolean> = inboxState.inviteLinksLoading;
   
   const channelNameMap = useMemo(
     () => new Map(channels.map((ch) => [ch.id, ch.title])),
@@ -100,7 +101,7 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
 
   const allInviteLinks = useMemo(() => {
     const allLinks: InviteLink[] = [];
-    Object.entries(inviteLinksState).forEach(([channelId, links]) => {
+    Object.entries(inviteLinksState).forEach(([channelId, links]: [string, InviteLink[]]) => {
       allLinks.push(...links);
     });
     return allLinks;

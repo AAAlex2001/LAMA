@@ -89,6 +89,16 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
     setOpenFilter(null);
   }
 
+  const resetSorting = () => {
+    setSortValues({ time: "", status: "" });
+    setOpenFilter(null);
+  };
+
+  const handleNavigate = () => {
+    resetSorting();
+    onNavigateToOtherView();
+  };
+
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
@@ -105,7 +115,7 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
       <DesktopWrapper>
         <div className={styles.sortingBar} ref={barRef}>
           <Button
-            onClick={() => onNavigateToOtherView()}
+            onClick={handleNavigate}
             variant="fill"
             intent="gradient"
             size="lg"

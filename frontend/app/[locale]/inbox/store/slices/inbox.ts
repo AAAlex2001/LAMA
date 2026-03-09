@@ -77,6 +77,10 @@ const inboxSlice = createSlice({
       if (state.selectedFilter !== action.payload) {
         state.selectedFilter = action.payload;
         state.eventTypeFilter = null;
+        state.statusFilter = null;
+        state.sortDir = 'new';
+        state.entityIds = null;
+        state.search = null;
         state.items = [];
         state.itemsOffset = 0;
         state.itemsHasMore = true;

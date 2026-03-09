@@ -1,54 +1,55 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './index';
 import type { InboxEventResponse } from './thunks/inboxEvents';
+import type { InboxState } from './slices/inbox';
 
-export const selectInbox = (s: RootState) => s.inbox;
+export const selectInbox = (s: RootState): InboxState => s.inbox;
 
-export const selectInboxItems = (s: RootState) => s.inbox.items;
+export const selectInboxItems = (s: RootState): InboxEventResponse[] => s.inbox.items;
 
-export const selectInboxItemsLoading = (s: RootState) => s.inbox.itemsLoading;
+export const selectInboxItemsLoading = (s: RootState): boolean => s.inbox.itemsLoading;
 
-export const selectInboxItemsError = (s: RootState) => s.inbox.itemsError;
+export const selectInboxItemsError = (s: RootState): string | null => s.inbox.itemsError;
 
-export const selectInboxItemsTotal = (s: RootState) => s.inbox.itemsTotal;
+export const selectInboxItemsTotal = (s: RootState): number => s.inbox.itemsTotal;
 
-export const selectInboxItemsHasMore = (s: RootState) => s.inbox.itemsHasMore;
+export const selectInboxItemsHasMore = (s: RootState): boolean => s.inbox.itemsHasMore;
 
-export const selectInboxItemsOffset = (s: RootState) => s.inbox.itemsOffset;
+export const selectInboxItemsOffset = (s: RootState): number => s.inbox.itemsOffset;
 
-export const selectBulkActionLoading = (s: RootState) => s.inbox.bulkActionLoading;
+export const selectBulkActionLoading = (s: RootState): boolean => s.inbox.bulkActionLoading;
 
-export const selectSpecificActionLoading = (s: RootState) => s.inbox.specificActionLoading;
+export const selectSpecificActionLoading = (s: RootState): boolean => s.inbox.specificActionLoading;
 
-export const selectSelectedFilter = (s: RootState) => s.inbox.selectedFilter;
+export const selectSelectedFilter = (s: RootState): InboxState['selectedFilter'] => s.inbox.selectedFilter;
 
-export const selectSortDir = (s: RootState) => s.inbox.sortDir;
+export const selectSortDir = (s: RootState): 'new' | 'old' => s.inbox.sortDir;
 
-export const selectStatusFilter = (s: RootState) => s.inbox.statusFilter;
+export const selectStatusFilter = (s: RootState): 'new' | 'processed' | 'ignored' | null => s.inbox.statusFilter;
 
-export const selectEventTypeFilter = (s: RootState) => s.inbox.eventTypeFilter;
+export const selectEventTypeFilter = (s: RootState): 'system_autoreply' | 'system_trigger' | 'bot_command' | null => s.inbox.eventTypeFilter;
 
-export const selectEntityIds = (s: RootState) => s.inbox.entityIds;
+export const selectEntityIds = (s: RootState): number[] | null => s.inbox.entityIds;
 
-export const selectSearch = (s: RootState) => s.inbox.search;
+export const selectSearch = (s: RootState): string | null => s.inbox.search;
 
 export const selectFilteredItems = createSelector(
   [
-    (s: RootState) => s.inbox.items,
-    (s: RootState) => s.inbox.selectedFilter,
+    (s: RootState): InboxEventResponse[] => s.inbox.items,
+    (s: RootState): InboxState['selectedFilter'] => s.inbox.selectedFilter,
   ],
   (items, filter): InboxEventResponse[] => {
     if (filter === 'all') {
       return items;
     }
-    return items.filter((item) => item.category === filter);
+    return items.filter((item: InboxEventResponse) => item.category === filter);
   },
 );
 
 export const selectSortedItems = createSelector(
   [
     selectFilteredItems,
-    (s: RootState) => s.inbox.sort,
+    (s: RootState): InboxState['sort'] => s.inbox.sort,
   ],
   (items, sort): InboxEventResponse[] => {
     if (!sort) {
@@ -102,17 +103,17 @@ export const selectChannelsPagination = createSelector(
 );
 
 export const selectInviteLinks = (channelId: number) => createSelector(
-  [(s: RootState) => s.inbox.inviteLinks],
+  [(s: RootState): InboxState['inviteLinks'] => s.inbox.inviteLinks],
   (inviteLinks) => inviteLinks[channelId] || [],
 );
 
 export const selectInviteLinksTotal = (channelId: number) => createSelector(
-  [(s: RootState) => s.inbox.inviteLinksTotal],
+  [(s: RootState): InboxState['inviteLinksTotal'] => s.inbox.inviteLinksTotal],
   (inviteLinksTotal) => inviteLinksTotal[channelId] || 0,
 );
 
 export const selectInviteLinksLoading = (channelId: number) => createSelector(
-  [(s: RootState) => s.inbox.inviteLinksLoading],
+  [(s: RootState): InboxState['inviteLinksLoading'] => s.inbox.inviteLinksLoading],
   (inviteLinksLoading) => inviteLinksLoading[channelId] || false,
 );
 
