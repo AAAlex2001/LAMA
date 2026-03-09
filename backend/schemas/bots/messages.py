@@ -16,6 +16,7 @@ class SendMessageRequest(BaseModel):
     media_urls: Optional[List[str]] = None
     media_type: Optional[MessageType] = None
     buttons: Optional[Dict[str, Any]] = None
+    reply_to_message_id: Optional[int] = None
 
 class BotMessageResponse(BaseModel):
     """Схема ответа сообщения бота"""
@@ -31,6 +32,7 @@ class BotMessageResponse(BaseModel):
     media_group_id: Optional[str] = None
     media_name: Optional[str] = None
     media_size: Optional[int] = None
+    reply_to_message_id: Optional[int] = None
     is_incoming: bool
     created_at: datetime
 

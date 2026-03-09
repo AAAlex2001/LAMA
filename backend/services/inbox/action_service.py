@@ -134,6 +134,7 @@ class InboxActionService:
                 bot_id=event.bot_id,
                 tg_user_id=event.tg_user_id,
                 chat_id=(event.payload or {}).get("chat_id"),
+                message_id=(event.payload or {}).get("message_id"),
             )
 
         bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None

@@ -58,7 +58,8 @@ async def list_inbox_events(
 
     return InboxListResponse(
         items=results,
-        total=total
+        total=total,
+        has_more=(offset + limit) < total,
     )
 
 @router.post("/bulk-action")

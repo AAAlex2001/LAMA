@@ -33,7 +33,7 @@ class InviteLinkService:
         bot = await self.resolve_bot(channel)
 
         expire_timestamp = int(data.expire_date.timestamp()) if data.expire_date else None
-        member_limit = None if data.creates_join_request else data.member_limit
+        member_limit = None if data.creates_join_request else (data.member_limit or None)
 
         try:
             tg_link = await bot.create_chat_invite_link(
@@ -80,9 +80,8 @@ class InviteLinkService:
 
         expire_timestamp = int(data.expire_date.timestamp()) if data.expire_date else None
         new_creates_join = data.creates_join_request if data.creates_join_request is not None else invite_link.creates_join_request
-        member_limit = None if new_creates_join else (
-            data.member_limit if data.member_limit is not None else invite_link.member_limit
-        )
+        raw_limit = data.member_limit if data.member_limit is not None else invite_link.member_limit
+        member_limit = None if new_creates_join else (raw_limit or None)
 
         try:
             tg_link = await bot.edit_chat_invite_link(
@@ -176,7 +175,27 @@ class InviteLinkService:
         except TelegramAPIError as e:
             logger.warning("Failed to get primary link: %s", e)
 
-        return await self.list(channel.id)
+        links = await self.list(channel.id)
+        for link in links:
+            if link.is_revoked or link.is_primary:
+                continue
+            try:
+                expire_ts = int(link.expire_date.timestamp()) if link.expire_date else None
+                tg_link = await bot.edit_chat_invite_link(
+                    chat_id=channel.telegram_id,
+                    invite_link=link.invite_link,
+                    name=link.name,
+                    expire_date=expire_ts,
+                    member_limit=link.member_limit,
+                    creates_join_request=link.creates_join_request,
+                )
+                link.member_count = tg_link.member_count or 0
+                link.pending_join_request_count = tg_link.pending_join_request_count or 0
+            except TelegramAPIError as e:
+                logger.debug("Failed to refresh link %s: %s", link.invite_link, e)
+
+        await self.db.commit()
+        return links
 
     async def save_or_update_primary(self, channel_id: int, invite_link: str) -> ChatInviteLink:
         """Сохранить или обновить основную ссылку."""

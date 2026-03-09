@@ -3,6 +3,7 @@
 """
 import asyncio
 import logging
+from typing import Optional
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
@@ -44,13 +45,16 @@ class MessageHandler:
                 chat_svc = DirectChatService(self.db)
                 msg_svc = DirectMessageService(self.db)
 
+                photo_url = await self.resolve_user_photo(message.from_user.id)
+
                 await chat_svc.get_or_create_chat(
                     bot_id=self.bot_model.id,
                     tg_chat_id=message.chat.id,
                     tg_user_id=message.from_user.id,
                     tg_username=message.from_user.username,
                     tg_first_name=message.from_user.first_name,
-                    tg_last_name=message.from_user.last_name
+                    tg_last_name=message.from_user.last_name,
+                    tg_photo_url=photo_url,
                 )
                 await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
                 saved_msg = await msg_svc.save_incoming_message(
@@ -135,6 +139,20 @@ class MessageHandler:
 
         except Exception as e:
             logger.error(f"Message processing error: {e}", exc_info=True)
+
+    async def resolve_user_photo(self, user_id: int) -> Optional[str]:
+        """Получить URL аватара пользователя через Telegram API."""
+        try:
+            async with get_bot_session(self.bot_model.token) as client:
+                photos = await client.get_user_profile_photos(user_id=user_id, limit=1)
+                if photos.photos and photos.photos[0]:
+                    smallest = photos.photos[0][-1]
+                    tg_file = await client.get_file(smallest.file_id)
+                    if tg_file.file_path:
+                        return f"https://api.telegram.org/file/bot{self.bot_model.token}/{tg_file.file_path}"
+        except Exception as e:
+            logger.debug(f"Could not resolve user photo for {user_id}: {e}")
+        return None
 
     async def check_night_mode(self, telegram_bot: Bot, message: Message) -> bool:
         """Проверка ночного режима. Возвращает True, если сообщение заблокировано"""

@@ -52,11 +52,16 @@ class BotMessagingService:
             media_url=data.media_url,
             is_incoming=False,
             raw_data=message.model_dump(mode="json"),
+            reply_to_message_id=data.reply_to_message_id,
         )
         return message
 
     async def dispatch_telegram(self, telegram_bot, data: SendMessageRequest, reply_markup) -> Message:
         """Отправить сообщение в Telegram по типу медиа."""
+        reply_params = {}
+        if data.reply_to_message_id:
+            reply_params["reply_to_message_id"] = data.reply_to_message_id
+
         if data.media_url and data.media_type and data.media_type in MEDIA_SEND_METHODS:
             method = getattr(telegram_bot, MEDIA_SEND_METHODS[data.media_type])
             return await method(
@@ -64,11 +69,13 @@ class BotMessagingService:
                 **{data.media_type.value.lower(): data.media_url},
                 caption=data.text_content,
                 reply_markup=reply_markup,
+                **reply_params,
             )
         return await telegram_bot.send_message(
             chat_id=data.chat_id,
             text=data.text_content or "No content",
             reply_markup=reply_markup,
+            **reply_params,
         )
 
     async def save(
@@ -77,6 +84,7 @@ class BotMessagingService:
         text_content: Optional[str], media_file_id: Optional[str],
         media_url: Optional[str], is_incoming: bool,
         raw_data: Optional[Dict[str, Any]],
+        reply_to_message_id: Optional[int] = None,
     ) -> BotMessage:
         """Сохранить сообщение в БД."""
         msg = BotMessage(
@@ -84,6 +92,7 @@ class BotMessagingService:
             chat_id=chat_id, user_id=user_id, message_type=message_type,
             text_content=text_content, media_file_id=media_file_id,
             media_url=media_url, is_incoming=is_incoming, raw_data=raw_data,
+            reply_to_message_id=reply_to_message_id,
         )
         self.db.add(msg)
         await self.db.commit()

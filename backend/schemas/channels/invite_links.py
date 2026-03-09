@@ -7,7 +7,7 @@ class InviteLinkCreate(BaseModel):
     """Создание пригласительной ссылки"""
     name: Optional[str] = Field(None, max_length=255)
     expire_date: Optional[datetime] = None
-    member_limit: Optional[int] = Field(None, ge=1, le=99999)
+    member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: bool = False
 
 
@@ -15,7 +15,7 @@ class InviteLinkUpdate(BaseModel):
     """Обновление пригласительной ссылки"""
     name: Optional[str] = Field(None, max_length=255)
     expire_date: Optional[datetime] = None
-    member_limit: Optional[int] = Field(None, ge=1, le=99999)
+    member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: Optional[bool] = None
 
 

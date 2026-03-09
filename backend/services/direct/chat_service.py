@@ -21,6 +21,7 @@ class DirectChatService:
         tg_username: Optional[str] = None,
         tg_first_name: Optional[str] = None,
         tg_last_name: Optional[str] = None,
+        tg_photo_url: Optional[str] = None,
     ) -> DirectChat:
         """Получить существующий чат или создать новый."""
         query = select(DirectChat).where(
@@ -40,6 +41,9 @@ class DirectChatService:
             if tg_last_name and chat.tg_last_name != tg_last_name:
                 chat.tg_last_name = tg_last_name
                 needs_update = True
+            if tg_photo_url and chat.tg_photo_url != tg_photo_url:
+                chat.tg_photo_url = tg_photo_url
+                needs_update = True
             if needs_update:
                 await self.db.commit()
                 await self.db.refresh(chat)
@@ -52,6 +56,7 @@ class DirectChatService:
             tg_username=tg_username,
             tg_first_name=tg_first_name,
             tg_last_name=tg_last_name,
+            tg_photo_url=tg_photo_url,
         )
         self.db.add(new_chat)
         await self.db.commit()
@@ -105,6 +110,8 @@ class DirectChatService:
                 last_msg_data.c.text_content.label("_last_text"),
                 last_msg_data.c.message_type.label("_last_type"),
                 last_msg_data.c.last_message_at.label("_last_at"),
+                Bot.username.label("_bot_username"),
+                Bot.first_name.label("_bot_first_name"),
             )
             .join(Bot, DirectChat.bot_id == Bot.id)
             .outerjoin(
@@ -136,6 +143,8 @@ class DirectChatService:
             last_text = row[1]
             last_type = row[2]
             last_at = row[3]
+            bot_username = row[4]
+            bot_first_name = row[5]
 
             preview = None
             if last_at is not None:
@@ -158,11 +167,14 @@ class DirectChatService:
                 "tg_username": chat.tg_username,
                 "tg_first_name": chat.tg_first_name,
                 "tg_last_name": chat.tg_last_name,
+                "tg_photo_url": chat.tg_photo_url,
                 "unread_count": chat.unread_count,
                 "is_pinned": chat.is_pinned,
                 "is_blocked": chat.is_blocked,
                 "created_at": chat.created_at,
                 "updated_at": chat.updated_at,
+                "bot_username": bot_username,
+                "bot_first_name": bot_first_name,
                 "last_message_preview": preview,
                 "last_message_at": last_at,
             })

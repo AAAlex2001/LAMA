@@ -153,6 +153,7 @@ class DirectMessageService:
         tg_message: Message,
         fallback_type: MessageType,
         fallback_media_url: Optional[str],
+        reply_to_message_id: Optional[int] = None,
     ) -> BotMessage:
         message_type = self.extract_message_type(tg_message, fallback_type)
         msg = BotMessage(
@@ -166,6 +167,7 @@ class DirectMessageService:
             media_url=fallback_media_url,
             is_incoming=False,
             raw_data=tg_message.model_dump(),
+            reply_to_message_id=reply_to_message_id,
         )
         self.db.add(msg)
         await self.db.flush()
@@ -215,6 +217,10 @@ class DirectMessageService:
         if not chat or not bot:
             return []
 
+        reply_params = {}
+        if request.reply_to_message_id:
+            reply_params["reply_to_message_id"] = request.reply_to_message_id
+
         media_urls = self.get_request_media_urls(request)
         tg_responses: List[Message] = []
         try:
@@ -224,31 +230,31 @@ class DirectMessageService:
                         self.build_media_item(media_url, request.text_content if index == 0 else None)
                         for index, media_url in enumerate(media_urls[:10])
                     ]
-                    tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group))
+                    tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
                 elif len(media_urls) == 1:
                     media_url = media_urls[0]
                     message_type = request.media_type or self.detect_media_type(media_url)
 
                     if message_type == MessageType.PHOTO:
-                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.VIDEO:
-                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.DOCUMENT:
-                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.AUDIO:
-                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.VOICE:
-                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.ANIMATION:
-                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media_url, caption=request.text_content)]
+                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media_url, caption=request.text_content, **reply_params)]
                     elif message_type == MessageType.STICKER:
-                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media_url)]
+                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media_url, **reply_params)]
                     elif request.text_content:
-                        tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content)]
+                        tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, **reply_params)]
                     else:
                         return []
                 elif request.text_content:
-                    tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content)]
+                    tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, **reply_params)]
 
             if not tg_responses:
                 return []
@@ -269,6 +275,7 @@ class DirectMessageService:
                     tg_message=tg_response,
                     fallback_type=fallback_type,
                     fallback_media_url=fallback_url,
+                    reply_to_message_id=request.reply_to_message_id if index == 0 else None,
                 )
             )
 
@@ -369,6 +376,11 @@ class DirectMessageService:
 
         media_url = await self.resolve_media_url(bot.token, media_file_id)
 
+        reply_to = self.message_get(message, "reply_to_message")
+        if reply_to is None:
+            reply_to = raw_data.get("reply_to_message")
+        reply_to_msg_id = self.extract_nested_id(reply_to, "message_id") if reply_to else None
+
         msg = BotMessage(
             bot_id=bot_id,
             telegram_message_id=message_id,
@@ -379,7 +391,8 @@ class DirectMessageService:
             media_file_id=media_file_id,
             media_url=media_url,
             is_incoming=True,
-            raw_data=raw_data
+            raw_data=raw_data,
+            reply_to_message_id=reply_to_msg_id,
         )
         self.db.add(msg)
         await self.db.commit()

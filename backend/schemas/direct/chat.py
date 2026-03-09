@@ -30,10 +30,13 @@ class DirectChatResponse(DirectChatBase):
     tg_username: Optional[str] = None
     tg_first_name: Optional[str] = None
     tg_last_name: Optional[str] = None
+    tg_photo_url: Optional[str] = None
     unread_count: int
     created_at: datetime
     updated_at: datetime
-    
+
+    bot_username: Optional[str] = None
+    bot_first_name: Optional[str] = None
     last_message_preview: Optional[str] = None
     last_message_at: Optional[datetime] = None
 

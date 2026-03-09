@@ -23,6 +23,7 @@ class DirectChat(Base):
     tg_username: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     tg_first_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     tg_last_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    tg_photo_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     
     unread_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

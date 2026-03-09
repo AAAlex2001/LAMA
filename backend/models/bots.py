@@ -147,7 +147,8 @@ class BotMessage(Base):
     text_content: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     media_file_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     media_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
-    
+    reply_to_message_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
     # Направление
     is_incoming: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)  # True = от пользователя, False = от бота
     

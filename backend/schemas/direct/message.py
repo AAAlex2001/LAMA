@@ -11,3 +11,4 @@ class ChatHistoryResponse(BaseModel):
     total: int
     page: int
     page_size: int
+    has_more: bool = False

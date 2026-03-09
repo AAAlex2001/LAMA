@@ -10,7 +10,8 @@ from sqlalchemy import case, func, or_, select
 
 from backend.celery.app import celery_app
 from backend.celery.async_runner import run
-from backend.config import OPENAI_API_KEY, get_bot
+from backend.config import OPENAI_API_KEY
+from backend.services.bot_provider import resolve_for_bot_id, resolve_master, use_user_bots
 from backend.database import AsyncSessionLocal
 from backend.models.publications import (
     Publication,
@@ -163,10 +164,16 @@ async def process_scheduled_triggers_async() -> str:
 
     async with AsyncSessionLocal() as db:
         service = TriggerService(db)
-        telegram_bot = get_bot()
         tasks = await service.get_pending_tasks(limit=50)
         for task in tasks:
             try:
+                bot_id = task.trigger.bot_id if task.trigger else None
+                if bot_id:
+                    telegram_bot = await resolve_for_bot_id(db, bot_id)
+                elif use_user_bots():
+                    raise ValueError(f"Trigger task {task.id} has no bot_id")
+                else:
+                    telegram_bot = resolve_master()
                 await service.execute_scheduled_task(task, telegram_bot)
             except Exception as exc:
                 logger.error("trigger_task_failed: %s", exc)
@@ -185,10 +192,15 @@ async def process_recurring_messages_async() -> str:
 
     async with AsyncSessionLocal() as db:
         service = RecurringMessageService(db)
-        telegram_bot = get_bot()
         pending = await service.get_pending(limit=50)
         for msg in pending:
             try:
+                if msg.bot_id:
+                    telegram_bot = await resolve_for_bot_id(db, msg.bot_id)
+                elif use_user_bots():
+                    raise ValueError(f"Recurring message {msg.id} has no bot_id")
+                else:
+                    telegram_bot = resolve_master()
                 await service.send(msg, telegram_bot)
             except Exception as exc:
                 logger.error("recurring_message_failed: %s", exc)
@@ -226,15 +238,6 @@ async def process_repeating_publications_async() -> str:
         republish_publication.apply_async(args=[publication_id], queue="default")
 
     return f"queued_republish:{len(ids)}"
-
-
-    """Обработать обновления ботов в режиме polling."""
-
-
-
-    """Async-реализация обработки обновлений ботов."""
-
-    return "bot_updates_ok"
 
 
 @celery_app.task(name="backend.celery.tasks.process_instant_backups")

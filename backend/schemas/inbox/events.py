@@ -30,6 +30,7 @@ class InboxEventResponse(InboxEventBase):
 class InboxListResponse(BaseModel):
     items: List[InboxEventResponse]
     total: int
+    has_more: bool = False
 
 class BulkActionRequest(BaseModel):
     event_ids: List[int]
@@ -45,11 +46,12 @@ class SpecificActionResult(BaseModel):
 
     Поле status всегда заполнено. Остальные поля заполняются только
     для соответствующих типов действий:
-      - reply: bot_id, tg_user_id, chat_id
+      - reply: bot_id, tg_user_id, chat_id, message_id
       - change_ban: affected_channels
     """
     status: str
     bot_id: Optional[int] = None
     tg_user_id: Optional[int] = None
     chat_id: Optional[int] = None
+    message_id: Optional[int] = None
     affected_channels: Optional[List[int]] = None

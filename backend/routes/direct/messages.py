@@ -36,7 +36,8 @@ async def get_chat_messages(
         "items": messages,
         "total": total,
         "page": (skip // limit) + 1,
-        "page_size": limit
+        "page_size": limit,
+        "has_more": (skip + limit) < total,
     }
 
 @router.post("/chats/{bot_id}/{tg_chat_id}/messages", response_model=BotMessageBatchResponse)
