@@ -1,17 +1,18 @@
 from backend.services.publications.telegram_sender import send_to_telegram
-from typing import Optional, List
+from typing import Callable, Awaitable, Optional, List
 from sqlalchemy import select
 from sqlalchemy.sql import nullslast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
-from aiogram import Bot
 
 from backend.models.publications import (
     Publication, PublicationSeries, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
 )
+from backend.models.channels import ChannelGroup
 from backend.schemas.publications import PublishResult, ChannelPublishResult
+from backend.services.telegram_client import RateLimitedBot
 
 
 class SeriesService:
@@ -97,12 +98,9 @@ class SeriesService:
     async def publish_series_post(
         self,
         publication: Publication,
-        bot: Bot
+        bot_resolver: Callable[[ChannelGroup], Awaitable[RateLimitedBot]],
     ) -> PublishResult:
-        """
-        Опубликовать пост из серии.
-        Если series.reply_to_previous=True и есть предыдущий пост, отправит как ответ.
-        """
+        """Опубликовать пост из серии с резолвом бота по каналу."""
         if not publication.series_id:
             raise ValueError("Publication must belong to a series")
 
@@ -117,6 +115,7 @@ class SeriesService:
 
         for channel in publication.channels:
             try:
+                bot = await bot_resolver(channel)
                 reply_to_id = None
 
                 if series.reply_to_previous:

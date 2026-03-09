@@ -8,12 +8,14 @@ from aiogram.types import ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from backend.models.bots import (
     Bot as BotModel, Trigger, ScheduledTriggerTask,
     TriggerType, TriggerActionType, TriggerChatType,
 )
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot_provider import get_bot_info
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -174,12 +176,14 @@ class BotTriggerService:
     async def get_pending_tasks(self, limit: int = 100) -> List[ScheduledTriggerTask]:
         """Получить задачи готовые к выполнению."""
         result = await self.db.execute(
-            select(ScheduledTriggerTask).where(
+            select(ScheduledTriggerTask)
+            .options(joinedload(ScheduledTriggerTask.trigger))
+            .where(
                 ScheduledTriggerTask.is_executed == False,
                 ScheduledTriggerTask.execute_at <= datetime.now(timezone.utc),
             ).limit(limit)
         )
-        return list(result.scalars().all())
+        return list(result.unique().scalars().all())
 
     async def execute_scheduled_task(self, task: ScheduledTriggerTask, telegram_bot: Bot) -> bool:
         """Выполнить отложенную задачу."""
@@ -209,7 +213,7 @@ class BotTriggerService:
         text = data.get("text", "")
         if not text:
             return
-        bot_info = await bot.get_me()
+        bot_info = await get_bot_info(bot.bot.token)
         text = ShortcodeProcessor.process(text, self.build_shortcode_ctx(user_id, data, bot_info))
         try:
             await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")))
@@ -225,7 +229,7 @@ class BotTriggerService:
         media_type = data.get("media_type", "PHOTO")
         caption = data.get("text", "")
         if caption:
-            bot_info = await bot.get_me()
+            bot_info = await get_bot_info(bot.bot.token)
             caption = ShortcodeProcessor.process(caption, self.build_shortcode_ctx(user_id, data, bot_info))
 
         method_name = MEDIA_SEND_METHODS.get(media_type)

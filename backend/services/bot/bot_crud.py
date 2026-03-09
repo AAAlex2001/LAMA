@@ -1,3 +1,5 @@
+import asyncio
+import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
@@ -6,9 +8,12 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.config import PUBLIC_DOMAIN, TELEGRAM_WEBHOOK_SECRET, get_bot
+from backend.config import PUBLIC_DOMAIN, TELEGRAM_WEBHOOK_SECRET
 from backend.models.bots import Bot as BotModel, BotStatus
 from backend.schemas.bots import BotCreate, BotUpdate
+from backend.services.bot_provider import get_cached_bot, cache, bot_info_cache
+
+logger = logging.getLogger(__name__)
 
 WEBHOOK_ALLOWED_UPDATES = [
     "message", "edited_message", "callback_query",
@@ -21,10 +26,6 @@ class BotCrudService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    def get_master_bot(self) -> Bot:
-        """Получить мастер-бота из env."""
-        return get_bot()
 
     async def create(self, data: BotCreate, owner_id: int) -> BotModel:
         """Создать бота по токену."""
@@ -104,13 +105,12 @@ class BotCrudService:
         update_data = data.model_dump(exclude_unset=True)
         new_name = update_data.pop("name", None)
 
-        telegram_bot: Optional[Bot] = None
         try:
             needs_api = new_name is not None or any(
                 f in update_data for f in ("description", "short_description")
             )
             if needs_api:
-                telegram_bot = Bot(token=bot.token)
+                telegram_bot = get_cached_bot(bot.token).bot
                 await self.sync_telegram_fields(telegram_bot, bot, new_name, update_data)
 
             for field, value in update_data.items():
@@ -123,18 +123,43 @@ class BotCrudService:
         except TelegramAPIError as e:
             await self.db.rollback()
             raise ValueError(f"Failed to update bot in Telegram: {e}")
-        finally:
-            if telegram_bot:
-                await telegram_bot.session.close()
 
     async def delete(self, bot_id: int, owner_id: int) -> bool:
-        """Удалить бота."""
+        """Удалить бота: снять вебхук, очистить кеш, удалить из БД."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
             return False
+        await self.remove_webhook(bot.token)
+        await self.evict_from_cache(bot.token)
         await self.db.delete(bot)
         await self.db.commit()
         return True
+
+    async def deactivate(self, bot_id: int, owner_id: int) -> Optional[BotModel]:
+        """Деактивировать бота: снять вебхук, поставить INACTIVE."""
+        bot = await self.get(bot_id, owner_id=owner_id)
+        if not bot:
+            return None
+        await self.remove_webhook(bot.token)
+        await self.evict_from_cache(bot.token)
+        bot.status = BotStatus.INACTIVE
+        bot.updated_at = datetime.now(timezone.utc)
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
+
+    async def activate(self, bot_id: int, owner_id: int) -> Optional[BotModel]:
+        """Активировать бота: поставить вебхук, поставить ACTIVE."""
+        bot = await self.get(bot_id, owner_id=owner_id)
+        if not bot:
+            return None
+        raw_bot = get_cached_bot(bot.token).bot
+        await self.setup_webhook(raw_bot, bot.token)
+        bot.status = BotStatus.ACTIVE
+        bot.updated_at = datetime.now(timezone.utc)
+        await self.db.commit()
+        await self.db.refresh(bot)
+        return bot
 
     async def sync_from_telegram(self, token: str, owner_id: int) -> BotModel:
         """Синхронизировать информацию о боте через Telegram API."""
@@ -173,18 +198,18 @@ class BotCrudService:
 
     async def fetch_bot_info(self, token: str) -> tuple:
         """Получить информацию о боте из Telegram API и установить вебхук."""
-        temp_bot = Bot(token=token)
+        raw_bot = get_cached_bot(token).bot
         try:
-            bot_info = await temp_bot.get_me()
-            await self.setup_webhook(temp_bot, token)
-
-            description = await self.safe_get_description(temp_bot)
-            short_description = await self.safe_get_short_description(temp_bot)
+            bot_info = await raw_bot.get_me()
+            webhook_task = self.setup_webhook(raw_bot, token)
+            desc_task = self.safe_get_description(raw_bot)
+            short_desc_task = self.safe_get_short_description(raw_bot)
+            _, description, short_description = await asyncio.gather(
+                webhook_task, desc_task, short_desc_task,
+            )
             return bot_info, description, short_description
         except TelegramAPIError as e:
             raise ValueError(f"Invalid bot token: {e}")
-        finally:
-            await temp_bot.session.close()
 
     async def setup_webhook(self, bot: Bot, token: str) -> None:
         """Установить вебхук для бота."""
@@ -210,6 +235,21 @@ class BotCrudService:
             return info.short_description if info and info.short_description else None
         except TelegramAPIError:
             return None
+
+    async def remove_webhook(self, token: str) -> None:
+        """Снять вебхук с бота."""
+        try:
+            raw_bot = get_cached_bot(token).bot
+            await raw_bot.delete_webhook(drop_pending_updates=True)
+        except TelegramAPIError as e:
+            logger.warning(f"Failed to remove webhook: {e}")
+
+    async def evict_from_cache(self, token: str) -> None:
+        """Удалить бота из кешей."""
+        bot = cache.pop(token, None)
+        if bot:
+            await bot.bot.session.close()
+        bot_info_cache.pop(token, None)
 
     async def sync_telegram_fields(
         self, telegram_bot: Bot, bot: BotModel,

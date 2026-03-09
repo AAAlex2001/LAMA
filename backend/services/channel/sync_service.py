@@ -10,6 +10,7 @@ from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
 from backend.services.bot import BotService
+from backend.services.bot_provider import get_cached_bot
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 
@@ -44,19 +45,18 @@ class SyncService:
 
         bot_model = await self.get_bot_model(bot_id, owner_id)
         user_telegram_id = await self.get_user_telegram_id(owner_id)
-        bot = Bot(token=bot_model.token)
+        rate_limited_bot = get_cached_bot(bot_model.token)
+        raw_bot = rate_limited_bot.bot
 
         try:
-            await validate_access(bot, chat_identifier, bot_model.telegram_id, user_telegram_id)
-            chat = await bot.get_chat(chat_identifier)
-            chat_data = await build_chat_data(bot, chat, bot_model.token)
+            await validate_access(raw_bot, chat_identifier, bot_model.telegram_id, user_telegram_id)
+            chat = await raw_bot.get_chat(chat_identifier)
+            chat_data = await build_chat_data(raw_bot, chat, bot_model.token)
             return await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
         except TelegramForbiddenError:
             raise ValueError("Bot doesn't have access to this channel/group")
         except TelegramBadRequest as e:
             raise ValueError(f"Invalid channel/group: {str(e)}")
-        finally:
-            await bot.session.close()
 
     async def get_bot_model(self, bot_id: int, owner_id: int) -> BotModel:
         """Получить модель бота из БД."""

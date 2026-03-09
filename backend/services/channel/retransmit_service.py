@@ -8,7 +8,7 @@ from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import BackedUpPost, ChannelGroup, PostRetransmission
-from backend.services.channel.utils.bot_utils import get_master_bot
+from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.media_utils import build_media_inputs
 
 MAX_RETRIES = 5
@@ -36,7 +36,7 @@ class RetransmitService:
                 raise ValueError("Target channel not found")
 
         if bot is None:
-            bot = get_master_bot()
+            bot = await resolve_for_channel(self.db, target_channel)
 
         success = True
         error_message = None

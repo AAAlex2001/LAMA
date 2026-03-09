@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Tuple
@@ -125,8 +126,11 @@ class BotRecurringService:
         keyboard = build_keyboard(msg.inline_buttons)
         text = ShortcodeProcessor.replace_datetime(msg.text_content or "")
 
-        for chat_id in msg.target_chats:
-            await self.send_to_chat(telegram_bot, chat_id, msg, text, keyboard)
+        await asyncio.gather(
+            *(self.send_to_chat(telegram_bot, chat_id, msg, text, keyboard)
+              for chat_id in msg.target_chats),
+            return_exceptions=True,
+        )
 
         msg.last_sent_at = now
         msg.next_send_at = self.calculate_next_send(msg)

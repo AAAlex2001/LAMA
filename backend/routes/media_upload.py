@@ -7,7 +7,7 @@ import logging
 
 from backend.services.storage import get_storage_service
 from backend.services.publications.media_warmup import warmup_media_files
-from backend.config import get_bot
+from backend.services.bot_provider import resolve_master
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -110,7 +110,7 @@ async def upload_media(
     
     if media_urls:
         try:
-            bot = get_bot()
+            bot = resolve_master()
             file_ids = await warmup_media_files(bot.bot, media_urls)
         except Exception as e:
             import logging

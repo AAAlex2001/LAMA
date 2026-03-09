@@ -8,7 +8,7 @@ from aiogram.exceptions import TelegramAPIError
 from backend.models.bots import Bot as BotModel, ApprovalMode
 from backend.schemas.bots import WelcomeSettingsUpdate, AutoApprovalUpdate
 from backend.services.bot.bot_crud import BotCrudService
-from backend.config import get_bot
+from backend.services.bot_provider import resolve_for_bot_model
 
 
 class BotSettingsService:
@@ -86,15 +86,16 @@ class BotSettingsService:
         if not required_channels:
             return False, []
 
-        return await self.check_channel_subscriptions(user_id, required_channels)
+        return await self.check_channel_subscriptions(bot, user_id, required_channels)
 
     async def check_channel_subscriptions(
         self,
+        bot: BotModel,
         user_id: int,
         required_channels: list[int],
     ) -> tuple[bool, list[int]]:
         """Проверить подписку пользователя на каналы (параллельно)."""
-        telegram_bot = get_bot()
+        telegram_bot = await resolve_for_bot_model(bot)
 
         async def check_one(channel_id: int) -> Optional[int]:
             try:

@@ -33,7 +33,7 @@ from backend.services.publications.series_service import SeriesService
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 from backend.services.publications import publisher, message_editor
 from backend.services.telegram_client import RateLimitedBot
-from backend.config import get_bot
+from backend.services.bot_provider import resolve_for_channel
 
 
 class PublicationService:
@@ -50,11 +50,9 @@ class PublicationService:
         self.ai = AIService(api_key=openai_api_key)
         self.channel_service = ChannelService(db=db)
 
-    def get_bot(self) -> RateLimitedBot:
-        return get_bot()
-
     async def bot_for_channel(self, channel: Channel) -> RateLimitedBot:
-        return get_bot()
+        """Бот для канала (user bot или master)."""
+        return await resolve_for_channel(self.db, channel)
 
     # ── Publication CRUD ──
 
@@ -218,7 +216,7 @@ class PublicationService:
 
         if publication.series_id and publication.series and publication.series.reply_to_previous:
             series_service = SeriesService(self.db)
-            return await series_service.publish_series_post(publication, self.get_bot())
+            return await series_service.publish_series_post(publication, self.bot_for_channel)
 
         return await publisher.publish_to_channels(
             publication, self.db, self.channel_service,

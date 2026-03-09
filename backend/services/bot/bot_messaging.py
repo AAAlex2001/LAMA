@@ -7,7 +7,7 @@ from aiogram.exceptions import TelegramAPIError
 
 from backend.models.bots import Bot as BotModel, BotMessage, BotStatus, MessageType
 from backend.schemas.bots import SendMessageRequest
-from backend.config import get_bot
+from backend.services.bot_provider import resolve_for_bot_id
 from backend.utils.keyboard import build_keyboard
 
 MEDIA_SEND_METHODS = {
@@ -32,7 +32,7 @@ class BotMessagingService:
         if bot.status != BotStatus.ACTIVE:
             raise ValueError("Bot is not active")
 
-        telegram_bot = get_bot()
+        telegram_bot = await resolve_for_bot_id(self.db, bot_id)
         reply_markup = build_keyboard(data.buttons) if data.buttons else None
 
         try:

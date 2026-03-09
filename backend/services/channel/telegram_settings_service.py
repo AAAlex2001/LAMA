@@ -7,8 +7,9 @@ from aiogram.types import BufferedInputFile, ChatPermissions, FSInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
-from backend.services.channel.utils.bot_utils import get_master_bot
+from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
+from backend.services.telegram_client import RateLimitedBot
 
 
 class TelegramSettingsService:
@@ -16,6 +17,10 @@ class TelegramSettingsService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def resolve_bot(self, channel: ChannelGroup) -> RateLimitedBot:
+        """Бот для канала."""
+        return await resolve_for_channel(self.db, channel)
 
     async def update_settings(
         self,
@@ -30,7 +35,7 @@ class TelegramSettingsService:
         if not channel:
             raise ValueError("Channel not found")
 
-        bot = get_master_bot()
+        bot = await self.resolve_bot(channel)
 
         try:
             if title is not None:
@@ -58,7 +63,7 @@ class TelegramSettingsService:
         if not channel:
             raise ValueError("Channel not found")
 
-        bot = get_master_bot()
+        bot = await self.resolve_bot(channel)
 
         try:
             await bot.delete_chat_photo(chat_id=channel.telegram_id)
@@ -89,7 +94,7 @@ class TelegramSettingsService:
         if not channel:
             raise ValueError("Channel not found")
 
-        bot = get_master_bot()
+        bot = await self.resolve_bot(channel)
 
         try:
             if permissions:
@@ -120,7 +125,7 @@ class TelegramSettingsService:
         if not channel:
             raise ValueError("Channel not found")
 
-        bot = get_master_bot()
+        bot = await self.resolve_bot(channel)
 
         try:
             await bot.pin_chat_message(
@@ -152,7 +157,7 @@ class TelegramSettingsService:
         if not channel:
             raise ValueError("Channel not found")
 
-        bot = get_master_bot()
+        bot = await self.resolve_bot(channel)
 
         try:
             if message_id is None:
@@ -174,7 +179,7 @@ class TelegramSettingsService:
         except TelegramBadRequest as e:
             raise ValueError(f"Failed to unpin message: {str(e)}")
 
-    async def upload_photo(self, bot, channel: ChannelGroup, photo_file_path: str):
+    async def upload_photo(self, bot: RateLimitedBot, channel: ChannelGroup, photo_file_path: str):
         """Загрузить фото канала."""
         if photo_file_path.startswith(("http://", "https://")):
             async with aiohttp.ClientSession() as session:
@@ -191,7 +196,7 @@ class TelegramSettingsService:
         if chat.photo:
             try:
                 photo_file = await bot.get_file(chat.photo.big_file_id)
-                channel.photo_url = f"https://api.telegram.org/file/bot{bot.token}/{photo_file.file_path}"
+                channel.photo_url = f"https://api.telegram.org/file/bot{bot.bot.token}/{photo_file.file_path}"
                 channel.photo_small_file_id = chat.photo.small_file_id
                 channel.photo_small_file_unique_id = chat.photo.small_file_unique_id
                 channel.photo_big_file_id = chat.photo.big_file_id

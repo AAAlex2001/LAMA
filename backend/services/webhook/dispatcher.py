@@ -6,11 +6,12 @@ import asyncio
 import logging
 import os
 
-from aiogram import Bot
 from aiogram.types import Update, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import AsyncSessionLocal
+from backend.models.bots import BotStatus
+from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import get_bot_by_token, get_bot_by_chat_id
 from backend.services.webhook.moderation import ModerationHandler
 from backend.services.webhook.messages import MessageHandler
@@ -79,6 +80,9 @@ class WebhookDispatcher:
                         "Bot with requested token/chat not found in DB")
                     return
 
+                if bot_model.status == BotStatus.INACTIVE:
+                    return
+
                 handler = ModerationHandler(db, bot_model)
                 await handler.process(message)
         except Exception as e:
@@ -114,6 +118,9 @@ class WebhookDispatcher:
                 if not bot_model:
                     logger.warning(
                         "Bot with requested token/chat not found in DB")
+                    return
+
+                if bot_model.status == BotStatus.INACTIVE:
                     return
 
                 # Специальная обработка команды /start для авторизации
@@ -166,13 +173,10 @@ class WebhookDispatcher:
         if not user_id:
             return
 
-        bot = Bot(token=bot_token)
+        bot = resolve_by_token(bot_token)
 
         try:
-            # Получаем URL фронтенда
             frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")
-
-            # Создаём инлайн кнопку с параметрами пользователя
             login_url = f"{frontend_url}/login?tg_id={user_id}"
 
             if message.from_user and message.from_user.username:
@@ -221,7 +225,7 @@ class WebhookDispatcher:
         if not user_id:
             return
 
-        bot = Bot(token=bot_token)
+        bot = resolve_by_token(bot_token)
 
         try:
             import aiohttp
@@ -295,5 +299,3 @@ class WebhookDispatcher:
                 text="❌ Ошибка при создании ссылки. Попробуйте позже.",
                 reply_to_message_id=message.message_id,
             )
-        finally:
-            await bot.session.close()

@@ -102,6 +102,35 @@ async def delete_bot(
         raise HTTPException(status_code=404, detail="Bot not found")
 
 
+@router.post("/{bot_id}/deactivate", response_model=BotResponse)
+async def deactivate_bot(
+    bot_id: int,
+    service: BotCrudService = Depends(get_bot_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Деактивировать бота: снять вебхук, остановить обработку."""
+    bot = await service.deactivate(bot_id, owner_id=current_user.id)
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return bot
+
+
+@router.post("/{bot_id}/activate", response_model=BotResponse)
+async def activate_bot(
+    bot_id: int,
+    service: BotCrudService = Depends(get_bot_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Активировать бота: установить вебхук, возобновить обработку."""
+    try:
+        bot = await service.activate(bot_id, owner_id=current_user.id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if not bot:
+        raise HTTPException(status_code=404, detail="Bot not found")
+    return bot
+
+
 @router.post("/{bot_id}/sync", response_model=BotResponse)
 async def sync_existing_bot(
     bot_id: int,

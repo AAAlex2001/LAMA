@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.bot import CaptchaService, TriggerService
+from backend.services.bot_provider import get_bot_info
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -33,7 +34,7 @@ class MemberProcessor:
     async def handle_new_members(self, message: Message) -> None:
         """Обработка добавления новых участников - триггер MEMBER_JOINED"""
         try:
-            bot_info = await self.telegram_bot.get_me()
+            bot_info = await get_bot_info(self.bot_model.token)
             bot_id = bot_info.id
         except Exception as e:
             logger.error(f"Failed to get bot info: {e}", exc_info=True)

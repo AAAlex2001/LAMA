@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.channels import BackedUpPost, BackupJob, BackupStatus
 from backend.schemas.channels import BackupJobCreate
 from backend.services.channel.retransmit_service import RetransmitService
-from backend.services.channel.utils.bot_utils import get_master_bot
+from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
 
 COMMIT_BATCH_SIZE = 10
@@ -60,7 +60,7 @@ class BackupJobService:
         if not target_channel:
             raise ValueError("Target channel not found")
 
-        bot = get_master_bot()
+        bot = await resolve_for_channel(self.db, target_channel)
         retransmit = RetransmitService(self.db)
 
         for post in posts:
