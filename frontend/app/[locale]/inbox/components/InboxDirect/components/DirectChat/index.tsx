@@ -284,16 +284,18 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           ))}
           <div ref={scroll.bottomRef} />
         </div>
-        <MessageField
-          ref={messageFieldRef}
-          value={inputMode.message}
-          onChange={inputMode.setMessage}
-          onSendMessage={handleSendOrEdit}
-          editingMessage={inputMode.editingMessage}
-          onCancelEdit={inputMode.cancelEdit}
-          replyingTo={inputMode.replyingTo}
-          onCancelReply={inputMode.cancelReply}
-        />
+        {!isBlocked && (
+          <MessageField
+            ref={messageFieldRef}
+            value={inputMode.message}
+            onChange={inputMode.setMessage}
+            onSendMessage={handleSendOrEdit}
+            editingMessage={inputMode.editingMessage}
+            onCancelEdit={inputMode.cancelEdit}
+            replyingTo={inputMode.replyingTo}
+            onCancelReply={inputMode.cancelReply}
+          />
+        )}
       </div>
     </div>
   );

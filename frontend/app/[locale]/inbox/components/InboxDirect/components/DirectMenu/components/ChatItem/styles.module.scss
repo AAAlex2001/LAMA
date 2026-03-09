@@ -40,13 +40,9 @@
 }
 
 .chatItemCurrent {
-  background: var(--color-lama-blue);
-  color: white;
-  border-color: var(--color-lama-blue);
-
-  &:hover {
-    background: var(--color-lama-blue);
-  }
+  background: var(--color-lama-blue) !important;
+  color: white !important;
+  border-color: var(--color-lama-blue) !important;
 }
 
 .paddingLeft {
@@ -54,7 +50,7 @@
 }
 
 .chatItemPinned {
-  background: #EBF2FE;
+  background: #EBF2FE !important;
   border-color: transparent;
   color: var(--color-lama-black);
 }

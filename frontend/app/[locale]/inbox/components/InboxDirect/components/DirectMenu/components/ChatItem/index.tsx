@@ -55,8 +55,8 @@ const ChatItem = (chat: ChatProps) => {
     <Component
       className={classNames(styles.chatItem, {
         [styles.chatItemCurrent]: isCurrent,
-        [styles.chatItemPinned]: isPinned && !isCurrent,
         [styles.chatItemBlocked]: isBlocked,
+        [styles.chatItemPinned]: isPinned && !isCurrent,
         [styles.chatItemWithCheckbox]: showCheckbox,
       })}
       onClick={handleItemClick}
