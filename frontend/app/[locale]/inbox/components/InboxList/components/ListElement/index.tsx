@@ -84,7 +84,8 @@ const ListElement: FC<ListElementProps> = ({
   };
 
   const handleBlockSave = (data: BlockModalData) => {
-    handleAction('block', data as unknown as Record<string, unknown>);
+    // BlockModal handles the API call when eventId is provided
+    // This callback is kept for backward compatibility
     setIsBlockModalOpen(false);
   };
 
@@ -252,6 +253,7 @@ const ListElement: FC<ListElementProps> = ({
         onOpenChange={setIsBlockModalOpen}
         stopWord={(item.payload?.block_reason as string) || 'spam'}
         message={item.description || ''}
+        eventId={item.id}
         onSave={handleBlockSave}
       />
       <DesktopWrapper>

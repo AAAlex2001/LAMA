@@ -7,12 +7,14 @@ import Toggle from '@/components/toggle/toggle';
 import { WheelPicker } from '@/components/wheel-picker';
 import styles from './styles.module.scss';
 import { Button } from '@/components/new-button';
+import { useAppDispatch, useAppSelector, specificInboxActionThunk, selectSpecificActionLoading } from '../../store';
 
 interface BlockModalProps {
   isOpen: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   stopWord?: string;
   message?: string;
+  eventId?: number;
   onSave?: (data: BlockModalData) => void;
 }
 
@@ -30,8 +32,11 @@ export default function BlockModal({
   onOpenChange,
   stopWord = 'spam',
   message = 'Купи сейчас...',
+  eventId,
   onSave,
 }: BlockModalProps) {
+  const dispatch = useAppDispatch();
+  const isLoading = useAppSelector(selectSpecificActionLoading);
   const [blockType, setBlockType] = useState<'ban' | 'mute'>('ban');
   const [days, setDays] = useState(6);
   const [hours, setHours] = useState(7);
@@ -39,16 +44,48 @@ export default function BlockModal({
   const [forever, setForever] = useState(false);
   const [blockEverywhere, setBlockEverywhere] = useState(false);
 
-  const handleSave = () => {
-    onSave?.({
+  const calculateDurationSeconds = (days: number, hours: number, minutes: number): number | null => {
+    if (days === 0 && hours === 0 && minutes === 0) {
+      return null; // Forever ban
+    }
+    return days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60;
+  };
+
+  const handleSave = async () => {
+    const data: BlockModalData = {
       blockType,
       days,
       hours,
       minutes,
       forever,
       blockEverywhere,
-    });
-    onOpenChange?.(false);
+    };
+
+    // If eventId is provided, use the store to call the API
+    if (eventId !== undefined) {
+      const durationSeconds = forever ? null : calculateDurationSeconds(days, hours, minutes);
+      const payload = {
+        ban_type: blockType,
+        duration_seconds: durationSeconds,
+        everywhere: blockEverywhere,
+      };
+
+      try {
+        await dispatch(specificInboxActionThunk({
+          eventId,
+          action_type: 'change_ban',
+          payload,
+        })).unwrap();
+        onOpenChange?.(false);
+      } catch (error) {
+        console.error('Failed to update ban:', error);
+        // Error handling can be added here (e.g., show toast notification)
+      }
+    } else {
+      // Fallback to onSave callback if eventId is not provided
+      onSave?.(data);
+      onOpenChange?.(false);
+    }
   };
 
   const handlePreset = (presetHours: number) => {
@@ -198,8 +235,8 @@ export default function BlockModal({
             variant="fill"
             intent="gradient"
             size="md"
-            loading={false}
-            disabled={false}
+            loading={isLoading}
+            disabled={isLoading}
           >
             <span className={styles.buttonLabel}>Сохранить изменения</span>
           </Button>
