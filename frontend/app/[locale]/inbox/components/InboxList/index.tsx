@@ -58,7 +58,6 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);
   const lastElementRef = useRef<HTMLDivElement>(null);
-  const loadMoreRef = useRef(false);
 
   const isEmpty = !itemsLoading && data.length === 0;
 

@@ -23,7 +23,6 @@ export interface GlobalMessageFormData {
   text_content?: string;
   media_url?: string;
   inline_keyboard?: InlineKeyboard;
-  chat_id?: number;
 }
 
 const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
@@ -88,10 +87,11 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
               <Loader size={32} color="blue" />
             </div>
           ) : (
-            <GlobalMessageForm 
-              onSubmit={handleSubmit} 
-              onCancel={() => onOpenChange(false)} 
+            <GlobalMessageForm
+              onSubmit={handleSubmit}
+              onCancel={() => onOpenChange(false)}
               hideSearchBar={!!bots}
+              bots={bots}
             />
           )}
         </ModalBase.Body>

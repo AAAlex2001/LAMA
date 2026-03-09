@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/new-button';
 import styles from '../styles.module.scss';
 import type { GlobalMessageFormData } from '../index';
@@ -29,20 +29,22 @@ interface GlobalMessageFormProps {
   onShowCreateBot?: () => void;
   maxBots?: number;
   hideSearchBar?: boolean;
+  bots?: Array<{ id: number; username?: string; title?: string }>;
 }
 
-const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({ 
-  onSubmit, 
+const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
+  onSubmit,
   onShowCreateBot,
-  maxBots = 0,
   hideSearchBar = false,
+  bots: propBots,
 }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createGlobalMessageModal);
-  const bots = useAppSelector((state) => selectBots(state));
+  const storeBots = useAppSelector((state) => selectBots(state));
   const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const bots = propBots || storeBots;
   const botSearch = formState.botSearch;
-  const selectedBotIds = new Set(formState.selectedBotIds);
+  const selectedBotIds = useMemo(() => new Set(formState.selectedBotIds), [formState.selectedBotIds]);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
   const [hasMediaFiles, setHasMediaFiles] = useState(false);
   const isLoading = useAppSelector((state) => selectGlobalMessageIsLoading(state));
@@ -55,21 +57,31 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
 
   const handleSubmit = async () => {
     const { limitedMediaFiles, inlineButtonRows } = responseTextSectionRef.current || { limitedMediaFiles: [], inlineButtonRows: [] };
-
-    if (!formState.text_content.trim() && limitedMediaFiles.length === 0) {
+    
+    if (!formState.text_content.trim()) {
       return;
     }
+    
+    // Use prop bots directly if provided, otherwise fall back to Redux selection
+    const botIds = propBots
+      ? propBots.map(bot => bot.id)
+      : formState.selectedBotIds
+          .map(id => {
+            const parsed = parseInt(id, 10);
+            return isNaN(parsed) ? null : parsed;
+          })
+          .filter((id): id is number => id !== null);
 
-    if (selectedBotIds.size === 0) {
+    if (botIds.length === 0) {
       return;
     }
 
     let mediaUrl = formState.media_url.trim();
-    
+
     if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
       try {
         const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
-        const baseUrl = API_BASE_URL.replace('/api', '') || 'http://localhost:8000';
+        const baseUrl = API_BASE_URL.replace('/api', '');
         mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
       } catch (error) {
         console.error('Failed to upload media:', error);
@@ -83,8 +95,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
       text_content: formState.text_content.trim() || undefined,
       media_url: mediaUrl || undefined,
       inline_keyboard: inlineKeyboard,
-      botIds: Array.from(selectedBotIds).map(id => parseInt(id)),
-      chat_id: formState.chat_id,
+      botIds,
     });
   };
 

@@ -7,7 +7,6 @@ export interface CreateGlobalMessageModalState {
   media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   botSearch: string;
   selectedBotIds: string[];
-  chat_id?: number;
   isLoading: boolean;
 }
 
@@ -18,7 +17,6 @@ const initialState: CreateGlobalMessageModalState = {
   media_type: 'TEXT',
   botSearch: '',
   selectedBotIds: [],
-  chat_id: undefined,
   isLoading: false,
 };
 
@@ -56,9 +54,6 @@ const createGlobalMessageModalSlice = createSlice({
     setSelectedBotIds(state, action: PayloadAction<string[]>) {
       state.selectedBotIds = action.payload;
     },
-    setChatId(state, action: PayloadAction<number | undefined>) {
-      state.chat_id = action.payload;
-    },
     resetForm(state) {
       Object.assign(state, initialState);
     },
@@ -76,7 +71,6 @@ export const {
   setBotSearch,
   toggleSelectedBotId,
   setSelectedBotIds,
-  setChatId,
   resetForm,
   setIsLoading,
 } = createGlobalMessageModalSlice.actions;

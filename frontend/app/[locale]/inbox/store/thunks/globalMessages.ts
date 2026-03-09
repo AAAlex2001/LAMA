@@ -6,7 +6,6 @@ export interface SendMessageRequest {
   text_content?: string;
   media_url?: string;
   inline_keyboard?: InlineKeyboard;
-  chat_id?: number;
 }
 
 export interface BotMessageResponse {
