@@ -46,7 +46,7 @@ export default function BlockModal({
 
   const calculateDurationSeconds = (days: number, hours: number, minutes: number): number | null => {
     if (days === 0 && hours === 0 && minutes === 0) {
-      return null; // Forever ban
+      return null;
     }
     return days * 24 * 60 * 60 + hours * 60 * 60 + minutes * 60;
   };
@@ -61,7 +61,6 @@ export default function BlockModal({
       blockEverywhere,
     };
 
-    // If eventId is provided, use the store to call the API
     if (eventId !== undefined) {
       const durationSeconds = forever ? null : calculateDurationSeconds(days, hours, minutes);
       const payload = {
@@ -79,10 +78,8 @@ export default function BlockModal({
         onOpenChange?.(false);
       } catch (error) {
         console.error('Failed to update ban:', error);
-        // Error handling can be added here (e.g., show toast notification)
       }
     } else {
-      // Fallback to onSave callback if eventId is not provided
       onSave?.(data);
       onOpenChange?.(false);
     }

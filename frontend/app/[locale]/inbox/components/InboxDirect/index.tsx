@@ -9,10 +9,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
-  const { activeChatId, chats, chatsLoading, setActiveChat, fetchChats, setReplyToMessageId } = useDirectChat();
+  const { activeChatId, chats, chatsLoading, setActiveChat, fetchChats, replyToMessageId, setReplyToMessageId, activeChat } = useDirectChat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialParamsProcessedRef = useRef(false);
+
+  const messageId = searchParams?.get('message_id');
+  const messageIdNumber = messageId ? parseInt(messageId, 10) : undefined;
 
   useEffect(() => {
     if (initialParamsProcessedRef.current) return;
@@ -32,13 +35,6 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
       const chat = chats.find((c) => c.tg_chat_id === tgChatId);
       if (chat) {
         setActiveChat(chat.id);
-        const messageIdParam = searchParams?.get('message_id');
-        if (messageIdParam) {
-          const msgId = parseInt(messageIdParam, 10);
-          if (!isNaN(msgId) && msgId > 0) {
-            setReplyToMessageId(msgId);
-          }
-        }
       }
     }
   }, [searchParams, chats, chatsLoading, setActiveChat, fetchChats]);
@@ -58,21 +54,29 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
   const handleDesktopClose = () => {
     setActiveChat(null);
-    router.push("/inbox/chat");
     onClose();
+  };
+
+  const handleReplySent = () => {
+    const chatIdParam = searchParams?.get('chat_id');
+    if (chatIdParam) {
+      router.push("/inbox/chat?chat_id=" + chatIdParam);
+    } else {
+      router.push("/inbox/chat");
+    }
   };
 
   return (
     <>
       <DesktopWrapper>
         <div className={styles.inboxDirect}>
-          <DirectChat onClose={handleDesktopClose}/>
+          <DirectChat onClose={handleDesktopClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>
           <DirectMenu onChatOpen={handleChatOpen} />
         </div>
       </DesktopWrapper>
       <MobileWrapper>
         {activeChatId === null && <DirectMenu onChatOpen={handleChatOpen} />}
-        {activeChatId !== null && <DirectChat onClose={handleMobileClose} />}
+        {activeChatId !== null && <DirectChat onClose={handleMobileClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>}
       </MobileWrapper>
     </>
   )

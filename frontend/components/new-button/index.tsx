@@ -3,6 +3,7 @@
 import React from 'react';
 import cn from 'classnames';
 import Link from 'next/link';
+import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 
 export type ButtonVariant = 'fill' | 'outline' | 'ghost' | 'tag';
@@ -44,6 +45,35 @@ export function Button({
   );
 
 
+  const getLoaderColor = (): 'blue' | 'white' | 'inherit' => {
+    if (intent === 'white' || intent === 'neutral') {
+      return 'blue';
+    }
+    if (variant === 'fill' && (intent === 'primary' || intent === 'gradient' || intent === 'destructive')) {
+      return 'white';
+    }
+    return 'inherit';
+  };
+
+  const getLoaderSize = (): number => {
+    switch (size) {
+      case 'sm':
+        return 16;
+      case 'lg':
+        return 20;
+      case 'transparent':
+        return 18;
+      default:
+        return 18;
+    }
+  };
+
+  const buttonContent = loading ? (
+    <Loader size={getLoaderSize()} color={getLoaderColor()} />
+  ) : (
+    children
+  );
+
   if (href) {
     return (
       <Link
@@ -53,7 +83,7 @@ export function Button({
         target={target}
         rel={rel}
       >
-        {children}
+        {buttonContent}
       </Link>
     );
   }
@@ -66,7 +96,7 @@ export function Button({
       disabled={disabled || loading}
       {...rest}
     >
-      {children}
+      {buttonContent}
     </button>
   );
 }

@@ -15,7 +15,7 @@ import {
   setGlobalMessageBotSearch,
   toggleGlobalMessageSelectedBotId,
 } from '../../../store';
-import { selectBots, selectBotsLoading } from '../../../store/selectors';
+import { selectBots, selectBotsLoading, selectGlobalMessageIsLoading } from '../../../store/selectors';
 import BotSearchSelector from '../../BotSearchSelector';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
 import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
@@ -45,7 +45,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
   const [hasMediaFiles, setHasMediaFiles] = useState(false);
-
+  const isLoading = useAppSelector((state) => selectGlobalMessageIsLoading(state));
   useEffect(() => {
     dispatch(setCreateGlobalMessageModalOpen(true));
     return () => {
@@ -128,7 +128,9 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
           size="lg"
           onClick={handleSubmit}
           className={styles.submitButton}
-          disabled={isSubmitDisabled}
+          disabled={isSubmitDisabled || isLoading}
+          loading={isLoading}
+          style={{ width: '100%' }}
         >
           Отправить сообщение
         </Button>

@@ -9,10 +9,7 @@ import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/direc
 import Loader from '@/components/loader/loader';
 
 function getChatDisplayName(chat: DirectChatResponse): string {
-  if (chat.tg_first_name || chat.tg_last_name) {
-    return [chat.tg_first_name, chat.tg_last_name].filter(Boolean).join(' ');
-  }
-  return chat.tg_username || `Chat ${chat.tg_chat_id}`;
+  return chat.bot_username || `Chat ${chat.tg_chat_id}`;
 }
 
 function formatChatTime(dateStr: string | null): string {
@@ -130,12 +127,12 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>Все чаты</h3>
               <div className={styles.chatList}>
-                {chatsLoading && unpinnedChats.length === 0 && (
+                {chatsLoading && pinnedChats.length === 0 && unpinnedChats.length === 0 && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
                     <Loader size={20} color="blue" />
                   </div>
                 )}
-                {unpinnedChats.map((chat) => (
+                {[...pinnedChats, ...unpinnedChats].map((chat) => (
                   <ChatItem
                     key={chat.id}
                     id={chat.id}
@@ -143,12 +140,14 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     username={chat.tg_username || undefined}
                     messagePreview={chat.last_message_preview || undefined}
                     time={formatChatTime(chat.last_message_at || chat.updated_at)}
+                    isPinned={false}
                     isBlocked={chat.is_blocked}
+                    unreadCount={chat.unread_count}
                     onClick={() => handleClick(chat.id)}
                   />
                 ))}
                 {chatsHasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
-                {chatsLoading && unpinnedChats.length > 0 && (
+                {chatsLoading && (pinnedChats.length > 0 || unpinnedChats.length > 0) && (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
                     <Loader size={20} color="blue" />
                   </div>

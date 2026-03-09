@@ -268,6 +268,7 @@ export {
   setSelectedBotIds as setGlobalMessageSelectedBotIds,
   setChatId,
   resetForm as resetGlobalMessageForm,
+  setIsLoading as setGlobalMessageIsLoading,
 } from './slices/createGlobalMessageModal';
 export type { CreateGlobalMessageModalState } from './slices/createGlobalMessageModal';
 export {

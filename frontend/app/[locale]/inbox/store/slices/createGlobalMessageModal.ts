@@ -8,6 +8,7 @@ export interface CreateGlobalMessageModalState {
   botSearch: string;
   selectedBotIds: string[];
   chat_id?: number;
+  isLoading: boolean;
 }
 
 const initialState: CreateGlobalMessageModalState = {
@@ -18,6 +19,7 @@ const initialState: CreateGlobalMessageModalState = {
   botSearch: '',
   selectedBotIds: [],
   chat_id: undefined,
+  isLoading: false,
 };
 
 const createGlobalMessageModalSlice = createSlice({
@@ -60,6 +62,9 @@ const createGlobalMessageModalSlice = createSlice({
     resetForm(state) {
       Object.assign(state, initialState);
     },
+    setIsLoading(state, action: PayloadAction<boolean>) {
+      state.isLoading = action.payload;
+    },
   },
 });
 
@@ -73,6 +78,7 @@ export const {
   setSelectedBotIds,
   setChatId,
   resetForm,
+  setIsLoading,
 } = createGlobalMessageModalSlice.actions;
 
 export default createGlobalMessageModalSlice.reducer;

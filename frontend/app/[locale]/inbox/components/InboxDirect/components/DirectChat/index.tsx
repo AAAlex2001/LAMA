@@ -1,70 +1,49 @@
 'use client';
 
-import { useState, useRef, useEffect, useMemo, useCallback, FC } from 'react';
+import { useRef, useEffect, useMemo, useCallback, FC } from 'react';
 import styles from './styles.module.scss';
 import MessageElement from './components/MessageElement';
 import MessageField, { type MessageFieldRef } from './components/MessageField';
 import { BlockedIcon, ChatChevronIcon, PinIcon } from '@/components/icons';
 import classNames from 'classnames';
 import Loader from '@/components/loader/loader';
-import { useDateSeparator } from './useDateSeparator';
+import { useDateSeparator } from './hooks/useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
 import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
-
-function formatMessageTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-function mapMessageType(msg: BotMessageResponse): 'incoming' | 'outgoing' | 'system' {
-  return msg.is_incoming ? 'incoming' : 'outgoing';
-}
-
-function mapMediaItems(messages: BotMessageResponse[]) {
-  const typeMap: Record<string, 'image' | 'video' | 'file'> = {
-    PHOTO: 'image',
-    VIDEO: 'video',
-    DOCUMENT: 'file',
-    AUDIO: 'file',
-    ANIMATION: 'video',
-  };
-
-  const items = messages
-    .filter((msg) => Boolean(msg.media_url) || msg.message_type === 'DOCUMENT' || msg.message_type === 'AUDIO')
-    .map((msg) => ({
-      type: typeMap[msg.message_type] || 'file',
-      src: msg.media_url || undefined,
-      id: String(msg.id),
-      name: msg.media_name || undefined,
-      size: msg.media_size || undefined,
-    }));
-
-  return items.length > 0 ? items : undefined;
-}
-
-interface RenderedMessageGroup {
-  id: string;
-  telegramMessageId: number;
-  replyToMessageId: number | null;
-  date: Date;
-  time: string;
-  type: 'incoming' | 'outgoing' | 'system';
-  text?: string;
-  mediaItems?: ReturnType<typeof mapMediaItems>;
-  onEdit?: () => void;
-  onReply?: () => void;
-  onDelete?: () => void;
-}
+import { useRenderedMessages, getReplyText } from './hooks/useRenderedMessages';
+import { useMessageScroll } from './hooks/useMessageScroll';
+import { useMessageInputMode } from './hooks/useMessageInputMode';
+import { useReplyFromParam } from './hooks/useReplyFromParam';
 
 interface DirectChatProps {
   onClose?: () => void;
+  replyMessageId?: number;
+  onReplySent?: () => void;
 }
 
-const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
+async function processMediaFiles(mediaFiles: Array<{ url?: string; file?: File }>): Promise<string[]> {
+  const mediaUrls: string[] = [];
+  const baseUrl = API_BASE_URL.replace('/api', '');
+
+  for (const mediaFile of mediaFiles) {
+    let mediaUrl = mediaFile.url;
+
+    if (mediaFile.file && !mediaUrl) {
+      const uploaded = await uploadMediaFile(mediaFile.file);
+      mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+    }
+
+    if (mediaUrl) {
+      mediaUrls.push(mediaUrl);
+    }
+  }
+
+  return mediaUrls;
+}
+
+const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent }) => {
   const {
     activeChat,
     activeChatId,
@@ -76,197 +55,46 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     editMessage,
     deleteMessage,
     fetchMessages,
-    replyToMessageId,
-    setReplyToMessageId,
   } = useDirectChat();
 
   const tgChatId = activeChat?.tg_chat_id ?? 0;
   const { messages, loading, hasMore } = useDirectMessages(tgChatId);
 
-  const [message, setMessage] = useState('');
-  const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);
-  const [replyingTo, setReplyingTo] = useState<{ id: number; text: string } | null>(null);
-  const messageListRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const prevMessagesRef = useRef<string>('');
   const messageFieldRef = useRef<MessageFieldRef>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
-  const shouldScrollAfterSendRef = useRef(false);
-  const loadingMoreRef = useRef(false);
 
   const isPinned = activeChat?.is_pinned ?? false;
   const isBlocked = activeChat?.is_blocked ?? false;
 
-  const userName = activeChat
-    ? [activeChat.tg_first_name, activeChat.tg_last_name].filter(Boolean).join(' ') || activeChat.tg_username || ''
-    : '';
+  const userName = activeChat?.tg_username || ''
+
+  const inputMode = useMessageInputMode();
+  const scroll = useMessageScroll({ messages, loading, hasMore, activeChat, fetchMessages });
+  useReplyFromParam(replyMessageId, messages, inputMode.startReplyById);
 
   useEffect(() => {
     if (activeChat) {
       fetchMessages({ botId: activeChat.bot_id, tgChatId: activeChat.tg_chat_id });
-      prevMessagesRef.current = '';
     }
   }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
 
-  useEffect(() => {
-    const el = messageListRef.current;
-    if (!el) return;
-
-    const sentinel = bottomRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        isNearBottomRef.current = entry.isIntersecting;
-      },
-      { root: el, threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const el = messageListRef.current;
-    const sentinel = topSentinelRef.current;
-    if (!el || !sentinel) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loading && activeChat && !loadingMoreRef.current) {
-          loadingMoreRef.current = true;
-          const prevScrollHeight = el.scrollHeight;
-          fetchMessages({
-            botId: activeChat.bot_id,
-            tgChatId: activeChat.tg_chat_id,
-            skip: messages.length,
-            limit: 50,
-          }).then(() => {
-            requestAnimationFrame(() => {
-              const newScrollHeight = el.scrollHeight;
-              el.scrollTop = newScrollHeight - prevScrollHeight;
-              loadingMoreRef.current = false;
-            });
-          });
-        }
-      },
-      { root: el, threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loading, activeChat, messages.length, fetchMessages]);
-
-  const lastMessageId = messages[0]?.id;
-  useEffect(() => {
-    if (!loading && lastMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-      shouldScrollAfterSendRef.current = false;
-    }
-  }, [lastMessageId, loading]);
-
-  useEffect(() => {
-    if (replyToMessageId && messages.length > 0) {
-      const msg = messages.find((m) => m.message_id === replyToMessageId);
-      if (msg) {
-        setReplyingTo({ id: msg.message_id, text: msg.text_content || '' });
-      }
-      setReplyToMessageId(null);
-    }
-  }, [replyToMessageId, messages, setReplyToMessageId]);
-
-  const handleDeleteMessage = async (messageId: number) => {
+  const handleDeleteMessage = useCallback(async (messageId: number) => {
     if (!activeChat) return;
     await deleteMessage({
       messageId,
       chatId: activeChat.tg_chat_id,
     });
-  };
+  }, [activeChat, deleteMessage]);
 
-  const handleStartEdit = useCallback((msg: BotMessageResponse & { date: Date }) => {
-    setEditingMessage({ id: msg.id, text: msg.text_content || '' });
-    setReplyingTo(null);
-    setMessage(msg.text_content || '');
-    messageFieldRef.current?.handleClearMedia();
-  }, []);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditingMessage(null);
-    setMessage('');
-  }, []);
-
-  const handleStartReply = useCallback((msg: BotMessageResponse & { date: Date }) => {
-    let replyText = msg.text_content || '';
-    if (!replyText && (msg.media_url || msg.media_file_id)) {
-      const mediaTypeLabels: Record<string, string> = {
-        PHOTO: 'Фото',
-        VIDEO: 'Видео',
-        DOCUMENT: 'Документ',
-        AUDIO: 'Аудио',
-        VOICE: 'Голосовое сообщение',
-        STICKER: 'Стикер',
-        ANIMATION: 'GIF',
-      };
-      replyText = mediaTypeLabels[msg.message_type] || 'Медиа';
-    }
-    setReplyingTo({ id: msg.telegram_message_id, text: replyText });
-    setEditingMessage(null);
-  }, []);
-
-  const handleCancelReply = useCallback(() => {
-    setReplyingTo(null);
-  }, []);
-
-  const renderedMessages = useMemo<RenderedMessageGroup[]>(() => {
-    const reversedMessages = [...messages].reverse();
-    const groups: Array<{ messages: BotMessageResponse[] }> = [];
-
-    for (const msg of reversedMessages) {
-      const lastGroup = groups[groups.length - 1];
-      const canAppendToGroup = Boolean(
-        msg.media_group_id &&
-        lastGroup &&
-        lastGroup.messages[0]?.media_group_id === msg.media_group_id &&
-        lastGroup.messages[0]?.is_incoming === msg.is_incoming
-      );
-
-      if (canAppendToGroup && lastGroup) {
-        lastGroup.messages.push(msg);
-      } else {
-        groups.push({ messages: [msg] });
-      }
-    }
-
-    return groups.map(({ messages: groupedMessages }) => {
-      const primaryMessage = groupedMessages.find((msg) => msg.text_content)?.media_group_id
-        ? groupedMessages.find((msg) => msg.text_content) || groupedMessages[0]
-        : groupedMessages[0];
-      const latestMessage = groupedMessages[groupedMessages.length - 1];
-      const text = groupedMessages.find((msg) => msg.text_content)?.text_content || undefined;
-
-      return {
-        id: primaryMessage.media_group_id || String(primaryMessage.id),
-        telegramMessageId: primaryMessage.telegram_message_id,
-        replyToMessageId: primaryMessage.reply_to_message_id,
-        date: new Date(primaryMessage.created_at),
-        time: formatMessageTime(latestMessage.created_at),
-        type: mapMessageType(primaryMessage),
-        text,
-        mediaItems: mapMediaItems(groupedMessages),
-        onEdit: !primaryMessage.is_incoming && groupedMessages.length === 1
-          ? () => handleStartEdit({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
-          : undefined,
-        onReply: primaryMessage.is_incoming
-          ? () => handleStartReply({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
-          : undefined,
-        onDelete: groupedMessages.length === 1
-          ? () => handleDeleteMessage(primaryMessage.id)
-          : undefined,
-      };
-    });
-  }, [messages, handleStartEdit, handleStartReply]);
+  const renderedMessages = useRenderedMessages(
+    messages,
+    (msg) => {
+      messageFieldRef.current?.handleClearMedia();
+      inputMode.startEdit(msg);
+    },
+    inputMode.startReply,
+    handleDeleteMessage
+  );
 
   const replyLookup = useMemo(() => {
     const map = new Map<number, { text: string; index: number }>();
@@ -297,47 +125,32 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
   const { visibleDate, showDateSeparator } = useDateSeparator({
     messages: renderedMessages,
-    messageListRef,
+    messageListRef: scroll.messageListRef,
     messageRefs,
   });
 
-  const handleSendMessage = async () => {
+  const handleSendMessage = useCallback(async () => {
     if (!activeChat) return;
     
     const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
-    const hasText = message.trim().length > 0;
+    const hasText = inputMode.message.trim().length > 0;
     const hasMedia = mediaFiles.length > 0;
     
     if (!hasText && !hasMedia) return;
 
-    const replyToMessageId = replyingTo?.id;
+    const replyToMessageId = inputMode.replyingTo?.id;
 
     try {
       if (hasMedia) {
-        const mediaUrls: string[] = [];
-
-        for (const mediaFile of mediaFiles) {
-          let mediaUrl = mediaFile.url;
-
-          if (mediaFile.file && !mediaUrl) {
-            const uploaded = await uploadMediaFile(mediaFile.file);
-            const baseUrl = API_BASE_URL.replace('/api', '');
-            mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
-          }
-
-          if (mediaUrl) {
-            mediaUrls.push(mediaUrl);
-          }
-        }
-
+        const mediaUrls = await processMediaFiles(mediaFiles);
         await sendMessage({
-          text_content: hasText ? message : undefined,
+          text_content: hasText ? inputMode.message : undefined,
           media_urls: mediaUrls,
           reply_to_message_id: replyToMessageId,
         });
       } else {
         await sendMessage({
-          text_content: message,
+          text_content: inputMode.message,
           reply_to_message_id: replyToMessageId,
         });
       }
@@ -346,43 +159,48 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
       return;
     }
     
-    setMessage('');
+    const hadReply = Boolean(inputMode.replyingTo);
+    
+    inputMode.reset();
     messageFieldRef.current?.handleClearMedia();
-    setReplyingTo(null);
-    shouldScrollAfterSendRef.current = true;
-  };
+    scroll.markShouldScroll();
+    
+    if (hadReply && onReplySent) {
+      onReplySent();
+    }
+  }, [activeChat, inputMode, sendMessage, scroll, onReplySent]);
 
-  const handlePinChat = async () => {
+  const handleTogglePin = useCallback(async () => {
     if (!activeChatId) return;
     if (isPinned) {
       await unpinChat(activeChatId);
     } else {
       await pinChat(activeChatId);
     }
-  };
+  }, [activeChatId, isPinned, pinChat, unpinChat]);
 
-  const handleBlockChat = async () => {
+  const handleToggleBlock = useCallback(async () => {
     if (!activeChatId) return;
     if (isBlocked) {
       await unblockChat(activeChatId);
     } else {
       await blockChat(activeChatId);
     }
-  };
-  const handleSendOrEdit = async () => {
-    if (editingMessage) {
-      const trimmed = message.trim();
-      if (!trimmed || trimmed === editingMessage.text) {
-        handleCancelEdit();
+  }, [activeChatId, isBlocked, blockChat, unblockChat]);
+
+  const handleSendOrEdit = useCallback(async () => {
+    if (inputMode.editingMessage) {
+      const trimmed = inputMode.message.trim();
+      if (!trimmed || trimmed === inputMode.editingMessage.text) {
+        inputMode.cancelEdit();
         return;
       }
-      await editMessage({ messageId: editingMessage.id, text_content: trimmed });
-      setEditingMessage(null);
-      setMessage('');
+      await editMessage({ messageId: inputMode.editingMessage.id, text_content: trimmed });
+      inputMode.cancelEdit();
       return;
     }
     await handleSendMessage();
-  };
+  }, [inputMode, editMessage, handleSendMessage]);
 
   return (
     <div className={styles.directChat}>
@@ -392,20 +210,21 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
         </button>
         <div className={styles.userInfo}>
           <span className={styles.userName}>{userName}</span>
+          <span className={styles.botName}>{activeChat?.bot_username}</span>
         </div>
         <div className={styles.headerActionsWrapper}>
           <div className={styles.headerActions}>
             <button
               className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
               type="button"
-              onClick={handlePinChat}
+              onClick={handleTogglePin}
             >
               <PinIcon width={16} height={16} />
             </button>
             <button
               className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
               type="button"
-              onClick={handleBlockChat}
+              onClick={handleToggleBlock}
             >
               <BlockedIcon width={16} height={16} />
             </button>
@@ -417,13 +236,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
           <span>{visibleDate}</span>
         </div>
       )}
-      <div className={styles.messageList} ref={messageListRef}>
+      <div className={styles.messageList} ref={scroll.messageListRef}>
         {loading && messages.length === 0 && (
           <div className={styles.loadingMessages}>
             <Loader />
           </div>
         )}
-        {hasMore && <div ref={topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
+        {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
         {loading && messages.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
             <Loader size={20} />
@@ -451,6 +270,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
               text={msg.text}
               mediaItems={msg.mediaItems}
               time={msg.time}
+              userPhoto={activeChat?.tg_photo_url ?? undefined}
               replyTo={msg.replyToMessageId && replyLookup.has(msg.replyToMessageId) ? {
                 text: replyLookup.get(msg.replyToMessageId)!.text,
                 onClick: () => scrollToMessage(msg.replyToMessageId!),
@@ -461,17 +281,17 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
             />
           </div>
         ))}
-        <div ref={bottomRef} />
+        <div ref={scroll.bottomRef} />
       </div>
       <MessageField
         ref={messageFieldRef}
-        value={message}
-        onChange={setMessage}
+        value={inputMode.message}
+        onChange={inputMode.setMessage}
         onSendMessage={handleSendOrEdit}
-        editingMessage={editingMessage}
-        onCancelEdit={handleCancelEdit}
-        replyingTo={replyingTo}
-        onCancelReply={handleCancelReply}
+        editingMessage={inputMode.editingMessage}
+        onCancelEdit={inputMode.cancelEdit}
+        replyingTo={inputMode.replyingTo}
+        onCancelReply={inputMode.cancelReply}
       />
     </div>
   );

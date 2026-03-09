@@ -84,8 +84,6 @@ const ListElement: FC<ListElementProps> = ({
   };
 
   const handleBlockSave = (data: BlockModalData) => {
-    // BlockModal handles the API call when eventId is provided
-    // This callback is kept for backward compatibility
     setIsBlockModalOpen(false);
   };
 

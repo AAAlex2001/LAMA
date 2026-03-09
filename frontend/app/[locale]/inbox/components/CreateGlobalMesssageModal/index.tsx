@@ -8,7 +8,7 @@ import GlobalMessageForm from './components/GlobalMessageForm';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useSendGlobalMessage } from '../../store/hooks/useGlobalMessages';
 import { useAppDispatch } from '../../store';
-import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds } from '../../store';
+import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds, setGlobalMessageIsLoading } from '../../store';
 import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 interface CreateGlobalMessageModalProps {
@@ -55,6 +55,8 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
         return;
       }
 
+      dispatch(setGlobalMessageIsLoading(true));
+      
       const promises = botIds.map(botId =>
         sendMessage.mutateAsync({ botId, data: messageData })
       );
@@ -67,6 +69,8 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
       showError(errorMessage);
+    } finally {
+      dispatch(setGlobalMessageIsLoading(false));
     }
   };
 

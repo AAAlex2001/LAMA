@@ -174,3 +174,5 @@ export const selectDirectMessagesHasMore = (tgChatId: number) => createSelector(
 export const selectSendingMessage = (s: RootState) => s.directChat.sendingMessage;
 
 export const selectWsConnected = (s: RootState) => s.directChat.wsConnected;
+
+export const selectGlobalMessageIsLoading = (s: RootState) => s.createGlobalMessageModal.isLoading;

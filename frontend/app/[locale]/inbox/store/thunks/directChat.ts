@@ -1,18 +1,19 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 
-// --- Backend response types (match backend schemas) ---
-
 export type MessageType = 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'VOICE' | 'STICKER' | 'ANIMATION';
 
 export interface DirectChatResponse {
   id: number;
   bot_id: number;
+  bot_username?: string | null;
+  bot_first_name?: string | null;
   tg_chat_id: number;
   tg_user_id: number | null;
   tg_username: string | null;
   tg_first_name: string | null;
   tg_last_name: string | null;
+  tg_photo_url: string | null;
   is_pinned: boolean;
   is_blocked: boolean;
   unread_count: number;

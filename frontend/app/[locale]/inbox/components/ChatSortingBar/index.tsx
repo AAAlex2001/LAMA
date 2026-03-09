@@ -179,7 +179,7 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
         >
           Инбокс
         </Button>
-        <div ref={filterButtonRef} style={{ position: 'relative' }}>
+        <div ref={filterButtonRef} className={styles.filterButton}>
           <Button
             onClick={() => setIsFilterPopupOpen(!isFilterPopupOpen)}
             variant="ghost"
