@@ -60,12 +60,12 @@ export interface ChatHistoryResponse {
   page_size: number;
 }
 
-// --- Request param types ---
-
 export interface FetchDirectChatsParams {
   botId?: number;
   skip?: number;
   limit?: number;
+  sort?: 'new' | 'old';
+  unread?: 'unread' | 'read' | null;
 }
 
 export interface FetchDirectMessagesParams {
@@ -107,13 +107,15 @@ export interface UpdateDirectChatParams {
 export const fetchDirectChatsThunk = createAsyncThunk(
   'directChat/fetchChats',
   async (params: FetchDirectChatsParams, { rejectWithValue }) => {
-    const { botId, skip = 0, limit = 50 } = params;
+    const { botId, skip = 0, limit = 50, sort, unread } = params;
 
     try {
       const queryParams = new URLSearchParams();
       if (botId !== undefined) queryParams.append('bot_id', String(botId));
       queryParams.append('skip', String(skip));
       queryParams.append('limit', String(limit));
+      if (sort) queryParams.append('sort', sort);
+      if (unread) queryParams.append('unread', unread);
 
       const response = await apiRequest<DirectChatListResponse>(
         `/direct/chats?${queryParams.toString()}`,

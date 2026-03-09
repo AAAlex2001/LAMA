@@ -131,6 +131,10 @@ export const selectDirectChatsHasMore = (s: RootState) => s.directChat.chatsHasM
 
 export const selectDirectChatsTotal = (s: RootState) => s.directChat.chatsTotal;
 
+export const selectChatSort = (s: RootState) => s.directChat.chatSort;
+
+export const selectChatUnreadFilter = (s: RootState) => s.directChat.chatUnreadFilter;
+
 export const selectActiveChatId = (s: RootState) => s.directChat.activeChatId;
 
 export const selectActiveChat = createSelector(

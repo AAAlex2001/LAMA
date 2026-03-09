@@ -6,6 +6,9 @@ import styles from "../SortingBar/styles.module.scss";
 import { FilterSortIcon, ChevronDownIcon, SortClearIcon } from "@/components/icons";
 import { Button } from "@/components/new-button";
 import PopupFilter from "../SortingBar/components/PopupFilter";
+import { useAppDispatch, useAppSelector } from "../../store";
+import { setChatSort, setChatUnreadFilter } from "../../store";
+import { selectChatSort, selectChatUnreadFilter } from "../../store/selectors";
 
 interface ChatSortingBarProps {
   onNavigateToOtherView: () => void;
@@ -23,15 +26,17 @@ interface SortOption {
 }
 
 const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
+  const dispatch = useAppDispatch();
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
   const filterButtonRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
-  const [sortValues, setSortValues] = useState<Record<'time' | 'status', string>>({
-    time: "",
-    status: "",
-  });
+  const chatSort = useAppSelector(selectChatSort);
+  const chatUnreadFilter = useAppSelector(selectChatUnreadFilter);
+
+  const sortTimeValue = chatSort === 'old' ? 'oldest' : (chatSort === 'new' ? 'newest' : '');
+  const sortStatusValue = chatUnreadFilter ?? '';
 
   const timeOptions = [
     { value: "newest", label: "Сначала новые" },
@@ -48,29 +53,56 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
     {
       type: 'time' as SortOptionType,
       label: 'По активности',
-      value: sortValues.time,
+      value: sortTimeValue,
       items: timeOptions,
       width: "138px",
     },
     {
       type: 'status' as SortOptionType,
       label: 'По статусу',
-      value: sortValues.status,
+      value: sortStatusValue,
       items: statusOptions,
       width: "138px",
     },
-  ], [sortValues]);
+  ], [sortTimeValue, sortStatusValue]);
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
-    setSortValues(prev => ({ ...prev, [sortType]: value }));
+    if (sortType === 'time') {
+      const dir = value === 'oldest' ? 'old' : 'new';
+      dispatch(setChatSort(dir));
+    }
+    if (sortType === 'status') {
+      const unreadMap: Record<string, 'unread' | 'read' | null> = {
+        'unread': 'unread',
+        'read': 'read',
+        'all': null,
+      };
+      dispatch(setChatUnreadFilter(unreadMap[value] ?? null));
+    }
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
-    setSortValues(prev => ({ ...prev, [sortType]: "" }));
+    if (sortType === 'time') {
+      dispatch(setChatSort('new'));
+    }
+    if (sortType === 'status') {
+      dispatch(setChatUnreadFilter(null));
+    }
+  };
+
+  const defaultValues: Record<string, string> = {
+    time: '',
+    status: '',
+  };
+
+  const isDefaultValue = (type: string, value: string): boolean => {
+    if (type === 'time') return value === '' || value === 'newest';
+    if (type === 'status') return value === '' || value === 'all';
+    return value === defaultValues[type];
   };
 
   function getButtonText(option: SortOption): string {
-    if (!option.value) return option.label;
+    if (!option.value || isDefaultValue(option.type, option.value)) return option.label;
     if (option.items) {
       const selectedItem = option.items.find((item) => item.value === option.value);
       return selectedItem?.label || option.label;
@@ -90,7 +122,8 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
   }
 
   const resetSorting = () => {
-    setSortValues({ time: "", status: "" });
+    dispatch(setChatSort('new'));
+    dispatch(setChatUnreadFilter(null));
     setOpenFilter(null);
   };
 
@@ -127,7 +160,7 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
             <span className={styles.sortLabel}>Сортировка:</span>
             <div className={styles.sortGroup}>
               {availableSortOptions.map((option) => {
-                const isActive = !!option.value;
+                const isActive = !!option.value && !isDefaultValue(option.type, option.value);
                 const isOpen = openFilter === option.type;
 
                 return (
@@ -181,7 +214,7 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
       </DesktopWrapper>
       <MobileWrapper className={styles.mobileWrapper}>
         <Button
-          onClick={() => onNavigateToOtherView()}
+          onClick={handleNavigate}
           variant="fill"
           intent="gradient"
           size="lg"

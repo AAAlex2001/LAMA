@@ -13,6 +13,8 @@ import {
   selectDirectMessagesLoading,
   selectDirectMessagesHasMore,
   selectSendingMessage,
+  selectChatSort,
+  selectChatUnreadFilter,
 } from '../selectors';
 import {
   setActiveChatId,
@@ -53,6 +55,8 @@ export function useDirectChat() {
   const pinnedChats = useAppSelector(selectPinnedChats);
   const unpinnedChats = useAppSelector(selectUnpinnedChats);
   const sendingMessage = useAppSelector(selectSendingMessage);
+  const chatSort = useAppSelector(selectChatSort);
+  const chatUnreadFilter = useAppSelector(selectChatUnreadFilter);
 
   useEffect(() => {
     if (handlersSetRef.current) return;
@@ -105,15 +109,24 @@ export function useDirectChat() {
 
   const fetchChats = useCallback(
     (params: FetchDirectChatsParams = {}) => {
-      return dispatch(fetchDirectChatsThunk(params));
+      return dispatch(fetchDirectChatsThunk({
+        sort: chatSort,
+        unread: chatUnreadFilter,
+        ...params,
+      }));
     },
-    [dispatch]
+    [dispatch, chatSort, chatUnreadFilter]
   );
 
   const fetchMoreChats = useCallback(() => {
     if (chatsLoading || !chatsHasMore) return;
-    return dispatch(fetchDirectChatsThunk({ skip: chats.length, limit: 50 }));
-  }, [dispatch, chats.length, chatsLoading, chatsHasMore]);
+    return dispatch(fetchDirectChatsThunk({
+      skip: chats.length,
+      limit: 50,
+      sort: chatSort,
+      unread: chatUnreadFilter,
+    }));
+  }, [dispatch, chats.length, chatsLoading, chatsHasMore, chatSort, chatUnreadFilter]);
 
   const fetchMessages = useCallback(
     (params: FetchDirectMessagesParams) => {

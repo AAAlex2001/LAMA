@@ -20,6 +20,9 @@ export interface DirectChatState {
   chatsTotal: number;
   chatsHasMore: boolean;
 
+  chatSort: 'new' | 'old';
+  chatUnreadFilter: 'unread' | 'read' | null;
+
   activeChatId: number | null;
 
   messages: Record<number, BotMessageResponse[]>;
@@ -39,6 +42,9 @@ const initialState: DirectChatState = {
   chatsTotal: 0,
   chatsHasMore: true,
 
+  chatSort: 'new',
+  chatUnreadFilter: null,
+
   activeChatId: null,
 
   messages: {},
@@ -57,6 +63,22 @@ const directChatSlice = createSlice({
   reducers: {
     setActiveChatId(state, action: PayloadAction<number | null>) {
       state.activeChatId = action.payload;
+    },
+    setChatSort(state, action: PayloadAction<'new' | 'old'>) {
+      if (state.chatSort !== action.payload) {
+        state.chatSort = action.payload;
+        state.chats = [];
+        state.chatsTotal = 0;
+        state.chatsHasMore = true;
+      }
+    },
+    setChatUnreadFilter(state, action: PayloadAction<'unread' | 'read' | null>) {
+      if (state.chatUnreadFilter !== action.payload) {
+        state.chatUnreadFilter = action.payload;
+        state.chats = [];
+        state.chatsTotal = 0;
+        state.chatsHasMore = true;
+      }
     },
     clearMessages(state, action: PayloadAction<number>) {
       const chatId = action.payload;
@@ -226,6 +248,8 @@ const directChatSlice = createSlice({
 
 export const {
   setActiveChatId,
+  setChatSort,
+  setChatUnreadFilter,
   clearMessages,
   wsMessageReceived,
   setWsConnected,

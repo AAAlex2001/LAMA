@@ -283,6 +283,8 @@ export {
 export type { FetchMessagesParams, SendMessageParams, SendMessageRequest, BotMessageResponse, BotMessageListResponse } from './thunks/globalMessages';
 export {
   setActiveChatId,
+  setChatSort,
+  setChatUnreadFilter,
   clearMessages,
   wsMessageReceived,
   setWsConnected,
@@ -317,6 +319,8 @@ export {
   selectDirectChatsError,
   selectDirectChatsHasMore,
   selectDirectChatsTotal,
+  selectChatSort,
+  selectChatUnreadFilter,
   selectActiveChatId,
   selectActiveChat,
   selectPinnedChats,
