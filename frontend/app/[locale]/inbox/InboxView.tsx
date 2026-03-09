@@ -12,6 +12,7 @@ import {
   useAppSelector,
   fetchChannelsThunk,
   setSelectedFilter,
+  selectSelectedFilter,
 } from "./store";
 import type { ListFilterType } from "./store";
 
@@ -19,7 +20,7 @@ const InboxView = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const selectedFilter = useAppSelector((s) => s.inbox.selectedFilter);
+  const selectedFilter = useAppSelector(selectSelectedFilter);
   const [sortHandlers, setSortHandlers] = useState<{
     handleTimeSortChange: (sort: 'new' | 'old') => void;
     handleStatusFilterChange: (status: 'new' | 'processed' | 'ignored' | null) => void;
