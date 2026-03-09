@@ -75,10 +75,10 @@ const ListElement: FC<ListElementProps> = ({
     const response = await onSpecificAction?.(item.id, actionType, payload);
     if (actionType === 'reply') {
       const chatId = response?.payload?.response?.chat_id;
-      const messageId = item.payload?.telegram_message_id;
+      const messageId = item.payload?.message_id;
       const url = messageId
-        ? `/inbox?chat_id=${chatId}&message_id=${messageId}`
-        : `/inbox?chat_id=${chatId}`;
+        ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
+        : `/inbox/chat?chat_id=${chatId}`;
       router.push(url);
     }
   };
@@ -223,7 +223,7 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply_in_bot')} className={btnClass}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass}>
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>

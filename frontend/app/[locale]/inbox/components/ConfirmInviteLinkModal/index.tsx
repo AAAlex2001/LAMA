@@ -43,7 +43,7 @@ const ConfirmInviteLinkModal: React.FC<ConfirmInviteLinkModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Header>
           <ModalBase.Title>Подтверждение ссылки-приглашения</ModalBase.Title>
           <ModalBase.Close />

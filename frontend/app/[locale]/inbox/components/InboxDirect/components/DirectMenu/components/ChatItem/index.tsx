@@ -60,7 +60,7 @@ const ChatItem = (chat: ChatProps) => {
         [styles.chatItemWithCheckbox]: showCheckbox,
       })}
       onClick={handleItemClick}
-      disabled={isBlocked && !showCheckbox}
+      disabled={showCheckbox}
     >
       {showCheckbox && (
         <div className={styles.checkboxWrapper} onClick={(e) => e.stopPropagation()}>

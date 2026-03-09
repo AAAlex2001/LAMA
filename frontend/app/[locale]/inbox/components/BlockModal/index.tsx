@@ -77,7 +77,7 @@ export default function BlockModal({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md">
+      <ModalBase.Content size="lg">
         <ModalBase.Header className={styles.header}>
           <div className={styles.headerContent}>
             <ModalBase.Title className={styles.title}>Причина блокировки</ModalBase.Title>

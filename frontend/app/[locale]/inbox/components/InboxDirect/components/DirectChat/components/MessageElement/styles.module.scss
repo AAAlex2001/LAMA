@@ -157,6 +157,65 @@
   }
 }
 
+.replyPreview,
+.replyPreviewOutgoing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  width: 100%;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.replyPreview {
+  background: rgba(56, 63, 69, 0.08);
+}
+
+.replyPreviewOutgoing {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.replyPreviewLine {
+  width: 2px;
+  min-height: 16px;
+  align-self: stretch;
+  border-radius: 1px;
+  flex-shrink: 0;
+
+  .replyPreview & {
+    background: var(--color-lama-blue);
+  }
+
+  .replyPreviewOutgoing & {
+    background: #F1F5FB;
+  }
+}
+
+.replyPreviewText {
+  font-size: 12px;
+  line-height: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+
+  .replyPreview & {
+    color: #383F45;
+  }
+
+  .replyPreviewOutgoing & {
+    color: #F1F5FB;
+  }
+}
+
 .avatarWrapper {
   display: none;
   align-items: center;

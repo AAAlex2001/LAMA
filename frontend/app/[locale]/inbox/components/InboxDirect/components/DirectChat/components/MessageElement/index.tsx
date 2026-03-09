@@ -22,17 +22,35 @@ export interface MediaItem {
   size?: number;
 }
 
+export interface ReplyToInfo {
+  text: string;
+  onClick: () => void;
+}
+
 export interface MessageProps {
   type: 'incoming' | 'outgoing' | 'system';
   text?: string;
+  userPhoto?: string;
   mediaItems?: MediaItem[];
   time?: string;
+  replyTo?: ReplyToInfo;
   onEdit?: () => void;
   onReply?: () => void;
   onDelete?: () => void;
 }
 
-const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelete }: MessageProps) => {
+const ReplyPreview = ({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOutgoing: boolean }) => (
+  <button
+    type="button"
+    className={isOutgoing ? styles.replyPreviewOutgoing : styles.replyPreview}
+    onClick={replyTo.onClick}
+  >
+    <span className={styles.replyPreviewLine} />
+    <span className={styles.replyPreviewText}>{replyTo.text}</span>
+  </button>
+);
+
+const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEdit, onReply, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -105,7 +123,8 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
       <div className={isOutgoing ? styles.outgoingWrapper : styles.incomingWrapper}>
         <DesktopWrapper>
           { 
-          !isOutgoing && <div className={styles.avatarWrapper}>
+          !isOutgoing  && 
+            <div className={styles.avatarWrapper}>
               <div className={styles.avatar}>
                 <UserIcon width={22} height={22} color="#B0B4B8" />
               </div>
@@ -113,6 +132,7 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
           }
         </DesktopWrapper>
         <div className={styles.mediaContainer}>
+          {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={isOutgoing} />}
           {mediaRuns.map((run, idx) =>
             run.kind === 'visual' ? (
               <MediaPreview key={`visual-${idx}`} items={run.items} />
@@ -122,6 +142,13 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
           )}
           {time && <span className={styles.mediaTime}>{time}</span>}
         </div>
+        {!isOutgoing && onReply && (
+          <div className={styles.incomingMeta}>
+            <button className={styles.incomingReplyAction} onClick={onReply} type="button">
+              <ReplyIcon width={18} height={18} />
+            </button>
+          </div>
+        )}
       </div>
     );
 
@@ -138,6 +165,7 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
           </div>
         </DesktopWrapper>
         <div className={styles.incomingBubble}>
+          {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={false} />}
           <div className={styles.mediaContainer}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (
@@ -165,6 +193,7 @@ const MessageElement = ({ type, text, mediaItems, time, onEdit, onReply, onDelet
     <>
       <div className={styles.outgoingWrapper}>
         <div className={styles.outgoingBubble}>
+          {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={true} />}
           <div className={styles.mediaContainer}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (

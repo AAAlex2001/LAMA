@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '../index';
 import {
   selectDirectChats,
   selectDirectChatsLoading,
   selectDirectChatsError,
+  selectDirectChatsHasMore,
   selectActiveChatId,
   selectActiveChat,
   selectPinnedChats,
@@ -42,15 +42,12 @@ import { directChatWs, type WsEvent } from '../services/directChatWs';
 export function useDirectChat() {
   const dispatch = useAppDispatch();
   const handlersSetRef = useRef(false);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const chatIdFromUrlRef = useRef<number | null>(null);
-  const messageIdFromUrlRef = useRef<number | null>(null);
   const [replyToMessageId, setReplyToMessageId] = useState<number | null>(null);
 
   const chats = useAppSelector(selectDirectChats);
   const chatsLoading = useAppSelector(selectDirectChatsLoading);
   const chatsError = useAppSelector(selectDirectChatsError);
+  const chatsHasMore = useAppSelector(selectDirectChatsHasMore);
   const activeChatId = useAppSelector(selectActiveChatId);
   const activeChat = useAppSelector(selectActiveChat);
   const pinnedChats = useAppSelector(selectPinnedChats);
@@ -92,47 +89,6 @@ export function useDirectChat() {
   }, [dispatch]);
 
   useEffect(() => {
-    const chatIdParam = searchParams?.get('chat_id');
-    if (chatIdParam) {
-      const chatId = parseInt(chatIdParam, 10);
-      if (!isNaN(chatId) && chatId > 0) {
-        chatIdFromUrlRef.current = chatId;
-        const messageIdParam = searchParams?.get('message_id');
-        if (messageIdParam) {
-          const msgId = parseInt(messageIdParam, 10);
-          if (!isNaN(msgId) && msgId > 0) {
-            messageIdFromUrlRef.current = msgId;
-          }
-        }
-        if (chats.length === 0 && !chatsLoading) {
-          dispatch(fetchDirectChatsThunk({}));
-        }
-        if (typeof window !== 'undefined') {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('chat_id');
-          url.searchParams.delete('message_id');
-          router.replace(url.pathname + url.search, { scroll: false });
-        }
-      }
-    }
-  }, [searchParams, router, chats.length, chatsLoading, dispatch]);
-
-  useEffect(() => {
-    if (chatIdFromUrlRef.current && chats.length > 0 && !chatsLoading) {
-      const chatId = chatIdFromUrlRef.current;
-      const chat = chats.find((c) => c.tg_chat_id === chatId);
-      if (chat && activeChatId !== chat.id) {
-        dispatch(setActiveChatId(chat.id));
-      }
-      if (messageIdFromUrlRef.current) {
-        setReplyToMessageId(messageIdFromUrlRef.current);
-        messageIdFromUrlRef.current = null;
-      }
-      chatIdFromUrlRef.current = null;
-    }
-  }, [chats, chatsLoading, activeChatId, dispatch]);
-
-  useEffect(() => {
     if (activeChat) {
       directChatWs.connect(activeChat.bot_id, activeChat.tg_chat_id);
     } else {
@@ -153,6 +109,11 @@ export function useDirectChat() {
     },
     [dispatch]
   );
+
+  const fetchMoreChats = useCallback(() => {
+    if (chatsLoading || !chatsHasMore) return;
+    return dispatch(fetchDirectChatsThunk({ skip: chats.length, limit: 50 }));
+  }, [dispatch, chats.length, chatsLoading, chatsHasMore]);
 
   const fetchMessages = useCallback(
     (params: FetchDirectMessagesParams) => {
@@ -256,6 +217,7 @@ export function useDirectChat() {
     chats,
     chatsLoading,
     chatsError,
+    chatsHasMore,
     activeChatId,
     activeChat,
     pinnedChats,
@@ -265,6 +227,7 @@ export function useDirectChat() {
 
     setActiveChat,
     fetchChats,
+    fetchMoreChats,
     fetchMessages,
     sendMessage,
     updateChat,

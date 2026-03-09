@@ -72,7 +72,7 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>Отправка сообщения</ModalBase.Title>
           <ModalBase.Close />

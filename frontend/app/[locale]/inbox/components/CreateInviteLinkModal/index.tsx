@@ -219,7 +219,7 @@ const CreateInviteLinkModal: React.FC<{
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={handleOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>
             {modalState.step === 'form'

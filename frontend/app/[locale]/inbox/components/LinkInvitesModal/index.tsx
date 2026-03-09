@@ -141,7 +141,7 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Body className={styles.modalBody}>
           {handleCreateLink && (
             <div className={styles.createButtonContainer}>

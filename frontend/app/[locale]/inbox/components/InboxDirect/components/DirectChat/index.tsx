@@ -48,6 +48,8 @@ function mapMediaItems(messages: BotMessageResponse[]) {
 
 interface RenderedMessageGroup {
   id: string;
+  telegramMessageId: number;
+  replyToMessageId: number | null;
   date: Date;
   time: string;
   type: 'incoming' | 'outgoing' | 'system';
@@ -79,7 +81,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   } = useDirectChat();
 
   const tgChatId = activeChat?.tg_chat_id ?? 0;
-  const { messages, loading } = useDirectMessages(tgChatId);
+  const { messages, loading, hasMore } = useDirectMessages(tgChatId);
 
   const [message, setMessage] = useState('');
   const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);
@@ -89,8 +91,10 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   const prevMessagesRef = useRef<string>('');
   const messageFieldRef = useRef<MessageFieldRef>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const shouldScrollAfterSendRef = useRef(false);
+  const loadingMoreRef = useRef(false);
 
   const isPinned = activeChat?.is_pinned ?? false;
   const isBlocked = activeChat?.is_blocked ?? false;
@@ -124,6 +128,37 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const el = messageListRef.current;
+    const sentinel = topSentinelRef.current;
+    if (!el || !sentinel) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading && activeChat && !loadingMoreRef.current) {
+          loadingMoreRef.current = true;
+          const prevScrollHeight = el.scrollHeight;
+          fetchMessages({
+            botId: activeChat.bot_id,
+            tgChatId: activeChat.tg_chat_id,
+            skip: messages.length,
+            limit: 50,
+          }).then(() => {
+            requestAnimationFrame(() => {
+              const newScrollHeight = el.scrollHeight;
+              el.scrollTop = newScrollHeight - prevScrollHeight;
+              loadingMoreRef.current = false;
+            });
+          });
+        }
+      },
+      { root: el, threshold: 0.1 }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMore, loading, activeChat, messages.length, fetchMessages]);
+
   const lastMessageId = messages[0]?.id;
   useEffect(() => {
     if (!loading && lastMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
@@ -134,9 +169,9 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
   useEffect(() => {
     if (replyToMessageId && messages.length > 0) {
-      const msg = messages.find((m) => m.telegram_message_id === replyToMessageId);
+      const msg = messages.find((m) => m.message_id === replyToMessageId);
       if (msg) {
-        setReplyingTo({ id: msg.telegram_message_id, text: msg.text_content || '' });
+        setReplyingTo({ id: msg.message_id, text: msg.text_content || '' });
       }
       setReplyToMessageId(null);
     }
@@ -163,7 +198,20 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
   }, []);
 
   const handleStartReply = useCallback((msg: BotMessageResponse & { date: Date }) => {
-    setReplyingTo({ id: msg.telegram_message_id, text: msg.text_content || '' });
+    let replyText = msg.text_content || '';
+    if (!replyText && (msg.media_url || msg.media_file_id)) {
+      const mediaTypeLabels: Record<string, string> = {
+        PHOTO: 'Фото',
+        VIDEO: 'Видео',
+        DOCUMENT: 'Документ',
+        AUDIO: 'Аудио',
+        VOICE: 'Голосовое сообщение',
+        STICKER: 'Стикер',
+        ANIMATION: 'GIF',
+      };
+      replyText = mediaTypeLabels[msg.message_type] || 'Медиа';
+    }
+    setReplyingTo({ id: msg.telegram_message_id, text: replyText });
     setEditingMessage(null);
   }, []);
 
@@ -200,6 +248,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
 
       return {
         id: primaryMessage.media_group_id || String(primaryMessage.id),
+        telegramMessageId: primaryMessage.telegram_message_id,
+        replyToMessageId: primaryMessage.reply_to_message_id,
         date: new Date(primaryMessage.created_at),
         time: formatMessageTime(latestMessage.created_at),
         type: mapMessageType(primaryMessage),
@@ -218,6 +268,33 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     });
   }, [messages, handleStartEdit, handleStartReply]);
 
+  const replyLookup = useMemo(() => {
+    const map = new Map<number, { text: string; index: number }>();
+    renderedMessages.forEach((msg, index) => {
+      map.set(msg.telegramMessageId, {
+        text: msg.text || (msg.mediaItems ? 'Медиа' : ''),
+        index,
+      });
+    });
+    return map;
+  }, [renderedMessages]);
+
+  const scrollToMessage = useCallback((telegramMessageId: number) => {
+    const info = replyLookup.get(telegramMessageId);
+    if (info == null) return;
+    const el = messageRefs.current[info.index];
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.style.transition = 'background 0.3s';
+      el.style.background = 'rgba(59, 130, 246, 0.12)';
+      el.style.borderRadius = '12px';
+      setTimeout(() => {
+        el.style.background = '';
+        el.style.borderRadius = '';
+      }, 1500);
+    }
+  }, [replyLookup]);
+
   const { visibleDate, showDateSeparator } = useDateSeparator({
     messages: renderedMessages,
     messageListRef,
@@ -232,6 +309,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
     const hasMedia = mediaFiles.length > 0;
     
     if (!hasText && !hasMedia) return;
+
+    const replyToMessageId = replyingTo?.id;
 
     try {
       if (hasMedia) {
@@ -254,10 +333,12 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
         await sendMessage({
           text_content: hasText ? message : undefined,
           media_urls: mediaUrls,
+          reply_to_message_id: replyToMessageId,
         });
       } else {
         await sendMessage({
           text_content: message,
+          reply_to_message_id: replyToMessageId,
         });
       }
     } catch (error) {
@@ -337,9 +418,15 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
         </div>
       )}
       <div className={styles.messageList} ref={messageListRef}>
-        {loading && (
+        {loading && messages.length === 0 && (
           <div className={styles.loadingMessages}>
             <Loader />
+          </div>
+        )}
+        {hasMore && <div ref={topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
+        {loading && messages.length > 0 && (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
+            <Loader size={20} />
           </div>
         )}
         {!loading && renderedMessages.length === 0 && (
@@ -364,6 +451,10 @@ const DirectChat: FC<DirectChatProps> = ({ onClose }) => {
               text={msg.text}
               mediaItems={msg.mediaItems}
               time={msg.time}
+              replyTo={msg.replyToMessageId && replyLookup.has(msg.replyToMessageId) ? {
+                text: replyLookup.get(msg.replyToMessageId)!.text,
+                onClick: () => scrollToMessage(msg.replyToMessageId!),
+              } : undefined}
               onEdit={msg.onEdit}
               onReply={msg.onReply}
               onDelete={msg.onDelete}

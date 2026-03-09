@@ -60,6 +60,9 @@ const SourceContent: FC<SourceContentProps> = ({
               checked={opt.checked}
               onChange={(checked) => {
                 opt.onChange(checked);
+                if (checked) {
+                  onDefaultChange(false);
+                }
               }}
             />
             <span className={styles.sourceOptionLabel}>{opt.label}</span>
@@ -72,6 +75,14 @@ const SourceContent: FC<SourceContentProps> = ({
         const hasSharedSearch = checkedOptions.some((opt) => opt.list?.isSharedSearch);
         const sharedSearchOption = checkedOptions.find((opt) => opt.list?.isSharedSearch);
         
+        // Combine all items from checked options into one list
+        const combinedItems = checkedOptions.flatMap((opt) => 
+          opt.list!.items.map((item) => ({
+            item,
+            option: opt,
+          }))
+        );
+        
         if (hasSharedSearch && sharedSearchOption) {
           return (
             <>
@@ -82,57 +93,57 @@ const SourceContent: FC<SourceContentProps> = ({
                   onChange={sharedSearchOption.list!.onSearchChange}
                 />
               </div>
-              {checkedOptions.map((opt) => (
-                <div key={`${opt.key}-list`}>
-                  <div className={styles.channelList}>
-                    {opt.list!.items.map((item) => {
-                      const isSelected = opt.list!.selectedItems.has(item);
-                      return (
-                        <div
-                          key={item}
-                          className={styles.channelItem}
-                        >
-                          <Checkbox
-                            checked={isSelected}
-                            onChange={() => {
-                              opt.list!.onItemToggle(item);
-                            }}
-                          />
-                          <span className={styles.channelItemLabel}>{item}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              <div className={styles.channelList}>
+                {combinedItems.map(({ item, option }) => {
+                  const isSelected = option.list!.selectedItems.has(item);
+                  return (
+                    <div
+                      key={`${option.key}-${item}`}
+                      className={styles.channelItem}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onChange={() => {
+                          option.list!.onItemToggle(item);
+                        }}
+                      />
+                      <span className={styles.channelItemLabel}>{item}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </>
           );
         }
         
-        return checkedOptions.map((opt) => (
-          <div key={`${opt.key}-list`}>
+        // If no shared search, use the first option's search (shouldn't happen with current setup)
+        const firstOption = checkedOptions[0];
+        if (!firstOption) return null;
+        
+        return (
+          <>
             <div className={styles.channelSearch}>
               <SearchBar
-                placeholder={opt.list!.searchPlaceholder}
-                value={opt.list!.searchValue}
-                onChange={opt.list!.onSearchChange}
+                placeholder={firstOption.list!.searchPlaceholder}
+                value={firstOption.list!.searchValue}
+                onChange={firstOption.list!.onSearchChange}
               />
             </div>
             <div className={styles.channelList}>
-              {opt.list!.items.map((item) => {
-                const isSelected = opt.list!.selectedItems.has(item);
+              {combinedItems.map(({ item, option }) => {
+                const isSelected = option.list!.selectedItems.has(item);
                 return (
                   <div
-                    key={item}
+                    key={`${option.key}-${item}`}
                     className={styles.channelItem}
                     onClick={() => {
-                      opt.list!.onItemToggle(item);
+                      option.list!.onItemToggle(item);
                     }}
                   >
                     <Checkbox
                       checked={isSelected}
                       onChange={() => {
-                        opt.list!.onItemToggle(item);
+                        option.list!.onItemToggle(item);
                       }}
                     />
                     <span className={styles.channelItemLabel}>{item}</span>
@@ -140,8 +151,8 @@ const SourceContent: FC<SourceContentProps> = ({
                 );
               })}
             </div>
-          </div>
-        ));
+          </>
+        );
       })()}
     </div>
   );

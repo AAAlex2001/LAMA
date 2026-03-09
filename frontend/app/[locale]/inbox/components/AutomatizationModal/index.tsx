@@ -38,7 +38,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>Автоматизация действий</ModalBase.Title>
           <ModalBase.Close />

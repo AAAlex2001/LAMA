@@ -32,6 +32,7 @@ export interface DirectChatListResponse {
 export interface BotMessageResponse {
   id: number;
   bot_id: number;
+  message_id: number;
   telegram_message_id: number;
   chat_id: number;
   user_id: number | null;
@@ -42,6 +43,7 @@ export interface BotMessageResponse {
   media_group_id: string | null;
   media_name: string | null;
   media_size: number | null;
+  reply_to_message_id: number | null;
   is_incoming: boolean;
   created_at: string;
 }

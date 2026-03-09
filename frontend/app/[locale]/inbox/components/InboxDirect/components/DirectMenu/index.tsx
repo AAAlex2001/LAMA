@@ -3,9 +3,10 @@
 import styles from "./styles.module.scss";
 import ChatItem from "./components/ChatItem";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
-import { FC, useEffect } from "react";
+import { FC, useEffect, useRef, useCallback } from "react";
 import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import Loader from '@/components/loader/loader';
 
 function getChatDisplayName(chat: DirectChatResponse): string {
   if (chat.tg_first_name || chat.tg_last_name) {
@@ -32,13 +33,33 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
     pinnedChats,
     unpinnedChats,
     chatsLoading,
+    chatsHasMore,
     fetchChats,
+    fetchMoreChats,
     setActiveChat,
   } = useDirectChat();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchChats();
   }, [fetchChats]);
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && chatsHasMore && !chatsLoading) {
+          fetchMoreChats();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    observer.observe(sentinelRef.current);
+    return () => observer.disconnect();
+  }, [chatsHasMore, chatsLoading, fetchMoreChats]);
 
   const handleClick = (chatId: number) => {
     setActiveChat(chatId);
@@ -109,8 +130,8 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>Все чаты</h3>
               <div className={styles.chatList}>
-                {chatsLoading && <div>Загрузка...</div>}
-                {!chatsLoading && unpinnedChats.map((chat) => (
+                {chatsLoading && unpinnedChats.length === 0 && <div>Загрузка...</div>}
+                {unpinnedChats.map((chat) => (
                   <ChatItem
                     key={chat.id}
                     id={chat.id}
@@ -122,6 +143,12 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     onClick={() => handleClick(chat.id)}
                   />
                 ))}
+                {chatsHasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
+                {chatsLoading && unpinnedChats.length > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                    <Loader size={20} color="blue" />
+                  </div>
+                )}
               </div>
             </div>
           </>

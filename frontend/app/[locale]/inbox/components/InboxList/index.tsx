@@ -12,6 +12,8 @@ import {
   fetchInboxEventsThunk,
   selectInboxItems,
   selectInboxItemsLoading,
+  selectInboxItemsHasMore,
+  selectInboxItemsOffset,
   selectSortDir,
   selectStatusFilter,
   selectSelectedFilter,
@@ -19,10 +21,6 @@ import {
   setSortDir,
   setStatusFilter,
   setEventTypeFilter,
-  setCurrentView,
-  setActiveChatId,
-  fetchDirectChatsThunk,
-  selectDirectChats,
 } from "../../store";
 import type { ListFilterType } from "../../store";
 
@@ -46,6 +44,8 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const dispatch = useAppDispatch();
   const data = useAppSelector(selectInboxItems);
   const itemsLoading = useAppSelector(selectInboxItemsLoading);
+  const itemsHasMore = useAppSelector(selectInboxItemsHasMore);
+  const itemsOffset = useAppSelector(selectInboxItemsOffset);
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
@@ -54,6 +54,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);
   const lastElementRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef(false);
 
   const isEmpty = !itemsLoading && data.length === 0;
 
@@ -113,6 +114,20 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     };
   }, [data]);
 
+  useEffect(() => {
+    if (isLastElementVisible && itemsHasMore && !itemsLoading && data.length > 0) {
+      const category = CATEGORY_MAP[selectedFilter];
+      dispatch(fetchInboxEventsThunk({
+        category: category as any,
+        status: statusFilter ?? undefined,
+        sort: sortDir,
+        event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
+        offset: itemsOffset,
+        limit: 50,
+      }));
+    }
+  }, [isLastElementVisible, itemsHasMore, itemsLoading, data.length, dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, itemsOffset]);
+
   const handleCheck = (id: string) => {
     const newCheckedItems = new Set(checkedItems);
     if (newCheckedItems.has(id)) {
@@ -161,10 +176,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
   }, [dispatch]);
 
-  console.log(itemsLoading, 'itemsLoading');
-  console.log(isEmpty, 'isEmpty');
-
-  if (itemsLoading) {
+  if (itemsLoading && data.length === 0) {
     return (
       <div className={styles.loaderContainer}>
         <Loader size={32} color="blue" />
@@ -172,7 +184,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     );
   }
 
-  if (isEmpty && !itemsLoading) {
+  if (isEmpty) {
     return <EmptyState />;
   }
 
@@ -206,6 +218,11 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
           </div>
         ))}
       </div>
+      {itemsLoading && data.length > 0 && (
+        <div className={styles.loaderContainer} style={{ padding: '16px 0' }}>
+          <Loader size={24} color="blue" />
+        </div>
+      )}
       {!isLastElementVisible && <div className={styles.bottomGradient} />}
     </div>
   )

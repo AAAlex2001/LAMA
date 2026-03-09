@@ -74,7 +74,7 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={handleClose}>
-      <ModalBase.Content size="md" >
+      <ModalBase.Content size="lg" >
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>Подключение Telegram бота</ModalBase.Title>
           <ModalBase.Close />

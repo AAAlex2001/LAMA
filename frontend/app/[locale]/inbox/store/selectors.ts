@@ -122,6 +122,10 @@ export const selectDirectChatsLoading = (s: RootState) => s.directChat.chatsLoad
 
 export const selectDirectChatsError = (s: RootState) => s.directChat.chatsError;
 
+export const selectDirectChatsHasMore = (s: RootState) => s.directChat.chatsHasMore;
+
+export const selectDirectChatsTotal = (s: RootState) => s.directChat.chatsTotal;
+
 export const selectActiveChatId = (s: RootState) => s.directChat.activeChatId;
 
 export const selectActiveChat = createSelector(

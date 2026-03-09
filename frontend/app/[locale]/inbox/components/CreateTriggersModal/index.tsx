@@ -72,7 +72,7 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modalContent}>
+      <ModalBase.Content size="lg" className={styles.modalContent}>
         <ModalBase.Header className={styles.modalHeader}>
           <ModalBase.Title>Создание триггера</ModalBase.Title>
           <ModalBase.Close />

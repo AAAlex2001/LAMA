@@ -18,6 +18,7 @@ export interface DirectChatState {
   chatsLoading: boolean;
   chatsError: string | null;
   chatsTotal: number;
+  chatsHasMore: boolean;
 
   activeChatId: number | null;
 
@@ -36,6 +37,7 @@ const initialState: DirectChatState = {
   chatsLoading: false,
   chatsError: null,
   chatsTotal: 0,
+  chatsHasMore: true,
 
   activeChatId: null,
 
@@ -120,8 +122,19 @@ const directChatSlice = createSlice({
       })
       .addCase(fetchDirectChatsThunk.fulfilled, (state, action) => {
         state.chatsLoading = false;
-        state.chats = action.payload.items;
-        state.chatsTotal = action.payload.total;
+        const { skip = 0, limit = 50 } = action.meta.arg;
+        const response = action.payload;
+
+        if (skip > 0) {
+          const existingIds = new Set(state.chats.map((c) => c.id));
+          const newChats = response.items.filter((c) => !existingIds.has(c.id));
+          state.chats = [...state.chats, ...newChats];
+        } else {
+          state.chats = response.items;
+        }
+
+        state.chatsTotal = response.total;
+        state.chatsHasMore = response.items.length >= limit;
       })
       .addCase(fetchDirectChatsThunk.rejected, (state, action) => {
         state.chatsLoading = false;

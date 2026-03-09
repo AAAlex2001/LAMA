@@ -309,6 +309,8 @@ export {
   selectDirectChats,
   selectDirectChatsLoading,
   selectDirectChatsError,
+  selectDirectChatsHasMore,
+  selectDirectChatsTotal,
   selectActiveChatId,
   selectActiveChat,
   selectPinnedChats,
