@@ -168,6 +168,7 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
           onClick={handleSubmit}
           className={styles.submitButton}
           disabled={isSubmitDisabled}
+          style={{ width: '100%' }}
         >
           Создать команду
         </Button>
