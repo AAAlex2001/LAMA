@@ -18,6 +18,8 @@ import {
   selectStatusFilter,
   selectSelectedFilter,
   selectEventTypeFilter,
+  selectEntityIds,
+  selectSearch,
   setSortDir,
   setStatusFilter,
   setEventTypeFilter,
@@ -50,6 +52,8 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
   const eventTypeFilter = useAppSelector(selectEventTypeFilter);
+  const entityIds = useAppSelector(selectEntityIds);
+  const search = useAppSelector(selectSearch);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
   const [isLastElementVisible, setIsLastElementVisible] = useState(false);
@@ -87,10 +91,12 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
       status: statusFilter ?? undefined,
       sort: sortDir,
       event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
+      entity_ids: entityIds && entityIds.length > 0 ? entityIds : undefined,
+      search: search ?? undefined,
       offset: 0,
       limit: 50,
     }));
-  }, [dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter]);
+  }, [dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, entityIds, search]);
 
   useEffect(() => {
     if (!lastElementRef.current) return;
@@ -122,11 +128,13 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         status: statusFilter ?? undefined,
         sort: sortDir,
         event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
+        entity_ids: entityIds && entityIds.length > 0 ? entityIds : undefined,
+        search: search ?? undefined,
         offset: itemsOffset,
         limit: 50,
       }));
     }
-  }, [isLastElementVisible, itemsHasMore, itemsLoading, data.length, dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, itemsOffset]);
+  }, [isLastElementVisible, itemsHasMore, itemsLoading, data.length, dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, entityIds, search, itemsOffset]);
 
   const handleCheck = (id: string) => {
     const newCheckedItems = new Set(checkedItems);
@@ -184,10 +192,6 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     );
   }
 
-  if (isEmpty) {
-    return <EmptyState />;
-  }
-
   return (
     <div className={styles.container}>
       <ListHeader
@@ -201,29 +205,35 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         automationSubFilter={eventTypeFilter}
         onAutomationSubFilterChange={handleEventTypeFilterChange}
       />
-      <div className={styles.list}>
-        {data.map((item, index) => (
-          <div
-            key={item.id}
-            ref={index === data.length - 1 ? lastElementRef : null}
-          >
-            <ListElement
-              item={item}
-              isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined}
-              onCheck={() => handleCheck(item.id.toString())}
-              onHold={() => handleOnHold(item.id.toString())}
-              type={type}
-              onSpecificAction={handleSpecificAction}
-            />
+      {isEmpty ? (
+        <EmptyState />
+      ) : (
+        <>
+          <div className={styles.list}>
+            {data.map((item, index) => (
+              <div
+                key={item.id}
+                ref={index === data.length - 1 ? lastElementRef : null}
+              >
+                <ListElement
+                  item={item}
+                  isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined}
+                  onCheck={() => handleCheck(item.id.toString())}
+                  onHold={() => handleOnHold(item.id.toString())}
+                  type={type}
+                  onSpecificAction={handleSpecificAction}
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-      {itemsLoading && data.length > 0 && (
-        <div className={styles.loaderContainer} style={{ padding: '16px 0' }}>
-          <Loader size={24} color="blue" />
-        </div>
+          {itemsLoading && data.length > 0 && (
+            <div className={styles.loaderContainer} style={{ padding: '16px 0' }}>
+              <Loader size={24} color="blue" />
+            </div>
+          )}
+          {!isLastElementVisible && <div className={styles.bottomGradient} />}
+        </>
       )}
-      {!isLastElementVisible && <div className={styles.bottomGradient} />}
     </div>
   )
 }

@@ -56,6 +56,7 @@ export interface FetchInboxEventsParams {
   sort?: SortDir;
   limit?: number;
   offset?: number;
+  search?: string | null;
 }
 
 export interface BulkActionParams {
@@ -91,6 +92,7 @@ export const fetchInboxEventsThunk = createAsyncThunk(
       sort = 'new',
       limit = 50,
       offset = 0,
+      search,
     } = params;
 
     try {
@@ -103,6 +105,9 @@ export const fetchInboxEventsThunk = createAsyncThunk(
       }
       if (event_types && event_types.length > 0) {
         queryParams.append('event_types', event_types.join(','));
+      }
+      if (search) {
+        queryParams.append('search', search);
       }
       queryParams.append('sort', sort);
       queryParams.append('limit', String(limit));

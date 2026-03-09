@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useState, useMemo, useRef } from "react";
+import React, { FC, useState, useMemo, useRef, useCallback } from "react";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
@@ -9,8 +9,9 @@ import { FilterSortIcon, ChevronDownIcon, SortClearIcon } from "@/components/ico
 import { Button } from "@/components/new-button";
 import SourceContent, { SourceFilterOption } from "./components/SourceComponent";
 import PopupFilter from "./components/PopupFilter";
-import { useAppSelector } from "../../store";
+import { useAppSelector, useAppDispatch } from "../../store";
 import { selectChannels, selectBots } from "../../store/selectors";
+import { setEntityIds, setSearch } from "../../store";
 
 interface InboxSortingBarProps {
   selectedFilter: ListHeaderType;
@@ -48,6 +49,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   onStatusFilterChange,
   onEventTypeFilterChange,
 }) => {
+  const dispatch = useAppDispatch();
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
   const filterButtonRef = useRef<HTMLDivElement>(null);
@@ -59,22 +61,59 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   const channelNames = useMemo(() => channels.map((c) => c.title), [channels]);
   const botNames = useMemo(() => bots.map((b) => b.title || b.username), [bots]);
 
-  const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
+  // Default values for each filter type
+  const defaultValues: Record<SortOptionType, string> = {
     time: "",
     source: "",
     sourceSystem: "",
-    status: "",
-    type: "",
+    status: "default",
+    type: "all",
+  };
+
+  const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({
+    time: defaultValues.time,
+    source: defaultValues.source,
+    sourceSystem: defaultValues.sourceSystem,
+    status: defaultValues.status,
+    type: defaultValues.type,
   });
 
-  const [sourceDefault, setSourceDefault] = useState(false);
-  const [sourceSystemDefault, setSourceSystemDefault] = useState(false);
+  const [sourceDefault, setSourceDefault] = useState(true);
+  const [sourceSystemDefault, setSourceSystemDefault] = useState(true);
 
   const [sourceChannels, setSourceChannels] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
 
   const [sourceBots, setSourceBots] = useState(false);
   const [selectedBots, setSelectedBots] = useState<Set<string>>(new Set());
+
+  const handleSourceChannelsChange = useCallback((checked: boolean) => {
+    setSourceChannels(checked);
+    if (checked) {
+      setSourceDefault(false);
+      setSourceSystemDefault(false);
+    } else {
+      setSelectedChannels(new Set());
+      if (!sourceBots) {
+        setSourceDefault(true);
+        setSourceSystemDefault(true);
+      }
+    }
+  }, [sourceBots]);
+
+  const handleSourceBotsChange = useCallback((checked: boolean) => {
+    setSourceBots(checked);
+    if (checked) {
+      setSourceDefault(false);
+      setSourceSystemDefault(false);
+    } else {
+      setSelectedBots(new Set());
+      if (!sourceChannels) {
+        setSourceDefault(true);
+        setSourceSystemDefault(true);
+      }
+    }
+  }, [sourceChannels]);
 
   const [sourceSharedSearch, setSourceSharedSearch] = useState("");
   const [sourceSystemSharedSearch, setSourceSystemSharedSearch] = useState("");
@@ -104,7 +143,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       key: "channels",
       label: "Каналы",
       checked: sourceChannels,
-      onChange: setSourceChannels,
+      onChange: handleSourceChannelsChange,
       list: {
         searchPlaceholder: "Введите название канала",
         searchValue: sourceSharedSearch,
@@ -119,7 +158,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       key: "bots",
       label: "Боты",
       checked: sourceBots,
-      onChange: setSourceBots,
+      onChange: handleSourceBotsChange,
       list: {
         searchPlaceholder: "Введите название бота",
         searchValue: sourceSharedSearch,
@@ -130,14 +169,14 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         onItemToggle: toggleSetItem(setSelectedBots),
       },
     },
-  ], [sourceChannels, sourceSharedSearch, filteredSourceChannels, selectedChannels, sourceBots, filteredSourceBots, selectedBots]);
+  ], [sourceChannels, sourceSharedSearch, filteredSourceChannels, selectedChannels, sourceBots, filteredSourceBots, selectedBots, handleSourceChannelsChange, handleSourceBotsChange]);
 
   const sourceSystemFilterOptions: SourceFilterOption[] = useMemo(() => [
     {
       key: "channels",
       label: "Каналы",
       checked: sourceChannels,
-      onChange: setSourceChannels,
+      onChange: handleSourceChannelsChange,
       list: {
         searchPlaceholder: "Введите название канала",
         searchValue: sourceSystemSharedSearch,
@@ -152,7 +191,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       key: "bots",
       label: "Боты",
       checked: sourceBots,
-      onChange: setSourceBots,
+      onChange: handleSourceBotsChange,
       list: {
         searchPlaceholder: "Введите название бота",
         searchValue: sourceSystemSharedSearch,
@@ -163,20 +202,8 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         onItemToggle: toggleSetItem(setSelectedBots),
       },
     },
-  ], [sourceChannels, sourceSystemSharedSearch, filteredSystemChannels, selectedChannels, sourceBots, filteredSystemBots, selectedBots]);
+  ], [sourceChannels, sourceSystemSharedSearch, filteredSystemChannels, selectedChannels, sourceBots, filteredSystemBots, selectedBots, handleSourceChannelsChange, handleSourceBotsChange]);
 
-  const [typeDefault, setTypeDefault] = useState(false);
-
-  const [typeAutoReply, setTypeAutoReply] = useState(false);
-  const [selectedAutoReplies, setSelectedAutoReplies] = useState<Set<string>>(new Set());
-
-  const [typeTrigger, setTypeTrigger] = useState(false);
-  const [selectedTriggers, setSelectedTriggers] = useState<Set<string>>(new Set());
-
-  const [typeCommand, setTypeCommand] = useState(false);
-  const [selectedCommands, setSelectedCommands] = useState<Set<string>>(new Set());
-
-  const [typeSharedSearch, setTypeSharedSearch] = useState("");
 
   const timeOptions = [
     { value: "newest", label: "Сначала новые" },
@@ -298,7 +325,11 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
-    setSortValues(prev => ({ ...prev, [sortType]: "" }));
+    // Reset to default value for the filter type
+    const defaultValue = defaultValues[sortType];
+    setSortValues(prev => ({ ...prev, [sortType]: defaultValue }));
+    
+    // Trigger callbacks for filters that need them
     if (sortType === 'time') {
       onTimeSortChange?.('new');
     }
@@ -310,8 +341,17 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
   };
 
+  // Check if a value is the default for a filter type
+  const isDefaultValue = (sortType: SortOptionType, value: string): boolean => {
+    return value === defaultValues[sortType];
+  };
+
   function getButtonText(option: SortOption): string {
     if (!option.value) return option.label;
+    // If value is default, show just the label (not the default option label)
+    if (isDefaultValue(option.type, option.value)) {
+      return option.label;
+    }
     if (option.items) {
       const selectedItem = option.items.find((item) => item.value === option.value);
       return selectedItem?.label || option.label;
@@ -322,6 +362,18 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   function clearFilter(sortType: SortOptionType, e: React.MouseEvent) {
     e.stopPropagation();
     handleSortClear(sortType);
+    
+    if (sortType === 'source' || sortType === 'sourceSystem') {
+      setSelectedChannels(new Set());
+      setSelectedBots(new Set());
+      setSourceSharedSearch("");
+      setSourceSystemSharedSearch("");
+      setSourceDefault(true);
+      setSourceSystemDefault(true);
+      dispatch(setEntityIds(null));
+      dispatch(setSearch(null));
+    }
+    
     setOpenFilter(null);
   }
 
@@ -332,16 +384,56 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
   }
 
+  const applySourceFilters = useCallback(() => {
+    const entityIds: number[] = [];
+    
+    if (selectedChannels.size > 0) {
+      const channelIds = channels
+        .filter(c => selectedChannels.has(c.title))
+        .map(c => c.id);
+      entityIds.push(...channelIds);
+    }
+    
+    if (selectedBots.size > 0) {
+      const botIds = bots
+        .filter(b => selectedBots.has(b.title || b.username))
+        .map(b => b.id);
+      entityIds.push(...botIds);
+    }
+    
+    let searchValue: string | null = null;
+    if (selectedFilter === 'system') {
+      if (sourceSystemSharedSearch.trim()) {
+        searchValue = sourceSystemSharedSearch.trim();
+      }
+    } else {
+      if (sourceSharedSearch.trim()) {
+        searchValue = sourceSharedSearch.trim();
+      }
+    }
+    
+    if (entityIds.length > 0 && (!sourceDefault && !sourceSystemDefault)) {
+      dispatch(setEntityIds(entityIds));
+    } else if (sourceDefault || sourceSystemDefault) {
+      dispatch(setEntityIds(null));
+    }
+    
+    dispatch(setSearch(searchValue || null));
+  }, [selectedChannels, selectedBots, channels, bots, sourceSharedSearch, sourceSystemSharedSearch, selectedFilter, sourceDefault, sourceSystemDefault, dispatch]);
+
   React.useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       const target = e.target as Node;
       if (!barRef.current?.contains(target)) {
+        if (openFilter === 'source' || openFilter === 'sourceSystem') {
+          applySourceFilters();
+        }
         setOpenFilter(null);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [openFilter, applySourceFilters]);
 
   const filterOptions = [
     { id: "all", label: "Все" },
@@ -367,7 +459,14 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
             <span className={styles.sortLabel}>Сортировка:</span>
             <div className={styles.sortGroup}>
               {availableSortOptions.map((option) => {
-                const isActive = !!option.value;
+                let isActive = false;
+                if (option.type === 'source') {
+                  isActive = !sourceDefault && (selectedChannels.size > 0 || selectedBots.size > 0 || !!sourceSharedSearch);
+                } else if (option.type === 'sourceSystem') {
+                  isActive = !sourceSystemDefault && (selectedChannels.size > 0 || selectedBots.size > 0 || !!sourceSystemSharedSearch);
+                } else {
+                  isActive = !!option.value && !isDefaultValue(option.type, option.value);
+                }
                 const isOpen = openFilter === option.type;
 
                 return (

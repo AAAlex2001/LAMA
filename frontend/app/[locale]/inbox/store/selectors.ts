@@ -28,6 +28,10 @@ export const selectStatusFilter = (s: RootState) => s.inbox.statusFilter;
 
 export const selectEventTypeFilter = (s: RootState) => s.inbox.eventTypeFilter;
 
+export const selectEntityIds = (s: RootState) => s.inbox.entityIds;
+
+export const selectSearch = (s: RootState) => s.inbox.search;
+
 export const selectFilteredItems = createSelector(
   [
     (s: RootState) => s.inbox.items,

@@ -33,6 +33,8 @@ export interface InboxState {
   sortDir: 'new' | 'old';
   statusFilter: 'new' | 'processed' | 'ignored' | null;
   eventTypeFilter: 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
+  entityIds: number[] | null;
+  search: string | null;
 
   bulkActionLoading: boolean;
   specificActionLoading: boolean;
@@ -56,6 +58,8 @@ const initialState: InboxState = {
   sortDir: 'new',
   statusFilter: null,
   eventTypeFilter: null,
+  entityIds: null,
+  search: null,
 
   bulkActionLoading: false,
   specificActionLoading: false,
@@ -103,6 +107,26 @@ const inboxSlice = createSlice({
     setEventTypeFilter(state, action: PayloadAction<'system_autoreply' | 'system_trigger' | 'bot_command' | null>) {
       if (state.eventTypeFilter !== action.payload) {
         state.eventTypeFilter = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setEntityIds(state, action: PayloadAction<number[] | null>) {
+      const newEntityIds = action.payload;
+      const currentIds = state.entityIds;
+      const idsChanged = JSON.stringify(newEntityIds?.sort()) !== JSON.stringify(currentIds?.sort());
+      if (idsChanged) {
+        state.entityIds = newEntityIds;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setSearch(state, action: PayloadAction<string | null>) {
+      const newSearch = action.payload;
+      if (state.search !== newSearch) {
+        state.search = newSearch;
         state.items = [];
         state.itemsOffset = 0;
         state.itemsHasMore = true;
@@ -238,6 +262,8 @@ export const {
   setSortDir,
   setStatusFilter,
   setEventTypeFilter,
+  setEntityIds,
+  setSearch,
   removeItem,
   updateItem,
   addInviteLink,
