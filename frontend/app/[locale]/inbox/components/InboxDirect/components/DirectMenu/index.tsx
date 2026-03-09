@@ -130,7 +130,11 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
             <div className={styles.section}>
               <h3 className={styles.sectionTitle}>Все чаты</h3>
               <div className={styles.chatList}>
-                {chatsLoading && unpinnedChats.length === 0 && <div>Загрузка...</div>}
+                {chatsLoading && unpinnedChats.length === 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                    <Loader size={20} color="blue" />
+                  </div>
+                )}
                 {unpinnedChats.map((chat) => (
                   <ChatItem
                     key={chat.id}
