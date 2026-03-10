@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 import { getReplyText } from './useRenderedMessages';
 
@@ -15,15 +15,41 @@ export interface MessageInputModeReturn {
   cancelReply: () => void;
 }
 
-export function useMessageInputMode(): MessageInputModeReturn {
-  const [message, setMessage] = useState('');
+export function useMessageInputMode(activeChatId: number | null): MessageInputModeReturn {
+  const draftsRef = useRef<Record<number, string>>({});
+  const prevChatIdRef = useRef<number | null>(null);
+
+  const [message, setMessageRaw] = useState('');
   const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);
   const [replyingTo, setReplyingTo] = useState<{ id: number; text: string } | null>(null);
+
+  useEffect(() => {
+    const prevId = prevChatIdRef.current;
+
+    if (prevId !== null && prevId !== activeChatId) {
+      draftsRef.current[prevId] = message;
+    }
+
+    if (activeChatId !== null && activeChatId !== prevId) {
+      setMessageRaw(draftsRef.current[activeChatId] ?? '');
+      setEditingMessage(null);
+      setReplyingTo(null);
+    }
+
+    prevChatIdRef.current = activeChatId;
+  }, [activeChatId]);
+
+  const setMessage = useCallback((msg: string) => {
+    setMessageRaw(msg);
+    if (activeChatId !== null) {
+      draftsRef.current[activeChatId] = msg;
+    }
+  }, [activeChatId]);
 
   const startEdit = useCallback((msg: BotMessageResponse & { date: Date }) => {
     setReplyingTo(null);
     setEditingMessage({ id: msg.id, text: msg.text_content || '' });
-    setMessage(msg.text_content || '');
+    setMessageRaw(msg.text_content || '');
   }, []);
 
   const startReply = useCallback((msg: BotMessageResponse & { date: Date }) => {
@@ -40,15 +66,19 @@ export function useMessageInputMode(): MessageInputModeReturn {
   }, []);
 
   const reset = useCallback(() => {
-    setMessage('');
+    setMessageRaw('');
     setEditingMessage(null);
     setReplyingTo(null);
-  }, []);
+    if (activeChatId !== null) {
+      delete draftsRef.current[activeChatId];
+    }
+  }, [activeChatId]);
 
   const cancelEdit = useCallback(() => {
     setEditingMessage(null);
-    setMessage('');
-  }, []);
+    const restored = activeChatId !== null ? (draftsRef.current[activeChatId] ?? '') : '';
+    setMessageRaw(restored);
+  }, [activeChatId]);
 
   const cancelReply = useCallback(() => {
     setReplyingTo(null);

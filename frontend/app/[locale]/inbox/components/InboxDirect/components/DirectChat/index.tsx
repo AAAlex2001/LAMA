@@ -68,7 +68,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
 
   const userName = activeChat?.tg_username || ''
 
-  const inputMode = useMessageInputMode();
+  const inputMode = useMessageInputMode(activeChatId);
   const scroll = useMessageScroll({ messages, loading, hasMore, activeChat, fetchMessages });
   useReplyFromParam(replyMessageId, messages, inputMode.startReplyById);
 
