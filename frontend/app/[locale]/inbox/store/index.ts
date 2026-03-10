@@ -73,6 +73,7 @@ export type {
   SpecificActionParams,
   SpecificActionResult,
   SpecificActionResponse,
+  InboxActionType,
 } from './thunks/inboxEvents';
 export {
   selectInbox,

@@ -24,7 +24,7 @@ import {
   setStatusFilter,
   setEventTypeFilter,
 } from "../../store";
-import type { ListFilterType, InboxEventResponse } from "../../store";
+import type { ListFilterType, InboxEventResponse, InboxActionType } from "../../store";
 
 const CATEGORY_MAP: Record<ListFilterType, string | undefined> = {
   all: undefined,
@@ -179,7 +179,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     setIsChecking(false);
   }, [dispatch, checkedItems]);
 
-  const handleSpecificAction = useCallback((eventId: number, actionType: string, payload?: Record<string, unknown>) => {
+  const handleSpecificAction = useCallback((eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => {
     return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
   }, [dispatch]);
 

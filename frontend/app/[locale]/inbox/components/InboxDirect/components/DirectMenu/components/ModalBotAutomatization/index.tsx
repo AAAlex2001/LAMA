@@ -43,9 +43,7 @@ export default function ModalBotAutomatization({
   const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
   const [isGlobalMessageModalOpen, setIsGlobalMessageModalOpen] = useState(false);
 
-  const allSelected = useMemo(() => {
-    return bots.length > 0 && selectedBotIds.size === bots.length;
-  }, [bots.length, selectedBotIds.size]);
+  const allSelected = bots.length > 0 && selectedBotIds.size === bots.length;
 
   const handleChatToggle = (chatId: number) => {
     const newSelected = new Set(selectedBotIds);
@@ -77,9 +75,7 @@ export default function ModalBotAutomatization({
     }
   };
 
-  const selectedBots = useMemo(() => {
-    return bots.filter(bot => selectedBotIds.has(bot.id));
-  }, [bots, selectedBotIds]);
+  const selectedBots = bots.filter(bot => selectedBotIds.has(bot.id));
 
   return (
     <ModalBase>

@@ -44,7 +44,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
   const botsLoading = useAppSelector((state) => selectBotsLoading(state));
   const bots = propBots || storeBots;
   const botSearch = formState.botSearch;
-  const selectedBotIds = useMemo(() => new Set(formState.selectedBotIds), [formState.selectedBotIds]);
+  const selectedBotIds =  new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
   const [hasMediaFiles, setHasMediaFiles] = useState(false);
   const isLoading = useAppSelector((state) => selectGlobalMessageIsLoading(state));

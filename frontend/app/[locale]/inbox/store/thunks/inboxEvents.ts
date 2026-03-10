@@ -67,9 +67,20 @@ export interface BulkActionParams {
 
 export interface SpecificActionParams {
   eventId: number;
-  action_type: string;
+  action_type: InboxActionType;
   payload?: Record<string, unknown>;
 }
+
+export type InboxActionType =
+  | 'mark_resolved'
+  | 'reply'
+  | 'accept'
+  | 'reject'
+  | 'unban'
+  | 'block'
+  | 'delete_message'
+  | 'delete_and_block'
+  | 'change_ban';
 
 export interface SpecificActionResult {
   status: string;

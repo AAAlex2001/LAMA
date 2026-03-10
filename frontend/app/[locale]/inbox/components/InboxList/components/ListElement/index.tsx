@@ -8,7 +8,7 @@ import { CheckListIcon } from "@/components/icons";
 import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/BlockModal";
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
-import type { InboxEventResponse, EventType } from "../../../../store/thunks/inboxEvents";
+import type { InboxEventResponse, EventType, InboxActionType } from "../../../../store/thunks/inboxEvents";
 import { useRouter } from "next/navigation";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -46,7 +46,7 @@ interface ListElementProps {
   type?: ListHeaderType;
   onCheck?: () => void;
   onHold?: () => void;
-  onSpecificAction?: (eventId: number, actionType: string, payload?: Record<string, unknown>) => any;
+  onSpecificAction?: (eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => any;
 }
 
 const ListElement: FC<ListElementProps> = ({
@@ -71,10 +71,10 @@ const ListElement: FC<ListElementProps> = ({
   const shouldEnableLongPress = type === 'all';
   const isProcessed = item.status === 'processed';
 
-  const handleAction = async (actionType: string, payload?: Record<string, unknown>) => {
-    const response = await onSpecificAction?.(item.id, actionType, payload);
-    if (actionType === 'reply') {
-      const chatId = response?.payload?.response?.chat_id;
+  const handleAction = async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
+    const result = await onSpecificAction?.(item.id, actionType, payload);
+    if (actionType === 'reply' && result?.payload?.response) {
+      const { chat_id: chatId } = result.payload.response;
       const messageId = item.payload?.message_id;
       const url = messageId
         ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
@@ -121,12 +121,12 @@ const ListElement: FC<ListElementProps> = ({
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Заблокировать</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('delete')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('delete_message')} className={btnClass}>
             <span className={buttonStyles.label}>Удалить</span>
           </Button>
-          <span className={styles.checkIcon}>
-            <CheckListIcon width={24} height={24} color="#858585" />
-          </span>
+          <Button variant="ghost" intent="primary" size="transparent" onClick={()=> handleAction('mark_resolved')}>
+            <CheckListIcon width={24} height={24} />
+          </Button>
         </div>
       );
     }
@@ -232,7 +232,7 @@ const ListElement: FC<ListElementProps> = ({
     if (item.event_type === 'bot_error') {
       return (
         <div className={styles.actionButtons}>
-          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('settings')} className={btnClass}>
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('mark_resolved')} className={btnClass}>
             <span className={buttonStyles.label}>Ошибка доступа</span>
           </Button>
         </div>

@@ -121,11 +121,12 @@
   padding: 0 8px;
   gap: 0;
   // width: 160px;
-  max-height: 300px;
+  max-height: 400px;
   overflow-y: auto;
   background: linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), #FFFFFF;
   border-radius: 8px;
   z-index: 20;
+  overflow-x: hidden;
 
   @media (min-width: 1440px) {
     left: 50%;
