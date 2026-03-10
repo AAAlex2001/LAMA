@@ -217,16 +217,17 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'system_autoreply') {
-      if (isProcessed) {
-        return <span className={styles.statusText}>Ответ отправлен</span>;
-      }
-      return (
-        <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass}>
-            <span className={buttonStyles.label}>Ответить в боте</span>
-          </Button>
-        </div>
-      );
+      // if (isProcessed) {
+      //   return <span className={styles.statusText}>Ответ отправлен</span>;
+      // }
+      // return (
+      //   <div className={styles.actionButtons}>
+      //     <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass}>
+      //       <span className={buttonStyles.label}>Ответить в боте</span>
+      //     </Button>
+      //   </div>
+      // );
+      return null;
     }
 
     if (item.event_type === 'bot_error') {

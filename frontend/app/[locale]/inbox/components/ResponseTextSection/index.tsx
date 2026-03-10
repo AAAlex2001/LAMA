@@ -61,19 +61,13 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
     deleteButton: deleteInlineButton,
   } = useInlineButtons();
 
-  const limitedMediaFiles = mediaFiles.slice(0, 1);
-  const canAddMedia = limitedMediaFiles.length < 1;
-  const canShowInlineButtons = limitedMediaFiles.length <= 1;
+  const MAX_MEDIA = 10;
+  const limitedMediaFiles = mediaFiles.slice(0, MAX_MEDIA);
+  const canAddMedia = limitedMediaFiles.length < MAX_MEDIA;
+  const canShowInlineButtons = true;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (mediaFiles.length > 0) {
-      handleClearMedia();
-      setTimeout(() => {
-        _handleFileUpload(e);
-      }, 10);
-    } else {
-      _handleFileUpload(e);
-    }
+    _handleFileUpload(e);
   };
 
   useImperativeHandle(ref, () => ({
@@ -121,6 +115,7 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
         ref={fileInputRef}
         type="file"
         accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+        multiple
         onChange={handleFileUpload}
         style={{ display: 'none' }}
       />

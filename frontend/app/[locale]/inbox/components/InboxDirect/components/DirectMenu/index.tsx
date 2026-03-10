@@ -3,7 +3,7 @@
 import styles from "./styles.module.scss";
 import ChatItem from "./components/ChatItem";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
-import { FC, useEffect, useRef, useCallback } from "react";
+import { FC, useEffect, useRef } from "react";
 import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 import Loader from '@/components/loader/loader';

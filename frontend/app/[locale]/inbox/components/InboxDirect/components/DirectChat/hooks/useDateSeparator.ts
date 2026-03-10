@@ -36,7 +36,7 @@ export function useDateSeparator({ messages, messageListRef, messageRefs }: UseD
   const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const findTopVisibleMessage = useCallback(() => {
-    if (!messageListRef.current) return;
+    if (!messageListRef.current) return null;
 
     const container = messageListRef.current;
     const containerRect = container.getBoundingClientRect();
@@ -56,17 +56,10 @@ export function useDateSeparator({ messages, messageListRef, messageRefs }: UseD
     });
 
     if (topVisibleIndex >= 0 && messages[topVisibleIndex]) {
-      const date = formatDate(messages[topVisibleIndex].date);
-      setVisibleDate(date);
-      setShowDateSeparator(true);
-
-      if (hideTimeoutRef.current) {
-        clearTimeout(hideTimeoutRef.current);
-      }
-      hideTimeoutRef.current = setTimeout(() => {
-        setShowDateSeparator(false);
-      }, 5000);
+      return formatDate(messages[topVisibleIndex].date);
     }
+
+    return null;
   }, [messages, messageListRef, messageRefs]);
 
   useEffect(() => {
@@ -75,18 +68,36 @@ export function useDateSeparator({ messages, messageListRef, messageRefs }: UseD
     const container = messageListRef.current;
 
     const handleScroll = () => {
-      findTopVisibleMessage();
+      const date = findTopVisibleMessage();
+      if (date) {
+        setVisibleDate(date);
+      }
+
+      setShowDateSeparator(true);
+
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+
+      hideTimeoutRef.current = setTimeout(() => {
+        setShowDateSeparator(false);
+      }, 1200);
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
+    };
+  }, [findTopVisibleMessage]);
+
+  useEffect(() => {
+    return () => {
       if (hideTimeoutRef.current) {
         clearTimeout(hideTimeoutRef.current);
       }
     };
-  }, [findTopVisibleMessage]);
+  }, []);
 
   return {
     visibleDate,

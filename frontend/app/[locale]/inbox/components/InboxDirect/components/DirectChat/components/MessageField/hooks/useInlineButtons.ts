@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import type { ButtonRow, InlineButton } from '@/app/[locale]/create-post/store/types';
 
 function createButton(): InlineButton {
@@ -23,7 +23,7 @@ export function useInlineButtons() {
   const [isOpen, setIsOpen] = useState(false);
   const [rows, setRows] = useState<ButtonRow[]>([]);
 
-  const toggle = useCallback(() => {
+  const toggle = () => {
     setIsOpen(prev => {
       if (prev) {
         setRows([]);
@@ -35,21 +35,21 @@ export function useInlineButtons() {
         return true;
       }
     });
-  }, [rows.length]);
+  };
 
-  const addRow = useCallback(() => {
+  const addRow = () => {
     setRows(prev => [...prev, createRow()]);
-  }, []);
+  };
 
-  const addColumn = useCallback((rowId: string) => {
+  const addColumn = (rowId: string) => {
     setRows(prev => prev.map(row => 
       row.id === rowId 
         ? { ...row, buttons: [...row.buttons, createButton()] }
         : row
     ));
-  }, []);
+  };
 
-  const updateButton = useCallback((rowId: string, buttonId: string, updates: Partial<InlineButton>) => {
+  const updateButton = (rowId: string, buttonId: string, updates: Partial<InlineButton>) => {
     setRows(prev => prev.map(row => 
       row.id === rowId
         ? {
@@ -60,9 +60,9 @@ export function useInlineButtons() {
           }
         : row
     ));
-  }, []);
+  };
 
-  const deleteButton = useCallback((rowId: string, buttonId: string) => {
+  const deleteButton = (rowId: string, buttonId: string) => {
     setRows(prev => {
       const rowIndex = prev.findIndex(r => r.id === rowId);
       if (rowIndex === -1) return prev;
@@ -76,12 +76,12 @@ export function useInlineButtons() {
       
       return prev.map(r => r.id === rowId ? { ...r, buttons: newButtons } : r);
     });
-  }, []);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setIsOpen(false);
     setRows([]);
-  }, []);
+  };
 
   return {
     isOpen,

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../index';
 import {
   selectDirectChats,
@@ -15,12 +15,24 @@ import {
   selectSendingMessage,
   selectChatSort,
   selectChatUnreadFilter,
+  selectReplyToMessageId,
+  selectBotAutomatizationModalOpen,
+  selectTriggerModalOpen,
+  selectGlobalMessageModalOpen,
+  selectSelectedBotIds,
 } from '../selectors';
 import {
   setActiveChatId,
   wsMessageReceived,
   setWsConnected,
   setSendingMessage,
+  setReplyToMessageId,
+  setBotAutomatizationModalOpen,
+  setTriggerModalOpen,
+  setGlobalMessageModalOpen,
+  setSelectedBotIds,
+  toggleBotSelection,
+  selectAllBots,
 } from '../slices/directChat';
 import {
   fetchDirectChatsThunk,
@@ -44,7 +56,6 @@ import { directChatWs, type WsEvent } from '../services/directChatWs';
 export function useDirectChat() {
   const dispatch = useAppDispatch();
   const handlersSetRef = useRef(false);
-  const [replyToMessageId, setReplyToMessageId] = useState<number | null>(null);
 
   const chats = useAppSelector(selectDirectChats);
   const chatsLoading = useAppSelector(selectDirectChatsLoading);
@@ -57,6 +68,11 @@ export function useDirectChat() {
   const sendingMessage = useAppSelector(selectSendingMessage);
   const chatSort = useAppSelector(selectChatSort);
   const chatUnreadFilter = useAppSelector(selectChatUnreadFilter);
+  const replyToMessageId = useAppSelector(selectReplyToMessageId);
+  const isBotAutomatizationModalOpen = useAppSelector(selectBotAutomatizationModalOpen);
+  const isTriggerModalOpen = useAppSelector(selectTriggerModalOpen);
+  const isGlobalMessageModalOpen = useAppSelector(selectGlobalMessageModalOpen);
+  const selectedBotIds = useAppSelector(selectSelectedBotIds);
 
   useEffect(() => {
     if (handlersSetRef.current) return;
@@ -226,6 +242,55 @@ export function useDirectChat() {
     [dispatch]
   );
 
+  const setReplyToMessageIdAction = useCallback(
+    (messageId: number | null) => {
+      dispatch(setReplyToMessageId(messageId));
+    },
+    [dispatch]
+  );
+
+  const setBotAutomatizationModalOpenAction = useCallback(
+    (isOpen: boolean) => {
+      dispatch(setBotAutomatizationModalOpen(isOpen));
+    },
+    [dispatch]
+  );
+
+  const setTriggerModalOpenAction = useCallback(
+    (isOpen: boolean) => {
+      dispatch(setTriggerModalOpen(isOpen));
+    },
+    [dispatch]
+  );
+
+  const setGlobalMessageModalOpenAction = useCallback(
+    (isOpen: boolean) => {
+      dispatch(setGlobalMessageModalOpen(isOpen));
+    },
+    [dispatch]
+  );
+
+  const toggleBotSelectionAction = useCallback(
+    (botId: number) => {
+      dispatch(toggleBotSelection(botId));
+    },
+    [dispatch]
+  );
+
+  const selectAllBotsAction = useCallback(
+    (botIds: number[]) => {
+      dispatch(selectAllBots(botIds));
+    },
+    [dispatch]
+  );
+
+  const setSelectedBotIdsAction = useCallback(
+    (botIds: number[]) => {
+      dispatch(setSelectedBotIds(botIds));
+    },
+    [dispatch]
+  );
+
   return {
     chats,
     chatsLoading,
@@ -237,6 +302,10 @@ export function useDirectChat() {
     unpinnedChats,
     sendingMessage,
     replyToMessageId,
+    isBotAutomatizationModalOpen,
+    isTriggerModalOpen,
+    isGlobalMessageModalOpen,
+    selectedBotIds,
 
     setActiveChat,
     fetchChats,
@@ -250,7 +319,13 @@ export function useDirectChat() {
     unblockChat,
     editMessage,
     deleteMessage,
-    setReplyToMessageId,
+    setReplyToMessageId: setReplyToMessageIdAction,
+    setBotAutomatizationModalOpen: setBotAutomatizationModalOpenAction,
+    setTriggerModalOpen: setTriggerModalOpenAction,
+    setGlobalMessageModalOpen: setGlobalMessageModalOpenAction,
+    toggleBotSelection: toggleBotSelectionAction,
+    selectAllBots: selectAllBotsAction,
+    setSelectedBotIds: setSelectedBotIdsAction,
   };
 }
 

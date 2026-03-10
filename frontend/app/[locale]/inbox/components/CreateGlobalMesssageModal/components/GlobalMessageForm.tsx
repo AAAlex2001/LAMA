@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/new-button';
 import styles from '../styles.module.scss';
 import type { GlobalMessageFormData } from '../index';
@@ -15,7 +15,7 @@ import {
   setGlobalMessageBotSearch,
   toggleGlobalMessageSelectedBotId,
 } from '../../../store';
-import { selectBots, selectBotsLoading, selectGlobalMessageIsLoading } from '../../../store/selectors';
+import { selectBots, selectBotsLoading } from '../../../store/selectors';
 import BotSearchSelector from '../../BotSearchSelector';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
 import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
@@ -30,6 +30,7 @@ interface GlobalMessageFormProps {
   maxBots?: number;
   hideSearchBar?: boolean;
   bots?: Array<{ id: number; username?: string; title?: string }>;
+  isLoading?: boolean;
 }
 
 const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
@@ -37,6 +38,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
   onShowCreateBot,
   hideSearchBar = false,
   bots: propBots,
+  isLoading = false,
 }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createGlobalMessageModal);
@@ -47,7 +49,6 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
   const selectedBotIds =  new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
   const [hasMediaFiles, setHasMediaFiles] = useState(false);
-  const isLoading = useAppSelector((state) => selectGlobalMessageIsLoading(state));
   useEffect(() => {
     dispatch(setCreateGlobalMessageModalOpen(true));
     return () => {
@@ -76,16 +77,21 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
       return;
     }
 
-    let mediaUrl = formState.media_url.trim();
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    const mediaUrls: string[] = [];
 
-    if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
-      try {
-        const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
-      } catch (error) {
-        console.error('Failed to upload media:', error);
-        return;
+    for (const mediaFile of limitedMediaFiles) {
+      if (mediaFile.url) {
+        mediaUrls.push(mediaFile.url);
+      } else if (mediaFile.file) {
+        try {
+          const uploaded = await uploadMediaFile(mediaFile.file);
+          const url = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+          mediaUrls.push(url);
+        } catch (error) {
+          console.error('Failed to upload media:', error);
+          return;
+        }
       }
     }
 
@@ -93,7 +99,8 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
 
     onSubmit({
       text_content: formState.text_content.trim() || undefined,
-      media_url: mediaUrl || undefined,
+      media_url: mediaUrls[0] || undefined,
+      media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       inline_keyboard: inlineKeyboard,
       botIds,
     });

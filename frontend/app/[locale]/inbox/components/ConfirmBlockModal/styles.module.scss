@@ -1,0 +1,45 @@
+.modalContent {
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.message {
+  font-size: 16px;
+  line-height: 24px;
+  color: #383F45;
+  font-weight: 400;
+  margin: 0;
+  text-align: center;
+}
+
+.username {
+  font-weight: 600;
+  color: #3B82F6;
+}
+
+.footer {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.cancelButton {
+  border-radius: 10px;
+  min-width: 100px;
+}
+
+.confirmButton {
+  border-radius: 10px;
+  min-width: 120px;
+}

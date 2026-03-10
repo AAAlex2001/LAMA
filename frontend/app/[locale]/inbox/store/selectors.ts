@@ -184,4 +184,11 @@ export const selectSendingMessage = (s: RootState) => s.directChat.sendingMessag
 
 export const selectWsConnected = (s: RootState) => s.directChat.wsConnected;
 
+export const selectReplyToMessageId = (s: RootState) => s.directChat.replyToMessageId;
+
+export const selectBotAutomatizationModalOpen = (s: RootState) => s.directChat.isBotAutomatizationModalOpen;
+export const selectTriggerModalOpen = (s: RootState) => s.directChat.isTriggerModalOpen;
+export const selectGlobalMessageModalOpen = (s: RootState) => s.directChat.isGlobalMessageModalOpen;
+export const selectSelectedBotIds = (s: RootState) => s.directChat.selectedBotIds;
+
 export const selectGlobalMessageIsLoading = (s: RootState) => s.createGlobalMessageModal.isLoading;

@@ -82,6 +82,11 @@
   }
 }
 
+.messageMediaWrapper {
+  display: flex;
+  max-width: 100%;
+}
+
 .messageText {
   font-size: 14px;
   line-height: 20px;

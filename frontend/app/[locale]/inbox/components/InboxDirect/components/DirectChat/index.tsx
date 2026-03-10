@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo, useCallback, FC } from 'react';
+import { useRef, useEffect, useMemo, FC } from 'react';
 import styles from './styles.module.scss';
 import MessageElement from './components/MessageElement';
 import MessageField, { type MessageFieldRef } from './components/MessageField';
@@ -9,10 +9,9 @@ import classNames from 'classnames';
 import Loader from '@/components/loader/loader';
 import { useDateSeparator } from './hooks/useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
-import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
 import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
-import { useRenderedMessages, getReplyText } from './hooks/useRenderedMessages';
+import { useRenderedMessages } from './hooks/useRenderedMessages';
 import { useMessageScroll } from './hooks/useMessageScroll';
 import { useMessageInputMode } from './hooks/useMessageInputMode';
 import { useReplyFromParam } from './hooks/useReplyFromParam';
@@ -78,13 +77,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     }
   }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
 
-  const handleDeleteMessage = useCallback(async (messageId: number) => {
+  const handleDeleteMessage = async (messageId: number) => {
     if (!activeChat) return;
     await deleteMessage({
       messageId,
       chatId: activeChat.tg_chat_id,
     });
-  }, [activeChat, deleteMessage]);
+  };
 
   const renderedMessages = useRenderedMessages(
     messages,
@@ -107,7 +106,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     return map;
   }, [renderedMessages]);
 
-  const scrollToMessage = useCallback((telegramMessageId: number) => {
+  const scrollToMessage = (telegramMessageId: number) => {
     const info = replyLookup.get(telegramMessageId);
     if (info == null) return;
     const el = messageRefs.current[info.index];
@@ -121,7 +120,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
         el.style.borderRadius = '';
       }, 1500);
     }
-  }, [replyLookup]);
+  };
 
   const { visibleDate, showDateSeparator } = useDateSeparator({
     messages: renderedMessages,
@@ -129,7 +128,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     messageRefs,
   });
 
-  const handleSendMessage = useCallback(async () => {
+  const handleSendMessage = async () => {
     if (!activeChat) return;
     
     const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
@@ -168,27 +167,27 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     if (hadReply && onReplySent) {
       onReplySent();
     }
-  }, [activeChat, inputMode, sendMessage, scroll, onReplySent]);
+  };
 
-  const handleTogglePin = useCallback(async () => {
+  const handleTogglePin = async () => {
     if (!activeChatId) return;
     if (isPinned) {
       await unpinChat(activeChatId);
     } else {
       await pinChat(activeChatId);
     }
-  }, [activeChatId, isPinned, pinChat, unpinChat]);
+  };
 
-  const handleToggleBlock = useCallback(async () => {
+  const handleToggleBlock = async () => {
     if (!activeChatId) return;
     if (isBlocked) {
       await unblockChat(activeChatId);
     } else {
       await blockChat(activeChatId);
     }
-  }, [activeChatId, isBlocked, blockChat, unblockChat]);
+  };
 
-  const handleSendOrEdit = useCallback(async () => {
+  const handleSendOrEdit = async () => {
     if (inputMode.editingMessage) {
       const trimmed = inputMode.message.trim();
       if (!trimmed || trimmed === inputMode.editingMessage.text) {
@@ -200,7 +199,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
       return;
     }
     await handleSendMessage();
-  }, [inputMode, editMessage, handleSendMessage]);
+  };
 
   return (
     <div className={styles.directChatWrapper}>
@@ -261,7 +260,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           )}
           {renderedMessages.map((msg, i) => (
             <div
-              key={msg.id}
+              key={`msg.id${i}`}
               ref={(el) => {
                 messageRefs.current[i] = el;
               }}

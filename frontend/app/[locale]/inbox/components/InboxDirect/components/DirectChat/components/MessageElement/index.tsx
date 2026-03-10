@@ -126,7 +126,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
           !isOutgoing  && 
             <div className={styles.avatarWrapper}>
               <div className={styles.avatar}>
-                {userPhoto ? <img src={userPhoto} alt="User photo" /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
+                {userPhoto ? <img src={userPhoto} alt="User photo" className={styles.avatar} /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
               </div>
             </div>
           }
@@ -166,7 +166,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
         </DesktopWrapper>
         <div className={styles.incomingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={false} />}
-          <div className={styles.mediaContainer}>
+          <div className={styles.messageMediaWrapper}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (
                 <MediaPreview key={`visual-${idx}`} items={run.items} />
@@ -194,7 +194,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
       <div className={styles.outgoingWrapper}>
         <div className={styles.outgoingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={true} />}
-          <div className={styles.mediaContainer}>
+          <div className={styles.messageMediaWrapper}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (
                 <MediaPreview key={`visual-${idx}`} items={run.items} />

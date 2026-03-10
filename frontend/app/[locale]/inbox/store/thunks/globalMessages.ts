@@ -5,6 +5,7 @@ import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 export interface SendMessageRequest {
   text_content?: string;
   media_url?: string;
+  media_urls?: string[];
   inline_keyboard?: InlineKeyboard;
 }
 
@@ -75,8 +76,6 @@ export const sendMessageThunk = createAsyncThunk(
   async (params: SendMessageParams, { rejectWithValue }) => {
     const { botId, data } = params;
 
-    console.log('data', data);
-    console.log('botId', botId);
     try {
       const message = await apiRequest<BotMessageResponse>(
         `/bots/${botId}/messages`,

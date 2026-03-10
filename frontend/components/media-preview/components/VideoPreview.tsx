@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { MediaFile } from '../media-preview';
 import Loader from '@/components/loader/loader';
 import PlayIcon from '@/components/icons/play-icon';
@@ -12,10 +12,7 @@ interface VideoPreviewProps {
 }
 
 export default function VideoPreview({ file, previewUrl, isLoaded, onLoad }: VideoPreviewProps) {
-  const videoSrc = useMemo(() => {
-    if (file.file) return URL.createObjectURL(file.file);
-    return file.url || file.preview_url || '';
-  }, [file.file, file.url, file.preview_url]);
+  const videoSrc = file.file ? URL.createObjectURL(file.file) : file.url || file.preview_url || '';
 
   useEffect(() => {
     return () => {
