@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
-import ChatItem, { ChatProps } from '../ChatItem';
+import ChatItem from '../ChatItem';
 import styles from './style.module.scss';
 import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';

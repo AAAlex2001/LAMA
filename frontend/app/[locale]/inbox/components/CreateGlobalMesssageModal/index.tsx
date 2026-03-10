@@ -8,7 +8,7 @@ import GlobalMessageForm from './components/GlobalMessageForm';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useSendGlobalMessage } from '../../store/hooks/useGlobalMessages';
 import { useAppDispatch } from '../../store';
-import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds, setGlobalMessageIsLoading } from '../../store';
+import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds } from '../../store';
 import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 interface CreateGlobalMessageModalProps {
@@ -22,6 +22,7 @@ export interface GlobalMessageFormData {
   botIds: number[];
   text_content?: string;
   media_url?: string;
+  media_urls?: string[];
   inline_keyboard?: InlineKeyboard;
 }
 
@@ -46,31 +47,27 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
   }, [isOpen, dispatch, bots]);
 
   const handleSubmit = async (data: GlobalMessageFormData) => {
-    try {
-      const { botIds, ...messageData } = data;
-      
-      if (botIds.length === 0) {
-        showError('Выберите хотя бы одного бота');
-        return;
-      }
+    const { botIds, ...messageData } = data;
 
-      dispatch(setGlobalMessageIsLoading(true));
-      
-      const promises = botIds.map(botId =>
-        sendMessage.mutateAsync({ botId, data: messageData })
-      );
-
-      await Promise.all(promises);
-      
-      showSuccess(`Сообщение успешно отправлено для ${botIds.length} ${botIds.length === 1 ? 'бота' : 'ботов'}`);
-      onSuccess?.();
-      onOpenChange(false);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
-      showError(errorMessage);
-    } finally {
-      dispatch(setGlobalMessageIsLoading(false));
+    if (botIds.length === 0) {
+      showError('Выберите хотя бы одного бота');
+      return;
     }
+
+    sendMessage.mutate(
+      { botIds, data: messageData },
+      {
+        onSuccess: () => {
+          showSuccess(`Сообщение успешно отправлено для ${botIds.length} ${botIds.length === 1 ? 'бота' : 'ботов'}`);
+          onSuccess?.();
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
+          showError(errorMessage);
+        },
+      }
+    );
   };
 
   return (
@@ -82,18 +79,13 @@ const CreateGlobalMessageModal: React.FC<CreateGlobalMessageModalProps> = ({
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.modalBody}>
-          {sendMessage.isPending ? (
-            <div className={styles.loaderContainer}>
-              <Loader size={32} color="blue" />
-            </div>
-          ) : (
-            <GlobalMessageForm
-              onSubmit={handleSubmit}
-              onCancel={() => onOpenChange(false)}
-              hideSearchBar={!!bots}
-              bots={bots}
-            />
-          )}
+          <GlobalMessageForm
+            onSubmit={handleSubmit}
+            onCancel={() => onOpenChange(false)}
+            hideSearchBar={!!bots}
+            bots={bots}
+            isLoading={sendMessage.isPending}
+          />
         </ModalBase.Body>
       </ModalBase.Content>
     </ModalBase>

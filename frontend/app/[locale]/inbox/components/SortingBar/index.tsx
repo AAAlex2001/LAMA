@@ -1,6 +1,6 @@
 'use client';
 
-import React, { FC, useState, useMemo, useRef, useCallback, useEffect } from "react";
+import React, { FC, useState, useMemo, useRef, useEffect } from "react";
 import FilterTabs from "@/components/filter-tabs/filter-tabs";
 import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
@@ -58,8 +58,8 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   const channels = useAppSelector(selectChannels);
   const bots = useAppSelector(selectBots);
 
-  const channelNames = useMemo(() => channels.map((c) => c.title), [channels]);
-  const botNames = useMemo(() => bots.map((b) => b.title || b.username), [bots]);
+  const channelNames = channels.map((c) => c.title)
+  const botNames = bots.map((b) => b.title || b.username);
 
   const defaultValues: Record<SortOptionType, string> = {
     time: "",
@@ -86,7 +86,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   const [sourceBots, setSourceBots] = useState(false);
   const [selectedBots, setSelectedBots] = useState<Set<string>>(new Set());
 
-  const handleSourceChannelsChange = useCallback((checked: boolean) => {
+  const handleSourceChannelsChange = (checked: boolean) => {
     setSourceChannels(checked);
     if (checked) {
       setSourceDefault(false);
@@ -98,9 +98,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         setSourceSystemDefault(true);
       }
     }
-  }, [sourceBots]);
+  };
 
-  const handleSourceBotsChange = useCallback((checked: boolean) => {
+  const handleSourceBotsChange = (checked: boolean) => {
     setSourceBots(checked);
     if (checked) {
       setSourceDefault(false);
@@ -112,32 +112,19 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         setSourceSystemDefault(true);
       }
     }
-  }, [sourceChannels]);
+  };
 
   const [sourceSharedSearch, setSourceSharedSearch] = useState("");
   const [sourceSystemSharedSearch, setSourceSystemSharedSearch] = useState("");
 
-  const filteredSourceChannels = useMemo(() => {
-    if (!sourceSharedSearch) return channelNames;
-    return channelNames.filter(c => c.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
-  }, [sourceSharedSearch, channelNames]);
+  const filteredSourceChannels = !sourceSharedSearch ? channelNames : channelNames.filter(c => c.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
 
-  const filteredSourceBots = useMemo(() => {
-    if (!sourceSharedSearch) return botNames;
-    return botNames.filter(b => b.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
-  }, [sourceSharedSearch, botNames]);
+  const filteredSourceBots = !sourceSharedSearch ? botNames : botNames.filter(b => b.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
 
-  const filteredSystemChannels = useMemo(() => {
-    if (!sourceSystemSharedSearch) return channelNames;
-    return channelNames.filter(c => c.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
-  }, [sourceSystemSharedSearch, channelNames]);
+  const filteredSystemChannels = !sourceSystemSharedSearch ? channelNames : channelNames.filter(c => c.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
 
-  const filteredSystemBots = useMemo(() => {
-    if (!sourceSystemSharedSearch) return botNames;
-    return botNames.filter(b => b.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
-  }, [sourceSystemSharedSearch, botNames]);
+  const filteredSystemBots = !sourceSystemSharedSearch ? botNames : botNames.filter(b => b.toLowerCase().includes(sourceSystemSharedSearch.toLowerCase()));
 
-  // --- Type filter state (Автоответы / Триггер / Команды → bots) ---
   const [typeDefault, setTypeDefault] = useState(true);
 
   const [typeAutoReply, setTypeAutoReply] = useState(false);
@@ -147,7 +134,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
 
   const [typeSharedSearch, setTypeSharedSearch] = useState("");
 
-  const handleTypeAutoReplyChange = useCallback((checked: boolean) => {
+  const handleTypeAutoReplyChange = (checked: boolean) => {
     setTypeAutoReply(checked);
     if (checked) {
       setTypeDefault(false);
@@ -157,9 +144,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         setSelectedTypeBots(new Set());
       }
     }
-  }, [typeTrigger, typeCommand]);
+  };
 
-  const handleTypeTriggerChange = useCallback((checked: boolean) => {
+  const handleTypeTriggerChange = (checked: boolean) => {
     setTypeTrigger(checked);
     if (checked) {
       setTypeDefault(false);
@@ -169,9 +156,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         setSelectedTypeBots(new Set());
       }
     }
-  }, [typeAutoReply, typeCommand]);
+  };
 
-  const handleTypeCommandChange = useCallback((checked: boolean) => {
+  const handleTypeCommandChange = (checked: boolean) => {
     setTypeCommand(checked);
     if (checked) {
       setTypeDefault(false);
@@ -181,14 +168,11 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         setSelectedTypeBots(new Set());
       }
     }
-  }, [typeAutoReply, typeTrigger]);
+  };
 
-  const filteredTypeBots = useMemo(() => {
-    if (!typeSharedSearch) return botNames;
-    return botNames.filter(b => b.toLowerCase().includes(typeSharedSearch.toLowerCase()));
-  }, [typeSharedSearch, botNames]);
+  const filteredTypeBots = !typeSharedSearch ? botNames : botNames.filter(b => b.toLowerCase().includes(typeSharedSearch.toLowerCase()));
 
-  const typeFilterOptions: SourceFilterOption[] = useMemo(() => [
+  const typeFilterOptions: SourceFilterOption[] = [
     {
       key: "autoreply",
       label: "Автоответы",
@@ -234,9 +218,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         onItemToggle: toggleSetItem(setSelectedTypeBots),
       },
     },
-  ], [typeAutoReply, typeTrigger, typeCommand, typeSharedSearch, filteredTypeBots, selectedTypeBots, handleTypeAutoReplyChange, handleTypeTriggerChange, handleTypeCommandChange]);
+  ];
 
-  const sourceFilterOptions: SourceFilterOption[] = useMemo(() => [
+  const sourceFilterOptions: SourceFilterOption[] = [
     {
       key: "channels",
       label: "Каналы",
@@ -267,9 +251,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         onItemToggle: toggleSetItem(setSelectedBots),
       },
     },
-  ], [sourceChannels, sourceSharedSearch, filteredSourceChannels, selectedChannels, sourceBots, filteredSourceBots, selectedBots, handleSourceChannelsChange, handleSourceBotsChange]);
+  ];
 
-  const sourceSystemFilterOptions: SourceFilterOption[] = useMemo(() => [
+  const sourceSystemFilterOptions: SourceFilterOption[] = [
     {
       key: "channels",
       label: "Каналы",
@@ -300,7 +284,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         onItemToggle: toggleSetItem(setSelectedBots),
       },
     },
-  ], [sourceChannels, sourceSystemSharedSearch, filteredSystemChannels, selectedChannels, sourceBots, filteredSystemBots, selectedBots, handleSourceChannelsChange, handleSourceBotsChange]);
+  ];
 
 
   const timeOptions = [
@@ -481,7 +465,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
   }
 
-  const applyTypeFilters = useCallback(() => {
+  const applyTypeFilters = () => {
     if (selectedTypeBots.size > 0 && !typeDefault) {
       const botIds = bots
         .filter(b => selectedTypeBots.has(b.title || b.username))
@@ -492,9 +476,9 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
 
     dispatch(setSearch(typeSharedSearch.trim() || null));
-  }, [selectedTypeBots, bots, typeDefault, typeSharedSearch, dispatch]);
+  };
 
-  const applySourceFilters = useCallback(() => {
+  const applySourceFilters = () => {
     const entityIds: number[] = [];
     
     if (selectedChannels.size > 0) {
@@ -529,7 +513,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
     
     dispatch(setSearch(searchValue || null));
-  }, [selectedChannels, selectedBots, channels, bots, sourceSharedSearch, sourceSystemSharedSearch, selectedFilter, sourceDefault, sourceSystemDefault, dispatch]);
+  };
 
   useEffect(() => {
     setSortValues({
@@ -554,6 +538,11 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     setSelectedTypeBots(new Set());
     setTypeSharedSearch("");
     setOpenFilter(null);
+    dispatch(setEntityIds(null));
+    dispatch(setSearch(null));
+    onTimeSortChange?.('new');
+    onStatusFilterChange?.(null);
+    onEventTypeFilterChange?.(null);
   }, [selectedFilter]);
 
   React.useEffect(() => {
@@ -698,7 +687,11 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
             </Button>
             <PopupFilter
               isOpen={isFilterPopupOpen}
-              onClose={() => setIsFilterPopupOpen(false)}
+              onClose={() => {
+                applySourceFilters();
+                applyTypeFilters();
+                setIsFilterPopupOpen(false);
+              }}
               triggerRef={filterButtonRef}
               availableSortOptions={availableSortOptions}
               onSortChange={handleSortChange}

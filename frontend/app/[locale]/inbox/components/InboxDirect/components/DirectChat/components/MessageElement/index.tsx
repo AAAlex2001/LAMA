@@ -126,7 +126,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
           !isOutgoing  && 
             <div className={styles.avatarWrapper}>
               <div className={styles.avatar}>
-                {userPhoto ? <img src={userPhoto} alt="User photo" /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
+                {userPhoto ? <img src={userPhoto} alt="User photo" className={styles.avatar} /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
               </div>
             </div>
           }

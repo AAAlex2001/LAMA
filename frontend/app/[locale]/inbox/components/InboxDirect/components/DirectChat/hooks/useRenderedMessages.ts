@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 
 function formatMessageTime(dateStr: string): string {
@@ -129,7 +128,5 @@ export function useRenderedMessages(
   onReply: (msg: BotMessageResponse & { date: Date }) => void,
   onDelete: (id: number) => void,
 ): RenderedMessageGroup[] {
-  return useMemo(() => {
-    return groupAndMapMessages(messages, onEdit, onReply, onDelete);
-  }, [messages, onEdit, onReply, onDelete]);
+  return groupAndMapMessages(messages, onEdit, onReply, onDelete);
 }

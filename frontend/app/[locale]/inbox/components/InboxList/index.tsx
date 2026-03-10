@@ -1,4 +1,4 @@
-import { FC, useState, useRef, useEffect, useCallback } from "react";
+import { FC, useState, useRef, useEffect } from "react";
 import ListElement from "./components/ListElement";
 import styles from "./styles.module.scss";
 import ListHeader, { ListHeaderType } from "./components/ListHeader";
@@ -61,17 +61,17 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
 
   const isEmpty = !itemsLoading && data.length === 0;
 
-  const handleTimeSortChange = useCallback((sort: 'new' | 'old') => {
+  const handleTimeSortChange = (sort: 'new' | 'old') => {
     dispatch(setSortDir(sort));
-  }, [dispatch]);
+  };
 
-  const handleStatusFilterChange = useCallback((status: 'new' | 'processed' | 'ignored' | null) => {
+  const handleStatusFilterChange = (status: 'new' | 'processed' | 'ignored' | null) => {
     dispatch(setStatusFilter(status));
-  }, [dispatch]);
+  };
 
-  const handleEventTypeFilterChange = useCallback((eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => {
+  const handleEventTypeFilterChange = (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => {
     dispatch(setEventTypeFilter(eventType));
-  }, [dispatch]);
+  };
 
   useEffect(() => {
     if (onHandlersReady) {
@@ -81,7 +81,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         handleEventTypeFilterChange,
       });
     }
-  }, [onHandlersReady, handleTimeSortChange, handleStatusFilterChange, handleEventTypeFilterChange]);
+  }, [onHandlersReady]);
 
   useEffect(() => {
     const category = CATEGORY_MAP[selectedFilter as ListFilterType];
@@ -171,17 +171,17 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     setCheckedItems(new Set([id]));
   }
 
-  const handleBulkAction = useCallback((action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => {
+  const handleBulkAction = (action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => {
     const eventIds = Array.from(checkedItems).map(Number);
     if (eventIds.length === 0) return;
     dispatch(bulkInboxActionThunk({ event_ids: eventIds, action }));
     setCheckedItems(new Set());
     setIsChecking(false);
-  }, [dispatch, checkedItems]);
+  };
 
-  const handleSpecificAction = useCallback((eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => {
+  const handleSpecificAction = (eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => {
     return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
-  }, [dispatch]);
+  };
 
   if (itemsLoading && data.length === 0) {
     return (

@@ -88,10 +88,8 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
   const inviteLinksState: Record<number, InviteLink[]> = inboxState.inviteLinks;
   const inviteLinksLoadingState: Record<number, boolean> = inboxState.inviteLinksLoading;
   
-  const channelNameMap = useMemo(
-    () => new Map(channels.map((ch) => [ch.id, ch.title])),
-    [channels]
-  );
+  const channelNameMap = new Map(channels.map((ch) => [ch.id, ch.title]));
+    
 
   useEffect(() => {
     if (isOpen && channels.length > 0) {
@@ -101,15 +99,13 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
 
   const allInviteLinks = useMemo(() => {
     const allLinks: InviteLink[] = [];
-    Object.entries(inviteLinksState).forEach(([channelId, links]: [string, InviteLink[]]) => {
+    Object.entries(inviteLinksState).forEach(([_, links]: [string, InviteLink[]]) => {
       allLinks.push(...links);
     });
     return allLinks;
   }, [inviteLinksState]);
 
-  const isLoading = useMemo(() => {
-    return Object.values(inviteLinksLoadingState).some(loading => loading === true);
-  }, [inviteLinksLoadingState]);
+  const isLoading = Object.values(inviteLinksLoadingState).some(loading => loading === true);
 
   const mappedLinks = useMemo(() => {
     if (allInviteLinks && allInviteLinks.length > 0) {

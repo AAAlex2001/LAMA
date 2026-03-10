@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 interface UseLongPressOptions {
   duration?: number;
@@ -22,7 +22,7 @@ export function useLongPress({
   const didFireRef = useRef(false);
   const isActiveRef = useRef(false);
 
-  const clear = useCallback((shouldCancel = true) => {
+  const clear = (shouldCancel = true) => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
       timerRef.current = null;
@@ -31,7 +31,7 @@ export function useLongPress({
       onHoldCancel?.();
     }
     isActiveRef.current = false;
-  }, [onHoldCancel]);
+  };
 
   useEffect(() => {
     return () => {
@@ -39,44 +39,37 @@ export function useLongPress({
     };
   }, []);
 
-  const start = useCallback(
-    (x: number, y: number) => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      
-      didFireRef.current = false;
-      isActiveRef.current = true;
-      startPosRef.current = { x, y };
-      onHoldStart?.();
+  const start = (x: number, y: number) => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    didFireRef.current = false;
+    isActiveRef.current = true;
+    startPosRef.current = { x, y };
+    onHoldStart?.();
 
-      timerRef.current = setTimeout(() => {
-        didFireRef.current = true;
-        timerRef.current = null;
-        isActiveRef.current = false;
-        onLongPress();
-        // Clear the holding state after long press completes
-        onHoldCancel?.();
-      }, duration);
-    },
-    [duration, onLongPress, onHoldStart, onHoldCancel],
-  );
+    timerRef.current = setTimeout(() => {
+      didFireRef.current = true;
+      timerRef.current = null;
+      isActiveRef.current = false;
+      onLongPress();
+      onHoldCancel?.();
+    }, duration);
+  };
 
-  const move = useCallback(
-    (x: number, y: number) => {
+  const move = (x: number, y: number) => {
       if (!startPosRef.current) return;
       const dx = Math.abs(x - startPosRef.current.x);
       const dy = Math.abs(y - startPosRef.current.y);
       if (dx > moveThreshold || dy > moveThreshold) {
         clear();
         startPosRef.current = null;
-      }
-    },
-    [moveThreshold, clear],
-  );
+    }
+  };
 
-  const end = useCallback(() => {
+  const end = () => {
     const fired = didFireRef.current;
     clear();
     startPosRef.current = null;
@@ -84,53 +77,41 @@ export function useLongPress({
     if (!fired) {
       onPress?.();
     }
-  }, [clear, onPress]);
+  };
 
-  const onTouchStart = useCallback(
-    (e: React.TouchEvent) => {
-      const t = e.touches[0];
-      start(t.clientX, t.clientY);
-    },
-    [start],
-  );
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    start(t.clientX, t.clientY);
+  };
 
-  const onTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      const t = e.touches[0];
-      move(t.clientX, t.clientY);
-    },
-    [move],
-  );
+  const onTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    move(t.clientX, t.clientY);
+  };
 
-  const onTouchEnd = useCallback(() => end(), [end]);
+  const onTouchEnd = () => end();
 
-  const onMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const onMouseDown = (e: React.MouseEvent) => {
       if (e.button !== 0) return;
       start(e.clientX, e.clientY);
-    },
-    [start],
-  );
+    };
 
-  const onMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      move(e.clientX, e.clientY);
-    },
-    [move],
-  );
+  const onMouseMove = (e: React.MouseEvent) => {
+    move(e.clientX, e.clientY);
+  };
 
-  const onMouseUp = useCallback(() => end(), [end]);
+  const onMouseUp = () => end();
 
-  const onMouseLeave = useCallback(() => {
+  const onMouseLeave = () => {
     clear();
     startPosRef.current = null;
-  }, [clear]);
+  };
 
-  const onContextMenu = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const onContextMenu = (e: React.MouseEvent | React.TouchEvent) => {
     if (isActiveRef.current || didFireRef.current) {
       e.preventDefault();
     }
-  }, []);
+  };
 
   return {
     onTouchStart,

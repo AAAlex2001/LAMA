@@ -42,7 +42,7 @@ const SourceContent: FC<SourceContentProps> = ({
   return (
     <div className={styles.sourceContent}>
       <div className={styles.sourceOptions}>
-        <div className={styles.sourceOption}>
+        <div className={styles.sourceOption} onClick={() => handleDefaultChange(!isDefault)}>
           <Checkbox
             variant="radio"
             checked={isDefault}
@@ -55,6 +55,13 @@ const SourceContent: FC<SourceContentProps> = ({
           <div
             key={opt.key}
             className={styles.sourceOption}
+            onClick={() => {
+              const next = !opt.checked;
+              opt.onChange(next);
+              if (next) {
+                onDefaultChange(false);
+              }
+            }}
           >
             <Checkbox
               checked={opt.checked}
@@ -106,6 +113,9 @@ const SourceContent: FC<SourceContentProps> = ({
                     <div
                       key={`${option.key}-${item}`}
                       className={styles.channelItem}
+                      onClick={() => {
+                        option.list!.onItemToggle(item);
+                      }}
                     >
                       <Checkbox
                         checked={isSelected}
