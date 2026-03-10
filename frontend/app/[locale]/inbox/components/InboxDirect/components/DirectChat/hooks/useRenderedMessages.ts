@@ -9,6 +9,9 @@ function formatMessageTime(dateStr: string): string {
 }
 
 function mapMessageType(msg: BotMessageResponse): 'incoming' | 'outgoing' | 'system' {
+  if (msg.is_system) {
+    return 'system';
+  }
   return msg.is_incoming ? 'incoming' : 'outgoing';
 }
 
