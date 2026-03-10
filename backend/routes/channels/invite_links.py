@@ -60,6 +60,7 @@ async def get_invite_link(
     link = await service.get(link_id, channel_id)
     if not link:
         raise HTTPException(status_code=404, detail="Invite link not found")
+    link = await service.sync_single(channel, link)
     return link
 
 

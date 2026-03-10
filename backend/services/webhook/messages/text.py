@@ -1,8 +1,7 @@
 import logging
-import json
-from typing import Optional, Dict, Any
+from typing import Optional, List, Dict, Any
 
-from aiogram.types import Message
+from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
 from aiogram import Bot
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +13,7 @@ from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
+from backend.services.publications.utils.media_utils import is_video_url, is_document_url
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class TextProcessor:
             chat_id=chat_id,
             user_id=None,
             message_type=MessageType.TEXT,
-            text_content=json.dumps({"type": "system", "text": text}, ensure_ascii=False),
+            text_content=text,
             is_incoming=False,
             is_system=True,
         )
@@ -60,13 +60,31 @@ class TextProcessor:
         chat_id: int,
         text: str,
         media_url: Optional[str] = None,
+        media_urls: Optional[List[str]] = None,
         media_type: Optional[MessageType] = None,
         buttons: Optional[Dict[str, Any]] = None,
     ) -> Optional[Message]:
-        """Универсальная отправка ответа (текст/медиа + кнопки)"""
+        """Универсальная отправка ответа (текст/медиа/альбом + кнопки)"""
         reply_markup = build_keyboard(buttons)
 
-        if media_url and media_type:
+        all_urls = [u for u in (media_urls or []) if u]
+        if not all_urls and media_url:
+            all_urls = [media_url]
+
+        if len(all_urls) > 1:
+            media_group = []
+            for i, url in enumerate(all_urls[:10]):
+                caption = text if i == 0 else None
+                if is_video_url(url):
+                    media_group.append(InputMediaVideo(media=url, caption=caption))
+                elif is_document_url(url):
+                    media_group.append(InputMediaDocument(media=url, caption=caption))
+                else:
+                    media_group.append(InputMediaPhoto(media=url, caption=caption))
+            await self.telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+            return None
+
+        if all_urls and media_type:
             send_methods = {
                 MessageType.PHOTO: self.telegram_bot.send_photo,
                 MessageType.VIDEO: self.telegram_bot.send_video,
@@ -83,7 +101,7 @@ class TextProcessor:
 
                 return await method(
                     chat_id=chat_id,
-                    **{media_param: media_url},
+                    **{media_param: all_urls[0]},
                     caption=text,
                     reply_markup=reply_markup
                 )
@@ -105,6 +123,7 @@ class TextProcessor:
             chat_id=message.chat.id,
             text=text,
             media_url=auto_reply.response_media_url,
+            media_urls=getattr(auto_reply, "response_media_urls", None),
             media_type=auto_reply.response_media_type,
             buttons=auto_reply.response_buttons,
         )

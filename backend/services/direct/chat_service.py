@@ -196,25 +196,78 @@ class DirectChatService:
         tg_chat_id: int,
         owner_id: int,
         skip: int = 0,
-        limit: int = 50
-    ) -> Tuple[List[BotMessage], int]:
-        """Получить историю сообщений в чате (с проверкой владельца)."""
+        limit: int = 50,
+        around_message_id: Optional[int] = None,
+    ) -> Tuple[List[Dict[str, Any]], int]:
+        """Получить историю сообщений в чате с reply_message_text."""
         bot_check = select(Bot.id).where(and_(Bot.id == bot_id, Bot.owner_id == owner_id))
         bot_exists = (await self.db.execute(bot_check)).scalar_one_or_none()
         if not bot_exists:
             return [], 0
 
-        query = select(BotMessage).where(
-            and_(BotMessage.bot_id == bot_id, BotMessage.chat_id == tg_chat_id)
-        )
+        base_filter = and_(BotMessage.bot_id == bot_id, BotMessage.chat_id == tg_chat_id)
+        base_query = select(BotMessage).where(base_filter)
 
-        count_query = select(func.count()).select_from(query.subquery())
+        count_query = select(func.count()).select_from(base_query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0
 
-        query = query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
-        messages = (await self.db.execute(query)).scalars().all()
+        if around_message_id:
+            half = limit // 2
+            target = await self.db.execute(
+                select(BotMessage).where(base_filter, BotMessage.id == around_message_id)
+            )
+            target_msg = target.scalar_one_or_none()
+            if target_msg:
+                before_q = (
+                    select(BotMessage)
+                    .where(base_filter, BotMessage.created_at <= target_msg.created_at)
+                    .order_by(desc(BotMessage.created_at))
+                    .limit(half + 1)
+                )
+                after_q = (
+                    select(BotMessage)
+                    .where(base_filter, BotMessage.created_at > target_msg.created_at)
+                    .order_by(asc(BotMessage.created_at))
+                    .limit(half)
+                )
+                before = list((await self.db.execute(before_q)).scalars().all())
+                after = list((await self.db.execute(after_q)).scalars().all())
+                after.reverse()
+                messages = after + before
+            else:
+                messages = list(
+                    (await self.db.execute(
+                        base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                    )).scalars().all()
+                )
+        else:
+            messages = list(
+                (await self.db.execute(
+                    base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                )).scalars().all()
+            )
 
-        return list(messages), total
+        reply_ids = [m.reply_to_message_id for m in messages if m.reply_to_message_id]
+        reply_texts = {}
+        if reply_ids:
+            reply_q = select(BotMessage.telegram_message_id, BotMessage.text_content).where(
+                base_filter, BotMessage.telegram_message_id.in_(reply_ids)
+            )
+            rows = (await self.db.execute(reply_q)).all()
+            for tg_msg_id, text in rows:
+                reply_texts[tg_msg_id] = (text or "")[:100]
+
+        enriched = []
+        for m in messages:
+            data = {c.name: getattr(m, c.name) for c in m.__table__.columns}
+            data["media_group_id"] = m.media_group_id
+            data["media_name"] = m.media_name
+            data["media_size"] = m.media_size
+            rtext = reply_texts.get(m.reply_to_message_id) if m.reply_to_message_id else None
+            data["reply_message_text"] = rtext
+            enriched.append(data)
+
+        return enriched, total
 
     async def update_chat_status(
         self,

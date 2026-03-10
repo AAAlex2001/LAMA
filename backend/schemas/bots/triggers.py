@@ -15,7 +15,7 @@ class TriggerCreate(BaseModel):
     action_type: TriggerActionType = Field(..., description="Тип действия")
     action_data: Optional[Dict[str, Any]] = Field(
         None,
-        description="Данные действия: {text, media_url, media_type, buttons, duration_minutes}"
+        description="Данные действия: {text, media_url, media_urls, media_type, buttons, duration_minutes}"
     )
     delay_minutes: int = Field(0, ge=0, description="Задержка в минутах (0 = сразу)")
     delivery_window: Optional[Dict[str, Any]] = Field(

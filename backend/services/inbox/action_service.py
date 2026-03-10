@@ -9,7 +9,7 @@ from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot
 from backend.models.channels import ChannelGroup
 from backend.models.direct import DirectChat
-from backend.schemas.inbox.enums import EventStatus, BulkActionType
+from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
 from backend.services.webhook.base import get_bot_session
 
@@ -57,33 +57,90 @@ class InboxActionService:
             events = result.scalars().all()
 
             for event in events:
-                if not (event.tg_user_id and event.bot_id and event.channel_id):
-                    continue
+                if action == BulkActionType.BLOCK:
+                    # DM-блокировка (нет channel_id)
+                    if not event.channel_id:
+                        dm_chat_id = (event.payload or {}).get("chat_id")
+                        if dm_chat_id and event.bot_id:
+                            await self.db.execute(
+                                update(DirectChat)
+                                .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == dm_chat_id)
+                                .values(is_blocked=True)
+                            )
+                        event.status = EventStatus.BANNED
+                        await self.create_block_notification(event)
+                        modified_count += 1
+                        continue
 
-                bot = await self.db.get(Bot, event.bot_id)
-                channel = await self.db.get(ChannelGroup, event.channel_id)
+                    # Канал-блокировка
+                    if not (event.tg_user_id and event.channel_id):
+                        continue
 
-                if not (bot and channel and channel.telegram_id):
-                    continue
+                    channel = await self.db.get(ChannelGroup, event.channel_id)
+                    if not (channel and channel.telegram_id):
+                        continue
 
-                try:
-                    async with get_bot_session(bot.token) as client:
-                        if action == BulkActionType.BLOCK:
+                    bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None
+                    if not bot:
+                        continue
+
+                    try:
+                        async with get_bot_session(bot.token) as client:
                             await client.ban_chat_member(channel.telegram_id, event.tg_user_id)
-                        else:
-                            await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
+                        event.status = EventStatus.BANNED
+                        await self.create_block_notification(event)
+                        modified_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Не удалось выполнить block для пользователя {event.tg_user_id} "
+                            f"в канале {channel.telegram_id}: {e}",
+                            exc_info=True
+                        )
 
-                    event.status = EventStatus.PROCESSED
-                    modified_count += 1
-                except Exception as e:
-                    logger.error(
-                        f"Не удалось выполнить {action.value} для пользователя {event.tg_user_id} "
-                        f"в канале {channel.telegram_id}: {e}",
-                        exc_info=True
-                    )
+                elif action == BulkActionType.UNBLOCK:
+                    if not (event.tg_user_id and event.bot_id and event.channel_id):
+                        continue
+
+                    bot = await self.db.get(Bot, event.bot_id)
+                    channel = await self.db.get(ChannelGroup, event.channel_id)
+                    if not (bot and channel and channel.telegram_id):
+                        continue
+
+                    try:
+                        async with get_bot_session(bot.token) as client:
+                            await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
+                        event.status = EventStatus.PROCESSED
+                        modified_count += 1
+                    except Exception as e:
+                        logger.error(
+                            f"Не удалось выполнить unblock для пользователя {event.tg_user_id} "
+                            f"в канале {channel.telegram_id}: {e}",
+                            exc_info=True
+                        )
 
         await self.db.commit()
         return modified_count
+
+    async def create_block_notification(self, source_event: InboxEvent) -> InboxEvent:
+        """Создать системное уведомление о блокировке пользователя."""
+        username = source_event.tg_username or str(source_event.tg_user_id or "unknown")
+        description = f"Пользователь @{username} заблокирован"
+
+        notification = InboxEvent(
+            owner_id=source_event.owner_id,
+            category=InboxCategory.SYSTEM,
+            entity_type=EntityType.SYSTEM,
+            event_type=EventType.SYSTEM_NOTIFICATION,
+            bot_id=source_event.bot_id,
+            channel_id=source_event.channel_id,
+            tg_user_id=source_event.tg_user_id,
+            tg_username=source_event.tg_username,
+            status=EventStatus.NEW,
+            description=description,
+            payload={"source_event_id": source_event.id, "action": "block"},
+        )
+        self.db.add(notification)
+        return notification
 
     async def create_event(self, event_data: dict) -> InboxEvent:
         """Создать событие инбокса. Вызывается из webhook-обработчиков."""
@@ -232,7 +289,8 @@ class InboxActionService:
                                 .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == dm_chat_id)
                                 .values(is_blocked=True)
                             )
-                        event.status = EventStatus.PROCESSED
+                        event.status = EventStatus.BANNED
+                        await self.create_block_notification(event)
                         await self.db.commit()
                         return SpecificActionResult(status="blocked")
 
@@ -249,7 +307,8 @@ class InboxActionService:
                         except Exception as e:
                             logger.error(f"Не удалось забанить пользователя в канале {channel.telegram_id}: {e}")
 
-                    event.status = EventStatus.PROCESSED
+                    event.status = EventStatus.BANNED
+                    await self.create_block_notification(event)
                     await self.db.commit()
                     return SpecificActionResult(status="blocked")
 
@@ -282,7 +341,8 @@ class InboxActionService:
                                 except Exception as e:
                                     logger.error(f"delete_and_block: бан не удался: {e}")
 
-                    event.status = EventStatus.PROCESSED
+                    event.status = EventStatus.BANNED
+                    await self.create_block_notification(event)
                     await self.db.commit()
                     return SpecificActionResult(status="deleted_and_blocked")
 

@@ -4,7 +4,7 @@ from typing import Optional, List, Tuple, Dict, Any
 
 import pytz
 from aiogram import Bot
-from aiogram.types import ChatPermissions
+from aiogram.types import ChatPermissions, InputMediaPhoto, InputMediaVideo, InputMediaDocument
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from backend.models.bots import (
 )
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.bot_provider import get_bot_info
+from backend.services.publications.utils.media_utils import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -221,25 +222,44 @@ class BotTriggerService:
             logger.warning(f"Failed to send trigger message to {chat_id}: {e}")
 
     async def action_send_media(self, bot: Bot, chat_id: int, user_id: int, data: dict) -> None:
-        """Действие: отправить медиа."""
+        """Действие: отправить медиа (одиночное или альбом)."""
+        media_urls = [u for u in (data.get("media_urls") or []) if u]
         media_url = data.get("media_url")
-        if not media_url:
+        if not media_urls and media_url:
+            media_urls = [media_url]
+        if not media_urls:
             return
 
-        media_type = data.get("media_type", "PHOTO")
         caption = data.get("text", "")
         if caption:
             bot_info = await get_bot_info(bot.bot.token)
             caption = ShortcodeProcessor.process(caption, self.build_shortcode_ctx(user_id, data, bot_info))
 
-        method_name = MEDIA_SEND_METHODS.get(media_type)
-        if not method_name:
-            return
-
         try:
+            if len(media_urls) > 1:
+                media_group = []
+                for i, url in enumerate(media_urls[:10]):
+                    cap = caption if i == 0 else None
+                    if is_video_url(url):
+                        media_group.append(InputMediaVideo(media=url, caption=cap))
+                    elif is_document_url(url):
+                        media_group.append(InputMediaDocument(media=url, caption=cap))
+                    else:
+                        media_group.append(InputMediaPhoto(media=url, caption=cap))
+                await bot.send_media_group(chat_id=chat_id, media=media_group)
+                return
+
+            media_type = data.get("media_type", "PHOTO")
+            method_name = MEDIA_SEND_METHODS.get(media_type)
+            if not method_name:
+                return
             method = getattr(bot, method_name)
-            await method(chat_id=chat_id, **{media_type.lower(): media_url},
-                         caption=caption, reply_markup=build_keyboard(data.get("buttons")))
+            await method(
+                chat_id=chat_id,
+                **{media_type.lower(): media_urls[0]},
+                caption=caption,
+                reply_markup=build_keyboard(data.get("buttons")),
+            )
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
 

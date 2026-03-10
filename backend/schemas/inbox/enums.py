@@ -27,6 +27,7 @@ class EventStatus(str, Enum):
     NEW = "new"
     PROCESSED = "processed"
     IGNORED = "ignored"
+    BANNED = "banned"
 
 class SortDir(str, Enum):
     NEW_FIRST = "new"

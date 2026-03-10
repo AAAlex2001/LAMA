@@ -1,15 +1,26 @@
-﻿from typing import List, Optional
-from sqlalchemy import select, desc, asc, func
+from typing import List, Optional
+from sqlalchemy import select, desc, asc, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.inbox import InboxEvent
-from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, SortDir, EventType
+from backend.schemas.inbox.enums import InboxCategory, EventStatus, SortDir, EventType
 
+
+# Системные = ошибки, вступления, ссылки и т.д. (НЕ триггеры/команды/авто-ответы)
+SYSTEM_EVENT_TYPES = (
+    EventType.SYSTEM_NOTIFICATION,
+    EventType.SYSTEM_UPDATE,
+    EventType.CHANNEL_JOIN_REQUEST,
+    EventType.CHANNEL_LINK_JOIN,
+    EventType.CHANNEL_BAN,
+    EventType.BOT_ERROR,
+)
 
 AUTOMATION_EVENT_TYPES = (
     EventType.BOT_COMMAND,
     EventType.SYSTEM_TRIGGER,
     EventType.SYSTEM_AUTOREPLY,
 )
+
 
 class InboxQueryService:
     def __init__(self, db: AsyncSession):
@@ -20,53 +31,63 @@ class InboxQueryService:
         owner_id: int,
         category: Optional[InboxCategory] = None,
         status: Optional[EventStatus] = None,
-        entity_type: Optional[EntityType] = None,
-        entity_ids: Optional[List[int]] = None,
+        bot_ids: Optional[List[int]] = None,
+        channel_ids: Optional[List[int]] = None,
+        include_system: Optional[bool] = None,
+        type_auto_replies: Optional[bool] = None,
+        type_triggers: Optional[bool] = None,
+        type_commands: Optional[bool] = None,
         event_types: Optional[List[EventType]] = None,
         sort_dir: SortDir = SortDir.NEW_FIRST,
         limit: int = 50,
-        offset: int = 0
+        offset: int = 0,
     ) -> tuple[List[InboxEvent], int]:
-        
-        stmt = select(InboxEvent).where(InboxEvent.owner_id == owner_id)
-        count_stmt = select(func.count(InboxEvent.id)).where(InboxEvent.owner_id == owner_id)
 
-        # Filters
+        base = InboxEvent.owner_id == owner_id
+        filters = [base]
+
         if category:
-            stmt = stmt.where(InboxEvent.category == category)
-            count_stmt = count_stmt.where(InboxEvent.category == category)
-
+            filters.append(InboxEvent.category == category)
             if category == InboxCategory.AUTOMATION and not event_types:
-                stmt = stmt.where(InboxEvent.event_type.in_(AUTOMATION_EVENT_TYPES))
-                count_stmt = count_stmt.where(InboxEvent.event_type.in_(AUTOMATION_EVENT_TYPES))
-            
-        if status:
-            stmt = stmt.where(InboxEvent.status == status)
-            count_stmt = count_stmt.where(InboxEvent.status == status)
-            
-        if entity_type:
-            stmt = stmt.where(InboxEvent.entity_type == entity_type)
-            count_stmt = count_stmt.where(InboxEvent.entity_type == entity_type)
-            
-        if entity_ids is not None and len(entity_ids) > 0:
-            if entity_type == EntityType.BOT:
-                stmt = stmt.where(InboxEvent.bot_id.in_(entity_ids))
-                count_stmt = count_stmt.where(InboxEvent.bot_id.in_(entity_ids))
-            elif entity_type == EntityType.CHANNEL:
-                stmt = stmt.where(InboxEvent.channel_id.in_(entity_ids))
-                count_stmt = count_stmt.where(InboxEvent.channel_id.in_(entity_ids))
-                
-        if event_types and len(event_types) > 0:
-            stmt = stmt.where(InboxEvent.event_type.in_(event_types))
-            count_stmt = count_stmt.where(InboxEvent.event_type.in_(event_types))
+                filters.append(InboxEvent.event_type.in_(AUTOMATION_EVENT_TYPES))
 
-        # Sort
+        if status:
+            filters.append(InboxEvent.status == status)
+
+        # --- Комбинированная фильтрация по источникам ---
+        source_conditions = []
+        if bot_ids:
+            source_conditions.append(InboxEvent.bot_id.in_(bot_ids))
+        if channel_ids:
+            source_conditions.append(InboxEvent.channel_id.in_(channel_ids))
+        if include_system is True:
+            source_conditions.append(InboxEvent.event_type.in_(SYSTEM_EVENT_TYPES))
+        if source_conditions:
+            filters.append(or_(*source_conditions))
+
+        # --- Фильтрация по типам автоматизации ---
+        type_conditions = []
+        if type_auto_replies is True:
+            type_conditions.append(InboxEvent.event_type == EventType.SYSTEM_AUTOREPLY)
+        if type_triggers is True:
+            type_conditions.append(InboxEvent.event_type == EventType.SYSTEM_TRIGGER)
+        if type_commands is True:
+            type_conditions.append(InboxEvent.event_type == EventType.BOT_COMMAND)
+        if type_conditions:
+            filters.append(or_(*type_conditions))
+
+        # --- Прямая фильтрация по event_types ---
+        if event_types:
+            filters.append(InboxEvent.event_type.in_(event_types))
+
+        stmt = select(InboxEvent).where(*filters)
+        count_stmt = select(func.count(InboxEvent.id)).where(*filters)
+
         if sort_dir == SortDir.NEW_FIRST:
             stmt = stmt.order_by(desc(InboxEvent.created_at))
         else:
             stmt = stmt.order_by(asc(InboxEvent.created_at))
 
-        # Pagination
         stmt = stmt.limit(limit).offset(offset)
 
         result = await self.db.execute(stmt)

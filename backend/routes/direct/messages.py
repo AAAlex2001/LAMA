@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
@@ -22,12 +23,16 @@ async def get_chat_messages(
     tg_chat_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    around_message_id: Optional[int] = Query(None, description="Load messages around this ID"),
     current_user: User = Depends(get_current_user),
-    chat_service: DirectChatService = Depends(get_chat_service)
+    chat_service: DirectChatService = Depends(get_chat_service),
 ):
-    """История сообщений в чате."""
+    """История сообщений в чате. around_message_id загружает окно вокруг указанного сообщения."""
     messages, total = await chat_service.get_chat_messages(
-        bot_id, tg_chat_id, owner_id=current_user.id, skip=skip, limit=limit
+        bot_id, tg_chat_id,
+        owner_id=current_user.id,
+        skip=skip, limit=limit,
+        around_message_id=around_message_id,
     )
 
     await chat_service.reset_unread(bot_id, tg_chat_id, owner_id=current_user.id)

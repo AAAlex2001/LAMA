@@ -161,6 +161,29 @@ class InviteLinkService:
         result = await self.db.execute(query)
         return list(result.scalars().all())
 
+    async def sync_single(self, channel: ChannelGroup, link: ChatInviteLink) -> ChatInviteLink:
+        """Обновить member_count одной ссылки через Telegram API."""
+        if link.is_revoked or link.is_primary:
+            return link
+        try:
+            bot = await self.resolve_bot(channel)
+            expire_ts = int(link.expire_date.timestamp()) if link.expire_date else None
+            tg_link = await bot.edit_chat_invite_link(
+                chat_id=channel.telegram_id,
+                invite_link=link.invite_link,
+                name=link.name,
+                expire_date=expire_ts,
+                member_limit=link.member_limit if link.member_limit else None,
+                creates_join_request=link.creates_join_request,
+            )
+            link.member_count = tg_link.member_count or 0
+            link.pending_join_request_count = tg_link.pending_join_request_count or 0
+            await self.db.commit()
+            await self.db.refresh(link)
+        except Exception as e:
+            logger.debug("Failed to sync single link %s: %s", link.invite_link, e)
+        return link
+
     async def delete(self, link_id: int, channel_id: int) -> bool:
         """Удалить ссылку из БД."""
         query = delete(ChatInviteLink).where(

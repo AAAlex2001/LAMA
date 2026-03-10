@@ -227,17 +227,18 @@ class BotCommand(Base):
     # Ответ
     response_text: Mapped[str] = mapped_column(Text, nullable=False)
     response_media_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    response_media_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     response_media_type: Mapped[Optional[MessageType]] = mapped_column(SQLEnum(MessageType), nullable=True)
     response_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Inline keyboard
-    
+
     # Настройки
     scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)  # Область работы команды
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    
+
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
-    
+
     # Relationships
     bot = relationship("Bot", back_populates="commands")
 
@@ -255,9 +256,10 @@ class AutoReply(Base):
     # Ответ
     response_text: Mapped[str] = mapped_column(Text, nullable=False)
     response_media_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    response_media_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     response_media_type: Mapped[Optional[MessageType]] = mapped_column(SQLEnum(MessageType), nullable=True)
     response_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Inline keyboard
-    
+
     # Настройки
     scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)  # Область работы (PRIVATE, GROUPS, ALL)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

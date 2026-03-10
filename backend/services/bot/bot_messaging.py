@@ -1,14 +1,15 @@
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, Union
 
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
-from aiogram.types import Message
+from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
 from aiogram.exceptions import TelegramAPIError
 
 from backend.models.bots import Bot as BotModel, BotMessage, BotStatus, MessageType
 from backend.models.direct import DirectChat
 from backend.schemas.bots.messages import SendMessageRequest, BroadcastResult, BroadcastResponse
 from backend.services.bot_provider import resolve_for_bot_id
+from backend.services.publications.utils.media_utils import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
 
 MEDIA_SEND_METHODS = {
@@ -27,7 +28,7 @@ class BotMessagingService:
     async def send(
         self, bot_id: int, data: SendMessageRequest,
         owner_id: Optional[int] = None,
-    ) -> Message:
+    ) -> Union[Message, List[Message]]:
         """Отправить сообщение от имени бота."""
         bot = await self.get_bot_or_raise(bot_id, owner_id)
         if bot.status != BotStatus.ACTIVE:
@@ -37,37 +38,58 @@ class BotMessagingService:
         reply_markup = build_keyboard(data.buttons) if data.buttons else None
 
         try:
-            message = await self.dispatch_telegram(telegram_bot, data, reply_markup)
+            result = await self.dispatch_telegram(telegram_bot, data, reply_markup)
         except TelegramAPIError as e:
             raise ValueError(f"Failed to send message: {e}")
 
-        file_id = message.photo[-1].file_id if message.photo else None
-        await self.save(
-            bot_id=bot.id,
-            telegram_message_id=message.message_id,
-            chat_id=data.chat_id,
-            user_id=None,
-            message_type=data.media_type or MessageType.TEXT,
-            text_content=data.text_content,
-            media_file_id=file_id,
-            media_url=data.media_url,
-            is_incoming=False,
-            raw_data=message.model_dump(mode="json"),
-            reply_to_message_id=data.reply_to_message_id,
-        )
-        return message
+        messages = result if isinstance(result, list) else [result]
+        for msg in messages:
+            file_id = msg.photo[-1].file_id if msg.photo else None
+            await self.save(
+                bot_id=bot.id,
+                telegram_message_id=msg.message_id,
+                chat_id=data.chat_id,
+                user_id=None,
+                message_type=data.media_type or MessageType.TEXT,
+                text_content=msg.text or msg.caption or data.text_content,
+                media_file_id=file_id,
+                media_url=data.media_url,
+                is_incoming=False,
+                raw_data=msg.model_dump(mode="json"),
+                reply_to_message_id=data.reply_to_message_id,
+            )
+        return result
 
-    async def dispatch_telegram(self, telegram_bot, data: SendMessageRequest, reply_markup) -> Message:
-        """Отправить сообщение в Telegram по типу медиа."""
+    async def dispatch_telegram(self, telegram_bot, data: SendMessageRequest, reply_markup) -> Union[Message, List[Message]]:
+        """Отправить сообщение в Telegram по типу медиа. Возвращает Message или List[Message] для media_group."""
         reply_params = {}
         if data.reply_to_message_id:
             reply_params["reply_to_message_id"] = data.reply_to_message_id
 
-        if data.media_url and data.media_type and data.media_type in MEDIA_SEND_METHODS:
+        media_urls = [u for u in (data.media_urls or []) if u]
+        if not media_urls and data.media_url:
+            media_urls = [data.media_url]
+
+        if len(media_urls) > 1:
+            media_group = []
+            for i, url in enumerate(media_urls[:10]):
+                caption = data.text_content if i == 0 else None
+                if is_video_url(url):
+                    media_group.append(InputMediaVideo(media=url, caption=caption))
+                elif is_document_url(url):
+                    media_group.append(InputMediaDocument(media=url, caption=caption))
+                else:
+                    media_group.append(InputMediaPhoto(media=url, caption=caption))
+            messages = await telegram_bot.send_media_group(
+                chat_id=data.chat_id, media=media_group, **reply_params,
+            )
+            return list(messages)
+
+        if len(media_urls) == 1 and data.media_type and data.media_type in MEDIA_SEND_METHODS:
             method = getattr(telegram_bot, MEDIA_SEND_METHODS[data.media_type])
             return await method(
                 chat_id=data.chat_id,
-                **{data.media_type.value.lower(): data.media_url},
+                **{data.media_type.value.lower(): media_urls[0]},
                 caption=data.text_content,
                 reply_markup=reply_markup,
                 **reply_params,
@@ -187,24 +209,27 @@ class BotMessagingService:
                 chat_id=chat_id,
                 text_content=data.text_content,
                 media_url=data.media_url,
+                media_urls=data.media_urls,
                 media_type=data.media_type,
                 buttons=data.buttons,
             )
             try:
-                message = await self.dispatch_telegram(telegram_bot, single, reply_markup)
-                file_id = message.photo[-1].file_id if message.photo else None
-                await self.save(
-                    bot_id=bot.id,
-                    telegram_message_id=message.message_id,
-                    chat_id=chat_id,
-                    user_id=None,
-                    message_type=data.media_type or MessageType.TEXT,
-                    text_content=data.text_content,
-                    media_file_id=file_id,
-                    media_url=data.media_url,
-                    is_incoming=False,
-                    raw_data=message.model_dump(mode="json"),
-                )
+                result = await self.dispatch_telegram(telegram_bot, single, reply_markup)
+                msgs = result if isinstance(result, list) else [result]
+                for msg in msgs:
+                    file_id = msg.photo[-1].file_id if msg.photo else None
+                    await self.save(
+                        bot_id=bot.id,
+                        telegram_message_id=msg.message_id,
+                        chat_id=chat_id,
+                        user_id=None,
+                        message_type=data.media_type or MessageType.TEXT,
+                        text_content=data.text_content,
+                        media_file_id=file_id,
+                        media_url=data.media_url,
+                        is_incoming=False,
+                        raw_data=msg.model_dump(mode="json"),
+                    )
                 results.append(BroadcastResult(chat_id=chat_id, success=True))
             except Exception as e:
                 results.append(BroadcastResult(chat_id=chat_id, success=False, error=str(e)))

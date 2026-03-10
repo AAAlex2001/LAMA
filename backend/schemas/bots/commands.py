@@ -14,6 +14,7 @@ class BotCommandCreate(BaseModel):
     description: Optional[str] = None
     response_text: str = Field(..., min_length=1)
     response_media_url: Optional[str] = None
+    response_media_urls: Optional[List[str]] = None
     response_media_type: Optional[MessageType] = None
     response_buttons: Optional[Dict[str, Any]] = None
     scope: Optional[CommandScope] = None
@@ -24,6 +25,7 @@ class BotCommandUpdate(BaseModel):
     description: Optional[str] = None
     response_text: Optional[str] = Field(None, min_length=1)
     response_media_url: Optional[str] = None
+    response_media_urls: Optional[List[str]] = None
     response_media_type: Optional[MessageType] = None
     response_buttons: Optional[Dict[str, Any]] = None
     scope: Optional[CommandScope] = None
@@ -37,6 +39,7 @@ class BotCommandResponse(BaseModel):
     description: Optional[str]
     response_text: str
     response_media_url: Optional[str]
+    response_media_urls: Optional[List[str]] = None
     response_media_type: Optional[MessageType]
     response_buttons: Optional[Dict[str, Any]]
     scope: Optional[CommandScope]
