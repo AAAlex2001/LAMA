@@ -13,7 +13,7 @@ from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
-from backend.services.publications.utils.media_utils import is_video_url, is_document_url
+from backend.utils.media import is_video_url, is_document_url
 
 logger = logging.getLogger(__name__)
 

@@ -16,7 +16,7 @@ from backend.models.bots import (
 )
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.bot_provider import get_bot_info
-from backend.services.publications.utils.media_utils import is_video_url, is_document_url
+from backend.utils.media import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)

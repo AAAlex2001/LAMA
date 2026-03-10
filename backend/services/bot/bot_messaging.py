@@ -9,7 +9,7 @@ from backend.models.bots import Bot as BotModel, BotMessage, BotStatus, MessageT
 from backend.models.direct import DirectChat
 from backend.schemas.bots.messages import SendMessageRequest, BroadcastResult, BroadcastResponse
 from backend.services.bot_provider import resolve_for_bot_id
-from backend.services.publications.utils.media_utils import is_video_url, is_document_url
+from backend.utils.media import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
 
 MEDIA_SEND_METHODS = {

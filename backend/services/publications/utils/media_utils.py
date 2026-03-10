@@ -1,11 +1,10 @@
 from typing import List, Optional
 
 from backend.models.publications import ContentType as DBContentType, Publication
-
-
-VIDEO_EXTENSIONS = (".mp4", ".mov", ".m4v", ".webm", ".avi")
-AUDIO_EXTENSIONS = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
-DOCUMENT_EXTENSIONS = (".pdf", ".doc", ".docx", ".txt", ".zip", ".rar")
+from backend.utils.media import (
+    VIDEO_EXTENSIONS, AUDIO_EXTENSIONS, DOCUMENT_EXTENSIONS,
+    is_video_url, is_document_url, is_audio_url,
+)
 
 
 def validate_media_urls(publication: Publication) -> None:
@@ -22,18 +21,3 @@ def get_spoiler(blur_list: Optional[List[bool]], index: int) -> bool:
     if blur_list and index < len(blur_list):
         return bool(blur_list[index])
     return False
-
-
-def is_video_url(url: str) -> bool:
-    """Check if URL points to a video file."""
-    return url.lower().endswith(VIDEO_EXTENSIONS)
-
-
-def is_document_url(url: str) -> bool:
-    """Check if URL points to a document file."""
-    return url.lower().endswith(DOCUMENT_EXTENSIONS)
-
-
-def is_audio_url(url: str) -> bool:
-    """Check if URL points to an audio file."""
-    return url.lower().endswith(AUDIO_EXTENSIONS)
