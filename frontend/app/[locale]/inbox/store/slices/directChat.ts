@@ -24,6 +24,7 @@ export interface DirectChatState {
   chatUnreadFilter: 'unread' | 'read' | null;
 
   activeChatId: number | null;
+  replyToMessageId: number | null;
 
   messages: Record<number, BotMessageResponse[]>;
   messagesLoading: Record<number, boolean>;
@@ -33,6 +34,11 @@ export interface DirectChatState {
 
   sendingMessage: boolean;
   wsConnected: boolean;
+
+  isBotAutomatizationModalOpen: boolean;
+  isTriggerModalOpen: boolean;
+  isGlobalMessageModalOpen: boolean;
+  selectedBotIds: number[];
 }
 
 const initialState: DirectChatState = {
@@ -46,6 +52,7 @@ const initialState: DirectChatState = {
   chatUnreadFilter: null,
 
   activeChatId: null,
+  replyToMessageId: null,
 
   messages: {},
   messagesLoading: {},
@@ -55,6 +62,11 @@ const initialState: DirectChatState = {
 
   sendingMessage: false,
   wsConnected: false,
+
+  isBotAutomatizationModalOpen: false,
+  isTriggerModalOpen: false,
+  isGlobalMessageModalOpen: false,
+  selectedBotIds: [],
 };
 
 const directChatSlice = createSlice({
@@ -131,6 +143,36 @@ const directChatSlice = createSlice({
     },
     setSendingMessage(state, action: PayloadAction<boolean>) {
       state.sendingMessage = action.payload;
+    },
+    setReplyToMessageId(state, action: PayloadAction<number | null>) {
+      state.replyToMessageId = action.payload;
+    },
+    setBotAutomatizationModalOpen(state, action: PayloadAction<boolean>) {
+      state.isBotAutomatizationModalOpen = action.payload;
+      if (!action.payload) {
+        state.selectedBotIds = [];
+      }
+    },
+    setTriggerModalOpen(state, action: PayloadAction<boolean>) {
+      state.isTriggerModalOpen = action.payload;
+    },
+    setGlobalMessageModalOpen(state, action: PayloadAction<boolean>) {
+      state.isGlobalMessageModalOpen = action.payload;
+    },
+    setSelectedBotIds(state, action: PayloadAction<number[]>) {
+      state.selectedBotIds = action.payload;
+    },
+    toggleBotSelection(state, action: PayloadAction<number>) {
+      const botId = action.payload;
+      const index = state.selectedBotIds.indexOf(botId);
+      if (index === -1) {
+        state.selectedBotIds.push(botId);
+      } else {
+        state.selectedBotIds.splice(index, 1);
+      }
+    },
+    selectAllBots(state, action: PayloadAction<number[]>) {
+      state.selectedBotIds = action.payload;
     },
     resetDirectChat() {
       return initialState;
@@ -254,6 +296,13 @@ export const {
   wsMessageReceived,
   setWsConnected,
   setSendingMessage,
+  setReplyToMessageId,
+  setBotAutomatizationModalOpen,
+  setTriggerModalOpen,
+  setGlobalMessageModalOpen,
+  setSelectedBotIds,
+  toggleBotSelection,
+  selectAllBots,
   resetDirectChat,
 } = directChatSlice.actions;
 

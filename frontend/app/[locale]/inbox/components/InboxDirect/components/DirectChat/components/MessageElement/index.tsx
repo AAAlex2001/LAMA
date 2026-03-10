@@ -166,7 +166,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
         </DesktopWrapper>
         <div className={styles.incomingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={false} />}
-          <div className={styles.mediaContainer}>
+          <div className={styles.messageMediaWrapper}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (
                 <MediaPreview key={`visual-${idx}`} items={run.items} />
@@ -194,7 +194,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
       <div className={styles.outgoingWrapper}>
         <div className={styles.outgoingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={true} />}
-          <div className={styles.mediaContainer}>
+          <div className={styles.messageMediaWrapper}>
             {mediaRuns.map((run, idx) =>
               run.kind === 'visual' ? (
                 <MediaPreview key={`visual-${idx}`} items={run.items} />
