@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -21,10 +21,7 @@ async def create_moderation_rule(
     service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        return await service.create_rule(channel_id=channel_id, data=data, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await service.create_rule(channel_id=channel_id, data=data, owner_id=current_user.id)
 
 
 @router.get("/{channel_id}/moderation/rules", response_model=ChannelModerationRuleListResponse)
@@ -33,10 +30,7 @@ async def list_moderation_rules(
     service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        rules = await service.list_rules(channel_id=channel_id, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    rules = await service.list_rules(channel_id=channel_id, owner_id=current_user.id)
     return ChannelModerationRuleListResponse(items=rules, total=len(rules))
 
 
@@ -48,10 +42,7 @@ async def update_moderation_rule(
     service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    rule = await service.update_rule(channel_id=channel_id, rule_id=rule_id, data=data, owner_id=current_user.id)
-    if not rule:
-        raise HTTPException(status_code=404, detail="Rule not found")
-    return rule
+    return await service.update_rule(channel_id=channel_id, rule_id=rule_id, data=data, owner_id=current_user.id)
 
 
 @router.delete("/{channel_id}/moderation/rules/{rule_id}", status_code=204)
@@ -61,6 +52,4 @@ async def delete_moderation_rule(
     service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    success = await service.delete_rule(channel_id=channel_id, rule_id=rule_id, owner_id=current_user.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Rule not found")
+    await service.delete_rule(channel_id=channel_id, rule_id=rule_id, owner_id=current_user.id)

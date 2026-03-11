@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +25,7 @@ class BackupJobService:
         source = await get_channel(self.db, data.source_channel_id, owner_id)
         target = await get_channel(self.db, data.target_channel_id, owner_id)
         if not source or not target:
-            raise ValueError("Source or target channel not found")
+            raise HTTPException(status_code=400, detail="Source or target channel not found")
 
         total_posts = await self.count_posts(data.source_channel_id)
 
@@ -48,7 +49,7 @@ class BackupJobService:
         result = await self.db.execute(query)
         job = result.scalar_one_or_none()
         if not job:
-            raise ValueError("Backup job not found")
+            raise HTTPException(status_code=404, detail="Backup job not found")
         if job.status != BackupStatus.IN_PROGRESS:
             return job
 
@@ -58,7 +59,7 @@ class BackupJobService:
 
         target_channel = await get_channel(self.db, job.target_channel_id)
         if not target_channel:
-            raise ValueError("Target channel not found")
+            raise HTTPException(status_code=400, detail="Target channel not found")
 
         bot = await resolve_for_channel(self.db, target_channel)
         retransmit = RetransmitService(self.db)
@@ -123,6 +124,15 @@ class BackupJobService:
             select(func.count(BackedUpPost.id)).where(BackedUpPost.channel_id == channel_id)
         )
         return result.scalar() or 0
+
+    async def get_backup_job(self, job_id: int, owner_id: int) -> BackupJob:
+        """Получить задачу бекапа по ID."""
+        query = select(BackupJob).where(BackupJob.id == job_id, BackupJob.owner_id == owner_id)
+        result = await self.db.execute(query)
+        job = result.scalar_one_or_none()
+        if not job:
+            raise HTTPException(status_code=404, detail="Backup job not found")
+        return job
 
     async def get_source_posts(self, channel_id: int) -> List[BackedUpPost]:
         """Получить все посты канала для обработки."""

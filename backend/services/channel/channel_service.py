@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import HTTPException
+
 from sqlalchemy import select, func, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -40,7 +42,7 @@ class ChannelService:
         await self.db.refresh(channel)
         return channel
 
-    async def get(self, channel_id: int, owner_id: Optional[int] = None) -> Optional[ChannelGroup]:
+    async def get(self, channel_id: int, owner_id: Optional[int] = None) -> ChannelGroup:
         """Получить канал по ID."""
         query = select(ChannelGroup).options(selectinload(ChannelGroup.bot)).where(
             ChannelGroup.id == channel_id,
@@ -48,13 +50,19 @@ class ChannelService:
         if owner_id is not None:
             query = query.where(ChannelGroup.owner_id == owner_id)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        channel = result.scalar_one_or_none()
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        return channel
 
-    async def get_by_telegram_id(self, telegram_id: int) -> Optional[ChannelGroup]:
+    async def get_by_telegram_id(self, telegram_id: int) -> ChannelGroup:
         """Получить канал по Telegram ID."""
         query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_id)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        channel = result.scalar_one_or_none()
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        return channel
 
     async def list(
         self,
@@ -91,11 +99,9 @@ class ChannelService:
 
         return channels, total
 
-    async def update(self, channel_id: int, data: ChannelGroupUpdate, owner_id: int) -> Optional[ChannelGroup]:
+    async def update(self, channel_id: int, data: ChannelGroupUpdate, owner_id: int) -> ChannelGroup:
         """Обновить канал."""
         channel = await self.get(channel_id, owner_id=owner_id)
-        if not channel:
-            return None
 
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -109,8 +115,6 @@ class ChannelService:
     async def delete(self, channel_id: int, owner_id: int) -> bool:
         """Удалить канал."""
         channel = await self.get(channel_id, owner_id=owner_id)
-        if not channel:
-            return False
         await self.db.delete(channel)
         await self.db.commit()
         return True

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional, Tuple
 
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ActionType, ChannelGroup, LinkFilterMode
@@ -93,11 +94,11 @@ class AntispamService:
         link_blacklist: Optional[List[str]] = None,
         link_filter_action: Optional[ActionType] = None,
         link_filter_mute_duration: Optional[int] = None,
-    ) -> Optional[ChannelGroup]:
+    ) -> ChannelGroup:
         """Обновить настройки антиспама."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            return None
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         if link_filter_mode is not None:
             channel.link_filter_mode = link_filter_mode

@@ -2,6 +2,7 @@ import logging
 from typing import List, Optional
 
 from aiogram.exceptions import TelegramAPIError
+from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -28,7 +29,7 @@ class InviteLinkService:
         channel: ChannelGroup,
         data: InviteLinkCreate,
         creator_id: int,
-    ) -> Optional[ChatInviteLink]:
+    ) -> ChatInviteLink:
         """Создать пригласительную ссылку."""
         bot = await self.resolve_bot(channel)
 
@@ -45,7 +46,7 @@ class InviteLinkService:
             )
         except TelegramAPIError as e:
             logger.error("Error creating invite link: %s", e)
-            return None
+            raise HTTPException(status_code=400, detail="Failed to create invite link")
 
         link = ChatInviteLink(
             channel_id=channel.id,
@@ -72,11 +73,11 @@ class InviteLinkService:
         channel: ChannelGroup,
         link_id: int,
         data: InviteLinkUpdate,
-    ) -> Optional[ChatInviteLink]:
+    ) -> ChatInviteLink:
         """Обновить пригласительную ссылку."""
         invite_link = await self.get(link_id, channel.id)
-        if not invite_link or invite_link.is_revoked or invite_link.is_primary:
-            return None
+        if invite_link.is_revoked or invite_link.is_primary:
+            raise HTTPException(status_code=400, detail="Cannot update revoked or primary invite link")
 
         bot = await self.resolve_bot(channel)
 
@@ -96,7 +97,7 @@ class InviteLinkService:
             )
         except TelegramAPIError as e:
             logger.error("Error updating invite link: %s", e)
-            return None
+            raise HTTPException(status_code=400, detail="Failed to update invite link in Telegram")
 
         if data.name is not None:
             invite_link.name = data.name
@@ -116,15 +117,13 @@ class InviteLinkService:
         await self.db.refresh(invite_link)
         return invite_link
 
-    async def revoke(self, channel: ChannelGroup, link_id: int) -> Optional[ChatInviteLink]:
+    async def revoke(self, channel: ChannelGroup, link_id: int) -> ChatInviteLink:
         """Отозвать пригласительную ссылку."""
         invite_link = await self.get(link_id, channel.id)
-        if not invite_link:
-            return None
         if invite_link.is_revoked:
             return invite_link
         if invite_link.is_primary:
-            return None
+            raise HTTPException(status_code=400, detail="Cannot revoke primary invite link")
 
         bot = await self.resolve_bot(channel)
 
@@ -135,21 +134,24 @@ class InviteLinkService:
             )
         except TelegramAPIError as e:
             logger.error("Error revoking invite link: %s", e)
-            return None
+            raise HTTPException(status_code=400, detail="Failed to revoke invite link in Telegram")
 
         invite_link.is_revoked = True
         await self.db.commit()
         await self.db.refresh(invite_link)
         return invite_link
 
-    async def get(self, link_id: int, channel_id: int) -> Optional[ChatInviteLink]:
+    async def get(self, link_id: int, channel_id: int) -> ChatInviteLink:
         """Получить ссылку по ID."""
         query = select(ChatInviteLink).where(
             ChatInviteLink.id == link_id,
             ChatInviteLink.channel_id == channel_id,
         )
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        link = result.scalar_one_or_none()
+        if not link:
+            raise HTTPException(status_code=404, detail="Invite link not found")
+        return link
 
     async def list(self, channel_id: int) -> List[ChatInviteLink]:
         """Список ссылок канала."""
@@ -191,8 +193,10 @@ class InviteLinkService:
             ChatInviteLink.channel_id == channel_id,
         )
         result = await self.db.execute(query)
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Invite link not found")
         await self.db.commit()
-        return result.rowcount > 0
+        return True
 
     async def sync(self, channel: ChannelGroup) -> List[ChatInviteLink]:
         """Синхронизировать ссылки с Telegram."""

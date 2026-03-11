@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 import aiohttp
 from aiogram.exceptions import TelegramBadRequest
 from aiogram.types import BufferedInputFile, ChatPermissions, FSInputFile
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
@@ -33,7 +34,7 @@ class TelegramSettingsService:
         """Обновить настройки канала через Telegram API."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         bot = await self.resolve_bot(channel)
 
@@ -55,13 +56,13 @@ class TelegramSettingsService:
             return channel
 
         except TelegramBadRequest as e:
-            raise ValueError(f"Failed to update channel settings: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to update channel settings: {str(e)}")
 
     async def delete_photo(self, channel_id: int, owner_id: int) -> ChannelGroup:
         """Удалить фото канала."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         bot = await self.resolve_bot(channel)
 
@@ -80,7 +81,7 @@ class TelegramSettingsService:
             return channel
 
         except TelegramBadRequest as e:
-            raise ValueError(f"Failed to delete channel photo: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to delete channel photo: {str(e)}")
 
     async def set_permissions(
         self,
@@ -90,9 +91,12 @@ class TelegramSettingsService:
         night_mode_settings: Optional[Dict[str, Any]] = None,
     ) -> ChannelGroup:
         """Установить разрешения канала."""
+        if not permissions and not night_mode_settings:
+            raise HTTPException(status_code=400, detail="No permissions provided")
+
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         bot = await self.resolve_bot(channel)
 
@@ -111,7 +115,7 @@ class TelegramSettingsService:
             return channel
 
         except TelegramBadRequest as e:
-            raise ValueError(f"Failed to set channel permissions: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to set channel permissions: {str(e)}")
 
     async def pin_message(
         self,
@@ -123,7 +127,7 @@ class TelegramSettingsService:
         """Закрепить сообщение."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         bot = await self.resolve_bot(channel)
 
@@ -144,7 +148,7 @@ class TelegramSettingsService:
             return channel
 
         except TelegramBadRequest as e:
-            raise ValueError(f"Failed to pin message: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to pin message: {str(e)}")
 
     async def unpin_message(
         self,
@@ -155,7 +159,7 @@ class TelegramSettingsService:
         """Открепить сообщение."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         bot = await self.resolve_bot(channel)
 
@@ -177,7 +181,7 @@ class TelegramSettingsService:
             return channel
 
         except TelegramBadRequest as e:
-            raise ValueError(f"Failed to unpin message: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Failed to unpin message: {str(e)}")
 
     async def upload_photo(self, bot: RateLimitedBot, channel: ChannelGroup, photo_file_path: str):
         """Загрузить фото канала."""

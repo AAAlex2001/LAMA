@@ -146,8 +146,7 @@ class InboxActionService:
         """Создать событие инбокса. Вызывается из webhook-обработчиков."""
         event = InboxEvent(**event_data)
         self.db.add(event)
-        await self.db.commit()
-        await self.db.refresh(event)
+        await self.db.flush()
         return event
 
     async def get_event(self, event_id: int, owner_id: int) -> Optional[InboxEvent]:

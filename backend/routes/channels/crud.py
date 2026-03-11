@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.models.auth import User
 from backend.models.channels import BackupMode
@@ -54,10 +54,7 @@ async def get_channel(
     service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    return channel
+    return await service.get(channel_id, owner_id=current_user.id)
 
 
 @router.put("/{channel_id}", response_model=ChannelGroupResponse)
@@ -67,10 +64,7 @@ async def update_channel(
     service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await service.update(channel_id, data, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    return channel
+    return await service.update(channel_id, data, owner_id=current_user.id)
 
 
 @router.delete("/{channel_id}")
@@ -79,7 +73,5 @@ async def delete_channel(
     service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user),
 ):
-    success = await service.delete(channel_id, owner_id=current_user.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Channel not found")
+    await service.delete(channel_id, owner_id=current_user.id)
     return {"success": True, "message": "Channel deleted successfully"}

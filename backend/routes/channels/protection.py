@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -40,8 +40,6 @@ async def update_antispam_settings(
         link_filter_action=data.link_filter_action,
         link_filter_mute_duration=data.link_filter_mute_duration,
     )
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     return AntispamSettingsResponse(
         link_filter_mode=channel.link_filter_mode,
         link_whitelist=channel.link_whitelist,
@@ -58,8 +56,6 @@ async def get_antispam_settings(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     return AntispamSettingsResponse(
         link_filter_mode=channel.link_filter_mode,
         link_whitelist=channel.link_whitelist,
@@ -84,8 +80,6 @@ async def update_flood_settings(
         flood_action=data.flood_action,
         flood_mute_duration_minutes=data.flood_mute_duration_minutes,
     )
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     return FloodSettingsResponse(
         flood_message_limit=channel.flood_message_limit,
         flood_interval_seconds=channel.flood_interval_seconds,
@@ -101,8 +95,6 @@ async def get_flood_settings(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     return FloodSettingsResponse(
         flood_message_limit=channel.flood_message_limit,
         flood_interval_seconds=channel.flood_interval_seconds,
@@ -117,10 +109,7 @@ async def get_auto_delete_settings(
     service: AutoDeleteService = Depends(get_auto_delete_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        return await service.get_settings(channel_id, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await service.get_settings(channel_id, owner_id=current_user.id)
 
 
 @router.put("/{channel_id}/auto-delete", response_model=ChannelAutoDeleteSettingsResponse)
@@ -130,7 +119,4 @@ async def update_auto_delete_settings(
     service: AutoDeleteService = Depends(get_auto_delete_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        return await service.update_settings(channel_id, data, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    return await service.update_settings(channel_id, data, owner_id=current_user.id)

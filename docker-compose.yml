@@ -70,7 +70,7 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    command: ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+    command: ["python", "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
   celery-worker:
     build:
@@ -97,7 +97,7 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "--concurrency=2", "-Q", "high,default,low"]
+    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "--concurrency=1", "-Q", "high,default,low"]
 
   celery-beat:
     build:

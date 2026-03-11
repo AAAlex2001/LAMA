@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 from aiogram.types import Message
+from fastapi import HTTPException
 from sqlalchemy import select, func, and_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,16 +29,16 @@ class BackupService:
         backup_mode: BackupMode,
         backup_target_id: Optional[int] = None,
         owner_id: int = None,
-    ) -> Optional[ChannelGroup]:
+    ) -> ChannelGroup:
         """Обновить режим бекапа."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            return None
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         if backup_mode == BackupMode.INSTANT and backup_target_id:
             target = await get_channel(self.db, backup_target_id, owner_id)
             if not target:
-                raise ValueError("Target channel not found")
+                raise HTTPException(status_code=400, detail="Target channel not found")
 
         channel.backup_mode = backup_mode
         channel.backup_target_id = backup_target_id

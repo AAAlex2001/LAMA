@@ -85,6 +85,7 @@ class WebhookDispatcher:
 
                 handler = ModerationHandler(db, bot_model)
                 await handler.process(message)
+                await db.commit()
         except Exception as e:
             logger.error(f"Moderation processing error: {e}", exc_info=True)
 
@@ -130,35 +131,41 @@ class WebhookDispatcher:
                         await WebhookDispatcher.handle_auth_command(
                             db, update.message, bot_token
                         )
+                        await db.commit()
                         return
                     if command == "/guest":
                         await WebhookDispatcher.handle_guest_command(
                             db, update.message, bot_token
                         )
+                        await db.commit()
                         return
 
                 # Обработка заявки на вступление
                 if update.chat_join_request:
                     join_handler = JoinRequestHandler(db, bot_model)
                     await join_handler.process(update.chat_join_request)
+                    await db.commit()
                     return
 
                 # Обработка сообщений
                 if update.message and update.message.chat:
                     message_handler = MessageHandler(db, bot_model)
                     await message_handler.process(update.message)
+                    await db.commit()
                     return
 
                 # Обработка callback query
                 if update.callback_query and update.callback_query.data:
                     callback_handler = CallbackHandler(db, bot_model)
                     await callback_handler.process(update.callback_query)
+                    await db.commit()
                     return
 
                 # Обработка подписки на канал
                 if update.chat_member and update.chat_member.new_chat_member:
                     subscription_handler = SubscriptionHandler(db, bot_model)
                     await subscription_handler.process(update.chat_member)
+                    await db.commit()
                     return
 
         except Exception as e:

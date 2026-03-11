@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,7 +20,7 @@ class ModerationService:
         """Создать правило модерации."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         rule = ChannelModerationRule(
             channel_id=channel_id,
@@ -36,7 +37,7 @@ class ModerationService:
         """Получить список правил."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
@@ -48,11 +49,11 @@ class ModerationService:
         rule_id: int,
         data: ChannelModerationRuleUpdate,
         owner_id: int,
-    ) -> Optional[ChannelModerationRule]:
+    ) -> ChannelModerationRule:
         """Обновить правило."""
         rule = await self.get_rule(channel_id, rule_id, owner_id)
         if not rule:
-            return None
+            raise HTTPException(status_code=404, detail="Rule not found")
 
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():
@@ -66,7 +67,7 @@ class ModerationService:
         """Удалить правило."""
         rule = await self.get_rule(channel_id, rule_id, owner_id)
         if not rule:
-            return False
+            raise HTTPException(status_code=404, detail="Rule not found")
         await self.db.delete(rule)
         await self.db.commit()
         return True

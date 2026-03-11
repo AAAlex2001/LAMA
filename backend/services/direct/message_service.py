@@ -395,8 +395,7 @@ class DirectMessageService:
             reply_to_message_id=reply_to_msg_id,
         )
         self.db.add(msg)
-        await self.db.commit()
-        await self.db.refresh(msg)
+        await self.db.flush()
 
         await ws_manager.broadcast_chat_update(
             user_id=owner_id, bot_id=bot_id, chat_id=chat_id,
