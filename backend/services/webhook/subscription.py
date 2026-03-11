@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 class SubscriptionHandler:
+    """Обработчик событий изменения статуса участника (ChatMemberUpdated)."""
 
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
@@ -32,19 +33,22 @@ class SubscriptionHandler:
         self.trigger_service = TriggerService(db)
 
     async def process(self, chat_member: ChatMemberUpdated) -> None:
+        """
+        Обработка события обновления статуса пользователя в чате.
+        Учитывает новые входы через пригласительные ссылки и одобряет отложенные подписки.
+        """
         new_status = chat_member.new_chat_member.status
         old_status = chat_member.old_chat_member.status
         user_id = chat_member.from_user.id
         chat_id = chat_member.chat.id
 
         logger.info(
-            f"chat_member update: user={user_id} chat={chat_id} "
-            f"old_status={old_status!r} new_status={new_status!r} "
+            f"Subscription change: user={user_id} chat={chat_id} "
+            f"status: {old_status} -> {new_status} "
             f"invite_link={chat_member.invite_link!r}"
         )
 
-        # old_status 'restricted' может быть как у члена группы, так и у не-члена.
-        # Проверяем is_member чтобы не считать смену прав у существующего участника за новый вход.
+        # Проверяем, был ли участник уже активен до этого события (учитывая restricted is_member)
         old_is_active = old_status in ("member", "administrator", "creator") or (
             old_status == "restricted" and getattr(chat_member.old_chat_member, "is_member", False)
         )
@@ -61,33 +65,19 @@ class SubscriptionHandler:
         await self.handle_subscription(chat_member, user_id, chat_id)
 
     async def update_member_count(self, chat_member: ChatMemberUpdated) -> None:
+        """
+        Обновляет счетчик member_count инвайт-ссылки.
+        Ссылка берется напрямую из события Telegram или из InboxEvent в качестве fallback.
+        """
         user_id = chat_member.from_user.id
         chat_id = chat_member.chat.id
-        invite_link_url = None
-
-        logger.info(
-            f"update_member_count: user={user_id} chat={chat_id} "
-            f"invite_link={chat_member.invite_link!r}"
-        )
-
-        if chat_member.invite_link:
-            invite_link_url = chat_member.invite_link.invite_link
-            logger.info(f"Got invite_link from chat_member: {invite_link_url}")
+        invite_link_url = chat_member.invite_link.invite_link if chat_member.invite_link else None
 
         if not invite_link_url:
-            invite_link_url = await self.find_link_url_from_inbox(
-                user_id=user_id,
-                telegram_chat_id=chat_id,
-            )
-            if invite_link_url:
-                logger.info(f"Got invite_link from InboxEvent: {invite_link_url}")
-            else:
-                logger.warning(
-                    f"No invite_link found for user={user_id} chat={chat_id} — skipping member_count update"
-                )
-
-        if not invite_link_url:
-            return
+            invite_link_url = await self.find_link_url_from_inbox(user_id, chat_id)
+            if not invite_link_url:
+                logger.debug(f"Invite link not found for user={user_id}, chat={chat_id}")
+                return
 
         try:
             stmt = (
@@ -99,14 +89,12 @@ class SubscriptionHandler:
             result = await self.db.execute(stmt)
             if result.rowcount > 0:
                 await self.db.commit()
-                logger.info(f"member_count +1 for link {invite_link_url}")
-            else:
-                logger.warning(f"No ChatInviteLink found for url={invite_link_url}, member_count NOT updated")
         except Exception as e:
             await self.db.rollback()
-            logger.error(f"Failed to update member_count: {e}")
+            logger.error(f"Failed to increment member_count for {invite_link_url}: {e}")
 
     async def find_link_url_from_inbox(self, user_id: int, telegram_chat_id: int) -> str | None:
+        """Ищет URL инвайт-ссылки в последних InboxEvent для заданного пользователя и чата."""
         try:
             channel_result = await self.db.execute(
                 select(ChannelGroup.id).where(ChannelGroup.telegram_id == telegram_chat_id)

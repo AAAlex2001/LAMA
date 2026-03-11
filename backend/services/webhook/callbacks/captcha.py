@@ -168,6 +168,10 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             )
 
     async def increment_member_count(self, user_id: int, chat_id: int) -> None:
+        """
+        Увеличивает счетчик участников (member_count) для пригласительной ссылки, 
+        если вступление происходило по заявке (ищет InboxEvent).
+        """
         try:
             channel_result = await self.db.execute(
                 select(ChannelGroup.id).where(ChannelGroup.telegram_id == chat_id)
@@ -202,7 +206,6 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             )
             if result.rowcount > 0:
                 await self.db.commit()
-                logger.info(f"member_count +1 after captcha for link {link_url}")
             else:
                 logger.warning(f"No ChatInviteLink found for captcha url={link_url}")
         except Exception as e:

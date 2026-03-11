@@ -226,7 +226,6 @@ class InboxActionService:
                                 .values(member_count=ChatInviteLink.member_count + 1)
                                 .execution_options(synchronize_session=False)
                             )
-                            logger.info(f"member_count +1 on accept for link {link_url}")
                     else:
                         await client.decline_chat_join_request(
                             chat_id=channel.telegram_id,
