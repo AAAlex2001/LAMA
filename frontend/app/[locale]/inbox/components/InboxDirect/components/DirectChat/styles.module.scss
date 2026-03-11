@@ -259,17 +259,12 @@
   align-items: center;
   justify-content: center;
   z-index: 20;
-
-  @media(min-width: 1440px) {
-    bottom: 200px;
-    right: 40px;
-  }
 }
 
 .scrollToBottomButton {
   width: 40px;
   height: 40px;
-  border-radius: 50%;
+  border-radius: 50% !important;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -283,4 +278,8 @@
 @keyframes messageHighlightAnim {
   0% { background: rgba(59, 130, 246, 0.15); }
   100% { background: transparent; }
+}
+
+.scrollIsBlocked {
+  bottom: 100px;
 }

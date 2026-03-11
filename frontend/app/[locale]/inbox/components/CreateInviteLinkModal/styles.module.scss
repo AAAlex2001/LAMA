@@ -130,6 +130,7 @@
 .dateTimeContainer {
   display: flex;
   flex-direction: column;
+  width: 100%;
   gap: 16px;
   margin-top: 8px;
 }
@@ -138,12 +139,19 @@
   width: 100%;
 }
 
+.datePickerComponent {
+  width: 100%;
+  max-width: 100% !important;
+}
+
 .withConfirm {
   color: var(--color-gray-input);
 }
 
 .timePickerContainer {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .submitButtonContainer {

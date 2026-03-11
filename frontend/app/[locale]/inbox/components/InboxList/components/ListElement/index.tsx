@@ -102,7 +102,8 @@ const ListElement: FC<ListElementProps> = ({
     const btnWidth = isMobile ? '100%' : '136px';
 
     if (item.event_type === 'bot_command') {
-      if (isProcessed) {
+      console.log(item.payload);
+      if (item.payload?.handled) {
         return (
           <>
             <MobileWrapper className={styles.fullWidthMobile}>

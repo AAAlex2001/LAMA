@@ -349,7 +349,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
         </div>
         {!scroll.isBottomVisible && renderedMessages.length > 0 && (
           <div
-            className={styles.scrollToBottomButtonWrapper}
+            className={classNames(styles.scrollToBottomButtonWrapper, { [styles.scrollIsBlocked]: isBlocked })}
           >
             <Button
               variant="fill"

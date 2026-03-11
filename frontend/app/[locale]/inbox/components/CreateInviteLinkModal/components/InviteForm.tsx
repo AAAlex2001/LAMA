@@ -212,6 +212,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
                 onChange={(date) => dispatch(setExpirationDate(date ? date.toISOString() : null))}
                 locale="ru"
                 minDate={null}
+                className={styles.datePickerComponent}
               />
             </div>
             <div className={styles.timePickerContainer}>

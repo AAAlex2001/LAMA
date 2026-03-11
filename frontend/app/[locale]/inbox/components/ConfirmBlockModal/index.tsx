@@ -33,25 +33,20 @@ const ConfirmBlockModal: React.FC<ConfirmBlockModalProps> = ({
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
       <ModalBase.Content size="md" className={styles.modalContent}>
-        <ModalBase.Header>
-          <ModalBase.Title>Подтверждение блокировки</ModalBase.Title>
-          <ModalBase.Close />
+        <ModalBase.Header className={styles.header}>
+          <ModalBase.Title className={styles.title}>Подтверждение блокировки</ModalBase.Title>
         </ModalBase.Header>
 
-        <ModalBase.Body className={styles.modalBody}>
-          <p className={styles.message}>
-            Вы действительно хотите заблокировать пользователя
-            {username && <span className={styles.username}> {username}</span>}?
-          </p>
+        <ModalBase.Body className={styles.modalContent}>
+            <span className={styles.message}>Вы действительно хотите заблокировать пользователя {username}? </span>
         </ModalBase.Body>
 
         <ModalBase.Footer className={styles.footer}>
           <Button
             variant="outline"
-            intent="primary"
+            intent="gradient"
             size="lg"
             onClick={handleCancel}
-            className={styles.cancelButton}
           >
             Отмена
           </Button>
@@ -60,7 +55,6 @@ const ConfirmBlockModal: React.FC<ConfirmBlockModalProps> = ({
             intent="destructive"
             size="lg"
             onClick={handleConfirm}
-            className={styles.confirmButton}
           >
             Заблокировать
           </Button>

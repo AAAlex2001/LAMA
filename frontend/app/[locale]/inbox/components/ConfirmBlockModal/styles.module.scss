@@ -5,41 +5,35 @@
   flex-direction: column;
 }
 
-.modalBody {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 0;
-}
-
 .message {
   font-size: 16px;
-  line-height: 24px;
-  color: #383F45;
+  line-height: 20px;
+  color: #1A1A1A;
   font-weight: 400;
-  margin: 0;
+  flex: 1;
   text-align: center;
-}
-
-.username {
-  font-weight: 600;
-  color: #3B82F6;
 }
 
 .footer {
   display: flex;
   flex-direction: row;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 8px;
 }
 
-.cancelButton {
-  border-radius: 10px;
-  min-width: 100px;
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
 }
 
-.confirmButton {
-  border-radius: 10px;
-  min-width: 120px;
+.title {
+  text-align: center;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 19px;
+  color: #1A1A1A;
 }
