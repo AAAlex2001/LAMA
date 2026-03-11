@@ -56,12 +56,12 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     deleteMessage,
     fetchMessages,
     jumpToLatest,
+    fetchChats,
   } = useDirectChat();
 
   const tgChatId = activeChat?.tg_chat_id ?? 0;
   const { messages, loading, hasMore, isDetached } = useDirectMessages(tgChatId);
 
-  // ID → DOM element map (stable across re-renders, no stale refs)
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const messageFieldRef = useRef<MessageFieldRef>(null);
 
@@ -95,11 +95,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           around_message_id: replyMessageId,
           jumpToMessage: true,
         });
+        fetchChats({}); 
       } else {
         fetchMessages({ botId: activeChat.bot_id, tgChatId: activeChat.tg_chat_id });
+        fetchChats({});
       }
     }
-  }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
+  }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages, fetchChats]);
 
   const handleDeleteMessage = async (messageId: number) => {
     if (!activeChat) return;
@@ -119,7 +121,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     handleDeleteMessage
   );
 
-  // Text-only lookup by telegramMessageId (no index dependency)
   const replyTextLookup = useMemo(() => {
     const map = new Map<number, string>();
     renderedMessages.forEach((msg) => {
@@ -128,18 +129,15 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     return map;
   }, [renderedMessages]);
 
-  // Scroll to element using container offset (avoids scrollIntoView layout thrashing)
   const scrollToAndHighlight = useCallback((el: HTMLElement) => {
     const container = scroll.messageListRef.current;
     if (!container) return;
 
-    // Wait 2 frames for DOM commit (Telegram pattern)
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const top = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
         container.scrollTo({ top, behavior: 'smooth' });
 
-        // CSS class animation instead of inline styles (GPU-accelerated)
         el.classList.add(styles.messageHighlight);
         setTimeout(() => {
           el.classList.remove(styles.messageHighlight);
@@ -150,7 +148,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
 
   const pendingScrollRef = useRef<number | null>(null);
 
-  // Resolve pending scroll after messages load/render
   useEffect(() => {
     if (pendingScrollRef.current === null) return;
     const targetId = pendingScrollRef.current;
@@ -162,7 +159,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   }, [renderedMessages, scrollToAndHighlight]);
 
   const scrollToMessage = async (telegramMessageId: number) => {
-    // O(1) lookup by ID
     const el = messageRefs.current.get(telegramMessageId);
     if (el) {
       scrollToAndHighlight(el);

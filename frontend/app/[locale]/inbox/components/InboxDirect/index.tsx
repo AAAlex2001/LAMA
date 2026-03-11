@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
 const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
-  const { activeChatId, chats, chatsLoading, setActiveChat, fetchChats, replyToMessageId, setReplyToMessageId, activeChat } = useDirectChat();
+  const { activeChatId, chats, chatsLoading, setActiveChat, fetchChats } = useDirectChat();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialParamsProcessedRef = useRef(false);
