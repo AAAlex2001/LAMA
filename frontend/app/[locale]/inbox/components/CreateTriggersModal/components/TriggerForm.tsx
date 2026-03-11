@@ -94,21 +94,27 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
         }
         break;
       }
-      case 'SEND_MEDIA':
-        let mediaUrl = formState.action_media_url.trim();
-        
-        if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
-          try {
-            const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
-            const baseUrl = API_BASE_URL.replace('/api', '') ;
-            mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
-          } catch (error) {
-            console.error('Failed to upload media:', error);
-            throw error;
+      case 'SEND_MEDIA': {
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        const mediaUrls: string[] = [];
+
+        for (const mediaFile of limitedMediaFiles) {
+          if (mediaFile.url) {
+            mediaUrls.push(mediaFile.url);
+          } else if (mediaFile.file) {
+            try {
+              const uploaded = await uploadMediaFile(mediaFile.file);
+              const url = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+              mediaUrls.push(url);
+            } catch (error) {
+              console.error('Failed to upload media:', error);
+              throw error;
+            }
           }
         }
-        
-        actionData.media_url = mediaUrl;
+
+        actionData.media_url = mediaUrls[0] || '';
+        actionData.media_urls = mediaUrls;
         actionData.media_type = formState.action_media_type;
         if (formState.action_text) {
           actionData.text = formState.action_text;
@@ -118,6 +124,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
           actionData.buttons = inlineButtons;
         }
         break;
+      }
       case 'MUTE_USER':
       case 'BAN_USER':
         actionData.duration_minutes = formState.action_duration_minutes;

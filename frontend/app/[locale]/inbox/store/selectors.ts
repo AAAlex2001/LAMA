@@ -27,9 +27,17 @@ export const selectSortDir = (s: RootState): 'new' | 'old' => s.inbox.sortDir;
 
 export const selectStatusFilter = (s: RootState): 'new' | 'processed' | 'ignored' | null => s.inbox.statusFilter;
 
-export const selectEventTypeFilter = (s: RootState): 'system_autoreply' | 'system_trigger' | 'bot_command' | null => s.inbox.eventTypeFilter;
+export const selectBotIds = (s: RootState): number[] | null => s.inbox.botIds;
 
-export const selectEntityIds = (s: RootState): number[] | null => s.inbox.entityIds;
+export const selectChannelIds = (s: RootState): number[] | null => s.inbox.channelIds;
+
+export const selectSystem = (s: RootState): boolean | null => s.inbox.system;
+
+export const selectTypeAutoReplies = (s: RootState): boolean | null => s.inbox.typeAutoReplies;
+
+export const selectTypeTriggers = (s: RootState): boolean | null => s.inbox.typeTriggers;
+
+export const selectTypeCommands = (s: RootState): boolean | null => s.inbox.typeCommands;
 
 export const selectSearch = (s: RootState): string | null => s.inbox.search;
 
@@ -178,6 +186,11 @@ export const selectDirectMessagesLoading = (tgChatId: number) => createSelector(
 export const selectDirectMessagesHasMore = (tgChatId: number) => createSelector(
   [(s: RootState) => s.directChat.messagesHasMore],
   (hasMore) => hasMore[tgChatId] || false,
+);
+
+export const selectDirectMessagesDetached = (tgChatId: number) => createSelector(
+  [(s: RootState) => s.directChat.messagesDetached],
+  (detached) => detached[tgChatId] || false,
 );
 
 export const selectSendingMessage = (s: RootState) => s.directChat.sendingMessage;

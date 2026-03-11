@@ -35,6 +35,8 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
           alt=""
           className={styles.image}
           style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
+          loading="lazy"
+          decoding="async"
         />
       );
 

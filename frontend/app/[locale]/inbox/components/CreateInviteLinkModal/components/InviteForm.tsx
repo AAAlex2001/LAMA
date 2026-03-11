@@ -325,6 +325,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
           onClick={handleSubmit}
           className={styles.submitButton}
           disabled={isSubmitDisabled}
+          style={{ width: '100%' }}
         >
           {editingLinkId ? 'Сохранить изменения' : 'Продолжить'}
         </Button>

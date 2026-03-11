@@ -32,8 +32,12 @@ export interface InboxState {
   sort: SortInput;
   sortDir: 'new' | 'old';
   statusFilter: 'new' | 'processed' | 'ignored' | null;
-  eventTypeFilter: 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
-  entityIds: number[] | null;
+  botIds: number[] | null;
+  channelIds: number[] | null;
+  system: boolean | null;
+  typeAutoReplies: boolean | null;
+  typeTriggers: boolean | null;
+  typeCommands: boolean | null;
   search: string | null;
 
   bulkActionLoading: boolean;
@@ -57,8 +61,12 @@ const initialState: InboxState = {
   sort: null,
   sortDir: 'new',
   statusFilter: null,
-  eventTypeFilter: null,
-  entityIds: null,
+  botIds: null,
+  channelIds: null,
+  system: null,
+  typeAutoReplies: null,
+  typeTriggers: null,
+  typeCommands: null,
   search: null,
 
   bulkActionLoading: false,
@@ -76,10 +84,14 @@ const inboxSlice = createSlice({
     setSelectedFilter(state, action: PayloadAction<ListFilterType>) {
       if (state.selectedFilter !== action.payload) {
         state.selectedFilter = action.payload;
-        state.eventTypeFilter = null;
         state.statusFilter = null;
         state.sortDir = 'new';
-        state.entityIds = null;
+        state.botIds = null;
+        state.channelIds = null;
+        state.system = null;
+        state.typeAutoReplies = null;
+        state.typeTriggers = null;
+        state.typeCommands = null;
         state.search = null;
         state.items = [];
         state.itemsOffset = 0;
@@ -108,20 +120,55 @@ const inboxSlice = createSlice({
         state.itemsHasMore = true;
       }
     },
-    setEventTypeFilter(state, action: PayloadAction<'system_autoreply' | 'system_trigger' | 'bot_command' | null>) {
-      if (state.eventTypeFilter !== action.payload) {
-        state.eventTypeFilter = action.payload;
+    setBotIds(state, action: PayloadAction<number[] | null>) {
+      const newIds = action.payload;
+      const currentIds = state.botIds;
+      const idsChanged = JSON.stringify(newIds?.slice().sort()) !== JSON.stringify(currentIds?.slice().sort());
+      if (idsChanged) {
+        state.botIds = newIds;
         state.items = [];
         state.itemsOffset = 0;
         state.itemsHasMore = true;
       }
     },
-    setEntityIds(state, action: PayloadAction<number[] | null>) {
-      const newEntityIds = action.payload;
-      const currentIds = state.entityIds;
-      const idsChanged = JSON.stringify(newEntityIds?.sort()) !== JSON.stringify(currentIds?.sort());
+    setChannelIds(state, action: PayloadAction<number[] | null>) {
+      const newIds = action.payload;
+      const currentIds = state.channelIds;
+      const idsChanged = JSON.stringify(newIds?.slice().sort()) !== JSON.stringify(currentIds?.slice().sort());
       if (idsChanged) {
-        state.entityIds = newEntityIds;
+        state.channelIds = newIds;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setSystem(state, action: PayloadAction<boolean | null>) {
+      if (state.system !== action.payload) {
+        state.system = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setTypeAutoReplies(state, action: PayloadAction<boolean | null>) {
+      if (state.typeAutoReplies !== action.payload) {
+        state.typeAutoReplies = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setTypeTriggers(state, action: PayloadAction<boolean | null>) {
+      if (state.typeTriggers !== action.payload) {
+        state.typeTriggers = action.payload;
+        state.items = [];
+        state.itemsOffset = 0;
+        state.itemsHasMore = true;
+      }
+    },
+    setTypeCommands(state, action: PayloadAction<boolean | null>) {
+      if (state.typeCommands !== action.payload) {
+        state.typeCommands = action.payload;
         state.items = [];
         state.itemsOffset = 0;
         state.itemsHasMore = true;
@@ -265,8 +312,12 @@ export const {
   setSort,
   setSortDir,
   setStatusFilter,
-  setEventTypeFilter,
-  setEntityIds,
+  setBotIds,
+  setChannelIds,
+  setSystem,
+  setTypeAutoReplies,
+  setTypeTriggers,
+  setTypeCommands,
   setSearch,
   removeItem,
   updateItem,

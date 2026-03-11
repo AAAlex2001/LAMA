@@ -8,6 +8,7 @@ export interface BotCommand {
   description: string;
   response_text: string;
   response_media_url?: string;
+  response_media_urls?: string[];
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'GROUPS';
@@ -21,6 +22,7 @@ export interface BotCommandCreate {
   description: string;
   response_text: string;
   response_media_url?: string;
+  response_media_urls?: string[];
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   response_buttons?: InlineKeyboard;
   scope: 'PRIVATE' | 'GROUPS';

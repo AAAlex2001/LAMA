@@ -50,8 +50,12 @@ export interface InboxListResponse {
 export interface FetchInboxEventsParams {
   category?: InboxCategory;
   status?: EventStatus;
-  entity_type?: EntityType;
-  entity_ids?: number[];
+  bot_ids?: number[];
+  channel_ids?: number[];
+  system?: boolean | null;
+  type_auto_replies?: boolean | null;
+  type_triggers?: boolean | null;
+  type_commands?: boolean | null;
   event_types?: EventType[];
   sort?: SortDir;
   limit?: number;
@@ -97,8 +101,12 @@ export const fetchInboxEventsThunk = createAsyncThunk(
     const {
       category,
       status,
-      entity_type,
-      entity_ids,
+      bot_ids,
+      channel_ids,
+      system,
+      type_auto_replies,
+      type_triggers,
+      type_commands,
       event_types,
       sort = 'new',
       limit = 50,
@@ -110,9 +118,23 @@ export const fetchInboxEventsThunk = createAsyncThunk(
       const queryParams = new URLSearchParams();
       if (category) queryParams.append('category', category);
       if (status) queryParams.append('status', status);
-      if (entity_type) queryParams.append('entity_type', entity_type);
-      if (entity_ids && entity_ids.length > 0) {
-        queryParams.append('entity_ids', entity_ids.join(','));
+      if (bot_ids && bot_ids.length > 0) {
+        queryParams.append('bot_ids', bot_ids.join(','));
+      }
+      if (channel_ids && channel_ids.length > 0) {
+        queryParams.append('channel_ids', channel_ids.join(','));
+      }
+      if (system !== undefined && system !== null) {
+        queryParams.append('system', String(system));
+      }
+      if (type_auto_replies !== undefined && type_auto_replies !== null) {
+        queryParams.append('type_auto_replies', String(type_auto_replies));
+      }
+      if (type_triggers !== undefined && type_triggers !== null) {
+        queryParams.append('type_triggers', String(type_triggers));
+      }
+      if (type_commands !== undefined && type_commands !== null) {
+        queryParams.append('type_commands', String(type_commands));
       }
       if (event_types && event_types.length > 0) {
         queryParams.append('event_types', event_types.join(','));

@@ -205,8 +205,13 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
           </div>
           {text && <p className={styles.messageText}>{text}</p>}
           <div className={styles.outgoingMeta}>
-            {(onEdit || onDelete) && (
+            {(onReply || onEdit || onDelete) && (
               <div className={styles.msgActions}>
+                {onReply && (
+                  <button className={styles.msgAction} onClick={onReply}>
+                    <ReplyIcon width={18} height={18} color="#F1F5FB" />
+                  </button>
+                )}
                 {onEdit && (
                   <button className={styles.msgAction} onClick={onEdit}>
                     <EditIcon width={20} height={20} color="#F1F5FB" />

@@ -57,16 +57,21 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
 
     const { limitedMediaFiles, inlineButtonRows } = responseTextSectionRef.current || { limitedMediaFiles: [], inlineButtonRows: [] };
 
-    let mediaUrl = formState.response_media_url.trim();
-    
-    if (limitedMediaFiles.length > 0 && limitedMediaFiles[0].file && !limitedMediaFiles[0].url) {
-      try {
-        const uploaded = await uploadMediaFile(limitedMediaFiles[0].file);
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        mediaUrl = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
-      } catch (error) {
-        console.error('Failed to upload media:', error);
-        return;
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    const mediaUrls: string[] = [];
+
+    for (const mediaFile of limitedMediaFiles) {
+      if (mediaFile.url) {
+        mediaUrls.push(mediaFile.url);
+      } else if (mediaFile.file) {
+        try {
+          const uploaded = await uploadMediaFile(mediaFile.file);
+          const url = uploaded.url.startsWith('http') ? uploaded.url : `${baseUrl}${uploaded.url}`;
+          mediaUrls.push(url);
+        } catch (error) {
+          console.error('Failed to upload media:', error);
+          return;
+        }
       }
     }
 
@@ -75,7 +80,8 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
       command: formState.command.trim(),
       description: formState.description.trim(),
       response_text: formState.response_text.trim(),
-      response_media_url: mediaUrl || undefined,
+      response_media_url: mediaUrls[0] || undefined,
+      response_media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
       response_media_type: formState.response_media_type,
       response_buttons: inlineButtons,
       scope: formState.scope,

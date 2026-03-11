@@ -58,6 +58,7 @@ export interface RenderedMessageGroup {
   id: string;
   telegramMessageId: number;
   replyToMessageId: number | null;
+  replyMessageText: string | null;
   date: Date;
   time: string;
   type: 'incoming' | 'outgoing' | 'system';
@@ -104,6 +105,7 @@ function groupAndMapMessages(
       id: primaryMessage.media_group_id || String(primaryMessage.id),
       telegramMessageId: primaryMessage.telegram_message_id,
       replyToMessageId: primaryMessage.reply_to_message_id,
+      replyMessageText: primaryMessage.reply_message_text,
       date: new Date(primaryMessage.created_at),
       time: formatMessageTime(latestMessage.created_at),
       type: mapMessageType(primaryMessage),
@@ -112,7 +114,7 @@ function groupAndMapMessages(
       onEdit: !primaryMessage.is_incoming && groupedMessages.length === 1
         ? () => onEdit({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
         : undefined,
-      onReply: primaryMessage.is_incoming
+      onReply: !primaryMessage.is_system
         ? () => onReply({ ...primaryMessage, date: new Date(primaryMessage.created_at) })
         : undefined,
       onDelete: groupedMessages.length === 1

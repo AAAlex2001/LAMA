@@ -18,12 +18,18 @@ import {
   selectSortDir,
   selectStatusFilter,
   selectSelectedFilter,
-  selectEventTypeFilter,
-  selectEntityIds,
+  selectBotIds,
+  selectChannelIds,
+  selectSystem,
+  selectTypeAutoReplies,
+  selectTypeTriggers,
+  selectTypeCommands,
   selectSearch,
   setSortDir,
   setStatusFilter,
-  setEventTypeFilter,
+  setTypeAutoReplies,
+  setTypeTriggers,
+  setTypeCommands,
 } from "../../store";
 import type { ListFilterType, InboxEventResponse, InboxActionType } from "../../store";
 
@@ -52,8 +58,12 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
-  const eventTypeFilter = useAppSelector(selectEventTypeFilter);
-  const entityIds = useAppSelector(selectEntityIds);
+  const botIds = useAppSelector(selectBotIds);
+  const channelIds = useAppSelector(selectChannelIds);
+  const system = useAppSelector(selectSystem);
+  const typeAutoReplies = useAppSelector(selectTypeAutoReplies);
+  const typeTriggers = useAppSelector(selectTypeTriggers);
+  const typeCommands = useAppSelector(selectTypeCommands);
   const search = useAppSelector(selectSearch);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [isChecking, setIsChecking] = useState(false);
@@ -77,7 +87,9 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   };
 
   const handleEventTypeFilterChange = (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => {
-    dispatch(setEventTypeFilter(eventType));
+    dispatch(setTypeAutoReplies(eventType === 'system_autoreply' ? true : null));
+    dispatch(setTypeTriggers(eventType === 'system_trigger' ? true : null));
+    dispatch(setTypeCommands(eventType === 'bot_command' ? true : null));
   };
 
   useEffect(() => {
@@ -96,13 +108,17 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
       category: category as any,
       status: statusFilter ?? undefined,
       sort: sortDir,
-      event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
-      entity_ids: entityIds && entityIds.length > 0 ? entityIds : undefined,
+      bot_ids: botIds && botIds.length > 0 ? botIds : undefined,
+      channel_ids: channelIds && channelIds.length > 0 ? channelIds : undefined,
+      system: system,
+      type_auto_replies: typeAutoReplies,
+      type_triggers: typeTriggers,
+      type_commands: typeCommands,
       search: search ?? undefined,
       offset: 0,
       limit: 50,
     }));
-  }, [dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, entityIds, search]);
+  }, [dispatch, selectedFilter, sortDir, statusFilter, botIds, channelIds, system, typeAutoReplies, typeTriggers, typeCommands, search]);
 
   useEffect(() => {
     if (!lastElementRef.current) return;
@@ -133,14 +149,18 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         category: category as any,
         status: statusFilter ?? undefined,
         sort: sortDir,
-        event_types: eventTypeFilter ? [eventTypeFilter as any] : undefined,
-        entity_ids: entityIds && entityIds.length > 0 ? entityIds : undefined,
+        bot_ids: botIds && botIds.length > 0 ? botIds : undefined,
+        channel_ids: channelIds && channelIds.length > 0 ? channelIds : undefined,
+        system: system,
+        type_auto_replies: typeAutoReplies,
+        type_triggers: typeTriggers,
+        type_commands: typeCommands,
         search: search ?? undefined,
         offset: itemsOffset,
         limit: 50,
       }));
     }
-  }, [isLastElementVisible, itemsHasMore, itemsLoading, data.length, dispatch, selectedFilter, sortDir, statusFilter, eventTypeFilter, entityIds, search, itemsOffset]);
+  }, [isLastElementVisible, itemsHasMore, itemsLoading, data.length, dispatch, selectedFilter, sortDir, statusFilter, botIds, channelIds, system, typeAutoReplies, typeTriggers, typeCommands, search, itemsOffset]);
 
   const handleCheck = (id: string) => {
     const newCheckedItems = new Set(checkedItems);
@@ -241,7 +261,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
         isSelectedAll={checkedItems.size > 0 && checkedItems.size === data.length}
         checkedItems={checkedItems.size}
         onBulkAction={handleBulkAction}
-        automationSubFilter={eventTypeFilter}
+        automationSubFilter={typeAutoReplies ? 'system_autoreply' : typeTriggers ? 'system_trigger' : typeCommands ? 'bot_command' : null}
         onAutomationSubFilterChange={handleEventTypeFilterChange}
         moderationSubFilter={statusFilter}
         onModerationSubFilterChange={handleStatusFilterChange}

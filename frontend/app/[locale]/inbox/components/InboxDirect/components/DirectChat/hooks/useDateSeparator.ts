@@ -25,9 +25,9 @@ function formatDate(date: Date): string {
 }
 
 interface UseDateSeparatorProps {
-  messages: Array<{ date: Date }>;
+  messages: Array<{ date: Date; telegramMessageId: number }>;
   messageListRef: React.RefObject<HTMLDivElement | null> | React.RefObject<HTMLDivElement>;
-  messageRefs: React.RefObject<(HTMLDivElement | null)[]>;
+  messageRefs: React.RefObject<Map<number, HTMLDivElement>>;
 }
 
 export function useDateSeparator({ messages, messageListRef, messageRefs }: UseDateSeparatorProps) {
@@ -41,22 +41,22 @@ export function useDateSeparator({ messages, messageListRef, messageRefs }: UseD
     const container = messageListRef.current;
     const containerRect = container.getBoundingClientRect();
 
-    let topVisibleIndex = -1;
+    let topVisibleId: number | null = null;
     let topmost = Infinity;
 
-    messageRefs.current.forEach((ref, index) => {
-      if (!ref) return;
+    for (const [id, ref] of messageRefs.current.entries()) {
       const rect = ref.getBoundingClientRect();
       if (rect.top < containerRect.bottom && rect.bottom > containerRect.top) {
         if (rect.top < topmost) {
           topmost = rect.top;
-          topVisibleIndex = index;
+          topVisibleId = id;
         }
       }
-    });
+    }
 
-    if (topVisibleIndex >= 0 && messages[topVisibleIndex]) {
-      return formatDate(messages[topVisibleIndex].date);
+    if (topVisibleId !== null) {
+      const msg = messages.find((m) => m.telegramMessageId === topVisibleId);
+      if (msg) return formatDate(msg.date);
     }
 
     return null;

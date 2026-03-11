@@ -1,12 +1,20 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 
 export interface MessageScrollOpts {
-  messages: Array<{ id: number }>;
+  messages: Array<{ id: number; telegram_message_id?: number }>;
   loading: boolean;
   hasMore: boolean;
   activeChat: DirectChatResponse | null;
-  fetchMessages: (params: { botId: number; tgChatId: number; skip?: number; limit?: number }) => Promise<unknown>;
+  fetchMessages: (params: {
+    botId: number;
+    tgChatId: number;
+    skip?: number;
+    limit?: number;
+    around_message_id?: number;
+  }) => Promise<unknown>;
+  isDetached?: boolean;
+  onJumpToLatest?: () => void;
 }
 
 export interface MessageScrollReturn {
@@ -14,6 +22,9 @@ export interface MessageScrollReturn {
   bottomRef: React.RefObject<HTMLDivElement | null>;
   topSentinelRef: React.RefObject<HTMLDivElement | null>;
   markShouldScroll: () => void;
+  isBottomVisible: boolean;
+  scrollToBottom: () => void;
+  resetInitialScroll: () => void;
 }
 
 export function useMessageScroll({
@@ -22,6 +33,8 @@ export function useMessageScroll({
   hasMore,
   activeChat,
   fetchMessages,
+  isDetached = false,
+  onJumpToLatest,
 }: MessageScrollOpts): MessageScrollReturn {
   const messageListRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -29,7 +42,10 @@ export function useMessageScroll({
   const isNearBottomRef = useRef(true);
   const shouldScrollAfterSendRef = useRef(false);
   const loadingMoreRef = useRef(false);
+  const didInitialScrollRef = useRef(false);
+  const [isBottomVisible, setIsBottomVisible] = useState(true);
 
+  // Bottom sentinel observer
   useEffect(() => {
     const el = messageListRef.current;
     if (!el) return;
@@ -39,7 +55,9 @@ export function useMessageScroll({
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        isNearBottomRef.current = entry.isIntersecting;
+        const isVisible = entry.isIntersecting;
+        isNearBottomRef.current = isVisible;
+        setIsBottomVisible(isVisible);
       },
       { root: el, threshold: 0.1 }
     );
@@ -58,12 +76,31 @@ export function useMessageScroll({
         if (entry.isIntersecting && hasMore && !loading && activeChat && !loadingMoreRef.current) {
           loadingMoreRef.current = true;
           const prevScrollHeight = el.scrollHeight;
-          fetchMessages({
-            botId: activeChat.bot_id,
-            tgChatId: activeChat.tg_chat_id,
-            skip: messages.length,
-            limit: 50,
-          }).then(() => {
+
+          const fetchParams = isDetached
+            ? (() => {
+                const oldestMsg = messages[messages.length - 1];
+                const aroundId = oldestMsg?.telegram_message_id;
+                if (!aroundId) return null;
+                return {
+                  botId: activeChat.bot_id,
+                  tgChatId: activeChat.tg_chat_id,
+                  around_message_id: aroundId,
+                };
+              })()
+            : {
+                botId: activeChat.bot_id,
+                tgChatId: activeChat.tg_chat_id,
+                skip: messages.length,
+                limit: 50,
+              };
+
+          if (!fetchParams) {
+            loadingMoreRef.current = false;
+            return;
+          }
+
+          fetchMessages(fetchParams).then(() => {
             requestAnimationFrame(() => {
               const newScrollHeight = el.scrollHeight;
               el.scrollTop = newScrollHeight - prevScrollHeight;
@@ -72,30 +109,83 @@ export function useMessageScroll({
           });
         }
       },
-      { root: el, threshold: 0.1 }
+      { root: el, rootMargin: '200px 0px 0px 0px', threshold: 0 }
     );
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [hasMore, loading, activeChat, messages.length, fetchMessages]);
+  }, [hasMore, loading, activeChat, messages.length, fetchMessages, isDetached]);
 
-  // Scroll after send or when new messages arrive
-  const lastMessageId = messages[0]?.id;
+  // Reset on chat change
   useEffect(() => {
-    if (!loading && lastMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
-      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    didInitialScrollRef.current = false;
+    isNearBottomRef.current = true;
+    shouldScrollAfterSendRef.current = false;
+  }, [activeChat?.tg_chat_id]);
+
+  const prevDetachedRef = useRef(isDetached);
+  useEffect(() => {
+    if (prevDetachedRef.current && !isDetached) {
+      didInitialScrollRef.current = false;
+    }
+    prevDetachedRef.current = isDetached;
+  }, [isDetached]);
+
+  // Initial scroll to bottom (skip when detached — useReplyFromParam handles positioning)
+  useEffect(() => {
+    const el = messageListRef.current;
+    if (!el) return;
+
+    if (!loading && messages.length > 0 && !didInitialScrollRef.current) {
+      if (isDetached) {
+        didInitialScrollRef.current = true;
+        return;
+      }
+      requestAnimationFrame(() => {
+        el.scrollTop = el.scrollHeight;
+        didInitialScrollRef.current = true;
+      });
+    }
+  }, [loading, messages.length, activeChat?.tg_chat_id, isDetached]);
+
+  const newestMessageId = messages.length > 0 ? messages[0]?.id : undefined;
+  useEffect(() => {
+    if (!didInitialScrollRef.current) return;
+    const el = messageListRef.current;
+    if (!el) return;
+
+    if (!loading && newestMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
+      el.scrollTop = el.scrollHeight;
       shouldScrollAfterSendRef.current = false;
     }
-  }, [lastMessageId, loading]);
+  }, [newestMessageId, loading]);
 
   const markShouldScroll = () => {
     shouldScrollAfterSendRef.current = true;
   };
+
+  const resetInitialScroll = useCallback(() => {
+    didInitialScrollRef.current = false;
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    if (isDetached && onJumpToLatest) {
+      onJumpToLatest();
+      return;
+    }
+    const el = messageListRef.current;
+    if (el) {
+      el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    }
+  }, [isDetached, onJumpToLatest]);
 
   return {
     messageListRef,
     bottomRef,
     topSentinelRef,
     markShouldScroll,
+    isBottomVisible,
+    scrollToBottom,
+    resetInitialScroll,
   };
 }

@@ -44,6 +44,7 @@ export interface BotMessageResponse {
   media_name: string | null;
   media_size: number | null;
   reply_to_message_id: number | null;
+  reply_message_text: string | null;
   is_incoming: boolean;
   is_system: boolean;
   created_at: string;
@@ -74,6 +75,9 @@ export interface FetchDirectMessagesParams {
   tgChatId: number;
   skip?: number;
   limit?: number;
+  around_message_id?: number;
+  /** Replace messages and enter detached mode (for jumping to a specific message) */
+  jumpToMessage?: boolean;
 }
 
 export interface SendDirectMessageParams {
@@ -134,12 +138,15 @@ export const fetchDirectChatsThunk = createAsyncThunk(
 export const fetchDirectMessagesThunk = createAsyncThunk(
   'directChat/fetchMessages',
   async (params: FetchDirectMessagesParams, { rejectWithValue }) => {
-    const { botId, tgChatId, skip = 0, limit = 50 } = params;
+    const { botId, tgChatId, skip = 0, limit = 50, around_message_id } = params;
 
     try {
       const queryParams = new URLSearchParams();
       queryParams.append('skip', String(skip));
       queryParams.append('limit', String(limit));
+      if (around_message_id !== undefined) {
+        queryParams.append('around_message_id', String(around_message_id));
+      }
 
       const response = await apiRequest<ChatHistoryResponse>(
         `/direct/chats/${botId}/${tgChatId}/messages?${queryParams.toString()}`,

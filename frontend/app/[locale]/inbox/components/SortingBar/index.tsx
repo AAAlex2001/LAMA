@@ -11,7 +11,7 @@ import SourceContent, { SourceFilterOption } from "./components/SourceComponent"
 import PopupFilter from "./components/PopupFilter";
 import { useAppSelector, useAppDispatch } from "../../store";
 import { selectChannels, selectBots } from "../../store/selectors";
-import { setEntityIds, setSearch } from "../../store";
+import { setBotIds, setChannelIds, setSystem, setTypeAutoReplies, setTypeTriggers, setTypeCommands, setSearch } from "../../store";
 
 interface InboxSortingBarProps {
   selectedFilter: ListHeaderType;
@@ -408,7 +408,10 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     }
     if (sortType === 'type') {
       onEventTypeFilterChange?.(null);
-      dispatch(setEntityIds(null));
+      dispatch(setBotIds(null));
+      dispatch(setTypeAutoReplies(null));
+      dispatch(setTypeTriggers(null));
+      dispatch(setTypeCommands(null));
     }
   };
 
@@ -441,7 +444,8 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       setSourceSystemSharedSearch("");
       setSourceDefault(true);
       setSourceSystemDefault(true);
-      dispatch(setEntityIds(null));
+      dispatch(setBotIds(null));
+      dispatch(setChannelIds(null));
       dispatch(setSearch(null));
     }
 
@@ -452,7 +456,10 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
       setSelectedTypeBots(new Set());
       setTypeSharedSearch("");
       setTypeDefault(true);
-      dispatch(setEntityIds(null));
+      dispatch(setBotIds(null));
+      dispatch(setTypeAutoReplies(null));
+      dispatch(setTypeTriggers(null));
+      dispatch(setTypeCommands(null));
     }
 
     setOpenFilter(null);
@@ -466,35 +473,55 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   }
 
   const applyTypeFilters = () => {
-    if (selectedTypeBots.size > 0 && !typeDefault) {
-      const botIds = bots
-        .filter(b => selectedTypeBots.has(b.title || b.username))
-        .map(b => b.id);
-      dispatch(setEntityIds(botIds.length > 0 ? botIds : null));
-    } else if (typeDefault) {
-      dispatch(setEntityIds(null));
+    if (!typeDefault) {
+      dispatch(setTypeAutoReplies(typeAutoReply ? true : null));
+      dispatch(setTypeTriggers(typeTrigger ? true : null));
+      dispatch(setTypeCommands(typeCommand ? true : null));
+
+      if (selectedTypeBots.size > 0) {
+        const filteredBotIds = bots
+          .filter(b => selectedTypeBots.has(b.title || b.username))
+          .map(b => b.id);
+        dispatch(setBotIds(filteredBotIds.length > 0 ? filteredBotIds : null));
+      } else {
+        dispatch(setBotIds(null));
+      }
+    } else {
+      dispatch(setTypeAutoReplies(null));
+      dispatch(setTypeTriggers(null));
+      dispatch(setTypeCommands(null));
+      dispatch(setBotIds(null));
     }
 
     dispatch(setSearch(typeSharedSearch.trim() || null));
   };
 
   const applySourceFilters = () => {
-    const entityIds: number[] = [];
-    
-    if (selectedChannels.size > 0) {
-      const channelIds = channels
-        .filter(c => selectedChannels.has(c.title))
-        .map(c => c.id);
-      entityIds.push(...channelIds);
+    const isDefault = selectedFilter === 'system' ? sourceSystemDefault : sourceDefault;
+
+    if (!isDefault) {
+      if (selectedChannels.size > 0) {
+        const filteredChannelIds = channels
+          .filter(c => selectedChannels.has(c.title))
+          .map(c => c.id);
+        dispatch(setChannelIds(filteredChannelIds.length > 0 ? filteredChannelIds : null));
+      } else {
+        dispatch(setChannelIds(null));
+      }
+
+      if (selectedBots.size > 0) {
+        const filteredBotIds = bots
+          .filter(b => selectedBots.has(b.title || b.username))
+          .map(b => b.id);
+        dispatch(setBotIds(filteredBotIds.length > 0 ? filteredBotIds : null));
+      } else {
+        dispatch(setBotIds(null));
+      }
+    } else {
+      dispatch(setBotIds(null));
+      dispatch(setChannelIds(null));
     }
-    
-    if (selectedBots.size > 0) {
-      const botIds = bots
-        .filter(b => selectedBots.has(b.title || b.username))
-        .map(b => b.id);
-      entityIds.push(...botIds);
-    }
-    
+
     let searchValue: string | null = null;
     if (selectedFilter === 'system') {
       if (sourceSystemSharedSearch.trim()) {
@@ -505,13 +532,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
         searchValue = sourceSharedSearch.trim();
       }
     }
-    
-    if (entityIds.length > 0 && (!sourceDefault && !sourceSystemDefault)) {
-      dispatch(setEntityIds(entityIds));
-    } else if (sourceDefault || sourceSystemDefault) {
-      dispatch(setEntityIds(null));
-    }
-    
+
     dispatch(setSearch(searchValue || null));
   };
 
@@ -538,7 +559,12 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     setSelectedTypeBots(new Set());
     setTypeSharedSearch("");
     setOpenFilter(null);
-    dispatch(setEntityIds(null));
+    dispatch(setBotIds(null));
+    dispatch(setChannelIds(null));
+    dispatch(setSystem(null));
+    dispatch(setTypeAutoReplies(null));
+    dispatch(setTypeTriggers(null));
+    dispatch(setTypeCommands(null));
     dispatch(setSearch(null));
     onTimeSortChange?.('new');
     onStatusFilterChange?.(null);

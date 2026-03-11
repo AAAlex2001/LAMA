@@ -85,6 +85,8 @@
 .messageMediaWrapper {
   display: flex;
   max-width: 100%;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .messageText {
@@ -134,6 +136,8 @@
   position: relative;
   gap: 8px;
   max-width: 50%;
+  min-width: 0;
+  flex-shrink: 0;
 }
 
 .mediaTime {

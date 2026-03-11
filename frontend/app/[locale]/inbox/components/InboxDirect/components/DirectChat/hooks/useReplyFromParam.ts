@@ -5,24 +5,28 @@ export function useReplyFromParam(
   replyMessageId: number | undefined,
   messages: BotMessageResponse[],
   startReplyById: (telegramMessageId: number, messages: BotMessageResponse[]) => void,
+  scrollToMessage: (telegramMessageId: number) => void,
+  /** Pass renderedMessages.length — ensures DOM refs are populated before scrolling */
+  renderedCount: number,
 ) {
   const processedReplyMessageIdRef = useRef<number | null>(null);
+  const scrollToMessageRef = useRef(scrollToMessage);
+  scrollToMessageRef.current = scrollToMessage;
 
   useEffect(() => {
-    // Reset ref when replyMessageId changes or is cleared
     if (!replyMessageId) {
       processedReplyMessageIdRef.current = null;
       return;
     }
 
-    // Skip if already processed
     if (processedReplyMessageIdRef.current === replyMessageId) {
       return;
     }
 
-    if (messages.length > 0) {
+    if (renderedCount > 0) {
       startReplyById(replyMessageId, messages);
+      scrollToMessageRef.current(replyMessageId);
       processedReplyMessageIdRef.current = replyMessageId;
     }
-  }, [replyMessageId, messages.length, startReplyById]);
+  }, [replyMessageId, renderedCount, startReplyById, messages]);
 }

@@ -4,6 +4,7 @@ export interface CreateGlobalMessageModalState {
   isOpen: boolean;
   text_content: string;
   media_url: string;
+  media_urls: string[];
   media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   botSearch: string;
   selectedBotIds: string[];
@@ -14,6 +15,7 @@ const initialState: CreateGlobalMessageModalState = {
   isOpen: false,
   text_content: '',
   media_url: '',
+  media_urls: [],
   media_type: 'TEXT',
   botSearch: '',
   selectedBotIds: [],
@@ -35,6 +37,9 @@ const createGlobalMessageModalSlice = createSlice({
     },
     setMediaUrl(state, action: PayloadAction<string>) {
       state.media_url = action.payload;
+    },
+    setMediaUrls(state, action: PayloadAction<string[]>) {
+      state.media_urls = action.payload;
     },
     setMediaType(state, action: PayloadAction<'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT'>) {
       state.media_type = action.payload;
@@ -67,6 +72,7 @@ export const {
   setModalOpen,
   setTextContent,
   setMediaUrl,
+  setMediaUrls,
   setMediaType,
   setBotSearch,
   toggleSelectedBotId,

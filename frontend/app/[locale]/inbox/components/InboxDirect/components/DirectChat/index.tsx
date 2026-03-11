@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef, useEffect, useMemo, FC } from 'react';
+import { useRef, useEffect, useMemo, useCallback, FC } from 'react';
 import styles from './styles.module.scss';
 import MessageElement from './components/MessageElement';
 import MessageField, { type MessageFieldRef } from './components/MessageField';
-import { BlockedIcon, ChatChevronIcon, PinIcon } from '@/components/icons';
+import { BlockedIcon, ChatChevronIcon, PinIcon, ChevronDownIcon } from '@/components/icons';
 import classNames from 'classnames';
 import Loader from '@/components/loader/loader';
 import { useDateSeparator } from './hooks/useDateSeparator';
@@ -15,6 +15,7 @@ import { useRenderedMessages } from './hooks/useRenderedMessages';
 import { useMessageScroll } from './hooks/useMessageScroll';
 import { useMessageInputMode } from './hooks/useMessageInputMode';
 import { useReplyFromParam } from './hooks/useReplyFromParam';
+import { Button } from '@/components/new-button';
 
 interface DirectChatProps {
   onClose?: () => void;
@@ -54,12 +55,14 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     editMessage,
     deleteMessage,
     fetchMessages,
+    jumpToLatest,
   } = useDirectChat();
 
   const tgChatId = activeChat?.tg_chat_id ?? 0;
-  const { messages, loading, hasMore } = useDirectMessages(tgChatId);
+  const { messages, loading, hasMore, isDetached } = useDirectMessages(tgChatId);
 
-  const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // ID → DOM element map (stable across re-renders, no stale refs)
+  const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const messageFieldRef = useRef<MessageFieldRef>(null);
 
   const isPinned = activeChat?.is_pinned ?? false;
@@ -68,12 +71,33 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const userName = activeChat?.tg_username || ''
 
   const inputMode = useMessageInputMode(activeChatId);
-  const scroll = useMessageScroll({ messages, loading, hasMore, activeChat, fetchMessages });
-  useReplyFromParam(replyMessageId, messages, inputMode.startReplyById);
+
+  const handleJumpToLatest = useCallback(() => {
+    jumpToLatest();
+  }, [jumpToLatest]);
+
+  const scroll = useMessageScroll({
+    messages,
+    loading,
+    hasMore,
+    activeChat,
+    fetchMessages,
+    isDetached,
+    onJumpToLatest: handleJumpToLatest,
+  });
 
   useEffect(() => {
     if (activeChat) {
-      fetchMessages({ botId: activeChat.bot_id, tgChatId: activeChat.tg_chat_id });
+      if (replyMessageId) {
+        fetchMessages({
+          botId: activeChat.bot_id,
+          tgChatId: activeChat.tg_chat_id,
+          around_message_id: replyMessageId,
+          jumpToMessage: true,
+        });
+      } else {
+        fetchMessages({ botId: activeChat.bot_id, tgChatId: activeChat.tg_chat_id });
+      }
     }
   }, [activeChat?.bot_id, activeChat?.tg_chat_id, fetchMessages]);
 
@@ -95,32 +119,67 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     handleDeleteMessage
   );
 
-  const replyLookup = useMemo(() => {
-    const map = new Map<number, { text: string; index: number }>();
-    renderedMessages.forEach((msg, index) => {
-      map.set(msg.telegramMessageId, {
-        text: msg.text || (msg.mediaItems ? 'Медиа' : ''),
-        index,
-      });
+  // Text-only lookup by telegramMessageId (no index dependency)
+  const replyTextLookup = useMemo(() => {
+    const map = new Map<number, string>();
+    renderedMessages.forEach((msg) => {
+      map.set(msg.telegramMessageId, msg.text || (msg.mediaItems ? 'Медиа' : ''));
     });
     return map;
   }, [renderedMessages]);
 
-  const scrollToMessage = (telegramMessageId: number) => {
-    const info = replyLookup.get(telegramMessageId);
-    if (info == null) return;
-    const el = messageRefs.current[info.index];
+  // Scroll to element using container offset (avoids scrollIntoView layout thrashing)
+  const scrollToAndHighlight = useCallback((el: HTMLElement) => {
+    const container = scroll.messageListRef.current;
+    if (!container) return;
+
+    // Wait 2 frames for DOM commit (Telegram pattern)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const top = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
+        container.scrollTo({ top, behavior: 'smooth' });
+
+        // CSS class animation instead of inline styles (GPU-accelerated)
+        el.classList.add(styles.messageHighlight);
+        setTimeout(() => {
+          el.classList.remove(styles.messageHighlight);
+        }, 1500);
+      });
+    });
+  }, [scroll.messageListRef]);
+
+  const pendingScrollRef = useRef<number | null>(null);
+
+  // Resolve pending scroll after messages load/render
+  useEffect(() => {
+    if (pendingScrollRef.current === null) return;
+    const targetId = pendingScrollRef.current;
+    const el = messageRefs.current.get(targetId);
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      el.style.transition = 'background 0.3s';
-      el.style.background = 'rgba(59, 130, 246, 0.12)';
-      el.style.borderRadius = '12px';
-      setTimeout(() => {
-        el.style.background = '';
-        el.style.borderRadius = '';
-      }, 1500);
+      scrollToAndHighlight(el);
+      pendingScrollRef.current = null;
     }
+  }, [renderedMessages, scrollToAndHighlight]);
+
+  const scrollToMessage = async (telegramMessageId: number) => {
+    // O(1) lookup by ID
+    const el = messageRefs.current.get(telegramMessageId);
+    if (el) {
+      scrollToAndHighlight(el);
+      return;
+    }
+
+    if (!activeChat) return;
+    pendingScrollRef.current = telegramMessageId;
+    await fetchMessages({
+      botId: activeChat.bot_id,
+      tgChatId: activeChat.tg_chat_id,
+      around_message_id: telegramMessageId,
+      jumpToMessage: true,
+    });
   };
+
+  useReplyFromParam(replyMessageId, messages, inputMode.startReplyById, scrollToMessage, renderedMessages.length);
 
   const { visibleDate, showDateSeparator } = useDateSeparator({
     messages: renderedMessages,
@@ -130,11 +189,11 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
 
   const handleSendMessage = async () => {
     if (!activeChat) return;
-    
+
     const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
     const hasText = inputMode.message.trim().length > 0;
     const hasMedia = mediaFiles.length > 0;
-    
+
     if (!hasText && !hasMedia) return;
 
     const replyToMessageId = inputMode.replyingTo?.id;
@@ -157,13 +216,18 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
       console.error('Failed to send direct message:', error);
       return;
     }
-    
+
     const hadReply = Boolean(inputMode.replyingTo);
-    
+
     inputMode.reset();
     messageFieldRef.current?.handleClearMedia();
-    scroll.markShouldScroll();
-    
+
+    if (isDetached) {
+      handleJumpToLatest();
+    } else {
+      scroll.markShouldScroll();
+    }
+
     if (hadReply && onReplySent) {
       onReplySent();
     }
@@ -258,11 +322,12 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
               </div>
             </div>
           )}
-          {renderedMessages.map((msg, i) => (
+          {renderedMessages.map((msg) => (
             <div
-              key={`msg.id${i}`}
+              key={msg.id}
               ref={(el) => {
-                messageRefs.current[i] = el;
+                if (el) messageRefs.current.set(msg.telegramMessageId, el);
+                else messageRefs.current.delete(msg.telegramMessageId);
               }}
             >
               <MessageElement
@@ -271,10 +336,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
                 mediaItems={msg.mediaItems}
                 time={msg.time}
                 userPhoto={activeChat?.tg_photo_url ?? undefined}
-                replyTo={msg.replyToMessageId && replyLookup.has(msg.replyToMessageId) ? {
-                  text: replyLookup.get(msg.replyToMessageId)!.text,
-                  onClick: () => scrollToMessage(msg.replyToMessageId!),
-                } : undefined}
+                replyTo={msg.replyToMessageId ? (() => {
+                  const text = replyTextLookup.get(msg.replyToMessageId!) || msg.replyMessageText || 'Сообщение';
+                  return {
+                    text,
+                    onClick: () => scrollToMessage(msg.replyToMessageId!),
+                  };
+                })() : undefined}
                 onEdit={msg.onEdit}
                 onReply={msg.onReply}
                 onDelete={msg.onDelete}
@@ -283,6 +351,21 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           ))}
           <div ref={scroll.bottomRef} />
         </div>
+        {!scroll.isBottomVisible && renderedMessages.length > 0 && (
+          <div
+            className={styles.scrollToBottomButtonWrapper}
+          >
+            <Button
+              variant="fill"
+              intent="gradient"
+              size="sm"
+              onClick={scroll.scrollToBottom}
+              className={styles.scrollToBottomButton}
+            >
+              <ChevronDownIcon width={20} height={20} color="white" />
+            </Button>
+          </div>
+        )}
         {!isBlocked && (
           <MessageField
             ref={messageFieldRef}

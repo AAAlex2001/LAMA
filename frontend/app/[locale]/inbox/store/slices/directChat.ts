@@ -31,6 +31,8 @@ export interface DirectChatState {
   messagesError: Record<number, string | null>;
   messagesTotalCount: Record<number, number>;
   messagesHasMore: Record<number, boolean>;
+  /** Whether the loaded messages are detached from the latest (viewing around a specific message) */
+  messagesDetached: Record<number, boolean>;
 
   sendingMessage: boolean;
   wsConnected: boolean;
@@ -59,6 +61,7 @@ const initialState: DirectChatState = {
   messagesError: {},
   messagesTotalCount: {},
   messagesHasMore: {},
+  messagesDetached: {},
 
   sendingMessage: false,
   wsConnected: false,
@@ -99,6 +102,14 @@ const directChatSlice = createSlice({
       delete state.messagesError[chatId];
       delete state.messagesTotalCount[chatId];
       delete state.messagesHasMore[chatId];
+      delete state.messagesDetached[chatId];
+    },
+    /** Clear messages and exit detached mode, preparing for a fresh latest-messages fetch */
+    resetToLatest(state, action: PayloadAction<number>) {
+      const tgChatId = action.payload;
+      state.messages[tgChatId] = [];
+      state.messagesDetached[tgChatId] = false;
+      state.messagesHasMore[tgChatId] = true;
     },
     wsMessageReceived(state, action: PayloadAction<{ tgChatId: number; message: BotMessageResponse }>) {
       const { tgChatId, message } = action.payload;
@@ -212,29 +223,47 @@ const directChatSlice = createSlice({
         state.messagesError[key] = null;
       })
       .addCase(fetchDirectMessagesThunk.fulfilled, (state, action) => {
-        const { tgChatId, skip = 0, limit = 50 } = action.meta.arg;
+        const { tgChatId, skip = 0, limit = 50, around_message_id, jumpToMessage } = action.meta.arg;
         state.messagesLoading[tgChatId] = false;
         const response = action.payload;
+        const sortDesc = (a: BotMessageResponse, b: BotMessageResponse) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        };
 
-        if (skip > 0) {
+        if (jumpToMessage && around_message_id) {
+          // Merge around-window with existing (keeps mounted DOM nodes, prevents UI jumps)
           const existing = state.messages[tgChatId] || [];
           const existingIds = new Set(existing.map((m) => m.id));
           const newMessages = response.items.filter((m) => !existingIds.has(m.id));
-          state.messages[tgChatId] = [...existing, ...newMessages].sort((a, b) => {
-            const timeA = new Date(a.created_at).getTime();
-            const timeB = new Date(b.created_at).getTime();
-            return timeB - timeA;
-          });
+          state.messages[tgChatId] = [...existing, ...newMessages].sort(sortDesc);
+          state.messagesDetached[tgChatId] = true;
+          state.messagesHasMore[tgChatId] = true;
+        } else if (skip === 0 && !around_message_id) {
+          if (state.messagesDetached[tgChatId]) {
+            // WS-triggered refetch while detached — skip to preserve the around-window
+            state.messagesTotalCount[tgChatId] = response.total;
+            return;
+          }
+          // Normal initial load or refresh
+          state.messages[tgChatId] = [...response.items].sort(sortDesc);
+          state.messagesDetached[tgChatId] = false;
+          state.messagesHasMore[tgChatId] = response.items.length >= limit;
         } else {
-          state.messages[tgChatId] = [...response.items].sort((a, b) => {
-            const timeA = new Date(a.created_at).getTime();
-            const timeB = new Date(b.created_at).getTime();
-            return timeB - timeA;
-          });
+          // Merge: load more (skip > 0) or around_message_id without jumpToMessage
+          const existing = state.messages[tgChatId] || [];
+          const existingIds = new Set(existing.map((m) => m.id));
+          const newMessages = response.items.filter((m) => !existingIds.has(m.id));
+          state.messages[tgChatId] = [...existing, ...newMessages].sort(sortDesc);
+
+          if (around_message_id) {
+            // Loading more while detached: no more if no new messages were added
+            state.messagesHasMore[tgChatId] = newMessages.length > 0;
+          } else {
+            state.messagesHasMore[tgChatId] = response.items.length >= limit;
+          }
         }
 
         state.messagesTotalCount[tgChatId] = response.total;
-        state.messagesHasMore[tgChatId] = response.items.length >= limit;
       })
       .addCase(fetchDirectMessagesThunk.rejected, (state, action) => {
         const key = action.meta.arg.tgChatId;
@@ -293,6 +322,7 @@ export const {
   setChatSort,
   setChatUnreadFilter,
   clearMessages,
+  resetToLatest,
   wsMessageReceived,
   setWsConnected,
   setSendingMessage,

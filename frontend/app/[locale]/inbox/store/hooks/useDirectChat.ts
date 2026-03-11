@@ -12,6 +12,7 @@ import {
   selectDirectMessages,
   selectDirectMessagesLoading,
   selectDirectMessagesHasMore,
+  selectDirectMessagesDetached,
   selectSendingMessage,
   selectChatSort,
   selectChatUnreadFilter,
@@ -27,6 +28,7 @@ import {
   setWsConnected,
   setSendingMessage,
   setReplyToMessageId,
+  resetToLatest,
   setBotAutomatizationModalOpen,
   setTriggerModalOpen,
   setGlobalMessageModalOpen,
@@ -291,6 +293,17 @@ export function useDirectChat() {
     [dispatch]
   );
 
+  const jumpToLatestMessages = useCallback(() => {
+    if (!activeChat) return;
+    dispatch(resetToLatest(activeChat.tg_chat_id));
+    return dispatch(fetchDirectMessagesThunk({
+      botId: activeChat.bot_id,
+      tgChatId: activeChat.tg_chat_id,
+      skip: 0,
+      limit: 50,
+    }));
+  }, [dispatch, activeChat]);
+
   return {
     chats,
     chatsLoading,
@@ -319,6 +332,7 @@ export function useDirectChat() {
     unblockChat,
     editMessage,
     deleteMessage,
+    jumpToLatest: jumpToLatestMessages,
     setReplyToMessageId: setReplyToMessageIdAction,
     setBotAutomatizationModalOpen: setBotAutomatizationModalOpenAction,
     setTriggerModalOpen: setTriggerModalOpenAction,
@@ -333,6 +347,7 @@ export function useDirectMessages(tgChatId: number) {
   const messages = useAppSelector(selectDirectMessages(tgChatId));
   const loading = useAppSelector(selectDirectMessagesLoading(tgChatId));
   const hasMore = useAppSelector(selectDirectMessagesHasMore(tgChatId));
+  const isDetached = useAppSelector(selectDirectMessagesDetached(tgChatId));
 
-  return { messages, loading, hasMore };
+  return { messages, loading, hasMore, isDetached };
 }
