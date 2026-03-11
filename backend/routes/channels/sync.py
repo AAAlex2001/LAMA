@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -16,20 +16,15 @@ async def sync_channel(
     service: SyncService = Depends(get_sync_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        channel = await service.sync_from_telegram(
-            telegram_id=data.telegram_id,
-            username=data.username,
-            invite_link=data.invite_link,
-            owner_id=current_user.id,
-            bot_id=data.bot_id,
-            token=data.token,
-        )
-        return SyncChannelResponse(success=True, channel=channel, message="Channel synchronized successfully")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+    channel = await service.sync_from_telegram(
+        telegram_id=data.telegram_id,
+        username=data.username,
+        invite_link=data.invite_link,
+        owner_id=current_user.id,
+        bot_id=data.bot_id,
+        token=data.token,
+    )
+    return SyncChannelResponse(success=True, channel=channel, message="Channel synchronized successfully")
 
 
 @router.post("/{channel_id}/sync", response_model=ChannelGroupResponse)
@@ -40,20 +35,11 @@ async def sync_existing_channel(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    if not channel.bot_id:
-        raise HTTPException(status_code=400, detail="Channel does not have an associated bot")
 
-    try:
-        return await sync_service.sync_from_telegram(
-            telegram_id=channel.telegram_id,
-            username=channel.username,
-            invite_link=channel.invite_link,
-            owner_id=current_user.id,
-            bot_id=channel.bot_id,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
+    return await sync_service.sync_from_telegram(
+        telegram_id=channel.telegram_id,
+        username=channel.username,
+        invite_link=channel.invite_link,
+        owner_id=current_user.id,
+        bot_id=channel.bot_id,
+    )

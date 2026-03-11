@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -23,8 +23,6 @@ async def list_invite_links(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     links = await service.list(channel_id)
     return InviteLinkListResponse(items=links, total=len(links))
 
@@ -38,11 +36,7 @@ async def create_invite_link(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     link = await service.create(channel, data, current_user.id)
-    if not link:
-        raise HTTPException(status_code=400, detail="Failed to create invite link")
     return link
 
 
@@ -55,11 +49,7 @@ async def get_invite_link(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     link = await service.get(link_id, channel_id)
-    if not link:
-        raise HTTPException(status_code=404, detail="Invite link not found")
     link = await service.sync_single(channel, link)
     return link
 
@@ -74,11 +64,7 @@ async def update_invite_link(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     link = await service.update(channel, link_id, data)
-    if not link:
-        raise HTTPException(status_code=404, detail="Invite link not found")
     return link
 
 
@@ -91,11 +77,7 @@ async def revoke_invite_link(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     link = await service.revoke(channel, link_id)
-    if not link:
-        raise HTTPException(status_code=404, detail="Invite link not found")
     return link
 
 
@@ -108,11 +90,7 @@ async def delete_invite_link(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
-    success = await service.delete(link_id, channel_id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Invite link not found")
+    await service.delete(link_id, channel_id)
     return {"success": True, "message": "Invite link deleted"}
 
 
@@ -124,7 +102,5 @@ async def sync_invite_links(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
     links = await service.sync(channel)
     return InviteLinkListResponse(items=links, total=len(links))

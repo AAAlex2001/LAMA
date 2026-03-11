@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends
 from sqlalchemy import select
 
 from backend.models.auth import User
@@ -32,18 +32,13 @@ async def update_backup_mode(
     service: BackupService = Depends(get_backup_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        channel = await service.update_mode(
-            channel_id=channel_id,
-            backup_mode=data.backup_mode,
-            backup_target_id=data.backup_target_id,
-            owner_id=current_user.id,
-        )
-        if not channel:
-            raise HTTPException(status_code=404, detail="Channel not found")
-        return channel
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    channel = await service.update_mode(
+        channel_id=channel_id,
+        backup_mode=data.backup_mode,
+        backup_target_id=data.backup_target_id,
+        owner_id=current_user.id,
+    )
+    return channel
 
 
 @router.get("/{channel_id}/backed-posts", response_model=BackedUpPostListResponse)
@@ -56,8 +51,6 @@ async def get_backed_up_posts(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
 
     posts, total = await backup_service.get_posts(channel_id=channel_id, page=page, page_size=page_size)
     return BackedUpPostListResponse(items=posts, total=total, page=page, page_size=page_size)
@@ -71,8 +64,6 @@ async def get_channel_stats(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found")
 
     stats = await backup_service.get_stats(channel_id)
     return ChannelStatsResponse(**stats)
@@ -85,12 +76,9 @@ async def create_backup_job(
     service: BackupJobService = Depends(get_backup_job_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        job = await service.create(data, owner_id=current_user.id)
-        background_tasks.add_task(service.process, job.id)
-        return job
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    job = await service.create(data, owner_id=current_user.id)
+    background_tasks.add_task(service.process, job.id)
+    return job
 
 
 @router.get("/backup-jobs", response_model=BackupJobListResponse)
@@ -116,13 +104,7 @@ async def get_backup_job(
     service: BackupJobService = Depends(get_backup_job_service),
     current_user: User = Depends(get_current_user),
 ):
-    from sqlalchemy import select
-    query = select(BackupJob).where(BackupJob.id == job_id, BackupJob.owner_id == current_user.id)
-    result = await service.db.execute(query)
-    job = result.scalar_one_or_none()
-    if not job:
-        raise HTTPException(status_code=404, detail="Backup job not found")
-    return job
+    return await service.get_backup_job(job_id=job_id, owner_id=current_user.id)
 
 
 @router.post("/restore", response_model=RestoreBackupResponse)
@@ -132,13 +114,10 @@ async def restore_backup(
     service: BackupJobService = Depends(get_backup_job_service),
     current_user: User = Depends(get_current_user),
 ):
-    try:
-        job_data = BackupJobCreate(
-            source_channel_id=data.source_channel_id,
-            target_channel_id=data.target_channel_id,
-        )
-        job = await service.create(job_data, owner_id=current_user.id)
-        background_tasks.add_task(service.process, job.id)
-        return RestoreBackupResponse(success=True, job_id=job.id, message="Backup restore started in background")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    job_data = BackupJobCreate(
+        source_channel_id=data.source_channel_id,
+        target_channel_id=data.target_channel_id,
+    )
+    job = await service.create(job_data, owner_id=current_user.id)
+    background_tasks.add_task(service.process, job.id)
+    return RestoreBackupResponse(success=True, job_id=job.id, message="Backup restore started in background")

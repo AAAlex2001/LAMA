@@ -3,6 +3,7 @@ from typing import Optional
 
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -32,9 +33,9 @@ class SyncService:
     ) -> ChannelGroup:
         """Синхронизировать канал через Telegram API."""
         if not bot_id and not token:
-            raise ValueError("Either bot_id or token must be provided")
+            raise HTTPException(status_code=400, detail="Either bot_id or token must be provided")
         if not telegram_id and not username and not invite_link:
-            raise ValueError("One of telegram_id, username, or invite_link must be provided")
+            raise HTTPException(status_code=400, detail="One of telegram_id, username, or invite_link must be provided")
 
         chat_identifier = resolve_chat_identifier(telegram_id, username, invite_link)
 
@@ -54,9 +55,9 @@ class SyncService:
             chat_data = await build_chat_data(raw_bot, chat, bot_model.token)
             return await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
         except TelegramForbiddenError:
-            raise ValueError("Bot doesn't have access to this channel/group")
+            raise HTTPException(status_code=403, detail="Bot doesn't have access to this channel/group")
         except TelegramBadRequest as e:
-            raise ValueError(f"Invalid channel/group: {str(e)}")
+            raise HTTPException(status_code=400, detail=f"Invalid channel/group: {str(e)}")
 
     async def get_bot_model(self, bot_id: int, owner_id: int) -> BotModel:
         """Получить модель бота из БД."""
@@ -64,7 +65,7 @@ class SyncService:
         result = await self.db.execute(query)
         bot_model = result.scalar_one_or_none()
         if not bot_model:
-            raise ValueError("Bot not found or does not belong to user")
+            raise HTTPException(status_code=404, detail="Bot not found or does not belong to user")
         return bot_model
 
     async def get_user_telegram_id(self, owner_id: int) -> int:
@@ -73,7 +74,7 @@ class SyncService:
         result = await self.db.execute(query)
         user_telegram_id = result.scalar_one_or_none()
         if not user_telegram_id:
-            raise ValueError("User has no linked Telegram account")
+            raise HTTPException(status_code=400, detail="User has no linked Telegram account")
         return user_telegram_id
 
     async def save_synced_channel(
@@ -84,7 +85,7 @@ class SyncService:
 
         if channel:
             if channel.owner_id != owner_id:
-                raise ValueError("Channel belongs to another user")
+                raise HTTPException(status_code=403, detail="Channel belongs to another user")
             for field, value in chat_data.items():
                 setattr(channel, field, value)
             channel.bot_id = bot_id
@@ -119,17 +120,17 @@ def resolve_chat_identifier(
     if invite_link and "t.me/" in invite_link:
         extracted = invite_link.split("t.me/")[-1]
         if extracted.startswith("+"):
-            raise ValueError("Private invite links (+hash) are not supported")
+            raise HTTPException(status_code=400, detail="Private invite links (+hash) are not supported")
         return f"@{extracted}"
-    raise ValueError("Invalid invite link format")
+    raise HTTPException(status_code=400, detail="Invalid invite link format")
 
 
 async def validate_access(bot: Bot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
     bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
     if bot_member.status in ["left", "kicked"]:
-        raise ValueError("Bot is not a member of this channel/group")
+        raise HTTPException(status_code=403, detail="Bot is not a member of this channel/group")
 
     user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
     if user_member.status not in ["administrator", "creator"]:
-        raise ValueError("User is not an admin in this channel/group")
+        raise HTTPException(status_code=403, detail="User is not an admin in this channel/group")

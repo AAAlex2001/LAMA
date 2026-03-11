@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional, Tuple
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,8 +43,7 @@ class FloodService:
                 last_message_at=now,
             )
             self.db.add(state)
-            await self.db.commit()
-            await self.db.refresh(state)
+            await self.db.flush()
             return False, None, None
 
         window_delta = (now - state.window_start).total_seconds()
@@ -51,14 +51,12 @@ class FloodService:
             state.message_count = 1
             state.window_start = now
             state.last_message_at = now
-            await self.db.commit()
-            await self.db.refresh(state)
+            await self.db.flush()
             return False, None, None
 
         state.message_count += 1
         state.last_message_at = now
-        await self.db.commit()
-        await self.db.refresh(state)
+        await self.db.flush()
 
         if state.message_count > channel.flood_message_limit:
             return True, channel.flood_action, channel.flood_mute_duration_minutes
@@ -73,11 +71,11 @@ class FloodService:
         flood_interval_seconds: Optional[int] = None,
         flood_action: Optional[ActionType] = None,
         flood_mute_duration_minutes: Optional[int] = None,
-    ) -> Optional[ChannelGroup]:
+    ) -> ChannelGroup:
         """Обновить настройки антифлуда."""
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
-            return None
+            raise HTTPException(status_code=404, detail='Channel not found')
 
         if flood_message_limit is not None:
             channel.flood_message_limit = flood_message_limit
