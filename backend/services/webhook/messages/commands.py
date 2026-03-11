@@ -318,7 +318,7 @@ class CommandProcessor:
         )
 
         if command:
-            await self.trigger_service.fire_event(
+            triggered_count = await self.trigger_service.fire_event(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.COMMAND_CALLED,
                 user_id=user_id,
@@ -327,6 +327,33 @@ class CommandProcessor:
                 chat_type=message.chat.type if message.chat else None,
                 context={"command": command_text}
             )
+
+            if triggered_count > 0:
+                try:
+                    inbox_service = InboxActionService(self.db)
+                    channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                    channel_id = channel_obj.id if channel_obj else None
+
+                    await inbox_service.create_event(event_data={
+                        "owner_id": self.bot_model.owner_id,
+                        "category": InboxCategory.AUTOMATION,
+                        "entity_type": EntityType.BOT,
+                        "event_type": EventType.SYSTEM_TRIGGER,
+                        "bot_id": self.bot_model.id,
+                        "channel_id": channel_id,
+                        "tg_user_id": message.from_user.id if message.from_user else None,
+                        "tg_username": message.from_user.username if message.from_user else None,
+                        "status": EventStatus.NEW,
+                        "description": f"Сработал триггер ({triggered_count}) для команды {command_text} в чате {message.chat.id}",
+                        "payload": {
+                            "chat_id": message.chat.id,
+                            "message_id": message.message_id,
+                            "command": command_text,
+                            "triggered_count": triggered_count,
+                        },
+                    })
+                except Exception as e:
+                    logger.error(f"Failed to create inbox event for trigger execution on command: {e}", exc_info=True)
 
             try:
                 await self.create_command_inbox_event(

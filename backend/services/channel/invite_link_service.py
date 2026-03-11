@@ -81,16 +81,21 @@ class InviteLinkService:
 
         bot = await self.resolve_bot(channel)
 
-        expire_timestamp = int(data.expire_date.timestamp()) if data.expire_date else None
-        new_creates_join = data.creates_join_request if data.creates_join_request is not None else invite_link.creates_join_request
-        raw_limit = data.member_limit if data.member_limit is not None else invite_link.member_limit
+        update_data = data.model_dump(exclude_unset=True)
+
+        new_name = update_data.get("name", invite_link.name)
+        new_expire_date = update_data.get("expire_date", invite_link.expire_date)
+        new_creates_join = update_data.get("creates_join_request", invite_link.creates_join_request)
+        raw_limit = update_data.get("member_limit", invite_link.member_limit)
+        
+        expire_timestamp = int(new_expire_date.timestamp()) if new_expire_date else None
         member_limit = None if new_creates_join else (raw_limit or None)
 
         try:
             tg_link = await bot.edit_chat_invite_link(
                 chat_id=channel.telegram_id,
                 invite_link=invite_link.invite_link,
-                name=data.name if data.name is not None else invite_link.name,
+                name=new_name,
                 expire_date=expire_timestamp,
                 member_limit=member_limit,
                 creates_join_request=new_creates_join,
@@ -99,18 +104,19 @@ class InviteLinkService:
             logger.error("Error updating invite link: %s", e)
             raise HTTPException(status_code=400, detail="Failed to update invite link in Telegram")
 
-        if data.name is not None:
-            invite_link.name = data.name
-        if data.expire_date is not None:
-            invite_link.expire_date = data.expire_date
-        if data.member_limit is not None:
-            invite_link.member_limit = data.member_limit
-        if data.creates_join_request is not None:
-            invite_link.creates_join_request = data.creates_join_request
-        if data.protection_type is not None:
-            invite_link.protection_type = data.protection_type
-        if data.entry_method is not None:
-            invite_link.entry_method = data.entry_method
+        if "name" in update_data:
+            invite_link.name = update_data["name"]
+        if "expire_date" in update_data:
+            invite_link.expire_date = update_data["expire_date"]
+        if "member_limit" in update_data:
+            invite_link.member_limit = update_data["member_limit"]
+        if "creates_join_request" in update_data:
+            invite_link.creates_join_request = update_data["creates_join_request"]
+        if "protection_type" in update_data:
+            invite_link.protection_type = update_data["protection_type"]
+        if "entry_method" in update_data:
+            invite_link.entry_method = update_data["entry_method"]
+
         invite_link.pending_join_request_count = tg_link.pending_join_request_count or 0
 
         await self.db.commit()
