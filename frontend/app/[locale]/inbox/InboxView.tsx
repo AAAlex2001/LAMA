@@ -23,7 +23,7 @@ const InboxView = () => {
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const [sortHandlers, setSortHandlers] = useState<{
     handleTimeSortChange: (sort: 'new' | 'old') => void;
-    handleStatusFilterChange: (status: 'new' | 'processed' | 'ignored' | null) => void;
+    handleStatusFilterChange: (status: 'new' | 'processed' | 'banned' | null) => void;
     handleEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
   } | null>(null);
 

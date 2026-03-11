@@ -9,8 +9,8 @@ import classNames from 'classnames';
 import Loader from '@/components/loader/loader';
 import { useDateSeparator } from './hooks/useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
-import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
-import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { uploadMediaFile, API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
 import { useRenderedMessages } from './hooks/useRenderedMessages';
 import { useMessageScroll } from './hooks/useMessageScroll';
 import { useMessageInputMode } from './hooks/useMessageInputMode';
@@ -186,13 +186,14 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const handleSendMessage = async () => {
     if (!activeChat) return;
 
-    const { mediaFiles } = messageFieldRef.current || { mediaFiles: [] };
+    const { mediaFiles, inlineButtonRows } = messageFieldRef.current || { mediaFiles: [], inlineButtonRows: [] };
     const hasText = inputMode.message.trim().length > 0;
     const hasMedia = mediaFiles.length > 0;
 
     if (!hasText && !hasMedia) return;
 
     const replyToMessageId = inputMode.replyingTo?.id;
+    const inlineKeyboard = buildInlineKeyboard(inlineButtonRows);
 
     try {
       if (hasMedia) {
@@ -201,11 +202,15 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           text_content: hasText ? inputMode.message : undefined,
           media_urls: mediaUrls,
           reply_to_message_id: replyToMessageId,
+          inline_keyboard: inlineKeyboard,
+          buttons: inlineKeyboard,
         });
       } else {
         await sendMessage({
           text_content: inputMode.message,
           reply_to_message_id: replyToMessageId,
+          inline_keyboard: inlineKeyboard,
+          buttons: inlineKeyboard,
         });
       }
     } catch (error) {
@@ -217,6 +222,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
 
     inputMode.reset();
     messageFieldRef.current?.handleClearMedia();
+    messageFieldRef.current?.handleResetInlineButtons();
 
     if (isDetached) {
       handleJumpToLatest();
@@ -296,72 +302,72 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
             <span>{visibleDate}</span>
           </div>
         )}
-        <div className={styles.messageList} ref={scroll.messageListRef}>
-          {loading && messages.length === 0 && (
-            <div className={styles.loadingMessages}>
-              <Loader />
-            </div>
-          )}
-          {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
-          {loading && messages.length > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
-              <Loader size={20} />
-            </div>
-          )}
-          {!loading && renderedMessages.length === 0 && (
-            <div className={styles.emptyState}>
-              <div className={styles.emptyStateContent}>
-                <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
-                <p className={styles.emptyStateSubtitle}>
-                  Выберите один из чатов в списке
-                </p>
+        <div className={styles.messageListWrapper}>
+          <div className={styles.messageList} ref={scroll.messageListRef}>
+            {loading && messages.length === 0 && (
+              <div className={styles.loadingMessages}>
+                <Loader />
               </div>
+            )}
+            {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
+            {loading && messages.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
+                <Loader size={20} />
+              </div>
+            )}
+            {!loading && renderedMessages.length === 0 && (
+              <div className={styles.emptyState}>
+                <div className={styles.emptyStateContent}>
+                  <h3 className={styles.emptyStateTitle}>Сообщений пока нет</h3>
+                  <p className={styles.emptyStateSubtitle}>
+                    Выберите один из чатов в списке
+                  </p>
+                </div>
+              </div>
+            )}
+            {renderedMessages.map((msg) => (
+              <div
+                key={msg.id}
+                ref={(el) => {
+                  if (el) messageRefs.current.set(msg.telegramMessageId, el);
+                  else messageRefs.current.delete(msg.telegramMessageId);
+                }}
+              >
+                <MessageElement
+                  type={msg.type}
+                  text={msg.text}
+                  mediaItems={msg.mediaItems}
+                  time={msg.time}
+                  userPhoto={activeChat?.tg_photo_url ?? undefined}
+                  replyTo={msg.replyToMessageId ? (() => {
+                    const text = replyTextLookup.get(msg.replyToMessageId!) || msg.replyMessageText || 'Сообщение';
+                    return {
+                      text,
+                      onClick: () => scrollToMessage(msg.replyToMessageId!),
+                    };
+                  })() : undefined}
+                  onEdit={msg.onEdit}
+                  onReply={msg.onReply}
+                  onDelete={msg.onDelete}
+                />
+              </div>
+            ))}
+            <div ref={scroll.bottomRef} style={{ height: 1, flexShrink: 0 }} />
+          </div>
+          {!scroll.isBottomVisible && renderedMessages.length > 0 && (
+            <div className={styles.scrollToBottomButtonWrapper}>
+              <Button
+                variant="fill"
+                intent="gradient"
+                size="sm"
+                onClick={scroll.scrollToBottom}
+                className={styles.scrollToBottomButton}
+              >
+                <ChevronDownIcon width={20} height={20} color="white" />
+              </Button>
             </div>
           )}
-          {renderedMessages.map((msg) => (
-            <div
-              key={msg.id}
-              ref={(el) => {
-                if (el) messageRefs.current.set(msg.telegramMessageId, el);
-                else messageRefs.current.delete(msg.telegramMessageId);
-              }}
-            >
-              <MessageElement
-                type={msg.type}
-                text={msg.text}
-                mediaItems={msg.mediaItems}
-                time={msg.time}
-                userPhoto={activeChat?.tg_photo_url ?? undefined}
-                replyTo={msg.replyToMessageId ? (() => {
-                  const text = replyTextLookup.get(msg.replyToMessageId!) || msg.replyMessageText || 'Сообщение';
-                  return {
-                    text,
-                    onClick: () => scrollToMessage(msg.replyToMessageId!),
-                  };
-                })() : undefined}
-                onEdit={msg.onEdit}
-                onReply={msg.onReply}
-                onDelete={msg.onDelete}
-              />
-            </div>
-          ))}
-          <div ref={scroll.bottomRef} />
         </div>
-        {!scroll.isBottomVisible && renderedMessages.length > 0 && (
-          <div
-            className={classNames(styles.scrollToBottomButtonWrapper, { [styles.scrollIsBlocked]: isBlocked })}
-          >
-            <Button
-              variant="fill"
-              intent="gradient"
-              size="sm"
-              onClick={scroll.scrollToBottom}
-              className={styles.scrollToBottomButton}
-            >
-              <ChevronDownIcon width={20} height={20} color="white" />
-            </Button>
-          </div>
-        )}
         {!isBlocked && (
           <MessageField
             ref={messageFieldRef}

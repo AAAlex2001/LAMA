@@ -18,7 +18,7 @@ interface InboxSortingBarProps {
   setSelectedFilter: (filter: ListHeaderType) => void;
   onNavigateToOtherView: () => void;
   onTimeSortChange?: (sort: 'new' | 'old') => void;
-  onStatusFilterChange?: (status: 'new' | 'processed' | 'ignored' | null) => void;
+  onStatusFilterChange?: (status: 'new' | 'processed' | 'banned' | null) => void;
   onEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
 }
 

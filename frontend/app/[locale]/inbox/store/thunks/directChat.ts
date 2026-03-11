@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import type { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 export type MessageType = 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'VOICE' | 'STICKER' | 'ANIMATION';
 
@@ -88,7 +89,8 @@ export interface SendDirectMessageParams {
   media_url?: string;
   media_urls?: string[];
   media_type?: MessageType;
-  buttons?: Record<string, unknown>;
+  inline_keyboard?: InlineKeyboard;
+  buttons?: InlineKeyboard;
   reply_to_message_id?: number;
 }
 

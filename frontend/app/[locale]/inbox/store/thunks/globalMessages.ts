@@ -84,7 +84,6 @@ export const sendMessageThunk = createAsyncThunk(
           body: JSON.stringify(data),
         }
       );
-      console.log('message', message);
       
       return message;
     } catch (error) {

@@ -8,6 +8,7 @@ import { WheelPicker } from '@/components/wheel-picker';
 import styles from './styles.module.scss';
 import { Button } from '@/components/new-button';
 import { useAppDispatch, useAppSelector, specificInboxActionThunk, selectSpecificActionLoading } from '../../store';
+import type { SpecificActionResponse } from '../../store/thunks/inboxEvents';
 
 interface BlockModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface BlockModalProps {
   message?: string;
   eventId?: number;
   onSave?: (data: BlockModalData) => void;
+  onActionResult?: (response: SpecificActionResponse) => void;
 }
 
 export interface BlockModalData {
@@ -34,6 +36,7 @@ export default function BlockModal({
   message = 'Купи сейчас...',
   eventId,
   onSave,
+  onActionResult,
 }: BlockModalProps) {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectSpecificActionLoading);
@@ -70,11 +73,12 @@ export default function BlockModal({
       };
 
       try {
-        await dispatch(specificInboxActionThunk({
+        const result = await dispatch(specificInboxActionThunk({
           eventId,
           action_type: 'change_ban',
           payload,
         })).unwrap();
+        onActionResult?.(result.response);
         onOpenChange?.(false);
       } catch (error) {
         console.error('Failed to update ban:', error);

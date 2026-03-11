@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useImperativeHandle, forwardRef } from 'react';
+import React, { useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from 'react';
 import { Button } from '@/components/new-button';
 import MediaPreview, { type MediaFile } from '@/components/media-preview';
 import InlineButtons, { type ButtonRow, type InlineButton } from '@/components/inline-buttons/inline-buttons';
@@ -59,16 +59,26 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
     addColumn: addInlineButtonColumn,
     updateButton: updateInlineButton,
     deleteButton: deleteInlineButton,
+    reset: resetInlineButtons,
   } = useInlineButtons();
 
   const MAX_MEDIA = 10;
-  const limitedMediaFiles = mediaFiles.slice(0, MAX_MEDIA);
+  const limitedMediaFiles = useMemo(() => mediaFiles.slice(0, MAX_MEDIA), [mediaFiles]);
   const canAddMedia = limitedMediaFiles.length < MAX_MEDIA;
-  const canShowInlineButtons = true;
+  const canShowInlineButtons = limitedMediaFiles.length < 2;
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     _handleFileUpload(e);
   };
+
+  const prevMediaFilesLengthRef = useRef(limitedMediaFiles.length);
+  const prevFirstFileIdRef = useRef(limitedMediaFiles[0]?.id);
+  const prevFirstFileUrlRef = useRef(limitedMediaFiles[0]?.url);
+  
+  const callbacksRef = useRef({ onMediaTypeChange, onMediaUrlChange, onMediaFilesChange });
+  useEffect(() => {
+    callbacksRef.current = { onMediaTypeChange, onMediaUrlChange, onMediaFilesChange };
+  }, [onMediaTypeChange, onMediaUrlChange, onMediaFilesChange]);
 
   useImperativeHandle(ref, () => ({
     limitedMediaFiles,
@@ -77,23 +87,52 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
   }), [limitedMediaFiles, inlineButtonRows, handleClearMedia]);
 
   useEffect(() => {
-    if (limitedMediaFiles.length > 0) {
+    const currentLength = limitedMediaFiles.length;
+    const currentFirstFileId = limitedMediaFiles[0]?.id;
+    const currentFirstFileUrl = limitedMediaFiles[0]?.url;
+
+    const lengthChanged = prevMediaFilesLengthRef.current !== currentLength;
+    const fileChanged = prevFirstFileIdRef.current !== currentFirstFileId;
+    const urlChanged = prevFirstFileUrlRef.current !== currentFirstFileUrl;
+
+    if (!lengthChanged && !fileChanged && !urlChanged) {
+      return;
+    }
+
+    prevMediaFilesLengthRef.current = currentLength;
+    prevFirstFileIdRef.current = currentFirstFileId;
+    prevFirstFileUrlRef.current = currentFirstFileUrl;
+
+    const { onMediaTypeChange, onMediaUrlChange, onMediaFilesChange } = callbacksRef.current;
+
+    if (currentLength > 0) {
       const firstFile = limitedMediaFiles[0];
       const mediaType = firstFile.type === 'image' ? 'PHOTO' 
         : firstFile.type === 'video' ? 'VIDEO' 
         : 'DOCUMENT';
-      onMediaTypeChange?.(mediaType);
       
-      if (firstFile.url) {
+      if (fileChanged || lengthChanged) {
+        onMediaTypeChange?.(mediaType);
+        onMediaFilesChange?.(true);
+      }
+      
+      if (firstFile.url && urlChanged) {
         onMediaUrlChange?.(firstFile.url);
       }
-      onMediaFilesChange?.(true);
     } else {
-      onMediaTypeChange?.('TEXT');
-      onMediaUrlChange?.('');
-      onMediaFilesChange?.(false);
+      if (lengthChanged) {
+        onMediaTypeChange?.('TEXT');
+        onMediaUrlChange?.('');
+        onMediaFilesChange?.(false);
+      }
     }
-  }, [limitedMediaFiles, onMediaTypeChange, onMediaUrlChange, onMediaFilesChange]);
+  }, [limitedMediaFiles]);
+
+  useEffect(() => {
+    if (limitedMediaFiles.length > 1 && inlineButtonRows.length > 0) {
+      resetInlineButtons();
+    }
+  }, [limitedMediaFiles.length, inlineButtonRows.length, resetInlineButtons]);
 
   useEffect(() => {
     return () => {

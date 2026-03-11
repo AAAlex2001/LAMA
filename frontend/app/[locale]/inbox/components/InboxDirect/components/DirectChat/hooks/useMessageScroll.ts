@@ -45,25 +45,25 @@ export function useMessageScroll({
   const didInitialScrollRef = useRef(false);
   const [isBottomVisible, setIsBottomVisible] = useState(true);
 
-  // Bottom sentinel observer
+  const checkBottomRef = useRef(() => {});
+  checkBottomRef.current = () => {
+    const el = messageListRef.current;
+    if (!el) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
+    isNearBottomRef.current = nearBottom;
+    setIsBottomVisible(nearBottom);
+  };
+
+  // Detect when user is near the bottom of the list
   useEffect(() => {
     const el = messageListRef.current;
     if (!el) return;
 
-    const sentinel = bottomRef.current;
-    if (!sentinel) return;
+    const handleScroll = () => checkBottomRef.current();
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const isVisible = entry.isIntersecting;
-        isNearBottomRef.current = isVisible;
-        setIsBottomVisible(isVisible);
-      },
-      { root: el, threshold: 0.1 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
+    handleScroll();
+    el.addEventListener('scroll', handleScroll, { passive: true });
+    return () => el.removeEventListener('scroll', handleScroll);
   }, []);
 
   useEffect(() => {
@@ -144,6 +144,7 @@ export function useMessageScroll({
       requestAnimationFrame(() => {
         el.scrollTop = el.scrollHeight;
         didInitialScrollRef.current = true;
+        checkBottomRef.current();
       });
     }
   }, [loading, messages.length, activeChat?.tg_chat_id, isDetached]);
@@ -157,6 +158,7 @@ export function useMessageScroll({
     if (!loading && newestMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
       el.scrollTop = el.scrollHeight;
       shouldScrollAfterSendRef.current = false;
+      requestAnimationFrame(() => checkBottomRef.current());
     }
   }, [newestMessageId, loading]);
 

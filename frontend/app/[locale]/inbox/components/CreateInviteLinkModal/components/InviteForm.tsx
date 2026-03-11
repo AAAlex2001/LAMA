@@ -199,7 +199,12 @@ const InviteForm: React.FC<InviteFormProps> = ({
             <Checkbox
               variant="radio"
               checked={validityPeriod === 'date'}
-              onChange={() => dispatch(setValidityPeriod('date'))}
+              onChange={() => {
+                dispatch(setValidityPeriod('date'));
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                dispatch(setExpirationDate(today.toISOString()));
+              }}
             />
             <span className={styles.channelItemName}>До даты</span>
           </div>

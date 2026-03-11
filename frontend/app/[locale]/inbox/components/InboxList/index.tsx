@@ -44,7 +44,7 @@ interface InboxListProps {
   type: ListHeaderType;
   onHandlersReady?: (handlers: {
     handleTimeSortChange: (sort: 'new' | 'old') => void;
-    handleStatusFilterChange: (status: 'new' | 'processed' | 'ignored' | null) => void;
+    handleStatusFilterChange: (status: 'new' | 'processed' | 'banned' | null) => void;
     handleEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
   }) => void;
 }
@@ -74,6 +74,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     eventId: number;
     payload?: Record<string, unknown>;
     username?: string;
+    resolve?: (value: unknown) => void;
   } | null>(null);
 
   const isEmpty = !itemsLoading && data.length === 0;
@@ -82,7 +83,7 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
     dispatch(setSortDir(sort));
   };
 
-  const handleStatusFilterChange = (status: 'new' | 'processed' | 'ignored' | null) => {
+  const handleStatusFilterChange = (status: 'new' | 'processed' | 'banned' | null) => {
     dispatch(setStatusFilter(status));
   };
 
@@ -209,29 +210,33 @@ const InboxList: FC<InboxListProps> = ( { type, onHandlersReady } ) => {
   const handleSpecificAction = (eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => {
     if (actionType === 'block') {
       const item = data.find((item: InboxEventResponse) => item.id === eventId);
-      setPendingBlockAction({
-        eventId,
-        payload,
-        username: item?.tg_username || undefined,
+      return new Promise((resolve) => {
+        setPendingBlockAction({
+          eventId,
+          payload,
+          username: item?.tg_username || undefined,
+          resolve,
+        });
+        setIsConfirmBlockModalOpen(true);
       });
-      setIsConfirmBlockModalOpen(true);
-      return Promise.resolve();
     }
     return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
   };
 
-  const handleConfirmBlock = () => {
+  const handleConfirmBlock = async () => {
     if (pendingBlockAction) {
-      dispatch(specificInboxActionThunk({
+      const result = await dispatch(specificInboxActionThunk({
         eventId: pendingBlockAction.eventId,
         action_type: 'block',
         payload: pendingBlockAction.payload,
       }));
+      pendingBlockAction.resolve?.(result);
       setPendingBlockAction(null);
     }
   };
 
   const handleCancelBlock = () => {
+    pendingBlockAction?.resolve?.(undefined);
     setPendingBlockAction(null);
   };
 

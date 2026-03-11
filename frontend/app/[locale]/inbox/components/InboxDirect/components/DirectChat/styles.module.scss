@@ -148,11 +148,15 @@
   margin-top: 0;
 }
 
-.messageList {
+.messageListWrapper {
   flex: 1;
-  overflow-y: auto;
-  min-height: 0;  
+  min-height: 0;
   position: relative;
+}
+
+.messageList {
+  height: 100%;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -251,14 +255,9 @@
 
 .scrollToBottomButtonWrapper {
   position: absolute;
-  bottom: 200px;
-  right: 40px;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 20;
+  bottom: 12px;
+  right: 16px;
+  z-index: 10;
 }
 
 .scrollToBottomButton {
@@ -280,6 +279,3 @@
   100% { background: transparent; }
 }
 
-.scrollIsBlocked {
-  bottom: 100px;
-}

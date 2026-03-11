@@ -24,6 +24,7 @@ export interface MessageFieldRef {
   mediaFiles: MediaFile[];
   inlineButtonRows: ButtonRow[];
   handleClearMedia: () => void;
+  handleResetInlineButtons: () => void;
 }
 
 interface MessageFieldProps {
@@ -57,6 +58,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
     addColumn: addInlineButtonColumn,
     updateButton: updateInlineButton,
     deleteButton: deleteInlineButton,
+    reset: resetInlineButtons,
   } = useInlineButtons();
 
   const {
@@ -89,7 +91,8 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
     mediaFiles,
     inlineButtonRows,
     handleClearMedia,
-  }), [mediaFiles, inlineButtonRows, handleClearMedia]);
+    handleResetInlineButtons: resetInlineButtons,
+  }), [mediaFiles, inlineButtonRows, handleClearMedia, resetInlineButtons]);
 
   const handleToggleInlineButtons = () => {
     toggleInlineButtons();

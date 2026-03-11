@@ -159,7 +159,8 @@ export function useDirectChat() {
       media_url?: string;
       media_urls?: string[];
       media_type?: MessageType;
-      buttons?: Record<string, unknown>;
+      inline_keyboard?: SendDirectMessageParams['inline_keyboard'];
+      buttons?: SendDirectMessageParams['buttons'];
       reply_to_message_id?: number;
     }) => {
       if (!activeChat) {

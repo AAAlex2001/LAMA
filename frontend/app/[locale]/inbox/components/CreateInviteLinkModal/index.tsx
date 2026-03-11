@@ -140,7 +140,6 @@ const CreateInviteLinkModal: React.FC<{
         expirationDateTime.setMilliseconds(0);
         expireDate = expirationDateTime.toISOString();
       }
-      console.log(previewData.hasCaptcha)
 
       const protectionType = previewData.hasCaptcha && previewData.connectionMethod === 'protection' ? 'captcha' as const : 'none' as const;
       const entryMethod = previewData.linkType === 'closed'

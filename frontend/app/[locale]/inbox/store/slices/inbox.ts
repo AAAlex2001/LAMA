@@ -31,7 +31,7 @@ export interface InboxState {
   currentView: InboxView;
   sort: SortInput;
   sortDir: 'new' | 'old';
-  statusFilter: 'new' | 'processed' | 'ignored' | null;
+  statusFilter: 'new' | 'processed' | 'banned' | null;
   botIds: number[] | null;
   channelIds: number[] | null;
   system: boolean | null;
@@ -112,7 +112,7 @@ const inboxSlice = createSlice({
         state.itemsHasMore = true;
       }
     },
-    setStatusFilter(state, action: PayloadAction<'new' | 'processed' | 'ignored' | null>) {
+    setStatusFilter(state, action: PayloadAction<'new' | 'processed' | 'banned' | null>) {
       if (state.statusFilter !== action.payload) {
         state.statusFilter = action.payload;
         state.items = [];
@@ -275,7 +275,7 @@ const inboxSlice = createSlice({
           }
         } else if (params.action === 'read' || params.action === 'ignore') {
           const idsToUpdate = new Set(params.event_ids);
-          const newStatus: BackendEventStatus = params.action === 'read' ? 'processed' : 'ignored';
+          const newStatus: BackendEventStatus = params.action === 'read' ? 'processed' : 'banned';
           state.items = state.items.map((item) =>
             idsToUpdate.has(item.id) || params.apply_to_all
               ? { ...item, status: newStatus, is_new: false }

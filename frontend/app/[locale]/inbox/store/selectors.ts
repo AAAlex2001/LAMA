@@ -25,7 +25,7 @@ export const selectSelectedFilter = (s: RootState): InboxState['selectedFilter']
 
 export const selectSortDir = (s: RootState): 'new' | 'old' => s.inbox.sortDir;
 
-export const selectStatusFilter = (s: RootState): 'new' | 'processed' | 'ignored' | null => s.inbox.statusFilter;
+export const selectStatusFilter = (s: RootState): 'new' | 'processed' | 'banned' | null => s.inbox.statusFilter;
 
 export const selectBotIds = (s: RootState): number[] | null => s.inbox.botIds;
 

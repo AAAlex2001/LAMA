@@ -18,7 +18,7 @@ export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
 type AutomationEventType = 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
 
-type ModerationStatusType = 'new' | 'processed' | 'ignored' | null;
+type ModerationStatusType = 'new' | 'processed' | 'banned' | null;
 
 interface ListHeaderProps {
   type: ListHeaderType;
@@ -61,7 +61,7 @@ const ListHeader: FC<ListHeaderProps> = ({
     { id: "all", label: "Все" },
     { id: "new", label: "Ожидают" },
     { id: "processed", label: "Обработанные" },
-    { id: "ingnored", label: "Заблокированные" },
+    // { id: "banned", label: "Заблокированные" },
   ];
 
   const filterOptionsAutomation = [
@@ -107,7 +107,7 @@ const ListHeader: FC<ListHeaderProps> = ({
         return 'new';
       case 'processed':
         return 'processed';
-      case 'ignored':
+      case 'banned':
         return 'ingnored';
       default:
         return 'all';
@@ -123,7 +123,7 @@ const ListHeader: FC<ListHeaderProps> = ({
         onModerationSubFilterChange?.('processed');
         break;
       case 'ingnored':
-        onModerationSubFilterChange?.('ignored');
+        onModerationSubFilterChange?.('banned');
         break;
       default:
         onModerationSubFilterChange?.(null);
@@ -156,9 +156,9 @@ const ListHeader: FC<ListHeaderProps> = ({
                     <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
                       Удалить
                     </Button>
-                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
+                    {/* <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                       Заблокировать
-                    </Button>
+                    </Button> */}
                     {/* <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                       <span className={buttonStyles.label}>Разблокировать</span>
                     </Button> */}

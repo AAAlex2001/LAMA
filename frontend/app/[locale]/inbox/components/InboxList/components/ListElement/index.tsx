@@ -8,7 +8,7 @@ import { CheckListIcon } from "@/components/icons";
 import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/BlockModal";
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
-import type { InboxEventResponse, EventType, InboxActionType } from "../../../../store/thunks/inboxEvents";
+import type { InboxEventResponse, EventType, InboxActionType, SpecificActionResponse } from "../../../../store/thunks/inboxEvents";
 import { useRouter } from "next/navigation";
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -59,6 +59,14 @@ const ListElement: FC<ListElementProps> = ({
 }) => {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
+  const [blockStatus, setBlockStatus] = useState<{
+    status: string;
+    bot_id: number | null;
+    tg_user_id: number | null;
+    chat_id: number | null;
+    message_id: number | null;
+    affected_channels: number[] | null;
+  } | null>(null);
   const router = useRouter();
 
   const longPressProps = useLongPress({
@@ -71,10 +79,26 @@ const ListElement: FC<ListElementProps> = ({
   const shouldEnableLongPress = type === 'all';
   const isProcessed = item.status === 'processed';
 
+  const saveActionResult = (response: SpecificActionResponse) => {
+    setBlockStatus({
+      status: response.status || "resolved",
+      bot_id: response.bot_id ?? null,
+      tg_user_id: response.tg_user_id ?? null,
+      chat_id: response.chat_id ?? null,
+      message_id: response.message_id ?? null,
+      affected_channels: response.affected_channels ?? null,
+    });
+  };
+
   const handleAction = async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
     const result = await onSpecificAction?.(item.id, actionType, payload);
-    if (actionType === 'reply' && result?.payload?.response) {
-      const { chat_id: chatId } = result.payload.response;
+    const response = result?.payload?.response as SpecificActionResponse | undefined;
+    if (!response) return;
+
+    saveActionResult(response);
+
+    if (actionType === 'reply') {
+      const chatId = response.chat_id;
       const messageId = item.payload?.message_id;
       const url = messageId
         ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
@@ -85,6 +109,10 @@ const ListElement: FC<ListElementProps> = ({
 
   const handleBlockSave = (data: BlockModalData) => {
     setIsBlockModalOpen(false);
+  };
+
+  const handleBlockModalResult = (response: SpecificActionResponse) => {
+    saveActionResult(response);
   };
 
   const renderSource = () => (
@@ -100,9 +128,21 @@ const ListElement: FC<ListElementProps> = ({
   const renderActions = (isMobile?: boolean) => {
     const btnClass = `${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`;
     const btnWidth = isMobile ? '100%' : '136px';
+    const status = blockStatus?.status;
 
     if (item.event_type === 'bot_command') {
-      console.log(item.payload);
+      if (status === 'resolved' || status === 'deleted' || status === 'blocked') return (
+        <>
+          <MobileWrapper className={styles.fullWidthMobile}>
+            <div className={styles.alignRightCheck}>
+              <CheckListIcon width={24} height={24} color="#3B82F6" />
+            </div>
+          </MobileWrapper>
+          <DesktopWrapper>
+            <CheckListIcon width={24} height={24} color="#3B82F6" />
+          </DesktopWrapper>
+        </>
+      );
       if (item.payload?.handled) {
         return (
           <>
@@ -133,7 +173,7 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'bot_message') {
-      if (isProcessed) {
+      if (status === 'replied' || isProcessed) {
         return <div className={styles.statusText}>Ответ отправлен</div>;
       }
       return (
@@ -146,7 +186,7 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_comment') {
-      if (isProcessed) {
+      if (status === 'replied' || isProcessed) {
         return <div className={styles.statusText}>Ответ отправлен</div>;
       }
       return (
@@ -159,10 +199,10 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_join_request') {
-      if (item.payload?.join_state === 'accepted') {
+      if (status === 'accepted' || item.payload?.join_state === 'accepted') {
         return <div className={styles.statusText}>Принята</div>;
       }
-      if (item.payload?.join_state === 'rejected') {
+      if (status === 'rejected' || item.payload?.join_state === 'rejected') {
         return <div className={`${styles.statusText} ${styles.declined}`}>Отклонена</div>;
       }
       return (
@@ -178,9 +218,9 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_link_join') {
-      if (isProcessed) {
-        return null;
-      }
+      if (status === 'accepted') return <div className={styles.statusText}>Принята</div>;
+      if (status === 'rejected') return <div className={`${styles.statusText} ${styles.declined}`}>Отклонена</div>;
+      if (isProcessed) return null;
       return (
         <div className={styles.actionButtons}>
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
@@ -194,9 +234,10 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_ban') {
-      if (isProcessed) {
-        return <span className={styles.statusText}>Разблокирован</span>;
-      }
+      if (status === 'unbanned') return <div className={styles.statusText}>Разблокирован</div>;
+      if (status === 'ban_updated') return <div className={styles.statusText}>Блокировка обновлена</div>;
+      if (status === 'blocked') return <div className={styles.statusText}>Заблокирован</div>;
+      if (isProcessed) return <span className={styles.statusText}>Разблокирован</span>;
       return (
         <div className={styles.actionButtons}>
           <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unban')} className={btnClass}>
@@ -218,16 +259,6 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'system_autoreply') {
-      // if (isProcessed) {
-      //   return <span className={styles.statusText}>Ответ отправлен</span>;
-      // }
-      // return (
-      //   <div className={styles.actionButtons}>
-      //     <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass}>
-      //       <span className={buttonStyles.label}>Ответить в боте</span>
-      //     </Button>
-      //   </div>
-      // );
       return null;
     }
 
@@ -255,6 +286,7 @@ const ListElement: FC<ListElementProps> = ({
         message={item.description || ''}
         eventId={item.id}
         onSave={handleBlockSave}
+        onActionResult={handleBlockModalResult}
       />
       <DesktopWrapper>
         <div className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>

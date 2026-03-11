@@ -17,7 +17,7 @@ export type EventType =
   | 'system_trigger'
   | 'system_autoreply'
   | 'system_update';
-export type EventStatus = 'new' | 'processed' | 'ignored';
+export type EventStatus = 'new' | 'processed' | 'banned';
 export type SortDir = 'new' | 'old';
 export type BulkActionType = 'read' | 'ignore' | 'delete' | 'block' | 'unblock';
 
@@ -188,7 +188,8 @@ export interface SpecificActionResponse {
   bot_id?: number;
   tg_user_id?: number;
   chat_id?: number;
-  affected_channels?: unknown;
+  message_id?: number;
+  affected_channels?: number[];
 }
 
 export const specificInboxActionThunk = createAsyncThunk(
