@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,18 +31,6 @@ async def create_series(
 async def update_series(
     series_id: int,
     data: PublicationSeriesUpdate,
-    db: AsyncSession = Depends(get_db),
+    service: SeriesService = Depends(get_series_service),
 ):
-    result = await db.execute(
-        select(PublicationSeries).where(PublicationSeries.id == series_id)
-    )
-    series = result.scalar_one_or_none()
-    if not series:
-        raise HTTPException(status_code=404, detail="Series not found")
-
-    for field, value in data.model_dump(exclude_unset=True).items():
-        setattr(series, field, value)
-
-    await db.commit()
-    await db.refresh(series)
-    return series
+    return await service.update_series(series_id, data)

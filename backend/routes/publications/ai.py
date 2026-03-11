@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from backend.schemas.publications.enums import PublicationStatus
@@ -83,7 +83,4 @@ async def edit_content_with_ai(
     current_user: User = Depends(get_current_user),
 ):
     payload = data.model_copy(update={"publication_id": publication_id})
-    publication = await service.edit_with_ai(payload, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
-    return publication
+    return await service.edit_with_ai(payload, owner_id=current_user.id)

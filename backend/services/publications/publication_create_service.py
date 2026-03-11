@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,7 +70,7 @@ class PublicationCreateService:
         if data.channel_ids:
             channels = await self._get_channels_by_ids(data.channel_ids, owner_id)
             if len(channels) != len(set(data.channel_ids)):
-                raise ValueError("One or more channels not found or do not belong to the user")
+                raise HTTPException(status_code=400, detail="One or more channels not found or do not belong to the user")
             publication.channels = channels
 
         if data.tag_names:

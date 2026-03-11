@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 import pytz
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.publications import Publication, PublicationNotification
+from backend.models.publications import Publication, PublicationNotification, PublicationStatus as DBPublicationStatus
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications.ai import AIGenerateRequest, AIEditRequest
 from backend.schemas.publications.enums import PublicationStatus, ContentType
@@ -182,7 +182,7 @@ class PublicationService:
     async def edit_with_ai(self, request: AIEditRequest, owner_id: Optional[int] = None):
         publication = await self.get_publication(request.publication_id, owner_id=owner_id)
         if not publication.text_content:
-            return None
+            raise HTTPException(status_code=400, detail="Publication has no text content to edit")
         edited = await self.ai.edit_content(publication.text_content, request.instruction)
         publication.text_content = edited
         publication.ai_generated = True
@@ -206,6 +206,20 @@ class PublicationService:
         await self.db.flush()
 
     # ── Publishing ──
+
+    async def prepare_for_publishing(self, publication_id: int, owner_id: Optional[int] = None) -> Publication:
+        """Подготавливает публикацию к отправке, проверяет каналы и меняет статус."""
+        publication = await self.query.get_publication(publication_id, owner_id)
+        if not publication:
+            raise HTTPException(status_code=404, detail="Publication not found")
+        if not publication.channels:
+            raise HTTPException(status_code=400, detail="No channels selected")
+
+        publication.status = DBPublicationStatus.SCHEDULED
+        publication.published_time = datetime.now(timezone.utc)
+        await self.db.commit()
+        await self.db.refresh(publication)
+        return publication
 
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> PublishResult:
         publication = await self.query.get_publication(publication_id, owner_id)
