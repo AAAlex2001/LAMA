@@ -48,8 +48,8 @@ export interface InviteLinkData {
   expirationDate?: string;
   expirationHours?: number;
   expirationMinutes?: number;
-  connectionMethod: 'hasCaptcha' | 'noCaptcha';
-  loginMethod: 'direct' | 'bot';
+  connectionMethod?: 'hasCaptcha' | 'noCaptcha';
+  loginMethod?: 'direct' | 'bot';
   joiningText?: string;
   applicationMethod?: 'direct' | 'bot';
   hasCaptcha?: boolean;
