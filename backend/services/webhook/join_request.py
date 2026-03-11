@@ -66,7 +66,7 @@ class JoinRequestHandler:
                     user_id=user_id,
                     chat_id=chat_id,
                     telegram_bot=telegram_bot,
-                    chat_type="private",
+                    chat_type=join_request.chat.type,
                     context={
                         "username": join_request.from_user.username,
                         "first_name": (
@@ -93,12 +93,12 @@ class JoinRequestHandler:
                     await self.db.commit()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    logger.info(
-                        f"Ручной режим одобрения для бота {self.bot_model.id}, "
-                        f"отправляем капчу"
-                    )
-                    await self.handle_manual_mode(telegram_bot, join_request)
-                    await self.create_join_event(join_request, status=EventStatus.NEW)
+                    captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+                    if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+                        await self.handle_manual_mode(telegram_bot, join_request)
+                        await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
+                    else:
+                        await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
 
                 elif (
@@ -122,7 +122,7 @@ class JoinRequestHandler:
                             user_id=user_id,
                             chat_id=chat_id,
                             telegram_bot=telegram_bot,
-                            chat_type="private",
+                            chat_type=join_request.chat.type,
                             context={
                                 "username": join_request.from_user.username,
                                 "first_name": (
@@ -261,10 +261,15 @@ class JoinRequestHandler:
                     link_name = db_link.name
                     requires_approval = db_link.creates_join_request
 
+            if join_state in ("captcha_pending", "auto_approved") or not requires_approval:
+                category = InboxCategory.SYSTEM
+            else:
+                category = InboxCategory.MODERATION
+
             inbox_service = InboxActionService(self.db)
             await inbox_service.create_event({
                 "owner_id": self.bot_model.owner_id,
-                "category": InboxCategory.MODERATION,
+                "category": category,
                 "entity_type": EntityType.CHANNEL,
                 "event_type": EventType.CHANNEL_JOIN_REQUEST,
                 "bot_id": self.bot_model.id,
@@ -318,39 +323,8 @@ class JoinRequestHandler:
                 await telegram_bot.approve_chat_join_request(
                     chat_id=chat_id, user_id=user_id
                 )
-                logger.info(
-                    f"Approved join request: user={user_id}, chat={chat_id}"
-                )
-
-                # Обновляем member_count для всех ссылок этого чата
-                await self.update_member_count(chat_id)
-
+                logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
                 return True
         except TelegramAPIError as e:
             logger.warning(f"Approve join request failed: {e}")
             return False
-
-    async def update_member_count(self, chat_id: int) -> None:
-        """Обновить member_count для всех invite links чата"""
-        try:
-            # Находим канал
-            query = select(ChannelGroup).where(
-                ChannelGroup.telegram_id == chat_id
-            )
-            result = await self.db.execute(query)
-            channel = result.scalar_one_or_none()
-
-            if not channel:
-                return
-
-            # Обновляем member_count для всех ссылок канала
-            stmt = (
-                update(ChatInviteLink)
-                .where(ChatInviteLink.channel_id == channel.id)
-                .values(member_count=ChatInviteLink.member_count + 1)
-            )
-            await self.db.execute(stmt)
-            await self.db.commit()
-            logger.info(f"Updated member_count for channel {channel.id}")
-        except Exception as e:
-            logger.warning(f"Failed to update member_count: {e}")

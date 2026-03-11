@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.types import ChatPermissions
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot
-from backend.models.channels import ChannelGroup
+from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
@@ -217,6 +217,16 @@ class InboxActionService:
                             user_id=event.tg_user_id,
                         )
                         join_state = "accepted"
+
+                        link_url = (event.payload or {}).get("link_url")
+                        if link_url:
+                            await self.db.execute(
+                                update(ChatInviteLink)
+                                .where(ChatInviteLink.invite_link == link_url)
+                                .values(member_count=ChatInviteLink.member_count + 1)
+                                .execution_options(synchronize_session=False)
+                            )
+                            logger.info(f"member_count +1 on accept for link {link_url}")
                     else:
                         await client.decline_chat_join_request(
                             chat_id=channel.telegram_id,

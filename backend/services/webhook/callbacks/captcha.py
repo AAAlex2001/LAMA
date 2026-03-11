@@ -1,9 +1,12 @@
 import logging
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, update
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 
+from backend.models.channels import ChannelGroup, ChatInviteLink
+from backend.models.inbox import InboxEvent
+from backend.schemas.inbox.enums import EventType
 from backend.services.bot import CaptchaService, TriggerService
 from backend.models.bots import PendingApproval, TriggerType
 from backend.services.webhook.base import get_bot_session
@@ -157,11 +160,54 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             await bot.approve_chat_join_request(
                 chat_id=pending.chat_id, user_id=pending.user_id
             )
+            await self.increment_member_count(pending.user_id, pending.chat_id)
         except TelegramAPIError as e:
             logger.warning(
                 f"Failed to approve join request "
                 f"for user {pending.user_id}: {e}"
             )
+
+    async def increment_member_count(self, user_id: int, chat_id: int) -> None:
+        try:
+            channel_result = await self.db.execute(
+                select(ChannelGroup.id).where(ChannelGroup.telegram_id == chat_id)
+            )
+            channel_id = channel_result.scalar_one_or_none()
+            if not channel_id:
+                return
+
+            event_result = await self.db.execute(
+                select(InboxEvent)
+                .where(
+                    InboxEvent.tg_user_id == user_id,
+                    InboxEvent.channel_id == channel_id,
+                    InboxEvent.event_type == EventType.CHANNEL_JOIN_REQUEST,
+                )
+                .order_by(InboxEvent.id.desc())
+                .limit(1)
+            )
+            event = event_result.scalar_one_or_none()
+            if not event or not event.payload:
+                return
+
+            link_url = event.payload.get("link_url")
+            if not link_url:
+                return
+
+            result = await self.db.execute(
+                update(ChatInviteLink)
+                .where(ChatInviteLink.invite_link == link_url)
+                .values(member_count=ChatInviteLink.member_count + 1)
+                .execution_options(synchronize_session=False)
+            )
+            if result.rowcount > 0:
+                await self.db.commit()
+                logger.info(f"member_count +1 after captcha for link {link_url}")
+            else:
+                logger.warning(f"No ChatInviteLink found for captcha url={link_url}")
+        except Exception as e:
+            await self.db.rollback()
+            logger.error(f"Failed to update member_count after captcha: {e}")
 
     async def delete_captcha_message(self, bot, message) -> None:
         """Удалить сообщение с капчей."""
