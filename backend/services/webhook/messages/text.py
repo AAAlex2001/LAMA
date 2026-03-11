@@ -82,6 +82,12 @@ class TextProcessor:
                 else:
                     media_group.append(InputMediaPhoto(media=url, caption=caption))
             await self.telegram_bot.send_media_group(chat_id=chat_id, media=media_group)
+            if reply_markup:
+                await self.telegram_bot.send_message(
+                    chat_id=chat_id,
+                    text="\u200b",
+                    reply_markup=reply_markup,
+                )
             return None
 
         if all_urls and media_type:

@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram.types import ChatPermissions
 from backend.models.inbox import InboxEvent
-from backend.models.bots import Bot
-from backend.models.channels import ChannelGroup
+from backend.models.bots import Bot, TriggerType
+from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
 from backend.services.webhook.base import get_bot_session
+from backend.services.bot import TriggerService
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +168,62 @@ class InboxActionService:
             new_payload["handled"] = True
             event.payload = new_payload
 
+    async def increment_link_counter(self, event: InboxEvent, channel: ChannelGroup) -> None:
+        """Инкрементировать member_count ссылки при принятии заявки."""
+        link_url = (event.payload or {}).get("link_url")
+        if not link_url:
+            return
+        try:
+            stmt = (
+                update(ChatInviteLink)
+                .where(ChatInviteLink.invite_link == link_url)
+                .values(member_count=ChatInviteLink.member_count + 1)
+            )
+            res = await self.db.execute(stmt)
+            if res.rowcount > 0:
+                await self.db.commit()
+                logger.info(f"Admin accept: incremented member_count for {link_url}")
+                result = await self.db.execute(
+                    select(ChatInviteLink).where(ChatInviteLink.invite_link == link_url)
+                )
+                link = result.scalar_one_or_none()
+                if link and link.member_limit and link.member_count >= link.member_limit and not link.is_revoked:
+                    async with get_bot_session((await self.db.get(Bot, event.bot_id)).token) as bot:
+                        try:
+                            await bot.revoke_chat_invite_link(
+                                chat_id=channel.telegram_id, invite_link=link_url,
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to revoke link: {e}")
+                    link.is_revoked = True
+                    await self.db.commit()
+        except Exception as e:
+            logger.error(f"increment_link_counter failed: {e}")
+
+    async def fire_join_trigger(
+        self, bot: Bot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
+    ) -> None:
+        """Запустить триггер при принятии/отклонении заявки из инбокса."""
+        try:
+            trigger_service = TriggerService(self.db)
+            async with get_bot_session(bot.token) as telegram_bot:
+                await trigger_service.fire_event(
+                    bot_id=bot.id,
+                    trigger_type=trigger_type,
+                    user_id=event.tg_user_id,
+                    chat_id=channel.telegram_id,
+                    telegram_bot=telegram_bot,
+                    chat_type="supergroup",
+                    context={
+                        "username": event.tg_username,
+                        "first_name": (event.payload or {}).get("first_name"),
+                        "chat_title": (event.payload or {}).get("chat_title"),
+                        "admin_action": True,
+                    },
+                )
+        except Exception as e:
+            logger.error(f"fire_join_trigger failed: {e}")
+
     async def execute_specific_action(
         self, event: InboxEvent, action_type: str, payload: dict = None
     ) -> Optional[SpecificActionResult]:
@@ -227,12 +284,15 @@ class InboxActionService:
                             user_id=event.tg_user_id,
                         )
                         join_state = "accepted"
+                        trigger_type = TriggerType.JOIN_REQUEST_APPROVED
+                        await self.increment_link_counter(event, channel)
                     else:
                         await client.decline_chat_join_request(
                             chat_id=channel.telegram_id,
                             user_id=event.tg_user_id,
                         )
                         join_state = "rejected"
+                        trigger_type = TriggerType.JOIN_REQUEST_REJECTED
 
                     new_payload = dict(event.payload or {})
                     new_payload["join_state"] = join_state
@@ -240,6 +300,11 @@ class InboxActionService:
                     event.status = EventStatus.PROCESSED
                     self.mark_payload_handled(event)
                     await self.db.commit()
+
+                    await self.fire_join_trigger(
+                        bot, trigger_type, event, channel,
+                    )
+
                     return SpecificActionResult(status=join_state)
 
                 if action_type == "unban":

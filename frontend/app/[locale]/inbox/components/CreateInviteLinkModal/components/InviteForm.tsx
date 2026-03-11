@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Checkbox } from '@/components/checkbox';
 import { DatePicker } from '@/components/date-picker';
@@ -76,6 +76,17 @@ const InviteForm: React.FC<InviteFormProps> = ({
   const filteredChannels = channels.filter((channel) =>
     channel.title.toLowerCase().includes(channelSearch.toLowerCase())
   );
+
+  useEffect(() => {
+    if (linkType === 'closed') {
+      dispatch(setConnectionMethod('noCaptcha'));
+      dispatch(setLoginMethod('direct'));
+    }
+    if (linkType === 'open') {
+      dispatch(setConnectionMethod('noCaptcha'));
+      dispatch(setLoginMethod('direct'));
+    }
+  }, [linkType, dispatch]);
 
   const handleSubmit = () => {
       if (editingLinkId && onEditingConfirm) {
@@ -235,51 +246,54 @@ const InviteForm: React.FC<InviteFormProps> = ({
         )}
       </div>
 
-      <div className={styles.sectionTitle}>Способ подключения</div>
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Защита:</div>
-        <div className={styles.radioGroup}>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={connectionMethod === 'noCaptcha'}
-              onChange={() => dispatch(setConnectionMethod('noCaptcha'))}
-            />
-            <span className={styles.channelItemName}>Без капчи</span>
+      {linkType === 'open' && (
+        <>
+          <div className={styles.sectionTitle}>Способ подключения</div>
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Защита:</div>
+            <div className={styles.radioGroup}>
+              <div className={styles.radioGroupItem}>
+                <Checkbox
+                  variant="radio"
+                  checked={connectionMethod === 'noCaptcha'}
+                  onChange={() => dispatch(setConnectionMethod('noCaptcha'))}
+                />
+                <span className={styles.channelItemName}>Без капчи</span>
+              </div>
+              <div className={styles.radioGroupItem}>
+                <Checkbox
+                  variant="radio"
+                  checked={connectionMethod === 'hasCaptcha'}
+                  onChange={() => dispatch(setConnectionMethod('hasCaptcha'))}
+                />
+                <span className={styles.channelItemName}>С капчей</span>
+              </div>
+            </div>
           </div>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={connectionMethod === 'hasCaptcha'}
-              onChange={() => dispatch(setConnectionMethod('hasCaptcha'))}
-            />
-            <span className={styles.channelItemName}>С капчей</span>
-          </div>
-        </div>
-      </div>
 
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Способ входа</div>
-        <div className={styles.radioGroup}>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={loginMethod === 'direct'}
-              onChange={() => dispatch(setLoginMethod('direct'))}
-            />
-            <span className={styles.channelItemName}>Прямая ссылка</span>
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Способ входа</div>
+            <div className={styles.radioGroup}>
+              <div className={styles.radioGroupItem}>
+                <Checkbox
+                  variant="radio"
+                  checked={loginMethod === 'direct'}
+                  onChange={() => dispatch(setLoginMethod('direct'))}
+                />
+                <span className={styles.channelItemName}>Прямая ссылка</span>
+              </div>
+              <div className={styles.radioGroupItem}>
+                <Checkbox
+                  variant="radio"
+                  checked={loginMethod === 'bot'}
+                  onChange={() => dispatch(setLoginMethod('bot'))}
+                />
+                <span className={styles.channelItemName}>Через приветственного бота</span>
+              </div>
+            </div>
           </div>
-          <div className={styles.radioGroupItem}>
-            <Checkbox
-              variant="radio"
-              checked={loginMethod === 'bot'}
-              onChange={() => dispatch(setLoginMethod('bot'))}
-            />
-            <span className={styles.channelItemName}>Через приветственного бота</span>
-          </div>
-        </div>
-      </div>
-
+        </>
+      )}
       {linkType === 'closed' && (
         <>
           <div className={styles.section}>

@@ -12,6 +12,7 @@ from backend.schemas.bots.messages import SendMessageRequest
 from backend.schemas.direct.message import EditMessageRequest
 from backend.services.publications.utils.media_utils import is_audio_url, is_document_url, is_video_url
 from backend.services.webhook.base import get_bot_session
+from backend.utils.keyboard import build_keyboard
 from backend.websockets.manager import ws_manager
 
 logger = logging.getLogger(__name__)
@@ -221,6 +222,8 @@ class DirectMessageService:
         if request.reply_to_message_id:
             reply_params["reply_to_message_id"] = request.reply_to_message_id
 
+        reply_markup = build_keyboard(request.buttons) if request.buttons else None
+
         media_urls = self.get_request_media_urls(request)
         tg_responses: List[Message] = []
         try:
@@ -236,25 +239,25 @@ class DirectMessageService:
                     message_type = request.media_type or self.detect_media_type(media_url)
 
                     if message_type == MessageType.PHOTO:
-                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.VIDEO:
-                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.DOCUMENT:
-                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.AUDIO:
-                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.VOICE:
-                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.ANIMATION:
-                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media_url, caption=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.STICKER:
-                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media_url, **reply_params)]
+                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media_url, reply_markup=reply_markup, **reply_params)]
                     elif request.text_content:
-                        tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, **reply_params)]
+                        tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
                     else:
                         return []
                 elif request.text_content:
-                    tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, **reply_params)]
+                    tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
 
             if not tg_responses:
                 return []

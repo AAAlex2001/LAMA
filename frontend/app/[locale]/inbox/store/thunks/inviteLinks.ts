@@ -31,7 +31,9 @@ export const createInviteLinkThunk = createAsyncThunk(
         expireDate = expirationDateTime.toISOString();
       }
 
-      const protectionType = data.hasCaptcha || data.connectionMethod === 'hasCaptcha' ? 'captcha' : 'none';
+      const protectionType = data.linkType === 'closed'
+        ? (data.hasCaptcha ? 'captcha' : 'none')
+        : (data.connectionMethod === 'hasCaptcha' ? 'captcha' : 'none');
       const entryMethod = data.linkType === 'closed'
         ? (data.applicationMethod || 'direct')
         : (data.loginMethod || 'direct');
@@ -153,7 +155,7 @@ export interface PatchInviteLinkRequest {
   expire_date?: string | null;
   member_limit?: number;
   creates_join_request?: boolean;
-  protection_type?: 'none' | 'captcha';
+  protection_type?: 'none' | 'captcha' | 'admin';
   entry_method?: 'direct' | 'bot';
 }
 
