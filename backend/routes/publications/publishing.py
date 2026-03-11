@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.schemas.publications.common import RescheduleRequest
 from backend.schemas.publications.publication_response import PublicationResponse
@@ -24,19 +24,10 @@ async def publish_now(
     service: PublicationService = Depends(get_publication_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await service.get_publication(publication_id, owner_id=current_user.id)
-
-    if not publication.channels:
-        raise HTTPException(status_code=400, detail="No channels selected")
-
-    publication.status = DBPublicationStatus.SCHEDULED
-    publication.published_time = datetime.now(timezone.utc)
-    await service.db.commit()
+    publication = await service.prepare_for_publishing(publication_id, owner_id=current_user.id)
 
     publish_publication.apply_async(args=[publication_id], queue="high")
     logger.info("Publish queued (publication_id=%s)", publication_id)
-
-    await service.db.refresh(publication)
     return publication
 
 
@@ -60,8 +51,6 @@ async def edit_published_message(
     current_user: User = Depends(get_current_user),
 ):
     result = await service.edit_published_message(publication_id, data, owner_id=current_user.id)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error", "Edit failed"))
     return result
 
 
@@ -72,6 +61,4 @@ async def delete_telegram_messages(
     current_user: User = Depends(get_current_user),
 ):
     result = await service.delete_telegram_messages(publication_id, owner_id=current_user.id)
-    if not result.get("success"):
-        raise HTTPException(status_code=400, detail=result.get("error", "Delete failed"))
     return result

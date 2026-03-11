@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from backend.services.publications.telegram_sender import send_to_telegram
 from typing import Callable, Awaitable, Optional, List
 from sqlalchemy import select
@@ -11,6 +12,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
 )
 from backend.models.channels import ChannelGroup
+from backend.schemas.publications.series import PublicationSeriesUpdate
 from backend.schemas.publications import PublishResult, ChannelPublishResult
 from backend.services.telegram_client import RateLimitedBot
 
@@ -47,6 +49,23 @@ class SeriesService:
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+
+    async def update_series(
+        self,
+        series_id: int,
+        update_data: PublicationSeriesUpdate
+    ) -> PublicationSeries:
+        """Обновить серию публикаций"""
+        series = await self.get_series(series_id)
+        if not series:
+            raise HTTPException(status_code=404, detail="Series not found")
+        
+        for field, value in update_data.model_dump(exclude_unset=True).items():
+            setattr(series, field, value)
+            
+        await self.db.commit()
+        await self.db.refresh(series)
+        return series
 
     async def get_series_publications(
         self,
@@ -173,10 +192,10 @@ class SeriesService:
         if success_count > 0:
             publication.status = DBPublicationStatus.PUBLISHED
             publication.published_time = datetime.now(timezone.utc)
-            await self.db.commit()
         else:
             publication.status = DBPublicationStatus.FAILED
-            await self.db.commit()
+
+        await self.db.commit()
 
         return PublishResult(
             success=success_count > 0,

@@ -10,7 +10,11 @@ from backend.services.publications.template_service import TemplateService
 from backend.services.publications.sharing_service import SharingService
 from backend.services.publications.ai_service import AIService
 from backend.services.publications.series_service import SeriesService
+from backend.services.publications.tag_service import TagService
 
+
+async def get_tag_service(db: AsyncSession = Depends(get_db)) -> TagService:
+    return TagService(db)
 
 async def get_publication_service(db: AsyncSession = Depends(get_db)) -> PublicationService:
     return PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
