@@ -158,10 +158,10 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_join_request') {
-      if (isProcessed) {
+      if (item.payload?.join_state === 'accepted') {
         return <div className={styles.statusText}>Принята</div>;
       }
-      if (item.status === 'ignored') {
+      if (item.payload?.join_state === 'rejected') {
         return <div className={`${styles.statusText} ${styles.declined}`}>Отклонена</div>;
       }
       return (
