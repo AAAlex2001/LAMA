@@ -93,8 +93,10 @@ class JoinRequestHandler:
                     await self.db.commit()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
+                    link_has_captcha = await self.link_has_captcha(join_request)
                     captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-                    if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+
+                    if link_has_captcha and captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
                         await self.handle_manual_mode(telegram_bot, join_request)
                         await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
                     else:
@@ -138,6 +140,17 @@ class JoinRequestHandler:
 
         except Exception as e:
             logger.error(f"Join request error: {e}", exc_info=True)
+
+    async def link_has_captcha(self, join_request: ChatJoinRequest) -> bool:
+        """Проверяет, включена ли капча для конкретной пригласительной ссылки."""
+        if not (hasattr(join_request, "invite_link") and join_request.invite_link):
+            return False
+        result = await self.db.execute(
+            select(ChatInviteLink.protection_type)
+            .where(ChatInviteLink.invite_link == join_request.invite_link.invite_link)
+        )
+        protection_type = result.scalar_one_or_none()
+        return protection_type == "captcha"
 
     async def handle_manual_mode(
         self, telegram_bot, join_request: ChatJoinRequest

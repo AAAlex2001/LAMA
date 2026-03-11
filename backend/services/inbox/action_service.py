@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram.types import ChatPermissions
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot
-from backend.models.channels import ChannelGroup, ChatInviteLink
+from backend.models.channels import ChannelGroup
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
@@ -159,6 +159,14 @@ class InboxActionService:
         )
         return result.scalar_one_or_none()
 
+    def mark_payload_handled(self, event: InboxEvent) -> None:
+        """Пометить payload.handled = True при наличии этого поля (bot_command и др.)."""
+        p = event.payload
+        if p and "handled" in p:
+            new_payload = dict(p)
+            new_payload["handled"] = True
+            event.payload = new_payload
+
     async def execute_specific_action(
         self, event: InboxEvent, action_type: str, payload: dict = None
     ) -> Optional[SpecificActionResult]:
@@ -181,11 +189,13 @@ class InboxActionService:
 
         if action_type == "mark_resolved":
             event.status = EventStatus.PROCESSED
+            self.mark_payload_handled(event)
             await self.db.commit()
             return SpecificActionResult(status="resolved")
 
         if action_type == "reply":
             event.status = EventStatus.PROCESSED
+            self.mark_payload_handled(event)
             await self.db.commit()
             return SpecificActionResult(
                 status="reply",
@@ -217,15 +227,6 @@ class InboxActionService:
                             user_id=event.tg_user_id,
                         )
                         join_state = "accepted"
-
-                        link_url = (event.payload or {}).get("link_url")
-                        if link_url:
-                            await self.db.execute(
-                                update(ChatInviteLink)
-                                .where(ChatInviteLink.invite_link == link_url)
-                                .values(member_count=ChatInviteLink.member_count + 1)
-                                .execution_options(synchronize_session=False)
-                            )
                     else:
                         await client.decline_chat_join_request(
                             chat_id=channel.telegram_id,
@@ -237,6 +238,7 @@ class InboxActionService:
                     new_payload["join_state"] = join_state
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status=join_state)
 
@@ -285,6 +287,7 @@ class InboxActionService:
                     new_payload["is_unbanned"] = True
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status="unbanned")
 
@@ -299,6 +302,7 @@ class InboxActionService:
                             )
                         event.status = EventStatus.BANNED
                         await self.create_block_notification(event)
+                        self.mark_payload_handled(event)
                         await self.db.commit()
                         return SpecificActionResult(status="blocked")
 
@@ -317,6 +321,7 @@ class InboxActionService:
 
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status="blocked")
 
@@ -351,6 +356,7 @@ class InboxActionService:
 
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status="deleted_and_blocked")
 
@@ -369,6 +375,7 @@ class InboxActionService:
                         message_id=msg_id,
                     )
                     event.status = EventStatus.PROCESSED
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status="deleted")
 
@@ -439,6 +446,7 @@ class InboxActionService:
                     new_payload["is_unbanned"] = False
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
+                    self.mark_payload_handled(event)
                     await self.db.commit()
                     return SpecificActionResult(status="ban_updated", affected_channels=affected)
 

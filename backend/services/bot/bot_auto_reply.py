@@ -24,6 +24,7 @@ class BotAutoReplyService:
             keywords=data.keywords,
             response_text=data.response_text,
             response_media_url=data.response_media_url,
+            response_media_urls=data.response_media_urls,
             response_media_type=data.response_media_type,
             response_buttons=data.response_buttons,
             scope=data.scope,

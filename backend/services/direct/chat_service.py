@@ -214,20 +214,20 @@ class DirectChatService:
         if around_message_id:
             half = limit // 2
             target = await self.db.execute(
-                select(BotMessage).where(base_filter, BotMessage.id == around_message_id)
+                select(BotMessage).where(base_filter, BotMessage.telegram_message_id == around_message_id)
             )
             target_msg = target.scalar_one_or_none()
             if target_msg:
                 before_q = (
                     select(BotMessage)
-                    .where(base_filter, BotMessage.created_at <= target_msg.created_at)
-                    .order_by(desc(BotMessage.created_at))
+                    .where(base_filter, BotMessage.id <= target_msg.id)
+                    .order_by(desc(BotMessage.id))
                     .limit(half + 1)
                 )
                 after_q = (
                     select(BotMessage)
-                    .where(base_filter, BotMessage.created_at > target_msg.created_at)
-                    .order_by(asc(BotMessage.created_at))
+                    .where(base_filter, BotMessage.id > target_msg.id)
+                    .order_by(asc(BotMessage.id))
                     .limit(half)
                 )
                 before = list((await self.db.execute(before_q)).scalars().all())

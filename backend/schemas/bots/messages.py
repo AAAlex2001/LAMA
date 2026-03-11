@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional, List, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from backend.models.bots import MessageType
 
@@ -16,7 +16,16 @@ class SendMessageRequest(BaseModel):
     media_urls: Optional[List[str]] = None
     media_type: Optional[MessageType] = None
     buttons: Optional[Dict[str, Any]] = None
+    inline_keyboard: Optional[Dict[str, Any]] = None
     reply_to_message_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def merge_buttons(self) -> "SendMessageRequest":
+        """Принимает кнопки из buttons или inline_keyboard (фронтенд)."""
+        if not self.buttons and self.inline_keyboard:
+            self.buttons = self.inline_keyboard
+        self.inline_keyboard = None
+        return self
 
 class BotMessageResponse(BaseModel):
     """Схема ответа сообщения бота"""
