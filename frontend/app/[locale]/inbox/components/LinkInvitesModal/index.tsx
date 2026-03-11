@@ -6,6 +6,7 @@ import { Button } from '@/components/new-button';
 import SearchBar from '@/components/search-bar/search-bar';
 import FilterTabsWithBadges from './components/FilterTabsWithBadges';
 import InvitationLinkItem from './components/InvitationLinkItem';
+import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 import { useAppSelector, useAppDispatch, fetchAllInviteLinksThunk, selectInbox } from '../../store';
 import type { InviteLink } from '@/types';
@@ -175,7 +176,9 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
 
           <div className={styles.linksList}>
             {isLoading ? (
-              <div className={styles.emptyState}>Загрузка...</div>
+              <div className={styles.emptyState}>
+                <Loader size={32} color="blue" />
+              </div>
             ) : !filteredLinks?.length ? (
               <div className={styles.emptyState}>Нет ссылок-приглашений</div>
             ) : (
