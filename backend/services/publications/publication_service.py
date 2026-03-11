@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 
 import pytz
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.publications import Publication, PublicationNotification
+from backend.models.publications import Publication, PublicationNotification, PublicationStatus as DBPublicationStatus
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications.ai import AIGenerateRequest, AIEditRequest
 from backend.schemas.publications.enums import PublicationStatus, ContentType
@@ -215,7 +215,7 @@ class PublicationService:
         if not publication.channels:
             raise HTTPException(status_code=400, detail="No channels selected")
 
-        publication.status = PublicationStatus.SCHEDULED
+        publication.status = DBPublicationStatus.SCHEDULED
         publication.published_time = datetime.now(timezone.utc)
         await self.db.commit()
         await self.db.refresh(publication)
