@@ -25,6 +25,8 @@ JOIN_REQUEST_TYPES = (
     TriggerType.JOIN_REQUEST_CREATED,
     TriggerType.JOIN_REQUEST_APPROVED,
     TriggerType.JOIN_REQUEST_REJECTED,
+    TriggerType.CAPTCHA_PASSED,
+    TriggerType.CAPTCHA_FAILED,
 )
 
 MEDIA_SEND_METHODS = {
@@ -161,7 +163,6 @@ class BotTriggerService:
 
         action_data = dict(trigger.action_data or {})
         action_data["context"] = context or {}
-        target = user_id if trigger.trigger_type in JOIN_REQUEST_TYPES else chat_id
 
         action_map = {
             TriggerActionType.SEND_MESSAGE: self.action_send_message,
@@ -171,7 +172,20 @@ class BotTriggerService:
         }
 
         handler = action_map.get(trigger.action_type)
-        if handler:
+        if not handler:
+            return
+
+        if trigger.trigger_type in JOIN_REQUEST_TYPES:
+            if trigger.chat_type == TriggerChatType.GROUP:
+                await handler(telegram_bot, chat_id, user_id, action_data)
+            elif trigger.chat_type == TriggerChatType.BOTH:
+                await handler(telegram_bot, user_id, user_id, action_data)
+                if chat_id and chat_id != user_id:
+                    await handler(telegram_bot, chat_id, user_id, action_data)
+            else:
+                await handler(telegram_bot, user_id, user_id, action_data)
+        else:
+            target = chat_id
             await handler(telegram_bot, target, user_id, action_data)
 
     async def get_pending_tasks(self, limit: int = 100) -> List[ScheduledTriggerTask]:
@@ -288,6 +302,8 @@ class BotTriggerService:
 
     def matches_chat_type(self, trigger: Trigger, chat_type: Optional[str]) -> bool:
         """Проверить совместимость типа чата с триггером."""
+        if trigger.trigger_type in JOIN_REQUEST_TYPES:
+            return True
         if not hasattr(trigger, "chat_type") or trigger.chat_type == TriggerChatType.BOTH:
             return True
         if not chat_type:

@@ -269,7 +269,7 @@ class CommandProcessor:
 
                     await inbox_service.create_event(event_data={
                         "owner_id": self.bot_model.owner_id,
-                        "category": InboxCategory.MODERATION,
+                          "category": InboxCategory.SYSTEM,
                         "entity_type": EntityType.CHANNEL,
                         "event_type": EventType.CHANNEL_BAN,
                         "bot_id": self.bot_model.id,

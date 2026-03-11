@@ -1,10 +1,13 @@
 import logging
 from typing import Optional
-from sqlalchemy import select
+from sqlalchemy import select, update
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 from backend.services.bot import CaptchaService, TriggerService
 from backend.models.bots import PendingApproval, TriggerType
+from backend.models.channels import ChatInviteLink, ChannelGroup
+from backend.models.inbox import InboxEvent
+from backend.schemas.inbox.enums import EventType, EventStatus
 from backend.services.webhook.base import get_bot_session
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.services.webhook.callbacks.base import BaseCallbackProcessor
@@ -38,11 +41,10 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 
+        group_chat_id = await self.get_pending_chat_id(pending_id)
+
         async with get_bot_session(self.bot_model.token) as bot:
             user_id = callback_query.from_user.id
-            chat_id = (
-                callback_query.message.chat.id if callback_query.message else 0
-            )
 
             if is_correct:
                 await self.answer_callback(
@@ -51,14 +53,18 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
                     "✅ Правильно! Заявка одобрена.",
                     True,
                 )
-                await self.approve_join_request(bot, pending_id)
+                pending = await self.approve_join_request(bot, pending_id)
+                if pending:
+                    await self.increment_member_count(pending.user_id, pending.chat_id)
+                    await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
+                    group_chat_id = pending.chat_id
                 await self.fire_captcha_trigger(
                     bot,
                     user_id,
-                    chat_id,
+                    group_chat_id,
                     TriggerType.CAPTCHA_PASSED,
                     pending_id,
-                    "private",
+                    "supergroup",
                 )
             elif reason == "not_allowed":
                 await self.answer_callback(
@@ -74,10 +80,10 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
                 await self.fire_captcha_trigger(
                     bot,
                     user_id,
-                    chat_id,
+                    group_chat_id,
                     TriggerType.CAPTCHA_FAILED,
                     pending_id,
-                    "private",
+                    "supergroup",
                     user_answer,
                 )
 
@@ -144,23 +150,125 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
                     user_answer,
                 )
 
-    async def approve_join_request(self, bot, pending_id: int) -> None:
-        """Одобрить заявку на вступление."""
+    async def get_pending_chat_id(self, pending_id: int) -> int:
+        """Получить chat_id группы из PendingApproval."""
+        result = await self.db.execute(
+            select(PendingApproval.chat_id).where(PendingApproval.id == pending_id)
+        )
+        return result.scalar_one_or_none() or 0
+
+    async def approve_join_request(self, bot, pending_id: int) -> Optional[PendingApproval]:
+        """Одобрить заявку на вступление. Возвращает PendingApproval."""
         query = select(PendingApproval).where(PendingApproval.id == pending_id)
         result = await self.db.execute(query)
         pending = result.scalar_one_or_none()
         if not pending:
             logger.warning(f"PendingApproval {pending_id} not found")
-            return
+            return None
         try:
             await bot.approve_chat_join_request(
                 chat_id=pending.chat_id, user_id=pending.user_id
             )
+            return pending
         except TelegramAPIError as e:
             logger.warning(
                 f"Failed to approve join request "
                 f"for user {pending.user_id}: {e}"
             )
+            return None
+
+    async def increment_member_count(self, user_id: int, telegram_chat_id: int) -> None:
+        """Инкрементировать member_count ссылки по данным InboxEvent."""
+        try:
+            channel_result = await self.db.execute(
+                select(ChannelGroup.id).where(ChannelGroup.telegram_id == telegram_chat_id)
+            )
+            channel_id = channel_result.scalar_one_or_none()
+            if not channel_id:
+                return
+
+            result = await self.db.execute(
+                select(InboxEvent)
+                .where(
+                    InboxEvent.tg_user_id == user_id,
+                    InboxEvent.channel_id == channel_id,
+                    InboxEvent.event_type == EventType.CHANNEL_JOIN_REQUEST,
+                )
+                .order_by(InboxEvent.id.desc())
+                .limit(1)
+            )
+            event = result.scalar_one_or_none()
+            link_url = (event.payload or {}).get("link_url") if event else None
+            if not link_url:
+                return
+
+            stmt = (
+                update(ChatInviteLink)
+                .where(ChatInviteLink.invite_link == link_url)
+                .values(member_count=ChatInviteLink.member_count + 1)
+            )
+            res = await self.db.execute(stmt)
+            if res.rowcount > 0:
+                await self.db.commit()
+                logger.info(f"Captcha approval: incremented member_count for {link_url}")
+                await self.check_and_revoke_link(link_url, telegram_chat_id)
+        except Exception as e:
+            logger.error(f"increment_member_count failed: {e}")
+            await self.db.rollback()
+
+    async def check_and_revoke_link(self, invite_link_url: str, chat_id: int) -> None:
+        """Автоотзыв ссылки при достижении лимита."""
+        try:
+            result = await self.db.execute(
+                select(ChatInviteLink).where(ChatInviteLink.invite_link == invite_link_url)
+            )
+            link = result.scalar_one_or_none()
+            if not link or not link.member_limit:
+                return
+            if link.member_count >= link.member_limit and not link.is_revoked:
+                async with get_bot_session(self.bot_model.token) as bot:
+                    try:
+                        await bot.revoke_chat_invite_link(
+                            chat_id=chat_id, invite_link=invite_link_url,
+                        )
+                    except TelegramAPIError as e:
+                        logger.warning(f"Failed to revoke link: {e}")
+                link.is_revoked = True
+                await self.db.commit()
+                logger.info(f"Auto-revoked link {invite_link_url}")
+        except Exception as e:
+            logger.error(f"check_and_revoke_link failed: {e}")
+
+    async def mark_join_event_accepted(self, user_id: int, telegram_chat_id: int) -> None:
+        """Пометить InboxEvent заявки как принятую после капчи."""
+        try:
+            channel_result = await self.db.execute(
+                select(ChannelGroup.id).where(ChannelGroup.telegram_id == telegram_chat_id)
+            )
+            channel_id = channel_result.scalar_one_or_none()
+            if not channel_id:
+                return
+
+            result = await self.db.execute(
+                select(InboxEvent)
+                .where(
+                    InboxEvent.tg_user_id == user_id,
+                    InboxEvent.channel_id == channel_id,
+                    InboxEvent.event_type == EventType.CHANNEL_JOIN_REQUEST,
+                )
+                .order_by(InboxEvent.id.desc())
+                .limit(1)
+            )
+            event = result.scalar_one_or_none()
+            if event:
+                new_payload = dict(event.payload or {})
+                new_payload["join_state"] = "accepted"
+                event.payload = new_payload
+                event.status = EventStatus.PROCESSED
+                await self.db.commit()
+        except Exception as e:
+            logger.error(f"mark_join_event_accepted failed: {e}")
+            await self.db.rollback()
 
     async def delete_captcha_message(self, bot, message) -> None:
         """Удалить сообщение с капчей."""

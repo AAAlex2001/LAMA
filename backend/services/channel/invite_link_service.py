@@ -164,7 +164,7 @@ class InviteLinkService:
         query = (
             select(ChatInviteLink)
             .where(ChatInviteLink.channel_id == channel_id)
-            .order_by(ChatInviteLink.created_at.desc())
+            .order_by(ChatInviteLink.id.desc())
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())

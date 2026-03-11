@@ -17,8 +17,15 @@ from backend.models.bots import (
     PendingJoinApproval,
     TriggerType,
 )
-from backend.schemas.inbox.enums import EventType
+from backend.schemas.inbox.enums import (
+    InboxCategory,
+    EntityType,
+    EventType,
+    EventStatus,
+)
 from backend.services.bot import TriggerService
+from backend.services.inbox.action_service import InboxActionService
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
@@ -42,6 +49,9 @@ class SubscriptionHandler:
         user_id = chat_member.from_user.id
         chat_id = chat_member.chat.id
 
+        if user_id == self.bot_model.telegram_id:
+            return
+
         logger.info(
             f"Subscription change: user={user_id} chat={chat_id} "
             f"status: {old_status} -> {new_status} "
@@ -53,15 +63,58 @@ class SubscriptionHandler:
             old_status == "restricted" and getattr(chat_member.old_chat_member, "is_member", False)
         )
 
-        is_new_join = (
-            new_status in ("member", "administrator", "creator", "restricted")
-            and not old_is_active
+        new_is_member = new_status in ("member", "administrator", "creator") or (
+            new_status == "restricted" and getattr(chat_member.new_chat_member, "is_member", False)
         )
+
+        is_new_join = new_is_member and not old_is_active
 
         if not is_new_join:
             return
 
         await self.update_member_count(chat_member)
+
+        is_direct_link_join = (
+            chat_member.invite_link is None
+            or not getattr(chat_member.invite_link, "creates_join_request", False)
+        )
+
+        if is_direct_link_join:
+            link_val = chat_member.invite_link.invite_link if chat_member.invite_link else None
+            await self.create_link_join_event(chat_member, link_val)
+            async with get_bot_session(self.bot_model.token) as telegram_bot:
+                await self.trigger_service.fire_event(
+                    bot_id=self.bot_model.id,
+                    trigger_type=TriggerType.JOIN_REQUEST_CREATED,
+                    user_id=user_id,
+                    chat_id=chat_id,
+                    telegram_bot=telegram_bot,
+                    chat_type=chat_member.chat.type,
+                    context={
+                        "username": chat_member.from_user.username,
+                        "first_name": chat_member.from_user.first_name,
+                        "chat_title": chat_member.chat.title,
+                        "link_url": link_val,
+                    },
+                )
+                await self.trigger_service.fire_event(
+                    bot_id=self.bot_model.id,
+                    trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                    user_id=user_id,
+                    chat_id=chat_id,
+                    telegram_bot=telegram_bot,
+                    chat_type=chat_member.chat.type,
+                    context={
+                        "username": chat_member.from_user.username,
+                        "first_name": chat_member.from_user.first_name,
+                        "chat_title": chat_member.chat.title,
+                        "auto_approved": True,
+                        "link_url": link_val,
+                    },
+                )
+        else:
+            await self.mark_join_event_accepted(user_id, chat_id)
+
         await self.handle_subscription(chat_member, user_id, chat_id)
 
     async def update_member_count(self, chat_member: ChatMemberUpdated) -> None:
@@ -89,9 +142,107 @@ class SubscriptionHandler:
             result = await self.db.execute(stmt)
             if result.rowcount > 0:
                 await self.db.commit()
+                logger.info(f"Incremented member_count for link {invite_link_url}")
+                await self.check_and_revoke_link(invite_link_url, chat_id)
+            else:
+                logger.warning(f"Link not found in DB for counter update: {invite_link_url}")
         except Exception as e:
             await self.db.rollback()
             logger.error(f"Failed to increment member_count for {invite_link_url}: {e}")
+
+    async def check_and_revoke_link(self, invite_link_url: str, chat_id: int) -> None:
+        """Автоотзыв ссылки при достижении лимита."""
+        try:
+            result = await self.db.execute(
+                select(ChatInviteLink).where(
+                    ChatInviteLink.invite_link == invite_link_url
+                )
+            )
+            link = result.scalar_one_or_none()
+            if not link or not link.member_limit:
+                return
+            if link.member_count >= link.member_limit and not link.is_revoked:
+                async with get_bot_session(self.bot_model.token) as bot:
+                    try:
+                        await bot.revoke_chat_invite_link(
+                            chat_id=chat_id,
+                            invite_link=invite_link_url,
+                        )
+                    except TelegramAPIError as e:
+                        logger.warning(f"Failed to revoke link via Telegram: {e}")
+                link.is_revoked = True
+                await self.db.commit()
+                logger.info(
+                    f"Auto-revoked link {invite_link_url}: "
+                    f"count={link.member_count}, limit={link.member_limit}"
+                )
+        except Exception as e:
+            logger.error(f"check_and_revoke_link failed: {e}")
+
+    async def create_link_join_event(
+        self, chat_member: ChatMemberUpdated, link_url: str | None
+    ) -> None:
+        """Создать InboxEvent для вступления по открытой ссылке (автопринятие)."""
+        try:
+            channel = await get_channel_by_telegram_id(self.db, chat_member.chat.id)
+            channel_id = channel.id if channel else None
+
+            link_id = None
+            link_name = None
+            protection_type = "none"
+            if link_url:
+                result = await self.db.execute(
+                    select(ChatInviteLink).where(
+                        ChatInviteLink.invite_link == link_url
+                    )
+                )
+                db_link = result.scalar_one_or_none()
+                if db_link:
+                    link_id = db_link.id
+                    link_name = db_link.name
+                    protection_type = db_link.protection_type or "none"
+
+            is_protected = protection_type != "none"
+            if is_protected:
+                status = EventStatus.NEW
+                join_state = "pending"
+                description = (
+                    f"Заявка от @{chat_member.from_user.username or chat_member.from_user.id} "
+                    f"на вступление в {chat_member.chat.title}"
+                )
+            else:
+                status = EventStatus.PROCESSED
+                join_state = "accepted"
+                description = (
+                    f"@{chat_member.from_user.username or chat_member.from_user.id} "
+                    f"вступил в {chat_member.chat.title}"
+                )
+
+            inbox_service = InboxActionService(self.db)
+            await inbox_service.create_event({
+                "owner_id": self.bot_model.owner_id,
+                "category": InboxCategory.MODERATION,
+                "entity_type": EntityType.CHANNEL,
+                "event_type": EventType.CHANNEL_JOIN_REQUEST,
+                "bot_id": self.bot_model.id,
+                "channel_id": channel_id,
+                "tg_user_id": chat_member.from_user.id,
+                "tg_username": chat_member.from_user.username,
+                "status": status,
+                "description": description,
+                "payload": {
+                    "join_state": join_state,
+                    "requires_approval": is_protected,
+                    "link_id": link_id,
+                    "link_name": link_name,
+                    "link_url": link_url,
+                    "chat_title": chat_member.chat.title,
+                    "first_name": chat_member.from_user.first_name,
+                    "protection_type": protection_type,
+                },
+            })
+        except Exception as e:
+            logger.error(f"Failed to create link_join inbox event: {e}", exc_info=True)
 
     async def find_link_url_from_inbox(self, user_id: int, telegram_chat_id: int) -> str | None:
         """Ищет URL инвайт-ссылки в последних InboxEvent для заданного пользователя и чата."""
@@ -172,6 +323,8 @@ class SubscriptionHandler:
                                 },
                             )
 
+                            await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
+
                         except (TelegramAPIError, asyncio.TimeoutError) as e:
                             logger.warning(
                                 f"Failed to approve join request: {e}"
@@ -183,4 +336,34 @@ class SubscriptionHandler:
 
         except Exception as e:
             logger.error(f"Subscription processing error: {e}", exc_info=True)
+
+    async def mark_join_event_accepted(self, user_id: int, chat_id: int) -> None:
+        """Помечает последний InboxEvent заявки пользователя как принятую."""
+        try:
+            channel_result = await self.db.execute(
+                select(ChannelGroup.id).where(ChannelGroup.telegram_id == chat_id)
+            )
+            channel_id = channel_result.scalar_one_or_none()
+            if not channel_id:
+                return
+
+            result = await self.db.execute(
+                select(InboxEvent)
+                .where(
+                    InboxEvent.tg_user_id == user_id,
+                    InboxEvent.channel_id == channel_id,
+                    InboxEvent.event_type == EventType.CHANNEL_JOIN_REQUEST,
+                )
+                .order_by(InboxEvent.id.desc())
+                .limit(1)
+            )
+            event = result.scalar_one_or_none()
+            if event:
+                new_payload = dict(event.payload or {})
+                new_payload["join_state"] = "accepted"
+                event.payload = new_payload
+                event.status = EventStatus.PROCESSED
+                await self.db.commit()
+        except Exception as e:
+            logger.error(f"mark_join_event_accepted failed: {e}")
             await self.db.rollback()
