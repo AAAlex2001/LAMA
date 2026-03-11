@@ -74,6 +74,15 @@ class SubscriptionHandler:
 
         await self.update_member_count(chat_member)
 
+        channel = await get_channel_by_telegram_id(self.db, chat_id)
+        channel_db_id = channel.id if channel else None
+
+        if await self.has_recent_join_event(user_id, channel_db_id):
+            logger.debug(
+                f"Skipping duplicate join processing: user={user_id}, channel={channel_db_id}"
+            )
+            return
+
         is_direct_link_join = (
             chat_member.invite_link is None
             or not getattr(chat_member.invite_link, "creates_join_request", False)
@@ -189,7 +198,6 @@ class SubscriptionHandler:
 
             link_id = None
             link_name = None
-            protection_type = "none"
             if link_url:
                 result = await self.db.execute(
                     select(ChatInviteLink).where(
@@ -200,23 +208,6 @@ class SubscriptionHandler:
                 if db_link:
                     link_id = db_link.id
                     link_name = db_link.name
-                    protection_type = db_link.protection_type or "none"
-
-            is_protected = protection_type != "none"
-            if is_protected:
-                status = EventStatus.NEW
-                join_state = "pending"
-                description = (
-                    f"Заявка от @{chat_member.from_user.username or chat_member.from_user.id} "
-                    f"на вступление в {chat_member.chat.title}"
-                )
-            else:
-                status = EventStatus.PROCESSED
-                join_state = "accepted"
-                description = (
-                    f"@{chat_member.from_user.username or chat_member.from_user.id} "
-                    f"вступил в {chat_member.chat.title}"
-                )
 
             inbox_service = InboxActionService(self.db)
             await inbox_service.create_event({
@@ -228,21 +219,45 @@ class SubscriptionHandler:
                 "channel_id": channel_id,
                 "tg_user_id": chat_member.from_user.id,
                 "tg_username": chat_member.from_user.username,
-                "status": status,
-                "description": description,
+                "status": EventStatus.PROCESSED,
+                "description": (
+                    f"@{chat_member.from_user.username or chat_member.from_user.id} "
+                    f"вступил в {chat_member.chat.title}"
+                ),
                 "payload": {
-                    "join_state": join_state,
-                    "requires_approval": is_protected,
+                    "join_state": "accepted",
+                    "requires_approval": False,
                     "link_id": link_id,
                     "link_name": link_name,
                     "link_url": link_url,
                     "chat_title": chat_member.chat.title,
                     "first_name": chat_member.from_user.first_name,
-                    "protection_type": protection_type,
                 },
             })
         except Exception as e:
             logger.error(f"Failed to create link_join inbox event: {e}", exc_info=True)
+
+    async def has_recent_join_event(self, user_id: int, channel_id: int | None) -> bool:
+        """Проверить, есть ли недавнее событие вступления для этого пользователя в канал."""
+        if not channel_id:
+            return False
+        try:
+            from datetime import datetime, timezone, timedelta
+            cutoff = datetime.now(timezone.utc) - timedelta(minutes=2)
+            result = await self.db.execute(
+                select(InboxEvent.id)
+                .where(
+                    InboxEvent.tg_user_id == user_id,
+                    InboxEvent.channel_id == channel_id,
+                    InboxEvent.event_type == EventType.CHANNEL_JOIN_REQUEST,
+                    InboxEvent.created_at >= cutoff,
+                )
+                .limit(1)
+            )
+            return result.scalar_one_or_none() is not None
+        except Exception as e:
+            logger.error(f"has_recent_join_event failed: {e}")
+            return False
 
     async def find_link_url_from_inbox(self, user_id: int, telegram_chat_id: int) -> str | None:
         """Ищет URL инвайт-ссылки в последних InboxEvent для заданного пользователя и чата."""

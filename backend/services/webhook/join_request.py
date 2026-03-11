@@ -102,6 +102,26 @@ class JoinRequestHandler:
                             await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
                         else:
                             await self.create_join_event(join_request, status=EventStatus.NEW)
+                    elif link_protection in (None, "none"):
+                        approved = await self.approve_join_request(chat_id, user_id)
+                        if approved:
+                            if hasattr(join_request, "invite_link") and join_request.invite_link:
+                                await self.increment_member_count(join_request.invite_link.invite_link)
+                            await self.trigger_service.fire_event(
+                                bot_id=self.bot_model.id,
+                                trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                                user_id=user_id,
+                                chat_id=chat_id,
+                                telegram_bot=telegram_bot,
+                                chat_type=join_request.chat.type,
+                                context={
+                                    "username": join_request.from_user.username,
+                                    "first_name": join_request.from_user.first_name,
+                                },
+                            )
+                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="accepted")
+                        else:
+                            await self.create_join_event(join_request, status=EventStatus.NEW)
                     else:
                         await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
@@ -121,6 +141,8 @@ class JoinRequestHandler:
                         chat_id, user_id
                     )
                     if approved:
+                        if hasattr(join_request, "invite_link") and join_request.invite_link:
+                            await self.increment_member_count(join_request.invite_link.invite_link)
                         await self.trigger_service.fire_event(
                             bot_id=self.bot_model.id,
                             trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
@@ -138,7 +160,7 @@ class JoinRequestHandler:
                         await self.create_join_event(
                             join_request,
                             status=EventStatus.PROCESSED,
-                            join_state="auto_approved",
+                            join_state="accepted",
                         )
 
         except Exception as e:
@@ -310,6 +332,22 @@ class JoinRequestHandler:
             })
         except Exception as e:
             logger.error(f"Failed to create join_request inbox event: {e}", exc_info=True)
+
+    async def increment_member_count(self, invite_link_url: str) -> None:
+        """Инкрементировать member_count ссылки при одобрении заявки."""
+        try:
+            stmt = (
+                update(ChatInviteLink)
+                .where(ChatInviteLink.invite_link == invite_link_url)
+                .values(member_count=ChatInviteLink.member_count + 1)
+            )
+            result = await self.db.execute(stmt)
+            if result.rowcount > 0:
+                await self.db.commit()
+                logger.info(f"Incremented member_count for {invite_link_url}")
+        except Exception as e:
+            logger.error(f"Failed to increment member_count: {e}")
+            await self.db.rollback()
 
     async def update_invite_link_metrics(self, invite_link_url: str) -> None:
         """Обновить метрику pending_join_request_count для invite link"""

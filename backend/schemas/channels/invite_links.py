@@ -9,7 +9,7 @@ class InviteLinkCreate(BaseModel):
     expire_date: Optional[datetime] = None
     member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: bool = False
-    protection_type: Literal["none", "captcha"] = "none"
+    protection_type: Literal["none", "captcha", "admin"] = "none"
     entry_method: Literal["direct", "bot"] = "direct"
 
 
@@ -19,7 +19,7 @@ class InviteLinkUpdate(BaseModel):
     expire_date: Optional[datetime] = None
     member_limit: Optional[int] = Field(None, ge=0, le=99999)
     creates_join_request: Optional[bool] = None
-    protection_type: Optional[Literal["none", "captcha"]] = None
+    protection_type: Optional[Literal["none", "captcha", "admin"]] = None
     entry_method: Optional[Literal["direct", "bot"]] = None
 
 
