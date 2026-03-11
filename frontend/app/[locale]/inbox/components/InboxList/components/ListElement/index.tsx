@@ -10,6 +10,7 @@ import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
 import type { InboxEventResponse, EventType, InboxActionType, SpecificActionResponse } from "../../../../store/thunks/inboxEvents";
 import { useRouter } from "next/navigation";
+import { useNotifications } from "@/components/notifications/NotificationProvider";
 
 const SOURCE_LABELS: Record<string, string> = {
   bot: 'Бот',
@@ -68,6 +69,7 @@ const ListElement: FC<ListElementProps> = ({
     affected_channels: number[] | null;
   } | null>(null);
   const router = useRouter();
+  const { showError } = useNotifications();
 
   const longPressProps = useLongPress({
     duration: 800,
@@ -91,19 +93,23 @@ const ListElement: FC<ListElementProps> = ({
   };
 
   const handleAction = async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
-    const result = await onSpecificAction?.(item.id, actionType, payload);
-    const response = result?.payload?.response as SpecificActionResponse | undefined;
-    if (!response) return;
+    try {
+      const result = await onSpecificAction?.(item.id, actionType, payload);
+      const response = result?.payload?.response as SpecificActionResponse | undefined;
+      if (!response) return;
 
-    saveActionResult(response);
+      saveActionResult(response);
 
-    if (actionType === 'reply') {
-      const chatId = response.chat_id;
-      const messageId = item.payload?.message_id;
-      const url = messageId
-        ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
-        : `/inbox/chat?chat_id=${chatId}`;
-      router.push(url);
+      if (actionType === 'reply') {
+        const chatId = response.chat_id;
+        const messageId = item.payload?.message_id;
+        const url = messageId
+          ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
+          : `/inbox/chat?chat_id=${chatId}`;
+        router.push(url);
+      }
+    } catch {
+      showError('Не удалось выполнить действие');
     }
   };
 

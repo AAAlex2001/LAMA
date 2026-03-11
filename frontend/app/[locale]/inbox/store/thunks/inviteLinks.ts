@@ -31,7 +31,7 @@ export const createInviteLinkThunk = createAsyncThunk(
         expireDate = expirationDateTime.toISOString();
       }
 
-      const protectionType = data.hasCaptcha || data.connectionMethod === 'protection' ? 'captcha' : 'none';
+      const protectionType = data.hasCaptcha || data.connectionMethod === 'hasCaptcha' ? 'captcha' : 'none';
       const entryMethod = data.linkType === 'closed'
         ? (data.applicationMethod || 'direct')
         : (data.loginMethod || 'direct');

@@ -9,6 +9,7 @@ import styles from './styles.module.scss';
 import { Button } from '@/components/new-button';
 import { useAppDispatch, useAppSelector, specificInboxActionThunk, selectSpecificActionLoading } from '../../store';
 import type { SpecificActionResponse } from '../../store/thunks/inboxEvents';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface BlockModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function BlockModal({
 }: BlockModalProps) {
   const dispatch = useAppDispatch();
   const isLoading = useAppSelector(selectSpecificActionLoading);
+  const { showError } = useNotifications();
   const [blockType, setBlockType] = useState<'ban' | 'mute'>('ban');
   const [days, setDays] = useState(6);
   const [hours, setHours] = useState(7);
@@ -80,8 +82,8 @@ export default function BlockModal({
         })).unwrap();
         onActionResult?.(result.response);
         onOpenChange?.(false);
-      } catch (error) {
-        console.error('Failed to update ban:', error);
+      } catch {
+        showError('Не удалось обновить блокировку');
       }
     } else {
       onSave?.(data);

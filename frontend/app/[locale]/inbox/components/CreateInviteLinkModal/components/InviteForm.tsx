@@ -235,24 +235,25 @@ const InviteForm: React.FC<InviteFormProps> = ({
         )}
       </div>
 
+      <div className={styles.sectionTitle}>Способ подключения</div>
       <div className={styles.section}>
-        <div className={styles.sectionTitle}>Способ подключения</div>
+        <div className={styles.sectionTitle}>Защита:</div>
         <div className={styles.radioGroup}>
           <div className={styles.radioGroupItem}>
             <Checkbox
               variant="radio"
-              checked={connectionMethod === 'protection'}
-              onChange={() => dispatch(setConnectionMethod('protection'))}
+              checked={connectionMethod === 'noCaptcha'}
+              onChange={() => dispatch(setConnectionMethod('noCaptcha'))}
             />
-            <span className={styles.channelItemName}>Защита</span>
+            <span className={styles.channelItemName}>Без капчи</span>
           </div>
           <div className={styles.radioGroupItem}>
             <Checkbox
               variant="radio"
-              checked={connectionMethod === 'normal'}
-              onChange={() => dispatch(setConnectionMethod('normal'))}
+              checked={connectionMethod === 'hasCaptcha'}
+              onChange={() => dispatch(setConnectionMethod('hasCaptcha'))}
             />
-            <span className={styles.channelItemName}>Обычная</span>
+            <span className={styles.channelItemName}>С капчей</span>
           </div>
         </div>
       </div>

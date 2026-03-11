@@ -17,7 +17,7 @@ export interface CreateInviteLinkModalState {
   expirationDate: string | null;
   expirationHours: number;
   expirationMinutes: number;
-  connectionMethod: 'protection' | 'normal';
+  connectionMethod: 'hasCaptcha' | 'noCaptcha';
   loginMethod: 'direct' | 'bot';
   joiningText: string;
   applicationMethod: 'direct' | 'bot';
@@ -42,7 +42,7 @@ const initialState: CreateInviteLinkModalState = {
   expirationDate: null,
   expirationHours: 0,
   expirationMinutes: 20,
-  connectionMethod: 'protection',
+  connectionMethod: 'hasCaptcha',
   loginMethod: 'direct',
   joiningText: '',
   applicationMethod: 'direct',
@@ -111,7 +111,7 @@ const createInviteLinkModalSlice = createSlice({
       state.expirationMinutes = action.payload;
     },
     
-    setConnectionMethod(state, action: PayloadAction<'protection' | 'normal'>) {
+    setConnectionMethod(state, action: PayloadAction<'hasCaptcha' | 'noCaptcha'>) {
       state.connectionMethod = action.payload;
     },
     
@@ -182,10 +182,10 @@ const createInviteLinkModalSlice = createSlice({
       }
 
       if (inviteLink.protection_type === 'captcha') {
-        state.connectionMethod = 'protection';
+        state.connectionMethod = 'hasCaptcha';
         state.hasCaptcha = true;
       } else {
-        state.connectionMethod = 'normal';
+        state.connectionMethod = 'noCaptcha';
         state.hasCaptcha = false;
       }
 

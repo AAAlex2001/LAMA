@@ -48,7 +48,7 @@ export interface InviteLinkData {
   expirationDate?: string;
   expirationHours?: number;
   expirationMinutes?: number;
-  connectionMethod: 'protection' | 'normal';
+  connectionMethod: 'hasCaptcha' | 'noCaptcha';
   loginMethod: 'direct' | 'bot';
   joiningText?: string;
   applicationMethod?: 'direct' | 'bot';
@@ -141,7 +141,7 @@ const CreateInviteLinkModal: React.FC<{
         expireDate = expirationDateTime.toISOString();
       }
 
-      const protectionType = previewData.hasCaptcha && previewData.connectionMethod === 'protection' ? 'captcha' as const : 'none' as const;
+      const protectionType = previewData.hasCaptcha || previewData.connectionMethod === 'hasCaptcha' ? 'captcha' as const : 'none' as const;
       const entryMethod = previewData.linkType === 'closed'
         ? (previewData.applicationMethod || 'direct') as 'direct' | 'bot'
         : (previewData.loginMethod || 'direct') as 'direct' | 'bot';

@@ -85,6 +85,12 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ value, on
     }
   }, [editingMessage, replyingTo]);
 
+  useEffect(() => {
+    if (mediaFiles.length > 1 && (inlineButtonsOpen || inlineButtonRows.length > 0)) {
+      resetInlineButtons();
+    }
+  }, [mediaFiles.length, inlineButtonsOpen, inlineButtonRows.length, resetInlineButtons]);
+
   const canShowInlineButtons = mediaFiles.length <= 1;
 
   useImperativeHandle(ref, () => ({
