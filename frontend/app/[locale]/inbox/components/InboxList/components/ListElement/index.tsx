@@ -103,9 +103,10 @@ const ListElement: FC<ListElementProps> = ({
       if (actionType === 'reply') {
         const chatId = response.chat_id;
         const messageId = item.payload?.message_id;
+        const botId = response.bot_id;
         const url = messageId
-          ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}`
-          : `/inbox/chat?chat_id=${chatId}`;
+          ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}&bot_id=${botId}`
+          : `/inbox/chat?chat_id=${chatId}&bot_id=${botId}`;
         router.push(url);
       }
     } catch {

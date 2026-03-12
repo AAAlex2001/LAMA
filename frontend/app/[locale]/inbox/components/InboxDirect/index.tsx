@@ -16,6 +16,8 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
   const messageId = searchParams?.get('message_id');
   const messageIdNumber = messageId ? parseInt(messageId, 10) : undefined;
+  const botIdParam = searchParams?.get('bot_id');
+  const botIdNumber = botIdParam ? parseInt(botIdParam, 10) : undefined;
 
   useEffect(() => {
     if (initialParamsProcessedRef.current) return;
@@ -32,18 +34,24 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
     if (chats.length > 0 && !chatsLoading) {
       initialParamsProcessedRef.current = true;
-      const chat = chats.find((c) => c.tg_chat_id === tgChatId);
+      const chat = chats.find((c) => {
+        const matchesChatId = c.tg_chat_id === tgChatId;
+        if (botIdNumber !== undefined) {
+          return matchesChatId && c.bot_id === botIdNumber;
+        }
+        return matchesChatId;
+      });
       if (chat) {
         setActiveChat(chat.id);
       }
     }
-  }, [searchParams, chats, chatsLoading, setActiveChat, fetchChats]);
+  }, [searchParams, chats, chatsLoading, setActiveChat, fetchChats, botIdNumber]);
 
   const handleChatOpen = (chatId: number) => {
     setActiveChat(chatId);
     const chat = chats.find((c) => c.id === chatId);
     if (chat) {
-      router.push("/inbox/chat?chat_id=" + chat.tg_chat_id);
+      router.push(`/inbox/chat?chat_id=${chat.tg_chat_id}&bot_id=${chat.bot_id}`);
     }
   };
 
@@ -59,8 +67,11 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
   const handleReplySent = () => {
     const chatIdParam = searchParams?.get('chat_id');
-    if (chatIdParam) {
-      router.push("/inbox/chat?chat_id=" + chatIdParam);
+    const botIdParam = searchParams?.get('bot_id');
+    if (chatIdParam && botIdParam) {
+      router.push(`/inbox/chat?chat_id=${chatIdParam}&bot_id=${botIdParam}`);
+    } else if (chatIdParam) {
+      router.push(`/inbox/chat?chat_id=${chatIdParam}`);
     } else {
       router.push("/inbox/chat");
     }
