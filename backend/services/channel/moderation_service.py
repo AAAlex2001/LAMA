@@ -29,7 +29,7 @@ class ModerationService:
             mute_duration_minutes=data.mute_duration_minutes,
         )
         self.db.add(rule)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(rule)
         return rule
 
@@ -59,7 +59,7 @@ class ModerationService:
         for field, value in update_data.items():
             setattr(rule, field, value)
         rule.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(rule)
         return rule
 
@@ -69,7 +69,7 @@ class ModerationService:
         if not rule:
             raise HTTPException(status_code=404, detail="Rule not found")
         await self.db.delete(rule)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def check_message(self, channel_id: int, text: str) -> Optional[ChannelModerationRule]:

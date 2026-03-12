@@ -34,6 +34,11 @@ async def telegram_webhook(
 
     # Парсинг payload
     try:
+        body = await request.body()
+        if not body:
+            logger.warning("Empty webhook payload received")
+            return {"ok": True}
+            
         payload = await request.json()
         update = Update.model_validate(payload)
     except Exception as e:

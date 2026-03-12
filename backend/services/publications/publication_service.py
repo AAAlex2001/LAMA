@@ -186,7 +186,7 @@ class PublicationService:
         edited = await self.ai.edit_content(publication.text_content, request.instruction)
         publication.text_content = edited
         publication.ai_generated = True
-        await self.db.commit()
+        await self.db.flush()
         return publication
 
     async def edit_text_with_ai(self, text: str, instruction: str) -> str:
@@ -217,7 +217,7 @@ class PublicationService:
 
         publication.status = DBPublicationStatus.SCHEDULED
         publication.published_time = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(publication)
         return publication
 

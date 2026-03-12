@@ -49,6 +49,7 @@ async def publish_publication_async(publication_id: int) -> str:
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.publish_now(publication_id)
+        await db.commit()
         return f"published:{publication_id}"
 
 
@@ -65,6 +66,7 @@ async def delete_publication_messages_async(publication_id: int) -> str:
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.delete_telegram_messages(publication_id)
+        await db.commit()
         return f"deleted_messages:{publication_id}"
 
 
@@ -81,6 +83,7 @@ async def republish_publication_async(publication_id: int) -> str:
     async with AsyncSessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.republish(publication_id)
+        await db.commit()
         return f"republished:{publication_id}"
 
 

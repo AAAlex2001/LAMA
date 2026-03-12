@@ -119,7 +119,7 @@ class BotMessagingService:
             reply_to_message_id=reply_to_message_id,
         )
         self.db.add(msg)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(msg)
         return msg
 

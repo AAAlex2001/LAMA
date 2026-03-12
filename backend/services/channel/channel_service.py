@@ -38,7 +38,7 @@ class ChannelService:
             is_active=True,
         )
         self.db.add(channel)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 
@@ -108,7 +108,7 @@ class ChannelService:
             setattr(channel, field, value)
 
         channel.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 
@@ -116,5 +116,5 @@ class ChannelService:
         """Удалить канал."""
         channel = await self.get(channel_id, owner_id=owner_id)
         await self.db.delete(channel)
-        await self.db.commit()
+        await self.db.flush()
         return True

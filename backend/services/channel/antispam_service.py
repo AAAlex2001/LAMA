@@ -112,7 +112,7 @@ class AntispamService:
             channel.link_filter_mute_duration = link_filter_mute_duration
 
         channel.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 

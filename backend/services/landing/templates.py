@@ -433,7 +433,7 @@ async def save_template_content(
         )
         db.add(template_content)
 
-    await db.commit()
+    await db.flush()
     return {"status": "ok", "message": "Template content saved"}
 
 
@@ -453,7 +453,7 @@ async def create_template(
         order=order,
     )
     db.add(template)
-    await db.commit()
+    await db.flush()
     await db.refresh(template)
     
     return {
@@ -491,7 +491,7 @@ async def update_template(
     if is_active is not None:
         template.is_active = is_active
     
-    await db.commit()
+    await db.flush()
     await db.refresh(template)
     
     return {
@@ -515,5 +515,5 @@ async def delete_template(db: AsyncSession, slug: str) -> bool:
         raise HTTPException(status_code=400, detail="Action failed")
     
     await db.delete(template)
-    await db.commit()
+    await db.flush()
     return True

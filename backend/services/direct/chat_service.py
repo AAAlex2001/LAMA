@@ -46,7 +46,7 @@ class DirectChatService:
                 chat.tg_photo_url = tg_photo_url
                 needs_update = True
             if needs_update:
-                await self.db.commit()
+                await self.db.flush()
                 await self.db.refresh(chat)
             return chat
 
@@ -60,7 +60,7 @@ class DirectChatService:
             tg_photo_url=tg_photo_url,
         )
         self.db.add(new_chat)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(new_chat)
         return new_chat
 
@@ -287,7 +287,7 @@ class DirectChatService:
         for key, value in update_data.model_dump(exclude_unset=True).items():
             setattr(chat, key, value)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(chat)
 
         await ws_manager.broadcast_chat_update(
@@ -316,7 +316,7 @@ class DirectChatService:
             .values(unread_count=0)
         )
         result = await self.db.execute(stmt)
-        await self.db.commit()
+        await self.db.flush()
         return result.rowcount > 0
 
     async def increment_unread(self, bot_id: int, tg_chat_id: int) -> None:
@@ -332,4 +332,4 @@ class DirectChatService:
             )
         )
         await self.db.execute(stmt)
-        await self.db.commit()
+        await self.db.flush()

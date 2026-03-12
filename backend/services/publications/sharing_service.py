@@ -32,7 +32,7 @@ class SharingService:
         publication.share_token_expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
         publication.share_token_used = False
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(publication)
         return token
 
@@ -73,5 +73,5 @@ class SharingService:
             raise HTTPException(status_code=404, detail="Invalid or expired token")
 
         publication.share_token_used = True
-        await self.db.commit()
+        await self.db.flush()
         return True

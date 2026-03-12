@@ -17,8 +17,20 @@ from backend.services.bot_provider import get_cached_bot, cache, bot_info_cache
 logger = logging.getLogger(__name__)
 
 WEBHOOK_ALLOWED_UPDATES = [
-    "message", "edited_message", "callback_query",
-    "chat_member", "my_chat_member", "chat_join_request",
+    "message",
+    "edited_message",
+    "channel_post",
+    "edited_channel_post",
+    "inline_query",
+    "chosen_inline_result",
+    "callback_query",
+    "shipping_query",
+    "pre_checkout_query",
+    "poll",
+    "poll_answer",
+    "my_chat_member",
+    "chat_member",
+    "chat_join_request"
 ]
 
 
@@ -52,7 +64,7 @@ class BotCrudService:
             last_sync_at=datetime.now(timezone.utc),
         )
         self.db.add(bot)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -118,7 +130,7 @@ class BotCrudService:
                 setattr(bot, field, value)
 
             bot.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(bot)
             return bot
         except TelegramAPIError as e:
@@ -133,7 +145,7 @@ class BotCrudService:
         await self.remove_webhook(bot.token)
         await self.evict_from_cache(bot.token)
         await self.db.delete(bot)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def deactivate(self, bot_id: int, owner_id: int) -> Optional[BotModel]:
@@ -145,7 +157,7 @@ class BotCrudService:
         await self.evict_from_cache(bot.token)
         bot.status = BotStatus.INACTIVE
         bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -158,7 +170,7 @@ class BotCrudService:
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
         bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -193,7 +205,7 @@ class BotCrudService:
             )
             self.db.add(bot)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 

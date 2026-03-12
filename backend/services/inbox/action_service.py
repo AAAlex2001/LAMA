@@ -120,7 +120,7 @@ class InboxActionService:
                             exc_info=True
                         )
 
-        await self.db.commit()
+        await self.db.flush()
         return modified_count
 
     async def create_block_notification(self, source_event: InboxEvent) -> InboxEvent:
@@ -182,7 +182,7 @@ class InboxActionService:
             )
             res = await self.db.execute(stmt)
             if res.rowcount > 0:
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(f"Admin accept: incremented member_count for {link_url}")
                 result = await self.db.execute(
                     select(ChatInviteLink).where(ChatInviteLink.invite_link == link_url)
@@ -197,7 +197,7 @@ class InboxActionService:
                         except Exception as e:
                             logger.warning(f"Failed to revoke link: {e}")
                     link.is_revoked = True
-                    await self.db.commit()
+                    await self.db.flush()
         except Exception as e:
             logger.error(f"increment_link_counter failed: {e}")
 
@@ -248,13 +248,13 @@ class InboxActionService:
         if action_type == "mark_resolved":
             event.status = EventStatus.PROCESSED
             self.mark_payload_handled(event)
-            await self.db.commit()
+            await self.db.flush()
             return SpecificActionResult(status="resolved")
 
         if action_type == "reply":
             event.status = EventStatus.PROCESSED
             self.mark_payload_handled(event)
-            await self.db.commit()
+            await self.db.flush()
             return SpecificActionResult(
                 status="reply",
                 bot_id=event.bot_id,
@@ -300,7 +300,7 @@ class InboxActionService:
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
 
                     await self.fire_join_trigger(
                         bot, trigger_type, event, channel,
@@ -354,7 +354,7 @@ class InboxActionService:
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
                     return SpecificActionResult(status="unbanned")
 
                 if action_type == "block":
@@ -369,7 +369,7 @@ class InboxActionService:
                         event.status = EventStatus.BANNED
                         await self.create_block_notification(event)
                         self.mark_payload_handled(event)
-                        await self.db.commit()
+                        await self.db.flush()
                         return SpecificActionResult(status="blocked")
 
                     channel = await self.db.get(ChannelGroup, event.channel_id)
@@ -388,7 +388,7 @@ class InboxActionService:
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
                     return SpecificActionResult(status="blocked")
 
                 if action_type == "delete_and_block":
@@ -423,7 +423,7 @@ class InboxActionService:
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
                     return SpecificActionResult(status="deleted_and_blocked")
 
                 if action_type == "delete_message":
@@ -442,7 +442,7 @@ class InboxActionService:
                     )
                     event.status = EventStatus.PROCESSED
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
                     return SpecificActionResult(status="deleted")
 
                 if action_type == "change_ban":
@@ -513,7 +513,7 @@ class InboxActionService:
                     event.payload = new_payload
                     event.status = EventStatus.PROCESSED
                     self.mark_payload_handled(event)
-                    await self.db.commit()
+                    await self.db.flush()
                     return SpecificActionResult(status="ban_updated", affected_channels=affected)
 
         except Exception as e:

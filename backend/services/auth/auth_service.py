@@ -122,7 +122,7 @@ class AuthService:
           session.expires_at = datetime.now(
               timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
           session.last_used_at = datetime.now(timezone.utc)
-          await self.db.commit()
+          await self.db.flush()
 
         return user, access_token, refresh_token
 
@@ -262,7 +262,7 @@ class AuthService:
             session.expires_at = datetime.now(
                 timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
 
         return user, access_token, refresh_token
 
@@ -309,7 +309,7 @@ class AuthService:
             session.expires_at = datetime.now(
                 timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
 
         return user, access_token, refresh_token
 

@@ -168,6 +168,6 @@ async def save_footer_content(
         ))
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Footer content saved"}

@@ -76,7 +76,7 @@ class BotAuthService:
         user_result = await self.db.execute(user_query)
         user = user_result.scalar_one()
 
-        await self.db.commit()
+        await self.db.flush()
 
         return user
 
@@ -101,7 +101,7 @@ class BotAuthService:
             ip_address=ip_address
         )
         self.db.add(session)
-        await self.db.commit()
+        await self.db.flush()
 
     async def create_bot_login_code(
         self,
@@ -129,7 +129,7 @@ class BotAuthService:
         )
 
         self.db.add(login_code)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(login_code)
 
         return login_code
@@ -231,4 +231,4 @@ class BotAuthService:
         login_code.is_used = True
         login_code.used_at = datetime.now(timezone.utc)
 
-        await self.db.commit()
+        await self.db.flush()

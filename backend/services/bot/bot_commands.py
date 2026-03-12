@@ -34,7 +34,7 @@ class BotCommandService:
             is_active=data.is_active,
         )
         self.db.add(command)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(command)
         return command
 
@@ -81,7 +81,7 @@ class BotCommandService:
             setattr(command, field, value)
 
         command.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(command)
         return command
 
@@ -91,7 +91,7 @@ class BotCommandService:
         if not command:
             return False
         await self.db.delete(command)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def find_by_text(

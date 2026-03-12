@@ -78,7 +78,7 @@ class TokenService:
                 return None
 
             session.last_used_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
 
             user_query = select(User).where(User.id == user_id)
             user_result = await self.db.execute(user_query)
@@ -122,7 +122,7 @@ class TokenService:
                 timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)
             session.last_used_at = datetime.now(timezone.utc)
 
-            await self.db.commit()
+            await self.db.flush()
 
             return new_access_token, new_refresh_token
 
@@ -139,5 +139,5 @@ class TokenService:
             return False
 
         session.is_active = False
-        await self.db.commit()
+        await self.db.flush()
         return True

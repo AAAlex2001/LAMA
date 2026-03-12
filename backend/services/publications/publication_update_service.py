@@ -77,17 +77,17 @@ class PublicationUpdateService:
             setattr(publication, key, value)
 
         publication.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(publication)
         return publication
 
     async def delete_publication(self, publication: Publication) -> None:
         await self.db.delete(publication)
-        await self.db.commit()
+        await self.db.flush()
 
     async def reschedule_publication(self, publication: Publication, new_time: datetime) -> Publication:
         publication.scheduled_time = new_time
         publication.status = DBPublicationStatus.SCHEDULED
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(publication)
         return publication

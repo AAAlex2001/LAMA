@@ -24,7 +24,7 @@ class TemplateService:
             owner_id=user_id, name=data.name, formatted_content=data.formatted_content,
         )
         self.db.add(template)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(template)
         return template
 
@@ -66,11 +66,11 @@ class TemplateService:
         template = await self.get_text_template_by_id(template_id, user_id)
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(template, field, value)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(template)
         return template
 
     async def delete_text_template(self, template_id: int, user_id: int) -> None:
         template = await self.get_text_template_by_id(template_id, user_id)
         await self.db.delete(template)
-        await self.db.commit()
+        await self.db.flush()

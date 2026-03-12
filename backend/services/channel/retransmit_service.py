@@ -57,7 +57,7 @@ class RetransmitService:
             error_message=error_message,
         )
         self.db.add(retransmission)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(retransmission)
         return retransmission
 

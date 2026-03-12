@@ -36,7 +36,7 @@ class SeriesService:
             reply_to_previous=reply_to_previous
         )
         self.db.add(series)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(series)
         return series
 
@@ -63,7 +63,7 @@ class SeriesService:
         for field, value in update_data.model_dump(exclude_unset=True).items():
             setattr(series, field, value)
             
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(series)
         return series
 
@@ -195,7 +195,7 @@ class SeriesService:
         else:
             publication.status = DBPublicationStatus.FAILED
 
-        await self.db.commit()
+        await self.db.flush()
 
         return PublishResult(
             success=success_count > 0,

@@ -43,6 +43,33 @@ async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
     return result.scalar_one_or_none()
 
 
+async def get_bot_context(db: AsyncSession, chat_id: Optional[int], token: Optional[str]) -> Optional[BotModel]:
+    if chat_id:
+        channel_query = select(ChannelGroup).where(ChannelGroup.telegram_id == chat_id).options(joinedload(ChannelGroup.bot))
+        channel_res = await db.execute(channel_query)
+        channel = channel_res.unique().scalar_one_or_none()
+        
+        if channel:
+            if channel.bot and (not token or channel.bot.token == token):
+                return channel.bot
+                
+            if token:
+                bot_query = select(BotModel).where(
+                    BotModel.token == token,
+                    BotModel.owner_id == channel.owner_id
+                ).limit(1)
+                bot_res = await db.execute(bot_query)
+                user_bot = bot_res.scalar_one_or_none()
+                if user_bot:
+                    return user_bot
+                    
+    if token:
+        bot_query = select(BotModel).where(BotModel.token == token).order_by(BotModel.id.asc()).limit(1)
+        bot_res = await db.execute(bot_query)
+        return bot_res.scalar_one_or_none()
+        
+    return None
+
 async def get_bot_by_chat_id(db: AsyncSession, chat_id: int) -> Optional[BotModel]:
     """Найти бота по telegram chat_id через привязку канала."""
     query = (

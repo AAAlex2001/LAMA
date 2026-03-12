@@ -102,7 +102,7 @@ class SyncService:
             )
             self.db.add(channel)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 
@@ -119,10 +119,17 @@ def resolve_chat_identifier(
         return username if username.startswith("@") else f"@{username}"
     if invite_link and "t.me/" in invite_link:
         extracted = invite_link.split("t.me/")[-1]
-        if extracted.startswith("+"):
-            raise HTTPException(status_code=400, detail="Private invite links (+hash) are not supported")
+        if extracted.startswith("+") or extracted.startswith("joinchat/"):
+            raise HTTPException(
+                status_code=400,
+                detail="Добавление по приватной invite ссылке напрямую не поддерживается Telegram API. Добавьте бота в канал/группу как администратора, и он появится автоматически."
+            )
         return f"@{extracted}"
-    raise HTTPException(status_code=400, detail="Invalid invite link format")
+    if invite_link:
+        raise HTTPException(
+            status_code=400,
+            detail="Неподдерживаемый формат ссылки. Используйте публичный username (@username) или t.me/username."
+        )
 
 
 async def validate_access(bot: Bot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):

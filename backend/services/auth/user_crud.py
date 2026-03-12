@@ -66,7 +66,7 @@ class UserCRUDService:
             setattr(user, field, value)
 
         user.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(user)
 
         return user
@@ -78,5 +78,5 @@ class UserCRUDService:
             return False
 
         await self.db.delete(user)
-        await self.db.commit()
+        await self.db.flush()
         return True

@@ -12,12 +12,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import AsyncSessionLocal
 from backend.models.bots import BotStatus
 from backend.services.bot_provider import resolve_by_token
-from backend.services.webhook.base import get_bot_by_token, get_bot_by_chat_id
+from backend.services.webhook.base import get_bot_by_token, get_bot_by_chat_id, get_bot_context
 from backend.services.webhook.moderation import ModerationHandler
 from backend.services.webhook.messages import MessageHandler
 from backend.services.webhook.join_request import JoinRequestHandler
 from backend.services.webhook.callbacks import CallbackHandler
 from backend.services.webhook.subscription import SubscriptionHandler
+from backend.services.webhook.my_chat_member import MyChatMemberHandler
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -70,10 +71,7 @@ class WebhookDispatcher:
         """Обработка модерации"""
         try:
             async with AsyncSessionLocal() as db:
-                if bot_token:
-                    bot_model = await get_bot_by_token(db, bot_token)
-                else:
-                    bot_model = await get_bot_by_chat_id(db, message.chat.id)
+                bot_model = await get_bot_context(db, message.chat.id, bot_token)
 
                 if not bot_model:
                     logger.warning(
@@ -96,25 +94,21 @@ class WebhookDispatcher:
         """Основная логика обработки бота"""
         try:
             async with AsyncSessionLocal() as db:
-                if bot_token:
-                    bot_model = await get_bot_by_token(db, bot_token)
-                else:
-                    chat_id = None
-                    if update.message and update.message.chat:
-                        chat_id = update.message.chat.id
-                    elif (update.callback_query
-                          and update.callback_query.message):
-                        chat_id = update.callback_query.message.chat.id
-                    elif (update.chat_join_request
-                          and update.chat_join_request.chat):
-                        chat_id = update.chat_join_request.chat.id
-                    elif update.chat_member and update.chat_member.chat:
-                        chat_id = update.chat_member.chat.id
+                chat_id = None
+                if update.message and update.message.chat:
+                    chat_id = update.message.chat.id
+                elif (update.callback_query
+                      and update.callback_query.message):
+                    chat_id = update.callback_query.message.chat.id
+                elif (update.chat_join_request
+                      and update.chat_join_request.chat):
+                    chat_id = update.chat_join_request.chat.id
+                elif update.chat_member and update.chat_member.chat:
+                    chat_id = update.chat_member.chat.id
+                elif update.my_chat_member and update.my_chat_member.chat:
+                    chat_id = update.my_chat_member.chat.id
 
-                    if chat_id:
-                        bot_model = await get_bot_by_chat_id(db, chat_id)
-                    else:
-                        bot_model = None
+                bot_model = await get_bot_context(db, chat_id, bot_token)
 
                 if not bot_model:
                     logger.warning(
@@ -165,6 +159,13 @@ class WebhookDispatcher:
                 if update.chat_member and update.chat_member.new_chat_member:
                     subscription_handler = SubscriptionHandler(db, bot_model)
                     await subscription_handler.process(update.chat_member)
+                    await db.commit()
+                    return
+
+                # Обработка добавления бота в канал (my_chat_member)
+                if update.my_chat_member:
+                    my_chat_member_handler = MyChatMemberHandler(db, bot_model)
+                    await my_chat_member_handler.process(update.my_chat_member)
                     await db.commit()
                     return
 

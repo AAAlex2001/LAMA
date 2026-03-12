@@ -72,7 +72,7 @@ async def publish_to_channels(
     update_publication_status(publication, success_count, total_count, calculate_next_repeat_time_callback)
 
     db.add(publication)
-    await db.commit()
+    await db.flush()
     await db.refresh(publication)
 
     logger.info(
@@ -123,7 +123,7 @@ async def republish(
         base_time = publication.next_repeat_time or publication.published_time
         publication.next_repeat_time = compute_next_repeat(publication, base_time, calculate_next_repeat_time_callback)
 
-    await db.commit()
+    await db.flush()
 
     return PublishResult(
         success=success_count > 0, results=results,
