@@ -180,6 +180,7 @@ async def process_scheduled_triggers_async() -> str:
                 await service.execute_scheduled_task(task, telegram_bot)
             except Exception as exc:
                 logger.error("trigger_task_failed: %s", exc)
+        await db.commit()
         return f"processed_triggers:{len(tasks)}"
 
 
@@ -207,6 +208,7 @@ async def process_recurring_messages_async() -> str:
                 await service.send(msg, telegram_bot)
             except Exception as exc:
                 logger.error("recurring_message_failed: %s", exc)
+        await db.commit()
         return f"processed_recurring:{len(pending)}"
 
 

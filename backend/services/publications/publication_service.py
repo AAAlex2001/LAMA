@@ -187,6 +187,7 @@ class PublicationService:
         publication.text_content = edited
         publication.ai_generated = True
         await self.db.flush()
+        await self.db.refresh(publication)
         return publication
 
     async def edit_text_with_ai(self, text: str, instruction: str) -> str:

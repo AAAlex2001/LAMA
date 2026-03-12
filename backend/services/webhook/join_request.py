@@ -90,7 +90,7 @@ class JoinRequestHandler:
                         missing_channels=missing,
                     )
                     self.db.add(pending)
-                    await self.db.commit()
+                    await self.db.flush()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
                     link_protection = await self.get_link_protection(join_request)
@@ -343,11 +343,10 @@ class JoinRequestHandler:
             )
             result = await self.db.execute(stmt)
             if result.rowcount > 0:
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(f"Incremented member_count for {invite_link_url}")
         except Exception as e:
             logger.error(f"Failed to increment member_count: {e}")
-            await self.db.rollback()
 
     async def update_invite_link_metrics(self, invite_link_url: str) -> None:
         """Обновить метрику pending_join_request_count для invite link"""
@@ -362,7 +361,7 @@ class JoinRequestHandler:
                 )
             )
             await self.db.execute(stmt)
-            await self.db.commit()
+            await self.db.flush()
             logger.info(
                 f"Обновлена метрика для invite link: {invite_link_url}"
             )

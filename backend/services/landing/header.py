@@ -84,13 +84,13 @@ async def _get_or_create_header_section(db: AsyncSession) -> LandingSection:
         is_active=True,
         order=0
     )
-    db.add(section)
 
     try:
-        await db.flush()
-        return section
+        async with db.begin_nested():
+            db.add(section)
+            await db.flush()
+            return section
     except IntegrityError:
-        await db.rollback()
         result = await db.execute(
             select(LandingSection).where(LandingSection.section_type == SectionType.HEADER)
         )

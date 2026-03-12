@@ -1,11 +1,14 @@
 import asyncio
 import logging
+import random
 
 from aiogram.types import Message, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from aiogram import Bot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.database import AsyncSessionLocal
 
 from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot_provider import get_bot_info
@@ -73,7 +76,7 @@ class MemberProcessor:
 
     async def send_group_captcha(self, message: Message, new_member) -> None:
         """Отправить капчу в группе после вступления"""
-        import random
+
 
         try:
             captcha_service = CaptchaService(self.db)
@@ -154,38 +157,39 @@ class MemberProcessor:
         pending_id: int,
         timeout_seconds: int
     ) -> None:
+        """Таймаут проверки капчи. Пробуждается в фоне через N секунд."""
         await asyncio.sleep(timeout_seconds + 1)
 
         try:
-            await self.db.rollback()
-            query = select(PendingApproval).where(
-                PendingApproval.id == pending_id)
-            result = await self.db.execute(query)
-            pending = result.scalar_one_or_none()
+            async with AsyncSessionLocal() as db:
+                query = select(PendingApproval).where(
+                    PendingApproval.id == pending_id)
+                result = await db.execute(query)
+                pending = result.scalar_one_or_none()
 
-            if not pending or pending.is_approved:
+                if not pending or pending.is_approved:
+                    try:
+                        await self.telegram_bot.delete_message(
+                            chat_id=chat_id, message_id=captcha_message_id
+                        )
+                    except TelegramAPIError as e:
+                        logger.warning(
+                            f"Failed to delete captcha message: {e}", exc_info=True
+                        )
+                    return
+
                 try:
+                    await self.telegram_bot.ban_chat_member(
+                        chat_id=chat_id, user_id=user_id
+                    )
+                    await self.telegram_bot.unban_chat_member(
+                        chat_id=chat_id, user_id=user_id
+                    )
                     await self.telegram_bot.delete_message(
                         chat_id=chat_id, message_id=captcha_message_id
                     )
                 except TelegramAPIError as e:
-                    logger.warning(
-                        f"Failed to delete captcha message: {e}", exc_info=True
-                    )
-                return
-
-            try:
-                await self.telegram_bot.ban_chat_member(
-                    chat_id=chat_id, user_id=user_id
-                )
-                await self.telegram_bot.unban_chat_member(
-                    chat_id=chat_id, user_id=user_id
-                )
-                await self.telegram_bot.delete_message(
-                    chat_id=chat_id, message_id=captcha_message_id
-                )
-            except TelegramAPIError as e:
-                logger.warning(f"Failed to kick user {user_id}: {e}")
+                    logger.warning(f"Failed to kick user {user_id}: {e}")
 
         except Exception as e:
             logger.error(f"Captcha timeout check failed: {e}")

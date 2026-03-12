@@ -175,6 +175,7 @@ class DirectMessageService:
         )
         self.db.add(msg)
         await self.db.flush()
+        await self.db.refresh(msg)
         return msg
 
     async def broadcast_new_message(self, owner_id: int, bot_id: int, tg_chat_id: int, message_id: int) -> None:
@@ -402,4 +403,5 @@ class DirectMessageService:
         )
         self.db.add(msg)
         await self.db.flush()
+        await self.db.refresh(msg)
         return msg

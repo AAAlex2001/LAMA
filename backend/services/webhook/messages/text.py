@@ -53,7 +53,7 @@ class TextProcessor:
             is_system=True,
         )
         self.db.add(msg)
-        await self.db.commit()
+        await self.db.flush()
 
     async def send_response(
         self,

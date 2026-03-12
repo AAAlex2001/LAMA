@@ -134,7 +134,6 @@ class BotCrudService:
             await self.db.refresh(bot)
             return bot
         except TelegramAPIError as e:
-            await self.db.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to update bot in Telegram: {e}")
 
     async def delete(self, bot_id: int, owner_id: int) -> bool:

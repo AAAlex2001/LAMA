@@ -66,8 +66,6 @@ async def edit_published_message(
         update_publication_after_edit(publication, request)
         await db.flush()
         await db.refresh(publication)
-    else:
-        await db.rollback()
 
     return EditMessageResult(success=success_count > 0, results=results, success_count=success_count, total_count=len(results))
 

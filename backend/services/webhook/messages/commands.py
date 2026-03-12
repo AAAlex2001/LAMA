@@ -67,7 +67,7 @@ class CommandProcessor:
             is_system=True,
         )
         self.db.add(msg)
-        await self.db.commit()
+        await self.db.flush()
 
     def get_chat_display_name(self, message: Message) -> str:
         """Получить читаемое имя чата для описания события."""

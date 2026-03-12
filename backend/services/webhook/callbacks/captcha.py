@@ -209,12 +209,11 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             )
             res = await self.db.execute(stmt)
             if res.rowcount > 0:
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(f"Captcha approval: incremented member_count for {link_url}")
                 await self.check_and_revoke_link(link_url, telegram_chat_id)
         except Exception as e:
             logger.error(f"increment_member_count failed: {e}")
-            await self.db.rollback()
 
     async def check_and_revoke_link(self, invite_link_url: str, chat_id: int) -> None:
         """Автоотзыв ссылки при достижении лимита."""
@@ -234,7 +233,7 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
                     except TelegramAPIError as e:
                         logger.warning(f"Failed to revoke link: {e}")
                 link.is_revoked = True
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(f"Auto-revoked link {invite_link_url}")
         except Exception as e:
             logger.error(f"check_and_revoke_link failed: {e}")
@@ -265,10 +264,9 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
                 new_payload["join_state"] = "accepted"
                 event.payload = new_payload
                 event.status = EventStatus.PROCESSED
-                await self.db.commit()
+                await self.db.flush()
         except Exception as e:
             logger.error(f"mark_join_event_accepted failed: {e}")
-            await self.db.rollback()
 
     async def delete_captcha_message(self, bot, message) -> None:
         """Удалить сообщение с капчей."""

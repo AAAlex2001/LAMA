@@ -101,7 +101,7 @@ class MessageHandler:
                         logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
 
                 if saved_msg:
-                    await self.db.commit()
+                    await self.db.flush()
                     await self.db.refresh(saved_msg)
                     await ws_manager.broadcast_chat_update(
                         user_id=self.bot_model.owner_id,
@@ -120,7 +120,7 @@ class MessageHandler:
                                 f"https://api.telegram.org/file/"
                                 f"bot{self.bot_model.token}/{tg_file.file_path}"
                             )
-                            await self.db.commit()
+                            await self.db.flush()
                     except Exception as e:
                         logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
                 # Удаление системных сообщений

@@ -149,6 +149,7 @@ class InboxActionService:
         event = InboxEvent(**event_data)
         self.db.add(event)
         await self.db.flush()
+        await self.db.refresh(event)
         return event
 
     async def get_event(self, event_id: int, owner_id: int) -> Optional[InboxEvent]:

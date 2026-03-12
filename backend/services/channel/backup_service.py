@@ -76,11 +76,11 @@ class BackupService:
         )
 
         try:
-            self.db.add(post)
-            await self.db.flush()
-            await self.db.refresh(post)
+            async with self.db.begin_nested():
+                self.db.add(post)
+                await self.db.flush()
+                await self.db.refresh(post)
         except IntegrityError:
-            await self.db.rollback()
             query = select(BackedUpPost).where(
                 and_(
                     BackedUpPost.channel_id == channel_id,
