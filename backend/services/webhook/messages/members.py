@@ -75,9 +75,7 @@ class MemberProcessor:
             )
 
     async def send_group_captcha(self, message: Message, new_member) -> None:
-        """Отправить капчу в группе после вступления"""
-
-
+        """Отправить капчу в группе после вступления."""
         try:
             captcha_service = CaptchaService(self.db)
             question, answer = captcha_service.generate()
