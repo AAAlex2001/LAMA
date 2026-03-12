@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
@@ -55,7 +56,7 @@ class BotRecurringService:
         """Обновить повторяющееся сообщение."""
         msg = await self.get_for_owner(message_id, owner_id)
         if not msg:
-            raise ValueError("Сообщение не найдено")
+            raise HTTPException(status_code=400, detail="Сообщение не найдено")
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(msg, field, value)
@@ -69,7 +70,7 @@ class BotRecurringService:
         """Удалить повторяющееся сообщение."""
         msg = await self.get_for_owner(message_id, owner_id)
         if not msg:
-            raise ValueError("Сообщение не найдено")
+            raise HTTPException(status_code=400, detail="Сообщение не найдено")
         await self.db.delete(msg)
         await self.db.commit()
         return True
@@ -217,7 +218,7 @@ class BotRecurringService:
             select(BotModel).where(and_(BotModel.id == bot_id, BotModel.owner_id == owner_id))
         )
         if not result.scalar_one_or_none():
-            raise ValueError("Бот не найден")
+            raise HTTPException(status_code=400, detail="Бот не найден")
 
     async def get_for_owner(self, message_id: int, owner_id: int) -> Optional[RecurringMessage]:
         """Получить сообщение для владельца."""

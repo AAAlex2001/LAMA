@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from typing import Optional, List, Tuple, Dict, Any, Union
 
 from sqlalchemy import select, func, desc
@@ -32,7 +33,7 @@ class BotMessagingService:
         """Отправить сообщение от имени бота."""
         bot = await self.get_bot_or_raise(bot_id, owner_id)
         if bot.status != BotStatus.ACTIVE:
-            raise ValueError("Bot is not active")
+            raise HTTPException(status_code=400, detail="Bot is not active")
 
         telegram_bot = await resolve_for_bot_id(self.db, bot_id)
         reply_markup = build_keyboard(data.buttons) if data.buttons else None
@@ -40,7 +41,7 @@ class BotMessagingService:
         try:
             result = await self.dispatch_telegram(telegram_bot, data, reply_markup)
         except TelegramAPIError as e:
-            raise ValueError(f"Failed to send message: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to send message: {e}")
 
         messages = result if isinstance(result, list) else [result]
         for msg in messages:
@@ -182,7 +183,7 @@ class BotMessagingService:
         result = await self.db.execute(query)
         bot = result.scalar_one_or_none()
         if not bot:
-            raise ValueError("Bot not found")
+            raise HTTPException(status_code=400, detail="Bot not found")
         return bot
 
     async def broadcast(
@@ -192,7 +193,7 @@ class BotMessagingService:
         """Рассылка сообщения всем незаблокированным чатам бота."""
         bot = await self.get_bot_or_raise(bot_id, owner_id)
         if bot.status != BotStatus.ACTIVE:
-            raise ValueError("Bot is not active")
+            raise HTTPException(status_code=400, detail="Bot is not active")
 
         rows = await self.db.execute(
             select(DirectChat.tg_chat_id)

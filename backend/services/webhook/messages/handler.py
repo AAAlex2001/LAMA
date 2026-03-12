@@ -18,6 +18,7 @@ from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
 from backend.services.inbox.action_service import InboxActionService
+from backend.websockets.manager import ws_manager
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 logger = logging.getLogger(__name__)
@@ -98,6 +99,17 @@ class MessageHandler:
                         })
                     except Exception as e:
                         logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
+
+                if saved_msg:
+                    await self.db.commit()
+                    await self.db.refresh(saved_msg)
+                    await ws_manager.broadcast_chat_update(
+                        user_id=self.bot_model.owner_id,
+                        bot_id=self.bot_model.id,
+                        chat_id=message.chat.id,
+                        event_type="message_new",
+                        payload={"message_id": saved_msg.id},
+                    )
 
             async with get_bot_session(self.bot_model.token) as telegram_bot:
                 if saved_msg and saved_msg.media_file_id and not saved_msg.media_url:

@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 """Главный сервис аутентификации"""
 
 from datetime import datetime, timezone, timedelta

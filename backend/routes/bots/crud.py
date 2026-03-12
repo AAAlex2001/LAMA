@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from typing import Optional
 
 from backend.routes.auth import get_current_user
@@ -22,13 +22,10 @@ async def sync_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Синхронизировать бота через Telegram API."""
-    try:
-        bot = await service.sync_from_telegram(data.token, owner_id=current_user.id)
-        return SyncBotResponse(success=True, bot=bot, message="Bot synchronized successfully")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
+
+    bot = await service.sync_from_telegram(data.token, owner_id=current_user.id)
+    return SyncBotResponse(success=True, bot=bot,
+                           message="Bot synchronized successfully")
 
 
 @router.get("/", response_model=BotListResponse)
@@ -43,7 +40,8 @@ async def get_bots(
     skip = (page - 1) * page_size
     bots, total = await service.get_list(owner_id=current_user.id, status=status, skip=skip, limit=page_size)
     pages = (total + page_size - 1) // page_size
-    return BotListResponse(items=bots, total=total, page=page, page_size=page_size, pages=pages)
+    return BotListResponse(items=bots, total=total,
+                           page=page, page_size=page_size, pages=pages)
 
 
 @router.post("/", response_model=BotResponse, status_code=201)
@@ -53,12 +51,8 @@ async def create_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Создать бота по токену."""
-    try:
-        return await service.create(data, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create bot: {e}")
+
+    return await service.create(data, owner_id=current_user.id)
 
 
 @router.get("/{bot_id}", response_model=BotResponse)
@@ -69,8 +63,6 @@ async def get_bot(
 ):
     """Получить бота по ID."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     return bot
 
 
@@ -82,12 +74,8 @@ async def update_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить бота."""
-    try:
-        bot = await service.update(bot_id, data, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
+
+    bot = await service.update(bot_id, data, owner_id=current_user.id)
     return bot
 
 
@@ -98,8 +86,6 @@ async def delete_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить бота."""
-    if not await service.delete(bot_id, owner_id=current_user.id):
-        raise HTTPException(status_code=404, detail="Bot not found")
 
 
 @router.post("/{bot_id}/deactivate", response_model=BotResponse)
@@ -110,8 +96,6 @@ async def deactivate_bot(
 ):
     """Деактивировать бота: снять вебхук, остановить обработку."""
     bot = await service.deactivate(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     return bot
 
 
@@ -122,12 +106,7 @@ async def activate_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Активировать бота: установить вебхук, возобновить обработку."""
-    try:
-        bot = await service.activate(bot_id, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
+    bot = await service.activate(bot_id, owner_id=current_user.id)
     return bot
 
 
@@ -139,14 +118,8 @@ async def sync_existing_bot(
 ):
     """Обновить информацию существующего бота через Telegram API."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    try:
-        return await service.sync_from_telegram(bot.token, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Sync failed: {e}")
+
+    return await service.sync_from_telegram(bot.token, owner_id=current_user.id)
 
 
 @router.get("/{bot_id}/stats", response_model=BotStatsResponse)
@@ -158,7 +131,5 @@ async def get_bot_stats(
 ):
     """Получить статистику бота."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     stats = await messaging.get_stats(bot_id, owner_id=current_user.id)
     return BotStatsResponse(**stats)

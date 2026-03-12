@@ -127,10 +127,24 @@ def resolve_chat_identifier(
 
 async def validate_access(bot: Bot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
-    bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
-    if bot_member.status in ["left", "kicked"]:
-        raise HTTPException(status_code=403, detail="Bot is not a member of this channel/group")
+    try:
+        bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
+        if bot_member.status in ["left", "kicked"]:
+            raise HTTPException(status_code=403, detail="Bot is not a member of this channel/group")
 
-    user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
-    if user_member.status not in ["administrator", "creator"]:
+        user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
+        if user_member.status not in ["administrator", "creator"]:
+            raise HTTPException(status_code=403, detail="User is not an admin in this channel/group")
+        return
+    except TelegramBadRequest as exc:
+        if "member list is inaccessible" not in str(exc).lower():
+            raise
+
+    administrators = await bot.get_chat_administrators(chat_identifier)
+    admin_ids = {admin.user.id for admin in administrators}
+
+    if bot_telegram_id not in admin_ids:
+        raise HTTPException(status_code=403, detail="Bot is not an admin of this channel/group")
+
+    if user_telegram_id not in admin_ids:
         raise HTTPException(status_code=403, detail="User is not an admin in this channel/group")

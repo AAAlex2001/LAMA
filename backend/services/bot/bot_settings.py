@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import asyncio
 from datetime import datetime, timezone
 from typing import Optional
@@ -27,7 +28,7 @@ class BotSettingsService:
         """Обновить настройки приветствия."""
         bot = await self.crud.get(bot_id, owner_id=owner_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         bot.welcome_enabled = data.welcome_enabled
         bot.welcome_message = data.welcome_message
@@ -57,7 +58,7 @@ class BotSettingsService:
         """Обновить настройки автоодобрения."""
         bot = await self.crud.get(bot_id, owner_id=owner_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         bot.auto_approval_mode = data.auto_approval_mode
         bot.approval_criteria = data.approval_criteria

@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -11,7 +11,8 @@ from backend.routes.bots.dependencies import get_bot_service, get_bot_command_se
 router = APIRouter()
 
 
-@router.post("/{bot_id}/commands", response_model=BotCommandResponse, status_code=201)
+@router.post("/{bot_id}/commands",
+             response_model=BotCommandResponse, status_code=201)
 async def create_command(
     bot_id: int,
     data: BotCommandCreate,
@@ -21,14 +22,8 @@ async def create_command(
 ):
     """Создать команду для бота."""
     bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    try:
-        return await command_service.create(bot_id, data, owner_id=current_user.id)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create command: {e}")
+
+    return await command_service.create(bot_id, data, owner_id=current_user.id)
 
 
 @router.get("/{bot_id}/commands", response_model=BotCommandListResponse)
@@ -41,13 +36,12 @@ async def get_commands(
 ):
     """Получить список команд бота."""
     bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     commands, total = await command_service.get_list(bot_id, is_active, owner_id=current_user.id)
     return BotCommandListResponse(items=commands, total=total)
 
 
-@router.get("/{bot_id}/commands/{command_id}", response_model=BotCommandResponse)
+@router.get("/{bot_id}/commands/{command_id}",
+            response_model=BotCommandResponse)
 async def get_command(
     bot_id: int,
     command_id: int,
@@ -56,12 +50,11 @@ async def get_command(
 ):
     """Получить команду по ID."""
     command = await command_service.get(command_id, owner_id=current_user.id)
-    if not command or command.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Command not found")
     return command
 
 
-@router.put("/{bot_id}/commands/{command_id}", response_model=BotCommandResponse)
+@router.put("/{bot_id}/commands/{command_id}",
+            response_model=BotCommandResponse)
 async def update_command(
     bot_id: int,
     command_id: int,
@@ -71,11 +64,7 @@ async def update_command(
 ):
     """Обновить команду."""
     command = await command_service.get(command_id, owner_id=current_user.id)
-    if not command or command.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Command not found")
     updated = await command_service.update(command_id, data, owner_id=current_user.id)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Command not found")
     return updated
 
 
@@ -88,7 +77,3 @@ async def delete_command(
 ):
     """Удалить команду."""
     command = await command_service.get(command_id, owner_id=current_user.id)
-    if not command or command.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Command not found")
-    if not await command_service.delete(command_id, owner_id=current_user.id):
-        raise HTTPException(status_code=404, detail="Command not found")

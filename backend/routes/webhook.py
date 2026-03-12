@@ -5,7 +5,8 @@ import asyncio
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Request, Header, HTTPException
+from fastapi import APIRouter, Request, Header
+from backend.services.webhook.webhook_validator import validate_webhook_secret
 from aiogram.types import Update
 
 from backend.config import TELEGRAM_WEBHOOK_SECRET
@@ -28,8 +29,8 @@ async def telegram_webhook(
     - Graceful error handling
     """
     # Валидация секрета (если задан)
-    if TELEGRAM_WEBHOOK_SECRET and x_telegram_bot_api_secret_token != TELEGRAM_WEBHOOK_SECRET:
-        raise HTTPException(status_code=401, detail="invalid secret")
+
+    validate_webhook_secret(x_telegram_bot_api_secret_token, TELEGRAM_WEBHOOK_SECRET)
 
     # Парсинг payload
     try:

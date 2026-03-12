@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from typing import Optional
@@ -25,8 +25,6 @@ async def create_chat(
     bot_check = await chat_service.db.execute(
         select(Bot.id).where(and_(Bot.id == data.bot_id, Bot.owner_id == current_user.id))
     )
-    if not bot_check.scalar_one_or_none():
-        raise HTTPException(status_code=403, detail="Бот не найден или нет доступа")
 
     chat = await chat_service.get_or_create_chat(
         bot_id=data.bot_id,
@@ -73,7 +71,5 @@ async def update_chat(
 ):
     """Обновление статуса чата."""
     chat = await chat_service.update_chat_status(chat_id, current_user.id, data)
-    if not chat:
-        raise HTTPException(status_code=404, detail="Чат не найден или нет доступа")
     
     return chat

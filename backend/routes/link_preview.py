@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, Depends, Query
 import logging
 
 from backend.services.link_preview import get_link_preview
@@ -16,11 +16,5 @@ async def fetch_link_preview(
     current_user: User = Depends(get_current_user)
 ):
     """Получить метаданные ссылки"""
-    try:
-        preview = await get_link_preview(url)
-        return preview
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Error getting link preview: {e}")
-        raise HTTPException(status_code=500, detail="Failed to fetch link preview")
+    preview = await get_link_preview(url)
+    return preview

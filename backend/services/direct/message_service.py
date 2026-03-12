@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from collections.abc import Sequence
 from typing import Any, List, Optional
 import logging
@@ -37,13 +38,13 @@ class DirectMessageService:
 
     def extract_nested_id(self, value: Any, key: str = "id") -> Optional[int]:
         if value is None:
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
         if isinstance(value, dict):
             nested_value = value.get(key)
         else:
             nested_value = getattr(value, key, None)
         if nested_value is None:
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
         return int(nested_value)
 
     def extract_file_id_from_entity(self, entity: Any) -> Optional[str]:
@@ -101,6 +102,8 @@ class DirectMessageService:
         return MessageType.PHOTO
 
     def extract_media_file_id(self, message: Message, message_type: MessageType) -> Optional[str]:
+        if message_type == MessageType.TEXT:
+            return None
         if message_type == MessageType.PHOTO and message.photo:
             return message.photo[-1].file_id
         if message_type == MessageType.VIDEO and message.video:
@@ -115,7 +118,7 @@ class DirectMessageService:
             return message.animation.file_id
         if message_type == MessageType.STICKER and message.sticker:
             return message.sticker.file_id
-        return None
+        raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
 
     def extract_message_type(self, message: Message, fallback: MessageType = MessageType.TEXT) -> MessageType:
         if message.photo:
@@ -192,11 +195,11 @@ class DirectMessageService:
             async with get_bot_session(bot_token) as client:
                 tg_file = await client.get_file(media_file_id)
                 if not tg_file.file_path:
-                    return None
+                    raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
                 return f"https://api.telegram.org/file/bot{bot_token}/{tg_file.file_path}"
         except Exception as e:
             logger.error(f"Error resolving media URL for file_id={media_file_id}: {e}", exc_info=True)
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
 
     async def get_chat_and_bot(self, bot_id: int, tg_chat_id: int, owner_id: int):
         """Получить чат и бота с проверкой прав владельца."""
@@ -209,7 +212,7 @@ class DirectMessageService:
         )
         row = (await self.db.execute(query)).first()
         if not row:
-            return None, None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
         return row[0], row[1]
 
     async def send_message(self, bot_id: int, tg_chat_id: int, owner_id: int, request: SendMessageRequest) -> List[BotMessage]:
@@ -296,7 +299,7 @@ class DirectMessageService:
         )
         row = (await self.db.execute(query)).first()
         if not row:
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
         
         msg, bot = row[0], row[1]
         
@@ -326,7 +329,7 @@ class DirectMessageService:
                     )
         except Exception as e:
             logger.error(f"Error editing message via Direct API: {e}", exc_info=True)
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
             
         return msg
 
@@ -337,7 +340,7 @@ class DirectMessageService:
         )
         row = (await self.db.execute(query)).first()
         if not row:
-            return False
+            raise HTTPException(status_code=400, detail="Не удалось отправить сообщение")
             
         msg, bot = row[0], row[1]
         
@@ -354,7 +357,7 @@ class DirectMessageService:
             return True
         except Exception as e:
             logger.error(f"Error deleting message via Direct API: {e}", exc_info=True)
-            return False
+            raise HTTPException(status_code=400, detail="Не удалось отправить сообщение")
 
     async def save_incoming_message(self, bot_id: int, owner_id: int, message: Message | dict) -> Optional[BotMessage]:
         """Сохранить новое входящее сообщение из вебхука."""
@@ -373,7 +376,7 @@ class DirectMessageService:
 
         bot = await self.db.get(Bot, bot_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно")
 
         msg_type, media_file_id = self.extract_incoming_media(message)
 
@@ -399,9 +402,4 @@ class DirectMessageService:
         )
         self.db.add(msg)
         await self.db.flush()
-
-        await ws_manager.broadcast_chat_update(
-            user_id=owner_id, bot_id=bot_id, chat_id=chat_id,
-            event_type="message_new", payload={"message_id": msg.id}
-        )
         return msg
