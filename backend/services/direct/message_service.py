@@ -402,9 +402,4 @@ class DirectMessageService:
         )
         self.db.add(msg)
         await self.db.flush()
-
-        await ws_manager.broadcast_chat_update(
-            user_id=owner_id, bot_id=bot_id, chat_id=chat_id,
-            event_type="message_new", payload={"message_id": msg.id}
-        )
         return msg

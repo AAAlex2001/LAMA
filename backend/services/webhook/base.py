@@ -28,7 +28,7 @@ async def get_bot_session(token: str):
 
 async def get_bot_by_token(db: AsyncSession, token: str) -> Optional[BotModel]:
     """Найти бота в БД по токену."""
-    query = select(BotModel).where(BotModel.token == token).limit(1)
+    query = select(BotModel).where(BotModel.token == token).order_by(BotModel.id.asc()).limit(1)
     result = await db.execute(query)
     return result.scalar_one_or_none()
 
