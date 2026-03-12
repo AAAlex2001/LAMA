@@ -101,6 +101,7 @@ export interface EditDirectMessageParams {
 
 export interface DeleteDirectMessageParams {
   messageId: number;
+  botId: number;
   chatId: number;
 }
 

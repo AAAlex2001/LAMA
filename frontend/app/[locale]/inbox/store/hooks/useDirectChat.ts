@@ -35,6 +35,7 @@ import {
   setSelectedBotIds,
   toggleBotSelection,
   selectAllBots,
+  makeChatKey,
 } from '../slices/directChat';
 import {
   fetchDirectChatsThunk,
@@ -119,7 +120,7 @@ export function useDirectChat() {
   }, [activeChat?.bot_id, activeChat?.tg_chat_id]);
 
   const setActiveChat = useCallback(
-    (chatId: number | null) => {
+    (chatId: string | null) => {
       dispatch(setActiveChatId(chatId));
     },
     [dispatch]
@@ -180,9 +181,10 @@ export function useDirectChat() {
       try {
         const result = await dispatch(sendDirectMessageThunk(sendParams));
         if (sendDirectMessageThunk.fulfilled.match(result)) {
+          const chatKey = makeChatKey(activeChat.bot_id, activeChat.tg_chat_id);
           for (const message of result.payload.items) {
             dispatch(wsMessageReceived({
-              tgChatId: activeChat.tg_chat_id,
+              chatKey,
               message,
             }));
           }
@@ -296,7 +298,7 @@ export function useDirectChat() {
 
   const jumpToLatestMessages = useCallback(() => {
     if (!activeChat) return;
-    dispatch(resetToLatest(activeChat.tg_chat_id));
+    dispatch(resetToLatest(makeChatKey(activeChat.bot_id, activeChat.tg_chat_id)));
     return dispatch(fetchDirectMessagesThunk({
       botId: activeChat.bot_id,
       tgChatId: activeChat.tg_chat_id,
@@ -344,11 +346,11 @@ export function useDirectChat() {
   };
 }
 
-export function useDirectMessages(tgChatId: number) {
-  const messages = useAppSelector(selectDirectMessages(tgChatId));
-  const loading = useAppSelector(selectDirectMessagesLoading(tgChatId));
-  const hasMore = useAppSelector(selectDirectMessagesHasMore(tgChatId));
-  const isDetached = useAppSelector(selectDirectMessagesDetached(tgChatId));
+export function useDirectMessages(chatKey: string) {
+  const messages = useAppSelector(selectDirectMessages(chatKey));
+  const loading = useAppSelector(selectDirectMessagesLoading(chatKey));
+  const hasMore = useAppSelector(selectDirectMessagesHasMore(chatKey));
+  const isDetached = useAppSelector(selectDirectMessagesDetached(chatKey));
 
   return { messages, loading, hasMore, isDetached };
 }

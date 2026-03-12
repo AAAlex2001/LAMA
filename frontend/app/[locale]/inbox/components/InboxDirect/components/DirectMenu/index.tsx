@@ -5,6 +5,7 @@ import ChatItem from "./components/ChatItem";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
 import { FC, useEffect, useRef } from "react";
 import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import { makeChatKey } from '@/app/[locale]/inbox/store/slices/directChat';
 import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 import Loader from '@/components/loader/loader';
 
@@ -58,13 +59,13 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
     return () => observer.disconnect();
   }, [chatsHasMore, chatsLoading, fetchMoreChats]);
 
-  const handleClick = (chatId: number) => {
-    setActiveChat(chatId);
-    onChatOpen(chatId);
+  const handleClick = (chat: DirectChatResponse) => {
+    setActiveChat(makeChatKey(chat.bot_id, chat.tg_chat_id));
+    onChatOpen(chat.id);
   };
 
   const activeChat = activeChatId !== null
-    ? [...pinnedChats, ...unpinnedChats].find((c) => c.id === activeChatId)
+    ? [...pinnedChats, ...unpinnedChats].find((c) => makeChatKey(c.bot_id, c.tg_chat_id) === activeChatId)
     : null;
 
   const hasNoChats = !chatsLoading && !activeChat && pinnedChats.length === 0 && unpinnedChats.length === 0;
@@ -100,7 +101,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     time={formatChatTime(activeChat.last_message_at || activeChat.updated_at)}
                     isCurrent={true}
                     isBlocked={activeChat.is_blocked}
-                    onClick={() => handleClick(activeChat.id)}
+                    onClick={() => handleClick(activeChat)}
                   />
                 </div>
               </div>
@@ -120,7 +121,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                       isPinned={true}
                       isBlocked={chat.is_blocked}
                       unreadCount={chat.unread_count}
-                      onClick={() => handleClick(chat.id)}
+                      onClick={() => handleClick(chat)}
                     />
                   ))}
                 </div>
@@ -145,7 +146,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     isPinned={false}
                     isBlocked={chat.is_blocked}
                     unreadCount={chat.unread_count}
-                    onClick={() => handleClick(chat.id)}
+                    onClick={() => handleClick(chat)}
                   />
                 ))}
                 {chatsHasMore && <div ref={sentinelRef} style={{ height: 1 }} />}

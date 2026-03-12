@@ -13,6 +13,10 @@ import type {
 
 export type { DirectChatResponse, BotMessageResponse };
 
+export function makeChatKey(botId: number, tgChatId: number): string {
+  return `${botId}_${tgChatId}`;
+}
+
 export interface DirectChatState {
   chats: DirectChatResponse[];
   chatsLoading: boolean;
@@ -23,16 +27,16 @@ export interface DirectChatState {
   chatSort: 'new' | 'old';
   chatUnreadFilter: 'unread' | 'read' | null;
 
-  activeChatId: number | null;
+  activeChatId: string | null;
   replyToMessageId: number | null;
 
-  messages: Record<number, BotMessageResponse[]>;
-  messagesLoading: Record<number, boolean>;
-  messagesError: Record<number, string | null>;
-  messagesTotalCount: Record<number, number>;
-  messagesHasMore: Record<number, boolean>;
+  messages: Record<string, BotMessageResponse[]>;
+  messagesLoading: Record<string, boolean>;
+  messagesError: Record<string, string | null>;
+  messagesTotalCount: Record<string, number>;
+  messagesHasMore: Record<string, boolean>;
   /** Whether the loaded messages are detached from the latest (viewing around a specific message) */
-  messagesDetached: Record<number, boolean>;
+  messagesDetached: Record<string, boolean>;
 
   sendingMessage: boolean;
   wsConnected: boolean;
@@ -76,7 +80,7 @@ const directChatSlice = createSlice({
   name: 'directChat',
   initialState,
   reducers: {
-    setActiveChatId(state, action: PayloadAction<number | null>) {
+    setActiveChatId(state, action: PayloadAction<string | null>) {
       state.activeChatId = action.payload;
     },
     setChatSort(state, action: PayloadAction<'new' | 'old'>) {
@@ -95,30 +99,30 @@ const directChatSlice = createSlice({
         state.chatsHasMore = true;
       }
     },
-    clearMessages(state, action: PayloadAction<number>) {
-      const chatId = action.payload;
-      delete state.messages[chatId];
-      delete state.messagesLoading[chatId];
-      delete state.messagesError[chatId];
-      delete state.messagesTotalCount[chatId];
-      delete state.messagesHasMore[chatId];
-      delete state.messagesDetached[chatId];
+    clearMessages(state, action: PayloadAction<string>) {
+      const chatKey = action.payload;
+      delete state.messages[chatKey];
+      delete state.messagesLoading[chatKey];
+      delete state.messagesError[chatKey];
+      delete state.messagesTotalCount[chatKey];
+      delete state.messagesHasMore[chatKey];
+      delete state.messagesDetached[chatKey];
     },
     /** Clear messages and exit detached mode, preparing for a fresh latest-messages fetch */
-    resetToLatest(state, action: PayloadAction<number>) {
-      const tgChatId = action.payload;
-      state.messages[tgChatId] = [];
-      state.messagesDetached[tgChatId] = false;
-      state.messagesHasMore[tgChatId] = true;
+    resetToLatest(state, action: PayloadAction<string>) {
+      const chatKey = action.payload;
+      state.messages[chatKey] = [];
+      state.messagesDetached[chatKey] = false;
+      state.messagesHasMore[chatKey] = true;
     },
-    wsMessageReceived(state, action: PayloadAction<{ tgChatId: number; message: BotMessageResponse }>) {
-      const { tgChatId, message } = action.payload;
-      if (!state.messages[tgChatId]) {
-        state.messages[tgChatId] = [];
+    wsMessageReceived(state, action: PayloadAction<{ chatKey: string; message: BotMessageResponse }>) {
+      const { chatKey, message } = action.payload;
+      if (!state.messages[chatKey]) {
+        state.messages[chatKey] = [];
       }
-      const exists = state.messages[tgChatId].some((m) => m.id === message.id);
+      const exists = state.messages[chatKey].some((m) => m.id === message.id);
       if (!exists) {
-        const messages = state.messages[tgChatId];
+        const messages = state.messages[chatKey];
         const messageTime = new Date(message.created_at).getTime();
         let insertIndex = messages.length;
         for (let i = 0; i < messages.length; i++) {
@@ -130,17 +134,20 @@ const directChatSlice = createSlice({
         }
         messages.splice(insertIndex, 0, message);
       } else {
-        const idx = state.messages[tgChatId].findIndex((m) => m.id === message.id);
+        const idx = state.messages[chatKey].findIndex((m) => m.id === message.id);
         if (idx !== -1) {
-          state.messages[tgChatId][idx] = message;
-          state.messages[tgChatId].sort((a, b) => {
+          state.messages[chatKey][idx] = message;
+          state.messages[chatKey].sort((a, b) => {
             const timeA = new Date(a.created_at).getTime();
             const timeB = new Date(b.created_at).getTime();
             return timeB - timeA;
           });
         }
       }
-      const chat = state.chats.find((c) => c.tg_chat_id === tgChatId);
+      const [botIdStr, tgChatIdStr] = chatKey.split('_');
+      const tgChatId = Number(tgChatIdStr);
+      const botId = Number(botIdStr);
+      const chat = state.chats.find((c) => c.tg_chat_id === tgChatId && c.bot_id === botId);
       if (chat) {
         chat.last_message_preview = message.text_content || '';
         chat.last_message_at = message.created_at;
@@ -218,55 +225,52 @@ const directChatSlice = createSlice({
 
     builder
       .addCase(fetchDirectMessagesThunk.pending, (state, action) => {
-        const key = action.meta.arg.tgChatId;
+        const key = makeChatKey(action.meta.arg.botId, action.meta.arg.tgChatId);
         state.messagesLoading[key] = true;
         state.messagesError[key] = null;
       })
       .addCase(fetchDirectMessagesThunk.fulfilled, (state, action) => {
-        const { tgChatId, skip = 0, limit = 50, around_message_id, jumpToMessage } = action.meta.arg;
-        state.messagesLoading[tgChatId] = false;
+        const { botId, tgChatId, skip = 0, limit = 50, around_message_id, jumpToMessage } = action.meta.arg;
+        const chatKey = makeChatKey(botId, tgChatId);
+        state.messagesLoading[chatKey] = false;
         const response = action.payload;
         const sortDesc = (a: BotMessageResponse, b: BotMessageResponse) => {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         };
 
         if (jumpToMessage && around_message_id) {
-          // Merge around-window with existing (keeps mounted DOM nodes, prevents UI jumps)
-          const existing = state.messages[tgChatId] || [];
+          const existing = state.messages[chatKey] || [];
           const existingIds = new Set(existing.map((m) => m.id));
           const newMessages = response.items.filter((m) => !existingIds.has(m.id));
-          state.messages[tgChatId] = [...existing, ...newMessages].sort(sortDesc);
-          state.messagesDetached[tgChatId] = true;
-          state.messagesHasMore[tgChatId] = true;
+          state.messages[chatKey] = [...existing, ...newMessages].sort(sortDesc);
+          state.messagesDetached[chatKey] = true;
+          state.messagesHasMore[chatKey] = true;
         } else if (skip === 0 && !around_message_id) {
-          if (state.messagesDetached[tgChatId]) {
-            // WS-triggered refetch while detached — skip to preserve the around-window
-            state.messagesTotalCount[tgChatId] = response.total;
+          if (state.messagesDetached[chatKey]) {
+            state.messagesTotalCount[chatKey] = response.total;
             return;
           }
           // Normal initial load or refresh
-          state.messages[tgChatId] = [...response.items].sort(sortDesc);
-          state.messagesDetached[tgChatId] = false;
-          state.messagesHasMore[tgChatId] = response.items.length >= limit;
+          state.messages[chatKey] = [...response.items].sort(sortDesc);
+          state.messagesDetached[chatKey] = false;
+          state.messagesHasMore[chatKey] = response.items.length >= limit;
         } else {
-          // Merge: load more (skip > 0) or around_message_id without jumpToMessage
-          const existing = state.messages[tgChatId] || [];
+          const existing = state.messages[chatKey] || [];
           const existingIds = new Set(existing.map((m) => m.id));
           const newMessages = response.items.filter((m) => !existingIds.has(m.id));
-          state.messages[tgChatId] = [...existing, ...newMessages].sort(sortDesc);
+          state.messages[chatKey] = [...existing, ...newMessages].sort(sortDesc);
 
           if (around_message_id) {
-            // Loading more while detached: no more if no new messages were added
-            state.messagesHasMore[tgChatId] = newMessages.length > 0;
+            state.messagesHasMore[chatKey] = newMessages.length > 0;
           } else {
-            state.messagesHasMore[tgChatId] = response.items.length >= limit;
+            state.messagesHasMore[chatKey] = response.items.length >= limit;
           }
         }
 
-        state.messagesTotalCount[tgChatId] = response.total;
+        state.messagesTotalCount[chatKey] = response.total;
       })
       .addCase(fetchDirectMessagesThunk.rejected, (state, action) => {
-        const key = action.meta.arg.tgChatId;
+        const key = makeChatKey(action.meta.arg.botId, action.meta.arg.tgChatId);
         state.messagesLoading[key] = false;
         state.messagesError[key] = action.payload as string;
       });
@@ -284,7 +288,7 @@ const directChatSlice = createSlice({
       .addCase(editDirectMessageThunk.fulfilled, (state, action) => {
         const updated = action.payload;
         for (const key of Object.keys(state.messages)) {
-          const chatMessages = state.messages[Number(key)];
+          const chatMessages = state.messages[key];
           const idx = chatMessages.findIndex((m) => m.id === updated.id);
           if (idx !== -1) {
             chatMessages[idx] = updated;
@@ -300,12 +304,13 @@ const directChatSlice = createSlice({
 
     builder
       .addCase(deleteDirectMessageThunk.fulfilled, (state, action) => {
-        const { messageId, chatId } = action.payload;
-        if (state.messages[chatId]) {
-          state.messages[chatId] = state.messages[chatId].filter((m) => m.id !== messageId);
+        const { messageId, botId, chatId } = action.payload;
+        const chatKey = makeChatKey(botId, chatId);
+        if (state.messages[chatKey]) {
+          state.messages[chatKey] = state.messages[chatKey].filter((m) => m.id !== messageId);
         } else {
           for (const key of Object.keys(state.messages)) {
-            const msgs = state.messages[Number(key)];
+            const msgs = state.messages[key];
             const idx = msgs.findIndex((m) => m.id === messageId);
             if (idx !== -1) {
               msgs.splice(idx, 1);

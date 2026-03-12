@@ -5,6 +5,7 @@ import DirectChat from "./components/DirectChat";
 import DirectMenu from "./components/DirectMenu";
 import { DesktopWrapper, MobileWrapper } from '@/components/responsive-wrappers';
 import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import { makeChatKey } from '@/app/[locale]/inbox/store/slices/directChat';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
@@ -42,15 +43,15 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
         return matchesChatId;
       });
       if (chat) {
-        setActiveChat(chat.id);
+        setActiveChat(makeChatKey(chat.bot_id, chat.tg_chat_id));
       }
     }
   }, [searchParams, chats, chatsLoading, setActiveChat, fetchChats, botIdNumber]);
 
   const handleChatOpen = (chatId: number) => {
-    setActiveChat(chatId);
     const chat = chats.find((c) => c.id === chatId);
     if (chat) {
+      setActiveChat(makeChatKey(chat.bot_id, chat.tg_chat_id));
       router.push(`/inbox/chat?chat_id=${chat.tg_chat_id}&bot_id=${chat.bot_id}`);
     }
   };

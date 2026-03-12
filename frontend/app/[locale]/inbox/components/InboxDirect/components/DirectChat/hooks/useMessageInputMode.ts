@@ -15,9 +15,9 @@ export interface MessageInputModeReturn {
   cancelReply: () => void;
 }
 
-export function useMessageInputMode(activeChatId: number | null): MessageInputModeReturn {
-  const draftsRef = useRef<Record<number, string>>({});
-  const prevChatIdRef = useRef<number | null>(null);
+export function useMessageInputMode(activeChatId: string | null): MessageInputModeReturn {
+  const draftsRef = useRef<Record<string, string>>({});
+  const prevChatIdRef = useRef<string | null>(null);
 
   const [message, setMessageRaw] = useState('');
   const [editingMessage, setEditingMessage] = useState<{ id: number; text: string } | null>(null);

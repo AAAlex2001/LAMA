@@ -121,7 +121,7 @@ export function useMessageScroll({
     didInitialScrollRef.current = false;
     isNearBottomRef.current = true;
     shouldScrollAfterSendRef.current = false;
-  }, [activeChat?.tg_chat_id]);
+  }, [activeChat?.bot_id, activeChat?.tg_chat_id]);
 
   const prevDetachedRef = useRef(isDetached);
   useEffect(() => {
@@ -147,7 +147,7 @@ export function useMessageScroll({
         checkBottomRef.current();
       });
     }
-  }, [loading, messages.length, activeChat?.tg_chat_id, isDetached]);
+  }, [loading, messages.length, activeChat?.bot_id, activeChat?.tg_chat_id, isDetached]);
 
   const newestMessageId = messages.length > 0 ? messages[0]?.id : undefined;
   useEffect(() => {

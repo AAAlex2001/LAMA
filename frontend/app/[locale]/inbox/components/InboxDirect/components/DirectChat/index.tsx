@@ -9,6 +9,7 @@ import classNames from 'classnames';
 import Loader from '@/components/loader/loader';
 import { useDateSeparator } from './hooks/useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import { makeChatKey } from '@/app/[locale]/inbox/store/slices/directChat';
 import { uploadMediaFile, API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
 import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
 import { useRenderedMessages } from './hooks/useRenderedMessages';
@@ -59,8 +60,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     fetchChats,
   } = useDirectChat();
 
-  const tgChatId = activeChat?.tg_chat_id ?? 0;
-  const { messages, loading, hasMore, isDetached } = useDirectMessages(tgChatId);
+  const chatKey = activeChat ? makeChatKey(activeChat.bot_id, activeChat.tg_chat_id) : '0_0';
+  const { messages, loading, hasMore, isDetached } = useDirectMessages(chatKey);
 
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const messageFieldRef = useRef<MessageFieldRef>(null);
@@ -107,6 +108,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     if (!activeChat) return;
     await deleteMessage({
       messageId,
+      botId: activeChat.bot_id,
       chatId: activeChat.tg_chat_id,
     });
   };
@@ -238,20 +240,20 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   };
 
   const handleTogglePin = async () => {
-    if (!activeChatId) return;
+    if (!activeChat) return;
     if (isPinned) {
-      await unpinChat(activeChatId);
+      await unpinChat(activeChat.id);
     } else {
-      await pinChat(activeChatId);
+      await pinChat(activeChat.id);
     }
   };
 
   const handleToggleBlock = async () => {
-    if (!activeChatId) return;
+    if (!activeChat) return;
     if (isBlocked) {
-      await unblockChat(activeChatId);
+      await unblockChat(activeChat.id);
     } else {
-      await blockChat(activeChatId);
+      await blockChat(activeChat.id);
     }
   };
 

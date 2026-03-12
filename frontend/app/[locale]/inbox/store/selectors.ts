@@ -2,6 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './index';
 import type { InboxEventResponse } from './thunks/inboxEvents';
 import type { InboxState } from './slices/inbox';
+import { makeChatKey } from './slices/directChat';
 
 export const selectInbox = (s: RootState): InboxState => s.inbox;
 
@@ -152,7 +153,7 @@ export const selectActiveChat = createSelector(
   ],
   (chats, activeChatId) => {
     if (activeChatId === null) return null;
-    return chats.find((c) => c.id === activeChatId) || null;
+    return chats.find((c) => makeChatKey(c.bot_id, c.tg_chat_id) === activeChatId) || null;
   },
 );
 
@@ -166,10 +167,10 @@ export const selectUnpinnedChats = createSelector(
   (chats) => chats.filter((c) => !c.is_pinned),
 );
 
-export const selectDirectMessages = (tgChatId: number) => createSelector(
+export const selectDirectMessages = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messages],
   (messages) => {
-    const chatMessages = messages[tgChatId] || [];
+    const chatMessages = messages[chatKey] || [];
     return [...chatMessages].sort((a, b) => {
       const timeA = new Date(a.created_at).getTime();
       const timeB = new Date(b.created_at).getTime();
@@ -178,19 +179,19 @@ export const selectDirectMessages = (tgChatId: number) => createSelector(
   },
 );
 
-export const selectDirectMessagesLoading = (tgChatId: number) => createSelector(
+export const selectDirectMessagesLoading = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messagesLoading],
-  (loading) => loading[tgChatId] || false,
+  (loading) => loading[chatKey] || false,
 );
 
-export const selectDirectMessagesHasMore = (tgChatId: number) => createSelector(
+export const selectDirectMessagesHasMore = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messagesHasMore],
-  (hasMore) => hasMore[tgChatId] || false,
+  (hasMore) => hasMore[chatKey] || false,
 );
 
-export const selectDirectMessagesDetached = (tgChatId: number) => createSelector(
+export const selectDirectMessagesDetached = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messagesDetached],
-  (detached) => detached[tgChatId] || false,
+  (detached) => detached[chatKey] || false,
 );
 
 export const selectSendingMessage = (s: RootState) => s.directChat.sendingMessage;
