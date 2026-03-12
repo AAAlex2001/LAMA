@@ -45,7 +45,7 @@ class BotSettingsService:
             bot.captcha_timeout_seconds = data.captcha_timeout_seconds
 
         bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -64,7 +64,7 @@ class BotSettingsService:
         bot.approval_criteria = data.approval_criteria
         bot.updated_at = datetime.now(timezone.utc)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 

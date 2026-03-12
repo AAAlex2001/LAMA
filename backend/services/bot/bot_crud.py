@@ -64,7 +64,7 @@ class BotCrudService:
             last_sync_at=datetime.now(timezone.utc),
         )
         self.db.add(bot)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -130,7 +130,7 @@ class BotCrudService:
                 setattr(bot, field, value)
 
             bot.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(bot)
             return bot
         except TelegramAPIError as e:
@@ -145,7 +145,7 @@ class BotCrudService:
         await self.remove_webhook(bot.token)
         await self.evict_from_cache(bot.token)
         await self.db.delete(bot)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def deactivate(self, bot_id: int, owner_id: int) -> Optional[BotModel]:
@@ -157,7 +157,7 @@ class BotCrudService:
         await self.evict_from_cache(bot.token)
         bot.status = BotStatus.INACTIVE
         bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -170,7 +170,7 @@ class BotCrudService:
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
         bot.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
@@ -205,7 +205,7 @@ class BotCrudService:
             )
             self.db.add(bot)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(bot)
         return bot
 

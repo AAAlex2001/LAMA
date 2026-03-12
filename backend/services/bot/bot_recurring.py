@@ -48,7 +48,7 @@ class BotRecurringService:
         )
         msg.next_send_at = self.calculate_next_send(msg)
         self.db.add(msg)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(msg)
         return msg
 
@@ -62,7 +62,7 @@ class BotRecurringService:
             setattr(msg, field, value)
 
         msg.next_send_at = self.calculate_next_send(msg)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(msg)
         return msg
 
@@ -72,7 +72,7 @@ class BotRecurringService:
         if not msg:
             raise HTTPException(status_code=400, detail="Сообщение не найдено")
         await self.db.delete(msg)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def get(self, message_id: int, owner_id: int) -> Optional[RecurringMessage]:
@@ -114,14 +114,14 @@ class BotRecurringService:
 
         if msg.end_date and now > msg.end_date:
             msg.is_active = False
-            await self.db.commit()
+            await self.db.flush()
             return
 
         if msg.weekdays:
             tz = pytz.timezone(msg.timezone)
             if datetime.now(tz).weekday() not in msg.weekdays:
                 msg.next_send_at = self.calculate_next_send(msg)
-                await self.db.commit()
+                await self.db.flush()
                 return
 
         keyboard = build_keyboard(msg.inline_buttons)
@@ -135,7 +135,7 @@ class BotRecurringService:
 
         msg.last_sent_at = now
         msg.next_send_at = self.calculate_next_send(msg)
-        await self.db.commit()
+        await self.db.flush()
 
     async def send_to_chat(self, bot: Bot, chat_id: int, msg: RecurringMessage, text: str, keyboard) -> None:
         """Отправить в один чат и залогировать."""

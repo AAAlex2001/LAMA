@@ -285,7 +285,7 @@ class DirectMessageService:
                 )
             )
 
-        await self.db.commit()
+        await self.db.flush()
         for message in saved_messages:
             await self.db.refresh(message)
             await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, message.id)
@@ -320,7 +320,7 @@ class DirectMessageService:
                         )
 
                     msg.text_content = request.text_content
-                    await self.db.commit()
+                    await self.db.flush()
                     await self.db.refresh(msg)
 
                     await ws_manager.broadcast_chat_update(
@@ -348,7 +348,7 @@ class DirectMessageService:
             async with get_bot_session(bot.token) as client:
                 await client.delete_message(chat_id=msg.chat_id, message_id=msg.telegram_message_id)
             await self.db.delete(msg)
-            await self.db.commit()
+            await self.db.flush()
 
             await ws_manager.broadcast_chat_update(
                 user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,

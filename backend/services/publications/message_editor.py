@@ -64,7 +64,7 @@ async def edit_published_message(
 
     if success_count > 0:
         update_publication_after_edit(publication, request)
-        await db.commit()
+        await db.flush()
         await db.refresh(publication)
     else:
         await db.rollback()
@@ -122,7 +122,7 @@ async def delete_telegram_messages(
     if success_count == len(results):
         publication.status = DBPublicationStatus.DELETED
 
-    await db.commit()
+    await db.flush()
 
     return DeleteMessageResult(
         success=success_count > 0, results=results, success_count=success_count, total_count=len(results),

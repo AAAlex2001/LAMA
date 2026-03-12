@@ -158,6 +158,6 @@ async def save_users_content(
     ]
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Users content saved"}

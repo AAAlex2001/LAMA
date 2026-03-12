@@ -155,6 +155,6 @@ async def save_lama_content(
     ]
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Lama content saved"}

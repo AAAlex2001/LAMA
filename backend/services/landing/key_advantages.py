@@ -132,6 +132,6 @@ async def save_key_advantages_content(
         ))
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Key Advantages content saved"}

@@ -66,7 +66,7 @@ class BotTriggerService:
             is_active=is_active,
         )
         self.db.add(trigger)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(trigger)
         return trigger
 
@@ -111,7 +111,7 @@ class BotTriggerService:
                 setattr(trigger, key, value)
 
         trigger.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(trigger)
         return trigger
 
@@ -121,7 +121,7 @@ class BotTriggerService:
         if not trigger:
             return False
         await self.db.delete(trigger)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def fire_event(
@@ -210,7 +210,7 @@ class BotTriggerService:
         if not trigger or not trigger.is_active:
             task.is_executed = True
             task.executed_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             return False
 
         ctx = task.event_context if isinstance(task.event_context, dict) else {}
@@ -218,7 +218,7 @@ class BotTriggerService:
             await self.execute(trigger, task.user_id, task.chat_id, telegram_bot, ctx)
             task.is_executed = True
             task.executed_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             return True
         except Exception as e:
             logger.error(f"Scheduled task {task.id} failed: {e}")
@@ -349,7 +349,7 @@ class BotTriggerService:
             execute_at=datetime.now(timezone.utc) + timedelta(minutes=trigger.delay_minutes),
             event_context=context,
         ))
-        await self.db.commit()
+        await self.db.flush()
 
     async def schedule_for_next_window(self, trigger: Trigger, user_id: int, chat_id: int, context: Optional[dict]) -> None:
         """Запланировать на начало следующего окна доставки."""
@@ -371,7 +371,7 @@ class BotTriggerService:
             execute_at=next_window.astimezone(pytz.UTC),
             event_context=context,
         ))
-        await self.db.commit()
+        await self.db.flush()
 
     async def get_active_for_event(self, bot_id: int, trigger_type: TriggerType) -> List[Trigger]:
         """Получить активные триггеры для типа события."""

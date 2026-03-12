@@ -64,7 +64,7 @@ class InviteLinkService:
             entry_method=data.entry_method,
         )
         self.db.add(link)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(link)
         return link
 
@@ -119,7 +119,7 @@ class InviteLinkService:
 
         invite_link.pending_join_request_count = tg_link.pending_join_request_count or 0
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(invite_link)
         return invite_link
 
@@ -143,7 +143,7 @@ class InviteLinkService:
             raise HTTPException(status_code=400, detail="Failed to revoke invite link in Telegram")
 
         invite_link.is_revoked = True
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(invite_link)
         return invite_link
 
@@ -186,7 +186,7 @@ class InviteLinkService:
             )
             link.member_count = tg_link.member_count or 0
             link.pending_join_request_count = tg_link.pending_join_request_count or 0
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(link)
         except Exception as e:
             logger.debug("Failed to sync single link %s: %s", link.invite_link, e)
@@ -201,7 +201,7 @@ class InviteLinkService:
         result = await self.db.execute(query)
         if result.rowcount == 0:
             raise HTTPException(status_code=404, detail="Invite link not found")
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def sync(self, channel: ChannelGroup) -> List[ChatInviteLink]:
@@ -233,7 +233,7 @@ class InviteLinkService:
             except TelegramAPIError as e:
                 logger.debug("Failed to refresh link %s: %s", link.invite_link, e)
 
-        await self.db.commit()
+        await self.db.flush()
         return links
 
     async def save_or_update_primary(self, channel_id: int, invite_link: str) -> ChatInviteLink:
@@ -244,7 +244,7 @@ class InviteLinkService:
 
         if existing:
             existing.is_primary = True
-            await self.db.commit()
+            await self.db.flush()
             return existing
 
         new_link = ChatInviteLink(
@@ -255,6 +255,6 @@ class InviteLinkService:
             is_revoked=False,
         )
         self.db.add(new_link)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(new_link)
         return new_link

@@ -99,7 +99,7 @@ class EmailAuthService:
         )
         self.db.add(session)
 
-        await self.db.commit()
+        await self.db.flush()
 
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(
@@ -151,7 +151,7 @@ class EmailAuthService:
         )
         self.db.add(session)
 
-        await self.db.commit()
+        await self.db.flush()
 
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(
@@ -199,7 +199,7 @@ class EmailAuthService:
         user.agree_personal_data = agree_personal_data
         user.agree_terms = agree_terms
 
-        await self.db.commit()
+        await self.db.flush()
 
         # Перезагружаем пользователя с telegram_account
         query = select(User).where(User.id == user.id).options(

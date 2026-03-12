@@ -44,7 +44,7 @@ class BackupService:
         channel.backup_target_id = backup_target_id
         channel.updated_at = datetime.now(timezone.utc)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 
@@ -77,7 +77,7 @@ class BackupService:
 
         try:
             self.db.add(post)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(post)
         except IntegrityError:
             await self.db.rollback()
@@ -200,6 +200,6 @@ class BackupService:
         else:
             post.raw_data = [post.raw_data, raw_data]
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(post)
         return post

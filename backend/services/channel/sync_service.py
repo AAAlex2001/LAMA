@@ -102,7 +102,7 @@ class SyncService:
             )
             self.db.add(channel)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 

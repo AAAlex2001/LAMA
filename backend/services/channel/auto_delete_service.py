@@ -41,7 +41,7 @@ class AutoDeleteService:
         for field, value in update_data.items():
             setattr(settings, field, value)
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(settings)
         return settings
 
@@ -94,7 +94,7 @@ class AutoDeleteService:
             delete_command_messages=False,
         )
         self.db.add(settings)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(settings)
         return settings
 

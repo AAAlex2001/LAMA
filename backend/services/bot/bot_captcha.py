@@ -36,7 +36,7 @@ class BotCaptchaService:
             expires_at=datetime.now(timezone.utc) + timedelta(minutes=CAPTCHA_TTL_MINUTES),
         )
         self.db.add(pending)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(pending)
         return pending
 
@@ -70,7 +70,7 @@ class BotCaptchaService:
 
         if pending.expires_at and datetime.now(timezone.utc) > pending.expires_at:
             pending.is_rejected = True
-            await self.db.commit()
+            await self.db.flush()
             return False, "expired"
 
         pending.attempts += 1
@@ -81,10 +81,10 @@ class BotCaptchaService:
         )
         if is_correct:
             pending.is_approved = True
-            await self.db.commit()
+            await self.db.flush()
             return True, "ok"
 
         if pending.attempts >= MAX_ATTEMPTS:
             pending.is_rejected = True
-        await self.db.commit()
+        await self.db.flush()
         return False, "wrong"

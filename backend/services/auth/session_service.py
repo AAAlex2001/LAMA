@@ -42,5 +42,5 @@ class SessionService:
             return False
 
         session.is_active = False
-        await self.db.commit()
+        await self.db.flush()
         return True

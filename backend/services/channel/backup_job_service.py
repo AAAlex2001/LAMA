@@ -39,7 +39,7 @@ class BackupJobService:
             failed_posts=0,
         )
         self.db.add(job)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(job)
         return job
 
@@ -55,7 +55,7 @@ class BackupJobService:
 
         posts = await self.get_source_posts(job.source_channel_id)
         job.total_posts = len(posts)
-        await self.db.commit()
+        await self.db.flush()
 
         target_channel = await get_channel(self.db, job.target_channel_id)
         if not target_channel:
@@ -79,7 +79,7 @@ class BackupJobService:
                 })
 
             if job.processed_posts % COMMIT_BATCH_SIZE == 0:
-                await self.db.commit()
+                await self.db.flush()
 
         if job.failed_posts == 0:
             job.status = BackupStatus.COMPLETED
@@ -89,7 +89,7 @@ class BackupJobService:
             job.status = BackupStatus.FAILED
 
         job.completed_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(job)
         return job
 

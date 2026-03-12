@@ -99,13 +99,13 @@ class TagService:
         if existing_tag:
             if color and existing_tag.color != color:
                 existing_tag.color = color
-                await self.db.commit()
+                await self.db.flush()
                 await self.db.refresh(existing_tag)
             return existing_tag
 
         tag = Tag(name=name, color=color, owner_id=owner_id)
         self.db.add(tag)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(tag)
         return tag
 
@@ -130,7 +130,7 @@ class TagService:
         if color is not None:
             tag.color = color
 
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(tag)
         return tag
 
@@ -143,4 +143,4 @@ class TagService:
             raise HTTPException(status_code=404, detail="Tag not found")
 
         await self.db.delete(tag)
-        await self.db.commit()
+        await self.db.flush()

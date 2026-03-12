@@ -125,7 +125,7 @@ class WidgetAuthService:
         )
         self.db.add(session)
 
-        await self.db.commit()
+        await self.db.flush()
 
         user_query = select(User).options(
             selectinload(User.telegram_account)

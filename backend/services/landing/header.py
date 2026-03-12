@@ -281,6 +281,6 @@ async def save_header_content(
     ]
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Header content saved"}

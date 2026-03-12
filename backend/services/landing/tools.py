@@ -144,6 +144,6 @@ async def save_tools_content(
     ]
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "Tools content saved"}

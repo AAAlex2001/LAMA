@@ -81,7 +81,7 @@ class PublicationCreateService:
             )
 
         self.db.add(publication)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(publication, ["channels", "tags", "series"])
         for channel in publication.channels:
             await self.db.refresh(channel, ["bot"])

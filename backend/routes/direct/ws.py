@@ -1,10 +1,9 @@
 import os
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from backend.websockets.manager import ws_manager
 from backend.services.auth.token_service import TokenService
-from backend.database import get_db
+from backend.database import AsyncSessionLocal
 
 router = APIRouter()
 
@@ -12,15 +11,16 @@ router = APIRouter()
 async def direct_websocket_endpoint(
     websocket: WebSocket,
     token: str = Query(..., description="JWT access token"),
-    db: AsyncSession = Depends(get_db)
 ):
     """
     WebSocket подключение для получения обновлений чатов Директа.
     """
-    jwt_secret = os.getenv("JWT_SECRET", "")
-    token_service = TokenService(db, jwt_secret)
-    user = await token_service.verify_access_token(token)
-    
+    # Короткоживущая сессия только для проверки токена
+    async with AsyncSessionLocal() as db:
+        jwt_secret = os.getenv("JWT_SECRET", "")
+        token_service = TokenService(db, jwt_secret)
+        user = await token_service.verify_access_token(token)
+
     if not user:
         await websocket.close(code=1008)
         return

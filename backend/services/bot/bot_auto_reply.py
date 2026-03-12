@@ -32,7 +32,7 @@ class BotAutoReplyService:
             is_active=data.is_active,
         )
         self.db.add(auto_reply)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(auto_reply)
         return auto_reply
 
@@ -79,7 +79,7 @@ class BotAutoReplyService:
             setattr(auto_reply, field, value)
 
         auto_reply.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(auto_reply)
         return auto_reply
 
@@ -89,7 +89,7 @@ class BotAutoReplyService:
         if not auto_reply:
             return False
         await self.db.delete(auto_reply)
-        await self.db.commit()
+        await self.db.flush()
         return True
 
     async def find_by_text(

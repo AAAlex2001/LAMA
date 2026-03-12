@@ -51,7 +51,7 @@ class TelegramSettingsService:
                 await self.upload_photo(bot, channel, photo_file_path)
 
             channel.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(channel)
             return channel
 
@@ -76,7 +76,7 @@ class TelegramSettingsService:
             channel.photo_big_file_unique_id = None
             channel.updated_at = datetime.now(timezone.utc)
 
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(channel)
             return channel
 
@@ -110,7 +110,7 @@ class TelegramSettingsService:
                 self.apply_night_mode(channel, night_mode_settings)
 
             channel.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(channel)
             return channel
 
@@ -143,7 +143,7 @@ class TelegramSettingsService:
                 channel.pinned_message = chat.pinned_message.model_dump(mode="json")
 
             channel.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(channel)
             return channel
 
@@ -176,7 +176,7 @@ class TelegramSettingsService:
                     channel.pinned_message = None
 
             channel.updated_at = datetime.now(timezone.utc)
-            await self.db.commit()
+            await self.db.flush()
             await self.db.refresh(channel)
             return channel
 

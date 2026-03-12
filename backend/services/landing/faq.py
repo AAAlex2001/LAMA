@@ -199,6 +199,6 @@ async def save_faq_content(
         ))
 
     db.add_all(contents)
-    await db.commit()
+    await db.flush()
 
     return {"status": "ok", "message": "FAQ content saved"}

@@ -87,7 +87,7 @@ class FloodService:
             channel.flood_mute_duration_minutes = flood_mute_duration_minutes
 
         channel.updated_at = datetime.now(timezone.utc)
-        await self.db.commit()
+        await self.db.flush()
         await self.db.refresh(channel)
         return channel
 
