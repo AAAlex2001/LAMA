@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const TELEGRAM_BOT_API_SECRET_TOKEN = process.env.TELEGRAM_WEBHOOK_SECRET || '';
 
 interface BotRequest {

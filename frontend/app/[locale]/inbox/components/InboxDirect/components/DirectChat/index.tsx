@@ -136,7 +136,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const top = el.offsetTop - container.clientHeight / 2 + el.clientHeight / 2;
-        container.scrollTo({ top, behavior: 'smooth' });
+        container.scrollTo({ top, behavior: 'auto' });
 
         el.classList.add(styles.messageHighlight);
         setTimeout(() => {
