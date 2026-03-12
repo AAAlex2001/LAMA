@@ -17,8 +17,20 @@ from backend.services.bot_provider import get_cached_bot, cache, bot_info_cache
 logger = logging.getLogger(__name__)
 
 WEBHOOK_ALLOWED_UPDATES = [
-    "message", "edited_message", "callback_query",
-    "chat_member", "my_chat_member", "chat_join_request",
+    "message",
+    "edited_message",
+    "channel_post",
+    "edited_channel_post",
+    "inline_query",
+    "chosen_inline_result",
+    "callback_query",
+    "shipping_query",
+    "pre_checkout_query",
+    "poll",
+    "poll_answer",
+    "my_chat_member",
+    "chat_member",
+    "chat_join_request"
 ]
 
 
