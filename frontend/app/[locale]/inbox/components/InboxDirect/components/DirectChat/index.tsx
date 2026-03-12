@@ -161,18 +161,20 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const scrollToMessage = async (telegramMessageId: number) => {
     const el = messageRefs.current.get(telegramMessageId);
     if (el) {
+      console.log('el', el);
       scrollToAndHighlight(el);
       return;
     }
-
+    console.log('activeChat', activeChat);
     if (!activeChat) return;
     pendingScrollRef.current = telegramMessageId;
-    await fetchMessages({
+    const response = await fetchMessages({
       botId: activeChat.bot_id,
       tgChatId: activeChat.tg_chat_id,
       around_message_id: telegramMessageId,
       jumpToMessage: true,
     });
+    console.log('response', response);
   };
 
   useReplyFromParam(replyMessageId, messages, inputMode.startReplyById, scrollToMessage, renderedMessages.length);
