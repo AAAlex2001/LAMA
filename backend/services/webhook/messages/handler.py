@@ -18,7 +18,7 @@ from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
 from backend.services.inbox.action_service import InboxActionService
-from backend.websockets.manager import ws_manager
+from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 logger = logging.getLogger(__name__)
@@ -30,8 +30,8 @@ class MessageHandler:
         self.db = db
         self.bot_model = bot_model
 
-    async def process(self, message: Message) -> None:
-        """Обработка сообщения"""
+    async def save_message(self, message: Message) -> Optional[DirectChatWsEvent]:
+        """Сохраняет входящее сообщение. Быстро возвращает WS-событие."""
         text_content = message.text or message.caption
         chat_type = message.chat.type if message.chat else None
         logger.info(
@@ -40,77 +40,92 @@ class MessageHandler:
             f"text={text_content[:50] if text_content else 'none'}"
         )
 
+        self.saved_msg = None
+
+        if chat_type != "private" or not message.from_user:
+            return None
+
         try:
-            saved_msg = None
-            if chat_type == "private" and message.from_user:
-                chat_svc = DirectChatService(self.db)
-                msg_svc = DirectMessageService(self.db)
+            chat_svc = DirectChatService(self.db)
+            msg_svc = DirectMessageService(self.db)
 
-                photo_url = await self.resolve_user_photo(message.from_user.id)
+            photo_url = await self.resolve_user_photo(message.from_user.id)
 
-                await chat_svc.get_or_create_chat(
+            await chat_svc.get_or_create_chat(
+                bot_id=self.bot_model.id,
+                tg_chat_id=message.chat.id,
+                tg_user_id=message.from_user.id,
+                tg_username=message.from_user.username,
+                tg_first_name=message.from_user.first_name,
+                tg_last_name=message.from_user.last_name,
+                tg_photo_url=photo_url,
+            )
+            await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
+            self.saved_msg = await msg_svc.save_incoming_message(
+                bot_id=self.bot_model.id,
+                owner_id=self.bot_model.owner_id,
+                message=message
+            )
+
+            is_command = bool(text_content and text_content.startswith("/"))
+            if not is_command:
+                try:
+                    inbox_service = InboxActionService(self.db)
+                    preview = text_content[:100] if text_content else "(медиа)"
+                    sender = message.from_user.username or str(message.from_user.id)
+
+                    media_file_id = None
+                    if message.photo:
+                        media_file_id = message.photo[-1].file_id
+                    elif message.video:
+                        media_file_id = message.video.file_id
+                    elif message.document:
+                        media_file_id = message.document.file_id
+
+                    await inbox_service.create_event({
+                        "owner_id": self.bot_model.owner_id,
+                        "category": InboxCategory.MODERATION,
+                        "entity_type": EntityType.BOT,
+                        "event_type": EventType.BOT_MESSAGE,
+                        "bot_id": self.bot_model.id,
+                        "tg_user_id": message.from_user.id,
+                        "tg_username": message.from_user.username,
+                        "status": EventStatus.NEW,
+                        "description": f"Сообщение от @{sender}: {preview}",
+                        "payload": {
+                            "message_id": message.message_id,
+                            "chat_id": message.chat.id,
+                            "text": text_content[:500] if text_content else None,
+                            "first_name": message.from_user.first_name,
+                            "media_file_id": media_file_id,
+                        },
+                    })
+                except Exception as e:
+                    logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
+
+            if self.saved_msg:
+                await self.db.flush()
+                await self.db.refresh(self.saved_msg)
+                return DirectChatWsEvent(
+                    user_id=self.bot_model.owner_id,
                     bot_id=self.bot_model.id,
-                    tg_chat_id=message.chat.id,
-                    tg_user_id=message.from_user.id,
-                    tg_username=message.from_user.username,
-                    tg_first_name=message.from_user.first_name,
-                    tg_last_name=message.from_user.last_name,
-                    tg_photo_url=photo_url,
-                )
-                await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
-                saved_msg = await msg_svc.save_incoming_message(
-                    bot_id=self.bot_model.id,
-                    owner_id=self.bot_model.owner_id,
-                    message=message
+                    chat_id=message.chat.id,
+                    event_type="message_new",
+                    payload={"message_id": self.saved_msg.id},
                 )
 
-                is_command = bool(text_content and text_content.startswith("/"))
-                if not is_command:
-                    try:
-                        inbox_service = InboxActionService(self.db)
-                        preview = text_content[:100] if text_content else "(медиа)"
-                        sender = message.from_user.username or str(message.from_user.id)
+        except Exception as e:
+            logger.error(f"Message save error: {e}", exc_info=True)
 
-                        media_file_id = None
-                        if message.photo:
-                            media_file_id = message.photo[-1].file_id
-                        elif message.video:
-                            media_file_id = message.video.file_id
-                        elif message.document:
-                            media_file_id = message.document.file_id
+        return None
 
-                        await inbox_service.create_event({
-                            "owner_id": self.bot_model.owner_id,
-                            "category": InboxCategory.MODERATION,
-                            "entity_type": EntityType.BOT,
-                            "event_type": EventType.BOT_MESSAGE,
-                            "bot_id": self.bot_model.id,
-                            "tg_user_id": message.from_user.id,
-                            "tg_username": message.from_user.username,
-                            "status": EventStatus.NEW,
-                            "description": f"Сообщение от @{sender}: {preview}",
-                            "payload": {
-                                "message_id": message.message_id,
-                                "chat_id": message.chat.id,
-                                "text": text_content[:500] if text_content else None,
-                                "first_name": message.from_user.first_name,
-                                "media_file_id": media_file_id,
-                            },
-                        })
-                    except Exception as e:
-                        logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
+    async def process_side_effects(self, message: Message) -> None:
+        """Обработка триггеров, автоответов, медиа и прочей логики."""
+        text_content = message.text or message.caption
+        chat_type = message.chat.type if message.chat else None
+        saved_msg = self.saved_msg
 
-                if saved_msg:
-                    await self.db.flush()
-                    await self.db.refresh(saved_msg)
-                    await ws_manager.broadcast_chat_update(
-                        user_id=self.bot_model.owner_id,
-                        bot_id=self.bot_model.id,
-                        chat_id=message.chat.id,
-                        event_type="message_new",
-                        payload={"message_id": saved_msg.id},
-                    )
-
+        try:
             async with get_bot_session(self.bot_model.token) as telegram_bot:
                 if saved_msg and saved_msg.media_file_id and not saved_msg.media_url:
                     try:
@@ -123,26 +138,22 @@ class MessageHandler:
                             await self.db.flush()
                     except Exception as e:
                         logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
-                # Удаление системных сообщений
+
                 auto_delete_service = ChannelAutoDeleteService(self.db)
                 if await auto_delete_service.delete_if_system(telegram_bot, message):
                     return
 
-                # Проверка ночного режима
                 if await self.check_night_mode(telegram_bot, message):
                     return
 
                 member_processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
 
-                # Обработка добавления новых участников
                 if message.new_chat_members:
                     await member_processor.handle_new_members(message)
 
-                # Обработка ухода участников
                 if message.left_chat_member:
                     await member_processor.handle_member_left(message)
 
-                # Обработка текстового контента
                 if text_content:
                     text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
                     await text_processor.process_text(
@@ -150,7 +161,7 @@ class MessageHandler:
                     )
 
         except Exception as e:
-            logger.error(f"Message processing error: {e}", exc_info=True)
+            logger.error(f"Side effects processing error: {e}", exc_info=True)
 
     async def resolve_user_photo(self, user_id: int) -> Optional[str]:
         """Получить URL аватара пользователя через Telegram API."""

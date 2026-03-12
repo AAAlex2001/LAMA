@@ -2,6 +2,15 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel
 
+
+class DirectChatWsEvent(BaseModel):
+    """WS-событие для direct-чата."""
+    user_id: int
+    bot_id: int
+    chat_id: int
+    event_type: str
+    payload: dict
+
 class DirectChatBase(BaseModel):
     is_pinned: bool = False
     is_blocked: bool = False
