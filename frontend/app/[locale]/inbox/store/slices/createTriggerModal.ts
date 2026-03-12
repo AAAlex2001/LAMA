@@ -34,6 +34,7 @@ export interface CreateTriggerModalState {
   delay_minutes: number;
   chat_type: ChatType;
   is_active: boolean;
+  isSubmitting: boolean;
   botSearch: string;
   selectedBotIds: string[];
 }
@@ -51,6 +52,7 @@ const initialState: CreateTriggerModalState = {
   delay_minutes: 0,
   chat_type: 'BOTH',
   is_active: true,
+  isSubmitting: false,
   botSearch: '',
   selectedBotIds: [],
 };
@@ -118,6 +120,9 @@ const createTriggerModalSlice = createSlice({
     setSelectedBotIds(state, action: PayloadAction<string[]>) {
       state.selectedBotIds = action.payload;
     },
+    setIsSubmitting(state, action: PayloadAction<boolean>) {
+      state.isSubmitting = action.payload;
+    },
     resetForm(state) {
       Object.assign(state, initialState);
     },
@@ -137,6 +142,7 @@ export const {
   setDelayMinutes,
   setChatType,
   setIsActive,
+  setIsSubmitting,
   setBotSearch,
   toggleSelectedBotId,
   setSelectedBotIds,

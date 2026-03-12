@@ -50,7 +50,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
-
+  
   useEffect(() => {
     dispatch(setCreateAutoReplyModalOpen(true));
     return () => {
@@ -205,6 +205,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
           onClick={handleSubmit}
           className={styles.submitButton}
           disabled={isSubmitDisabled}
+          loading={formState.isSubmitting}
           style={{ width: '100%' }}
         >
           Создать автоответ

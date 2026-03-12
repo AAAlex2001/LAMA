@@ -2,14 +2,12 @@
 
 import React, { useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
-import { Button } from '@/components/new-button';
-import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 import TriggerForm from './components/TriggerForm';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useCreateTrigger } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
-import { setCreateTriggerModalOpen, resetTriggerForm, setTriggerSelectedBotIds } from '../../store';
+import { setCreateTriggerModalOpen, resetTriggerForm, setTriggerSelectedBotIds, setTriggerIsSubmitting } from '../../store';
 import type { TriggerCreate } from '../../store/slices/triggers';
 
 interface CreateTriggersModalProps {
@@ -47,6 +45,7 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
 
   const handleSubmit = async (data: TriggerFormData) => {
     try {
+      dispatch(setTriggerIsSubmitting(true));
       const { botIds, ...triggerData } = data;
       const botIdsToUse = botIds.length > 0 ? botIds : (botId ? [botId] : []);
       
@@ -67,6 +66,8 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Не удалось создать триггер';
       showError(errorMessage);
+    } finally {
+      dispatch(setTriggerIsSubmitting(false));
     }
   };
 
@@ -79,18 +80,12 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.modalBody}>
-          {createTrigger.isPending ? (
-            <div className={styles.loaderContainer}>
-              <Loader size={32} color="blue" />
-            </div>
-          ) : (
-            <TriggerForm 
-              onSubmit={handleSubmit} 
-              onCancel={() => onOpenChange(false)}
-              bots={bots}
-              hideSearchBar={!!bots}
-            />
-          )}
+          <TriggerForm 
+            onSubmit={handleSubmit} 
+            onCancel={() => onOpenChange(false)}
+            bots={bots}
+            hideSearchBar={!!bots}
+          />
         </ModalBase.Body>
       </ModalBase.Content>
     </ModalBase>

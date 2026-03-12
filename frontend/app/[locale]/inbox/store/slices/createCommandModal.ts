@@ -9,6 +9,7 @@ export interface CreateCommandModalState {
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
   scope: 'PRIVATE' | 'GROUPS';
   is_active: boolean;
+  isSubmitting: boolean;
   botSearch: string;
   selectedBotIds: string[];
 }
@@ -22,6 +23,7 @@ const initialState: CreateCommandModalState = {
   response_media_type: 'TEXT',
   scope: 'PRIVATE',
   is_active: true,
+  isSubmitting: false,
   botSearch: '',
   selectedBotIds: [],
 };
@@ -72,6 +74,9 @@ const createCommandModalSlice = createSlice({
     setSelectedBotIds(state, action: PayloadAction<string[]>) {
       state.selectedBotIds = action.payload;
     },
+    setIsSubmitting(state, action: PayloadAction<boolean>) {
+      state.isSubmitting = action.payload;
+    },
     resetForm(state) {
       Object.assign(state, initialState);
     },
@@ -87,6 +92,7 @@ export const {
   setResponseMediaType,
   setScope,
   setIsActive,
+  setIsSubmitting,
   setBotSearch,
   toggleSelectedBotId,
   setSelectedBotIds,

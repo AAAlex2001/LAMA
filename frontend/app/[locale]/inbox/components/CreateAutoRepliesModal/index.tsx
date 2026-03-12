@@ -2,13 +2,12 @@
 
 import React, { useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
-import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 import AutoReplyForm from './components/AutoReplyForm';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useCreateAutoReply } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
-import { setCreateAutoReplyModalOpen, resetAutoReplyForm } from '../../store';
+import { setCreateAutoReplyModalOpen, resetAutoReplyForm, setAutoReplyIsSubmitting } from '../../store';
 import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
 
 interface CreateAutoRepliesModalProps {
@@ -47,6 +46,7 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
 
   const handleSubmit = async (data: AutoReplyFormData) => {
     try {
+      dispatch(setAutoReplyIsSubmitting(true));
       const { botIds, ...autoReplyData } = data;
       
       if (botIds.length === 0) {
@@ -66,6 +66,8 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Не удалось создать автоответ';
       showError(errorMessage);
+    } finally {
+      dispatch(setAutoReplyIsSubmitting(false));
     }
   };
 
@@ -78,13 +80,7 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.modalBody}>
-          {createAutoReply.isPending ? (
-            <div className={styles.loaderContainer}>
-              <Loader size={32} color="blue" />
-            </div>
-          ) : (
-            <AutoReplyForm onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
-          )}
+          <AutoReplyForm onSubmit={handleSubmit} onCancel={() => onOpenChange(false)} />
         </ModalBase.Body>
       </ModalBase.Content>
     </ModalBase>

@@ -36,12 +36,14 @@ const InvitationLinkItem: React.FC<InvitationLinkItemProps> = ({ link, onEdit })
   };
 
   return (
-    <button 
-      type="button" 
+    <div 
+      role="button"
+      tabIndex={0}
       className={classNames(styles.linkItem, { 
         [styles.linkItemExpired]: isExpired 
       })} 
       onClick={!isExpired ? () => onEdit?.(link) : undefined}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isExpired) onEdit?.(link); } }}
       style={{ cursor: onEdit && !isExpired ? 'pointer' : 'default' }}
     >
       <div className={styles.linkContent}>
@@ -75,7 +77,7 @@ const InvitationLinkItem: React.FC<InvitationLinkItemProps> = ({ link, onEdit })
           </div>
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 

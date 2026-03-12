@@ -303,6 +303,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
           onClick={handleSubmit}
           className={styles.submitButton}
           disabled={isSubmitDisabled}
+          loading={formState.isSubmitting}
         >
           Создать триггер
         </Button>
