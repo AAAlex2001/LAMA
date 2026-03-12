@@ -44,7 +44,7 @@ const ConnectBotModal: React.FC<ConnectBotModalProps> = ({
       });
       
       if (data.botError) {
-        showError(`Бот создан, но подключение не удалось: ${data.botError}`);
+        showError(`Подключение не удалось, бот не создан`);
       } else {
         showSuccess('Бот успешно создан и подключен');
       }
