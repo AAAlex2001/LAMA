@@ -1,5 +1,5 @@
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks
 from fastapi.responses import JSONResponse
 from typing import List
 import asyncio
@@ -37,13 +37,13 @@ async def upload_media(
     
     for file in files:
         if not file.filename:
-            raise HTTPException(status_code=400, detail="Файл должен иметь имя")
+            raise ValueError( "Файл должен иметь имя")
 
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Неподдерживаемый формат файла {file.filename}. Разрешены: изображения, видео, документы"
+            raise ValueError(
+                
+                f"Неподдерживаемый формат файла {file.filename}. Разрешены: изображения, видео, документы"
             )
 
         contents = await file.read()
@@ -51,9 +51,9 @@ async def upload_media(
         total_size += file_size
         
         if file_size > MAX_FILE_SIZE:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Файл {file.filename} слишком большой (макс. 50MB)"
+            raise ValueError(
+                
+                f"Файл {file.filename} слишком большой (макс. 50MB)"
             )
         
         files_data.append({
@@ -66,9 +66,9 @@ async def upload_media(
     
     # Проверяем общий размер всех файлов
     if total_size > TOTAL_MAX_SIZE:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Общий размер файлов превышает лимит ({total_size / (1024*1024):.1f}MB из 50MB)"
+        raise ValueError(
+            
+            f"Общий размер файлов превышает лимит ({total_size / (1024*1024):.1f}MB из 50MB)"
         )
     
     # Загружаем файлы
@@ -98,9 +98,9 @@ async def upload_media(
             media_urls.append(result["url"])
             
         except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Не удалось загрузить файл {file_data['filename']}: {str(e)}"
+            raise ValueError(
+                
+                f"Не удалось загрузить файл {file_data['filename']}: {str(e)}"
             )
     
     file_ids = [None] * len(media_urls)

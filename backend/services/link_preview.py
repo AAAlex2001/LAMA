@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import re
 import logging
 from urllib.parse import urlparse
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 async def get_link_preview(url: str, timeout: int = 10) -> LinkPreview:
     """Получить метаданные ссылки"""
     if not is_valid_url(url):
-        raise ValueError("Invalid URL format")
+        raise HTTPException(status_code=400, detail="Invalid URL format")
     
     try:
         async with httpx.AsyncClient(follow_redirects=True, timeout=timeout) as client:

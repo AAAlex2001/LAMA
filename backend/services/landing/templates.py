@@ -1,6 +1,7 @@
 """Сервис для работы с шаблонами (Templates) как отдельными сущностями в БД."""
 
 from __future__ import annotations
+from fastapi import HTTPException
 
 from typing import Any, Dict, List, Optional
 
@@ -58,7 +59,7 @@ async def get_template(db: AsyncSession, template_id: int, locale: str | Locale 
     template = result.scalar_one_or_none()
     
     if not template:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
     
     return {
         "id": template.id,
@@ -73,7 +74,7 @@ async def get_template_by_slug(db: AsyncSession, slug: str, locale: str | Locale
     """Получить шаблон по slug."""
     slug_norm = _safe_str(slug).lower()
     if not slug_norm:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     result = await db.execute(
         select(Template)
@@ -83,7 +84,7 @@ async def get_template_by_slug(db: AsyncSession, slug: str, locale: str | Locale
     template = result.scalar_one_or_none()
     
     if not template:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
     
     return {
         "id": template.id,
@@ -149,7 +150,7 @@ def _normalize_blocks(raw_blocks: Any) -> List[Dict[str, Any]]:
 
 def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw_faq, dict):
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     headline = _safe_str(raw_faq.get("headline"))
 
@@ -190,7 +191,7 @@ def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_cards_block(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     headline = _safe_str(raw.get("headline"))
 
@@ -224,7 +225,7 @@ def _normalize_cards_block(raw: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_subscribe_block(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     block: Dict[str, Any] = {
         "title": _safe_str(raw.get("title")),
@@ -240,7 +241,7 @@ def _normalize_subscribe_block(raw: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_subscribe_placement(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     position = _safe_str(raw.get("position")).lower() or "after_cards"
     if position not in {"after_block", "after_faq", "after_cards"}:
@@ -266,7 +267,7 @@ def _normalize_subscribe_placement(raw: Any) -> Optional[Dict[str, Any]]:
 
     # keep it only if meaningful
     if position == "after_block" and not after_block_number:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
     return placement
 
 
@@ -316,7 +317,7 @@ async def get_template_content(
     """Получить контент конкретного шаблона."""
     template = await get_template_by_slug(db, slug=slug, locale=locale)
     if not template:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     locale_enum = _coerce_locale(locale)
     
@@ -373,7 +374,7 @@ async def save_template_content(
     """Сохранить контент шаблона."""
     template = await get_template_by_slug(db, slug=slug, locale=locale)
     if not template:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
 
     locale_enum = _coerce_locale(locale)
     
@@ -479,7 +480,7 @@ async def update_template(
     template = result.scalar_one_or_none()
     
     if not template:
-        return None
+        raise HTTPException(status_code=404, detail="Template not found")
     
     if title is not None:
         template.title = title
@@ -511,7 +512,7 @@ async def delete_template(db: AsyncSession, slug: str) -> bool:
     template = result.scalar_one_or_none()
     
     if not template:
-        return False
+        raise HTTPException(status_code=400, detail="Action failed")
     
     await db.delete(template)
     await db.commit()

@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -241,7 +242,7 @@ class BotModerationService:
         """Построить кнопки для уведомления /admin."""
         replied = message.reply_to_message
         if not replied:
-            return None
+            raise HTTPException(status_code=404, detail="Auto reply not found")
 
         replied_user_id = replied.from_user.id if replied.from_user else 0
         return build_keyboard([[

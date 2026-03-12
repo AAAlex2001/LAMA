@@ -1,7 +1,7 @@
 """
 Роуты для получения и сохранения контента лендинга
 """
-from fastapi import APIRouter, Depends, Query, HTTPException, Path
+from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -158,8 +158,6 @@ async def get_template(
     """Получить шаблон по ID."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template(db, template_id=template_id, locale=parsed_locale.value)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
     return template
 
 
@@ -172,8 +170,6 @@ async def get_template_by_slug(
     """Получить шаблон по slug."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template_by_slug(db, slug=slug, locale=parsed_locale.value)
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
     return template
 
 
@@ -186,8 +182,6 @@ async def get_template_page_content(
     """Получить контент страницы конкретного шаблона (редактируется в админке)."""
     parsed_locale = parse_locale(locale)
     content = await templates.get_template_content(db, slug=slug, locale=parsed_locale.value)
-    if not content:
-        raise HTTPException(status_code=404, detail="Template not found")
     return content
 
 
@@ -237,8 +231,6 @@ async def save_template_page_content(
         },
         locale=parsed_locale.value,
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="Template not found")
     return result
 
 
@@ -272,8 +264,6 @@ async def update_template(
         order=data.order,
         is_active=data.is_active,
     )
-    if not result:
-        raise HTTPException(status_code=404, detail="Template not found")
     return result
 
 
@@ -284,8 +274,6 @@ async def delete_template(
 ):
     """Удалить шаблон."""
     success = await templates.delete_template(db, slug=slug)
-    if not success:
-        raise HTTPException(status_code=404, detail="Template not found")
     return {"status": "ok", "message": "Template deleted"}
 
 

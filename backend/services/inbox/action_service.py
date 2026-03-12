@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -265,7 +266,7 @@ class InboxActionService:
         bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None
         if not bot:
             logger.warning(f"Не удалось выполнить {action_type} для события {event.id}: бот не найден.")
-            return None
+            raise HTTPException(status_code=404, detail="Event not found")
 
         try:
             async with get_bot_session(bot.token) as client:
@@ -276,7 +277,7 @@ class InboxActionService:
                         if event.channel_id else None
                     )
                     if not (channel and channel.telegram_id and event.tg_user_id):
-                        return None
+                        raise HTTPException(status_code=404, detail="Event not found")
 
                     if action_type == "accept":
                         await client.approve_chat_join_request(
@@ -313,7 +314,7 @@ class InboxActionService:
                         if event.channel_id else None
                     )
                     if not (channel and channel.telegram_id and event.tg_user_id):
-                        return None
+                        raise HTTPException(status_code=404, detail="Event not found")
 
                     if str(channel.telegram_id).startswith("-"):
                         try:
@@ -373,7 +374,7 @@ class InboxActionService:
 
                     channel = await self.db.get(ChannelGroup, event.channel_id)
                     if not (channel and channel.telegram_id and event.tg_user_id):
-                        return None
+                        raise HTTPException(status_code=404, detail="Event not found")
 
                     if str(channel.telegram_id).startswith("-"):
                         try:
@@ -433,7 +434,7 @@ class InboxActionService:
                             f"delete_message: в payload события {event.id} "
                             f"отсутствует chat_id или message_id"
                         )
-                        return None
+                        raise HTTPException(status_code=404, detail="Event not found")
 
                     await client.delete_message(
                         chat_id=msg_chat_id,
@@ -450,7 +451,7 @@ class InboxActionService:
                     everywhere = payload.get("everywhere", False)
 
                     if not event.tg_user_id:
-                        return None
+                        raise HTTPException(status_code=404, detail="Event not found")
 
                     until_date = None
                     if duration_seconds:
@@ -520,7 +521,7 @@ class InboxActionService:
                 f"Ошибка при выполнении {action_type} для события {event.id}: {e}",
                 exc_info=True
             )
-            return None
+            raise HTTPException(status_code=404, detail="Event not found")
 
         logger.warning(f"Неизвестный action_type '{action_type}' для события {event.id}.")
-        return None
+        raise HTTPException(status_code=404, detail="Event not found")

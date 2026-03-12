@@ -82,22 +82,20 @@ async def resolve_for_channel(
     db: AsyncSession,
     channel: ChannelGroup,
 ) -> RateLimitedBot:
-    """Бот для конкретного канала.
-
-    USE_USER_BOTS=true  → бот канала.
-    USE_USER_BOTS=false → мастер-бот.
-    """
-    if use_user_bots():
-        if not channel.bot_id:
-            raise ValueError(
-                f"Channel {channel.telegram_id} has no bot assigned"
-            )
+    """Бот для конкретного канала."""
+    if channel.bot_id:
         bot_model = await load_bot_model(db, channel.bot_id)
-        if not bot_model or not bot_model.token:
-            raise ValueError(
-                f"Bot {channel.bot_id} not found or has no token"
-            )
-        return get_cached_bot(bot_model.token)
+        if bot_model and bot_model.token:
+            logger.info(f"======== [BOT_PROVIDER] USING CUSTOM BOT: bot_id={channel.bot_id} FOR CHANNEL: {channel.title} ========")
+            return get_cached_bot(bot_model.token)
+            
+    if use_user_bots():
+        logger.error(f"======== [BOT_PROVIDER] NO CUSTOM BOT ASSIGNED FOR CHANNEL: {channel.title} ========")
+        raise ValueError(
+            f"Channel {channel.telegram_id} has no bot assigned"
+        )
+        
+    logger.info(f"======== [BOT_PROVIDER] FALLING BACK TO MASTER BOT FOR CHANNEL: {channel.title} ========")
     return resolve_master()
 
 

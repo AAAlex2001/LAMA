@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -43,10 +43,7 @@ async def list_inbox_events(
 
     event_types_list = None
     if event_types:
-        try:
-            event_types_list = [EventType(e.strip()) for e in event_types.split(",") if e.strip()]
-        except ValueError:
-            raise HTTPException(status_code=400, detail="Invalid event type provided in list")
+        event_types_list = [EventType(e.strip()) for e in event_types.split(",") if e.strip()]
 
     items, total = await query_service.get_events(
         owner_id=current_user.id,
@@ -115,8 +112,6 @@ async def execute_specific_action(
       change_ban      - change ban (payload: ban_type, duration_seconds, everywhere)
     """
     event = await action_service.get_event(event_id, current_user.id)
-    if not event:
-        raise HTTPException(status_code=404, detail="Event not found")
 
     result = await action_service.execute_specific_action(
         event=event,
@@ -124,7 +119,5 @@ async def execute_specific_action(
         payload=request.payload,
     )
 
-    if result is None:
-        raise HTTPException(status_code=400, detail=f"Failed to execute action {request.action_type}")
 
     return result

@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -12,7 +12,8 @@ from backend.routes.bots.dependencies import get_bot_service, get_trigger_servic
 router = APIRouter()
 
 
-@router.post("/{bot_id}/triggers", response_model=TriggerResponse, status_code=201)
+@router.post("/{bot_id}/triggers",
+             response_model=TriggerResponse, status_code=201)
 async def create_trigger(
     bot_id: int,
     data: TriggerCreate,
@@ -22,18 +23,13 @@ async def create_trigger(
 ):
     """Создать триггер для бота."""
     bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    try:
-        return await trigger_service.create(
-            bot_id=bot_id, name=data.name,
-            trigger_type=data.trigger_type, action_type=data.action_type,
-            action_data=data.action_data, delay_minutes=data.delay_minutes,
-            delivery_window=data.delivery_window, chat_type=data.chat_type,
-            is_active=data.is_active, owner_id=current_user.id,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    return await trigger_service.create(
+        bot_id=bot_id, name=data.name,
+        trigger_type=data.trigger_type, action_type=data.action_type,
+        action_data=data.action_data, delay_minutes=data.delay_minutes,
+        delivery_window=data.delivery_window, chat_type=data.chat_type,
+        is_active=data.is_active, owner_id=current_user.id,
+    )
 
 
 @router.get("/{bot_id}/triggers", response_model=TriggerListResponse)
@@ -47,8 +43,6 @@ async def get_triggers(
 ):
     """Получить список триггеров бота."""
     bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     triggers, total = await trigger_service.get_list(
         bot_id=bot_id, trigger_type=trigger_type, is_active=is_active, owner_id=current_user.id,
     )
@@ -64,8 +58,6 @@ async def get_trigger(
 ):
     """Получить триггер по ID."""
     trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
-    if not trigger or trigger.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Trigger not found")
     return trigger
 
 
@@ -79,8 +71,6 @@ async def update_trigger(
 ):
     """Обновить триггер."""
     trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
-    if not trigger or trigger.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Trigger not found")
     updated = await trigger_service.update(
         trigger_id=trigger_id, owner_id=current_user.id,
         name=data.name, trigger_type=data.trigger_type,
@@ -88,8 +78,6 @@ async def update_trigger(
         delay_minutes=data.delay_minutes, delivery_window=data.delivery_window,
         filters=data.filters, is_active=data.is_active,
     )
-    if not updated:
-        raise HTTPException(status_code=404, detail="Trigger not found")
     return updated
 
 
@@ -102,7 +90,3 @@ async def delete_trigger(
 ):
     """Удалить триггер."""
     trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
-    if not trigger or trigger.bot_id != bot_id:
-        raise HTTPException(status_code=404, detail="Trigger not found")
-    if not await trigger_service.delete(trigger_id, owner_id=current_user.id):
-        raise HTTPException(status_code=404, detail="Trigger not found")

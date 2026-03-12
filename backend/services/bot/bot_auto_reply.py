@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
@@ -72,7 +73,7 @@ class BotAutoReplyService:
         """Обновить автоответ."""
         auto_reply = await self.get(auto_reply_id, owner_id=owner_id)
         if not auto_reply:
-            return None
+            raise HTTPException(status_code=404, detail="Auto reply not found")
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(auto_reply, field, value)
@@ -136,4 +137,4 @@ class BotAutoReplyService:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         if not result.scalar_one_or_none():
-            raise ValueError("Bot not found")
+            raise HTTPException(status_code=400, detail="Bot not found")

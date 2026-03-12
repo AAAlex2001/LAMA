@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple, Dict, Any
@@ -103,7 +104,7 @@ class BotTriggerService:
         """Обновить триггер."""
         trigger = await self.get(trigger_id, owner_id)
         if not trigger:
-            return None
+            raise HTTPException(status_code=404, detail="Trigger not found")
 
         for key, value in kwargs.items():
             if hasattr(trigger, key) and value is not None:
@@ -389,7 +390,7 @@ class BotTriggerService:
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
         if not (await self.db.execute(query)).scalar_one_or_none():
-            raise ValueError("Bot not found")
+            raise HTTPException(status_code=400, detail="Bot not found")
 
     def build_shortcode_ctx(self, user_id: int, data: dict, bot_info) -> dict:
         """Построить контекст для шорткодов."""

@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import logging
 from typing import Optional, Dict, Any
 
@@ -34,7 +35,7 @@ class BotWelcomeService:
     ) -> Optional[Message]:
         """Отправить приветственное сообщение."""
         if not bot_model.welcome_enabled or not bot_model.welcome_message:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         try:
             text = ShortcodeProcessor.process(bot_model.welcome_message, context)
@@ -104,7 +105,7 @@ class BotWelcomeService:
     ) -> Optional[Message]:
         """Приветствие при заявке на вступление (в ЛС)."""
         if not bot_model.welcome_enabled:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         user = join_request.from_user
         context = self.build_context(
@@ -132,7 +133,7 @@ class BotWelcomeService:
     ) -> Optional[Message]:
         """Приветствие при добавлении участника в группу."""
         if not bot_model.welcome_enabled:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         context = self.build_context(
             user_id=user_id,

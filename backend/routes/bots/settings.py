@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -22,8 +22,6 @@ async def get_welcome_settings(
 ):
     """Получить настройки приветствия."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
@@ -47,8 +45,6 @@ async def update_welcome_settings(
 ):
     """Обновить настройки приветствия."""
     bot = await settings.update_welcome_settings(bot_id, data, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
@@ -71,8 +67,6 @@ async def get_auto_approval_settings(
 ):
     """Получить настройки автоодобрения."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
 
     return AutoApprovalResponse(
         auto_approval_mode=bot.auto_approval_mode,
@@ -88,13 +82,8 @@ async def update_auto_approval_settings(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить настройки автоодобрения."""
-    try:
-        bot = await settings.update_auto_approval(bot_id, data, owner_id=current_user.id)
-        if not bot:
-            raise HTTPException(status_code=404, detail="Bot not found")
-        return AutoApprovalResponse(
-            auto_approval_mode=bot.auto_approval_mode,
-            approval_criteria=bot.approval_criteria,
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    bot = await settings.update_auto_approval(bot_id, data, owner_id=current_user.id)
+    return AutoApprovalResponse(
+        auto_approval_mode=bot.auto_approval_mode,
+        approval_criteria=bot.approval_criteria,
+    )

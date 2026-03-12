@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 import asyncio
 import logging
 from datetime import datetime, timezone
@@ -33,7 +34,7 @@ class BotCrudService:
 
         existing = await self.get_by_telegram_id(bot_info.id, owner_id=owner_id)
         if existing:
-            raise ValueError("You have already registered this bot")
+            raise HTTPException(status_code=400, detail="You have already registered this bot")
 
         global_existing = await self.get_by_telegram_id(bot_info.id)
         if global_existing:
@@ -100,7 +101,7 @@ class BotCrudService:
         """Обновить бота."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
 
         update_data = data.model_dump(exclude_unset=True)
         new_name = update_data.pop("name", None)
@@ -122,7 +123,7 @@ class BotCrudService:
             return bot
         except TelegramAPIError as e:
             await self.db.rollback()
-            raise ValueError(f"Failed to update bot in Telegram: {e}")
+            raise HTTPException(status_code=400, detail=f"Failed to update bot in Telegram: {e}")
 
     async def delete(self, bot_id: int, owner_id: int) -> bool:
         """Удалить бота: снять вебхук, очистить кеш, удалить из БД."""
@@ -139,7 +140,7 @@ class BotCrudService:
         """Деактивировать бота: снять вебхук, поставить INACTIVE."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
         await self.remove_webhook(bot.token)
         await self.evict_from_cache(bot.token)
         bot.status = BotStatus.INACTIVE
@@ -152,7 +153,7 @@ class BotCrudService:
         """Активировать бота: поставить вебхук, поставить ACTIVE."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
-            return None
+            raise HTTPException(status_code=404, detail="Bot not found")
         raw_bot = get_cached_bot(bot.token).bot
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
@@ -178,7 +179,7 @@ class BotCrudService:
             bot.updated_at = datetime.now(timezone.utc)
         else:
             if owner_id is None:
-                raise ValueError("Owner id is required to register a new bot")
+                raise HTTPException(status_code=400, detail="Owner id is required to register a new bot")
             bot = BotModel(
                 owner_id=owner_id,
                 telegram_id=bot_info.id,
@@ -209,7 +210,7 @@ class BotCrudService:
             )
             return bot_info, description, short_description
         except TelegramAPIError as e:
-            raise ValueError(f"Invalid bot token: {e}")
+            raise HTTPException(status_code=400, detail=f"Invalid bot token: {e}")
 
     async def setup_webhook(self, bot: Bot, token: str) -> None:
         """Установить вебхук для бота."""

@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from typing import Tuple, List, Optional, Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, asc, and_, update
@@ -281,7 +282,7 @@ class DirectChatService:
         )
         chat = (await self.db.execute(query)).scalar_one_or_none()
         if not chat:
-            return None
+            raise HTTPException(status_code=404, detail="Чат не найден или нет доступа")
 
         for key, value in update_data.model_dump(exclude_unset=True).items():
             setattr(chat, key, value)

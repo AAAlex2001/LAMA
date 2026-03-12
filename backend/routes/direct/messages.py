@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.auth import User
@@ -55,8 +55,6 @@ async def send_message(
 ):
     """Отправка нового сообщения пользователю."""
     messages = await msg_service.send_message(bot_id, tg_chat_id, current_user.id, request)
-    if not messages:
-        raise HTTPException(status_code=400, detail="Не удалось отправить сообщение")
     return {"items": messages}
 
 @router.patch("/messages/{message_id}", response_model=BotMessageResponse)
@@ -68,8 +66,6 @@ async def edit_message(
 ):
     """Редактирование исходящего сообщения."""
     msg = await msg_service.edit_message(message_id, current_user.id, request)
-    if not msg:
-        raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно для редактирования")
     return msg
 
 @router.delete("/messages/{message_id}")
@@ -80,6 +76,4 @@ async def delete_message(
 ):
     """Удаление исходящего сообщения."""
     success = await msg_service.delete_message(message_id, current_user.id)
-    if not success:
-        raise HTTPException(status_code=404, detail="Сообщение не найдено или недоступно для удаления")
     return {"status": "ok"}

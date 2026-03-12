@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
@@ -74,7 +75,7 @@ class BotCommandService:
         """Обновить команду."""
         command = await self.get(command_id, owner_id=owner_id)
         if not command:
-            return None
+            raise HTTPException(status_code=404, detail="Command not found")
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(command, field, value)
@@ -131,7 +132,7 @@ class BotCommandService:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         if not result.scalar_one_or_none():
-            raise ValueError("Bot not found")
+            raise HTTPException(status_code=400, detail="Bot not found")
 
     async def ensure_command_unique(self, bot_id: int, command_text: str) -> None:
         """Проверить уникальность команды."""
@@ -142,4 +143,4 @@ class BotCommandService:
             )
         )
         if result.scalar_one_or_none():
-            raise ValueError(f"Command {command_text} already exists for this bot")
+            raise HTTPException(status_code=400, detail=f"Command {command_text} already exists for this bot")
