@@ -86,6 +86,7 @@ async def delete_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить бота."""
+    await service.delete(bot_id, owner_id=current_user.id)
 
 
 @router.post("/{bot_id}/deactivate", response_model=BotResponse)

@@ -20,6 +20,7 @@ from backend.services.webhook.callbacks import CallbackHandler
 from backend.services.webhook.subscription import SubscriptionHandler
 from backend.services.webhook.my_chat_member import MyChatMemberHandler
 from backend.utils.keyboard import build_keyboard
+from backend.websockets.manager import ws_manager
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,11 @@ class WebhookDispatcher:
                 # Обработка сообщений
                 if update.message and update.message.chat:
                     message_handler = MessageHandler(db, bot_model)
-                    await message_handler.process(update.message)
+                    ws_event = await message_handler.save_message(update.message)
+                    await db.commit()
+                    if ws_event:
+                        await ws_manager.broadcast_chat_update(**ws_event.model_dump())
+                    await message_handler.process_side_effects(update.message)
                     await db.commit()
                     return
 

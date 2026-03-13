@@ -38,7 +38,7 @@ class BackupService:
         if backup_mode == BackupMode.INSTANT and backup_target_id:
             target = await get_channel(self.db, backup_target_id, owner_id)
             if not target:
-                raise HTTPException(status_code=400, detail="Target channel not found")
+                raise HTTPException(status_code=404, detail="Target channel not found")
 
         channel.backup_mode = backup_mode
         channel.backup_target_id = backup_target_id
@@ -76,11 +76,11 @@ class BackupService:
         )
 
         try:
-            self.db.add(post)
-            await self.db.flush()
-            await self.db.refresh(post)
+            async with self.db.begin_nested():
+                self.db.add(post)
+                await self.db.flush()
+                await self.db.refresh(post)
         except IntegrityError:
-            await self.db.rollback()
             query = select(BackedUpPost).where(
                 and_(
                     BackedUpPost.channel_id == channel_id,

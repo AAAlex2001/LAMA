@@ -150,13 +150,12 @@ class SubscriptionHandler:
             )
             result = await self.db.execute(stmt)
             if result.rowcount > 0:
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(f"Incremented member_count for link {invite_link_url}")
                 await self.check_and_revoke_link(invite_link_url, chat_id)
             else:
                 logger.warning(f"Link not found in DB for counter update: {invite_link_url}")
         except Exception as e:
-            await self.db.rollback()
             logger.error(f"Failed to increment member_count for {invite_link_url}: {e}")
 
     async def check_and_revoke_link(self, invite_link_url: str, chat_id: int) -> None:
@@ -180,7 +179,7 @@ class SubscriptionHandler:
                     except TelegramAPIError as e:
                         logger.warning(f"Failed to revoke link via Telegram: {e}")
                 link.is_revoked = True
-                await self.db.commit()
+                await self.db.flush()
                 logger.info(
                     f"Auto-revoked link {invite_link_url}: "
                     f"count={link.member_count}, limit={link.member_limit}"
@@ -347,7 +346,7 @@ class SubscriptionHandler:
 
                         await self.db.delete(pending)
 
-            await self.db.commit()
+            await self.db.flush()
 
         except Exception as e:
             logger.error(f"Subscription processing error: {e}", exc_info=True)
@@ -378,7 +377,6 @@ class SubscriptionHandler:
                 new_payload["join_state"] = "accepted"
                 event.payload = new_payload
                 event.status = EventStatus.PROCESSED
-                await self.db.commit()
+                await self.db.flush()
         except Exception as e:
             logger.error(f"mark_join_event_accepted failed: {e}")
-            await self.db.rollback()

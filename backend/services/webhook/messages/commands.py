@@ -4,6 +4,7 @@ from typing import Optional, List, Dict, Any
 
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import ChannelAutoDeleteService
@@ -25,7 +26,7 @@ MODERATION_COMMANDS = {
 
 class CommandProcessor:
     def __init__(
-        self, db: AsyncSession, bot_model: BotModel, telegram_bot: Bot
+        self, db: AsyncSession, bot_model: BotModel, telegram_bot: RateLimitedBot
     ):
         self.db = db
         self.bot_model = bot_model
@@ -67,7 +68,7 @@ class CommandProcessor:
             is_system=True,
         )
         self.db.add(msg)
-        await self.db.commit()
+        await self.db.flush()
 
     def get_chat_display_name(self, message: Message) -> str:
         """Получить читаемое имя чата для описания события."""

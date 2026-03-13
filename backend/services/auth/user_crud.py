@@ -4,6 +4,7 @@ CRUD операции для пользователей
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
+from fastapi import HTTPException
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -59,7 +60,7 @@ class UserCRUDService:
         """Обновить пользователя (только для админа)"""
         user = await self.get_user(user_id)
         if not user:
-            return None
+            raise HTTPException(status_code=404, detail="User not found")
 
         update_data = data.model_dump(exclude_unset=True)
         for field, value in update_data.items():

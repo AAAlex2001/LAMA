@@ -1,4 +1,5 @@
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import Chat
 
 from backend.models.channels import ChannelType
@@ -11,7 +12,7 @@ def dump_model(obj) -> dict:
     return obj.model_dump(mode="json", exclude_defaults=True)
 
 
-async def fetch_photo_data(bot: Bot, chat: Chat, bot_token: str) -> dict:
+async def fetch_photo_data(bot: RateLimitedBot, chat: Chat, bot_token: str) -> dict:
     """Получить данные фото чата."""
     empty = {
         "photo_url": None,
@@ -44,7 +45,7 @@ def resolve_channel_type(chat: Chat) -> ChannelType:
     return ChannelType.CHANNEL
 
 
-async def build_chat_data(bot: Bot, chat: Chat, bot_token: str) -> dict:
+async def build_chat_data(bot: RateLimitedBot, chat: Chat, bot_token: str) -> dict:
     """Собрать данные чата для сохранения."""
     members_count = 0
     try:

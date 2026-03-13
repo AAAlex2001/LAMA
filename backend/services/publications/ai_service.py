@@ -2,6 +2,7 @@ from typing import Optional
 import json
 import httpx
 
+from fastapi import HTTPException
 from backend.schemas.publications import AIGenerateRequest
 
 # Module-level singleton — reused across all requests, no per-request leak
@@ -22,7 +23,7 @@ class AIService:
     async def generate_content(self, request: AIGenerateRequest) -> str:
         """Сгенерировать контент с помощью AI"""
         if not self.api_key:
-            raise ValueError("AI API key not configured")
+            raise HTTPException(status_code=503, detail="AI service is not configured")
 
         response = await self.http_client.post(
             "https://api.deepseek.com/v1/chat/completions",
@@ -48,7 +49,7 @@ class AIService:
         )
 
         if response.status_code != 200:
-            raise ValueError(f"DeepSeek API error: {response.text}")
+            raise HTTPException(status_code=502, detail="AI service request failed")
 
         result = response.json()
         return result['choices'][0]['message']['content']
@@ -56,7 +57,7 @@ class AIService:
     async def edit_content(self, original_text: str, instruction: str) -> str:
         """Редактировать контент с помощью AI"""
         if not self.api_key:
-            raise ValueError("AI API key not configured")
+            raise HTTPException(status_code=503, detail="AI service is not configured")
 
         response = await self.http_client.post(
             "https://api.deepseek.com/v1/chat/completions",
@@ -81,7 +82,7 @@ class AIService:
         )
 
         if response.status_code != 200:
-            raise ValueError(f"DeepSeek API error: {response.text}")
+            raise HTTPException(status_code=502, detail="AI service request failed")
 
         result = response.json()
         return result['choices'][0]['message']['content']
@@ -89,7 +90,7 @@ class AIService:
     async def edit_content_stream(self, original_text: str, instruction: str):
         """Редактировать контент с помощью AI со streaming"""
         if not self.api_key:
-            raise ValueError("AI API key not configured")
+            raise HTTPException(status_code=503, detail="AI service is not configured")
 
         async with self.http_client.stream(
             "POST",
@@ -116,7 +117,7 @@ class AIService:
         ) as response:
             if response.status_code != 200:
                 error_text = (await response.aread()).decode('utf-8', errors='replace')
-                raise ValueError(f"DeepSeek API error: {error_text}")
+                raise HTTPException(status_code=502, detail="AI service request failed")
 
             async for line in response.aiter_lines():
                 if line.startswith("data: "):

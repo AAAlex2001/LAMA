@@ -5,6 +5,7 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -144,10 +145,10 @@ class BotAuthService:
         login_code = result.scalar_one_or_none()
 
         if not login_code:
-            raise ValueError("Invalid or expired login code")
+            raise HTTPException(status_code=401, detail="Invalid or expired login code")
 
         if datetime.now(timezone.utc) > login_code.expires_at:
-            raise ValueError("Login code has expired")
+            raise HTTPException(status_code=401, detail="Login code has expired")
 
         account_query = select(TelegramAccount).options(
             selectinload(TelegramAccount.user)
@@ -165,7 +166,7 @@ class BotAuthService:
 
             user = await self.db.get(User, telegram_account.user_id)
             if not user:
-                raise ValueError("User not found")
+                raise HTTPException(status_code=404, detail="User not found")
         else:
             user = User(
                 role=UserRole.USER,
@@ -213,7 +214,7 @@ class BotAuthService:
         login_code = result.scalar_one_or_none()
 
         if not login_code:
-            raise ValueError("Invalid or expired login code")
+            raise HTTPException(status_code=401, detail="Invalid or expired login code")
 
         expires_at = datetime.now(
             timezone.utc) + timedelta(minutes=self.access_token_expire_minutes)

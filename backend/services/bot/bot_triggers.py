@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple, Dict, Any
 
 import pytz
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import ChatPermissions, InputMediaPhoto, InputMediaVideo, InputMediaDocument
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func
@@ -119,14 +120,14 @@ class BotTriggerService:
         """Удалить триггер."""
         trigger = await self.get(trigger_id, owner_id)
         if not trigger:
-            return False
+            raise HTTPException(status_code=404, detail="Trigger not found")
         await self.db.delete(trigger)
         await self.db.flush()
         return True
 
     async def fire_event(
         self, bot_id: int, trigger_type: TriggerType,
-        user_id: int, chat_id: int, telegram_bot: Bot,
+        user_id: int, chat_id: int, telegram_bot: RateLimitedBot,
         context: Optional[Dict[str, Any]] = None,
         chat_type: Optional[str] = None,
     ) -> int:
@@ -155,7 +156,7 @@ class BotTriggerService:
 
     async def execute(
         self, trigger: Trigger, user_id: int, chat_id: int,
-        telegram_bot: Bot, context: Optional[dict] = None,
+        telegram_bot: RateLimitedBot, context: Optional[dict] = None,
     ) -> None:
         """Выполнить действие триггера."""
         if not self.is_in_delivery_window(trigger):
@@ -201,7 +202,7 @@ class BotTriggerService:
         )
         return list(result.unique().scalars().all())
 
-    async def execute_scheduled_task(self, task: ScheduledTriggerTask, telegram_bot: Bot) -> bool:
+    async def execute_scheduled_task(self, task: ScheduledTriggerTask, telegram_bot: RateLimitedBot) -> bool:
         """Выполнить отложенную задачу."""
         trigger = (await self.db.execute(
             select(Trigger).where(Trigger.id == task.trigger_id)
@@ -224,7 +225,7 @@ class BotTriggerService:
             logger.error(f"Scheduled task {task.id} failed: {e}")
             return False
 
-    async def action_send_message(self, bot: Bot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_send_message(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
         """Действие: отправить текст."""
         text = data.get("text", "")
         if not text:
@@ -236,7 +237,7 @@ class BotTriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger message to {chat_id}: {e}")
 
-    async def action_send_media(self, bot: Bot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_send_media(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
         """Действие: отправить медиа (одиночное или альбом)."""
         media_urls = [u for u in (data.get("media_urls") or []) if u]
         media_url = data.get("media_url")
@@ -278,7 +279,7 @@ class BotTriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
 
-    async def action_mute(self, bot: Bot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_mute(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
         """Действие: заглушить пользователя."""
         minutes = data.get("duration_minutes", 60)
         try:
@@ -290,7 +291,7 @@ class BotTriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to mute user {user_id}: {e}")
 
-    async def action_ban(self, bot: Bot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_ban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
         """Действие: забанить пользователя."""
         minutes = data.get("duration_minutes", 0)
         try:
@@ -390,7 +391,7 @@ class BotTriggerService:
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
         if not (await self.db.execute(query)).scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Bot not found")
+            raise HTTPException(status_code=404, detail="Bot not found")
 
     def build_shortcode_ctx(self, user_id: int, data: dict, bot_info) -> dict:
         """Построить контекст для шорткодов."""

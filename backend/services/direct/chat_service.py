@@ -282,7 +282,7 @@ class DirectChatService:
         )
         chat = (await self.db.execute(query)).scalar_one_or_none()
         if not chat:
-            raise HTTPException(status_code=404, detail="Чат не найден или нет доступа")
+            raise HTTPException(status_code=404, detail="Chat not found or access denied")
 
         for key, value in update_data.model_dump(exclude_unset=True).items():
             setattr(chat, key, value)

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -122,17 +123,17 @@ def resolve_chat_identifier(
         if extracted.startswith("+") or extracted.startswith("joinchat/"):
             raise HTTPException(
                 status_code=400,
-                detail="Добавление по приватной invite ссылке напрямую не поддерживается Telegram API. Добавьте бота в канал/группу как администратора, и он появится автоматически."
+                detail="Private invite links are not supported by Telegram API. Add the bot to the channel/group as an administrator and it will appear automatically."
             )
         return f"@{extracted}"
     if invite_link:
         raise HTTPException(
             status_code=400,
-            detail="Неподдерживаемый формат ссылки. Используйте публичный username (@username) или t.me/username."
+            detail="Unsupported link format. Use a public username (@username) or t.me/username."
         )
 
 
-async def validate_access(bot: Bot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
+async def validate_access(bot: RateLimitedBot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
     try:
         bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)

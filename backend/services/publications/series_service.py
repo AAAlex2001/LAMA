@@ -121,14 +121,14 @@ class SeriesService:
     ) -> PublishResult:
         """Опубликовать пост из серии с резолвом бота по каналу."""
         if not publication.series_id:
-            raise ValueError("Publication must belong to a series")
+            raise HTTPException(status_code=400, detail="Publication must belong to a series")
 
         if not publication.channels:
-            raise ValueError("No channels selected for publication")
+            raise HTTPException(status_code=400, detail="No channels selected for publication")
 
         series = await self.get_series(publication.series_id)
         if not series:
-            raise ValueError("Series not found")
+            raise HTTPException(status_code=404, detail="Series not found")
 
         results: List[ChannelPublishResult] = []
 

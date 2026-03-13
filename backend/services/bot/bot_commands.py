@@ -89,7 +89,7 @@ class BotCommandService:
         """Удалить команду."""
         command = await self.get(command_id, owner_id=owner_id)
         if not command:
-            return False
+            raise HTTPException(status_code=404, detail="Command not found")
         await self.db.delete(command)
         await self.db.flush()
         return True
@@ -132,7 +132,7 @@ class BotCommandService:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         if not result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Bot not found")
+            raise HTTPException(status_code=404, detail="Bot not found")
 
     async def ensure_command_unique(self, bot_id: int, command_text: str) -> None:
         """Проверить уникальность команды."""

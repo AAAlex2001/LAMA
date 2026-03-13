@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -50,7 +51,7 @@ class BotCrudService:
 
         global_existing = await self.get_by_telegram_id(bot_info.id)
         if global_existing:
-            return global_existing
+            raise HTTPException(status_code=409, detail="This bot is already registered by another user")
 
         bot = BotModel(
             owner_id=owner_id,
@@ -134,14 +135,13 @@ class BotCrudService:
             await self.db.refresh(bot)
             return bot
         except TelegramAPIError as e:
-            await self.db.rollback()
             raise HTTPException(status_code=400, detail=f"Failed to update bot in Telegram: {e}")
 
     async def delete(self, bot_id: int, owner_id: int) -> bool:
         """Удалить бота: снять вебхук, очистить кеш, удалить из БД."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
-            return False
+            raise HTTPException(status_code=404, detail="Bot not found")
         await self.remove_webhook(bot.token)
         await self.evict_from_cache(bot.token)
         await self.db.delete(bot)
@@ -190,6 +190,10 @@ class BotCrudService:
             bot.last_sync_at = datetime.now(timezone.utc)
             bot.updated_at = datetime.now(timezone.utc)
         else:
+            global_existing = await self.get_by_telegram_id(bot_info.id)
+            if global_existing:
+                raise HTTPException(status_code=409, detail="This bot is already registered by another user")
+
             if owner_id is None:
                 raise HTTPException(status_code=400, detail="Owner id is required to register a new bot")
             bot = BotModel(
@@ -224,7 +228,7 @@ class BotCrudService:
         except TelegramAPIError as e:
             raise HTTPException(status_code=400, detail=f"Invalid bot token: {e}")
 
-    async def setup_webhook(self, bot: Bot, token: str) -> None:
+    async def setup_webhook(self, bot: RateLimitedBot, token: str) -> None:
         """Установить вебхук для бота."""
         webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
         await bot.set_webhook(
@@ -233,7 +237,7 @@ class BotCrudService:
             allowed_updates=WEBHOOK_ALLOWED_UPDATES,
         )
 
-    async def safe_get_description(self, bot: Bot) -> Optional[str]:
+    async def safe_get_description(self, bot: RateLimitedBot) -> Optional[str]:
         """Получить описание бота (None при ошибке)."""
         try:
             info = await bot.get_my_description()
@@ -241,7 +245,7 @@ class BotCrudService:
         except TelegramAPIError:
             return None
 
-    async def safe_get_short_description(self, bot: Bot) -> Optional[str]:
+    async def safe_get_short_description(self, bot: RateLimitedBot) -> Optional[str]:
         """Получить краткое описание бота (None при ошибке)."""
         try:
             info = await bot.get_my_short_description()
@@ -265,7 +269,7 @@ class BotCrudService:
         bot_info_cache.pop(token, None)
 
     async def sync_telegram_fields(
-        self, telegram_bot: Bot, bot: BotModel,
+        self, telegram_bot: RateLimitedBot, bot: BotModel,
         new_name: Optional[str], update_data: dict,
     ) -> None:
         """Синхронизировать поля бота с Telegram API."""

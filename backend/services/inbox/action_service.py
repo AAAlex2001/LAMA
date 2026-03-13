@@ -6,6 +6,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram.types import ChatPermissions
+from backend.services.telegram_client import RateLimitedBot
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot, TriggerType
 from backend.models.channels import ChannelGroup, ChatInviteLink
@@ -149,9 +150,10 @@ class InboxActionService:
         event = InboxEvent(**event_data)
         self.db.add(event)
         await self.db.flush()
+        await self.db.refresh(event)
         return event
 
-    async def get_event(self, event_id: int, owner_id: int) -> Optional[InboxEvent]:
+    async def get_event(self, event_id: int, owner_id: int) -> InboxEvent:
         """Получить событие по ID с проверкой владельца."""
         result = await self.db.execute(
             select(InboxEvent).where(
@@ -159,7 +161,10 @@ class InboxActionService:
                 InboxEvent.owner_id == owner_id
             )
         )
-        return result.scalar_one_or_none()
+        event = result.scalar_one_or_none()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return event
 
     def mark_payload_handled(self, event: InboxEvent) -> None:
         """Пометить payload.handled = True при наличии этого поля (bot_command и др.)."""
@@ -202,7 +207,7 @@ class InboxActionService:
             logger.error(f"increment_link_counter failed: {e}")
 
     async def fire_join_trigger(
-        self, bot: Bot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
+        self, bot: RateLimitedBot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
     ) -> None:
         """Запустить триггер при принятии/отклонении заявки из инбокса."""
         try:

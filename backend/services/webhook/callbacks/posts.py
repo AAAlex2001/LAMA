@@ -195,7 +195,7 @@ class PostsCallbackProcessor(BaseCallbackProcessor):
             )
         )
         await self.db.execute(stmt)
-        await self.db.commit()
+        await self.db.flush()
 
     async def get_click_count(
         self, publication_id: int, button_id: str

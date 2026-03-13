@@ -87,7 +87,7 @@ class BotAutoReplyService:
         """Удалить автоответ."""
         auto_reply = await self.get(auto_reply_id, owner_id=owner_id)
         if not auto_reply:
-            return False
+            raise HTTPException(status_code=404, detail="Auto reply not found")
         await self.db.delete(auto_reply)
         await self.db.flush()
         return True
@@ -137,4 +137,4 @@ class BotAutoReplyService:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         if not result.scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Bot not found")
+            raise HTTPException(status_code=404, detail="Bot not found")

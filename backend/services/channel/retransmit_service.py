@@ -2,6 +2,7 @@ import asyncio
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.enums import ParseMode
 from aiogram.exceptions import TelegramRetryAfter
 from aiogram.types import Message
@@ -61,7 +62,7 @@ class RetransmitService:
         await self.db.refresh(retransmission)
         return retransmission
 
-    async def copy_message(self, post: BackedUpPost, target_telegram_id: int, bot: Bot) -> Message:
+    async def copy_message(self, post: BackedUpPost, target_telegram_id: int, bot: RateLimitedBot) -> Message:
         """Скопировать сообщение в канал с ретраями."""
         for attempt in range(MAX_RETRIES):
             try:
@@ -77,7 +78,7 @@ class RetransmitService:
                 else:
                     raise
 
-    async def send_post(self, post: BackedUpPost, target_telegram_id: int, bot: Bot) -> Message:
+    async def send_post(self, post: BackedUpPost, target_telegram_id: int, bot: RateLimitedBot) -> Message:
         """Отправить пост в канал."""
         if post.media_group_id and post.media_file_ids and len(post.media_file_ids) > 1:
             media_inputs = build_media_inputs(post)
