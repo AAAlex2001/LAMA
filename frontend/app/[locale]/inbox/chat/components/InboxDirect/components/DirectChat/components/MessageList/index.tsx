@@ -1,11 +1,56 @@
-import { FC, RefObject } from 'react';
+import { FC, RefObject, useMemo, useCallback, memo } from 'react';
 import Loader from '@/components/loader/loader';
 import { Button } from '@/components/new-button';
 import { ChevronDownIcon } from '@/components/icons';
 import MessageElement from '../MessageElement';
+import type { ReplyToInfo } from '../MessageElement';
 import styles from '../../styles.module.scss';
 import type { RenderedMessageGroup } from '../../hooks/useRenderedMessages';
 import type { MessageScrollReturn } from '../../hooks/useMessageScroll';
+
+interface MessageRowProps {
+  msg: RenderedMessageGroup;
+  messageRefs: RefObject<Map<number, HTMLDivElement>>;
+  replyTextLookup: Map<number, string>;
+  userPhoto?: string;
+  scrollToMessage: (telegramMessageId: number) => Promise<void>;
+}
+
+const MessageRow = memo<MessageRowProps>(({ msg, messageRefs, replyTextLookup, userPhoto, scrollToMessage }) => {
+  const replyTo: ReplyToInfo | undefined = useMemo(() => {
+    if (!msg.replyToMessageId) return undefined;
+    const text = replyTextLookup.get(msg.replyToMessageId) || msg.replyMessageText || 'Сообщение';
+    return {
+      text,
+      onClick: () => scrollToMessage(msg.replyToMessageId!),
+    };
+  }, [msg.replyToMessageId, msg.replyMessageText, replyTextLookup, scrollToMessage]);
+
+  const setRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      if (el) messageRefs.current?.set(msg.telegramMessageId, el);
+      else messageRefs.current?.delete(msg.telegramMessageId);
+    },
+    [messageRefs, msg.telegramMessageId],
+  );
+
+  return (
+    <div ref={setRef}>
+      <MessageElement
+        type={msg.type}
+        text={msg.text}
+        mediaItems={msg.mediaItems}
+        time={msg.time}
+        userPhoto={userPhoto}
+        replyTo={replyTo}
+        onEdit={msg.onEdit}
+        onReply={msg.onReply}
+        onDelete={msg.onDelete}
+      />
+    </div>
+  );
+});
+MessageRow.displayName = 'MessageRow';
 
 interface MessageListProps {
   renderedMessages: RenderedMessageGroup[];
@@ -51,35 +96,14 @@ const MessageList: FC<MessageListProps> = ({
           </div>
         )}
         {renderedMessages.map((msg) => (
-          <div
+          <MessageRow
             key={msg.id}
-            ref={(el) => {
-              if (el) messageRefs.current?.set(msg.telegramMessageId, el);
-              else messageRefs.current?.delete(msg.telegramMessageId);
-            }}
-          >
-            <MessageElement
-              type={msg.type}
-              text={msg.text}
-              mediaItems={msg.mediaItems}
-              time={msg.time}
-              userPhoto={userPhoto}
-              replyTo={
-                msg.replyToMessageId
-                  ? (() => {
-                      const text = replyTextLookup.get(msg.replyToMessageId!) || msg.replyMessageText || 'Сообщение';
-                      return {
-                        text,
-                        onClick: () => scrollToMessage(msg.replyToMessageId!),
-                      };
-                    })()
-                  : undefined
-              }
-              onEdit={msg.onEdit}
-              onReply={msg.onReply}
-              onDelete={msg.onDelete}
-            />
-          </div>
+            msg={msg}
+            messageRefs={messageRefs}
+            replyTextLookup={replyTextLookup}
+            userPhoto={userPhoto}
+            scrollToMessage={scrollToMessage}
+          />
         ))}
         <div ref={scroll.bottomRef} style={{ height: 1, flexShrink: 0 }} />
       </div>

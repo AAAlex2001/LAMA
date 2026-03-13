@@ -139,7 +139,7 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
       handleClearMedia();
       onCleanup?.();
     };
-  }, [handleClearMedia, onCleanup]);
+  }, [onCleanup]);
 
   return (
     <div className={styles.section}>

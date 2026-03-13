@@ -193,6 +193,22 @@
     opacity: 0.8;
   }
 }
+.outgoingMeta {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.outgoingReplyAction {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+}
 
 .replyPreview {
   background: rgba(56, 63, 69, 0.08);

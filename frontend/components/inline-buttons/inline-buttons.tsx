@@ -19,6 +19,7 @@ export interface InlineButton {
   callback_response?: string;
   hidden_text_subscribed?: string;
   hidden_text_unsubscribed?: string;
+  hideButtonType?: boolean;
 }
 
 export interface ButtonRow {
@@ -34,6 +35,7 @@ interface InlineButtonsProps {
   onAddColumn: (rowId: string) => void;
   onUpdateButton: (rowId: string, buttonId: string, updates: Partial<InlineButton>) => void;
   onDeleteButton: (rowId: string, buttonId: string) => void;
+  hideButtonType?: boolean;
 }
 
 export default function InlineButtons({
@@ -44,6 +46,7 @@ export default function InlineButtons({
   onAddColumn,
   onUpdateButton,
   onDeleteButton,
+  hideButtonType = false,
 }: InlineButtonsProps) {
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
 
@@ -118,6 +121,7 @@ export default function InlineButtons({
       <div className={styles.editors}>
         {allButtons.map(({ rowId, button, number }) => (
           <ButtonEditor
+            hideButtonType={hideButtonType}
             key={button.id}
             rowId={rowId}
             button={button}
@@ -135,9 +139,10 @@ interface ButtonEditorProps {
   button: InlineButton;
   number: number;
   onUpdate: (rowId: string, buttonId: string, updates: Partial<InlineButton>) => void;
+  hideButtonType?: boolean;
 }
 
-function ButtonEditor({ rowId, button, number, onUpdate }: ButtonEditorProps) {
+function ButtonEditor({ rowId, button, number, onUpdate, hideButtonType }: ButtonEditorProps) {
   const handleTypeChange = (newType: ButtonTypeOption) => {
     onUpdate(rowId, button.id, {
       type: newType as ButtonType,
@@ -158,13 +163,15 @@ function ButtonEditor({ rowId, button, number, onUpdate }: ButtonEditorProps) {
       <div className={styles.buttonLabel}>
         Кнопка {number}
       </div>
-      <Dropdown
+      {!hideButtonType && (
+        <Dropdown
         variant="button-type"
         label="Тип кнопки"
         buttonTypeValue={button.type as ButtonTypeOption}
         onButtonTypeChange={handleTypeChange}
         className={styles.typeDropdown}
-      />
+        />
+      )}
     </div>
   );
 

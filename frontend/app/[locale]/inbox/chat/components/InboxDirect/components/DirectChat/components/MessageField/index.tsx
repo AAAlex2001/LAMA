@@ -238,14 +238,16 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
           <span className={styles.dropOverlayText}>Перетащите файлы сюда</span>
         </div>
       )}
-      <div className={styles.mediaPreviewWrapper}>
-        <MediaPreview
-          files={mediaFiles}
-          onRemove={handleRemoveFile}
-          onToggleBlur={handleToggleBlur}
-          onMove={handleMoveMedia}
-        />
-      </div>
+      {mediaFiles.length > 0 && (
+        <div className={styles.mediaPreviewWrapper}>
+          <MediaPreview
+            files={mediaFiles}
+            onRemove={handleRemoveFile}
+            onToggleBlur={handleToggleBlur}
+            onMove={handleMoveMedia}
+          />
+        </div>
+      )}
       <input
         ref={fileInputRef}
         type="file"
@@ -275,7 +277,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
         )}
         {!editingMessage && replyingTo && (
           <div className={styles.replyBar}>
-            <ReplyIcon width={18} height={18} color="var(--color-lama-blue)" />
+            <ReplyIcon width={20} height={20} color="var(--color-lama-blue)" />
             <div className={styles.editBarContent}>
               <span className={styles.editBarLabel}>Ответ</span>
               <span className={styles.editBarText}>{replyingTo.text}</span>
@@ -319,16 +321,6 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             </Button>
           )}
         </div>
-        <div className={classNames(styles.inlineButtonsContainer, { [styles.inlineOpen]: inlineButtonsOpen })}>
-          <InlineButtons
-            isOpen={inlineButtonsOpen}
-            rows={inlineButtonRows}
-            onAddRow={addInlineButtonRow}
-            onAddColumn={addInlineButtonColumn}
-            onUpdateButton={updateInlineButton}
-            onDeleteButton={deleteInlineButton}
-          />
-        </div>
         <div className={styles.actionsRow}>
           <Button
             variant='tag'
@@ -354,6 +346,17 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             <TemplatesIcon width={24} height={24} color="#383F45" />
             Шаблоны
           </Button>
+        </div>
+        <div className={classNames(styles.inlineButtonsContainer, { [styles.inlineOpen]: inlineButtonsOpen })}>
+          <InlineButtons
+            isOpen={inlineButtonsOpen}
+            rows={inlineButtonRows}
+            onAddRow={addInlineButtonRow}
+            onAddColumn={addInlineButtonColumn}
+            onUpdateButton={updateInlineButton}
+            onDeleteButton={deleteInlineButton}
+            hideButtonType
+          />
         </div>
       </div>
       <TextTemplatesModal

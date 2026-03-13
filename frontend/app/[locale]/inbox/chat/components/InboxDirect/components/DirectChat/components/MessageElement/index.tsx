@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import styles from './styles.module.scss';
 import EditIcon from '@/components/icons/edit-icon';
 import TrashIcon from '@/components/icons/trash-icon';
@@ -39,7 +39,7 @@ export interface MessageProps {
   onDelete?: () => void;
 }
 
-const ReplyPreview = ({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOutgoing: boolean }) => (
+const ReplyPreview = memo(({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOutgoing: boolean }) => (
   <button
     type="button"
     className={isOutgoing ? styles.replyPreviewOutgoing : styles.replyPreview}
@@ -48,9 +48,10 @@ const ReplyPreview = ({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOutgoin
     <span className={styles.replyPreviewLine} />
     <span className={styles.replyPreviewText}>{replyTo.text}</span>
   </button>
-);
+));
+ReplyPreview.displayName = 'ReplyPreview';
 
-const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEdit, onReply, onDelete }: MessageProps) => {
+const MessageElement = memo(({ type, text, userPhoto, mediaItems, time, replyTo, onEdit, onReply, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -68,15 +69,15 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
     setIsDeleteModalOpen(false);
   };
 
-  const mediaFiles: MediaFile[] = (mediaItems || [])
-    .map((item, i): MediaFile => ({
-      id: item.id || `item-${i}`,
-      type: (item.type === 'image' ? 'image' : item.type === 'video' ? 'video' : 'document') as 'image' | 'video' | 'document',
-      file: item.file,
-      url: item.src,
-      name: item.name,
-      size: item.size,
-    }));
+  // const mediaItemsKey = (mediaItems || []).map((item) => `${item.id ?? ''}|${item.type}|${item.src ?? ''}`).join(',');
+  const mediaFiles: MediaFile[] = (mediaItems || []).map((item, i): MediaFile => ({
+    id: item.id || `item-${i}`,
+    type: (item.type === 'image' ? 'image' : item.type === 'video' ? 'video' : 'document') as 'image' | 'video' | 'document',
+    file: item.file,
+    url: item.src,
+    name: item.name,
+    size: item.size,
+  }));
 
   const filesNeedingUrls = mediaFiles.filter((m) => m.file && (m.type === 'image' || m.type === 'video' || m.type === 'document'));
 
@@ -90,7 +91,12 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
       return;
     }
 
+    let cancelled = false;
     createObjectUrls(filesNeedingUrls).then((urls) => {
+      if (cancelled) {
+        revokeObjectUrls(urls);
+        return;
+      }
       if (objectUrlsRef.current.size > 0) {
         revokeObjectUrls(objectUrlsRef.current);
       }
@@ -99,15 +105,15 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
     });
 
     return () => {
+      cancelled = true;
       if (objectUrlsRef.current.size > 0) {
         revokeObjectUrls(objectUrlsRef.current);
         objectUrlsRef.current = new Map();
       }
     };
-  }, [mediaItems]);
+  }, [filesNeedingUrls]);
 
   const mediaRuns = createMediaRuns(mediaFiles, objectUrls);
-
   const isOutgoing = type === 'outgoing';
 
   if (type === 'system') {
@@ -131,6 +137,13 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
             </div>
           }
         </DesktopWrapper>
+        {isOutgoing && onReply && (
+          <div className={styles.outgoingMeta}>
+            <button className={styles.outgoingReplyAction} onClick={onReply} type="button">
+              <ReplyIcon width={20} height={20} />
+            </button>
+          </div>
+        )}
         <div className={styles.mediaContainer}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={isOutgoing} />}
           {mediaRuns.map((run, idx) =>
@@ -145,7 +158,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
         {!isOutgoing && onReply && (
           <div className={styles.incomingMeta}>
             <button className={styles.incomingReplyAction} onClick={onReply} type="button">
-              <ReplyIcon width={18} height={18} />
+              <ReplyIcon width={20} height={20} />
             </button>
           </div>
         )}
@@ -181,7 +194,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
           <div className={styles.incomingMeta}>
             {onReply && (
               <button className={styles.incomingReplyAction} onClick={onReply} type="button">
-                <ReplyIcon width={18} height={18} />
+                <ReplyIcon width={20} height={20} />
               </button>
             )}
             {time && <span className={styles.incomingTime}>{time}</span>}
@@ -213,7 +226,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
               <div className={styles.msgActions}>
                 {onReply && (
                   <button className={styles.msgAction} onClick={onReply}>
-                    <ReplyIcon width={18} height={18} color="#F1F5FB" />
+                    <ReplyIcon width={20} height={20} color="#F1F5FB" />
                   </button>
                 )}
                 {onEdit && (
@@ -242,6 +255,7 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
       />
     </>
   );
-};
+});
+MessageElement.displayName = 'MessageElement';
 
 export default MessageElement;

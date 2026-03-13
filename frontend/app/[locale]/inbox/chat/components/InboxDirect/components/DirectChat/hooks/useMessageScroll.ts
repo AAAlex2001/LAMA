@@ -108,7 +108,7 @@ export function useMessageScroll({
           });
         }
       },
-      { root: el, rootMargin: '200px 0px 0px 0px', threshold: 0 }
+      { root: el, rootMargin: '500px 0px 0px 0px', threshold: 0 }
     );
 
     observer.observe(sentinel);

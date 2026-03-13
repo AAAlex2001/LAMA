@@ -29,31 +29,32 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
   ) => {
     const isVideo = item.type === 'video';
     const hasVideoThumbnail = isVideo && item.thumbnailUrl;
+
     const isBroken = brokenIds.has(item.id);
 
     const tile = isBroken ? (
       <div className={styles.brokenPlaceholder} />
     ) : isVideo && !item.thumbnailUrl ? (
-        <video
-          className={styles.video}
-          src={item.url}
-          muted
-          playsInline
-          preload="metadata"
-          style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
-          onError={() => handleMediaError(item.id)}
-        />
-      ) : (
-        <img
-          src={hasVideoThumbnail ? item.thumbnailUrl : item.url}
-          alt=""
-          className={styles.image}
-          style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
-          loading="lazy"
-          decoding="async"
-          onError={() => handleMediaError(item.id)}
-        />
-      );
+      <video
+        className={styles.video}
+        src={item.url}
+        muted
+        playsInline
+        preload="metadata"
+        style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
+        onError={() => handleMediaError(item.id)}
+      />
+    ) : (
+      <img
+        src={hasVideoThumbnail ? item.thumbnailUrl : item.url}
+        alt=""
+        className={styles.image}
+        style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
+        loading="lazy"
+        decoding="async"
+        onError={() => handleMediaError(item.id)}
+      />
+    );
 
     return (
       <div
