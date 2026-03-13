@@ -12,7 +12,6 @@ from backend.schemas.publications.enums import PublicationStatus, ContentType
 from backend.schemas.publications.publication_response import (
     CalendarEntry,
     DayCount,
-    PublicationResponse,
 )
 from backend.schemas.publications.publishing import (
     EditPublishedRequest,
@@ -65,7 +64,7 @@ class PublicationService:
             raise HTTPException(status_code=404, detail="Publication not found")
         return publication
 
-    async def get_publications(
+    async def get_publications_compact(
         self,
         owner_id: Optional[int] = None,
         status: Optional[PublicationStatus] = None,
@@ -82,7 +81,7 @@ class PublicationService:
         skip: int = 0,
         limit: int = 100,
     ) -> List[Publication]:
-        return await self.query.get_publications(
+        return await self.query.get_publications_compact(
             owner_id=owner_id,
             status=status,
             content_type=content_type,
@@ -122,7 +121,7 @@ class PublicationService:
     ) -> List[CalendarEntry]:
         publications = await self.calendar.get_calendar(year, month, owner_id)
         tz = pytz.timezone(tz_str)
-        grouped: dict[str, List[PublicationResponse]] = {}
+        grouped: dict[str, list] = {}
         for pub in publications:
             key = pub.scheduled_time.astimezone(tz).strftime("%Y-%m-%d")
             grouped.setdefault(key, []).append(pub)

@@ -10,9 +10,14 @@ import { resetSeries } from '../slices/series';
 import { apiRequest } from './api';
 import { prepareMediaPayload, buildCreatePostRequest, extractPlainText } from './utils';
 
+interface SaveDraftParams {
+  channelIds: number[];
+  draftId?: string | null;
+}
+
 export const saveDraft = createAsyncThunk(
   'createPost/saveDraft',
-  async (channelIds: number[], { getState, dispatch, rejectWithValue }) => {
+  async ({ channelIds, draftId }: SaveDraftParams, { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState;
     const { editor, media, settings, inlineButtons, quiz } = state;
     const pollData = selectPollData(quiz);
@@ -31,7 +36,11 @@ export const saveDraft = createAsyncThunk(
         mediaPayload, pollData, channelIds
       );
       
-      await apiRequest('/publications', { method: 'POST', body: JSON.stringify(request) });
+      if (draftId) {
+        await apiRequest(`/publications/${draftId}`, { method: 'PUT', body: JSON.stringify(request) });
+      } else {
+        await apiRequest('/publications', { method: 'POST', body: JSON.stringify(request) });
+      }
       
       dispatch(resetEditor());
       dispatch(clearFiles());

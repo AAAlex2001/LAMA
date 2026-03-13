@@ -14,6 +14,7 @@ interface UseMessageSendingProps {
     text_content?: string;
     media_url?: string;
     media_urls?: string[];
+    media_file_ids?: string[];
     media_type?: MessageType;
     inline_keyboard?: SendDirectMessageParams['inline_keyboard'];
     buttons?: SendDirectMessageParams['buttons'];
@@ -51,10 +52,11 @@ export function useMessageSending({
 
     try {
       if (hasMedia) {
-        const mediaUrls = await processMediaFiles(mediaFiles);
+        const { urls: mediaUrls, fileIds: mediaFileIds } = await processMediaFiles(mediaFiles);
         await sendMessage({
           text_content: hasText ? inputMode.message : undefined,
           media_urls: mediaUrls,
+          media_file_ids: mediaFileIds.length > 0 ? mediaFileIds : undefined,
           reply_to_message_id: replyToMessageId,
           inline_keyboard: inlineKeyboard,
           buttons: inlineKeyboard,

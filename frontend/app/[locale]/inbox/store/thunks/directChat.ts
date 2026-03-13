@@ -87,6 +87,7 @@ export interface SendDirectMessageParams {
   text_content?: string;
   media_url?: string;
   media_urls?: string[];
+  media_file_ids?: string[];
   media_type?: MessageType;
   inline_keyboard?: InlineKeyboard;
   buttons?: InlineKeyboard;

@@ -14,6 +14,7 @@ class SendMessageRequest(BaseModel):
     text_content: Optional[str] = None
     media_url: Optional[str] = None
     media_urls: Optional[List[str]] = None
+    media_file_ids: Optional[List[str]] = None
     media_type: Optional[MessageType] = None
     buttons: Optional[Dict[str, Any]] = None
     inline_keyboard: Optional[Dict[str, Any]] = None

@@ -54,7 +54,7 @@ function CreateDraftPageContent() {
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
 
   const handleSaveDraft = async () => {
-    const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
+    const result = await dispatch(saveDraft({ channelIds: selectedChannels.map(c => c.id) }));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
       setTimeout(() => {

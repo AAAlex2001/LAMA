@@ -188,7 +188,7 @@ function EditDraftPageContent() {
   }, [channelsError, dispatch, showError]);
 
   const handleSaveDraft = async (): Promise<boolean> => {
-    const result = await dispatch(saveDraft(selectedChannels.map(c => c.id)));
+    const result = await dispatch(saveDraft({ channelIds: selectedChannels.map(c => c.id), draftId }));
     if (saveDraft.fulfilled.match(result)) {
       showSuccess('Черновик сохранён!');
       setTimeout(() => {

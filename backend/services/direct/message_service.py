@@ -31,6 +31,11 @@ class DirectMessageService:
             return [request.media_url]
         return []
 
+    def get_request_media_file_ids(self, request: SendMessageRequest) -> List[str]:
+        if request.media_file_ids:
+            return [fid for fid in request.media_file_ids if fid]
+        return []
+
     def message_get(self, message: Message | dict, key: str, default: Any = None) -> Any:
         if isinstance(message, dict):
             return message.get(key, default)
@@ -139,16 +144,17 @@ class DirectMessageService:
             return MessageType.TEXT if not any([message.photo, message.video, message.document, message.audio, message.voice, message.animation, message.sticker]) else fallback
         return fallback
 
-    def build_media_item(self, media_url: str, caption: Optional[str]):
+    def build_media_item(self, media_url: str, caption: Optional[str], file_id: Optional[str] = None):
         parse_mode = ParseMode.HTML if caption else None
+        media = file_id or media_url
 
         if is_document_url(media_url):
-            return InputMediaDocument(media=media_url, caption=caption, parse_mode=parse_mode)
+            return InputMediaDocument(media=media, caption=caption, parse_mode=parse_mode)
         if is_audio_url(media_url):
-            return InputMediaAudio(media=media_url, caption=caption, parse_mode=parse_mode)
+            return InputMediaAudio(media=media, caption=caption, parse_mode=parse_mode)
         if is_video_url(media_url):
-            return InputMediaVideo(media=media_url, caption=caption, parse_mode=parse_mode)
-        return InputMediaPhoto(media=media_url, caption=caption, parse_mode=parse_mode)
+            return InputMediaVideo(media=media, caption=caption, parse_mode=parse_mode)
+        return InputMediaPhoto(media=media, caption=caption, parse_mode=parse_mode)
 
     async def save_outgoing_message(
         self,
@@ -229,33 +235,39 @@ class DirectMessageService:
         reply_markup = build_keyboard(request.buttons) if request.buttons else None
 
         media_urls = self.get_request_media_urls(request)
+        media_file_ids = self.get_request_media_file_ids(request)
         tg_responses: List[Message] = []
         try:
             async with get_bot_session(bot.token) as client:
                 if len(media_urls) > 1:
                     media_group = [
-                        self.build_media_item(media_url, request.text_content if index == 0 else None)
+                        self.build_media_item(
+                            media_url,
+                            request.text_content if index == 0 else None,
+                            media_file_ids[index] if index < len(media_file_ids) else None,
+                        )
                         for index, media_url in enumerate(media_urls[:10])
                     ]
                     tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
                 elif len(media_urls) == 1:
                     media_url = media_urls[0]
+                    media = media_file_ids[0] if media_file_ids else media_url
                     message_type = request.media_type or self.detect_media_type(media_url)
 
                     if message_type == MessageType.PHOTO:
-                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.VIDEO:
-                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.DOCUMENT:
-                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.AUDIO:
-                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.VOICE:
-                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.ANIMATION:
-                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media_url, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
                     elif message_type == MessageType.STICKER:
-                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media_url, reply_markup=reply_markup, **reply_params)]
+                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media, reply_markup=reply_markup, **reply_params)]
                     elif request.text_content:
                         tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
                     else:

@@ -57,7 +57,7 @@ export default function FooterButtonsConnected({
           loading={isSavingDraft}
           disabled={isSavingDraft}
           onClick={async () => {
-            const result = await dispatch(saveDraft(selectedChannels.map((c) => c.id)));
+            const result = await dispatch(saveDraft({ channelIds: selectedChannels.map((c) => c.id) }));
             if (saveDraft.fulfilled.match(result)) {
               showSuccess('Черновик сохранён!');
               setTimeout(() => {

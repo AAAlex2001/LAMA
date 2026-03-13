@@ -8,7 +8,7 @@ from backend.schemas.publications.publication_base import PublicationCreate
 from backend.schemas.publications.publication_update import PublicationUpdate
 from backend.schemas.publications.publication_response import (
     PublicationResponse,
-    PublicationListResponse,
+    PublicationCompactListResponse,
 )
 from backend.services.publications.publication_service import PublicationService
 from backend.routes.publications.dependencies import get_publication_service
@@ -27,7 +27,7 @@ async def create_publication(
     return await service.create_publication(data, owner_id=current_user.id)
 
 
-@router.get("/drafts", response_model=PublicationListResponse)
+@router.get("/drafts", response_model=PublicationCompactListResponse)
 async def get_drafts(
     tag_names: Optional[List[str]] = None,
     tag_ids: Optional[List[int]] = None,
@@ -37,7 +37,7 @@ async def get_drafts(
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await service.get_publications_compact(
         owner_id=current_user.id,
         status=PublicationStatus.DRAFT,
         tag_names=tag_names,
@@ -45,10 +45,10 @@ async def get_drafts(
         skip=skip,
         limit=page_size,
     )
-    return PublicationListResponse(items=publications, page=page, page_size=page_size)
+    return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
 
 
-@router.get("/scheduled", response_model=PublicationListResponse)
+@router.get("/scheduled", response_model=PublicationCompactListResponse)
 async def get_scheduled(
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
@@ -56,16 +56,16 @@ async def get_scheduled(
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await service.get_publications_compact(
         owner_id=current_user.id,
         status=PublicationStatus.SCHEDULED,
         skip=skip,
         limit=page_size,
     )
-    return PublicationListResponse(items=publications, page=page, page_size=page_size)
+    return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
 
 
-@router.get("/", response_model=PublicationListResponse)
+@router.get("/", response_model=PublicationCompactListResponse)
 async def get_publications(
     status: Optional[PublicationStatus] = None,
     content_type: Optional[ContentType] = None,
@@ -84,7 +84,7 @@ async def get_publications(
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications(
+    publications = await service.get_publications_compact(
         owner_id=current_user.id,
         status=status,
         content_type=content_type,
@@ -100,7 +100,7 @@ async def get_publications(
         skip=skip,
         limit=page_size,
     )
-    return PublicationListResponse(items=publications, page=page, page_size=page_size)
+    return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
 
 
 @router.get("/{publication_id}", response_model=PublicationResponse)

@@ -14,6 +14,60 @@ from backend.schemas.publications.tags import TagResponse
 from backend.schemas.publications.series import PublicationSeriesResponse
 
 
+class ChannelCompact(BaseModel):
+    """Lightweight channel info for list views."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    telegram_id: int
+    title: str
+    username: Optional[str] = None
+    is_active: bool
+    members_count: Optional[int] = None
+    photo_url: Optional[str] = None
+
+
+class TagCompact(BaseModel):
+    """Lightweight tag info for list views."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    color: Optional[str] = None
+
+
+class PublicationCompact(BaseModel):
+    """Lightweight publication for calendar/drafts/list views."""
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    content_type: ContentType
+    status: PublicationStatus
+    text_content: Optional[str] = None
+    formatted_content: Optional[dict[str, Any]] = None
+    media_urls: Optional[List[str]] = None
+    media_thumbnail_urls: Optional[List[Optional[str]]] = None
+    media_file_ids: Optional[List[Optional[str]]] = None
+    media_blur: Optional[List[bool]] = None
+    inline_keyboard: Optional[dict[str, Any]] = None
+    poll_data: Optional[dict[str, Any]] = None
+    scheduled_time: Optional[datetime] = None
+    published_time: Optional[datetime] = None
+    repeat_interval: RepeatInterval = RepeatInterval.NEVER
+    series_id: Optional[int] = None
+    series_order: Optional[int] = None
+    created_at: datetime
+    updated_at: datetime
+    channels: List[ChannelCompact] = []
+    tags: List[TagCompact] = []
+
+
+class PublicationCompactListResponse(BaseModel):
+    items: List[PublicationCompact]
+    page: int
+    page_size: int
+
+
 class PublicationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,12 +116,6 @@ class PublicationResponse(BaseModel):
     series: Optional[PublicationSeriesResponse] = None
 
 
-class PublicationListResponse(BaseModel):
-    items: List[PublicationResponse]
-    page: int
-    page_size: int
-
-
 class PublicationPreview(BaseModel):
     text: str
     media_preview: Optional[List[str]] = None
@@ -77,7 +125,7 @@ class PublicationPreview(BaseModel):
 
 class CalendarEntry(BaseModel):
     date: str
-    publications: List[PublicationResponse]
+    publications: List[PublicationCompact]
 
 
 class DayCount(BaseModel):

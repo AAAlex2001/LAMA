@@ -32,7 +32,8 @@ from backend.schemas.publications.publication_base import (
 from backend.schemas.publications.publication_update import PublicationUpdate
 from backend.schemas.publications.publication_response import (
     PublicationResponse,
-    PublicationListResponse,
+    PublicationCompact,
+    PublicationCompactListResponse,
     PublicationPreview,
     CalendarEntry,
     DayCount,
