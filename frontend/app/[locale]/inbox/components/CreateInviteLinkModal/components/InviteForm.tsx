@@ -238,9 +238,9 @@ const InviteForm: React.FC<InviteFormProps> = ({
 
       {linkType === 'open' && (
         <>
-          <div className={styles.sectionTitle}>Способ подключения</div>
-          <div className={styles.section}>
-            <div className={styles.sectionTitle}>Защита:</div>
+          {/* <div className={styles.sectionTitle}>Способ подключения</div> */}
+          {/* <div className={styles.section}> */}
+            {/* <div className={styles.sectionTitle}>Защита:</div> */}
             {/* <div className={styles.radioGroup}>
               <div className={styles.radioGroupItem}>
                 <Checkbox
@@ -259,7 +259,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
                 <span className={styles.channelItemName}>С капчей</span>
               </div>
             </div> */}
-          </div>
+          {/* </div> */}
 
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Способ входа</div>

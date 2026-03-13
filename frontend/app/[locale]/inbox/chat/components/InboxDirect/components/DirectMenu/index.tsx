@@ -61,7 +61,8 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
 
   const activeChat = activeChatId ? chatsById[activeChatId] : null;
 
-  const filtredUnpinned = unpinnedChats.filter((chat) => chat.bot_id !== activeChat?.bot_id && chat.tg_chat_id !== activeChat?.tg_chat_id);
+  const filteredPinned = pinnedChats.filter((chat) => makeChatKey(chat.bot_id, chat.tg_chat_id) !== activeChatId);
+  const filteredUnpinned = unpinnedChats.filter((chat) => makeChatKey(chat.bot_id, chat.tg_chat_id) !== activeChatId);
 
   const hasNoChats = !chatsLoading && !activeChat && pinnedChats.length === 0 && unpinnedChats.length === 0;
 
@@ -101,11 +102,11 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                 </div>
               </div>
             )}
-            {pinnedChats.length > 0 && (
+            {filteredPinned.length > 0 && (
               <div className={styles.section}>
                 <h3 className={styles.sectionTitle}>Закрепленные чаты</h3>
                 <div className={styles.chatList}>
-                  {pinnedChats.map((chat) => (
+                  {filteredPinned.map((chat) => (
                     <ChatItem
                       key={chat.id}
                       id={chat.id}
@@ -130,7 +131,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     <Loader size={20} color="blue" />
                   </div>
                 )}
-                {filtredUnpinned.map((chat) => (
+                {filteredUnpinned.map((chat) => (
                   <ChatItem
                     key={chat.id}
                     id={chat.id}
