@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-export type SortOptionType = 'time' | 'source' | 'sourceSystem' | 'status' | 'type';
+export type SortOptionType = 'time' | 'source' | 'status' | 'type';
 
 export interface SortOption {
   type: SortOptionType;

@@ -1,19 +1,11 @@
 'use client';
 
 import React, { FC, useRef, useEffect, useState } from "react";
+import clsx from "clsx";
 import styles from "../styles.module.scss";
-import { ChevronDownIcon, SortClearIcon } from "@/components/icons";
-
-type SortOptionType = 'time' | 'source' | 'sourceSystem' | 'status' | 'type';
-
-interface SortOption {
-  type: SortOptionType;
-  label: string;
-  value: string;
-  items?: Array<{ value: string; label: string }>;
-  width?: string | number;
-  content?: React.ReactNode;
-}
+import { ChevronDownIcon } from "@/components/icons";
+import Checkbox from "@/components/checkbox/checkbox";
+import type { SortOptionType, SortOption } from "../../sortTypes";
 
 interface PopupFilterProps {
   isOpen: boolean;
@@ -22,6 +14,8 @@ interface PopupFilterProps {
   availableSortOptions: SortOption[];
   onSortChange: (sortType: SortOptionType, value: string) => void;
   onSortClear: (sortType: SortOptionType) => void;
+  systemChecked?: boolean;
+  onSystemChange?: (checked: boolean) => void;
 }
 
 const PopupFilter: FC<PopupFilterProps> = ({
@@ -31,6 +25,8 @@ const PopupFilter: FC<PopupFilterProps> = ({
   availableSortOptions,
   onSortChange,
   onSortClear,
+  systemChecked,
+  onSystemChange,
 }) => {
   const popupRef = useRef<HTMLDivElement>(null);
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
@@ -55,27 +51,27 @@ const PopupFilter: FC<PopupFilterProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen, onClose, triggerRef]);
 
-  function getButtonText(option: SortOption): string {
+  const getButtonText = (option: SortOption): string => {
     if (!option.value) return option.label;
     if (option.items) {
       const selectedItem = option.items.find((item) => item.value === option.value);
       return selectedItem?.label || option.label;
     }
     return option.label;
-  }
+  };
 
-  function clearFilter(sortType: SortOptionType, e: React.MouseEvent) {
+  const clearFilter = (sortType: SortOptionType, e: React.MouseEvent) => {
     e.stopPropagation();
     onSortClear(sortType);
     setOpenFilter(null);
-  }
+  };
 
-  function toggleOption(option: SortOption, value: string) {
+  const toggleOption = (option: SortOption, value: string) => {
     onSortChange(option.type, value);
     if (!option.content) {
       setOpenFilter(null);
     }
-  }
+  };
 
   if (!isOpen) return null;
 
@@ -84,7 +80,6 @@ const PopupFilter: FC<PopupFilterProps> = ({
       <div className={styles.popupFilterContent}>
         <div className={styles.popupFilterOptions}>
           {availableSortOptions.map((option) => {
-            const isActive = !!option.value;
             const isOpen = openFilter === option.type;
 
             return (
@@ -93,13 +88,15 @@ const PopupFilter: FC<PopupFilterProps> = ({
                   type="button"
                   className={styles.mobileFilterItem}
                   onClick={() => setOpenFilter(isOpen ? null : option.type)}
+                  aria-expanded={isOpen}
+                  aria-haspopup="listbox"
                 >
                   <span className={styles.mobileFilterItemText}>{getButtonText(option)}</span>
                   <ChevronDownIcon width={16} height={16} />
                 </button>
 
                 {isOpen && (
-                  <div className={styles.mobileFilterSubmenu}>
+                  <div className={styles.mobileFilterSubmenu} role="listbox">
                     {option.items ? (
                       option.items.map((item) => {
                         const checked = option.value === item.value;
@@ -108,14 +105,12 @@ const PopupFilter: FC<PopupFilterProps> = ({
                             key={item.value}
                             type="button"
                             className={styles.sortOption}
+                            role="option"
+                            aria-selected={checked}
                             onClick={() => toggleOption(option, item.value)}
                           >
                             <span
-                              className={
-                                checked
-                                  ? `${styles.sortRadio} ${styles.sortRadioActive}`
-                                  : styles.sortRadio
-                              }
+                              className={clsx(styles.sortRadio, checked && styles.sortRadioActive)}
                             >
                               <span className={styles.sortRadioDot} />
                             </span>
@@ -133,6 +128,16 @@ const PopupFilter: FC<PopupFilterProps> = ({
               </React.Fragment>
             );
           })}
+          {systemChecked !== undefined && onSystemChange && (
+            <button
+              type="button"
+              className={styles.mobileFilterItem}
+              onClick={() => onSystemChange(!systemChecked)}
+            >
+              <span className={styles.mobileFilterItemText}>Системные</span>
+              <Checkbox checked={systemChecked} onChange={onSystemChange} />
+            </button>
+          )}
         </div>
       </div>
     </div>

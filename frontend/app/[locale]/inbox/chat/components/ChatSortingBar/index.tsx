@@ -1,6 +1,7 @@
 'use client';
 
-import React, { FC, useState, useRef } from "react";
+import { FC, useState, useRef, useEffect } from "react";
+import clsx from "clsx";
 import { MobileWrapper, DesktopWrapper } from "@/components/responsive-wrappers";
 import styles from "./styles.module.scss";
 import { FilterSortIcon, ChevronDownIcon, SortClearIcon } from "@/components/icons";
@@ -10,6 +11,38 @@ import { useAppDispatch, useAppSelector } from "../../../store";
 import { setChatSort, setChatUnreadFilter } from "../../../store";
 import { selectChatSort, selectChatUnreadFilter } from "../../../store/selectors";
 import type { SortOptionType, SortOption } from "../../../components/sortTypes";
+
+const timeOptions = [
+  { value: "newest", label: "Сначала новые" },
+  { value: "oldest", label: "Сначала старые" },
+];
+
+const statusOptions = [
+  { value: "all", label: "Все" },
+  { value: "unread", label: "Непрочитанные" },
+  { value: "read", label: "Прочитанные" },
+];
+
+const UNREAD_MAP: Record<string, 'unread' | 'read' | null> = {
+  unread: 'unread',
+  read: 'read',
+  all: null,
+};
+
+const isDefaultValue = (type: SortOptionType, value: string): boolean => {
+  if (type === 'time') return value === '' || value === 'newest';
+  if (type === 'status') return value === '' || value === 'all';
+  return value === '';
+};
+
+const getButtonText = (option: SortOption): string => {
+  if (!option.value || isDefaultValue(option.type, option.value)) return option.label;
+  if (option.items) {
+    const selectedItem = option.items.find((item) => item.value === option.value);
+    return selectedItem?.label || option.label;
+  }
+  return option.label;
+};
 
 interface ChatSortingBarProps {
   onNavigateToOtherView: () => void;
@@ -27,17 +60,6 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
 
   const sortTimeValue = chatSort === 'old' ? 'oldest' : (chatSort === 'new' ? 'newest' : '');
   const sortStatusValue = chatUnreadFilter ?? '';
-
-  const timeOptions = [
-    { value: "newest", label: "Сначала новые" },
-    { value: "oldest", label: "Сначала старые" },
-  ];
-
-  const statusOptions = [
-    { value: "all", label: "Все" },
-    { value: "unread", label: "Непрочитанные" },
-    { value: "read", label: "Прочитанные" },
-  ];
 
   const availableSortOptions: SortOption[] = [
     {
@@ -58,16 +80,10 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
     if (sortType === 'time') {
-      const dir = value === 'oldest' ? 'old' : 'new';
-      dispatch(setChatSort(dir));
+      dispatch(setChatSort(value === 'oldest' ? 'old' : 'new'));
     }
     if (sortType === 'status') {
-      const unreadMap: Record<string, 'unread' | 'read' | null> = {
-        'unread': 'unread',
-        'read': 'read',
-        'all': null,
-      };
-      dispatch(setChatUnreadFilter(unreadMap[value] ?? null));
+      dispatch(setChatUnreadFilter(UNREAD_MAP[value] ?? null));
     }
   };
 
@@ -80,36 +96,16 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
     }
   };
 
-  const defaultValues: Record<string, string> = {
-    time: '',
-    status: '',
-  };
-
-  const isDefaultValue = (type: string, value: string): boolean => {
-    if (type === 'time') return value === '' || value === 'newest';
-    if (type === 'status') return value === '' || value === 'all';
-    return value === defaultValues[type];
-  };
-
-  function getButtonText(option: SortOption): string {
-    if (!option.value || isDefaultValue(option.type, option.value)) return option.label;
-    if (option.items) {
-      const selectedItem = option.items.find((item) => item.value === option.value);
-      return selectedItem?.label || option.label;
-    }
-    return option.label;
-  }
-
-  function clearFilter(sortType: SortOptionType, e: React.MouseEvent) {
+  const clearFilter = (sortType: SortOptionType, e: React.MouseEvent) => {
     e.stopPropagation();
     handleSortClear(sortType);
     setOpenFilter(null);
-  }
+  };
 
-  function toggleOption(option: SortOption, value: string) {
+  const toggleOption = (option: SortOption, value: string) => {
     handleSortChange(option.type, value);
     setOpenFilter(null);
-  }
+  };
 
   const resetSorting = () => {
     dispatch(setChatSort('new'));
@@ -122,13 +118,13 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
     onNavigateToOtherView();
   };
 
-  React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
       if (!barRef.current?.contains(target)) {
         setOpenFilter(null);
       }
-    }
+    };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -157,8 +153,10 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
                   <div key={option.type} className={styles.sortDropdown}>
                     <button
                       type="button"
-                      className={isActive ? `${styles.sortButton} ${styles.sortButtonActive}` : styles.sortButton}
+                      className={clsx(styles.sortButton, isActive && styles.sortButtonActive)}
                       onClick={() => setOpenFilter(isOpen ? null : option.type)}
+                      aria-expanded={isOpen}
+                      aria-haspopup="listbox"
                     >
                       <span className={styles.sortButtonText}>{getButtonText(option)}</span>
                       <ChevronDownIcon className={styles.sortChevron} width={16} height={16} />
@@ -170,7 +168,11 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
                     </button>
 
                     {isOpen && (
-                      <div className={styles.sortMenu} style={option.width ? { width: typeof option.width === 'number' ? `${option.width}px` : option.width, minWidth: typeof option.width === 'number' ? `${option.width}px` : option.width } : undefined}>
+                      <div
+                        className={styles.sortMenu}
+                        role="listbox"
+                        style={option.width ? { width: option.width, minWidth: option.width } : undefined}
+                      >
                         {option.items?.map((item) => {
                           const checked = option.value === item.value;
                           return (
@@ -178,14 +180,12 @@ const ChatSortingBar: FC<ChatSortingBarProps> = ({ onNavigateToOtherView }) => {
                               key={item.value}
                               type="button"
                               className={styles.sortOption}
+                              role="option"
+                              aria-selected={checked}
                               onClick={() => toggleOption(option, item.value)}
                             >
                               <span
-                                className={
-                                  checked
-                                    ? `${styles.sortRadio} ${styles.sortRadioActive}`
-                                    : styles.sortRadio
-                                }
+                                className={clsx(styles.sortRadio, checked && styles.sortRadioActive)}
                               >
                                 <span className={styles.sortRadioDot} />
                               </span>

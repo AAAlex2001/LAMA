@@ -62,7 +62,6 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
   const search = useAppSelector(selectSearch);
 
   const { ref: sentinelRef, inView } = useInView({ threshold: 0.1 });
-  const isLastElementVisible = inView && itemsHasMore && !itemsLoading;
   const { checkedItems, isChecking, toggle, selectAll, holdSelect, setMode, clear } = useCheckedItems(data);
   const { blockModal, handleAction } = useBlockConfirmation(data);
 
@@ -179,7 +178,7 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
                 <Loader size={24} color="blue" />
               </div>
             )}
-            {!isLastElementVisible && <div className={styles.bottomGradient} />}
+            <div className={styles.bottomGradient} />
             {itemsHasMore && !itemsLoading && (
               <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}
