@@ -1,5 +1,6 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import { useInView } from '@/app/[locale]/calendar/store/useInView';
 
 export interface MessageScrollOpts {
   messages: Array<{ id: number; telegram_message_id?: number }>;
@@ -19,8 +20,8 @@ export interface MessageScrollOpts {
 
 export interface MessageScrollReturn {
   messageListRef: React.RefObject<HTMLDivElement | null>;
-  bottomRef: React.RefObject<HTMLDivElement | null>;
-  topSentinelRef: React.RefObject<HTMLDivElement | null>;
+  bottomRef: (node?: Element | null) => void;
+  topSentinelRef: (node?: Element | null) => void;
   markShouldScroll: () => void;
   isBottomVisible: boolean;
   scrollToBottom: () => void;
@@ -37,87 +38,72 @@ export function useMessageScroll({
   onJumpToLatest,
 }: MessageScrollOpts): MessageScrollReturn {
   const messageListRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const topSentinelRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
   const shouldScrollAfterSendRef = useRef(false);
   const loadingMoreRef = useRef(false);
   const didInitialScrollRef = useRef(false);
-  const [isBottomVisible, setIsBottomVisible] = useState(true);
 
-  const checkBottomRef = useRef(() => {});
-  checkBottomRef.current = () => {
-    const el = messageListRef.current;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 50;
-    isNearBottomRef.current = nearBottom;
-    setIsBottomVisible(nearBottom);
-  };
+  const { ref: bottomRef, inView: isBottomVisible } = useInView({
+    root: messageListRef.current,
+    rootMargin: '0px 0px 50px 0px',
+    threshold: 0,
+    initialInView: true,
+  });
 
-  useEffect(() => {
-    const el = messageListRef.current;
-    if (!el) return;
+  const isBottomVisibleRef = useRef(true);
+  isBottomVisibleRef.current = isBottomVisible;
 
-    const handleScroll = () => checkBottomRef.current();
+  const { ref: topSentinelRef } = useInView({
+    root: messageListRef.current,
+    rootMargin: '500px 0px 0px 0px',
+    threshold: 0,
+    skip: !hasMore || !activeChat,
+    onChange: (inView) => {
+      if (!inView || loading || loadingMoreRef.current || !activeChat) return;
 
-    handleScroll();
-    el.addEventListener('scroll', handleScroll, { passive: true });
-    return () => el.removeEventListener('scroll', handleScroll);
-  }, []);
+      loadingMoreRef.current = true;
+      const el = messageListRef.current;
+      if (!el) {
+        loadingMoreRef.current = false;
+        return;
+      }
+      const prevScrollHeight = el.scrollHeight;
 
-  useEffect(() => {
-    const el = messageListRef.current;
-    const sentinel = topSentinelRef.current;
-    if (!el || !sentinel) return;
+      const fetchParams = isDetached
+        ? (() => {
+            const oldestMsg = messages[messages.length - 1];
+            const aroundId = oldestMsg?.telegram_message_id;
+            if (!aroundId) return null;
+            return {
+              botId: activeChat.bot_id,
+              tgChatId: activeChat.tg_chat_id,
+              around_message_id: aroundId,
+            };
+          })()
+        : {
+            botId: activeChat.bot_id,
+            tgChatId: activeChat.tg_chat_id,
+            skip: messages.length,
+            limit: 50,
+          };
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loading && activeChat && !loadingMoreRef.current) {
-          loadingMoreRef.current = true;
-          const prevScrollHeight = el.scrollHeight;
+      if (!fetchParams) {
+        loadingMoreRef.current = false;
+        return;
+      }
 
-          const fetchParams = isDetached
-            ? (() => {
-                const oldestMsg = messages[messages.length - 1];
-                const aroundId = oldestMsg?.telegram_message_id;
-                if (!aroundId) return null;
-                return {
-                  botId: activeChat.bot_id,
-                  tgChatId: activeChat.tg_chat_id,
-                  around_message_id: aroundId,
-                };
-              })()
-            : {
-                botId: activeChat.bot_id,
-                tgChatId: activeChat.tg_chat_id,
-                skip: messages.length,
-                limit: 50,
-              };
+      fetchMessages(fetchParams).then(() => {
+        requestAnimationFrame(() => {
+          const newScrollHeight = el.scrollHeight;
+          el.scrollTop = newScrollHeight - prevScrollHeight;
+          loadingMoreRef.current = false;
+        });
+      });
+    },
+  });
 
-          if (!fetchParams) {
-            loadingMoreRef.current = false;
-            return;
-          }
-
-          fetchMessages(fetchParams).then(() => {
-            requestAnimationFrame(() => {
-              const newScrollHeight = el.scrollHeight;
-              el.scrollTop = newScrollHeight - prevScrollHeight;
-              loadingMoreRef.current = false;
-            });
-          });
-        }
-      },
-      { root: el, rootMargin: '500px 0px 0px 0px', threshold: 0 }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, loading, activeChat, messages.length, fetchMessages, isDetached]);
-
+  // Reset on chat change
   useEffect(() => {
     didInitialScrollRef.current = false;
-    isNearBottomRef.current = true;
     shouldScrollAfterSendRef.current = false;
   }, [activeChat?.bot_id, activeChat?.tg_chat_id]);
 
@@ -141,7 +127,6 @@ export function useMessageScroll({
       requestAnimationFrame(() => {
         el.scrollTop = el.scrollHeight;
         didInitialScrollRef.current = true;
-        checkBottomRef.current();
       });
     }
   }, [loading, messages.length, activeChat?.bot_id, activeChat?.tg_chat_id, isDetached]);
@@ -152,10 +137,9 @@ export function useMessageScroll({
     const el = messageListRef.current;
     if (!el) return;
 
-    if (!loading && newestMessageId && (isNearBottomRef.current || shouldScrollAfterSendRef.current)) {
+    if (!loading && newestMessageId && (isBottomVisibleRef.current || shouldScrollAfterSendRef.current)) {
       el.scrollTop = el.scrollHeight;
       shouldScrollAfterSendRef.current = false;
-      requestAnimationFrame(() => checkBottomRef.current());
     }
   }, [newestMessageId, loading]);
 

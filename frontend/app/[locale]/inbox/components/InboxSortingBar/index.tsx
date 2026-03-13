@@ -85,7 +85,6 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   onStatusFilterChange,
   onEventTypeFilterChange,
 }) => {
-  console.log(selectedFilter);
   const dispatch = useAppDispatch();
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);

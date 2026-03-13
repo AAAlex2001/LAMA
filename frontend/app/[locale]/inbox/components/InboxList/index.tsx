@@ -33,6 +33,7 @@ import {
 import type { InboxCategory, ListFilterType } from "../../store";
 import { CATEGORY_MAP } from "../../store/thunks/inboxEvents";
 import { useInView } from "@/app/[locale]/calendar/store/useInView";
+import { useScrollContainer } from "@/components/app-layout";
 import { useCheckedItems } from "./hooks/useCheckedItems";
 import { useBlockConfirmation } from "./hooks/useBlockConfirmation";
 
@@ -61,7 +62,9 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
   const typeCommands = useAppSelector(selectTypeCommands);
   const search = useAppSelector(selectSearch);
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0.1 });
+  const scrollContainer = useScrollContainer();
+  const { ref: sentinelRef, inView } = useInView({ root: scrollContainer, rootMargin: '0px 0px 500px 0px' });
+  const { ref: bottomRef, inView: isAtBottom } = useInView({ root: scrollContainer });
   const { checkedItems, isChecking, toggle, selectAll, holdSelect, setMode, clear } = useCheckedItems(data);
   const { blockModal, handleAction } = useBlockConfirmation(data);
 
@@ -178,7 +181,10 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
                 <Loader size={24} color="blue" />
               </div>
             )}
-            <div className={styles.bottomGradient} />
+            {!isAtBottom && (
+              <div className={styles.bottomGradient} />
+            )}
+            <div ref={bottomRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             {itemsHasMore && !itemsLoading && (
               <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}

@@ -1,4 +1,4 @@
-import { FC, RefObject, useMemo, useCallback, memo } from 'react';
+import React, { FC, RefObject, useMemo, useCallback, memo } from 'react';
 import Loader from '@/components/loader/loader';
 import { Button } from '@/components/new-button';
 import { ChevronDownIcon } from '@/components/icons';
@@ -81,7 +81,7 @@ const MessageList: FC<MessageListProps> = ({
             <Loader />
           </div>
         )}
-        {hasMore && <div ref={scroll.topSentinelRef} style={{ height: 1, flexShrink: 0 }} />}
+        {hasMore && <div ref={scroll.topSentinelRef as React.Ref<HTMLDivElement>} style={{ height: 1, flexShrink: 0 }} />}
         {loading && renderedMessages.length > 0 && (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '8px 0', flexShrink: 0 }}>
             <Loader size={20} />
@@ -105,7 +105,7 @@ const MessageList: FC<MessageListProps> = ({
             scrollToMessage={scrollToMessage}
           />
         ))}
-        <div ref={scroll.bottomRef} style={{ height: 1, flexShrink: 0 }} />
+        <div ref={scroll.bottomRef as React.Ref<HTMLDivElement>} style={{ height: 1, flexShrink: 0 }} />
       </div>
       {!scroll.isBottomVisible && renderedMessages.length > 0 && (
         <div className={styles.scrollToBottomButtonWrapper}>
