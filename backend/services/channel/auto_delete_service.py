@@ -3,6 +3,7 @@ from typing import Optional
 from aiogram import Bot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,7 +23,7 @@ class AutoDeleteService:
         """Получить настройки автоудаления."""
         channel = await get_channel(self.db, channel_id, owner_id, load_auto_delete=True)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
         return await self.ensure_settings(channel)
 
     async def update_settings(
@@ -34,7 +35,7 @@ class AutoDeleteService:
         """Обновить настройки автоудаления."""
         channel = await get_channel(self.db, channel_id, owner_id, load_auto_delete=True)
         if not channel:
-            raise ValueError("Channel not found")
+            raise HTTPException(status_code=404, detail="Channel not found")
 
         settings = await self.ensure_settings(channel)
         update_data = data.model_dump(exclude_unset=True)

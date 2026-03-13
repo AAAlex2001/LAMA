@@ -5,6 +5,7 @@ import secrets
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+from fastapi import HTTPException
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -101,7 +102,7 @@ class TokenService:
             token_type = payload.get("type")
 
             if token_type != "refresh":
-                raise ValueError("Invalid token type")
+                raise HTTPException(status_code=401, detail="Invalid token type")
 
             query = select(UserSession).where(
                 UserSession.refresh_token == refresh_token,
@@ -111,7 +112,7 @@ class TokenService:
             session = result.scalar_one_or_none()
 
             if not session:
-                raise ValueError("Invalid or expired refresh token")
+                raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
             new_access_token = self.create_access_token(user_id)
             new_refresh_token = self.create_refresh_token(user_id)
@@ -127,7 +128,7 @@ class TokenService:
             return new_access_token, new_refresh_token
 
         except JWTError:
-            raise ValueError("Invalid or expired refresh token")
+            raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
 
     async def logout(self, token: str) -> bool:
         """Завершить сессию (logout)"""

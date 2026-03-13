@@ -225,9 +225,9 @@ class PublicationService:
     async def publish_now(self, publication_id: int, owner_id: Optional[int] = None) -> PublishResult:
         publication = await self.query.get_publication(publication_id, owner_id)
         if not publication:
-            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=404, detail="Publication not found")
         if not publication.channels:
-            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=400, detail="No channels selected")
 
         if publication.series_id and publication.series and publication.series.reply_to_previous:
             series_service = SeriesService(self.db)
@@ -241,9 +241,9 @@ class PublicationService:
     async def republish(self, publication_id: int) -> PublishResult:
         publication = await self.query.get_publication(publication_id)
         if not publication:
-            return PublishResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=404, detail="Publication not found")
         if not publication.channels:
-            return PublishResult(success=False, error="No channels selected", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=400, detail="No channels selected")
 
         return await publisher.republish(
             publication, self.db, self.bot_for_channel, calculate_next_repeat_time,
@@ -252,11 +252,11 @@ class PublicationService:
     async def edit_published_message(self, publication_id: int, request: EditPublishedRequest, owner_id: Optional[int] = None):
         publication = await self.query.get_publication(publication_id, owner_id)
         if not publication:
-            return EditMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=404, detail="Publication not found")
         return await message_editor.edit_published_message(publication, request, self.db, self.bot_for_channel)
 
     async def delete_telegram_messages(self, publication_id: int, owner_id: Optional[int] = None):
         publication = await self.query.get_publication(publication_id, owner_id)
         if not publication:
-            return DeleteMessageResult(success=False, error="Publication not found", results=[], success_count=0, total_count=0)
+            raise HTTPException(status_code=404, detail="Publication not found")
         return await message_editor.delete_telegram_messages(publication, self.db, self.bot_for_channel)

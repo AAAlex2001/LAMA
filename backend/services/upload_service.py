@@ -10,12 +10,12 @@ def validate_media_files(files: List[UploadFile]):
     total_size = 0
     for file in files:
         if not file.filename:
-            raise HTTPException(status_code=400, detail="Файл должен иметь имя")
+            raise HTTPException(status_code=400, detail="File must have a name")
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(status_code=400, detail=f"Неподдерживаемый формат: {file.filename}")
+            raise HTTPException(status_code=400, detail=f"Unsupported format: {file.filename}")
         total_size += file.size if file.size else 0
         if file.size and file.size > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail=f"Файл {file.filename} слишком большой")
+            raise HTTPException(status_code=400, detail=f"File {file.filename} is too large")
     if total_size > TOTAL_MAX_SIZE:
-        raise HTTPException(status_code=400, detail="Общий размер файлов превышает лимит")
+        raise HTTPException(status_code=400, detail="Total file size exceeds the limit")

@@ -6,6 +6,7 @@ import hmac
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -74,7 +75,7 @@ class WidgetAuthService:
         Возвращает: User
         """
         if not self.verify_telegram_auth(auth_data):
-            raise ValueError("Invalid Telegram authentication data")
+            raise HTTPException(status_code=401, detail="Invalid Telegram authentication data")
 
         query = select(TelegramAccount).options(
             selectinload(TelegramAccount.user)

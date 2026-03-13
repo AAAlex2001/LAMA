@@ -122,13 +122,13 @@ def resolve_chat_identifier(
         if extracted.startswith("+") or extracted.startswith("joinchat/"):
             raise HTTPException(
                 status_code=400,
-                detail="Добавление по приватной invite ссылке напрямую не поддерживается Telegram API. Добавьте бота в канал/группу как администратора, и он появится автоматически."
+                detail="Private invite links are not supported by Telegram API. Add the bot to the channel/group as an administrator and it will appear automatically."
             )
         return f"@{extracted}"
     if invite_link:
         raise HTTPException(
             status_code=400,
-            detail="Неподдерживаемый формат ссылки. Используйте публичный username (@username) или t.me/username."
+            detail="Unsupported link format. Use a public username (@username) or t.me/username."
         )
 
 

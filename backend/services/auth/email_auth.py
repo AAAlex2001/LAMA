@@ -4,6 +4,7 @@
 from typing import Optional, Tuple
 from datetime import datetime, timezone, timedelta
 
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -61,15 +62,15 @@ class EmailAuthService:
         """
         # Проверяем, что пользователь согласился с условиями
         if not agree_personal_data:
-            raise ValueError(
-                "Необходимо согласие на обработку персональных данных")
+            raise HTTPException(
+                status_code=400, detail="Personal data consent is required")
         if not agree_terms:
-            raise ValueError("Необходимо принять условия использования")
+            raise HTTPException(status_code=400, detail="Terms of service must be accepted")
 
         # Проверяем, существует ли пользователь с таким email
         existing_user = await self.get_user_by_email(email)
         if existing_user:
-            raise ValueError("Пользователь с таким email уже существует")
+            raise HTTPException(status_code=409, detail="User with this email already exists")
 
         # Создаём пользователя
         password_hash = self.hash_password(password)
@@ -125,17 +126,17 @@ class EmailAuthService:
         user = await self.get_user_by_email(email)
 
         if not user:
-            raise ValueError("Неверный email или пароль")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
         if not user.password_hash:
-            raise ValueError(
-                "Для этого аккаунта не установлен пароль. Используйте вход через Telegram")
+            raise HTTPException(
+                status_code=400, detail="No password set for this account. Use Telegram login")
 
         if not self.verify_password(password, user.password_hash):
-            raise ValueError("Неверный email или пароль")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
 
         if not user.is_active:
-            raise ValueError("Аккаунт деактивирован")
+            raise HTTPException(status_code=403, detail="Account is deactivated")
 
         # Создаём сессию
         expires_at = datetime.now(
@@ -174,16 +175,16 @@ class EmailAuthService:
         Добавить email/password к существующему пользователю (например, после Telegram авторизации)
         """
         if not agree_personal_data:
-            raise ValueError(
-                "Необходимо согласие на обработку персональных данных")
+            raise HTTPException(
+                status_code=400, detail="Personal data consent is required")
         if not agree_terms:
-            raise ValueError("Необходимо принять условия использования")
+            raise HTTPException(status_code=400, detail="Terms of service must be accepted")
 
         # Проверяем, что email не занят
         existing_user = await self.get_user_by_email(email)
         if existing_user and existing_user.id != user_id:
-            raise ValueError(
-                "Этот email уже используется другим пользователем")
+            raise HTTPException(
+                status_code=409, detail="This email is already used by another account")
 
         # Получаем пользователя
         query = select(User).where(User.id == user_id)
@@ -191,7 +192,7 @@ class EmailAuthService:
         user = result.scalar_one_or_none()
 
         if not user:
-            raise ValueError("Пользователь не найден")
+            raise HTTPException(status_code=404, detail="User not found")
 
         # Обновляем данные
         user.email = email.lower()

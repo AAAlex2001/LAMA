@@ -152,7 +152,7 @@ class InboxActionService:
         await self.db.refresh(event)
         return event
 
-    async def get_event(self, event_id: int, owner_id: int) -> Optional[InboxEvent]:
+    async def get_event(self, event_id: int, owner_id: int) -> InboxEvent:
         """Получить событие по ID с проверкой владельца."""
         result = await self.db.execute(
             select(InboxEvent).where(
@@ -160,7 +160,10 @@ class InboxActionService:
                 InboxEvent.owner_id == owner_id
             )
         )
-        return result.scalar_one_or_none()
+        event = result.scalar_one_or_none()
+        if not event:
+            raise HTTPException(status_code=404, detail="Event not found")
+        return event
 
     def mark_payload_handled(self, event: InboxEvent) -> None:
         """Пометить payload.handled = True при наличии этого поля (bot_command и др.)."""

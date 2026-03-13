@@ -24,8 +24,10 @@ class BackupJobService:
         """Создать задачу бекапа."""
         source = await get_channel(self.db, data.source_channel_id, owner_id)
         target = await get_channel(self.db, data.target_channel_id, owner_id)
-        if not source or not target:
-            raise HTTPException(status_code=400, detail="Source or target channel not found")
+        if not source:
+            raise HTTPException(status_code=404, detail="Source channel not found")
+        if not target:
+            raise HTTPException(status_code=404, detail="Target channel not found")
 
         total_posts = await self.count_posts(data.source_channel_id)
 
@@ -59,7 +61,7 @@ class BackupJobService:
 
         target_channel = await get_channel(self.db, job.target_channel_id)
         if not target_channel:
-            raise HTTPException(status_code=400, detail="Target channel not found")
+            raise HTTPException(status_code=404, detail="Target channel not found")
 
         bot = await resolve_for_channel(self.db, target_channel)
         retransmit = RetransmitService(self.db)

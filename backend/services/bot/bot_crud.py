@@ -50,7 +50,7 @@ class BotCrudService:
 
         global_existing = await self.get_by_telegram_id(bot_info.id)
         if global_existing:
-            return global_existing
+            raise HTTPException(status_code=409, detail="This bot is already registered by another user")
 
         bot = BotModel(
             owner_id=owner_id,
@@ -140,7 +140,7 @@ class BotCrudService:
         """Удалить бота: снять вебхук, очистить кеш, удалить из БД."""
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
-            return False
+            raise HTTPException(status_code=404, detail="Bot not found")
         await self.remove_webhook(bot.token)
         await self.evict_from_cache(bot.token)
         await self.db.delete(bot)
@@ -189,6 +189,10 @@ class BotCrudService:
             bot.last_sync_at = datetime.now(timezone.utc)
             bot.updated_at = datetime.now(timezone.utc)
         else:
+            global_existing = await self.get_by_telegram_id(bot_info.id)
+            if global_existing:
+                raise HTTPException(status_code=409, detail="This bot is already registered by another user")
+
             if owner_id is None:
                 raise HTTPException(status_code=400, detail="Owner id is required to register a new bot")
             bot = BotModel(

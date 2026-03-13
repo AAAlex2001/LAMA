@@ -176,14 +176,14 @@ class BotMessagingService:
         }
 
     async def get_bot_or_raise(self, bot_id: int, owner_id: Optional[int] = None) -> BotModel:
-        """Получить бота или поднять ValueError."""
+        """Получить бота или вернуть 404."""
         query = select(BotModel).where(BotModel.id == bot_id)
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
         bot = result.scalar_one_or_none()
         if not bot:
-            raise HTTPException(status_code=400, detail="Bot not found")
+            raise HTTPException(status_code=404, detail="Bot not found")
         return bot
 
     async def broadcast(

@@ -119,7 +119,7 @@ class BotTriggerService:
         """Удалить триггер."""
         trigger = await self.get(trigger_id, owner_id)
         if not trigger:
-            return False
+            raise HTTPException(status_code=404, detail="Trigger not found")
         await self.db.delete(trigger)
         await self.db.flush()
         return True
@@ -390,7 +390,7 @@ class BotTriggerService:
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
         if not (await self.db.execute(query)).scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Bot not found")
+            raise HTTPException(status_code=404, detail="Bot not found")
 
     def build_shortcode_ctx(self, user_id: int, data: dict, bot_info) -> dict:
         """Построить контекст для шорткодов."""
