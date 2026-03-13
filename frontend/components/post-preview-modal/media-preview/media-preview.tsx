@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import styles from './media-preview.module.scss';
 import type { MediaPreviewItem } from '../store';
 import PlayIcon from '@/components/icons/play-icon';
@@ -9,7 +10,17 @@ export interface MediaPreviewProps {
 }
 
 export default function MediaPreview({ items }: MediaPreviewProps) {
+  const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+
   if (items.length === 0) return null;
+
+  const handleMediaError = (id: string) => {
+    setBrokenIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
 
   const renderTile = (
     item: MediaPreviewItem,
@@ -18,9 +29,11 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
   ) => {
     const isVideo = item.type === 'video';
     const hasVideoThumbnail = isVideo && item.thumbnailUrl;
+    const isBroken = brokenIds.has(item.id);
 
-    const tile =
-      isVideo && !item.thumbnailUrl ? (
+    const tile = isBroken ? (
+      <div className={styles.brokenPlaceholder} />
+    ) : isVideo && !item.thumbnailUrl ? (
         <video
           className={styles.video}
           src={item.url}
@@ -28,6 +41,7 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
           playsInline
           preload="metadata"
           style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
+          onError={() => handleMediaError(item.id)}
         />
       ) : (
         <img
@@ -37,6 +51,7 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
           style={{ filter: item.blur ? 'blur(20px)' : 'none' }}
           loading="lazy"
           decoding="async"
+          onError={() => handleMediaError(item.id)}
         />
       );
 

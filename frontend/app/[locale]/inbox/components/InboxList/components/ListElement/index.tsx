@@ -314,12 +314,20 @@ const ListElement: FC<ListElementProps> = ({
             <span className={styles.dateTime}>{dateStr}</span>
           </div>
           <div className={styles.gridCell}>{renderEventType()}</div>
-          <div className={styles.gridCell}>
-            <span className={styles.username}>{item.tg_username || item.tg_first_name || 'Имя пользователя'}</span>
-          </div>
-          <div className={styles.gridCell}>
-            <span className={styles.commandPath}>{item.description}</span>
-          </div>
+          {(item.tg_username || item.tg_first_name) ? (
+            <>
+              <div className={styles.gridCell}>
+                <span className={styles.username}>{item.tg_username || item.tg_first_name}</span>
+              </div>
+              <div className={styles.gridCell}>
+                <span className={styles.commandPath}>{item.description}</span>
+              </div>
+            </>
+          ) : (
+            <div className={styles.gridCell} style={{ gridColumn: 'span 2' }}>
+              <span className={styles.commandPath}>{item.description}</span>
+            </div>
+          )}
           <div className={styles.gridCell}>
             {renderActions()}
           </div>
@@ -355,9 +363,11 @@ const ListElement: FC<ListElementProps> = ({
                   <div className={styles.eventType}>
                     {renderEventType()}
                   </div>
-                  <div className={styles.username}>
-                    {item.tg_username || item.tg_first_name || 'Имя пользователя'}
-                  </div>
+                  { item.tg_username || item.tg_first_name ? (
+                    <div className={styles.username}>
+                      {item.tg_username || item.tg_first_name}
+                    </div>
+                  ) : null}
                 </div>
                 <div className={styles.descriptionMobile}>
                   {item.description}
