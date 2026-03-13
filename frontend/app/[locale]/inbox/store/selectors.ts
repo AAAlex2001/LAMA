@@ -76,8 +76,8 @@ export const selectSortedItems = createSelector(
           bValue = new Date(b.created_at).getTime();
           break;
         case 'username':
-          aValue = a.tg_username || '';
-          bValue = b.tg_username || '';
+          aValue = a.tg_username || a.tg_first_name || '';
+          bValue = b.tg_username || b.tg_first_name || '';
           break;
         case 'event_type':
           aValue = a.event_type;

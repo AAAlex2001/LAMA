@@ -315,7 +315,7 @@ const ListElement: FC<ListElementProps> = ({
           </div>
           <div className={styles.gridCell}>{renderEventType()}</div>
           <div className={styles.gridCell}>
-            <span className={styles.username}>{item.tg_username || 'Имя пользователя'}</span>
+            <span className={styles.username}>{item.tg_username || item.tg_first_name || 'Имя пользователя'}</span>
           </div>
           <div className={styles.gridCell}>
             <span className={styles.commandPath}>{item.description}</span>
@@ -356,7 +356,7 @@ const ListElement: FC<ListElementProps> = ({
                     {renderEventType()}
                   </div>
                   <div className={styles.username}>
-                    {item.tg_username}
+                    {item.tg_username || item.tg_first_name || 'Имя пользователя'}
                   </div>
                 </div>
                 <div className={styles.descriptionMobile}>

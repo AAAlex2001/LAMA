@@ -25,6 +25,10 @@
   flex-direction: column;
   gap: 6px;
 
+  &:has(.messageMediaWrapper) {
+    max-width: 50%;
+  }
+
   .messageText {
     color: #383F45;
   }
@@ -73,6 +77,10 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  &:has(.messageMediaWrapper) {
+    max-width: 50%;
+  }
 
   .messageText {
     color: #F1F5FB;

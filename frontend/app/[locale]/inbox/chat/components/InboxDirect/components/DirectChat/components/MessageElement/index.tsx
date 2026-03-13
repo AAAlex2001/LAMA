@@ -166,15 +166,17 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
         </DesktopWrapper>
         <div className={styles.incomingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={false} />}
-          <div className={styles.messageMediaWrapper}>
-            {mediaRuns.map((run, idx) =>
-              run.kind === 'visual' ? (
-                <MediaPreview key={`visual-${idx}`} items={run.items} />
-              ) : (
-                <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
-              )
-            )}
-          </div>
+          { (mediaRuns.length > 0) && (
+            <div className={styles.messageMediaWrapper}>
+              {mediaRuns.map((run, idx) =>
+                run.kind === 'visual' ? (
+                  <MediaPreview key={`visual-${idx}`} items={run.items} />
+                ) : (
+                  <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
+                )
+              )}
+            </div>
+          )}
           {text && <p className={styles.messageText}>{text}</p>}
           <div className={styles.incomingMeta}>
             {onReply && (
@@ -194,15 +196,17 @@ const MessageElement = ({ type, text, userPhoto, mediaItems, time, replyTo, onEd
       <div className={styles.outgoingWrapper}>
         <div className={styles.outgoingBubble}>
           {replyTo && <ReplyPreview replyTo={replyTo} isOutgoing={true} />}
-          <div className={styles.messageMediaWrapper}>
-            {mediaRuns.map((run, idx) =>
-              run.kind === 'visual' ? (
-                <MediaPreview key={`visual-${idx}`} items={run.items} />
-              ) : (
-                <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
-              )
-            )}
-          </div>
+          { (mediaRuns.length > 0 ) && (
+            <div className={styles.messageMediaWrapper}>
+              {mediaRuns.map((run, idx) =>
+                run.kind === 'visual' ? (
+                  <MediaPreview key={`visual-${idx}`} items={run.items} />
+                ) : (
+                  <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
+                )
+              )}
+            </div>
+          )}
           {text && <p className={styles.messageText}>{text}</p>}
           <div className={styles.outgoingMeta}>
             {(onReply || onEdit || onDelete) && (

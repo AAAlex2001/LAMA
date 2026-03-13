@@ -28,6 +28,7 @@ export interface InboxEventResponse {
   channel_id: number | null;
   tg_user_id: number | null;
   tg_username: string | null;
+  tg_first_name: string | null;
   status: EventStatus;
   description: string | null;
   payload: Record<string, unknown>;

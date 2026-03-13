@@ -89,7 +89,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                   <ChatItem
                     id={activeChat.id}
                     name={getChatDisplayName(activeChat)}
-                    username={activeChat.tg_username || undefined}
+                    username={activeChat.tg_username || activeChat.tg_first_name || undefined}
                     messagePreview={activeChat.last_message_preview || undefined}
                     time={formatChatTime(activeChat.last_message_at || activeChat.updated_at)}
                     isCurrent={true}
@@ -108,7 +108,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                       key={chat.id}
                       id={chat.id}
                       name={getChatDisplayName(chat)}
-                      username={chat.tg_username || undefined}
+                      username={chat.tg_username || chat.tg_first_name || undefined}
                       messagePreview={chat.last_message_preview || undefined}
                       time={formatChatTime(chat.last_message_at || chat.updated_at)}
                       isPinned={true}
@@ -133,7 +133,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     key={chat.id}
                     id={chat.id}
                     name={getChatDisplayName(chat)}
-                    username={chat.tg_username || undefined}
+                    username={chat.tg_username || chat.tg_first_name || undefined}
                     messagePreview={chat.last_message_preview || undefined}
                     time={formatChatTime(chat.last_message_at || chat.updated_at)}
                     isPinned={false}

@@ -45,7 +45,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
 
   const isPinned = activeChat?.is_pinned ?? false;
   const isBlocked = activeChat?.is_blocked ?? false;
-  const userName = activeChat?.tg_username || '';
+  const userName = activeChat?.tg_username || activeChat?.tg_first_name || '';
 
   const inputMode = useMessageInputMode(activeChatId);
 
