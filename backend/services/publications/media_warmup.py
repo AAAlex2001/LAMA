@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import BufferedInputFile, Message
 
 from backend.services.rate_limiter import get_rate_limiter
@@ -23,7 +24,7 @@ logger = logging.getLogger(__name__)
 STORAGE_CHANNEL_IDS = [874275963, 850249529]
 
 
-async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[str]]:
+async def warmup_media_files(bot: RateLimitedBot, media_urls: List[str]) -> List[Optional[str]]:
     """Прогревает медиа файлы в Telegram параллельно."""
     async def warmup_with_logging(idx: int, url: str, total: int) -> Optional[str]:
         try:
@@ -46,7 +47,7 @@ async def warmup_media_files(bot: Bot, media_urls: List[str]) -> List[Optional[s
     return list(file_ids)
 
 
-async def warmup_single_media(bot: Bot, media_url: str, idx: Optional[int] = None) -> Optional[str]:
+async def warmup_single_media(bot: RateLimitedBot, media_url: str, idx: Optional[int] = None) -> Optional[str]:
     """Прогревает один медиа файл."""
     if not STORAGE_CHANNEL_IDS:
         raise RuntimeError("No STORAGE_CHANNEL_IDS configured")

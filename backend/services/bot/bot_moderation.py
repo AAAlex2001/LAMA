@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 
@@ -17,7 +18,7 @@ MAX_AUTO_DELETE_SECONDS = 31536000
 class BotModerationService:
     """Обработка модерационных команд (/ban, /mute, /admin и т.д.)."""
 
-    async def handle_command(self, command: str, message: Message, telegram_bot: Bot) -> bool:
+    async def handle_command(self, command: str, message: Message, telegram_bot: RateLimitedBot) -> bool:
         """Обработать команду модерации. Возвращает True если обработана."""
         if message.chat.type not in ("group", "supergroup"):
             return False
@@ -49,7 +50,7 @@ class BotModerationService:
             return await handler()
         return False
 
-    async def handle_admin(self, message: Message, telegram_bot: Bot) -> bool:
+    async def handle_admin(self, message: Message, telegram_bot: RateLimitedBot) -> bool:
         """Уведомить владельца группы о вызове /admin."""
         try:
             owner = await self.find_group_owner(telegram_bot, message.chat.id)
@@ -66,7 +67,7 @@ class BotModerationService:
             return False
 
     async def handle_ban(
-        self, bot: Bot, chat_id: int,
+        self, bot: RateLimitedBot, chat_id: int,
         user_id: Optional[int], username: Optional[str], parts: list,
     ) -> bool:
         """Забанить пользователя."""
@@ -88,7 +89,7 @@ class BotModerationService:
         return True
 
     async def handle_unban(
-        self, bot: Bot, chat_id: int,
+        self, bot: RateLimitedBot, chat_id: int,
         user_id: Optional[int], username: Optional[str],
     ) -> bool:
         """Разбанить пользователя."""
@@ -103,7 +104,7 @@ class BotModerationService:
         return True
 
     async def handle_mute(
-        self, bot: Bot, chat_id: int,
+        self, bot: RateLimitedBot, chat_id: int,
         user_id: Optional[int], username: Optional[str], parts: list,
     ) -> bool:
         """Заглушить пользователя."""
@@ -124,7 +125,7 @@ class BotModerationService:
         return True
 
     async def handle_unmute(
-        self, bot: Bot, chat_id: int,
+        self, bot: RateLimitedBot, chat_id: int,
         user_id: Optional[int], username: Optional[str],
     ) -> bool:
         """Разглушить пользователя."""
@@ -146,7 +147,7 @@ class BotModerationService:
             await self.reply(bot, chat_id, f"Не удалось разглушить: {e}")
         return True
 
-    async def handle_delete_time(self, bot: Bot, chat_id: int, parts: list) -> bool:
+    async def handle_delete_time(self, bot: RateLimitedBot, chat_id: int, parts: list) -> bool:
         """Настроить автоудаление сообщений в группе."""
         if len(parts) < 2:
             await self.reply(bot, chat_id, "Укажите время: /delitetime <секунды>")
@@ -168,11 +169,11 @@ class BotModerationService:
             await self.reply(bot, chat_id, f"Не удалось установить автоудаление: {e}")
         return True
 
-    async def reply(self, bot: Bot, chat_id: int, text: str) -> None:
+    async def reply(self, bot: RateLimitedBot, chat_id: int, text: str) -> None:
         """Отправить ответ в чат."""
         await bot.send_message(chat_id=chat_id, text=text)
 
-    async def check_is_admin(self, bot: Bot, chat_id: int, user_id: int) -> bool:
+    async def check_is_admin(self, bot: RateLimitedBot, chat_id: int, user_id: int) -> bool:
         """Проверить является ли пользователь администратором."""
         try:
             member = await bot.get_chat_member(chat_id, user_id)
@@ -180,7 +181,7 @@ class BotModerationService:
         except TelegramAPIError:
             return False
 
-    async def find_group_owner(self, bot: Bot, chat_id: int):
+    async def find_group_owner(self, bot: RateLimitedBot, chat_id: int):
         """Найти владельца (создателя) группы."""
         admins = await bot.get_chat_administrators(chat_id)
         for admin in admins:

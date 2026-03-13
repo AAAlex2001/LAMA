@@ -4,6 +4,7 @@ from typing import Optional, Dict, Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import Message, ChatJoinRequest
 from aiogram.exceptions import TelegramAPIError
 
@@ -28,7 +29,7 @@ class BotWelcomeService:
         self.db = db
 
     async def send_welcome(
-        self, telegram_bot: Bot, bot_model: BotModel,
+        self, telegram_bot: RateLimitedBot, bot_model: BotModel,
         user_id: int, chat_id: int,
         context: Optional[Dict[str, Any]] = None,
         message_thread_id: Optional[int] = None,
@@ -55,7 +56,7 @@ class BotWelcomeService:
             return None
 
     async def send_media_or_text(
-        self, telegram_bot: Bot, chat_id: int, text: str,
+        self, telegram_bot: RateLimitedBot, chat_id: int, text: str,
         media_url: Optional[str] = None,
         media_type: Optional[MessageType] = None,
         reply_markup=None,
@@ -100,7 +101,7 @@ class BotWelcomeService:
         }
 
     async def handle_join_request(
-        self, telegram_bot: Bot, bot_model: BotModel,
+        self, telegram_bot: RateLimitedBot, bot_model: BotModel,
         join_request: ChatJoinRequest,
     ) -> Optional[Message]:
         """Приветствие при заявке на вступление (в ЛС)."""
@@ -123,7 +124,7 @@ class BotWelcomeService:
         )
 
     async def handle_member_joined(
-        self, telegram_bot: Bot, bot_model: BotModel,
+        self, telegram_bot: RateLimitedBot, bot_model: BotModel,
         user_id: int, chat_id: int,
         user_first_name: Optional[str] = None,
         user_username: Optional[str] = None,

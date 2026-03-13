@@ -6,6 +6,7 @@ from typing import List, Optional, Tuple
 
 import pytz
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy import select, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -108,7 +109,7 @@ class BotRecurringService:
         )
         return list(result.scalars().all())
 
-    async def send(self, msg: RecurringMessage, telegram_bot: Bot) -> None:
+    async def send(self, msg: RecurringMessage, telegram_bot: RateLimitedBot) -> None:
         """Отправить сообщение во все целевые чаты."""
         now = datetime.now(timezone.utc)
 
@@ -137,7 +138,7 @@ class BotRecurringService:
         msg.next_send_at = self.calculate_next_send(msg)
         await self.db.flush()
 
-    async def send_to_chat(self, bot: Bot, chat_id: int, msg: RecurringMessage, text: str, keyboard) -> None:
+    async def send_to_chat(self, bot: RateLimitedBot, chat_id: int, msg: RecurringMessage, text: str, keyboard) -> None:
         """Отправить в один чат и залогировать."""
         telegram_message_id = None
         success = True

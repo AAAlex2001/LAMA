@@ -206,7 +206,7 @@ class InboxActionService:
             logger.error(f"increment_link_counter failed: {e}")
 
     async def fire_join_trigger(
-        self, bot: Bot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
+        self, bot: RateLimitedBot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
     ) -> None:
         """Запустить триггер при принятии/отклонении заявки из инбокса."""
         try:

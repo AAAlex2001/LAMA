@@ -5,6 +5,7 @@ import random
 from aiogram.types import Message, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 class MemberProcessor:
     def __init__(
-        self, db: AsyncSession, bot_model: BotModel, telegram_bot: Bot
+        self, db: AsyncSession, bot_model: BotModel, telegram_bot: RateLimitedBot
     ):
         self.db = db
         self.bot_model = bot_model

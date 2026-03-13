@@ -1,6 +1,7 @@
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 from fastapi import HTTPException
@@ -46,7 +47,7 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
-    async def delete_if_system(self, telegram_bot: Bot, message: Message) -> bool:
+    async def delete_if_system(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
         """Удалить системное сообщение если настроено."""
         if not message or not message.chat:
             return False
@@ -60,7 +61,7 @@ class AutoDeleteService:
 
         return await self.safe_delete(telegram_bot, message.chat.id, message.message_id)
 
-    async def delete_if_command(self, telegram_bot: Bot, message: Message) -> bool:
+    async def delete_if_command(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
         """Удалить командное сообщение если настроено."""
         if not message or not message.chat:
             return False
@@ -99,7 +100,7 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
-    async def safe_delete(self, telegram_bot: Bot, chat_id: int, message_id: int) -> bool:
+    async def safe_delete(self, telegram_bot: RateLimitedBot, chat_id: int, message_id: int) -> bool:
         """Безопасно удалить сообщение."""
         try:
             await telegram_bot.delete_message(chat_id=chat_id, message_id=message_id)

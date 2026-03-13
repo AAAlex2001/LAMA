@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -227,7 +228,7 @@ class BotCrudService:
         except TelegramAPIError as e:
             raise HTTPException(status_code=400, detail=f"Invalid bot token: {e}")
 
-    async def setup_webhook(self, bot: Bot, token: str) -> None:
+    async def setup_webhook(self, bot: RateLimitedBot, token: str) -> None:
         """Установить вебхук для бота."""
         webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
         await bot.set_webhook(
@@ -236,7 +237,7 @@ class BotCrudService:
             allowed_updates=WEBHOOK_ALLOWED_UPDATES,
         )
 
-    async def safe_get_description(self, bot: Bot) -> Optional[str]:
+    async def safe_get_description(self, bot: RateLimitedBot) -> Optional[str]:
         """Получить описание бота (None при ошибке)."""
         try:
             info = await bot.get_my_description()
@@ -244,7 +245,7 @@ class BotCrudService:
         except TelegramAPIError:
             return None
 
-    async def safe_get_short_description(self, bot: Bot) -> Optional[str]:
+    async def safe_get_short_description(self, bot: RateLimitedBot) -> Optional[str]:
         """Получить краткое описание бота (None при ошибке)."""
         try:
             info = await bot.get_my_short_description()
@@ -268,7 +269,7 @@ class BotCrudService:
         bot_info_cache.pop(token, None)
 
     async def sync_telegram_fields(
-        self, telegram_bot: Bot, bot: BotModel,
+        self, telegram_bot: RateLimitedBot, bot: BotModel,
         new_name: Optional[str], update_data: dict,
     ) -> None:
         """Синхронизировать поля бота с Telegram API."""

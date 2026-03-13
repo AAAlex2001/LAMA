@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -177,7 +178,7 @@ class MessageHandler:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None
 
-    async def check_night_mode(self, telegram_bot: Bot, message: Message) -> bool:
+    async def check_night_mode(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
         """Проверка ночного режима. Возвращает True, если сообщение заблокировано"""
         is_media = any([
             getattr(message, attr, None)

@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from aiogram import Bot
+from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -132,7 +133,7 @@ def resolve_chat_identifier(
         )
 
 
-async def validate_access(bot: Bot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
+async def validate_access(bot: RateLimitedBot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
     try:
         bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
