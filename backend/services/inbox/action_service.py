@@ -6,6 +6,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram.types import ChatPermissions
+from backend.services.telegram_client import RateLimitedBot
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot, TriggerType
 from backend.models.channels import ChannelGroup, ChatInviteLink
