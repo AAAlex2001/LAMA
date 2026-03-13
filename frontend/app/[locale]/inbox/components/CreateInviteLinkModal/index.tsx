@@ -239,6 +239,13 @@ const CreateInviteLinkModal: React.FC<{
             />
           </ModalBase.Body>
         )}
+        {modalState.step === 'confirm' && !modalState.previewData && isFetchingLink && (
+          <ModalBase.Body className={styles.modalBody}>
+            <div className={styles.loaderContainer}>
+              <Loader size={32} color="blue" />
+            </div>
+          </ModalBase.Body>
+        )}
         {modalState.step === 'confirm' && modalState.previewData && (
           <ConfirmInviteStep
             previewData={modalState.previewData}
