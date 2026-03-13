@@ -118,7 +118,9 @@ class DirectMessageService:
             return message.animation.file_id
         if message_type == MessageType.STICKER and message.sticker:
             return message.sticker.file_id
-        raise HTTPException(status_code=404, detail="Media file not found")(self, message: Message, fallback: MessageType = MessageType.TEXT) -> MessageType:
+        raise HTTPException(status_code=404, detail="Media file not found")
+
+    def extract_media_type(self, message: Message, fallback: MessageType = MessageType.TEXT) -> MessageType:
         if message.photo:
             return MessageType.PHOTO
         if message.video:
