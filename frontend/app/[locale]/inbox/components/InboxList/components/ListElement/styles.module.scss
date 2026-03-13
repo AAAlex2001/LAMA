@@ -18,7 +18,8 @@
 }
 
 .elementMobile {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -67,6 +68,7 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
+  flex: 0;
 }
 
 .descriptionContentItem {

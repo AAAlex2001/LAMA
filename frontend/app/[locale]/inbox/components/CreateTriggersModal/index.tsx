@@ -31,7 +31,7 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const createTrigger = useCreateTrigger();
+  const { createTrigger } = useCreateTrigger();
 
   useEffect(() => {
     dispatch(setCreateTriggerModalOpen(isOpen));
@@ -55,7 +55,7 @@ const CreateTriggersModal: React.FC<CreateTriggersModalProps> = ({
       }
 
       const promises = botIdsToUse.map(botId =>
-        createTrigger.mutateAsync({ botId, data: triggerData })
+        createTrigger({ botId, data: triggerData })
       );
 
       await Promise.all(promises);

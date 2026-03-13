@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
 import SearchBar from '@/components/search-bar/search-bar';
@@ -98,25 +98,16 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
     }
   }, [isOpen, channels.length, dispatch]);
 
-  const allInviteLinks = useMemo(() => {
-    const allLinks: InviteLink[] = [];
-    Object.entries(inviteLinksState).forEach(([_, links]: [string, InviteLink[]]) => {
-      allLinks.push(...links);
-    });
-    return allLinks;
-  }, [inviteLinksState]);
+  const allInviteLinks = Object.values(inviteLinksState).flat();
 
   const isLoading = Object.values(inviteLinksLoadingState).some(loading => loading === true);
 
-  const mappedLinks = useMemo(() => {
-    if (allInviteLinks && allInviteLinks.length > 0) {
-      return allInviteLinks.map((link) => {
-        const channelName = channelNameMap.get(link.channel_id) || '';
-        return mapInviteLinkToInvitationLink(link, channelName);
-      });
-    }
-    return propLinks;
-  }, [allInviteLinks, channelNameMap, propLinks]);
+  const mappedLinks = allInviteLinks && !!allInviteLinks.length ? 
+    allInviteLinks.map((link) => {
+      const channelName = channelNameMap.get(link.channel_id) || '';
+      return mapInviteLinkToInvitationLink(link, channelName);
+    }) 
+    : propLinks;
 
   const filteredLinks = mappedLinks?.filter((link) => {
     const matchesSearch =
@@ -175,13 +166,17 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
           />
 
           <div className={styles.linksList}>
-            {isLoading ? (
+            {isLoading && (
               <div className={styles.emptyState}>
                 <Loader size={32} color="blue" />
               </div>
-            ) : !filteredLinks?.length ? (
+            )} 
+            
+            {!filteredLinks?.length && !isLoading && (
               <div className={styles.emptyState}>Нет ссылок-приглашений</div>
-            ) : (
+            )}
+            
+            {filteredLinks?.length && !isLoading && (
               filteredLinks?.map((link) => (
                 <InvitationLinkItem
                   key={link.id}

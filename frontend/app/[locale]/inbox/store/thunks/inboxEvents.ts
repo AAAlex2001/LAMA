@@ -1,8 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 
-// --- Backend enums ---
-
 export type InboxCategory = 'moderation' | 'system' | 'automation';
 export type EntityType = 'bot' | 'channel' | 'system';
 export type EventType =
@@ -20,8 +18,6 @@ export type EventType =
 export type EventStatus = 'new' | 'processed' | 'banned';
 export type SortDir = 'new' | 'old';
 export type BulkActionType = 'read' | 'ignore' | 'delete' | 'block' | 'unblock';
-
-// --- Response types ---
 
 export interface InboxEventResponse {
   id: number;
@@ -44,8 +40,6 @@ export interface InboxListResponse {
   items: InboxEventResponse[];
   total: number;
 }
-
-// --- Request param types ---
 
 export interface FetchInboxEventsParams {
   category?: InboxCategory;
@@ -157,6 +151,72 @@ export const fetchInboxEventsThunk = createAsyncThunk(
       return rejectWithValue(errorMessage);
     }
   }
+);
+
+export const CATEGORY_MAP: Record<string, string | undefined> = {
+  all: undefined,
+  moderation: 'moderation',
+  system: 'system',
+  automation: 'automation',
+};
+
+export const fetchMoreInboxEventsThunk = createAsyncThunk<
+  InboxListResponse,
+  void,
+  { state: { inbox: import('../slices/inbox').InboxState } }
+>(
+  'inboxEvents/fetchMore',
+  async (_, { getState, rejectWithValue }) => {
+    const s = getState().inbox;
+    const limit = 50;
+
+    try {
+      const queryParams = new URLSearchParams();
+      const category = CATEGORY_MAP[s.selectedFilter];
+      if (category) queryParams.append('category', category);
+      if (s.statusFilter) queryParams.append('status', s.statusFilter);
+      if (s.botIds && s.botIds.length > 0) {
+        queryParams.append('bot_ids', s.botIds.join(','));
+      }
+      if (s.channelIds && s.channelIds.length > 0) {
+        queryParams.append('channel_ids', s.channelIds.join(','));
+      }
+      if (s.system !== undefined && s.system !== null) {
+        queryParams.append('system', String(s.system));
+      }
+      if (s.typeAutoReplies !== undefined && s.typeAutoReplies !== null) {
+        queryParams.append('type_auto_replies', String(s.typeAutoReplies));
+      }
+      if (s.typeTriggers !== undefined && s.typeTriggers !== null) {
+        queryParams.append('type_triggers', String(s.typeTriggers));
+      }
+      if (s.typeCommands !== undefined && s.typeCommands !== null) {
+        queryParams.append('type_commands', String(s.typeCommands));
+      }
+      if (s.search) {
+        queryParams.append('search', s.search);
+      }
+      queryParams.append('sort', s.sortDir);
+      queryParams.append('limit', String(limit));
+      queryParams.append('offset', String(s.itemsOffset));
+
+      const response = await apiRequest<InboxListResponse>(
+        `/inbox?${queryParams.toString()}`,
+        { method: 'GET' }
+      );
+
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки уведомлений';
+      return rejectWithValue(errorMessage);
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().inbox;
+      return !s.itemsLoading && s.itemsHasMore;
+    },
+  },
 );
 
 export const bulkInboxActionThunk = createAsyncThunk(

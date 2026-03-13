@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useImperativeHandle, forwardRef, useMemo, useRef } from 'react';
+import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react';
 import { Button } from '@/components/new-button';
 import MediaPreview, { type MediaFile } from '@/components/media-preview';
 import InlineButtons, { type ButtonRow, type InlineButton } from '@/components/inline-buttons/inline-buttons';
@@ -10,8 +10,8 @@ import classNames from 'classnames';
 import styles from './styles.module.scss';
 import Input from '@/components/input';
 import buttonStyles from '@/components/new-button/styles.module.scss';
-import { useMessageMedia } from '../InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
-import { useInlineButtons } from '../InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
+import { useMessageMedia } from '../../chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
+import { useInlineButtons } from '../../chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
 
 export interface ResponseTextSectionRef {
   limitedMediaFiles: MediaFile[];
@@ -63,7 +63,7 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
   } = useInlineButtons();
 
   const MAX_MEDIA = 10;
-  const limitedMediaFiles = useMemo(() => mediaFiles.slice(0, MAX_MEDIA), [mediaFiles]);
+  const limitedMediaFiles = mediaFiles.slice(0, MAX_MEDIA);
   const canAddMedia = limitedMediaFiles.length < MAX_MEDIA;
   const canShowInlineButtons = limitedMediaFiles.length < 2;
 

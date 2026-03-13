@@ -35,7 +35,7 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const createAutoReply = useCreateAutoReply();
+  const { createAutoReply } = useCreateAutoReply();
 
   useEffect(() => {
     dispatch(setCreateAutoReplyModalOpen(isOpen));
@@ -55,7 +55,7 @@ const CreateAutoRepliesModal: React.FC<CreateAutoRepliesModalProps> = ({
       }
 
       const promises = botIds.map(botId =>
-        createAutoReply.mutateAsync({ botIds: [botId], data: autoReplyData })
+        createAutoReply({ botId: botId, data: autoReplyData })
       );
 
       await Promise.all(promises);

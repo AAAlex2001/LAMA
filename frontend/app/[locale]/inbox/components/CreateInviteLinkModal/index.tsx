@@ -192,23 +192,16 @@ const CreateInviteLinkModal: React.FC<{
     dispatch(setStep('form'));
   };
 
-  const createInviteLinkMutation = useCreateInviteLink();
+  const { createInviteLink, isLoading: isCreatingLink } = useCreateInviteLink();
 
   const handleConfirm = async () => {
     if (!modalState.previewData) return;
     
     try {
-      await createInviteLinkMutation.mutate(modalState.previewData, {
-        onSuccess: () => {
-          showSuccess('Ссылка-приглашение успешно создана');
-          onCreateLink?.(modalState.previewData!);
-          onOpenChange?.(false);
-        },
-        onError: (error) => {
-          const errorMessage = error instanceof Error ? error.message : 'Не удалось создать ссылку-приглашение';
-          showError(errorMessage);
-        },
-      });
+      await createInviteLink(modalState.previewData);
+      showSuccess('Ссылка-приглашение успешно создана');
+      onCreateLink?.(modalState.previewData!);
+      onOpenChange?.(false);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Не удалось создать ссылку-приглашение';
       showError(errorMessage);
@@ -237,38 +230,26 @@ const CreateInviteLinkModal: React.FC<{
           </ModalBase.Title>
           {modalState.step === 'form' && <ModalBase.Close/>}
         </ModalBase.Header>
-
-        {isFetchingLink ? (
+        {modalState.step === 'form' && (
           <ModalBase.Body className={styles.modalBody}>
-            <div className={styles.loaderContainer}>
-              <Loader size={32} color="blue" />
-            </div>
+            <InviteForm
+              channels={channelsOptions}
+              maxChannels={maxChannels}
+              onEditingConfirm={handleEditingConfirm}
+            />
           </ModalBase.Body>
-        ) : (
-          <>
-            {modalState.step === 'form' && (
-              <ModalBase.Body className={styles.modalBody}>
-                <InviteForm
-                  channels={channelsOptions}
-                  maxChannels={maxChannels}
-                  onEditingConfirm={handleEditingConfirm}
-                />
-              </ModalBase.Body>
-            )}
-
-            {modalState.step === 'confirm' && modalState.previewData && (
-              <ConfirmInviteStep
-                previewData={modalState.previewData}
-                selectedChannel={selectedChannel}
-                onBack={handleBack}
-                onConfirm={modalState.editingLinkId ? handleEditingConfirm : handleConfirm}
-                onEdit={handleEdit}
-                onClose={() => onOpenChange(false)}
-                isEditing={!!modalState.editingLinkId}
-                isLoading={modalState.editingLinkId ? isUpdatingLink : createInviteLinkMutation.isLoading}
-              />
-            )}
-          </>
+        )}
+        {modalState.step === 'confirm' && modalState.previewData && (
+          <ConfirmInviteStep
+            previewData={modalState.previewData}
+            selectedChannel={selectedChannel}
+            onBack={handleBack}
+            onConfirm={modalState.editingLinkId ? handleEditingConfirm : handleConfirm}
+            onEdit={handleEdit}
+            onClose={() => onOpenChange(false)}
+            isEditing={!!modalState.editingLinkId}
+            isLoading={modalState.editingLinkId ? isUpdatingLink : isCreatingLink}
+          />
         )}
       </ModalBase.Content>
     </ModalBase>

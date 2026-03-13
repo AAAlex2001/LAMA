@@ -42,35 +42,6 @@ export interface SendMessageParams {
   data: SendMessageRequest;
 }
 
-export const fetchMessagesThunk = createAsyncThunk(
-  'globalMessages/fetchMessages',
-  async (params: FetchMessagesParams, { rejectWithValue }) => {
-    const { botId, chat_id, is_incoming, page = 1, page_size = 50 } = params;
-    
-    try {
-      const queryParams = new URLSearchParams();
-      if (chat_id !== undefined && chat_id !== null) {
-        queryParams.append('chat_id', String(chat_id));
-      }
-      if (is_incoming !== undefined && is_incoming !== null) {
-        queryParams.append('is_incoming', String(is_incoming));
-      }
-      queryParams.append('page', String(page));
-      queryParams.append('page_size', String(page_size));
-      
-      const response = await apiRequest<BotMessageListResponse>(
-        `/bots/${botId}/messages?${queryParams.toString()}`,
-        { method: 'GET' }
-      );
-      
-      return response;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки сообщений';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
 export const sendMessageThunk = createAsyncThunk(
   'globalMessages/sendMessage',
   async (params: SendMessageParams, { rejectWithValue }) => {

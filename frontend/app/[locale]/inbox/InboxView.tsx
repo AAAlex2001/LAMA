@@ -1,16 +1,14 @@
 'use client';
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import InboxList from "./components/InboxList";
-import InboxSortingBar from "./components/SortingBar";
+import InboxSortingBar from "./components/InboxSortingBar";
 import styles from "./styles.module.scss";
 import { ListHeaderType } from "./components/InboxList/components/ListHeader";
 import {
-  fetchBotsThunk,
   useAppDispatch,
   useAppSelector,
-  fetchChannelsThunk,
   setSelectedFilter,
   selectSelectedFilter,
 } from "./store";
@@ -19,6 +17,7 @@ import type { ListFilterType } from "./store";
 const InboxView = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { locale } = useParams();
 
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const [sortHandlers, setSortHandlers] = useState<{
@@ -27,17 +26,12 @@ const InboxView = () => {
     handleEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
   } | null>(null);
 
-  useEffect(() => {
-    dispatch(fetchChannelsThunk({}));
-    dispatch(fetchBotsThunk({}));
-  }, [dispatch]);
-
   const handleFilterChange = (filter: ListHeaderType) => {
     dispatch(setSelectedFilter(filter as ListFilterType));
   };
 
   const handleNavigateToDirect = () => {
-    router.push('/inbox/chat');
+    router.push(`/${locale}/inbox/chat`);
   };
 
   return (

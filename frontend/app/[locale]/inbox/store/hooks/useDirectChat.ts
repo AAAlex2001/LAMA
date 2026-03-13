@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '../index';
 import {
+  selectChatsById,
+  selectChatOrder,
   selectDirectChats,
   selectDirectChatsLoading,
   selectDirectChatsError,
@@ -34,11 +36,11 @@ import {
   setGlobalMessageModalOpen,
   setSelectedBotIds,
   toggleBotSelection,
-  selectAllBots,
   makeChatKey,
 } from '../slices/directChat';
 import {
   fetchDirectChatsThunk,
+  fetchMoreDirectChatsThunk,
   fetchDirectMessagesThunk,
   sendDirectMessageThunk,
   updateDirectChatThunk,
@@ -60,6 +62,8 @@ export function useDirectChat() {
   const dispatch = useAppDispatch();
   const handlersSetRef = useRef(false);
 
+  const chatsById = useAppSelector(selectChatsById);
+  const chatOrder = useAppSelector(selectChatOrder);
   const chats = useAppSelector(selectDirectChats);
   const chatsLoading = useAppSelector(selectDirectChatsLoading);
   const chatsError = useAppSelector(selectDirectChatsError);
@@ -83,22 +87,20 @@ export function useDirectChat() {
 
     directChatWs.setHandlers(
       (event: WsEvent) => {
-        if (event.type === 'message_new') {
-          dispatch(fetchDirectMessagesThunk({
-            botId: event.bot_id,
-            tgChatId: event.chat_id,
-            skip: 0,
-            limit: 50,
-          }));
-        } else if (event.type === 'message_edited' || event.type === 'message_deleted') {
-          dispatch(fetchDirectMessagesThunk({
-            botId: event.bot_id,
-            tgChatId: event.chat_id,
-            skip: 0,
-            limit: 50,
-          }));
-        } else if (event.type === 'chat_updated') {
-          dispatch(fetchDirectChatsThunk({}));
+        switch (event.type) {
+          case 'message_new':
+          case 'message_edited':
+          case 'message_deleted':
+            dispatch(fetchDirectMessagesThunk({
+              botId: event.bot_id,
+              tgChatId: event.chat_id,
+              skip: 0,
+              limit: 50,
+            }));
+          break;
+          case 'chat_updated':
+            dispatch(fetchDirectChatsThunk({}));
+          break;
         }
       },
       (connected) => {
@@ -119,184 +121,94 @@ export function useDirectChat() {
     }
   }, [activeChat?.bot_id, activeChat?.tg_chat_id]);
 
-  const setActiveChat = useCallback(
-    (chatId: string | null) => {
-      dispatch(setActiveChatId(chatId));
-    },
-    [dispatch]
-  );
+  const setActiveChat = (chatId: string | null) => {
+    dispatch(setActiveChatId(chatId));
+  };
 
-  const fetchChats = useCallback(
-    (params: FetchDirectChatsParams = {}) => {
-      return dispatch(fetchDirectChatsThunk({
-        sort: chatSort,
-        unread: chatUnreadFilter,
-        ...params,
-      }));
-    },
-    [dispatch, chatSort, chatUnreadFilter]
-  );
-
-  const fetchMoreChats = useCallback(() => {
-    if (chatsLoading || !chatsHasMore) return;
+  const fetchChats = (params: FetchDirectChatsParams = {}) => {
     return dispatch(fetchDirectChatsThunk({
-      skip: chats.length,
-      limit: 50,
       sort: chatSort,
       unread: chatUnreadFilter,
+      ...params,
     }));
-  }, [dispatch, chats.length, chatsLoading, chatsHasMore, chatSort, chatUnreadFilter]);
+  };
 
-  const fetchMessages = useCallback(
-    (params: FetchDirectMessagesParams) => {
-      return dispatch(fetchDirectMessagesThunk(params));
-    },
-    [dispatch]
-  );
+  const fetchMoreChats = () => {
+    return dispatch(fetchMoreDirectChatsThunk());
+  };
 
-  const sendMessage = useCallback(
-    async (params: {
-      text_content?: string;
-      media_url?: string;
-      media_urls?: string[];
-      media_type?: MessageType;
-      inline_keyboard?: SendDirectMessageParams['inline_keyboard'];
-      buttons?: SendDirectMessageParams['buttons'];
-      reply_to_message_id?: number;
-    }) => {
-      if (!activeChat) {
-        console.warn('No active chat, cannot send message');
-        return null;
-      }
+  const fetchMessages = (params: FetchDirectMessagesParams) => {
+    return dispatch(fetchDirectMessagesThunk(params));
+  };
 
-      dispatch(setSendingMessage(true));
+  const sendMessage = async (params: {
+    text_content?: string;
+    media_url?: string;
+    media_urls?: string[];
+    media_type?: MessageType;
+    inline_keyboard?: SendDirectMessageParams['inline_keyboard'];
+    buttons?: SendDirectMessageParams['buttons'];
+    reply_to_message_id?: number;
+  }) => {
+    if (!activeChat) {
+      console.warn('No active chat, cannot send message');
+      return null;
+    }
 
-      const sendParams: SendDirectMessageParams = {
-        botId: activeChat.bot_id,
-        tgChatId: activeChat.tg_chat_id,
-        chat_id: activeChat.tg_chat_id,
-        ...params,
-      };
+    dispatch(setSendingMessage(true));
 
-      try {
-        const result = await dispatch(sendDirectMessageThunk(sendParams));
-        if (sendDirectMessageThunk.fulfilled.match(result)) {
-          const chatKey = makeChatKey(activeChat.bot_id, activeChat.tg_chat_id);
-          for (const message of result.payload.items) {
-            dispatch(wsMessageReceived({
-              chatKey,
-              message,
-            }));
-          }
-          return result.payload.items;
+    const sendParams: SendDirectMessageParams = {
+      botId: activeChat.bot_id,
+      tgChatId: activeChat.tg_chat_id,
+      chat_id: activeChat.tg_chat_id,
+      ...params,
+    };
+
+    try {
+      const result = await dispatch(sendDirectMessageThunk(sendParams));
+      if (sendDirectMessageThunk.fulfilled.match(result)) {
+        const chatKey = makeChatKey(activeChat.bot_id, activeChat.tg_chat_id);
+        for (const message of result.payload.items) {
+          dispatch(wsMessageReceived({
+            chatKey,
+            message,
+          }));
         }
-        return null;
-      } finally {
-        dispatch(setSendingMessage(false));
+        return result.payload.items;
       }
-    },
-    [dispatch, activeChat]
-  );
+      return null;
+    } finally {
+      dispatch(setSendingMessage(false));
+    }
+  };
 
-  const updateChat = useCallback(
-    (params: UpdateDirectChatParams) => {
-      return dispatch(updateDirectChatThunk(params));
-    },
-    [dispatch]
-  );
+  const updateChat = (params: UpdateDirectChatParams) => dispatch(updateDirectChatThunk(params));
 
-  const pinChat = useCallback(
-    (chatId: number) => {
-      return dispatch(updateDirectChatThunk({ chatId, is_pinned: true }));
-    },
-    [dispatch]
-  );
+  const pinChat = (chatId: number) => dispatch(updateDirectChatThunk({ chatId, is_pinned: true }));
 
-  const unpinChat = useCallback(
-    (chatId: number) => {
-      return dispatch(updateDirectChatThunk({ chatId, is_pinned: false }));
-    },
-    [dispatch]
-  );
+  const unpinChat = (chatId: number) => dispatch(updateDirectChatThunk({ chatId, is_pinned: false }));
 
-  const blockChat = useCallback(
-    (chatId: number) => {
-      return dispatch(updateDirectChatThunk({ chatId, is_blocked: true }));
-    },
-    [dispatch]
-  );
+  const blockChat = (chatId: number) => dispatch(updateDirectChatThunk({ chatId, is_blocked: true }));
 
-  const unblockChat = useCallback(
-    (chatId: number) => {
-      return dispatch(updateDirectChatThunk({ chatId, is_blocked: false }));
-    },
-    [dispatch]
-  );
+  const unblockChat = (chatId: number) => dispatch(updateDirectChatThunk({ chatId, is_blocked: false }));
 
-  const editMessage = useCallback(
-    (params: EditDirectMessageParams) => {
-      return dispatch(editDirectMessageThunk(params));
-    },
-    [dispatch]
-  );
+  const editMessage = (params: EditDirectMessageParams) => dispatch(editDirectMessageThunk(params));
 
-  const deleteMessage = useCallback(
-    (params: DeleteDirectMessageParams) => {
-      return dispatch(deleteDirectMessageThunk(params));
-    },
-    [dispatch]
-  );
+  const deleteMessage = (params: DeleteDirectMessageParams) => dispatch(deleteDirectMessageThunk(params));
 
-  const setReplyToMessageIdAction = useCallback(
-    (messageId: number | null) => {
-      dispatch(setReplyToMessageId(messageId));
-    },
-    [dispatch]
-  );
+  const setReplyToMessageIdAction = (messageId: number | null) => dispatch(setReplyToMessageId(messageId));
 
-  const setBotAutomatizationModalOpenAction = useCallback(
-    (isOpen: boolean) => {
-      dispatch(setBotAutomatizationModalOpen(isOpen));
-    },
-    [dispatch]
-  );
+  const setBotAutomatizationModalOpenAction = (isOpen: boolean) => dispatch(setBotAutomatizationModalOpen(isOpen));
 
-  const setTriggerModalOpenAction = useCallback(
-    (isOpen: boolean) => {
-      dispatch(setTriggerModalOpen(isOpen));
-    },
-    [dispatch]
-  );
+  const setTriggerModalOpenAction = (isOpen: boolean) => dispatch(setTriggerModalOpen(isOpen));
 
-  const setGlobalMessageModalOpenAction = useCallback(
-    (isOpen: boolean) => {
-      dispatch(setGlobalMessageModalOpen(isOpen));
-    },
-    [dispatch]
-  );
+  const setGlobalMessageModalOpenAction = (isOpen: boolean) => dispatch(setGlobalMessageModalOpen(isOpen));
 
-  const toggleBotSelectionAction = useCallback(
-    (botId: number) => {
-      dispatch(toggleBotSelection(botId));
-    },
-    [dispatch]
-  );
+  const toggleBotSelectionAction = (botId: number) => dispatch(toggleBotSelection(botId));
 
-  const selectAllBotsAction = useCallback(
-    (botIds: number[]) => {
-      dispatch(selectAllBots(botIds));
-    },
-    [dispatch]
-  );
+  const setSelectedBotIdsAction = (botIds: number[]) => dispatch(setSelectedBotIds(botIds));
 
-  const setSelectedBotIdsAction = useCallback(
-    (botIds: number[]) => {
-      dispatch(setSelectedBotIds(botIds));
-    },
-    [dispatch]
-  );
-
-  const jumpToLatestMessages = useCallback(() => {
+  const jumpToLatestMessages = () => {
     if (!activeChat) return;
     dispatch(resetToLatest(makeChatKey(activeChat.bot_id, activeChat.tg_chat_id)));
     return dispatch(fetchDirectMessagesThunk({
@@ -305,9 +217,11 @@ export function useDirectChat() {
       skip: 0,
       limit: 50,
     }));
-  }, [dispatch, activeChat]);
+  };
 
   return {
+    chatsById,
+    chatOrder,
     chats,
     chatsLoading,
     chatsError,
@@ -317,6 +231,8 @@ export function useDirectChat() {
     pinnedChats,
     unpinnedChats,
     sendingMessage,
+    chatSort,
+    chatUnreadFilter,
     replyToMessageId,
     isBotAutomatizationModalOpen,
     isTriggerModalOpen,
@@ -341,7 +257,6 @@ export function useDirectChat() {
     setTriggerModalOpen: setTriggerModalOpenAction,
     setGlobalMessageModalOpen: setGlobalMessageModalOpenAction,
     toggleBotSelection: toggleBotSelectionAction,
-    selectAllBots: selectAllBotsAction,
     setSelectedBotIds: setSelectedBotIdsAction,
   };
 }

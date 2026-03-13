@@ -38,7 +38,7 @@ const CreateCommandModal: React.FC<CreateCommandModalProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const createCommand = useCreateCommand();
+  const { createCommand } = useCreateCommand();
 
   useEffect(() => {
     dispatch(setCreateCommandModalOpen(isOpen));
@@ -59,7 +59,7 @@ const CreateCommandModal: React.FC<CreateCommandModalProps> = ({
       }
 
       const promises = botIdsToUse.map(botId =>
-        createCommand.mutateAsync({ botId, data: commandData })
+        createCommand({ botId, data: commandData })
       );
 
       await Promise.all(promises);

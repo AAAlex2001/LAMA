@@ -17,7 +17,7 @@ export interface CreateInviteLinkModalState {
   expirationDate: string | null;
   expirationHours: number;
   expirationMinutes: number;
-  connectionMethod: 'hasCaptcha' | 'noCaptcha';
+  // connectionMethod: 'hasCaptcha' | 'noCaptcha';
   loginMethod: 'direct' | 'bot';
   joiningText: string;
   applicationMethod: 'direct' | 'bot';
@@ -42,7 +42,7 @@ const initialState: CreateInviteLinkModalState = {
   expirationDate: null,
   expirationHours: 0,
   expirationMinutes: 20,
-  connectionMethod: 'hasCaptcha',
+  // connectionMethod: 'hasCaptcha',
   loginMethod: 'direct',
   joiningText: '',
   applicationMethod: 'direct',
@@ -111,9 +111,9 @@ const createInviteLinkModalSlice = createSlice({
       state.expirationMinutes = action.payload;
     },
     
-    setConnectionMethod(state, action: PayloadAction<'hasCaptcha' | 'noCaptcha'>) {
-      state.connectionMethod = action.payload;
-    },
+    // setConnectionMethod(state, action: PayloadAction<'hasCaptcha' | 'noCaptcha'>) {
+    //   // state.connectionMethod = action.payload;
+    // },
     
     setLoginMethod(state, action: PayloadAction<'direct' | 'bot'>) {
       state.loginMethod = action.payload;
@@ -182,10 +182,10 @@ const createInviteLinkModalSlice = createSlice({
       }
 
       if (inviteLink.protection_type === 'captcha') {
-        state.connectionMethod = 'hasCaptcha';
+        // state.connectionMethod = 'hasCaptcha';
         state.hasCaptcha = true;
       } else {
-        state.connectionMethod = 'noCaptcha';
+        // state.connectionMethod = 'noCaptcha';
         state.hasCaptcha = false;
       }
 
@@ -214,7 +214,7 @@ const createInviteLinkModalSlice = createSlice({
         expirationDate: state.validityPeriod === 'date' && state.expirationDate ? state.expirationDate : undefined,
         expirationHours: state.validityPeriod === 'date' ? state.expirationHours : undefined,
         expirationMinutes: state.validityPeriod === 'date' ? state.expirationMinutes : undefined,
-        connectionMethod: state.linkType === 'open' ? state.connectionMethod : undefined,
+        // connectionMethod: state.linkType === 'open' ? state.connectionMethod : undefined,
         loginMethod: state.linkType === 'open' ? state.loginMethod : undefined,
         joiningText: state.linkType === 'closed' ? state.joiningText : undefined,
         applicationMethod: state.linkType === 'closed' ? state.applicationMethod : undefined,
@@ -238,7 +238,7 @@ export const {
   setExpirationDate,
   setExpirationHours,
   setExpirationMinutes,
-  setConnectionMethod,
+  // setConnectionMethod,
   setLoginMethod,
   setJoiningText,
   setApplicationMethod,

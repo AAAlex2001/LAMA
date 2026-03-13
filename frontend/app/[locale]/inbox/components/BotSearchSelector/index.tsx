@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Checkbox } from '@/components/checkbox';
 import { Button } from '@/components/new-button';
 import SearchBar from '@/components/search-bar/search-bar';
@@ -59,7 +59,7 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
     await dispatch(addBot(data.botData));
   };
 
-  const filteredBots = useMemo(() => {
+  const filteredBots = (() => {
     if (!searchValue.trim()) {
       return bots;
     }
@@ -69,7 +69,7 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
       const title = bot.title?.toLowerCase() || '';
       return username.includes(searchLower) || title.includes(searchLower);
     });
-  }, [bots, searchValue]);
+  })();
 
   return (
     <>

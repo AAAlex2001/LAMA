@@ -2,7 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './index';
 import type { InboxEventResponse } from './thunks/inboxEvents';
 import type { InboxState } from './slices/inbox';
-import { makeChatKey } from './slices/directChat';
+import type { DirectChatResponse, BotMessageResponse } from './thunks/directChat';
 
 export const selectInbox = (s: RootState): InboxState => s.inbox;
 
@@ -130,7 +130,15 @@ export const selectBots = (s: RootState) => s.bots.bots;
 
 export const selectBotsLoading = (s: RootState) => s.bots.loading;
 
-export const selectDirectChats = (s: RootState) => s.directChat.chats;
+export const selectChatsById = (s: RootState) => s.directChat.chatsById;
+
+export const selectChatOrder = (s: RootState) => s.directChat.chatOrder;
+
+export const selectDirectChats = createSelector(
+  [selectChatsById, selectChatOrder],
+  (chatsById, chatOrder): DirectChatResponse[] =>
+    chatOrder.map((key) => chatsById[key]).filter(Boolean) as DirectChatResponse[],
+);
 
 export const selectDirectChatsLoading = (s: RootState) => s.directChat.chatsLoading;
 
@@ -147,35 +155,37 @@ export const selectChatUnreadFilter = (s: RootState) => s.directChat.chatUnreadF
 export const selectActiveChatId = (s: RootState) => s.directChat.activeChatId;
 
 export const selectActiveChat = createSelector(
-  [
-    (s: RootState) => s.directChat.chats,
-    (s: RootState) => s.directChat.activeChatId,
-  ],
-  (chats, activeChatId) => {
+  [selectChatsById, selectActiveChatId],
+  (chatsById, activeChatId) => {
     if (activeChatId === null) return null;
-    return chats.find((c) => makeChatKey(c.bot_id, c.tg_chat_id) === activeChatId) || null;
+    return chatsById[activeChatId] || null;
   },
 );
 
 export const selectPinnedChats = createSelector(
-  [(s: RootState) => s.directChat.chats],
-  (chats) => chats.filter((c) => c.is_pinned),
+  [selectChatsById, selectChatOrder],
+  (chatsById, chatOrder): DirectChatResponse[] =>
+    chatOrder
+      .map((key) => chatsById[key])
+      .filter((c): c is DirectChatResponse => !!c && c.is_pinned),
 );
 
 export const selectUnpinnedChats = createSelector(
-  [(s: RootState) => s.directChat.chats],
-  (chats) => chats.filter((c) => !c.is_pinned),
+  [selectChatsById, selectChatOrder],
+  (chatsById, chatOrder): DirectChatResponse[] =>
+    chatOrder
+      .map((key) => chatsById[key])
+      .filter((c): c is DirectChatResponse => !!c && !c.is_pinned),
 );
 
 export const selectDirectMessages = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messages],
-  (messages) => {
-    const chatMessages = messages[chatKey] || [];
-    return [...chatMessages].sort((a, b) => {
-      const timeA = new Date(a.created_at).getTime();
-      const timeB = new Date(b.created_at).getTime();
-      return timeB - timeA;
-    });
+  (messages): BotMessageResponse[] => {
+    const chat = messages[chatKey];
+    if (!chat) return [];
+    return chat.order
+      .map((id) => chat.byId[id])
+      .filter(Boolean) as BotMessageResponse[];
   },
 );
 

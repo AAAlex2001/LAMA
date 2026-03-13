@@ -1,4 +1,4 @@
-import { FC, useState } from "react";
+import { FC, memo, useState, useCallback } from "react";
 import styles from "./styles.module.scss";
 import Checkbox from "@/components/checkbox/checkbox";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
@@ -45,8 +45,8 @@ interface ListElementProps {
   item: InboxEventResponse;
   isChecked?: boolean;
   type?: ListHeaderType;
-  onCheck?: () => void;
-  onHold?: () => void;
+  onCheck?: (id: string) => void;
+  onHold?: (id: string) => void;
   onSpecificAction?: (eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => any;
 }
 
@@ -71,9 +71,14 @@ const ListElement: FC<ListElementProps> = ({
   const router = useRouter();
   const { showError } = useNotifications();
 
+  const itemId = item.id.toString();
+
+  const handleCheck = useCallback(() => onCheck?.(itemId), [onCheck, itemId]);
+  const handleHold = useCallback(() => onHold?.(itemId), [onHold, itemId]);
+
   const longPressProps = useLongPress({
     duration: 800,
-    onLongPress: () => onHold?.(),
+    onLongPress: handleHold,
     onHoldStart: () => setIsHolding(true),
     onHoldCancel: () => setIsHolding(false),
   });
@@ -107,7 +112,7 @@ const ListElement: FC<ListElementProps> = ({
         const url = messageId
           ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}&bot_id=${botId}`
           : `/inbox/chat?chat_id=${chatId}&bot_id=${botId}`;
-        router.push(url);
+        setTimeout(() => router.push(url), 500);
       }
     } catch {
       showError('Не удалось выполнить действие');
@@ -299,7 +304,7 @@ const ListElement: FC<ListElementProps> = ({
         <div className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>
           <div className={styles.gridCell}>
             {isChecked !== undefined ? (
-              <Checkbox checked={isChecked} onChange={() => onCheck?.()} />
+              <Checkbox checked={isChecked} onChange={handleCheck} />
             ) : item.is_new ? (
               <span className={styles.dot} />
             ) : null}
@@ -328,7 +333,7 @@ const ListElement: FC<ListElementProps> = ({
           <div className={styles.holdOverlay} />
           <div>
             {isChecked !== undefined ? (
-                <Checkbox checked={isChecked} onChange={() => onCheck?.()} />
+                <Checkbox checked={isChecked} onChange={handleCheck} />
               ): null
             }
           </div>
@@ -369,4 +374,4 @@ const ListElement: FC<ListElementProps> = ({
   );
 }
 
-export default ListElement;
+export default memo(ListElement);

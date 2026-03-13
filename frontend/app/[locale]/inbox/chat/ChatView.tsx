@@ -1,27 +1,16 @@
 'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import ChatSortingBar from "../components/ChatSortingBar";
-import InboxDirect from "../components/InboxDirect";
+import { useRouter, useParams } from "next/navigation";
+import ChatSortingBar from "./components/ChatSortingBar";
+import InboxDirect from "./components/InboxDirect";
 import styles from "../styles.module.scss";
-import {
-  fetchBotsThunk,
-  useAppDispatch,
-  fetchChannelsThunk,
-} from "../store";
 
 const ChatView = () => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
-
-  useEffect(() => {
-    dispatch(fetchChannelsThunk({}));
-    dispatch(fetchBotsThunk({}));
-  }, [dispatch]);
+  const { locale } = useParams();
 
   const handleNavigateToInbox = () => {
-    router.push('/inbox');
+    router.push(`/${locale}/inbox`);
   };
 
   return (

@@ -34,15 +34,18 @@ export class DirectChatWsService {
   }
 
   connect(botId: number, tgChatId: number) {
-    this.activeBotId = botId;
-    this.activeTgChatId = tgChatId;
+    const isSameChat = this.activeBotId === botId && this.activeTgChatId === tgChatId;
 
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      return;
+      if (isSameChat) return;
+      this.disconnect();
     }
 
+    this.activeBotId = botId;
+    this.activeTgChatId = tgChatId;
+    this.shouldReconnect = true;
+
     if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
-      this.shouldReconnect = true;
       this.createConnection();
     }
   }
@@ -73,11 +76,6 @@ export class DirectChatWsService {
       this.ws = null;
     }
     this.onStatus?.(false);
-  }
-
-  send(_data: { text_content?: string; media_url?: string; media_type?: string; buttons?: Record<string, unknown> }) {
-    console.warn('Sending messages via WebSocket is not supported. Use HTTP POST instead.');
-    return false;
   }
 
   get isConnected(): boolean {

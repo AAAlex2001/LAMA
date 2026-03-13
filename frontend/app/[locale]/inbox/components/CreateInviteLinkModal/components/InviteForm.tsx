@@ -26,9 +26,7 @@ import {
   setExpirationDate,
   setExpirationHours,
   setExpirationMinutes,
-  setConnectionMethod,
   setLoginMethod,
-  setJoiningText,
   setApplicationMethod,
   setHasCaptcha,
   buildPreviewData,
@@ -65,7 +63,6 @@ const InviteForm: React.FC<InviteFormProps> = ({
     expirationDate: expirationDateString,
     expirationHours,
     expirationMinutes,
-    connectionMethod,
     loginMethod,
     applicationMethod,
     hasCaptcha,
@@ -78,23 +75,16 @@ const InviteForm: React.FC<InviteFormProps> = ({
   );
 
   useEffect(() => {
-    if (linkType === 'closed') {
-      dispatch(setConnectionMethod('noCaptcha'));
-      dispatch(setLoginMethod('direct'));
-    }
-    if (linkType === 'open') {
-      dispatch(setConnectionMethod('noCaptcha'));
-      dispatch(setLoginMethod('direct'));
-    }
+    dispatch(setLoginMethod('direct'));
   }, [linkType, dispatch]);
 
   const handleSubmit = () => {
-      if (editingLinkId && onEditingConfirm) {
-        onEditingConfirm();
-      } else {
-        dispatch(buildPreviewData());
-        dispatch(setStep('confirm'));
-      }
+    if (editingLinkId && onEditingConfirm) {
+      onEditingConfirm();
+    } else {
+      dispatch(buildPreviewData());
+      dispatch(setStep('confirm'));
+    }
   };
 
   const handleAddChannel = async (link: string) => {
@@ -251,7 +241,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
           <div className={styles.sectionTitle}>Способ подключения</div>
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Защита:</div>
-            <div className={styles.radioGroup}>
+            {/* <div className={styles.radioGroup}>
               <div className={styles.radioGroupItem}>
                 <Checkbox
                   variant="radio"
@@ -268,7 +258,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
                 />
                 <span className={styles.channelItemName}>С капчей</span>
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className={styles.section}>

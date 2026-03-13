@@ -1,4 +1,4 @@
-import { useRef, useCallback, useSyncExternalStore } from 'react';
+import { useRef, useSyncExternalStore } from 'react';
 import { MediaFile } from './media-preview';
 
 interface PointerDragState {

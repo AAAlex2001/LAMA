@@ -77,7 +77,6 @@ export interface FetchDirectMessagesParams {
   skip?: number;
   limit?: number;
   around_message_id?: number;
-  /** Replace messages and enter detached mode (for jumping to a specific message) */
   jumpToMessage?: boolean;
 }
 
@@ -136,6 +135,41 @@ export const fetchDirectChatsThunk = createAsyncThunk(
       return rejectWithValue(errorMessage);
     }
   }
+);
+
+export const fetchMoreDirectChatsThunk = createAsyncThunk<
+  DirectChatListResponse,
+  void,
+  { state: { directChat: import('../slices/directChat').DirectChatState } }
+>(
+  'directChat/fetchMoreChats',
+  async (_, { getState, rejectWithValue }) => {
+    const s = getState().directChat;
+
+    try {
+      const queryParams = new URLSearchParams();
+      queryParams.append('skip', String(s.chatOrder.length));
+      queryParams.append('limit', '50');
+      if (s.chatSort) queryParams.append('sort', s.chatSort);
+      if (s.chatUnreadFilter) queryParams.append('unread', s.chatUnreadFilter);
+
+      const response = await apiRequest<DirectChatListResponse>(
+        `/direct/chats?${queryParams.toString()}`,
+        { method: 'GET' }
+      );
+
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка загрузки чатов';
+      return rejectWithValue(errorMessage);
+    }
+  },
+  {
+    condition: (_, { getState }) => {
+      const s = getState().directChat;
+      return !s.chatsLoading && s.chatsHasMore;
+    },
+  },
 );
 
 export const fetchDirectMessagesThunk = createAsyncThunk(

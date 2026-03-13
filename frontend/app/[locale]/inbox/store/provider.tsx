@@ -1,18 +1,31 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { inboxStore } from './index';
 import type { ReactNode } from 'react';
+import { fetchChannelsThunk } from '@/app/[locale]/create-post/store/thunks/channels';
+import { fetchBotsThunk } from './thunks/bots';
 
 interface InboxProviderProps {
   children: ReactNode;
 }
 
+function InboxInitializer({ children }: { children: ReactNode }) {
+  useEffect(() => {
+    inboxStore.dispatch(fetchChannelsThunk({}));
+    inboxStore.dispatch(fetchBotsThunk({}));
+  }, []);
+
+  return <>{children}</>;
+}
+
 export function InboxProvider({ children }: InboxProviderProps) {
-  
   return (
     <Provider store={inboxStore}>
-      {children}
+      <InboxInitializer>
+        {children}
+      </InboxInitializer>
     </Provider>
   );
 }

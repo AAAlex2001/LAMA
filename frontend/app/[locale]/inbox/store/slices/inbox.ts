@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { InviteLink } from '../types';
 import {
   fetchInboxEventsThunk,
+  fetchMoreInboxEventsThunk,
   bulkInboxActionThunk,
   specificInboxActionThunk,
 } from '../thunks/inboxEvents';
@@ -9,6 +10,15 @@ import type {
   InboxEventResponse,
   EventStatus as BackendEventStatus,
 } from '../thunks/inboxEvents';
+
+function arraysEqual(a: number[] | null, b: number[] | null): boolean {
+  if (a === b) return true;
+  if (a === null || b === null) return false;
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((v, i) => v === sortedB[i]);
+}
 
 export type InboxView = 'list' | 'direct';
 
@@ -123,8 +133,7 @@ const inboxSlice = createSlice({
     setBotIds(state, action: PayloadAction<number[] | null>) {
       const newIds = action.payload;
       const currentIds = state.botIds;
-      const idsChanged = JSON.stringify(newIds?.slice().sort()) !== JSON.stringify(currentIds?.slice().sort());
-      if (idsChanged) {
+      if (!arraysEqual(newIds, currentIds)) {
         state.botIds = newIds;
         state.items = [];
         state.itemsOffset = 0;
@@ -134,8 +143,7 @@ const inboxSlice = createSlice({
     setChannelIds(state, action: PayloadAction<number[] | null>) {
       const newIds = action.payload;
       const currentIds = state.channelIds;
-      const idsChanged = JSON.stringify(newIds?.slice().sort()) !== JSON.stringify(currentIds?.slice().sort());
-      if (idsChanged) {
+      if (!arraysEqual(newIds, currentIds)) {
         state.channelIds = newIds;
         state.items = [];
         state.itemsOffset = 0;
@@ -254,6 +262,29 @@ const inboxSlice = createSlice({
         state.itemsHasMore = response.items.length >= limit;
       })
       .addCase(fetchInboxEventsThunk.rejected, (state, action) => {
+        state.itemsLoading = false;
+        state.itemsError = action.payload as string;
+      });
+
+    builder
+      .addCase(fetchMoreInboxEventsThunk.pending, (state) => {
+        state.itemsLoading = true;
+        state.itemsError = null;
+      })
+      .addCase(fetchMoreInboxEventsThunk.fulfilled, (state, action) => {
+        state.itemsLoading = false;
+        const response = action.payload;
+        const limit = 50;
+
+        const existingIds = new Set(state.items.map((i) => i.id));
+        const newItems = response.items.filter((i) => !existingIds.has(i.id));
+        state.items = [...state.items, ...newItems];
+
+        state.itemsTotal = response.total;
+        state.itemsOffset = state.itemsOffset + response.items.length;
+        state.itemsHasMore = response.items.length >= limit;
+      })
+      .addCase(fetchMoreInboxEventsThunk.rejected, (state, action) => {
         state.itemsLoading = false;
         state.itemsError = action.payload as string;
       });

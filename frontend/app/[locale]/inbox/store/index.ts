@@ -60,6 +60,7 @@ export {
 } from './slices/inbox';
 export {
   fetchInboxEventsThunk,
+  fetchMoreInboxEventsThunk,
   bulkInboxActionThunk,
   specificInboxActionThunk,
 } from './thunks/inboxEvents';
@@ -153,7 +154,6 @@ export {
   setExpirationDate,
   setExpirationHours,
   setExpirationMinutes,
-  setConnectionMethod,
   setLoginMethod,
   setJoiningText,
   setApplicationMethod,
@@ -289,7 +289,6 @@ export {
 } from './slices/createGlobalMessageModal';
 export type { CreateGlobalMessageModalState } from './slices/createGlobalMessageModal';
 export {
-  fetchMessagesThunk,
   sendMessageThunk,
 } from './thunks/globalMessages';
 export type { FetchMessagesParams, SendMessageParams, SendMessageRequest, BotMessageResponse, BotMessageListResponse } from './thunks/globalMessages';
@@ -306,6 +305,7 @@ export {
 export type { DirectChatState } from './slices/directChat';
 export {
   fetchDirectChatsThunk,
+  fetchMoreDirectChatsThunk,
   fetchDirectMessagesThunk,
   sendDirectMessageThunk,
   updateDirectChatThunk,
@@ -326,6 +326,8 @@ export type {
   UpdateDirectChatParams,
 } from './thunks/directChat';
 export {
+  selectChatsById,
+  selectChatOrder,
   selectDirectChats,
   selectDirectChatsLoading,
   selectDirectChatsError,

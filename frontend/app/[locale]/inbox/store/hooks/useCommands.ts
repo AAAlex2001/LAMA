@@ -1,32 +1,25 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAppDispatch } from '../index';
+import { useAppDispatch, useAppSelector } from '../index';
 import { fetchCommandsThunk, createCommandThunk } from '../thunks/commands';
 import type { BotCommandCreate } from '../slices/commands';
 import type { FetchCommandsParams } from '../thunks/commands';
+import type { RootState } from '../index';
 
-export function useCommands(params: FetchCommandsParams) {
+export function useCommands() {
   const dispatch = useAppDispatch();
-  
-  return useQuery({
-    queryKey: ['commands', params.botId, params.isActive],
-    queryFn: async () => {
-      const result = await dispatch(fetchCommandsThunk(params)).unwrap();
-      return result;
-    },
-    staleTime: 30 * 1000,
-  });
+  const commands = useAppSelector((state: RootState) => state.commands.commands);
+  const loading = useAppSelector((state: RootState) => state.commands.loading);
+  const error = useAppSelector((state: RootState) => state.commands.error);
+
+  const fetchCommands = (params: FetchCommandsParams) => dispatch(fetchCommandsThunk(params));
+
+  return { commands, loading, error, fetchCommands };
 }
 
 export function useCreateCommand() {
   const dispatch = useAppDispatch();
-  const queryClient = useQueryClient();
+  const loading = useAppSelector((state: RootState) => state.commands.loading);
+
+  const createCommand = (params: { botId: number; data: BotCommandCreate }) => dispatch(createCommandThunk(params));
   
-  return useMutation({
-    mutationFn: async ({ botId, data }: { botId: number; data: BotCommandCreate }) => {
-      return await dispatch(createCommandThunk({ botId, data })).unwrap();
-    },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['commands', variables.botId] });
-    },
-  });
+  return { createCommand, loading };
 }
