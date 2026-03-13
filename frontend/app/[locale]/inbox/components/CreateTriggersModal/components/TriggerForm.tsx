@@ -57,7 +57,6 @@ const TRIGGER_TYPE_LABELS: Record<TriggerTypeEnum, string> = {
 
 const ACTION_TYPE_LABELS: Record<ActionTypeEnum, string> = {
   SEND_MESSAGE: 'Отправить сообщение',
-  SEND_MEDIA: 'Отправить медиа',
   ADD_TO_GROUP: 'Добавить в группу',
   REMOVE_FROM_GROUP: 'Удалить из группы',
   MUTE_USER: 'Заглушить пользователя',
@@ -87,14 +86,6 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
     
     switch (formState.action_type) {
       case 'SEND_MESSAGE':{
-        actionData.text = formState.action_text;
-        const inlineButtons = buildInlineKeyboard(inlineButtonRows);
-        if (inlineButtons) {
-          actionData.buttons = inlineButtons;
-        }
-        break;
-      }
-      case 'SEND_MEDIA': {
         const baseUrl = API_BASE_URL.replace('/api', '');
         const mediaUrls: string[] = [];
 
@@ -171,7 +162,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
 
   const isSubmitDisabled = !formState.name.trim() || selectedBotIds.size === 0;
 
-  const showTextField = formState.action_type === 'SEND_MESSAGE' || formState.action_type === 'SEND_MEDIA';
+  const showTextField = formState.action_type === 'SEND_MESSAGE';
   const showDurationField = formState.action_type === 'MUTE_USER' || formState.action_type === 'BAN_USER';
 
   const triggerTypeItems = (Object.keys(TRIGGER_TYPE_LABELS) as TriggerTypeEnum[]).map((triggerType) => ({

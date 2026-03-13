@@ -61,6 +61,8 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
 
   const activeChat = activeChatId ? chatsById[activeChatId] : null;
 
+  const filtredUnpinned = unpinnedChats.filter((chat) => chat.bot_id !== activeChat?.bot_id && chat.tg_chat_id !== activeChat?.tg_chat_id);
+
   const hasNoChats = !chatsLoading && !activeChat && pinnedChats.length === 0 && unpinnedChats.length === 0;
 
   return (
@@ -128,7 +130,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
                     <Loader size={20} color="blue" />
                   </div>
                 )}
-                {unpinnedChats.map((chat) => (
+                {filtredUnpinned.map((chat) => (
                   <ChatItem
                     key={chat.id}
                     id={chat.id}

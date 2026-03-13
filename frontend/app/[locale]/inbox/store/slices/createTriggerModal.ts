@@ -15,7 +15,6 @@ export type TriggerTypeEnum =
 
 export type ActionTypeEnum = 
   | 'SEND_MESSAGE'
-  | 'SEND_MEDIA'
   | 'ADD_TO_GROUP'
   | 'REMOVE_FROM_GROUP'
   | 'MUTE_USER'
