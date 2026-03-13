@@ -2,7 +2,7 @@
 Роуты для работы с аутентификацией
 """
 from typing import Optional
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Header, Request, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -47,9 +47,11 @@ async def get_current_user(
 ) -> User:
     """Получить текущего авторизованного пользователя"""
 
+    if not credentials:
+        raise HTTPException(status_code=401, detail='Not authenticated')
     user = await service.verify_access_token(credentials.credentials)
-
-
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid token')
     return user
 
 

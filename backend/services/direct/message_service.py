@@ -159,7 +159,7 @@ class DirectMessageService:
         fallback_media_url: Optional[str],
         reply_to_message_id: Optional[int] = None,
     ) -> BotMessage:
-        message_type = self.extract_message_type(tg_message, fallback_type)
+        message_type = self.extract_media_type(tg_message, fallback_type)
         msg = BotMessage(
             bot_id=bot_id,
             telegram_message_id=tg_message.message_id,
