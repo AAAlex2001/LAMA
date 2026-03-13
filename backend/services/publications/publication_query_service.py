@@ -77,7 +77,7 @@ class PublicationQueryService:
 
         normalized_mode = (date_mode or "scheduled").lower()
         primary_date = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
-        source_date = func.coalesce(primary_date, Publication.updated_at, Publication.created_at)
+        source_date = primary_date
         order_asc = (sort_order or "").lower() == "asc"
         order_expr = source_date.asc() if order_asc else source_date.desc()
         id_tie = Publication.id.asc() if order_asc else Publication.id.desc()

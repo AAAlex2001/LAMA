@@ -116,6 +116,8 @@ class Publication(Base):
 
     __table_args__ = (
         Index('ix_publications_owner_status_created', 'owner_id', 'status', 'created_at'),
+        Index('ix_publications_owner_scheduled', 'owner_id', 'scheduled_time'),
+        Index('ix_publications_owner_published', 'owner_id', 'published_time'),
     )
     
     owner = relationship("User", back_populates="publications")
