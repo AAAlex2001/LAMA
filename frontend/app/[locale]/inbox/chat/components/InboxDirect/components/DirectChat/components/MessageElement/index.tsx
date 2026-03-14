@@ -40,6 +40,8 @@ export interface MessageProps {
   onDelete?: () => void;
 }
 
+const SYSTEM_MESSAGE_ID = 0;
+
 const ReplyPreview = memo(({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOutgoing: boolean }) => (
   <button
     type="button"
@@ -118,7 +120,7 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
   const isOutgoing = type === 'outgoing';
 
   if (type === 'system') {
-    if ((mediaRuns.length > 0 || text) && messageId !== 0) {
+    if ((mediaRuns.length > 0 || text) && messageId !== SYSTEM_MESSAGE_ID) {
       return (
         <div className={styles.postCard}>
           {mediaRuns.length > 0 && (
