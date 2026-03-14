@@ -76,9 +76,12 @@ class BotRecurringService:
         await self.db.flush()
         return True
 
-    async def get(self, message_id: int, owner_id: int) -> Optional[RecurringMessage]:
+    async def get(self, message_id: int, owner_id: int) -> RecurringMessage:
         """Получить сообщение по ID."""
-        return await self.get_for_owner(message_id, owner_id)
+        msg = await self.get_for_owner(message_id, owner_id)
+        if not msg:
+            raise HTTPException(status_code=404, detail="Recurring message not found")
+        return msg
 
     async def list(self, bot_id: int, owner_id: int, skip: int = 0, limit: int = 100) -> Tuple[List[RecurringMessage], int]:
         """Список сообщений бота."""

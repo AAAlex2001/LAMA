@@ -36,7 +36,7 @@ class BotAutoReplyService:
         await self.db.refresh(auto_reply)
         return auto_reply
 
-    async def get(self, auto_reply_id: int, owner_id: Optional[int] = None) -> Optional[AutoReply]:
+    async def get(self, auto_reply_id: int, owner_id: Optional[int] = None) -> AutoReply:
         """Получить автоответ по ID."""
         query = select(AutoReply).where(AutoReply.id == auto_reply_id)
         if owner_id is not None:
@@ -44,7 +44,10 @@ class BotAutoReplyService:
                 BotModel.owner_id == owner_id,
             )
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        reply = result.scalar_one_or_none()
+        if not reply:
+            raise HTTPException(status_code=404, detail="Auto-reply not found")
+        return reply
 
     async def get_list(
         self, bot_id: int,

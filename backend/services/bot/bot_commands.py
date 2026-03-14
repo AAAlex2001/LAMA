@@ -38,7 +38,7 @@ class BotCommandService:
         await self.db.refresh(command)
         return command
 
-    async def get(self, command_id: int, owner_id: Optional[int] = None) -> Optional[BotCommand]:
+    async def get(self, command_id: int, owner_id: Optional[int] = None) -> BotCommand:
         """Получить команду по ID."""
         query = select(BotCommand).where(BotCommand.id == command_id)
         if owner_id is not None:
@@ -46,7 +46,10 @@ class BotCommandService:
                 BotModel.owner_id == owner_id,
             )
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        command = result.scalar_one_or_none()
+        if not command:
+            raise HTTPException(status_code=404, detail="Command not found")
+        return command
 
     async def get_list(
         self, bot_id: int,

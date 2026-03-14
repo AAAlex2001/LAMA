@@ -46,8 +46,7 @@ async def get_recurring_message(
     current_user: User = Depends(get_current_user),
 ):
     """Получить повторяющееся сообщение."""
-    msg = await service.get(message_id, current_user.id)
-    return msg
+    return await service.get(message_id, current_user.id)
 
 
 @router.patch("/{bot_id}/recurring/{message_id}",
@@ -60,8 +59,6 @@ async def update_recurring_message(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить повторяющееся сообщение."""
-    msg = await service.get(message_id, current_user.id)
-
     return await service.update(message_id, data, current_user.id)
 
 
@@ -73,5 +70,4 @@ async def delete_recurring_message(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить повторяющееся сообщение."""
-    msg = await service.get(message_id, current_user.id)
     await service.delete(message_id, current_user.id)

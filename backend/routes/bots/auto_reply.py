@@ -49,8 +49,7 @@ async def get_auto_reply(
     current_user: User = Depends(get_current_user),
 ):
     """Получить автоответ по ID."""
-    reply = await auto_reply_service.get(auto_reply_id, owner_id=current_user.id)
-    return reply
+    return await auto_reply_service.get(auto_reply_id, owner_id=current_user.id)
 
 
 @router.put("/{bot_id}/auto-replies/{auto_reply_id}",
@@ -63,9 +62,7 @@ async def update_auto_reply(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить автоответ."""
-    reply = await auto_reply_service.get(auto_reply_id, owner_id=current_user.id)
-    updated = await auto_reply_service.update(auto_reply_id, data, owner_id=current_user.id)
-    return updated
+    return await auto_reply_service.update(auto_reply_id, data, owner_id=current_user.id)
 
 
 @router.delete("/{bot_id}/auto-replies/{auto_reply_id}", status_code=204)

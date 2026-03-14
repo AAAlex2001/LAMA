@@ -62,8 +62,7 @@ async def get_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Получить бота по ID."""
-    bot = await service.get(bot_id, owner_id=current_user.id)
-    return bot
+    return await service.get(bot_id, owner_id=current_user.id)
 
 
 @router.put("/{bot_id}", response_model=BotResponse)
@@ -74,9 +73,7 @@ async def update_bot(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить бота."""
-
-    bot = await service.update(bot_id, data, owner_id=current_user.id)
-    return bot
+    return await service.update(bot_id, data, owner_id=current_user.id)
 
 
 @router.delete("/{bot_id}", status_code=204)
@@ -119,7 +116,6 @@ async def sync_existing_bot(
 ):
     """Обновить информацию существующего бота через Telegram API."""
     bot = await service.get(bot_id, owner_id=current_user.id)
-
     return await service.sync_from_telegram(bot.token, owner_id=current_user.id)
 
 
@@ -131,6 +127,6 @@ async def get_bot_stats(
     current_user: User = Depends(get_current_user),
 ):
     """Получить статистику бота."""
-    bot = await service.get(bot_id, owner_id=current_user.id)
+    await service.get(bot_id, owner_id=current_user.id)
     stats = await messaging.get_stats(bot_id, owner_id=current_user.id)
     return BotStatsResponse(**stats)

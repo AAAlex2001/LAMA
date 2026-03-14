@@ -69,13 +69,16 @@ class BotCrudService:
         await self.db.refresh(bot)
         return bot
 
-    async def get(self, bot_id: int, owner_id: Optional[int] = None) -> Optional[BotModel]:
+    async def get(self, bot_id: int, owner_id: Optional[int] = None) -> BotModel:
         """Получить бота по ID."""
         query = select(BotModel).where(BotModel.id == bot_id)
         if owner_id is not None:
             query = query.where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        bot = result.scalar_one_or_none()
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+        return bot
 
     async def get_by_telegram_id(
         self, telegram_id: int, owner_id: Optional[int] = None,

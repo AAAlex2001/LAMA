@@ -57,8 +57,7 @@ async def get_trigger(
     current_user: User = Depends(get_current_user),
 ):
     """Получить триггер по ID."""
-    trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
-    return trigger
+    return await trigger_service.get(trigger_id, owner_id=current_user.id)
 
 
 @router.put("/{bot_id}/triggers/{trigger_id}", response_model=TriggerResponse)
@@ -70,15 +69,13 @@ async def update_trigger(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить триггер."""
-    trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
-    updated = await trigger_service.update(
+    return await trigger_service.update(
         trigger_id=trigger_id, owner_id=current_user.id,
         name=data.name, trigger_type=data.trigger_type,
         action_type=data.action_type, action_data=data.action_data,
         delay_minutes=data.delay_minutes, delivery_window=data.delivery_window,
         filters=data.filters, is_active=data.is_active,
     )
-    return updated
 
 
 @router.delete("/{bot_id}/triggers/{trigger_id}", status_code=204)

@@ -5,6 +5,8 @@
 import asyncio
 import logging
 import os
+from html import escape as html_escape
+from urllib.parse import quote as url_quote
 
 from aiogram.types import Update, Message
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -192,17 +194,17 @@ class WebhookDispatcher:
             login_url = f"{frontend_url}/login?tg_id={user_id}"
 
             if message.from_user and message.from_user.username:
-                login_url += f"&username={message.from_user.username}"
+                login_url += f"&username={url_quote(message.from_user.username)}"
             if message.from_user and message.from_user.first_name:
-                login_url += f"&first_name={message.from_user.first_name}"
+                login_url += f"&first_name={url_quote(message.from_user.first_name)}"
             if message.from_user and message.from_user.last_name:
-                login_url += f"&last_name={message.from_user.last_name}"
+                login_url += f"&last_name={url_quote(message.from_user.last_name)}"
 
             keyboard = build_keyboard(
                 [[{"text": "🔐 Войти в Lama Planner", "url": login_url}]]
             )
 
-            first_name = (
+            first_name = html_escape(
                 message.from_user.first_name
                 if message.from_user
                 else "пользователь"

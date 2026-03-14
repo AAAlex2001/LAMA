@@ -49,7 +49,7 @@ class MessageHandler:
             return None
 
         if not message.from_user:
-
+            return None
         try:
             chat_svc = DirectChatService(self.db)
             msg_svc = DirectMessageService(self.db)

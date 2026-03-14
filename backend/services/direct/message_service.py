@@ -235,7 +235,8 @@ class DirectMessageService:
         reply_markup = build_keyboard(request.buttons) if request.buttons else None
 
         media_urls = self.get_request_media_urls(request)
-        media_file_ids = self.get_request_media_file_ids(request)
+        # file_ids from warmup are master-bot-specific, user bots can't use them.
+        # Always use URLs for Direct messages — they work with any bot.
         tg_responses: List[Message] = []
         try:
             async with get_bot_session(bot.token) as client:
@@ -244,14 +245,13 @@ class DirectMessageService:
                         self.build_media_item(
                             media_url,
                             request.text_content if index == 0 else None,
-                            media_file_ids[index] if index < len(media_file_ids) else None,
                         )
                         for index, media_url in enumerate(media_urls[:10])
                     ]
                     tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
                 elif len(media_urls) == 1:
                     media_url = media_urls[0]
-                    media = media_file_ids[0] if media_file_ids else media_url
+                    media = media_url
                     message_type = request.media_type or self.detect_media_type(media_url)
 
                     if message_type == MessageType.PHOTO:

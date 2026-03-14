@@ -49,8 +49,7 @@ async def get_command(
     current_user: User = Depends(get_current_user),
 ):
     """Получить команду по ID."""
-    command = await command_service.get(command_id, owner_id=current_user.id)
-    return command
+    return await command_service.get(command_id, owner_id=current_user.id)
 
 
 @router.put("/{bot_id}/commands/{command_id}",
@@ -63,9 +62,7 @@ async def update_command(
     current_user: User = Depends(get_current_user),
 ):
     """Обновить команду."""
-    command = await command_service.get(command_id, owner_id=current_user.id)
-    updated = await command_service.update(command_id, data, owner_id=current_user.id)
-    return updated
+    return await command_service.update(command_id, data, owner_id=current_user.id)
 
 
 @router.delete("/{bot_id}/commands/{command_id}", status_code=204)

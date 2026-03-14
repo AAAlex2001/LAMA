@@ -71,13 +71,16 @@ class BotTriggerService:
         await self.db.refresh(trigger)
         return trigger
 
-    async def get(self, trigger_id: int, owner_id: Optional[int] = None) -> Optional[Trigger]:
+    async def get(self, trigger_id: int, owner_id: Optional[int] = None) -> Trigger:
         """Получить триггер по ID."""
         query = select(Trigger).where(Trigger.id == trigger_id)
         if owner_id is not None:
             query = query.join(BotModel).where(BotModel.owner_id == owner_id)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        trigger = result.scalar_one_or_none()
+        if not trigger:
+            raise HTTPException(status_code=404, detail="Trigger not found")
+        return trigger
 
     async def get_list(
         self, bot_id: int,
