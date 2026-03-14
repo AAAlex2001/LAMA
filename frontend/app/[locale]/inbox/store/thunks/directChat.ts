@@ -99,6 +99,8 @@ export interface SendDirectMessageParams {
 
 export interface EditDirectMessageParams {
   messageId: number;
+  botId: number;
+  chatId: number;
   text_content?: string;
 }
 
@@ -249,11 +251,14 @@ export const updateDirectChatThunk = createAsyncThunk(
 export const editDirectMessageThunk = createAsyncThunk(
   'directChat/editMessage',
   async (params: EditDirectMessageParams, { rejectWithValue }) => {
-    const { messageId, ...body } = params;
+    const { messageId, botId, chatId, ...body } = params;
+    const queryParams = new URLSearchParams();
+    queryParams.append('bot_id', String(botId));
+    queryParams.append('tg_chat_id', String(chatId));
 
     try {
       const response = await apiRequest<BotMessageResponse>(
-        `/direct/messages/${messageId}`,
+        `/direct/messages/${messageId}?${queryParams.toString()}`,
         {
           method: 'PATCH',
           body: JSON.stringify(body),
@@ -271,11 +276,14 @@ export const editDirectMessageThunk = createAsyncThunk(
 export const deleteDirectMessageThunk = createAsyncThunk(
   'directChat/deleteMessage',
   async (params: DeleteDirectMessageParams, { rejectWithValue }) => {
-    const { messageId } = params;
+    const { messageId, botId, chatId } = params;
+    const queryParams = new URLSearchParams();
+    queryParams.append('bot_id', String(botId));
+    queryParams.append('tg_chat_id', String(chatId));
 
     try {
       await apiRequest(
-        `/direct/messages/${messageId}`,
+        `/direct/messages/${messageId}?${queryParams.toString()}`,
         { method: 'DELETE' }
       );
       return params;
