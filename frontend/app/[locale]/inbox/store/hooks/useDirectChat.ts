@@ -14,6 +14,7 @@ import {
   selectDirectMessages,
   selectDirectMessagesLoading,
   selectDirectMessagesHasMore,
+  selectDirectMessagesHasNewer,
   selectDirectMessagesDetached,
   selectSendingMessage,
   selectChatSort,
@@ -266,7 +267,8 @@ export function useDirectMessages(chatKey: string) {
   const messages = useAppSelector(selectDirectMessages(chatKey));
   const loading = useAppSelector(selectDirectMessagesLoading(chatKey));
   const hasMore = useAppSelector(selectDirectMessagesHasMore(chatKey));
+  const hasNewer = useAppSelector(selectDirectMessagesHasNewer(chatKey));
   const isDetached = useAppSelector(selectDirectMessagesDetached(chatKey));
 
-  return { messages, loading, hasMore, isDetached };
+  return { messages, loading, hasMore, hasNewer, isDetached };
 }

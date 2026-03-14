@@ -57,6 +57,8 @@ interface MessageListProps {
   renderedMessages: RenderedMessageGroup[];
   loading: boolean;
   hasMore: boolean;
+  isDetached: boolean;
+  hasNewer: boolean;
   messageRefs: RefObject<Map<number, HTMLDivElement>>;
   scroll: MessageScrollReturn;
   replyTextLookup: Map<number, string>;
@@ -68,6 +70,8 @@ const MessageList: FC<MessageListProps> = ({
   renderedMessages,
   loading,
   hasMore,
+  isDetached,
+  hasNewer,
   messageRefs,
   scroll,
   replyTextLookup,
@@ -106,6 +110,9 @@ const MessageList: FC<MessageListProps> = ({
             scrollToMessage={scrollToMessage}
           />
         ))}
+        {isDetached && hasNewer && (
+          <div ref={scroll.bottomSentinelRef as React.Ref<HTMLDivElement>} style={{ height: 1, flexShrink: 0 }} />
+        )}
         <div ref={scroll.bottomRef as React.Ref<HTMLDivElement>} style={{ height: 1, flexShrink: 0 }} />
       </div>
       {!scroll.isBottomVisible && renderedMessages.length > 0 && (

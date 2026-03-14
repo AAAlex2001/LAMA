@@ -38,7 +38,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     fetchChats,
   } = useDirectChat();
 
-  const { messages, loading, hasMore, isDetached } = useDirectMessages(activeChatId || "0_0");
+  const { messages, loading, hasMore, hasNewer, isDetached } = useDirectMessages(activeChatId || "0_0");
 
   const messageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const messageFieldRef = useRef<MessageFieldRef>(null);
@@ -57,6 +57,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     messages,
     loading,
     hasMore,
+    hasNewer,
     activeChat,
     fetchMessages,
     isDetached,
@@ -151,6 +152,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           renderedMessages={renderedMessages}
           loading={loading}
           hasMore={hasMore}
+          isDetached={isDetached}
+          hasNewer={hasNewer}
           messageRefs={messageRefs}
           scroll={scroll}
           replyTextLookup={replyTextLookup}

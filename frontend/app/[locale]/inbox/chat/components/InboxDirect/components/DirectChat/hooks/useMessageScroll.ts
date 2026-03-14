@@ -6,6 +6,7 @@ export interface MessageScrollOpts {
   messages: Array<{ id: number; telegram_message_id?: number }>;
   loading: boolean;
   hasMore: boolean;
+  hasNewer: boolean;
   activeChat: DirectChatResponse | null;
   fetchMessages: (params: {
     botId: number;
@@ -13,6 +14,7 @@ export interface MessageScrollOpts {
     skip?: number;
     limit?: number;
     around_message_id?: number;
+    after_message_id?: number;
   }) => Promise<unknown>;
   isDetached?: boolean;
   onJumpToLatest?: () => void;
@@ -22,6 +24,7 @@ export interface MessageScrollReturn {
   messageListRef: React.RefObject<HTMLDivElement | null>;
   bottomRef: (node?: Element | null) => void;
   topSentinelRef: (node?: Element | null) => void;
+  bottomSentinelRef: (node?: Element | null) => void;
   markShouldScroll: () => void;
   isBottomVisible: boolean;
   scrollToBottom: () => void;
@@ -32,6 +35,7 @@ export function useMessageScroll({
   messages,
   loading,
   hasMore,
+  hasNewer,
   activeChat,
   fetchMessages,
   isDetached = false,
@@ -101,6 +105,49 @@ export function useMessageScroll({
     },
   });
 
+  const loadingNewerRef = useRef(false);
+  const newerFetchReadyRef = useRef(false);
+
+  useEffect(() => {
+    if (!isDetached) {
+      newerFetchReadyRef.current = false;
+      return;
+    }
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        newerFetchReadyRef.current = true;
+      });
+    });
+    return () => {
+      cancelAnimationFrame(id);
+      newerFetchReadyRef.current = false;
+    };
+  }, [isDetached]);
+
+  const { ref: bottomSentinelRef } = useInView({
+    root: messageListRef.current,
+    rootMargin: '0px 0px 200px 0px',
+    threshold: 0,
+    skip: !isDetached || !hasNewer || !activeChat,
+    onChange: (inView) => {
+      if (!inView || loading || loadingNewerRef.current || !activeChat || !newerFetchReadyRef.current) return;
+
+      const newestMsg = messages[0];
+      const afterId = newestMsg?.telegram_message_id;
+      if (!afterId) return;
+
+      loadingNewerRef.current = true;
+      fetchMessages({
+        botId: activeChat.bot_id,
+        tgChatId: activeChat.tg_chat_id,
+        after_message_id: afterId,
+        limit: 50,
+      }).then(() => {
+        loadingNewerRef.current = false;
+      });
+    },
+  });
+
   // Reset on chat change
   useEffect(() => {
     didInitialScrollRef.current = false;
@@ -166,6 +213,7 @@ export function useMessageScroll({
     messageListRef,
     bottomRef,
     topSentinelRef,
+    bottomSentinelRef,
     markShouldScroll,
     isBottomVisible,
     scrollToBottom,

@@ -80,6 +80,7 @@ export interface FetchDirectMessagesParams {
   skip?: number;
   limit?: number;
   around_message_id?: number;
+  after_message_id?: number;
   jumpToMessage?: boolean;
 }
 
@@ -181,7 +182,7 @@ export const fetchMoreDirectChatsThunk = createAsyncThunk<
 export const fetchDirectMessagesThunk = createAsyncThunk(
   'directChat/fetchMessages',
   async (params: FetchDirectMessagesParams, { rejectWithValue }) => {
-    const { botId, tgChatId, skip = 0, limit = 50, around_message_id } = params;
+    const { botId, tgChatId, skip = 0, limit = 50, around_message_id, after_message_id } = params;
 
     try {
       const queryParams = new URLSearchParams();
@@ -189,6 +190,9 @@ export const fetchDirectMessagesThunk = createAsyncThunk(
       queryParams.append('limit', String(limit));
       if (around_message_id !== undefined) {
         queryParams.append('around_message_id', String(around_message_id));
+      }
+      if (after_message_id !== undefined) {
+        queryParams.append('after_message_id', String(after_message_id));
       }
 
       const response = await apiRequest<ChatHistoryResponse>(

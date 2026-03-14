@@ -77,6 +77,7 @@ export interface DirectChatState {
   messagesError: Record<string, string | null>;
   messagesTotalCount: Record<string, number>;
   messagesHasMore: Record<string, boolean>;
+  messagesHasNewer: Record<string, boolean>;
   messagesDetached: Record<string, boolean>;
 
   sendingMessage: boolean;
@@ -107,6 +108,7 @@ const initialState: DirectChatState = {
   messagesError: {},
   messagesTotalCount: {},
   messagesHasMore: {},
+  messagesHasNewer: {},
   messagesDetached: {},
 
   sendingMessage: false,
@@ -150,6 +152,7 @@ const directChatSlice = createSlice({
       delete state.messagesError[chatKey];
       delete state.messagesTotalCount[chatKey];
       delete state.messagesHasMore[chatKey];
+      delete state.messagesHasNewer[chatKey];
       delete state.messagesDetached[chatKey];
     },
 
@@ -158,6 +161,7 @@ const directChatSlice = createSlice({
       state.messages[chatKey] = emptyChatMessages();
       state.messagesDetached[chatKey] = false;
       state.messagesHasMore[chatKey] = true;
+      state.messagesHasNewer[chatKey] = false;
     },
     
     wsMessageReceived(state, action: PayloadAction<{ chatKey: string; message: BotMessageResponse }>) {
@@ -299,7 +303,7 @@ const directChatSlice = createSlice({
         state.messagesError[key] = null;
       })
       .addCase(fetchDirectMessagesThunk.fulfilled, (state, action) => {
-        const { botId, tgChatId, skip = 0, limit = 50, around_message_id, jumpToMessage } = action.meta.arg;
+        const { botId, tgChatId, skip = 0, limit = 50, around_message_id, after_message_id, jumpToMessage } = action.meta.arg;
         const chatKey = makeChatKey(botId, tgChatId);
         state.messagesLoading[chatKey] = false;
         const response = action.payload;
@@ -311,6 +315,21 @@ const directChatSlice = createSlice({
           mergeInto(state.messages[chatKey], response.items);
           state.messagesDetached[chatKey] = true;
           state.messagesHasMore[chatKey] = true;
+          state.messagesHasNewer[chatKey] = true;
+        } else if (after_message_id) {
+          // Loading newer messages in detached mode
+          if (!state.messages[chatKey]) {
+            state.messages[chatKey] = emptyChatMessages();
+          }
+          const newCount = mergeInto(state.messages[chatKey], response.items);
+          const caughtUp = response.items.length < limit || !response.has_more;
+          if (caughtUp) {
+            // Reached the latest messages — exit detached mode
+            state.messagesDetached[chatKey] = false;
+            state.messagesHasNewer[chatKey] = false;
+          } else {
+            state.messagesHasNewer[chatKey] = newCount > 0;
+          }
         } else if (skip === 0 && !around_message_id) {
           if (state.messagesDetached[chatKey]) {
             state.messagesTotalCount[chatKey] = response.total;
@@ -319,6 +338,7 @@ const directChatSlice = createSlice({
           state.messages[chatKey] = fromArray(response.items);
           state.messagesDetached[chatKey] = false;
           state.messagesHasMore[chatKey] = response.items.length >= limit;
+          state.messagesHasNewer[chatKey] = false;
         } else {
           if (!state.messages[chatKey]) {
             state.messages[chatKey] = emptyChatMessages();

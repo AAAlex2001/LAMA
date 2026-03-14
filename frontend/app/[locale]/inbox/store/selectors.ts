@@ -199,6 +199,11 @@ export const selectDirectMessagesHasMore = (chatKey: string) => createSelector(
   (hasMore) => hasMore[chatKey] || false,
 );
 
+export const selectDirectMessagesHasNewer = (chatKey: string) => createSelector(
+  [(s: RootState) => s.directChat.messagesHasNewer],
+  (hasNewer) => hasNewer[chatKey] || false,
+);
+
 export const selectDirectMessagesDetached = (chatKey: string) => createSelector(
   [(s: RootState) => s.directChat.messagesDetached],
   (detached) => detached[chatKey] || false,
