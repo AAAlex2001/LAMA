@@ -12,7 +12,7 @@ from aiogram.enums import ParseMode
 from backend.models.publications import Publication
 from backend.models.channels import ChannelGroup as Channel
 from backend.services.telegram_client import RateLimitedBot
-from backend.services.publications.media_warmup import get_file_id_for_media
+from backend.services.publications.media_warmup import get_file_id_for_media, resolve_media
 from backend.services.publications.utils import (
     clean_html_for_telegram,
     get_spoiler,
@@ -60,8 +60,8 @@ async def send_single_media_with_text(
     """Отправить одиночное медиа с подписью."""
     blur_list = publication.media_blur or []
     single_url = publication.media_urls[0]
-    file_id = get_file_id_for_media(publication.media_file_ids, 0)
-    media_to_send = file_id if file_id else single_url
+    file_id = get_file_id_for_media(publication.media_file_ids, 0, bot.bot.token)
+    media_to_send = resolve_media(file_id, single_url)
     spoiler = get_spoiler(blur_list, 0)
 
     logger.info(
@@ -107,8 +107,8 @@ async def send_media_group(
 
     media: list = []
     for i, url in enumerate(urls):
-        file_id = get_file_id_for_media(publication.media_file_ids, i)
-        media_to_send = file_id if file_id else url
+        file_id = get_file_id_for_media(publication.media_file_ids, i, bot.bot.token)
+        media_to_send = resolve_media(file_id, url)
         file_spoiler = get_spoiler(blur_list, i)
         is_first = i == 0
         caption = caption_text if is_first and caption_text else None

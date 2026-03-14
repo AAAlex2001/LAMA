@@ -9,7 +9,7 @@ from aiogram.enums import ParseMode
 from backend.models.publications import Publication
 from backend.models.channels import ChannelGroup as Channel
 from backend.services.telegram_client import RateLimitedBot
-from backend.services.publications.media_warmup import get_file_id_for_media
+from backend.services.publications.media_warmup import get_file_id_for_media, resolve_media
 from backend.services.publications.utils import clean_html_for_telegram, is_document_url
 
 logger = logging.getLogger(__name__)
@@ -24,9 +24,9 @@ async def send_image(
     cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить фото."""
-    file_id = get_file_id_for_media(publication.media_file_ids, 0)
-    media_to_send = file_id if file_id else publication.media_urls[0]
+    file_id = get_file_id_for_media(publication.media_file_ids, 0, bot.bot.token)
     url = publication.media_urls[0]
+    media_to_send = resolve_media(file_id, url)
 
     cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
     if file_id and is_document_url(url):
@@ -62,9 +62,9 @@ async def send_video(
     cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить видео."""
-    file_id = get_file_id_for_media(publication.media_file_ids, 0)
-    media_to_send = file_id if file_id else publication.media_urls[0]
+    file_id = get_file_id_for_media(publication.media_file_ids, 0, bot.bot.token)
     url = publication.media_urls[0]
+    media_to_send = resolve_media(file_id, url)
     cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
 
     if file_id and is_document_url(url):
@@ -100,9 +100,9 @@ async def send_audio(
     cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить аудио."""
-    file_id = get_file_id_for_media(publication.media_file_ids, 0)
-    media_to_send = file_id if file_id else publication.media_urls[0]
+    file_id = get_file_id_for_media(publication.media_file_ids, 0, bot.bot.token)
     url = publication.media_urls[0]
+    media_to_send = resolve_media(file_id, url)
     cleaned_caption = cleaned_text if cleaned_text is not None else clean_html_for_telegram(publication.text_content)
 
     if file_id and is_document_url(url):
@@ -137,8 +137,8 @@ async def send_document(
     cleaned_text: Optional[str] = None,
 ) -> List[Message]:
     """Отправить документ."""
-    file_id = get_file_id_for_media(publication.media_file_ids, 0)
-    media_to_send = file_id if file_id else publication.media_urls[0]
+    file_id = get_file_id_for_media(publication.media_file_ids, 0, bot.bot.token)
+    media_to_send = resolve_media(file_id, publication.media_urls[0])
 
     message = await bot.send_document(
         chat_id=channel.telegram_id,

@@ -5,6 +5,7 @@ import logging
 from typing import List, Optional
 
 from aiogram import Bot
+from backend.config import TELEGRAM_BOT_TOKEN
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import BufferedInputFile, Message
 
@@ -106,9 +107,24 @@ async def warmup_single_media(bot: RateLimitedBot, media_url: str, idx: Optional
         return None
 
 
-def get_file_id_for_media(media_file_ids: Optional[List[Optional[str]]], index: int) -> Optional[str]:
-    """Возвращает file_id по индексу."""
+def get_file_id_for_media(
+    media_file_ids: Optional[List[Optional[str]]], index: int, bot_token: Optional[str] = None,
+) -> Optional[str]:
+    """Возвращает file_id по индексу. Если bot_token передан и не совпадает с master — None."""
+    if bot_token and bot_token != TELEGRAM_BOT_TOKEN:
+        return None
     if not media_file_ids or index >= len(media_file_ids):
         return None
     value = media_file_ids[index]
     return value if value else None
+
+
+def resolve_media(file_id: Optional[str], url: str):
+    """file_id или URL. Для видео/документов/аудио без file_id — URLInputFile."""
+    if file_id:
+        return file_id
+    if is_video_url(url) or is_document_url(url) or is_audio_url(url):
+        from aiogram.types import URLInputFile
+        filename = url.rsplit("/", 1)[-1].split("?")[0]
+        return URLInputFile(url, filename=filename)
+    return url
