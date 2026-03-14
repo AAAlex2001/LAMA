@@ -6,6 +6,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from aiogram.types import ChatPermissions
+from aiogram.exceptions import TelegramAPIError
 from backend.services.telegram_client import RateLimitedBot
 from backend.models.inbox import InboxEvent
 from backend.models.bots import Bot, TriggerType
@@ -93,11 +94,11 @@ class InboxActionService:
                         event.status = EventStatus.BANNED
                         await self.create_block_notification(event)
                         modified_count += 1
-                    except Exception as e:
+                    except TelegramAPIError as e:
                         logger.error(
-                            f"Не удалось выполнить block для пользователя {event.tg_user_id} "
-                            f"в канале {channel.telegram_id}: {e}",
-                            exc_info=True
+                            "Не удалось выполнить block для пользователя %s в канале %s: %s",
+                            event.tg_user_id, channel.telegram_id, e,
+                            exc_info=True,
                         )
 
                 elif action == BulkActionType.UNBLOCK:
@@ -116,9 +117,9 @@ class InboxActionService:
                         modified_count += 1
                     except Exception as e:
                         logger.error(
-                            f"Не удалось выполнить unblock для пользователя {event.tg_user_id} "
-                            f"в канале {channel.telegram_id}: {e}",
-                            exc_info=True
+                            "Не удалось выполнить unblock для пользователя %s в канале %s: %s",
+                            event.tg_user_id, channel.telegram_id, e,
+                            exc_info=True,
                         )
 
         await self.db.flush()
@@ -188,7 +189,7 @@ class InboxActionService:
             res = await self.db.execute(stmt)
             if res.rowcount > 0:
                 await self.db.flush()
-                logger.info(f"Admin accept: incremented member_count for {link_url}")
+                logger.info("Admin accept: incremented member_count for %s", link_url)
                 result = await self.db.execute(
                     select(ChatInviteLink).where(ChatInviteLink.invite_link == link_url)
                 )
@@ -200,11 +201,11 @@ class InboxActionService:
                                 chat_id=channel.telegram_id, invite_link=link_url,
                             )
                         except Exception as e:
-                            logger.warning(f"Failed to revoke link: {e}")
+                            logger.warning("Failed to revoke link: %s", e)
                     link.is_revoked = True
                     await self.db.flush()
         except Exception as e:
-            logger.error(f"increment_link_counter failed: {e}")
+            logger.error("increment_link_counter failed: %s", e)
 
     async def fire_join_trigger(
         self, bot: RateLimitedBot, trigger_type: TriggerType, event: InboxEvent, channel: ChannelGroup
@@ -228,7 +229,7 @@ class InboxActionService:
                     },
                 )
         except Exception as e:
-            logger.error(f"fire_join_trigger failed: {e}")
+            logger.error("fire_join_trigger failed: %s", e)
 
     async def execute_specific_action(
         self, event: InboxEvent, action_type: str, payload: dict = None
@@ -270,7 +271,7 @@ class InboxActionService:
 
         bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None
         if not bot:
-            logger.warning(f"Не удалось выполнить {action_type} для события {event.id}: бот не найден.")
+            logger.warning("Не удалось выполнить %s для события %s: бот не найден.", action_type, event.id)
             raise HTTPException(status_code=404, detail="Event not found")
 
         try:
@@ -344,7 +345,7 @@ class InboxActionService:
                                 )
                             )
                         except Exception as e:
-                            logger.warning(f"Не удалось снять мут через restrict_chat_member, пробуем unban: {e}")
+                            logger.warning("Не удалось снять мут через restrict_chat_member, пробуем unban: %s", e)
                             try:
                                 await client.unban_chat_member(
                                     chat_id=channel.telegram_id,
@@ -352,7 +353,7 @@ class InboxActionService:
                                     only_if_banned=True
                                 )
                             except Exception as unban_e:
-                                logger.error(f"Ошибка при unban_chat_member: {unban_e}")
+                                logger.error("Ошибка при unban_chat_member: %s", unban_e)
 
                     new_payload = dict(event.payload or {})
                     new_payload["is_unbanned"] = True
@@ -388,7 +389,7 @@ class InboxActionService:
                                 user_id=event.tg_user_id,
                             )
                         except Exception as e:
-                            logger.error(f"Не удалось забанить пользователя в канале {channel.telegram_id}: {e}")
+                            logger.error("Не удалось забанить пользователя в канале %s: %s", channel.telegram_id, e)
 
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
@@ -404,7 +405,7 @@ class InboxActionService:
                         try:
                             await client.delete_message(chat_id=msg_chat_id, message_id=msg_id)
                         except Exception as e:
-                            logger.warning(f"delete_and_block: не удалось удалить сообщение: {e}")
+                            logger.warning("delete_and_block: не удалось удалить сообщение: %s", e)
 
                     if not event.channel_id:
                         if msg_chat_id and event.bot_id:
@@ -423,7 +424,7 @@ class InboxActionService:
                                         user_id=event.tg_user_id,
                                     )
                                 except Exception as e:
-                                    logger.error(f"delete_and_block: бан не удался: {e}")
+                                    logger.error("delete_and_block: бан не удался: %s", e)
 
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
@@ -436,8 +437,8 @@ class InboxActionService:
                     msg_id = (event.payload or {}).get("message_id")
                     if not msg_chat_id or not msg_id:
                         logger.warning(
-                            f"delete_message: в payload события {event.id} "
-                            f"отсутствует chat_id или message_id"
+                            "delete_message: в payload события %s отсутствует chat_id или message_id",
+                            event.id,
                         )
                         raise HTTPException(status_code=404, detail="Event not found")
 
@@ -508,7 +509,7 @@ class InboxActionService:
                                     )
                             affected.append(ch.id)
                         except Exception as e:
-                            logger.error(f"Не удалось изменить бан для канала {ch.id}: {e}")
+                            logger.error("Не удалось изменить бан для канала %s: %s", ch.id, e)
 
                     new_payload = dict(event.payload or {})
                     new_payload["ban_type"] = ban_type
@@ -523,10 +524,11 @@ class InboxActionService:
 
         except Exception as e:
             logger.error(
-                f"Ошибка при выполнении {action_type} для события {event.id}: {e}",
-                exc_info=True
+                "Ошибка при выполнении %s для события %s: %s",
+                action_type, event.id, e,
+                exc_info=True,
             )
             raise HTTPException(status_code=404, detail="Event not found")
 
-        logger.warning(f"Неизвестный action_type '{action_type}' для события {event.id}.")
+        logger.warning("Неизвестный action_type '%s' для события %s.", action_type, event.id)
         raise HTTPException(status_code=404, detail="Event not found")

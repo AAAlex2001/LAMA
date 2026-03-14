@@ -76,4 +76,4 @@ async def delete_command(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить команду."""
-    command = await command_service.get(command_id, owner_id=current_user.id)
+    await command_service.delete(command_id, owner_id=current_user.id)

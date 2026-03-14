@@ -62,7 +62,7 @@ async def get_users_content(db: AsyncSession, locale: str | Locale | None = None
         if content.key == "users_number":
             try:
                 response["number"] = int(content.text or content.title or "0")
-            except:
+            except (ValueError, TypeError):
                 response["number"] = 0
         elif content.key == "users_text_line":
             response["textLine"] = content.text or content.title or ""

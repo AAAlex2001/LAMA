@@ -36,7 +36,6 @@ class WebhookDispatcher:
         """
         tasks = []
 
-        # Получаем сообщение из разных источников
         message = (
             update.message
             or update.channel_post
@@ -63,7 +62,7 @@ class WebhookDispatcher:
         try:
             await asyncio.gather(*tasks, return_exceptions=True)
         except Exception as e:
-            logger.error(f"Background tasks error: {e}", exc_info=True)
+            logger.error("Background tasks error: %s", e, exc_info=True)
 
     @staticmethod
     async def process_moderation(
@@ -86,7 +85,7 @@ class WebhookDispatcher:
                 await handler.process(message)
                 await db.commit()
         except Exception as e:
-            logger.error(f"Moderation processing error: {e}", exc_info=True)
+            logger.error("Moderation processing error: %s", e, exc_info=True)
 
     @staticmethod
     async def process_bot_logic(
@@ -175,7 +174,7 @@ class WebhookDispatcher:
                     return
 
         except Exception as e:
-            logger.error(f"Bot logic error: {e}", exc_info=True)
+            logger.error("Bot logic error: %s", e, exc_info=True)
 
     @staticmethod
     async def handle_auth_command(
@@ -222,7 +221,7 @@ class WebhookDispatcher:
             )
 
         except Exception as e:
-            logger.error(f"Auth command error: {e}", exc_info=True)
+            logger.error("Auth command error: %s", e, exc_info=True)
             await bot.send_message(
                 chat_id=message.chat.id,
                 text="❌ Ошибка при отправке ссылки. Попробуйте позже.",
@@ -306,7 +305,7 @@ class WebhookDispatcher:
                             f"API returned {response.status}: {error_text}")
 
         except Exception as e:
-            logger.error(f"Guest command error: {e}", exc_info=True)
+            logger.error("Guest command error: %s", e, exc_info=True)
             await bot.send_message(
                 chat_id=message.chat.id,
                 text="❌ Ошибка при создании ссылки. Попробуйте позже.",

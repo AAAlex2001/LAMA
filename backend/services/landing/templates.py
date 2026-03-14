@@ -74,7 +74,7 @@ async def get_template_by_slug(db: AsyncSession, slug: str, locale: str | Locale
     """Получить шаблон по slug."""
     slug_norm = _safe_str(slug).lower()
     if not slug_norm:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="Invalid slug")
 
     result = await db.execute(
         select(Template)
@@ -150,7 +150,7 @@ def _normalize_blocks(raw_blocks: Any) -> List[Dict[str, Any]]:
 
 def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw_faq, dict):
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="Invalid faq data structure")
 
     headline = _safe_str(raw_faq.get("headline"))
 
@@ -191,7 +191,7 @@ def _normalize_faq(raw_faq: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_cards_block(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="Invalid cards block data structure")
 
     headline = _safe_str(raw.get("headline"))
 
@@ -225,7 +225,7 @@ def _normalize_cards_block(raw: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_subscribe_block(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="Invalid subscribe block data structure")
 
     block: Dict[str, Any] = {
         "title": _safe_str(raw.get("title")),
@@ -241,7 +241,7 @@ def _normalize_subscribe_block(raw: Any) -> Optional[Dict[str, Any]]:
 
 def _normalize_subscribe_placement(raw: Any) -> Optional[Dict[str, Any]]:
     if not isinstance(raw, dict):
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="Invalid subscribe placement data structure")
 
     position = _safe_str(raw.get("position")).lower() or "after_cards"
     if position not in {"after_block", "after_faq", "after_cards"}:
@@ -267,7 +267,7 @@ def _normalize_subscribe_placement(raw: Any) -> Optional[Dict[str, Any]]:
 
     # keep it only if meaningful
     if position == "after_block" and not after_block_number:
-        raise HTTPException(status_code=404, detail="Template not found")
+        raise HTTPException(status_code=400, detail="afterBlockNumber is required when position is 'after_block'")
     return placement
 
 
@@ -512,7 +512,7 @@ async def delete_template(db: AsyncSession, slug: str) -> bool:
     template = result.scalar_one_or_none()
     
     if not template:
-        raise HTTPException(status_code=400, detail="Action failed")
+        raise HTTPException(status_code=404, detail="Template not found")
     
     await db.delete(template)
     await db.flush()

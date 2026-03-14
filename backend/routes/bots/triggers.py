@@ -89,4 +89,4 @@ async def delete_trigger(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить триггер."""
-    trigger = await trigger_service.get(trigger_id, owner_id=current_user.id)
+    await trigger_service.delete(trigger_id, owner_id=current_user.id)

@@ -199,6 +199,7 @@ class DirectChatService:
         skip: int = 0,
         limit: int = 50,
         around_message_id: Optional[int] = None,
+        after_message_id: Optional[int] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """Получить историю сообщений в чате с reply_message_text."""
         bot_check = select(Bot.id).where(and_(Bot.id == bot_id, Bot.owner_id == owner_id))
@@ -212,7 +213,27 @@ class DirectChatService:
         count_query = select(func.count()).select_from(base_query.subquery())
         total = (await self.db.execute(count_query)).scalar() or 0
 
-        if around_message_id:
+        if after_message_id:
+            target = await self.db.execute(
+                select(BotMessage).where(base_filter, BotMessage.telegram_message_id == after_message_id)
+            )
+            target_msg = target.scalar_one_or_none()
+            if target_msg:
+                messages = list(
+                    (await self.db.execute(
+                        select(BotMessage)
+                        .where(base_filter, BotMessage.id > target_msg.id)
+                        .order_by(desc(BotMessage.created_at))
+                        .limit(limit)
+                    )).scalars().all()
+                )
+            else:
+                messages = list(
+                    (await self.db.execute(
+                        base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                    )).scalars().all()
+                )
+        elif around_message_id:
             half = limit // 2
             target = await self.db.execute(
                 select(BotMessage).where(base_filter, BotMessage.telegram_message_id == around_message_id)

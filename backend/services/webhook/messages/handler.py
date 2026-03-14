@@ -43,8 +43,12 @@ class MessageHandler:
 
         self.saved_msg = None
 
-        if chat_type != "private" or not message.from_user:
+        if chat_type != "private":
+            if message.from_user and chat_type in ("group", "supergroup"):
+                await self.handle_group_comment(message, text_content)
             return None
+
+        if not message.from_user:
 
         try:
             chat_svc = DirectChatService(self.db)
@@ -119,6 +123,55 @@ class MessageHandler:
             logger.error(f"Message save error: {e}", exc_info=True)
 
         return None
+
+    async def handle_group_comment(self, message: Message, text_content: Optional[str]) -> None:
+        """Создать inbox-уведомление о комментарии в группе обсуждений канала."""
+        if not message.reply_to_message:
+            return
+
+        try:
+            from sqlalchemy import select, or_
+            from backend.models.channels import ChannelGroup
+
+            chat_id = message.chat.id
+            query = select(ChannelGroup).where(
+                ChannelGroup.owner_id == self.bot_model.owner_id,
+                or_(
+                    ChannelGroup.linked_chat_id == chat_id,
+                    ChannelGroup.telegram_id == chat_id,
+                ),
+            )
+            result = await self.db.execute(query)
+            channel = result.scalar_one_or_none()
+            if not channel:
+                return
+
+            inbox_service = InboxActionService(self.db)
+            preview = text_content[:100] if text_content else "(медиа)"
+            sender = message.from_user.username or str(message.from_user.id)
+
+            await inbox_service.create_event({
+                "owner_id": self.bot_model.owner_id,
+                "category": InboxCategory.MODERATION,
+                "entity_type": EntityType.CHANNEL,
+                "event_type": EventType.CHANNEL_COMMENT,
+                "bot_id": self.bot_model.id,
+                "channel_id": channel.id,
+                "tg_user_id": message.from_user.id,
+                "tg_username": message.from_user.username,
+                "status": EventStatus.NEW,
+                "description": f"Комментарий от @{sender}: {preview}",
+                "payload": {
+                    "message_id": message.message_id,
+                    "chat_id": chat_id,
+                    "text": text_content[:500] if text_content else None,
+                    "first_name": message.from_user.first_name,
+                    "chat_title": message.chat.title,
+                    "reply_to_message_id": message.reply_to_message.message_id if message.reply_to_message else None,
+                },
+            })
+        except Exception as e:
+            logger.error("Failed to create CHANNEL_COMMENT inbox event: %s", e, exc_info=True)
 
     async def process_side_effects(self, message: Message) -> None:
         """Обработка триггеров, автоответов, медиа и прочей логики."""

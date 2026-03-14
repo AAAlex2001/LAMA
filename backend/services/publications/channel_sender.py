@@ -26,7 +26,7 @@ async def process_batch(
     reply_map: Dict[int, int] = None,
 ) -> List[ChannelPublishResult]:
     """Обработать батч каналов."""
-    logger.info(f"Processing batch {batch_num}: {len(batch_channels)} channels")
+    logger.info("Processing batch %s: %s channels", batch_num, len(batch_channels))
 
     tasks = [
         safe_send_to_channel(publication, channel, get_bot_callback, reply_map)
@@ -39,7 +39,7 @@ async def process_batch(
         if isinstance(result, BaseException):
             channel = batch_channels[i]
             channel_name = getattr(channel, "title", str(channel.telegram_id))
-            logger.error(f"Exception for channel {channel_name}: {result}")
+            logger.error("Exception for channel %s: %s", channel_name, result)
             results.append(ChannelPublishResult(channel=channel_name, success=False, error=str(result)))
         else:
             results.append(result)
@@ -96,7 +96,7 @@ async def send_to_channel_with_retry(
                         disable_notification=publication.disable_notification,
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to pin message in {channel_name}: {e}")
+                    logger.warning("Failed to pin message in %s: %s", channel_name, e)
 
             return ChannelPublishResult(
                 channel=channel_name, success=True, message_ids=message_ids,
@@ -106,8 +106,8 @@ async def send_to_channel_with_retry(
 
         except TelegramRetryAfter as e:
             logger.warning(
-                f"TelegramRetryAfter in {channel_name}: retry_after={e.retry_after}s, "
-                f"attempt={attempt+1}/{MAX_RETRY_ATTEMPTS}",
+                "TelegramRetryAfter in %s: retry_after=%ss, attempt=%s/%s",
+                channel_name, e.retry_after, attempt + 1, MAX_RETRY_ATTEMPTS,
             )
             if attempt < MAX_RETRY_ATTEMPTS - 1:
                 if e.retry_after > LARGE_RETRY_AFTER_THRESHOLD:
@@ -125,8 +125,9 @@ async def send_to_channel_with_retry(
 
         except Exception as e:
             logger.error(
-                f"Error publishing to {channel_name}, attempt={attempt+1}/{MAX_RETRY_ATTEMPTS}: "
-                f"{type(e).__name__}: {str(e)}", exc_info=True,
+                "Error publishing to %s, attempt=%s/%s: %s: %s",
+                channel_name, attempt + 1, MAX_RETRY_ATTEMPTS, type(e).__name__, str(e),
+                exc_info=True,
             )
             if attempt == MAX_RETRY_ATTEMPTS - 1:
                 return ChannelPublishResult(

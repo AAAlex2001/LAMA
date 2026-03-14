@@ -24,15 +24,17 @@ async def get_chat_messages(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     around_message_id: Optional[int] = Query(None, description="Load messages around this ID"),
+    after_message_id: Optional[int] = Query(None, description="Load messages newer than this telegram_message_id"),
     current_user: User = Depends(get_current_user),
     chat_service: DirectChatService = Depends(get_chat_service),
 ):
-    """История сообщений в чате. around_message_id загружает окно вокруг указанного сообщения."""
+    """История сообщений в чате. around_message_id загружает окно вокруг указанного сообщения. after_message_id — только новые."""
     messages, total = await chat_service.get_chat_messages(
         bot_id, tg_chat_id,
         owner_id=current_user.id,
         skip=skip, limit=limit,
         around_message_id=around_message_id,
+        after_message_id=after_message_id,
     )
 
     await chat_service.reset_unread(bot_id, tg_chat_id, owner_id=current_user.id)
@@ -61,19 +63,23 @@ async def send_message(
 async def edit_message(
     message_id: int,
     request: EditMessageRequest,
+    bot_id: int = Query(..., description="Bot ID"),
+    tg_chat_id: int = Query(..., description="Telegram chat ID"),
     current_user: User = Depends(get_current_user),
     msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Редактирование исходящего сообщения."""
-    msg = await msg_service.edit_message(message_id, current_user.id, request)
+    msg = await msg_service.edit_message(message_id, current_user.id, request, bot_id=bot_id, tg_chat_id=tg_chat_id)
     return msg
 
 @router.delete("/messages/{message_id}")
 async def delete_message(
     message_id: int,
+    bot_id: int = Query(..., description="Bot ID"),
+    tg_chat_id: int = Query(..., description="Telegram chat ID"),
     current_user: User = Depends(get_current_user),
     msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Удаление исходящего сообщения."""
-    success = await msg_service.delete_message(message_id, current_user.id)
+    await msg_service.delete_message(message_id, current_user.id, bot_id=bot_id, tg_chat_id=tg_chat_id)
     return {"status": "ok"}

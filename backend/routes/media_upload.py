@@ -1,8 +1,7 @@
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException
 from fastapi.responses import JSONResponse
 from typing import List
-import asyncio
 import logging
 
 from backend.services.storage import get_storage_service
@@ -37,13 +36,13 @@ async def upload_media(
     
     for file in files:
         if not file.filename:
-            raise ValueError( "Файл должен иметь имя")
+            raise HTTPException(status_code=400, detail="Файл должен иметь имя")
 
         file_ext = Path(file.filename).suffix.lower()
         if file_ext not in ALLOWED_EXTENSIONS:
-            raise ValueError(
-                
-                f"Неподдерживаемый формат файла {file.filename}. Разрешены: изображения, видео, документы"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Неподдерживаемый формат файла {file.filename}. Разрешены: изображения, видео, документы"
             )
 
         contents = await file.read()
@@ -51,9 +50,9 @@ async def upload_media(
         total_size += file_size
         
         if file_size > MAX_FILE_SIZE:
-            raise ValueError(
-                
-                f"Файл {file.filename} слишком большой (макс. 50MB)"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Файл {file.filename} слишком большой (макс. 50MB)"
             )
         
         files_data.append({
@@ -66,9 +65,9 @@ async def upload_media(
     
     # Проверяем общий размер всех файлов
     if total_size > TOTAL_MAX_SIZE:
-        raise ValueError(
-            
-            f"Общий размер файлов превышает лимит ({total_size / (1024*1024):.1f}MB из 50MB)"
+        raise HTTPException(
+            status_code=400,
+            detail=f"Общий размер файлов превышает лимит ({total_size / (1024*1024):.1f}MB из 50MB)"
         )
     
     # Загружаем файлы
@@ -84,37 +83,37 @@ async def upload_media(
                 generate_thumbnail=generate_thumbnail
             )
             
-            logger.info(f"Upload result for {file_data['filename']}: url={result.get('url')}, thumbnail_url={result.get('thumbnail_url')}")
-            
+            logger.info("Upload result for %s: url=%s, thumbnail_url=%s",
+                        file_data['filename'], result.url, result.thumbnail_url)
+
             uploaded_files.append({
-                "url": result["url"],
-                "thumbnailUrl": result.get("thumbnail_url"),
+                "url": result.url,
+                "thumbnailUrl": result.thumbnail_url,
                 "name": file_data['filename'],
-                "path": result["path"],
-                "size": result["size"],
-                "type": result["type"]
+                "path": result.path,
+                "size": result.size,
+                "type": result.type
             })
-            
-            media_urls.append(result["url"])
+
+            media_urls.append(result.url)
             
         except Exception as e:
-            raise ValueError(
-                
-                f"Не удалось загрузить файл {file_data['filename']}: {str(e)}"
+            raise HTTPException(
+                status_code=400,
+                detail=f"Не удалось загрузить файл {file_data['filename']}: {str(e)}"
             )
     
     file_ids = [None] * len(media_urls)
     thumbnail_urls = [f.get("thumbnailUrl") for f in uploaded_files]
     
-    logger.info(f"Final response: {len(uploaded_files)} files, thumbnail_urls={thumbnail_urls}")
+    logger.info("Final response: %s files, thumbnail_urls=%s", len(uploaded_files), thumbnail_urls)
     
     if media_urls:
         try:
             bot = resolve_master()
             file_ids = await warmup_media_files(bot.bot, media_urls)
         except Exception as e:
-            import logging
-            logging.error(f"Failed to warmup media: {e}")
+            logger.error("Failed to warmup media: %s", e)
             file_ids = [None] * len(media_urls)
     
     return JSONResponse({

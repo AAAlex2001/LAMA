@@ -1,7 +1,7 @@
 """Вспомогательные функции после публикации: сохранение, бэкапы, уведомления, статус."""
 
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import Any, List, Optional
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -39,14 +39,14 @@ async def handle_backups(
 ) -> None:
     """Обработать бэкапы для успешных отправок."""
     for result in results:
-        if result.success and hasattr(result, "sent_messages") and hasattr(result, "channel_obj"):
+        if result.success and result.sent_messages and result.channel_obj:
             try:
                 await handle_instant_backup(
                     result.channel_obj, result.sent_messages,
                     publication_id, channel_service, create_notification_callback,
                 )
             except Exception as e:
-                logger.error(f"Failed to handle instant backup for {result.channel}: {e}")
+                logger.error("Failed to handle instant backup for %s: %s", result.channel, e)
 
 
 async def handle_instant_backup(
@@ -86,7 +86,7 @@ async def create_notifications(
     for result in results:
         if result.success:
             await create_notification_callback(publication_id, "success", f"Published to {result.channel}")
-        elif hasattr(result, "notification_error") and result.notification_error:
+        elif result.notification_error:
             await create_notification_callback(publication_id, "error", result.notification_error)
 
 
@@ -112,7 +112,7 @@ def update_publication_status(
         publication.next_repeat_time = compute_next_repeat(publication, base_time, calculate_next_repeat_time_callback)
 
 
-def compute_next_repeat(publication: Publication, base_time: datetime, calculate_fn) -> Any:
+def compute_next_repeat(publication: Publication, base_time: datetime, calculate_fn) -> Optional[datetime]:
     """Рассчитать следующее время повтора."""
     return calculate_fn(
         base_time,

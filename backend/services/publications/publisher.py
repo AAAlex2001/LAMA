@@ -39,7 +39,7 @@ async def publish_to_channels(
 ) -> PublishResult:
     """Опубликовать во все каналы публикации батчами."""
     publish_start = time.monotonic()
-    logger.info(f"publish_now START publication_id={publication.id}")
+    logger.info("publish_now START publication_id=%s", publication.id)
 
     reply_map: Dict[int, int] = {}
     if publication.reply_to_post_id:
@@ -76,8 +76,8 @@ async def publish_to_channels(
     await db.refresh(publication)
 
     logger.info(
-        f"publish_now DONE publication_id={publication.id}, "
-        f"total={time.monotonic()-publish_start:.3f}s, success={success_count}/{total_count}",
+        "publish_now DONE publication_id=%s, total=%.3fs, success=%s/%s",
+        publication.id, time.monotonic() - publish_start, success_count, total_count,
     )
 
     return PublishResult(

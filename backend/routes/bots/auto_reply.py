@@ -76,4 +76,4 @@ async def delete_auto_reply(
     current_user: User = Depends(get_current_user),
 ):
     """Удалить автоответ."""
-    reply = await auto_reply_service.get(auto_reply_id, owner_id=current_user.id)
+    await auto_reply_service.delete(auto_reply_id, owner_id=current_user.id)

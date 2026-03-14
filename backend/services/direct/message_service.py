@@ -305,11 +305,14 @@ class DirectMessageService:
 
         return saved_messages
 
-    async def edit_message(self, message_id: int, owner_id: int, request: EditMessageRequest) -> Optional[BotMessage]:
+    async def edit_message(self, message_id: int, owner_id: int, request: EditMessageRequest, bot_id: int = None, tg_chat_id: int = None) -> Optional[BotMessage]:
         """Редактировать исходящее сообщение в Telegram и БД."""
-        query = select(BotMessage, Bot).join(Bot, BotMessage.bot_id == Bot.id).where(
-            and_(BotMessage.id == message_id, Bot.owner_id == owner_id, BotMessage.is_incoming == False)
-        )
+        filters = [BotMessage.id == message_id, Bot.owner_id == owner_id, BotMessage.is_incoming == False]
+        if bot_id is not None:
+            filters.append(BotMessage.bot_id == bot_id)
+        if tg_chat_id is not None:
+            filters.append(BotMessage.chat_id == tg_chat_id)
+        query = select(BotMessage, Bot).join(Bot, BotMessage.bot_id == Bot.id).where(and_(*filters))
         row = (await self.db.execute(query)).first()
         if not row:
             raise HTTPException(status_code=404, detail="Message not found or access denied")
@@ -346,11 +349,14 @@ class DirectMessageService:
             
         return msg
 
-    async def delete_message(self, message_id: int, owner_id: int) -> bool:
+    async def delete_message(self, message_id: int, owner_id: int, bot_id: int = None, tg_chat_id: int = None) -> bool:
         """Удалить исходящее сообщение в Telegram и БД."""
-        query = select(BotMessage, Bot).join(Bot, BotMessage.bot_id == Bot.id).where(
-            and_(BotMessage.id == message_id, Bot.owner_id == owner_id, BotMessage.is_incoming == False)
-        )
+        filters = [BotMessage.id == message_id, Bot.owner_id == owner_id, BotMessage.is_incoming == False]
+        if bot_id is not None:
+            filters.append(BotMessage.bot_id == bot_id)
+        if tg_chat_id is not None:
+            filters.append(BotMessage.chat_id == tg_chat_id)
+        query = select(BotMessage, Bot).join(Bot, BotMessage.bot_id == Bot.id).where(and_(*filters))
         row = (await self.db.execute(query)).first()
         if not row:
             raise HTTPException(status_code=404, detail="Message not found or access denied")

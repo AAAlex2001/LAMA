@@ -59,7 +59,7 @@ class BackupJobService:
         job.total_posts = len(posts)
         await self.db.flush()
 
-        target_channel = await get_channel(self.db, job.target_channel_id)
+        target_channel = await get_channel(self.db, job.target_channel_id, job.owner_id)
         if not target_channel:
             raise HTTPException(status_code=404, detail="Target channel not found")
 

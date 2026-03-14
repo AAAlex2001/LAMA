@@ -42,13 +42,14 @@ async def telegram_webhook(
         payload = await request.json()
         update = Update.model_validate(payload)
     except Exception as e:
-        logger.warning(f"Invalid update payload: {e}")
+        logger.warning("Invalid update payload: %s", e)
         return {"ok": True}
 
     # Запускаем обработку в фоне
     if not bot_token:
-        import os
-        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
-    asyncio.create_task(WebhookDispatcher.dispatch(update, bot_token))
+        logger.warning("Webhook request missing bot_token in URL")
+        return {"ok": False, "error": "bot_token is required"}
+    task = asyncio.create_task(WebhookDispatcher.dispatch(update, bot_token))
+    task.add_done_callback(lambda t: logger.error("Webhook dispatch failed: %s", t.exception()) if t.exception() else None)
 
     return {"ok": True}
