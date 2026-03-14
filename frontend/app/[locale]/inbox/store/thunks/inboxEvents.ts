@@ -1,4 +1,4 @@
-import { createAsyncThunk } from '@reduxjs/toolkit';
+import { createAsyncThunk, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 
 export type InboxCategory = 'moderation' | 'system' | 'automation';
@@ -220,9 +220,13 @@ export const fetchMoreInboxEventsThunk = createAsyncThunk<
   },
 );
 
-export const bulkInboxActionThunk = createAsyncThunk(
+export const bulkInboxActionThunk = createAsyncThunk<
+  { status: string; affected_rows: number; params: BulkActionParams },
+  BulkActionParams,
+  { state: { inbox: import('../slices/inbox').InboxState }; dispatch: ThunkDispatch<unknown, unknown, UnknownAction> }
+>(
   'inboxEvents/bulkAction',
-  async (params: BulkActionParams, { rejectWithValue }) => {
+  async (params, { rejectWithValue, dispatch, getState }) => {
     try {
       const response = await apiRequest<{ status: string; affected_rows: number }>(
         '/inbox/bulk-action',
@@ -235,6 +239,53 @@ export const bulkInboxActionThunk = createAsyncThunk(
           }),
         }
       );
+
+      if (params.action === 'delete') {
+        const s = getState().inbox;
+        const queryParams = new URLSearchParams();
+        const category = CATEGORY_MAP[s.selectedFilter];
+        if (category) queryParams.append('category', category);
+        if (s.statusFilter) queryParams.append('status', s.statusFilter);
+        if (s.botIds && s.botIds.length > 0) {
+          queryParams.append('bot_ids', s.botIds.join(','));
+        }
+        if (s.channelIds && s.channelIds.length > 0) {
+          queryParams.append('channel_ids', s.channelIds.join(','));
+        }
+        if (s.system !== undefined && s.system !== null) {
+          queryParams.append('system', String(s.system));
+        }
+        if (s.typeAutoReplies !== undefined && s.typeAutoReplies !== null) {
+          queryParams.append('type_auto_replies', String(s.typeAutoReplies));
+        }
+        if (s.typeTriggers !== undefined && s.typeTriggers !== null) {
+          queryParams.append('type_triggers', String(s.typeTriggers));
+        }
+        if (s.typeCommands !== undefined && s.typeCommands !== null) {
+          queryParams.append('type_commands', String(s.typeCommands));
+        }
+        if (s.search) {
+          queryParams.append('search', s.search);
+        }
+        queryParams.append('sort', s.sortDir);
+        queryParams.append('limit', '50');
+        queryParams.append('offset', '0');
+
+        dispatch(fetchInboxEventsThunk({
+          category: category as InboxCategory | undefined,
+          status: s.statusFilter as EventStatus | undefined,
+          bot_ids: s.botIds ?? undefined,
+          channel_ids: s.channelIds ?? undefined,
+          system: s.system,
+          type_auto_replies: s.typeAutoReplies,
+          type_triggers: s.typeTriggers,
+          type_commands: s.typeCommands,
+          search: s.search,
+          sort: s.sortDir,
+          limit: 50,
+          offset: 0,
+        }));
+      }
 
       return { ...response, params };
     } catch (error) {
