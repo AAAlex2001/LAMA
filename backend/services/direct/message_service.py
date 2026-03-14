@@ -3,7 +3,7 @@ from collections.abc import Sequence
 from typing import Any, List, Optional
 import logging
 from aiogram.enums import ParseMode
-from aiogram.types import InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo, Message
+from aiogram.types import InputMediaAudio, InputMediaDocument, InputMediaPhoto, InputMediaVideo, Message, URLInputFile
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
@@ -146,7 +146,11 @@ class DirectMessageService:
 
     def build_media_item(self, media_url: str, caption: Optional[str], file_id: Optional[str] = None):
         parse_mode = ParseMode.HTML if caption else None
-        media = file_id or media_url
+        if is_video_url(media_url) or is_document_url(media_url) or is_audio_url(media_url):
+            filename = media_url.rsplit("/", 1)[-1].split("?")[0]
+            media = URLInputFile(media_url, filename=filename)
+        else:
+            media = media_url
 
         if is_document_url(media_url):
             return InputMediaDocument(media=media, caption=caption, parse_mode=parse_mode)
@@ -251,8 +255,12 @@ class DirectMessageService:
                     tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
                 elif len(media_urls) == 1:
                     media_url = media_urls[0]
-                    media = media_url
                     message_type = request.media_type or self.detect_media_type(media_url)
+                    if message_type in (MessageType.VIDEO, MessageType.DOCUMENT, MessageType.AUDIO, MessageType.VOICE):
+                        filename = media_url.rsplit("/", 1)[-1].split("?")[0]
+                        media = URLInputFile(media_url, filename=filename)
+                    else:
+                        media = media_url
 
                     if message_type == MessageType.PHOTO:
                         tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]

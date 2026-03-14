@@ -45,7 +45,7 @@ class MessageHandler:
 
         if chat_type != "private":
             if message.from_user and chat_type in ("group", "supergroup"):
-                await self.handle_group_comment(message, text_content)
+                return await self.handle_group_comment(message, text_content)
             return None
 
         if not message.from_user:
@@ -124,10 +124,10 @@ class MessageHandler:
 
         return None
 
-    async def handle_group_comment(self, message: Message, text_content: Optional[str]) -> None:
-        """Создать inbox-уведомление о комментарии в группе обсуждений канала."""
+    async def handle_group_comment(self, message: Message, text_content: Optional[str]) -> Optional[DirectChatWsEvent]:
+        """Обработать комментарий в группе обсуждений: создать чат, сохранить сообщение, уведомить."""
         if not message.reply_to_message:
-            return
+            return None
 
         try:
             from sqlalchemy import select, or_
@@ -144,8 +144,29 @@ class MessageHandler:
             result = await self.db.execute(query)
             channel = result.scalar_one_or_none()
             if not channel:
-                return
+                return None
 
+            # Create/get DirectChat for the discussion group
+            chat_svc = DirectChatService(self.db)
+            msg_svc = DirectMessageService(self.db)
+
+            await chat_svc.get_or_create_chat(
+                bot_id=self.bot_model.id,
+                tg_chat_id=chat_id,
+                tg_user_id=None,
+                tg_first_name=message.chat.title,
+                tg_username=None,
+                tg_last_name=None,
+            )
+            await chat_svc.increment_unread(self.bot_model.id, chat_id)
+
+            self.saved_msg = await msg_svc.save_incoming_message(
+                bot_id=self.bot_model.id,
+                owner_id=self.bot_model.owner_id,
+                message=message,
+            )
+
+            # Inbox notification
             inbox_service = InboxActionService(self.db)
             preview = text_content[:100] if text_content else "(медиа)"
             sender = message.from_user.username or str(message.from_user.id)
@@ -170,8 +191,21 @@ class MessageHandler:
                     "reply_to_message_id": message.reply_to_message.message_id if message.reply_to_message else None,
                 },
             })
+
+            if self.saved_msg:
+                await self.db.flush()
+                await self.db.refresh(self.saved_msg)
+                return DirectChatWsEvent(
+                    user_id=self.bot_model.owner_id,
+                    bot_id=self.bot_model.id,
+                    chat_id=chat_id,
+                    event_type="message_new",
+                    payload={"message_id": self.saved_msg.id},
+                )
         except Exception as e:
-            logger.error("Failed to create CHANNEL_COMMENT inbox event: %s", e, exc_info=True)
+            logger.error("Failed to handle group comment: %s", e, exc_info=True)
+
+        return None
 
     async def process_side_effects(self, message: Message) -> None:
         """Обработка триггеров, автоответов, медиа и прочей логики."""
