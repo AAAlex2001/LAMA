@@ -4,7 +4,12 @@ from typing import List, Dict
 import asyncio
 import logging
 
-from aiogram.exceptions import TelegramRetryAfter
+from aiogram.exceptions import (
+    TelegramBadRequest,
+    TelegramForbiddenError,
+    TelegramNotFound,
+    TelegramRetryAfter,
+)
 
 from backend.models.publications import Publication
 from backend.models.channels import ChannelGroup as Channel
@@ -93,7 +98,7 @@ async def send_to_channel_with_retry(
                 try:
                     await bot.pin_chat_message(
                         chat_id=channel.telegram_id, message_id=message_ids[0],
-                        disable_notification=publication.disable_notification,
+                        disable_notification=True,
                     )
                 except Exception as e:
                     logger.warning("Failed to pin message in %s: %s", channel_name, e)
@@ -102,6 +107,16 @@ async def send_to_channel_with_retry(
                 channel=channel_name, success=True, message_ids=message_ids,
                 telegram_messages_data=telegram_messages_data,
                 sent_messages=sent_messages, channel_obj=channel,
+            )
+
+        except (TelegramBadRequest, TelegramForbiddenError, TelegramNotFound) as e:
+            logger.warning(
+                "Fatal Telegram error in %s: %s: %s",
+                channel_name, type(e).__name__, str(e),
+            )
+            return ChannelPublishResult(
+                channel=channel_name, success=False, error=str(e),
+                notification_error=f"Failed to publish to {channel_name}: {str(e)}",
             )
 
         except TelegramRetryAfter as e:

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
 from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
+from backend.services.channel.utils.message_utils import is_system_message
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT, get_bot_session
 from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
@@ -44,6 +45,8 @@ class MessageHandler:
         self.saved_msg = None
 
         if chat_type != "private":
+            if is_system_message(message):
+                return None
             if message.from_user and chat_type in ("group", "supergroup"):
                 return await self.handle_group_comment(message, text_content)
             return None
