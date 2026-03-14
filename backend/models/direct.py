@@ -34,4 +34,5 @@ class DirectChat(Base):
 
     __table_args__ = (
         Index("ix_direct_chats_bot_chat", "bot_id", "tg_chat_id", unique=True),
+        Index("ix_direct_chats_bot_updated", "bot_id", "updated_at"),
     )

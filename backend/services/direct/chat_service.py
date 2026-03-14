@@ -82,16 +82,6 @@ class DirectChatService:
         elif unread_filter == "read":
             base_filter.append(DirectChat.unread_count == 0)
 
-        last_msg_sq = (
-            select(
-                BotMessage.bot_id,
-                BotMessage.chat_id,
-                func.max(BotMessage.created_at).label("last_msg_at"),
-            )
-            .group_by(BotMessage.bot_id, BotMessage.chat_id)
-            .subquery("last_msg_sq")
-        )
-
         last_msg_data = (
             select(
                 BotMessage.bot_id,
@@ -100,14 +90,8 @@ class DirectChatService:
                 BotMessage.message_type,
                 BotMessage.created_at.label("last_message_at"),
             )
-            .join(
-                last_msg_sq,
-                and_(
-                    BotMessage.bot_id == last_msg_sq.c.bot_id,
-                    BotMessage.chat_id == last_msg_sq.c.chat_id,
-                    BotMessage.created_at == last_msg_sq.c.last_msg_at,
-                ),
-            )
+            .distinct(BotMessage.bot_id, BotMessage.chat_id)
+            .order_by(BotMessage.bot_id, BotMessage.chat_id, desc(BotMessage.created_at))
             .subquery("last_msg_data")
         )
 

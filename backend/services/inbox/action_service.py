@@ -60,6 +60,17 @@ class InboxActionService:
             result = await self.db.execute(query)
             events = result.scalars().all()
 
+            bot_ids = {e.bot_id for e in events if e.bot_id}
+            channel_ids = {e.channel_id for e in events if e.channel_id}
+            bots_map = {}
+            channels_map = {}
+            if bot_ids:
+                res = await self.db.execute(select(Bot).where(Bot.id.in_(bot_ids)))
+                bots_map = {b.id: b for b in res.scalars().all()}
+            if channel_ids:
+                res = await self.db.execute(select(ChannelGroup).where(ChannelGroup.id.in_(channel_ids)))
+                channels_map = {c.id: c for c in res.scalars().all()}
+
             for event in events:
                 if action == BulkActionType.BLOCK:
                     # DM-блокировка (нет channel_id)
@@ -80,11 +91,11 @@ class InboxActionService:
                     if not (event.tg_user_id and event.channel_id):
                         continue
 
-                    channel = await self.db.get(ChannelGroup, event.channel_id)
+                    channel = channels_map.get(event.channel_id)
                     if not (channel and channel.telegram_id):
                         continue
 
-                    bot = await self.db.get(Bot, event.bot_id) if event.bot_id else None
+                    bot = bots_map.get(event.bot_id) if event.bot_id else None
                     if not bot:
                         continue
 
@@ -105,8 +116,8 @@ class InboxActionService:
                     if not (event.tg_user_id and event.bot_id and event.channel_id):
                         continue
 
-                    bot = await self.db.get(Bot, event.bot_id)
-                    channel = await self.db.get(ChannelGroup, event.channel_id)
+                    bot = bots_map.get(event.bot_id)
+                    channel = channels_map.get(event.channel_id)
                     if not (bot and channel and channel.telegram_id):
                         continue
 

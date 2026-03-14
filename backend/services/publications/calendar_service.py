@@ -27,21 +27,21 @@ class CalendarService:
             else datetime(year, month + 1, 1, tzinfo=pytz.UTC)
         )
 
+        filters = [
+            Publication.scheduled_time >= start,
+            Publication.scheduled_time < end,
+            Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED]),
+        ]
+        if owner_id is not None:
+            filters.insert(0, Publication.owner_id == owner_id)
+
         query = (
             select(Publication)
-            .where(
-                and_(
-                    Publication.scheduled_time >= start,
-                    Publication.scheduled_time < end,
-                    Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED]),
-                )
-            )
+            .where(and_(*filters))
             .options(selectinload(Publication.channels), selectinload(Publication.tags))
             .order_by(Publication.scheduled_time)
             .limit(500)
         )
-        if owner_id is not None:
-            query = query.where(Publication.owner_id == owner_id)
 
         result = await self.db.execute(query)
         return list(result.scalars().all())
@@ -65,20 +65,20 @@ class CalendarService:
             status_filter = Publication.status.notin_([DBPublicationStatus.DELETED])
 
         date_expr = func.date(date_field)
+        filters = [
+            date_field.isnot(None),
+            date_field >= start_date,
+            date_field <= end_date,
+            status_filter,
+        ]
+        if owner_id is not None:
+            filters.insert(0, Publication.owner_id == owner_id)
+
         query = (
             select(date_expr.label("day"), func.count().label("cnt"))
-            .where(
-                and_(
-                    date_field.isnot(None),
-                    date_field >= start_date,
-                    date_field <= end_date,
-                    status_filter,
-                )
-            )
+            .where(and_(*filters))
             .group_by(date_expr)
         )
-        if owner_id is not None:
-            query = query.where(Publication.owner_id == owner_id)
 
         result = await self.db.execute(query)
         return [DayCount(date=str(row.day), count=row.cnt) for row in result.all()]

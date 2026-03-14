@@ -2,7 +2,7 @@
 Модели для работы с ботами
 """
 from datetime import datetime, timezone
-from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint
+from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import enum
 from typing import Optional
@@ -133,6 +133,9 @@ class Bot(Base):
 class BotMessage(Base):
     """Модель сообщения бота"""
     __tablename__ = "bot_messages"
+    __table_args__ = (
+        Index("ix_bot_messages_bot_chat_created", "bot_id", "chat_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)

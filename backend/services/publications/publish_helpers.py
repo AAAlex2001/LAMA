@@ -19,16 +19,18 @@ logger = logging.getLogger(__name__)
 
 
 async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncSession) -> None:
-    """Сохранить telegram_messages в БД."""
+    """Сохранить telegram_messages в БД (bulk)."""
+    objects = []
     for result in results:
         if result.success and result.telegram_messages_data:
             for msg_data in result.telegram_messages_data:
-                telegram_message = TelegramMessage(
+                objects.append(TelegramMessage(
                     publication_id=msg_data["publication_id"],
                     channel_id=msg_data["channel_id"],
                     telegram_message_id=msg_data["telegram_message_id"],
-                )
-                db.add(telegram_message)
+                ))
+    if objects:
+        db.add_all(objects)
 
 
 async def handle_backups(

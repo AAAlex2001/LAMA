@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum as SQLEnum, BigInteger, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.sql import func
 
@@ -7,6 +7,10 @@ from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, Ev
 
 class InboxEvent(Base):
     __tablename__ = "inbox_events"
+    __table_args__ = (
+        Index("ix_inbox_events_owner_created", "owner_id", "created_at"),
+        Index("ix_inbox_events_owner_status_created", "owner_id", "status", "created_at"),
+    )
 
     id = Column(Integer, primary_key=True, index=True)
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)

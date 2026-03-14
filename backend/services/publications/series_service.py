@@ -152,16 +152,15 @@ class SeriesService:
                     )
                 else:
                     sent_messages = await send_to_telegram(publication, channel, bot)
-                message_ids = []
-                for msg in sent_messages:
-                    message_ids.append(msg.message_id)
-                    telegram_message = TelegramMessage(
+                message_ids = [msg.message_id for msg in sent_messages]
+                self.db.add_all([
+                    TelegramMessage(
                         publication_id=publication.id,
                         channel_id=channel.id,
-                        telegram_message_id=msg.message_id
+                        telegram_message_id=msg_id,
                     )
-                    self.db.add(telegram_message)
-
+                    for msg_id in message_ids
+                ])
                 await self.db.flush()
 
                 channel_name = getattr(channel, "title", getattr(

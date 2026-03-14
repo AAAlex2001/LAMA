@@ -26,7 +26,7 @@ from backend.services.publications.publish_helpers import (
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 
 
 async def publish_to_channels(
@@ -60,7 +60,7 @@ async def publish_to_channels(
         results.extend(batch_results)
 
         if batch_end < len(publication.channels):
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.3)
 
     await save_telegram_messages(results, db)
     await handle_backups(results, publication.id, channel_service, create_notification_callback)
@@ -107,14 +107,18 @@ async def republish(
             continue
 
         result = await send_to_channel_with_retry(publication, channel, bot, channel_name)
+        results.append(result)
 
+    tg_messages = []
+    for result in results:
         if result.success:
             for msg_id in result.message_ids:
-                db.add(TelegramMessage(
-                    publication_id=publication.id, channel_id=channel.id, telegram_message_id=msg_id,
+                tg_messages.append(TelegramMessage(
+                    publication_id=publication.id, channel_id=result.channel_obj.id if result.channel_obj else 0,
+                    telegram_message_id=msg_id,
                 ))
-
-        results.append(result)
+    if tg_messages:
+        db.add_all(tg_messages)
 
     success_count = sum(1 for r in results if r.success)
 
