@@ -228,6 +228,12 @@ class PublicationService:
         if not publication.channels:
             raise HTTPException(status_code=400, detail="No channels selected")
 
+        if publication.status in (DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS):
+            return PublishResult(
+                success=True, results=[], success_count=0, total_count=0,
+                publication_id=publication_id, error="Already published",
+            )
+
         if publication.series_id and publication.series and publication.series.reply_to_previous:
             series_service = SeriesService(self.db)
             return await series_service.publish_series_post(publication, self.bot_for_channel)

@@ -36,9 +36,9 @@ class RetriableTask(Task):
     max_retries = 3
 
 
-@celery_app.task(name="backend.celery.tasks.publish_publication", base=RetriableTask)
+@celery_app.task(name="backend.celery.tasks.publish_publication")
 def publish_publication(publication_id: int) -> str:
-    """Опубликовать одну публикацию."""
+    """Опубликовать одну публикацию (без RetriableTask — retry в channel_sender)."""
 
     return run(publish_publication_async(publication_id))
 
@@ -53,7 +53,7 @@ async def publish_publication_async(publication_id: int) -> str:
         return f"published:{publication_id}"
 
 
-@celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask)
+@celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask, max_retries=1)
 def delete_publication_messages(publication_id: int) -> str:
     """Удалить Telegram-сообщения, связанные с публикацией."""
 
@@ -70,9 +70,9 @@ async def delete_publication_messages_async(publication_id: int) -> str:
         return f"deleted_messages:{publication_id}"
 
 
-@celery_app.task(name="backend.celery.tasks.republish_publication", base=RetriableTask)
+@celery_app.task(name="backend.celery.tasks.republish_publication")
 def republish_publication(publication_id: int) -> str:
-    """Переопубликовать публикацию согласно настройкам повторов."""
+    """Переопубликовать публикацию (без RetriableTask — retry в channel_sender)."""
 
     return run(republish_publication_async(publication_id))
 
@@ -95,16 +95,24 @@ def process_scheduled_publications() -> str:
 
 
 async def process_scheduled_publications_async() -> str:
-    """Async-реализация постановки запланированных публикаций в очередь."""
+    """Атомарный UPDATE + enqueue: помечает published_time и ставит задачу в Celery."""
 
     async with AsyncSessionLocal() as db:
         now = datetime.now(timezone.utc)
-        query = select(Publication.id).where(
-            Publication.status == DBPublicationStatus.SCHEDULED,
-            Publication.scheduled_time <= now,
+        from sqlalchemy import update
+        stmt = (
+            update(Publication)
+            .where(
+                Publication.status == DBPublicationStatus.SCHEDULED,
+                Publication.scheduled_time <= now,
+                Publication.published_time.is_(None),
+            )
+            .values(published_time=now)
+            .returning(Publication.id)
         )
-        result = await db.execute(query)
+        result = await db.execute(stmt)
         ids = list(result.scalars().all())
+        await db.commit()
 
     for publication_id in ids:
         publish_publication.apply_async(args=[publication_id], queue="high")

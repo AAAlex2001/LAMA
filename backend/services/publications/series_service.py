@@ -133,9 +133,9 @@ class SeriesService:
         results: List[ChannelPublishResult] = []
 
         for channel in publication.channels:
+            reply_to_id = None
             try:
                 bot = await bot_resolver(channel)
-                reply_to_id = None
 
                 if series.reply_to_previous:
                     reply_to_id = await self.get_reply_to_message_id(
