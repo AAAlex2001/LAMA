@@ -272,12 +272,41 @@ class DirectChatService:
         reply_ids = [m.reply_to_message_id for m in messages if m.reply_to_message_id]
         reply_texts = {}
         if reply_ids:
-            reply_q = select(BotMessage.telegram_message_id, BotMessage.text_content).where(
+            reply_q = select(
+                BotMessage.telegram_message_id,
+                BotMessage.text_content,
+                BotMessage.message_type,
+                BotMessage.media_url,
+                BotMessage.is_system,
+            ).where(
                 base_filter, BotMessage.telegram_message_id.in_(reply_ids)
             )
             rows = (await self.db.execute(reply_q)).all()
-            for tg_msg_id, text in rows:
-                reply_texts[tg_msg_id] = (text or "")[:100]
+            for tg_msg_id, text, msg_type, media_url, is_sys in rows:
+                if text:
+                    reply_texts[tg_msg_id] = {
+                        "text": text[:200],
+                        "media_url": media_url if is_sys else None,
+                        "message_type": msg_type.value if msg_type else None,
+                        "is_post": is_sys or False,
+                    }
+                else:
+                    type_labels = {
+                        MessageType.PHOTO: "Фотография",
+                        MessageType.VIDEO: "Видео",
+                        MessageType.DOCUMENT: "Документ",
+                        MessageType.AUDIO: "Аудио",
+                        MessageType.VOICE: "Голосовое",
+                        MessageType.ANIMATION: "GIF",
+                        MessageType.STICKER: "Стикер",
+                    }
+                    label = type_labels.get(msg_type, "Медиа")
+                    reply_texts[tg_msg_id] = {
+                        "text": label,
+                        "media_url": media_url if is_sys else None,
+                        "message_type": msg_type.value if msg_type else None,
+                        "is_post": is_sys or False,
+                    }
 
         enriched = []
         for m in messages:
@@ -285,8 +314,11 @@ class DirectChatService:
             data["media_group_id"] = m.media_group_id
             data["media_name"] = m.media_name
             data["media_size"] = m.media_size
-            rtext = reply_texts.get(m.reply_to_message_id) if m.reply_to_message_id else None
-            data["reply_message_text"] = rtext
+            reply_data = reply_texts.get(m.reply_to_message_id) if m.reply_to_message_id else None
+            data["reply_message_text"] = reply_data["text"] if reply_data else None
+            data["reply_media_url"] = reply_data["media_url"] if reply_data else None
+            data["reply_message_type"] = reply_data["message_type"] if reply_data else None
+            data["reply_is_post"] = reply_data["is_post"] if reply_data else False
             enriched.append(data)
 
         return enriched, total

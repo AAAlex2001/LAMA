@@ -132,6 +132,7 @@ class MessageHandler:
         try:
             from sqlalchemy import select, or_
             from backend.models.channels import ChannelGroup
+            from backend.models.bots import BotMessage as BotMessageModel
 
             chat_id = message.chat.id
             query = select(ChannelGroup).where(
@@ -146,7 +147,6 @@ class MessageHandler:
             if not channel:
                 return None
 
-            # Create/get DirectChat for the discussion group
             chat_svc = DirectChatService(self.db)
             msg_svc = DirectMessageService(self.db)
 
@@ -158,6 +158,45 @@ class MessageHandler:
                 tg_username=None,
                 tg_last_name=None,
             )
+
+            reply_msg = message.reply_to_message
+            existing_post = (await self.db.execute(
+                select(BotMessageModel).where(
+                    BotMessageModel.bot_id == self.bot_model.id,
+                    BotMessageModel.chat_id == chat_id,
+                    BotMessageModel.telegram_message_id == reply_msg.message_id,
+                )
+            )).scalar_one_or_none()
+
+            if not existing_post:
+                post_text = reply_msg.text or reply_msg.caption
+                msg_type, media_file_id = msg_svc.extract_incoming_media(reply_msg)
+
+                media_url = None
+                if media_file_id:
+                    try:
+                        media_url = await msg_svc.resolve_media_url(
+                            self.bot_model.token, media_file_id,
+                        )
+                    except Exception:
+                        pass
+
+                post_msg = BotMessageModel(
+                    bot_id=self.bot_model.id,
+                    telegram_message_id=reply_msg.message_id,
+                    chat_id=chat_id,
+                    user_id=None,
+                    message_type=msg_type,
+                    text_content=post_text,
+                    media_file_id=media_file_id,
+                    media_url=media_url,
+                    is_incoming=True,
+                    is_system=True,
+                    raw_data=reply_msg.model_dump(),
+                )
+                self.db.add(post_msg)
+                await self.db.flush()
+
             await chat_svc.increment_unread(self.bot_model.id, chat_id)
 
             self.saved_msg = await msg_svc.save_incoming_message(
@@ -188,7 +227,7 @@ class MessageHandler:
                     "text": text_content[:500] if text_content else None,
                     "first_name": message.from_user.first_name,
                     "chat_title": message.chat.title,
-                    "reply_to_message_id": message.reply_to_message.message_id if message.reply_to_message else None,
+                    "reply_to_message_id": reply_msg.message_id,
                 },
             })
 

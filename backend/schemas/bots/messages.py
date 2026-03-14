@@ -44,6 +44,9 @@ class BotMessageResponse(BaseModel):
     media_size: Optional[int] = None
     reply_to_message_id: Optional[int] = None
     reply_message_text: Optional[str] = None
+    reply_media_url: Optional[str] = None
+    reply_message_type: Optional[str] = None
+    reply_is_post: bool = False
     is_incoming: bool
     is_system: bool = False
     created_at: datetime

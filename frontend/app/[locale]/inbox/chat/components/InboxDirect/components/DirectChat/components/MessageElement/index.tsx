@@ -117,6 +117,25 @@ const MessageElement = memo(({ type, text, userPhoto, mediaItems, time, replyTo,
   const isOutgoing = type === 'outgoing';
 
   if (type === 'system') {
+    if (mediaRuns.length > 0 || text) {
+      return (
+        <div className={styles.postCard}>
+          {mediaRuns.length > 0 && (
+            <div className={styles.postCardMedia}>
+              {mediaRuns.map((run, idx) =>
+                run.kind === 'visual' ? (
+                  <MediaPreview key={`visual-${idx}`} items={run.items} />
+                ) : (
+                  <DocumentsPreview key={`head-doc-${idx}`} items={run.items} showTitle={false} />
+                )
+              )}
+            </div>
+          )}
+          {text && <p className={styles.postCardText}>{text}</p>}
+          {time && <span className={styles.postCardTime}>{time}</span>}
+        </div>
+      );
+    }
     return (
       <div className={styles.systemMessage}>
         <span className={styles.systemMessageText}>{text}</span>

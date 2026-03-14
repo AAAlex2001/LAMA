@@ -46,6 +46,9 @@ export interface BotMessageResponse {
   media_size: number | null;
   reply_to_message_id: number | null;
   reply_message_text: string | null;
+  reply_media_url: string | null;
+  reply_message_type: string | null;
+  reply_is_post: boolean;
   is_incoming: boolean;
   is_system: boolean;
   created_at: string;

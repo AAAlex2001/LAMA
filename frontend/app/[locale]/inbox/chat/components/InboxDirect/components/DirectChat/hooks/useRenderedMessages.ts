@@ -59,6 +59,9 @@ export interface RenderedMessageGroup {
   telegramMessageId: number;
   replyToMessageId: number | null;
   replyMessageText: string | null;
+  replyMediaUrl: string | null;
+  replyMessageType: string | null;
+  replyIsPost: boolean;
   date: Date;
   time: string;
   type: 'incoming' | 'outgoing' | 'system';
@@ -106,6 +109,9 @@ function groupAndMapMessages(
       telegramMessageId: primaryMessage.telegram_message_id,
       replyToMessageId: primaryMessage.reply_to_message_id,
       replyMessageText: primaryMessage.reply_message_text,
+      replyMediaUrl: primaryMessage.reply_media_url ?? null,
+      replyMessageType: primaryMessage.reply_message_type ?? null,
+      replyIsPost: primaryMessage.reply_is_post ?? false,
       date: new Date(primaryMessage.created_at),
       time: formatMessageTime(latestMessage.created_at),
       type: mapMessageType(primaryMessage),
