@@ -4,6 +4,7 @@ import type { MessageFieldRef } from '../components/MessageField';
 import type { MessageInputModeReturn } from './useMessageInputMode';
 import type { MessageScrollReturn } from './useMessageScroll';
 import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { processMediaFiles } from '../utils/processMediaFiles';
 
 interface UseMessageSendingProps {
@@ -38,6 +39,8 @@ export function useMessageSending({
   onJumpToLatest,
   onReplySent,
 }: UseMessageSendingProps) {
+  const { showError } = useNotifications();
+
   const handleSendMessage = async () => {
     if (!activeChat) return;
 
@@ -70,7 +73,8 @@ export function useMessageSending({
         });
       }
     } catch (error) {
-      console.error('Failed to send direct message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось отправить сообщение';
+      showError(errorMessage);
       return;
     }
 
@@ -98,7 +102,8 @@ export function useMessageSending({
         inputMode.cancelEdit();
         return;
       }
-      await editMessage({ messageId: inputMode.editingMessage.id, text_content: trimmed });
+      if (!activeChat) return;
+      await editMessage({ messageId: inputMode.editingMessage.id, botId: activeChat?.bot_id, chatId: activeChat?.tg_chat_id, text_content: trimmed });
       inputMode.cancelEdit();
       return;
     }
