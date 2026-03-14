@@ -30,6 +30,7 @@ export interface ReplyToInfo {
 export interface MessageProps {
   type: 'incoming' | 'outgoing' | 'system';
   text?: string;
+  messageId?: number;
   userPhoto?: string;
   mediaItems?: MediaItem[];
   time?: string;
@@ -51,7 +52,7 @@ const ReplyPreview = memo(({ replyTo, isOutgoing }: { replyTo: ReplyToInfo; isOu
 ));
 ReplyPreview.displayName = 'ReplyPreview';
 
-const MessageElement = memo(({ type, text, userPhoto, mediaItems, time, replyTo, onEdit, onReply, onDelete }: MessageProps) => {
+const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, time, replyTo, onEdit, onReply, onDelete }: MessageProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [objectUrls, setObjectUrls] = useState<Map<string, string>>(new Map());
   const objectUrlsRef = useRef<Map<string, string>>(new Map());
@@ -117,7 +118,7 @@ const MessageElement = memo(({ type, text, userPhoto, mediaItems, time, replyTo,
   const isOutgoing = type === 'outgoing';
 
   if (type === 'system') {
-    if (mediaRuns.length > 0 || text) {
+    if ((mediaRuns.length > 0 || text) && messageId !== 0) {
       return (
         <div className={styles.postCard}>
           {mediaRuns.length > 0 && (

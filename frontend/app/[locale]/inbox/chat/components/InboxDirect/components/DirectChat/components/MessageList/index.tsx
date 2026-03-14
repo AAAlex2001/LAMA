@@ -39,6 +39,7 @@ const MessageRow = memo<MessageRowProps>(({ msg, messageRefs, replyTextLookup, u
       <MessageElement
         type={msg.type}
         text={msg.text}
+        messageId={msg.telegramMessageId}
         mediaItems={msg.mediaItems}
         time={msg.time}
         userPhoto={userPhoto}
