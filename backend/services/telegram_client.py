@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class RateLimitedBot:
-    """Обёртка над aiogram Bot с автоматическим rate limiting"""
+    """Обёртка над aiogram Bot с автоматическим per-bot rate limiting."""
 
-    def __init__(self, bot: Bot):
+    def __init__(self, bot: Bot, bot_key: str = "default"):
         self.bot = bot
-        self.rate_limiter = get_rate_limiter()
+        self.rate_limiter = get_rate_limiter(bot_key)
 
     def extract_chat_id(self, chat_id: Union[int, str]) -> Optional[int]:
         """Извлечь числовой chat_id"""

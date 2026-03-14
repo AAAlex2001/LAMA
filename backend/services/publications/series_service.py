@@ -1,4 +1,7 @@
+import logging
+
 from fastapi import HTTPException
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramNotFound
 from backend.services.publications.telegram_sender import send_to_telegram
 from typing import Callable, Awaitable, Optional, List
 from sqlalchemy import select
@@ -15,6 +18,8 @@ from backend.models.channels import ChannelGroup
 from backend.schemas.publications.series import PublicationSeriesUpdate
 from backend.schemas.publications import PublishResult, ChannelPublishResult
 from backend.services.telegram_client import RateLimitedBot
+
+logger = logging.getLogger(__name__)
 
 
 class SeriesService:
@@ -133,6 +138,7 @@ class SeriesService:
         results: List[ChannelPublishResult] = []
 
         for channel in publication.channels:
+            channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
             reply_to_id = None
             try:
                 bot = await bot_resolver(channel)
@@ -140,18 +146,16 @@ class SeriesService:
                 if series.reply_to_previous:
                     reply_to_id = await self.get_reply_to_message_id(
                         publication.series_id,
-                        channel.id
+                        channel.id,
                     )
 
                 if reply_to_id and series.reply_to_previous:
                     sent_messages = await send_to_telegram(
-                        publication,
-                        channel,
-                        bot,
-                        reply_to_message_id=reply_to_id,
+                        publication, channel, bot, reply_to_message_id=reply_to_id,
                     )
                 else:
                     sent_messages = await send_to_telegram(publication, channel, bot)
+
                 message_ids = [msg.message_id for msg in sent_messages]
                 self.db.add_all([
                     TelegramMessage(
@@ -163,28 +167,24 @@ class SeriesService:
                 ])
                 await self.db.flush()
 
-                channel_name = getattr(channel, "title", getattr(
-                    channel, "name", str(channel.telegram_id)))
-                results.append(
-                    ChannelPublishResult(
-                        channel=channel_name,
-                        success=True,
-                        message_ids=message_ids,
-                        replied_to=reply_to_id,
-                    )
-                )
+                results.append(ChannelPublishResult(
+                    channel=channel_name, success=True,
+                    message_ids=message_ids, replied_to=reply_to_id,
+                ))
+
+            except (TelegramBadRequest, TelegramForbiddenError, TelegramNotFound) as e:
+                logger.warning("Fatal Telegram error in series for %s: %s", channel_name, e)
+                results.append(ChannelPublishResult(
+                    channel=channel_name, success=False,
+                    error=str(e), replied_to=reply_to_id,
+                ))
 
             except Exception as e:
-                channel_name = getattr(channel, "title", getattr(
-                    channel, "name", str(channel.telegram_id)))
-                results.append(
-                    ChannelPublishResult(
-                        channel=channel_name,
-                        success=False,
-                        error=str(e),
-                        replied_to=reply_to_id,
-                    )
-                )
+                logger.error("Error sending series to %s: %s", channel_name, e)
+                results.append(ChannelPublishResult(
+                    channel=channel_name, success=False,
+                    error=str(e), replied_to=reply_to_id,
+                ))
 
         success_count = sum(1 for r in results if r.success)
 

@@ -31,6 +31,11 @@ def use_user_bots() -> bool:
     return os.getenv("USE_USER_BOTS", "false").lower() in ("1", "true", "yes")
 
 
+def bot_key_from_token(token: str) -> str:
+    """Ключ бота для rate limiter namespace (bot_id из токена)."""
+    return token.split(":")[0]
+
+
 def get_cached_bot(token: str) -> RateLimitedBot:
     """Получить или создать RateLimitedBot по токену с кешированием."""
     if token not in cache:
@@ -38,7 +43,7 @@ def get_cached_bot(token: str) -> RateLimitedBot:
             token=token,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         )
-        cache[token] = RateLimitedBot(bot)
+        cache[token] = RateLimitedBot(bot, bot_key=bot_key_from_token(token))
     return cache[token]
 
 

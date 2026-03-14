@@ -9,7 +9,6 @@ from backend.config import TELEGRAM_BOT_TOKEN
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import BufferedInputFile, Message
 
-from backend.services.rate_limiter import get_rate_limiter
 from backend.services.publications.media_download import download_media, resize_image_if_needed
 from backend.services.publications.utils import (
     AUDIO_EXTENSIONS,
@@ -73,29 +72,24 @@ async def warmup_single_media(bot: RateLimitedBot, media_url: str, idx: Optional
 
         input_file = BufferedInputFile(file_bytes, filename=filename)
         message: Optional[Message] = None
-        rate_limiter = get_rate_limiter()
 
         if url_lower.endswith(VIDEO_EXTENSIONS):
-            async with rate_limiter.limit(chat_id=storage_channel_id):
-                message = await bot.send_video(chat_id=storage_channel_id, video=input_file)
+            message = await bot.send_video(chat_id=storage_channel_id, video=input_file)
             if message.video:
                 return message.video.file_id
 
         elif url_lower.endswith(AUDIO_EXTENSIONS):
-            async with rate_limiter.limit(chat_id=storage_channel_id):
-                message = await bot.send_audio(chat_id=storage_channel_id, audio=input_file)
+            message = await bot.send_audio(chat_id=storage_channel_id, audio=input_file)
             if message.audio:
                 return message.audio.file_id
 
         elif url_lower.endswith(DOCUMENT_EXTENSIONS):
-            async with rate_limiter.limit(chat_id=storage_channel_id):
-                message = await bot.send_document(chat_id=storage_channel_id, document=input_file)
+            message = await bot.send_document(chat_id=storage_channel_id, document=input_file)
             if message.document:
                 return message.document.file_id
 
         else:
-            async with rate_limiter.limit(chat_id=storage_channel_id):
-                message = await bot.send_photo(chat_id=storage_channel_id, photo=input_file)
+            message = await bot.send_photo(chat_id=storage_channel_id, photo=input_file)
             if message.photo:
                 return message.photo[-1].file_id
 
