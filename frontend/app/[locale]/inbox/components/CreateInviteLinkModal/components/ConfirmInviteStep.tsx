@@ -127,6 +127,7 @@ const ConfirmInviteStep: React.FC<ConfirmInviteStepProps> = ({
           onClick={isEditing ? handleEdit : onConfirm}
           className={styles.confirmSubmitButton}
           disabled={isLoading}
+          loading={isLoading}
         >
           <span className={buttonStyles.label}>{isEditing ? 'Редактировать' : 'Создать'}</span>
         </Button>

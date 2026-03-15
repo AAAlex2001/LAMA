@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { botToken, botDescription } = body;
 
+
     if (!botToken || typeof botToken !== 'string' || !botToken.trim()) {
       return NextResponse.json(
         { error: 'Bot token is required' },

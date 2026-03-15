@@ -148,7 +148,6 @@ export function useMessageScroll({
     },
   });
 
-  // Reset on chat change
   useEffect(() => {
     didInitialScrollRef.current = false;
     shouldScrollAfterSendRef.current = false;
