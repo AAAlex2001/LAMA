@@ -7,7 +7,7 @@ import pytz
 from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import ChatPermissions, InputMediaPhoto, InputMediaVideo, InputMediaDocument
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramRetryAfter
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -236,7 +236,9 @@ class BotTriggerService:
         bot_info = await get_bot_info(bot.bot.token)
         text = ShortcodeProcessor.process(text, self.build_shortcode_ctx(user_id, data, bot_info))
         try:
-            await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")))
+            await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")), _group_weight=0)
+        except TelegramRetryAfter as e:
+            logger.warning("Trigger rate limited for chat %s: %ss", chat_id, e.retry_after)
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger message to {chat_id}: {e}")
 
@@ -265,7 +267,7 @@ class BotTriggerService:
                         media_group.append(InputMediaDocument(media=url, caption=cap))
                     else:
                         media_group.append(InputMediaPhoto(media=url, caption=cap))
-                await bot.send_media_group(chat_id=chat_id, media=media_group)
+                await bot.send_media_group(chat_id=chat_id, media=media_group, _group_weight=0)
                 return
 
             media_type = data.get("media_type", "PHOTO")
@@ -278,7 +280,10 @@ class BotTriggerService:
                 **{media_type.lower(): media_urls[0]},
                 caption=caption,
                 reply_markup=build_keyboard(data.get("buttons")),
+                _group_weight=0,
             )
+        except TelegramRetryAfter as e:
+            logger.warning("Trigger media rate limited for chat %s: %ss", chat_id, e.retry_after)
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
 

@@ -46,11 +46,36 @@ def publish_publication(publication_id: int) -> str:
 async def publish_publication_async(publication_id: int) -> str:
     """Async-реализация публикации одной записи."""
 
+    next_id = None
     async with CelerySessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-        await service.publish_now(publication_id)
+        result = await service.publish_now(publication_id)
+
+        cur = (
+            select(Publication.series_id, Publication.series_order)
+            .where(Publication.id == publication_id)
+            .subquery()
+        )
+        next_id = (await db.execute(
+            select(Publication.id).where(
+                Publication.series_id == cur.c.series_id,
+                Publication.series_order == cur.c.series_order + 1,
+                Publication.status == DBPublicationStatus.SCHEDULED,
+            )
+        )).scalar_one_or_none()
+
         await db.commit()
-        return f"published:{publication_id}"
+
+    # Chain next series post FIRST — chain must never break,
+    # even if current post failed permanently (e.g. "message too long")
+    if next_id:
+        publish_publication.apply_async(args=[next_id], queue="high", countdown=5)
+        logger.info("Chained next series post: publication_id=%s", next_id)
+
+    if not result.success:
+        raise RuntimeError(f"publish failed: {publication_id}")
+
+    return f"published:{publication_id}"
 
 
 @celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask, max_retries=1)

@@ -67,11 +67,8 @@ class RetransmitService:
         for attempt in range(MAX_RETRIES):
             try:
                 return await self.send_post(post, target_telegram_id, bot)
-            except TelegramRetryAfter as e:
-                if attempt < MAX_RETRIES - 1:
-                    await asyncio.sleep(e.retry_after)
-                else:
-                    raise
+            except TelegramRetryAfter:
+                raise
             except Exception:
                 if attempt < MAX_RETRIES - 1:
                     await asyncio.sleep(2 ** attempt)

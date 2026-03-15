@@ -26,12 +26,13 @@ async def publish_now(
 ):
     publication = await service.prepare_for_publishing(publication_id, owner_id=current_user.id)
 
-    countdown = 0
-    if publication.series_order and publication.series_order > 0:
-        countdown = publication.series_order * 5
+    if publication.series_id and publication.series_order and publication.series_order > 0:
+        logger.info("Series post deferred (publication_id=%s, series_order=%s)",
+                    publication_id, publication.series_order)
+        return publication
 
-    publish_publication.apply_async(args=[publication_id], queue="high", countdown=countdown)
-    logger.info("Publish queued (publication_id=%s, countdown=%ss)", publication_id, countdown)
+    publish_publication.apply_async(args=[publication_id], queue="high")
+    logger.info("Publish queued (publication_id=%s)", publication_id)
     return publication
 
 

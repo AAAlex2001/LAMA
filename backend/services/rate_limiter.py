@@ -79,20 +79,29 @@ class RedisTelegramRateLimiter:
 
     async def wait_group(self, chat_id: int, weight: int) -> None:
         """Per-bot лимит для группы: 20 msg/min на группу."""
-        if chat_id >= 0:
+        if chat_id >= 0 or weight <= 0:
             return
-        now_min = int(time.time() // 60)
-        key = f"lama:rl:{self.bot_key}:group:{chat_id}:{now_min}"
-        count = await self.client.incrby(key, weight)
-        await self.client.expire(key, 70)
-        if count <= self.per_group_per_minute:
-            return
-        ttl_ms = await self.client.pttl(key)
-        sleep_s = max(float(ttl_ms) / 1000.0, 0.2) if ttl_ms > 0 else 1.0
+        for _ in range(3):
+            now = time.time()
+            now_min = int(now // 60)
+            key = f"lama:rl:{self.bot_key}:group:{chat_id}:{now_min}"
+            count = await self.client.incrby(key, weight)
+            await self.client.expire(key, 70)
+            if count <= self.per_group_per_minute:
+                return
+            await self.client.decrby(key, weight)
+            wait = 60 - (now % 60)
+            if wait > 5:
+                raise TelegramRetryAfter(
+                    method=None,
+                    message=f"Group Rate Limit lock for {wait:.1f}s",
+                    retry_after=int(wait) or 1
+                )
+            await asyncio.sleep(wait + 0.1)
         raise TelegramRetryAfter(
             method=None,
-            message=f"Group Rate Limit lock for {sleep_s}s",
-            retry_after=int(sleep_s) or 1
+            message="Group Rate Limit: retries exhausted",
+            retry_after=5
         )
 
     async def wait_chat_delay(self, chat_id: int, weight: int) -> None:
@@ -114,16 +123,21 @@ class RedisTelegramRateLimiter:
             await asyncio.sleep(sleep_s)
 
     @asynccontextmanager
-    async def limit(self, chat_id: Optional[int] = None, weight: int = 1):
+    async def limit(self, chat_id: Optional[int] = None, weight: int = 1, group_weight: Optional[int] = None):
         if chat_id is None:
             yield
             return
 
         w = max(weight, 1)
+        gw = w if group_weight is None else group_weight
         await self.wait_chat_delay(chat_id, w)
-        await self.wait_group(chat_id, w)
+        await self.wait_group(chat_id, gw)
         await self.wait_global(w)
-        yield
+        try:
+            yield
+        except TelegramRetryAfter as e:
+            await self.notify_retry_after(chat_id, e.retry_after)
+            raise
 
 
 
