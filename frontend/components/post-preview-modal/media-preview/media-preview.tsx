@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import styles from './media-preview.module.scss';
 import type { MediaPreviewItem } from '../store';
 import PlayIcon from '@/components/icons/play-icon';
+import Lightbox from '@/components/media-preview/components/Lightbox';
+import type { MediaFile } from '@/components/media-preview';
 
 export interface MediaPreviewProps {
   items: MediaPreviewItem[];
@@ -11,6 +13,32 @@ export interface MediaPreviewProps {
 
 export default function MediaPreview({ items }: MediaPreviewProps) {
   const [brokenIds, setBrokenIds] = useState<Set<string>>(new Set());
+  const [lightbox, setLightbox] = useState<{
+    isOpen: boolean;
+    media: MediaFile | null;
+    url: string;
+    loading: boolean;
+  }>({ isOpen: false, media: null, url: '', loading: false });
+
+  const openLightbox = useCallback((item: MediaPreviewItem) => {
+    if (!item.url) return;
+    const media: MediaFile = {
+      id: item.id,
+      type: item.type,
+      url: item.url,
+      thumbnail_url: item.thumbnailUrl,
+      blur: item.blur,
+    };
+    setLightbox({ isOpen: true, media, url: item.url, loading: true });
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightbox({ isOpen: false, media: null, url: '', loading: false });
+  }, []);
+
+  const setLightboxLoaded = useCallback(() => {
+    setLightbox((prev) => ({ ...prev, loading: false }));
+  }, []);
 
   if (items.length === 0) return null;
 
@@ -59,6 +87,8 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     return (
       <div
         className={`${styles.tile} ${isVideo ? styles.tileVideo : ''} ${className || ''}`}
+        style={{ cursor: 'pointer' }}
+        onClick={() => openLightbox(item)}
       >
         {tile}
         {isVideo && (
@@ -80,14 +110,27 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     );
   };
 
+  const lightboxOverlay = lightbox.isOpen && lightbox.media && lightbox.url ? (
+    <Lightbox
+      media={lightbox.media}
+      url={lightbox.url}
+      loading={lightbox.loading}
+      onClose={closeLightbox}
+      onLoaded={setLightboxLoaded}
+    />
+  ) : null;
+
   // 1 медиа — одна большая картинка 16:9
   if (items.length === 1) {
     const item = items[0];
     if (!item.url) return null;
     return (
-      <div className={styles.single}>
-        {renderTile(item, styles.singleItem, 'big')}
-      </div>
+      <>
+        <div className={styles.single}>
+          {renderTile(item, styles.singleItem, 'big')}
+        </div>
+        {lightboxOverlay}
+      </>
     );
   }
 
@@ -100,18 +143,21 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
 
   if (isVideoWithPhotosColumn) {
     return (
-      <div className={styles.videoWithPhotos}>
-        <div className={styles.videoColumn}>
-          {renderTile(items[0], styles.videoColumnItem, 'big')}
+      <>
+        <div className={styles.videoWithPhotos}>
+          <div className={styles.videoColumn}>
+            {renderTile(items[0], styles.videoColumnItem, 'big')}
+          </div>
+          <div className={`${styles.photoColumn} ${styles[`photoCount${rightItems.length}`]}`}>
+            {rightItems.map((item) => (
+              <div key={item.id} className={styles.photoTile}>
+                {renderTile(item, undefined, 'small')}
+              </div>
+            ))}
+          </div>
         </div>
-        <div className={`${styles.photoColumn} ${styles[`photoCount${rightItems.length}`]}`}>
-          {rightItems.map((item) => (
-            <div key={item.id} className={styles.photoTile}>
-              {renderTile(item, undefined, 'small')}
-            </div>
-          ))}
-        </div>
-      </div>
+        {lightboxOverlay}
+      </>
     );
   }
 
@@ -119,10 +165,13 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
   if (items.length === 2) {
     if (!items[0].url || !items[1].url) return null;
     return (
-      <div className={styles.dual}>
-        {renderTile(items[0], styles.dualItem, 'small')}
-        {renderTile(items[1], styles.dualItem, 'small')}
-      </div>
+      <>
+        <div className={styles.dual}>
+          {renderTile(items[0], styles.dualItem, 'small')}
+          {renderTile(items[1], styles.dualItem, 'small')}
+        </div>
+        {lightboxOverlay}
+      </>
     );
   }
 
@@ -133,21 +182,24 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
   const thumbs = items.slice(1);
 
   return (
-    <div className={styles.block}>
-      <div className={styles.main}>{renderTile(main, undefined, 'big')}</div>
+    <>
+      <div className={styles.block}>
+        <div className={styles.main}>{renderTile(main, undefined, 'big')}</div>
 
-      {thumbs.length > 0 && (
-        <div className={styles.grid}>
-          {thumbs.map((item) => {
-            if (!item.url) return <div key={item.id} className={styles.gridTile} />;
-            return (
-              <div key={item.id} className={styles.gridTile}>
-                {renderTile(item, undefined, 'small')}
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+        {thumbs.length > 0 && (
+          <div className={styles.grid}>
+            {thumbs.map((item) => {
+              if (!item.url) return <div key={item.id} className={styles.gridTile} />;
+              return (
+                <div key={item.id} className={styles.gridTile}>
+                  {renderTile(item, undefined, 'small')}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {lightboxOverlay}
+    </>
   );
 }

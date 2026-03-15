@@ -8,7 +8,7 @@ import MediaPreview from '@/components/media-preview';
 import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
-import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
 import { useMessageMedia } from './hooks/useMessageMedia';
 import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
@@ -46,7 +46,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
   replyingTo, 
   onCancelReply 
 }, ref) => {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     mediaFiles,
     fileInputRef,
@@ -92,10 +92,23 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
 
   useEffect(() => {
     if (editingMessage || replyingTo) {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
     }
   }, [editingMessage, replyingTo]);
 
+  const autoResize = useCallback(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+
+    const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 22.4;
+    const maxHeight = lineHeight * 13;
+
+    const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+    textarea.style.height = `${newHeight}px`;
+  }, []);
+  
   useEffect(() => {
     if (mediaFiles.length > 1 && (inlineButtonsOpen || inlineButtonRows.length > 0)) {
       resetInlineButtons();
@@ -209,7 +222,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     }
   }, [editingMessage, canAddMedia, handleFilesAdd]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -288,15 +301,18 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
           </div>
         )}
         <div className={styles.inputRow}>
-          <input
-            ref={inputRef}
+          <textarea
+            ref={textareaRef}
             className={styles.input}
-            type="text"
             placeholder="Сообщение..."
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              onChange(e.target.value);
+              autoResize();
+            }}
             onKeyDown={handleKeyDown}
             onPaste={handlePaste}
+            rows={1}
             autoFocus
           />
           <Button
