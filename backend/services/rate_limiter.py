@@ -17,12 +17,25 @@ import logging
 import os
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, Optional
+from typing import Optional
 
 from redis.asyncio import Redis
 from aiogram.exceptions import TelegramRetryAfter
 
 logger = logging.getLogger(__name__)
+
+
+class RateLimitTimeout(Exception):
+    """Наш rate limiter говорит «подожди» — НЕ ошибка Telegram.
+
+    Используется когда wait превышает допустимый порог и мы не хотим
+    блокировать воркер. Задача завершается быстро, воркер свободен.
+    """
+
+    def __init__(self, chat_id: int, wait_seconds: float):
+        self.chat_id = chat_id
+        self.wait_seconds = wait_seconds
+        super().__init__(f"Rate limit timeout: chat {chat_id} needs {wait_seconds:.1f}s wait")
 
 
 class RedisTelegramRateLimiter:
@@ -78,10 +91,14 @@ class RedisTelegramRateLimiter:
             await asyncio.sleep(sleep_s)
 
     async def wait_group(self, chat_id: int, weight: int) -> None:
-        """Per-bot лимит для группы: 20 msg/min на группу."""
+        """Per-bot лимит для группы: 20 msg/min на группу.
+
+        Ждём до 5 секунд. Если нужно ждать дольше — RateLimitTimeout,
+        чтобы не блокировать воркер.
+        """
         if chat_id >= 0 or weight <= 0:
             return
-        for _ in range(3):
+        for attempt in range(3):
             now = time.time()
             now_min = int(now // 60)
             key = f"lama:rl:{self.bot_key}:group:{chat_id}:{now_min}"
@@ -92,17 +109,9 @@ class RedisTelegramRateLimiter:
             await self.client.decrby(key, weight)
             wait = 60 - (now % 60)
             if wait > 5:
-                raise TelegramRetryAfter(
-                    method=None,
-                    message=f"Group Rate Limit lock for {wait:.1f}s",
-                    retry_after=int(wait) or 1
-                )
+                raise RateLimitTimeout(chat_id, wait)
             await asyncio.sleep(wait + 0.1)
-        raise TelegramRetryAfter(
-            method=None,
-            message="Group Rate Limit: retries exhausted",
-            retry_after=5
-        )
+        raise RateLimitTimeout(chat_id, 60)
 
     async def wait_chat_delay(self, chat_id: int, weight: int) -> None:
         """Per-bot задержка: 1 msg/sec на конкретный чат."""
@@ -114,11 +123,7 @@ class RedisTelegramRateLimiter:
                 return
             ttl_ms = await self.client.pttl(key)
             if ttl_ms > 5000:
-                raise TelegramRetryAfter(
-                    method=None,
-                    message=f"Chat {chat_id} blocked for {ttl_ms}ms (RetryAfter)",
-                    retry_after=int(ttl_ms / 1000) or 1
-                )
+                raise RateLimitTimeout(chat_id, ttl_ms / 1000)
             sleep_s = max(float(ttl_ms) / 1000.0, 0.05) if ttl_ms > 0 else 0.2
             await asyncio.sleep(sleep_s)
 

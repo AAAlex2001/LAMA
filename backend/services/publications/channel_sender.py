@@ -14,6 +14,7 @@ from aiogram.exceptions import (
 from backend.models.publications import Publication
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications import ChannelPublishResult
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
 from backend.services.publications.telegram_sender import send_to_telegram
 
@@ -128,6 +129,13 @@ async def send_to_channel_with_retry(
                 channel=channel_name, success=False,
                 error=f"Rate limit: {e.retry_after}s",
                 notification_error=f"Failed to publish to {channel_name}: Rate limit",
+            )
+
+        except RateLimitTimeout as e:
+            logger.info("Rate limit timeout for %s: %s", channel_name, e)
+            return ChannelPublishResult(
+                channel=channel_name, success=False,
+                error=f"Rate limit timeout: {e.wait_seconds:.0f}s",
             )
 
         except Exception as e:

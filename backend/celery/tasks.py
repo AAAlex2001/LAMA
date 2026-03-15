@@ -36,9 +36,9 @@ class RetriableTask(Task):
     max_retries = 3
 
 
-@celery_app.task(name="backend.celery.tasks.publish_publication", soft_time_limit=120, time_limit=180, base=RetriableTask, max_retries=2, acks_late=True)
+@celery_app.task(name="backend.celery.tasks.publish_publication", soft_time_limit=120, time_limit=180, acks_late=True)
 def publish_publication(publication_id: int) -> str:
-    """Опубликовать одну публикацию (без RetriableTask — retry в channel_sender)."""
+    """Опубликовать одну публикацию. Без auto-retry — channel_sender сам обрабатывает ошибки."""
 
     return run(publish_publication_async(publication_id))
 
@@ -66,16 +66,18 @@ async def publish_publication_async(publication_id: int) -> str:
 
         await db.commit()
 
-    # Chain next series post FIRST — chain must never break,
     # even if current post failed permanently (e.g. "message too long")
     if next_id:
-        publish_publication.apply_async(args=[next_id], queue="high", countdown=5)
-        logger.info("Chained next series post: publication_id=%s", next_id)
+        countdown = 30 if not result.success else 5
+        publish_publication.apply_async(args=[next_id], queue="high", countdown=countdown)
+        logger.info("Chained next series post: publication_id=%s, countdown=%s", next_id, countdown)
 
-    if not result.success:
-        raise RuntimeError(f"publish failed: {publication_id}")
-
-    return f"published:{publication_id}"
+    if result.success:
+        return f"published:{publication_id}"
+    else:
+        logger.warning("publish partial/failed: publication_id=%s, %s/%s channels",
+                        publication_id, result.success_count, result.total_count)
+        return f"publish_failed:{publication_id}"
 
 
 @celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask, max_retries=1)

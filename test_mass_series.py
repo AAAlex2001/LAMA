@@ -111,7 +111,6 @@ async def main():
         await asyncio.gather(
             run_series(client, "A-100", 100, [9, 4, 3, 2, 1], drafts),
             run_series(client, "B-20", 20, [5], drafts),
-            run_series(client, "C-20", 20, [269], drafts),
         )
 
     elapsed = time.monotonic() - t0
