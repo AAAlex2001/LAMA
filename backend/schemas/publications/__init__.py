@@ -35,7 +35,6 @@ from backend.schemas.publications.publication_response import (
     PublicationCompact,
     PublicationCompactListResponse,
     PublicationPreview,
-    CalendarEntry,
     DayCount,
 )
 from backend.schemas.publications.ai import (

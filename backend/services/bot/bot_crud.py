@@ -265,11 +265,14 @@ class BotCrudService:
             logger.warning(f"Failed to remove webhook: {e}")
 
     async def evict_from_cache(self, token: str) -> None:
-        """Удалить бота из кешей."""
+        """Удалить бота из кешей и закрыть его aiohttp-сессию."""
         bot = cache.pop(token, None)
-        if bot:
-            await bot.bot.session.close()
         bot_info_cache.pop(token, None)
+        if bot:
+            try:
+                await bot.bot.session.close()
+            except Exception as e:
+                logger.warning("Failed to close bot session: %s", e)
 
     async def sync_telegram_fields(
         self, telegram_bot: RateLimitedBot, bot: BotModel,

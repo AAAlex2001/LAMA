@@ -12,7 +12,7 @@ from backend.celery.app import celery_app
 from backend.celery.async_runner import run
 from backend.config import OPENAI_API_KEY
 from backend.services.bot_provider import resolve_for_bot_id, resolve_master, use_user_bots
-from backend.database import AsyncSessionLocal
+from backend.database import CelerySessionLocal
 from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
@@ -36,9 +36,9 @@ class RetriableTask(Task):
     max_retries = 3
 
 
-@celery_app.task(name="backend.celery.tasks.publish_publication")
+@celery_app.task(name="backend.celery.tasks.publish_publication", soft_time_limit=120, time_limit=180, acks_late=True)
 def publish_publication(publication_id: int) -> str:
-    """Опубликовать одну публикацию (без RetriableTask — retry в channel_sender)."""
+    """Опубликовать одну публикацию. Без auto-retry — channel_sender сам обрабатывает ошибки."""
 
     return run(publish_publication_async(publication_id))
 
@@ -46,11 +46,38 @@ def publish_publication(publication_id: int) -> str:
 async def publish_publication_async(publication_id: int) -> str:
     """Async-реализация публикации одной записи."""
 
-    async with AsyncSessionLocal() as db:
+    next_id = None
+    async with CelerySessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-        await service.publish_now(publication_id)
+        result = await service.publish_now(publication_id)
+
+        cur = (
+            select(Publication.series_id, Publication.series_order)
+            .where(Publication.id == publication_id)
+            .subquery()
+        )
+        next_id = (await db.execute(
+            select(Publication.id).where(
+                Publication.series_id == cur.c.series_id,
+                Publication.series_order == cur.c.series_order + 1,
+                Publication.status == DBPublicationStatus.SCHEDULED,
+            )
+        )).scalar_one_or_none()
+
         await db.commit()
+
+    # even if current post failed permanently (e.g. "message too long")
+    if next_id:
+        countdown = 30 if not result.success else 5
+        publish_publication.apply_async(args=[next_id], queue="high", countdown=countdown)
+        logger.info("Chained next series post: publication_id=%s, countdown=%s", next_id, countdown)
+
+    if result.success:
         return f"published:{publication_id}"
+    else:
+        logger.warning("publish partial/failed: publication_id=%s, %s/%s channels",
+                        publication_id, result.success_count, result.total_count)
+        return f"publish_failed:{publication_id}"
 
 
 @celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask, max_retries=1)
@@ -63,14 +90,14 @@ def delete_publication_messages(publication_id: int) -> str:
 async def delete_publication_messages_async(publication_id: int) -> str:
     """Async-реализация удаления Telegram-сообщений публикации."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.delete_telegram_messages(publication_id)
         await db.commit()
         return f"deleted_messages:{publication_id}"
 
 
-@celery_app.task(name="backend.celery.tasks.republish_publication")
+@celery_app.task(name="backend.celery.tasks.republish_publication", soft_time_limit=120, time_limit=180)
 def republish_publication(publication_id: int) -> str:
     """Переопубликовать публикацию (без RetriableTask — retry в channel_sender)."""
 
@@ -80,7 +107,7 @@ def republish_publication(publication_id: int) -> str:
 async def republish_publication_async(publication_id: int) -> str:
     """Async-реализация переопубликации."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
         await service.republish(publication_id)
         await db.commit()
@@ -97,7 +124,7 @@ def process_scheduled_publications() -> str:
 async def process_scheduled_publications_async() -> str:
     """Атомарный UPDATE + enqueue: помечает published_time и ставит задачу в Celery."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         now = datetime.now(timezone.utc)
         from sqlalchemy import update
         stmt = (
@@ -130,7 +157,7 @@ def process_auto_delete() -> str:
 async def process_auto_delete_async() -> str:
     """Async-реализация постановки задач автоудаления в очередь."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         now = datetime.now(timezone.utc)
 
         delete_delay = case(
@@ -173,7 +200,7 @@ def process_scheduled_triggers() -> str:
 async def process_scheduled_triggers_async() -> str:
     """Async-реализация выполнения задач триггеров."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         service = TriggerService(db)
         tasks = await service.get_pending_tasks(limit=50)
         for task in tasks:
@@ -202,7 +229,7 @@ def process_recurring_messages() -> str:
 async def process_recurring_messages_async() -> str:
     """Async-реализация отправки повторяющихся сообщений."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         service = RecurringMessageService(db)
         pending = await service.get_pending(limit=50)
         for msg in pending:
@@ -230,7 +257,7 @@ def process_repeating_publications() -> str:
 async def process_repeating_publications_async() -> str:
     """Async-реализация постановки задач переопубликации в очередь."""
 
-    async with AsyncSessionLocal() as db:
+    async with CelerySessionLocal() as db:
         now = datetime.now(timezone.utc)
         query = (
             select(Publication.id)

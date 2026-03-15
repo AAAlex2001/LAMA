@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from fastapi import HTTPException
@@ -17,6 +18,7 @@ from backend.models.publications import (
 from backend.models.channels import ChannelGroup
 from backend.schemas.publications.series import PublicationSeriesUpdate
 from backend.schemas.publications import PublishResult, ChannelPublishResult
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
@@ -64,10 +66,10 @@ class SeriesService:
         series = await self.get_series(series_id)
         if not series:
             raise HTTPException(status_code=404, detail="Series not found")
-        
+
         for field, value in update_data.model_dump(exclude_unset=True).items():
             setattr(series, field, value)
-            
+
         await self.db.flush()
         await self.db.refresh(series)
         return series
@@ -119,6 +121,57 @@ class SeriesService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
+    @staticmethod
+    async def send_to_channel(
+        publication: Publication,
+        channel: ChannelGroup,
+        bot: RateLimitedBot,
+        reply_to_id: Optional[int],
+        channel_name: str,
+    ) -> ChannelPublishResult:
+        """Отправить пост серии в один канал.
+
+        DB-запись TelegramMessage происходит в publish_series_post после gather,
+        т.к. AsyncSession нельзя использовать из параллельных корутин.
+        """
+        try:
+            sent_messages = await send_to_telegram(
+                publication, channel, bot, reply_to_message_id=reply_to_id,
+            )
+
+            if not sent_messages:
+                raise RuntimeError("No messages returned from send_to_telegram")
+
+            message_ids = [msg.message_id for msg in sent_messages]
+
+            return ChannelPublishResult(
+                channel=channel_name, success=True,
+                message_ids=message_ids, replied_to=reply_to_id,
+                channel_obj=channel,
+            )
+
+        except (TelegramBadRequest, TelegramForbiddenError, TelegramNotFound) as e:
+            logger.warning("Fatal Telegram error in series for %s: %s", channel_name, e)
+            return ChannelPublishResult(
+                channel=channel_name, success=False,
+                error=str(e), replied_to=reply_to_id,
+            )
+
+        except RateLimitTimeout as e:
+            logger.info("Rate limit timeout for series channel %s: %s", channel_name, e)
+            return ChannelPublishResult(
+                channel=channel_name, success=False,
+                error=f"Rate limit timeout: {e.wait_seconds:.0f}s",
+                replied_to=reply_to_id,
+            )
+
+        except Exception as e:
+            logger.error("Error sending series to %s: %s", channel_name, e)
+            return ChannelPublishResult(
+                channel=channel_name, success=False,
+                error=str(e), replied_to=reply_to_id,
+            )
+
     async def publish_series_post(
         self,
         publication: Publication,
@@ -135,56 +188,48 @@ class SeriesService:
         if not series:
             raise HTTPException(status_code=404, detail="Series not found")
 
+        coros = []
         results: List[ChannelPublishResult] = []
 
         for channel in publication.channels:
             channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
-            reply_to_id = None
             try:
                 bot = await bot_resolver(channel)
+            except ValueError as e:
+                results.append(ChannelPublishResult(
+                    channel=channel_name, success=False, error=str(e),
+                ))
+                continue
 
-                if series.reply_to_previous:
-                    reply_to_id = await self.get_reply_to_message_id(
-                        publication.series_id,
-                        channel.id,
-                    )
+            reply_to_id = None
+            if series.reply_to_previous:
+                reply_to_id = await self.get_reply_to_message_id(
+                    publication.series_id, channel.id,
+                )
 
-                if reply_to_id and series.reply_to_previous:
-                    sent_messages = await send_to_telegram(
-                        publication, channel, bot, reply_to_message_id=reply_to_id,
-                    )
-                else:
-                    sent_messages = await send_to_telegram(publication, channel, bot)
+            coros.append(self.send_to_channel(
+                publication, channel, bot, reply_to_id, channel_name,
+            ))
 
-                message_ids = [msg.message_id for msg in sent_messages]
+        for result in await asyncio.gather(*coros, return_exceptions=True):
+            if isinstance(result, BaseException):
+                logger.error("Unexpected exception in series gather: %s", result)
+                results.append(ChannelPublishResult(
+                    channel="unknown", success=False, error=str(result),
+                ))
+            else:
+                results.append(result)
+
+        for r in results:
+            if r.success and r.message_ids and r.channel_obj:
                 self.db.add_all([
                     TelegramMessage(
                         publication_id=publication.id,
-                        channel_id=channel.id,
+                        channel_id=r.channel_obj.id,
                         telegram_message_id=msg_id,
                     )
-                    for msg_id in message_ids
+                    for msg_id in r.message_ids
                 ])
-                await self.db.flush()
-
-                results.append(ChannelPublishResult(
-                    channel=channel_name, success=True,
-                    message_ids=message_ids, replied_to=reply_to_id,
-                ))
-
-            except (TelegramBadRequest, TelegramForbiddenError, TelegramNotFound) as e:
-                logger.warning("Fatal Telegram error in series for %s: %s", channel_name, e)
-                results.append(ChannelPublishResult(
-                    channel=channel_name, success=False,
-                    error=str(e), replied_to=reply_to_id,
-                ))
-
-            except Exception as e:
-                logger.error("Error sending series to %s: %s", channel_name, e)
-                results.append(ChannelPublishResult(
-                    channel=channel_name, success=False,
-                    error=str(e), replied_to=reply_to_id,
-                ))
 
         success_count = sum(1 for r in results if r.success)
 

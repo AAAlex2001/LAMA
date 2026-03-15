@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, load_only
 
 from backend.models.channels import ChannelGroup as Channel
 from backend.models.publications import (
@@ -16,6 +16,39 @@ from backend.models.publications import (
     publication_tags,
 )
 from backend.schemas.publications.enums import ContentType, PublicationStatus
+
+PUB_COMPACT_COLUMNS = [
+    Publication.id,
+    Publication.status,
+    Publication.content_type,
+    Publication.text_content,
+    Publication.formatted_content,
+    Publication.media_urls,
+    Publication.media_thumbnail_urls,
+    Publication.media_file_ids,
+    Publication.media_blur,
+    Publication.inline_keyboard,
+    Publication.poll_data,
+    Publication.repeat_interval,
+    Publication.scheduled_time,
+    Publication.published_time,
+    Publication.created_at,
+    Publication.updated_at,
+    Publication.owner_id,
+]
+
+CHANNEL_COMPACT_COLUMNS = [
+    Channel.id,
+    Channel.title,
+    Channel.members_count,
+    Channel.photo_url,
+]
+
+TAG_COMPACT_COLUMNS = [
+    Tag.id,
+    Tag.name,
+    Tag.color,
+]
 
 
 def escape_like(s: str) -> str:
@@ -119,35 +152,34 @@ class PublicationQueryService:
         skip = max(0, skip)
         limit = min(max(1, limit), 500)
 
-        id_query = select(Publication.id)
+        query = select(Publication)
         if owner_id is not None:
-            id_query = id_query.where(Publication.owner_id == owner_id)
+            query = query.where(Publication.owner_id == owner_id)
 
-        id_query = self.apply_filters(
-            id_query, status, content_type, channel_id, tag_names, tag_ids,
+        query = self.apply_filters(
+            query, status, content_type, channel_id, tag_names, tag_ids,
             series_id, start_date, end_date, search, owner_id, date_mode,
         )
 
         normalized_mode = (date_mode or "scheduled").lower()
         primary_date = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
-        source_date = primary_date
         order_asc = (sort_order or "").lower() == "asc"
-        order_expr = source_date.asc() if order_asc else source_date.desc()
+        order_expr = primary_date.asc() if order_asc else primary_date.desc()
         id_tie = Publication.id.asc() if order_asc else Publication.id.desc()
 
-        id_subquery = id_query.order_by(order_expr, id_tie).offset(skip).limit(limit).subquery()
-
-        full_query = (
-            select(Publication)
-            .join(id_subquery, Publication.id == id_subquery.c.id)
+        query = (
+            query
             .options(
-                selectinload(Publication.channels),
-                selectinload(Publication.tags),
+                load_only(*PUB_COMPACT_COLUMNS),
+                selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
+                selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
             .order_by(order_expr, id_tie)
+            .offset(skip)
+            .limit(limit)
         )
 
-        result = await self.db.execute(full_query)
+        result = await self.db.execute(query)
         return list(result.scalars().all())
 
     def apply_filters(self, id_query, status, content_type, channel_id,

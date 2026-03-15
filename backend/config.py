@@ -19,9 +19,8 @@ if not TELEGRAM_BOT_TOKEN:
 
 
 async def close_bot():
-    """Закрыть сессии всех кешированных ботов."""
     from backend.services.bot_provider import cache, bot_info_cache
-    for bot in cache.values():
+    for bot in list(cache.values()):
         await bot.bot.session.close()
     cache.clear()
     bot_info_cache.clear()

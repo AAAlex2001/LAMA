@@ -1,10 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
 
-import pytz
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from backend.models.publications import (
     Publication,
@@ -18,33 +16,6 @@ class CalendarService:
 
     def __init__(self, db: AsyncSession):
         self.db = db
-
-    async def get_calendar(self, year: int, month: int, owner_id: Optional[int] = None) -> List[Publication]:
-        start = datetime(year, month, 1, tzinfo=pytz.UTC)
-        end = (
-            datetime(year + 1, 1, 1, tzinfo=pytz.UTC)
-            if month == 12
-            else datetime(year, month + 1, 1, tzinfo=pytz.UTC)
-        )
-
-        filters = [
-            Publication.scheduled_time >= start,
-            Publication.scheduled_time < end,
-            Publication.status.in_([DBPublicationStatus.SCHEDULED, DBPublicationStatus.PUBLISHED]),
-        ]
-        if owner_id is not None:
-            filters.insert(0, Publication.owner_id == owner_id)
-
-        query = (
-            select(Publication)
-            .where(and_(*filters))
-            .options(selectinload(Publication.channels), selectinload(Publication.tags))
-            .order_by(Publication.scheduled_time)
-            .limit(500)
-        )
-
-        result = await self.db.execute(query)
-        return list(result.scalars().all())
 
     async def get_day_counts(
         self,
