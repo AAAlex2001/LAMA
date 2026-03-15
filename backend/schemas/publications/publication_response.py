@@ -19,10 +19,7 @@ class ChannelCompact(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    telegram_id: int
     title: str
-    username: Optional[str] = None
-    is_active: bool
     members_count: Optional[int] = None
     photo_url: Optional[str] = None
 
@@ -54,8 +51,6 @@ class PublicationCompact(BaseModel):
     scheduled_time: Optional[datetime] = None
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
-    series_id: Optional[int] = None
-    series_order: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     channels: List[ChannelCompact] = []
@@ -121,11 +116,6 @@ class PublicationPreview(BaseModel):
     media_preview: Optional[List[str]] = None
     keyboard_preview: Optional[str] = None
     poll_preview: Optional[str] = None
-
-
-class CalendarEntry(BaseModel):
-    date: str
-    publications: List[PublicationCompact]
 
 
 class DayCount(BaseModel):

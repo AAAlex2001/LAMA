@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, List
 
-import pytz
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,10 +8,7 @@ from backend.models.publications import Publication, PublicationNotification, Pu
 from backend.models.channels import ChannelGroup as Channel
 from backend.schemas.publications.ai import AIGenerateRequest, AIEditRequest
 from backend.schemas.publications.enums import PublicationStatus, ContentType
-from backend.schemas.publications.publication_response import (
-    CalendarEntry,
-    DayCount,
-)
+from backend.schemas.publications.publication_response import DayCount
 from backend.schemas.publications.publishing import (
     EditPublishedRequest,
     PublishResult,
@@ -111,24 +107,6 @@ class PublicationService:
         return await self.updater.reschedule_publication(publication, new_time)
 
     # ── Calendar ──
-
-    async def get_calendar(
-        self,
-        year: int,
-        month: int,
-        tz_str: str = "UTC",
-        owner_id: Optional[int] = None,
-    ) -> List[CalendarEntry]:
-        publications = await self.calendar.get_calendar(year, month, owner_id)
-        tz = pytz.timezone(tz_str)
-        grouped: dict[str, list] = {}
-        for pub in publications:
-            key = pub.scheduled_time.astimezone(tz).strftime("%Y-%m-%d")
-            grouped.setdefault(key, []).append(pub)
-        return [
-            CalendarEntry(date=date_str, publications=pubs)
-            for date_str, pubs in grouped.items()
-        ]
 
     async def get_day_counts(
         self,

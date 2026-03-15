@@ -23,7 +23,6 @@ celery_state = {"factory": None}
 
 
 def CelerySessionLocal() -> AsyncSession:
-    """Return a new AsyncSession for Celery (single-threaded)."""
     if celery_state["factory"] is None:
         celery_engine = create_async_engine(
             DATABASE_URL,
