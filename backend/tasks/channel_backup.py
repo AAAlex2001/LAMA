@@ -4,9 +4,9 @@
 поэтому отдельный polling отключён.
 """
 
-from backend.database import AsyncSessionLocal
+from backend.database import CelerySessionLocal
 
 
 async def process_instant_backups():
-    async with AsyncSessionLocal():
+    async with CelerySessionLocal():
         return

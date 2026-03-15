@@ -55,7 +55,7 @@ class RateLimitedBot:
 
     async def send_media_group(self, chat_id: Union[int, str], media: list, **kwargs) -> list:
         """Отправить медиагруппу (альбом)"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), weight=1):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), weight=len(media)):
             return await self.bot.send_media_group(chat_id=chat_id, media=media, **kwargs)
 
     async def delete_message(self, chat_id: Union[int, str], message_id: int, **kwargs) -> bool:

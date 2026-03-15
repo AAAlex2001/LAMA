@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 from fastapi import HTTPException
-from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramNotFound
+from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError, TelegramNotFound, TelegramRetryAfter
 from backend.services.publications.telegram_sender import send_to_telegram
 from typing import Callable, Awaitable, Optional, List
 from sqlalchemy import select
@@ -149,12 +150,28 @@ class SeriesService:
                         channel.id,
                     )
 
-                if reply_to_id and series.reply_to_previous:
-                    sent_messages = await send_to_telegram(
-                        publication, channel, bot, reply_to_message_id=reply_to_id,
-                    )
-                else:
-                    sent_messages = await send_to_telegram(publication, channel, bot)
+                sent_messages = None
+                for attempt in range(5):
+                    try:
+                        if reply_to_id and series.reply_to_previous:
+                            sent_messages = await send_to_telegram(
+                                publication, channel, bot, reply_to_message_id=reply_to_id,
+                            )
+                        else:
+                            sent_messages = await send_to_telegram(publication, channel, bot)
+                        break
+                    except TelegramRetryAfter as e:
+                        if attempt < 4:
+                            logger.warning(
+                                "Series RetryAfter for %s: %ss, attempt %s/5",
+                                channel_name, e.retry_after, attempt + 1,
+                            )
+                            await asyncio.sleep(e.retry_after)
+                        else:
+                            raise
+
+                if not sent_messages:
+                    raise RuntimeError("Failed to send after 5 attempts")
 
                 message_ids = [msg.message_id for msg in sent_messages]
                 self.db.add_all([

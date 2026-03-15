@@ -9,15 +9,35 @@ from backend.models.base import Base
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost:5432/publications_db")
 
 engine = create_async_engine(
-    DATABASE_URL, 
+    DATABASE_URL,
     echo=False,
-    pool_pre_ping=True, 
-    pool_size=100,
-    max_overflow=50,
+    pool_pre_ping=True,
+    pool_size=20,
+    max_overflow=30,
     pool_timeout=60,
-    pool_recycle=1800
+    pool_recycle=1800,
 )
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+celery_state = {"factory": None}
+
+
+def CelerySessionLocal() -> AsyncSession:
+    """Return a new AsyncSession for Celery (single-threaded)."""
+    if celery_state["factory"] is None:
+        celery_engine = create_async_engine(
+            DATABASE_URL,
+            echo=False,
+            pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=5,
+            pool_timeout=60,
+            pool_recycle=1800,
+        )
+        celery_state["factory"] = async_sessionmaker(
+            celery_engine, class_=AsyncSession, expire_on_commit=False
+        )
+    return celery_state["factory"]()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
