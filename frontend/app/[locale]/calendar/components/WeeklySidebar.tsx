@@ -3,7 +3,7 @@
 import React from 'react';
 import DatePicker from '@/components/date-picker/date-picker';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
 import {
   formatDayTitle,
   formatTime,
@@ -109,7 +109,11 @@ export default function WeeklySidebar({
                     onClick={() => onEdit(post)}
                   >
                     <div className={styles.postIcon}>
-                      {isPublished ? <CalendarSidebarSentIcon /> : <CalendarSidebarPostIcon />}
+                      {post.status === 'draft' ? (
+                        <CalendarDraftIcon width={14} height={14} />
+                      ) : (
+                        <CalendarDocPostIcon width={16} height={16} />
+                      )}
                     </div>
                     <span className={styles.postTime}>{time}</span>
                     <span className={styles.postPreview}>

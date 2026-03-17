@@ -31,7 +31,7 @@ export const fetchMoreListPosts = createAsyncThunk<
       if (s.listStatusFilter) params.set('status', s.listStatusFilter);
     }
 
-    const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+    const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const merged = mergeUniqueById(s.items, res.items);
     return { items: merged, page: nextPage, hasMore: res.items.length === pageSize };
   },
@@ -60,7 +60,7 @@ export const fetchMoreDayPosts = createAsyncThunk<
       start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
     });
 
-    const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+    const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const current = s.weekItems[dateKey] || [];
     const merged = mergeUniqueById(current, res.items);
     return { dateKey, items: merged, page: nextPage, hasMore: res.items.length === pageSize };

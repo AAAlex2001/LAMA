@@ -110,13 +110,13 @@ export default function CalendarPageConnected() {
 
   const { data: allTags } = useQuery({
     queryKey: ['calendar-all-tags'],
-    queryFn: () => apiRequest<TagsResponse>('/publications/tags/?page=1&page_size=200'),
+    queryFn: () => apiRequest<TagsResponse>('/publications/tags/?page=1&page_size=50'),
     staleTime: Infinity,
   });
 
   const { data: allChannels } = useQuery({
     queryKey: ['calendar-all-channels'],
-    queryFn: () => apiRequest<ChannelsResponse>('/channels?page=1&page_size=200'),
+    queryFn: () => apiRequest<ChannelsResponse>('/channels/?page=1&page_size=200'),
     staleTime: Infinity,
   });
 

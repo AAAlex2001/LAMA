@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
 import {
   formatTime,
   getPreviewText,
@@ -77,6 +77,11 @@ export default function CalendarSidebar({
                     className={styles.postRow}
                     onClick={() => onEdit(post)}
                   >
+                    {post.status === 'draft' ? (
+                      <CalendarDraftIcon width={14} height={14} />
+                    ) : (
+                      <CalendarDocPostIcon width={16} height={16} />
+                    )}
                     <span className={styles.postTime}>{time}</span>
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { CalendarDocPostIcon, CalendarBotMessageIcon, CalendarDraftIcon, CalendarRepeatIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import Loader from '@/components/loader';
 import {
@@ -58,7 +58,6 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
         <div className={styles.headerRow}>
           <div className={listMode ? styles.timeBlockList : styles.timeBlock}>
             {!listMode && (
-              post.status === 'published' ? <CalendarBotMessageIcon width={16} height={16} /> :
               post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
               <CalendarDocPostIcon width={16} height={16} />
             )}
@@ -66,7 +65,6 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
           </div>
           <div className={listMode ? styles.statusIconsOnly : styles.statusBlock}>
             {listMode && (
-              post.status === 'published' ? <CalendarBotMessageIcon width={16} height={16} /> :
               post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
               <CalendarDocPostIcon width={16} height={16} />
             )}

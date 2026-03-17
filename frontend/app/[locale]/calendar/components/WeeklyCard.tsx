@@ -3,7 +3,6 @@
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import {
   CalendarDocPostIcon,
-  CalendarBotMessageIcon,
   CalendarDraftIcon,
   CalendarRepeatIcon,
   CalendarReactionsIcon,
@@ -42,9 +41,7 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
       <div className={styles.headerRow}>
         <span className={styles.time}>{time}</span>
         <div className={styles.icons}>
-          {isPublished ? (
-            <CalendarBotMessageIcon width={14} height={14} />
-          ) : isDraft ? (
+          {isDraft ? (
             <CalendarDraftIcon width={14} height={14} />
           ) : (
             <CalendarDocPostIcon width={14} height={14} />

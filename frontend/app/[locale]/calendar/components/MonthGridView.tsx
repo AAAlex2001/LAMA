@@ -3,10 +3,7 @@
 import React from 'react';
 import {
   CalendarDocPostIcon,
-  CalendarBotMessageIcon,
   CalendarDraftIcon,
-  CalendarReactionsIcon,
-  CalendarViewsIcon,
 } from '@/components/icons';
 import type { DayStatusCount } from '../store';
 import {
@@ -114,20 +111,12 @@ export default function MonthGridView({
 
                   {total > 0 && sc && (
                     <div className={styles.statsBlock}>
-                      {(sc.scheduled > 0 || sc.published > 0) && (
+                      {(sc.scheduled + sc.published) > 0 && (
                         <div className={styles.statsRow}>
-                          {sc.scheduled > 0 && (
-                            <div className={styles.statItem}>
-                              <CalendarDocPostIcon width={12} height={12} />
-                              <span className={styles.statValueBlue}>{sc.scheduled}</span>
-                            </div>
-                          )}
-                          {sc.published > 0 && (
-                            <div className={`${styles.statItem} ${styles.statItemRight}`}>
-                              <span className={styles.statValueGreen}>{sc.published}</span>
-                              <CalendarBotMessageIcon width={12} height={12} />
-                            </div>
-                          )}
+                          <div className={styles.statItem}>
+                            <CalendarDocPostIcon width={12} height={12} />
+                            <span className={styles.statValueBlue}>{sc.scheduled + sc.published}</span>
+                          </div>
                         </div>
                       )}
                       {sc.draft > 0 && (

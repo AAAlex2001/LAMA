@@ -83,6 +83,10 @@ export default function CalendarMainContent({
             />
             <MonthlySidebar
               sidebarDate={sidebarDate}
+              weekItems={weekItems}
+              dayLoadingMap={dayLoadingMap}
+              dayHasMoreMap={dayHasMoreMap}
+              onLoadMoreDay={onLoadMoreDay}
               onEdit={onEdit}
             />
           </div>

@@ -4,9 +4,8 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarBotMessageIcon, CalendarDraftIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
   formatDayTitle,
@@ -20,94 +19,36 @@ import styles from './monthly-sidebar.module.scss';
 
 interface MonthlySidebarProps {
   sidebarDate: Date;
+  weekItems: Record<string, Draft[]>;
+  dayLoadingMap: Record<string, boolean>;
+  dayHasMoreMap: Record<string, boolean>;
+  onLoadMoreDay: (dateKey: string) => void;
   onEdit: (post: Draft) => void;
 }
 
 export default function MonthlySidebar({
   sidebarDate,
+  weekItems,
+  dayLoadingMap,
+  dayHasMoreMap,
+  onLoadMoreDay,
   onEdit,
 }: MonthlySidebarProps) {
   const router = useRouter();
-  const cacheRef = React.useRef<Record<string, { items: Draft[]; page: number; hasMore: boolean }>>({});
-  const [posts, setPosts] = React.useState<Draft[]>([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
-  const [page, setPage] = React.useState(1);
-  const [hasMore, setHasMore] = React.useState(false);
-  const pageSize = 20;
 
   const dateKey = formatDateOnly(sidebarDate);
   const dayTitle = formatDayTitle(sidebarDate);
+  const posts = weekItems[dateKey] || [];
+  const isDayLoading = !!dayLoadingMap[dateKey];
+  const hasDayMore = !!dayHasMoreMap[dateKey];
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0, skip: isLoadingMore || !hasMore });
-
-  async function loadDayPosts(targetPage: number, append: boolean) {
-    const params = new URLSearchParams({
-      page: String(targetPage),
-      page_size: String(pageSize),
-      start_date: `${dateKey}T00:00:00`,
-      end_date: `${dateKey}T23:59:59`,
-      sort_order: 'desc',
-    });
-
-    const response = await apiRequest<{ items: Draft[] }>(`/publications?${params}`);
-    const loaded = response.items || [];
-    setPosts((prev) => {
-      const next = append ? [...prev, ...loaded] : loaded;
-      cacheRef.current[dateKey] = {
-        items: next,
-        page: targetPage,
-        hasMore: loaded.length === pageSize,
-      };
-      return next;
-    });
-    setPage(targetPage);
-    setHasMore(loaded.length === pageSize);
-  }
+  const { ref: sentinelRef, inView } = useInView({ threshold: 0, skip: isDayLoading || !hasDayMore });
 
   React.useEffect(() => {
-    let isActive = true;
-
-    const cached = cacheRef.current[dateKey];
-    if (cached) {
-      setPosts(cached.items);
-      setPage(cached.page);
-      setHasMore(cached.hasMore);
-      setIsLoading(false);
-      setIsLoadingMore(false);
-      return () => {
-        isActive = false;
-      };
+    if (inView && hasDayMore && !isDayLoading) {
+      onLoadMoreDay(dateKey);
     }
-
-    setIsLoading(true);
-    setIsLoadingMore(false);
-    setPosts([]);
-    setPage(1);
-    setHasMore(false);
-
-    loadDayPosts(1, false)
-      .catch(() => {
-        if (!isActive) return;
-        setPosts([]);
-        setHasMore(false);
-      })
-      .finally(() => {
-        if (isActive) setIsLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [dateKey]);
-
-  React.useEffect(() => {
-    if (!inView || !hasMore || isLoadingMore || isLoading) return;
-
-    setIsLoadingMore(true);
-    loadDayPosts(page + 1, true)
-      .finally(() => setIsLoadingMore(false));
-  }, [inView, hasMore, isLoadingMore, isLoading, page, dateKey]);
+  }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dateKey]);
 
   return (
     <div className={styles.sidebar}>
@@ -127,7 +68,7 @@ export default function MonthlySidebar({
       <div className={styles.postsSection}>
         <div className={styles.postsList}>
           <div className={styles.postsInner}>
-            {isLoading ? (
+            {isDayLoading && posts.length === 0 ? (
               <div className={styles.dayLoader}>
                 <Loader size={20} color="blue" />
               </div>
@@ -137,7 +78,6 @@ export default function MonthlySidebar({
               posts.map((post) => {
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
-                const isPublished = post.status === 'published';
 
                 return (
                   <div
@@ -146,9 +86,7 @@ export default function MonthlySidebar({
                     onClick={() => onEdit(post)}
                   >
                     <div className={styles.postIcon}>
-                      {isPublished ? (
-                        <CalendarBotMessageIcon width={16} height={16} />
-                      ) : post.status === 'draft' ? (
+                      {post.status === 'draft' ? (
                         <CalendarDraftIcon width={14} height={14} />
                       ) : (
                         <CalendarDocPostIcon width={16} height={16} />
@@ -163,13 +101,13 @@ export default function MonthlySidebar({
               })
             )}
 
-            {isLoadingMore && (
+            {isDayLoading && posts.length > 0 && (
               <div className={styles.dayLoader}>
                 <Loader size={16} color="blue" />
               </div>
             )}
 
-            {hasMore && !isLoadingMore && !isLoading && (
+            {hasDayMore && !isDayLoading && (
               <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}
           </div>

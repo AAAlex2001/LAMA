@@ -44,7 +44,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
         start_date: `${dayKey}T00:00:00`, end_date: `${dayKey}T23:59:59`,
         sort_order: 'asc',
       });
-      const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+      const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
       const results: GridDayResult[] = [
         { dateKey: dayKey, items: res.items, hasMore: res.items.length === pageSize },
       ];
@@ -60,7 +60,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
             page: '1', page_size: String(pageSize),
             start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
           });
-          const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+          const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
           return { dateKey, items: res.items, hasMore: res.items.length === pageSize };
         }),
       );
@@ -87,7 +87,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       if (s.listStatusFilter) params.set('status', s.listStatusFilter);
     }
 
-    const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+    const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const rangeKey = view === 'list' && s.listRangeStart && s.listRangeEnd
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;

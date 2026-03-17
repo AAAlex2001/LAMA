@@ -11,12 +11,15 @@ from backend.models.publications import (
     ContentType as DBContentType,
     Publication,
     PublicationStatus as DBPublicationStatus,
+    RepeatInterval as DBRepeatInterval,
     Tag,
     TelegramMessage,
     publication_channels,
     publication_tags,
 )
 from backend.schemas.publications.enums import ContentType, PublicationStatus
+from backend.services.publications.calendar_service import fast_forward_to, strip_tz
+from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 
 PUB_COMPACT_COLUMNS = [
     Publication.id,
@@ -135,7 +138,68 @@ class PublicationQueryService:
         )
 
         result = await self.db.execute(query)
-        return list(result.scalars().all())
+        posts = list(result.scalars().all())
+
+        if start_date and end_date and owner_id:
+            posts = await self.merge_repeating(posts, start_date, end_date, owner_id)
+
+        return posts
+
+    async def merge_repeating(
+        self,
+        posts: List[Publication],
+        start_date: datetime,
+        end_date: datetime,
+        owner_id: int,
+    ) -> List[Publication]:
+        """Подтягивает повторяющиеся посты, проецирующиеся на диапазон."""
+        existing_ids = {p.id for p in posts}
+
+        query = (
+            select(Publication)
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.repeat_interval != DBRepeatInterval.NEVER,
+                Publication.status.in_([
+                    DBPublicationStatus.PUBLISHED,
+                    DBPublicationStatus.PARTIAL_SUCCESS,
+                ]),
+                Publication.next_repeat_time.isnot(None),
+                Publication.id.notin_(existing_ids) if existing_ids else True,
+            )
+            .options(
+                selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
+                selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
+            )
+        )
+        result = await self.db.execute(query)
+        repeating_pubs = list(result.scalars().all())
+
+        naive_start = strip_tz(start_date)
+        naive_end = strip_tz(end_date)
+
+        for pub in repeating_pubs:
+            current = fast_forward_to(
+                pub.next_repeat_time, naive_start,
+                pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
+            )
+            if current is None:
+                continue
+
+            while current and current <= naive_end:
+                if current >= naive_start:
+                    posts.append(pub)
+                    break
+                current = calculate_next_repeat_time(
+                    current, pub.repeat_interval,
+                    pub.repeat_custom_days, pub.repeat_custom_hours,
+                    pub.repeat_end_time, pub.repeat_custom_unit,
+                    pub.repeat_custom_value, pub.repeat_weekdays,
+                    pub.repeat_month_days, pub.repeat_year_month,
+                    pub.repeat_year_days,
+                )
+
+        return posts
 
     def apply_filters(self, id_query, status, content_type, channel_id,
                        tag_names, tag_ids, series_id, start_date, end_date,

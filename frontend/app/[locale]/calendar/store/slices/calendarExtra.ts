@@ -6,7 +6,14 @@ import { fetchCalendarData, fetchMoreListPosts, fetchMoreDayPosts, fetchDayCount
 export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarState>) {
   builder
     .addCase(fetchCalendarData.pending, (state) => {
-      if (state.currentView === 'month' && Object.keys(state.weekItems).length > 0) {
+      if (state.currentView === 'month') {
+        const dayKey = state.sidebarDate;
+        if (!state.weekItems[dayKey] || state.weekItems[dayKey].length === 0) {
+          state.dayPageState[dayKey] = { page: 1, hasMore: false, isLoading: true };
+        }
+        if (Object.keys(state.weekItems).length === 0) {
+          state.isLoading = true;
+        }
         return;
       }
       state.isLoading = true;
