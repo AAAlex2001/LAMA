@@ -14,6 +14,7 @@ import {
   VideoIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
+import { CalendarBotMessageIcon } from '@/components/icons';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
 import { useInView } from '../store/useInView';
@@ -43,6 +44,8 @@ interface ListCalendarViewProps {
   onDateSortChange: (order: 'asc' | 'desc' | null) => void;
   onStatusFilterChange: (status: string | null) => void;
   mobileActiveFilters?: Record<string, string[]>;
+  allChannels?: Array<{ id: number; title: string }>;
+  allTags?: Array<{ id: number; name: string; color?: string }>;
 }
 
 function MediaIcons({ post }: { post: Draft }) {
@@ -72,23 +75,59 @@ export default function ListCalendarView({
   onDateSortChange,
   onStatusFilterChange,
   mobileActiveFilters,
+  allChannels,
+  allTags,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const loadingRef = React.useRef(isLoadingMore);
+  loadingRef.current = isLoadingMore;
+  const hasMoreRef = React.useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const onLoadMoreRef = React.useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  const { ref: sentinelRef, inView } = useInView({
+    root: scrollRoot,
+    rootMargin: '0px 0px 400px 0px',
+    threshold: 0,
+    skip: !hasMore || !scrollRoot,
+  });
 
   React.useEffect(() => {
-    if (inView && hasMore && !isLoadingMore && onLoadMore) {
-      onLoadMore();
+    if (inView && hasMoreRef.current && !loadingRef.current) {
+      onLoadMoreRef.current?.();
     }
-  }, [inView, hasMore, isLoadingMore, onLoadMore]);
+  }, [inView]);
+
+  React.useEffect(() => {
+    if (!isLoadingMore && inView && hasMore) {
+      const id = setTimeout(() => {
+        if (hasMoreRef.current && !loadingRef.current) {
+          onLoadMoreRef.current?.();
+        }
+      }, 100);
+      return () => clearTimeout(id);
+    }
+  }, [isLoadingMore, hasMore]);
 
   const filterConfigs = buildFilterConfigs(posts, {
     withDateSort: true,
     withStatusFilter: true,
     withStatsFilters: true,
+    allChannels,
+    allTags,
   });
-  const filteredPosts = applyPostFilters(posts, activeFilters, mobileActiveFilters);
+  let filteredPosts = applyPostFilters(posts, activeFilters, mobileActiveFilters);
+
+  const dateSort = activeFilters['date']?.[0];
+  if (dateSort) {
+    const dir = dateSort === 'new' ? -1 : 1;
+    filteredPosts = [...filteredPosts].sort(
+      (a, b) => dir * (new Date(getSourceDate(a)).getTime() - new Date(getSourceDate(b)).getTime()),
+    );
+  }
 
   React.useEffect(() => {
     setActiveFilters((prev) => ({ ...prev, date: dateSortOrder ? [dateSortOrder === 'desc' ? 'new' : 'old'] : [] }));
@@ -157,7 +196,7 @@ export default function ListCalendarView({
         <div className={styles.empty}>Нет публикаций в этом периоде</div>
       ) : (
 
-      <div className={styles.scrollContainer}>
+      <div className={styles.scrollContainer} ref={setScrollRoot}>
         <div className={styles.desktopList}>
           {filteredPosts.map((post) => {
             const sourceDate = getSourceDate(post);
@@ -193,7 +232,9 @@ export default function ListCalendarView({
 
                 <div className={styles.mainBlock}>
                   <span className={styles.channelTitle}>
-                    {channel?.title || 'Канал'}{extraChannelsCount > 0 ? ` +${extraChannelsCount}` : ''}
+                    {post.is_bot_message
+                      ? `@${post.bot_username}`
+                      : `${channel?.title || 'Канал'}${extraChannelsCount > 0 ? ` +${extraChannelsCount}` : ''}`}
                   </span>
                   <span className={styles.preview}>{preview || '(без текста)'}</span>
                 </div>
@@ -201,8 +242,9 @@ export default function ListCalendarView({
                 <MediaIcons post={post} />
 
                 <div className={styles.statusBlock}>
+                  {post.is_bot_message && <CalendarBotMessageIcon width={14} height={14} />}
                   <span className={styles.status}>{getStatusLabel(post.status)}</span>
-                  {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} color="#B0B4B8" />}
+                  {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} color="#3B82F6" />}
                 </div>
 
                 <div className={styles.stats}>

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
   formatDayTitle,
@@ -14,6 +14,7 @@ import {
   getSourceDate,
   formatDateOnly,
   buildCreatePostUrl,
+  hasRepeat,
 } from '../utils/calendar-helpers';
 import styles from './monthly-sidebar.module.scss';
 
@@ -42,13 +43,39 @@ export default function MonthlySidebar({
   const isDayLoading = !!dayLoadingMap[dateKey];
   const hasDayMore = !!dayHasMoreMap[dateKey];
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0, skip: isDayLoading || !hasDayMore });
+  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const loadingRef = React.useRef(isDayLoading);
+  loadingRef.current = isDayLoading;
+  const hasMoreRef = React.useRef(hasDayMore);
+  hasMoreRef.current = hasDayMore;
+  const onLoadRef = React.useRef(onLoadMoreDay);
+  onLoadRef.current = onLoadMoreDay;
+  const dayKeyRef = React.useRef(dateKey);
+  dayKeyRef.current = dateKey;
+
+  const { ref: sentinelRef, inView } = useInView({
+    root: scrollRoot,
+    rootMargin: '0px 0px 200px 0px',
+    threshold: 0,
+    skip: !hasDayMore || !scrollRoot,
+  });
 
   React.useEffect(() => {
-    if (inView && hasDayMore && !isDayLoading) {
-      onLoadMoreDay(dateKey);
+    if (inView && hasMoreRef.current && !loadingRef.current) {
+      onLoadRef.current(dayKeyRef.current);
     }
-  }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dateKey]);
+  }, [inView]);
+
+  React.useEffect(() => {
+    if (!isDayLoading && inView && hasDayMore) {
+      const id = setTimeout(() => {
+        if (hasMoreRef.current && !loadingRef.current) {
+          onLoadRef.current(dayKeyRef.current);
+        }
+      }, 100);
+      return () => clearTimeout(id);
+    }
+  }, [isDayLoading, hasDayMore]);
 
   return (
     <div className={styles.sidebar}>
@@ -66,7 +93,7 @@ export default function MonthlySidebar({
       </div>
 
       <div className={styles.postsSection}>
-        <div className={styles.postsList}>
+        <div className={styles.postsList} ref={setScrollRoot}>
           <div className={styles.postsInner}>
             {isDayLoading && posts.length === 0 ? (
               <div className={styles.dayLoader}>
@@ -86,7 +113,9 @@ export default function MonthlySidebar({
                     onClick={() => onEdit(post)}
                   >
                     <div className={styles.postIcon}>
-                      {post.status === 'draft' ? (
+                      {post.is_bot_message ? (
+                        <CalendarBotMessageIcon width={14} height={14} />
+                      ) : post.status === 'draft' ? (
                         <CalendarDraftIcon width={14} height={14} />
                       ) : (
                         <CalendarDocPostIcon width={16} height={16} />
@@ -96,6 +125,7 @@ export default function MonthlySidebar({
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}
                     </span>
+                    {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                   </div>
                 );
               })

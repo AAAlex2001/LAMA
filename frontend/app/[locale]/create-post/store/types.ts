@@ -195,12 +195,28 @@ export interface Draft {
   views?: number;
   reactions_count?: number;
   likes_count?: number;
+  is_bot_message?: boolean;
+  bot_username?: string;
+  bot_total_chats?: number;
+  bot_success_chats?: number;
+}
+
+export interface BotMessageCompact {
+  id: number;
+  name: string;
+  text_content?: string;
+  media_url?: string;
+  bot_username: string;
+  sent_at: string;
+  total_chats: number;
+  success_chats: number;
 }
 
 export interface DraftListResponse {
   items: Draft[];
   page: number;
   page_size: number;
+  bot_messages?: BotMessageCompact[];
 }
 
 export interface TextTemplate {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import Loader from '@/components/loader';
 import {
@@ -31,6 +31,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
   const previewText = getPreviewText(post);
   const thumbnail = getThumbnail(post);
   const isRepeating = hasRepeat(post);
+  const isBotMessage = post.is_bot_message === true;
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -58,20 +59,25 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
         <div className={styles.headerRow}>
           <div className={listMode ? styles.timeBlockList : styles.timeBlock}>
             {!listMode && (
-              post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
-              <CalendarDocPostIcon width={16} height={16} />
+              <>
+                {isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
+                post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
+                <CalendarDocPostIcon width={16} height={16} />}
+                {isRepeating && <CalendarRepeatIcon width={14} height={14} />}
+              </>
             )}
             <span className={listMode ? styles.timeList : styles.time}>{listMode ? date : time}</span>
           </div>
           <div className={listMode ? styles.statusIconsOnly : styles.statusBlock}>
             {listMode && (
-              post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
-              <CalendarDocPostIcon width={16} height={16} />
+              <>
+                {isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
+                post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
+                <CalendarDocPostIcon width={16} height={16} />}
+                {isRepeating && <CalendarRepeatIcon width={16} height={16} />}
+              </>
             )}
             {!listMode && <span className={styles.statusText}>{getStatusLabel(post.status)}</span>}
-            {isRepeating && (
-              <CalendarRepeatIcon width={listMode ? 16 : 14} height={listMode ? 16 : 14} color={listMode ? '#3B82F6' : '#B0B4B8'} />
-            )}
           </div>
         </div>
 
@@ -128,7 +134,9 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
 
       <div className={styles.bottomSection}>
         <div className={styles.channelInfo}>
-          {channel && (
+          {isBotMessage ? (
+            <span className={styles.channelName}>@{post.bot_username}</span>
+          ) : channel ? (
             <>
               {channel.photo_url && (
                 <img
@@ -142,7 +150,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
                 <span className={styles.channelExtra}>+{extraChannelsCount}</span>
               )}
             </>
-          )}
+          ) : null}
         </div>
         <DraftContentIcons draft={post} />
       </div>

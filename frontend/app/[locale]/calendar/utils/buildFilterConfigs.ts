@@ -37,7 +37,7 @@ export function buildFilterConfigs(posts: Draft[], opts: FilterConfigOptions = {
   }
   if (opts.withStatusFilter) {
     configs.push({ key: 'status', label: 'По статусу', multiSelect: false, options:
-      ['draft', 'scheduled', 'publishing', 'published', 'partial_success', 'failed', 'deleted']
+      ['draft', 'scheduled', 'published', 'partial_success', 'failed', 'deleted']
         .map((s) => ({ value: s, label: getStatusLabel(s) })),
     });
   }

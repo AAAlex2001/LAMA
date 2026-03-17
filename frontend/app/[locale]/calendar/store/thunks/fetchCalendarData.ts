@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { DraftListResponse, Draft } from '@/app/[locale]/create-post/store/types';
+import type { DraftListResponse, Draft, BotMessageCompact } from '@/app/[locale]/create-post/store/types';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calendar-helpers';
@@ -7,6 +7,7 @@ import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calen
 interface WeekBatchDay {
   items: Draft[];
   has_more: boolean;
+  bot_messages?: BotMessageCompact[];
 }
 
 interface WeekBatchResponse {
@@ -28,6 +29,25 @@ type CalendarRequestMeta = {
 type FetchDataResult =
   | { type: 'grid'; merge?: boolean; keys: string[]; results: GridDayResult[]; request: CalendarRequestMeta }
   | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string; request: CalendarRequestMeta };
+
+function botMessageToDraft(msg: BotMessageCompact): Draft {
+  return {
+    id: -msg.id,
+    content_type: msg.media_url ? 'text_with_media' : 'text',
+    status: 'published',
+    text_content: msg.text_content || msg.name,
+    media_urls: msg.media_url ? [msg.media_url] : undefined,
+    created_at: msg.sent_at,
+    updated_at: msg.sent_at,
+    scheduled_time: msg.sent_at,
+    channels: [],
+    tags: [],
+    is_bot_message: true,
+    bot_username: msg.bot_username,
+    bot_total_chats: msg.total_chats,
+    bot_success_chats: msg.success_chats,
+  };
+}
 
 export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state: RootState }>(
   'calendar/fetchData',
@@ -54,8 +74,12 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
         sort_order: 'asc',
       });
       const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
+      const allItems = [
+        ...res.items,
+        ...(res.bot_messages ?? []).map(botMessageToDraft),
+      ];
       const results: GridDayResult[] = [
-        { dateKey: dayKey, items: res.items, hasMore: res.items.length === pageSize },
+        { dateKey: dayKey, items: allItems, hasMore: res.items.length === pageSize },
       ];
       return { type: 'grid', merge: true, keys: [dayKey], results, request };
     }
@@ -71,9 +95,11 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
       const results: GridDayResult[] = keys.map((dateKey) => {
         const day = res.days[dateKey];
+        const pubItems = day?.items ?? [];
+        const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
         return {
           dateKey,
-          items: day?.items ?? [],
+          items: [...pubItems, ...botItems],
           hasMore: day?.has_more ?? false,
         };
       });
@@ -105,6 +131,11 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;
 
-    return { type: 'list', items: res.items, hasMore: res.items.length === pageSize, rangeKey, request };
+    const allItems = [
+      ...res.items,
+      ...(res.bot_messages ?? []).map(botMessageToDraft),
+    ];
+
+    return { type: 'list', items: allItems, hasMore: res.items.length === pageSize, rangeKey, request };
   },
 );

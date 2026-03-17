@@ -5,13 +5,15 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
+import { useScrollContainer } from '@/components/app-layout';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
   formatTime,
   getSourceDate,
   getPreviewText,
   formatDateOnly,
+  hasRepeat,
 } from '../utils/calendar-helpers';
 import styles from './month-calendar-view.module.scss';
 
@@ -28,13 +30,6 @@ interface MonthCalendarViewProps {
   onLoadMoreDay: (dateKey: string) => void;
   dayLoadingMap: Record<string, boolean>;
   dayHasMoreMap: Record<string, boolean>;
-}
-
-function PostStatusIcon({ status }: { status: string }) {
-  if (status === 'draft') {
-    return <CalendarDraftIcon width={14} height={14} />;
-  }
-  return <CalendarDocPostIcon width={16} height={16} />;
 }
 
 export default function MonthCalendarView({
@@ -56,16 +51,39 @@ export default function MonthCalendarView({
   const isDayLoading = !!dayLoadingMap[dayKey];
   const hasDayMore = !!dayHasMoreMap[dayKey];
 
+  const scrollContainer = useScrollContainer();
+  const loadingRef = React.useRef(isDayLoading);
+  loadingRef.current = isDayLoading;
+  const hasMoreRef = React.useRef(hasDayMore);
+  hasMoreRef.current = hasDayMore;
+  const onLoadRef = React.useRef(onLoadMoreDay);
+  onLoadRef.current = onLoadMoreDay;
+  const dayKeyRef = React.useRef(dayKey);
+  dayKeyRef.current = dayKey;
+
   const { ref: sentinelRef, inView } = useInView({
+    root: scrollContainer,
+    rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore || isDayLoading,
+    skip: !hasDayMore,
   });
 
   React.useEffect(() => {
-    if (inView && hasDayMore && !isDayLoading) {
-      onLoadMoreDay(dayKey);
+    if (inView && hasMoreRef.current && !loadingRef.current) {
+      onLoadRef.current(dayKeyRef.current);
     }
-  }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dayKey]);
+  }, [inView]);
+
+  React.useEffect(() => {
+    if (!isDayLoading && inView && hasDayMore) {
+      const id = setTimeout(() => {
+        if (hasMoreRef.current && !loadingRef.current) {
+          onLoadRef.current(dayKeyRef.current);
+        }
+      }, 100);
+      return () => clearTimeout(id);
+    }
+  }, [isDayLoading, hasDayMore]);
 
   return (
     <div className={styles.monthWrap}>
@@ -110,9 +128,16 @@ export default function MonthCalendarView({
                   className={styles.postRow}
                   onClick={() => onEdit(post)}
                 >
-                  <PostStatusIcon status={post.status} />
+                  {post.is_bot_message ? (
+                    <CalendarBotMessageIcon width={14} height={14} />
+                  ) : post.status === 'draft' ? (
+                    <CalendarDraftIcon width={14} height={14} />
+                  ) : (
+                    <CalendarDocPostIcon width={16} height={16} />
+                  )}
                   <span className={styles.postTime}>{time}</span>
                   <span className={styles.postPreview}>{preview || '(без текста)'}</span>
+                  {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                 </div>
               );
             })

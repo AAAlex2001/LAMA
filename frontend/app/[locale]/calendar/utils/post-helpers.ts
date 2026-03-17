@@ -22,7 +22,7 @@ export function getPreviewHtml(post: Draft): string {
 
 export function getStatusLabel(status: string): string {
   const labels: Record<string, string> = {
-    scheduled: 'Запланирован', published: 'Опубликован', publishing: 'Публикуется',
+    scheduled: 'Запланирован', published: 'Опубликован',
     partial_success: 'Частично опубликован', draft: 'Черновик',
     failed: 'Ошибка', deleted: 'Удалён',
   };

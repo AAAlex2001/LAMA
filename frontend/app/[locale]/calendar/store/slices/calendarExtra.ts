@@ -23,7 +23,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       const isStaleResponse =
         request.view !== state.currentView
         || request.selectedDate !== state.selectedDate
-        || request.sidebarDate !== state.sidebarDate
+        || (request.view === 'month' && request.sidebarDate !== state.sidebarDate)
         || request.listRangeStart !== state.listRangeStart
         || request.listRangeEnd !== state.listRangeEnd
         || request.listSortOrder !== state.listSortOrder
