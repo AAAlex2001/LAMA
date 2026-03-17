@@ -119,6 +119,7 @@ class Publication(Base):
         Index('ix_publications_owner_status_scheduled', 'owner_id', 'status', 'scheduled_time'),
         Index('ix_publications_owner_scheduled', 'owner_id', 'scheduled_time'),
         Index('ix_publications_owner_published', 'owner_id', 'published_time'),
+        Index('ix_publications_owner_repeat', 'owner_id', 'repeat_interval', 'next_repeat_time'),
     )
     
     owner = relationship("User", back_populates="publications")

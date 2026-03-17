@@ -4,6 +4,7 @@ from typing import Dict, List, Optional
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import load_only
 
 from backend.models.publications import (
     Publication,
@@ -112,14 +113,31 @@ class CalendarService:
         owner_id: int,
     ) -> Dict[str, int]:
         """Проецирует будущие повторы на даты в диапазоне."""
-        query = select(Publication).where(
-            Publication.owner_id == owner_id,
-            Publication.repeat_interval != DBRepeatInterval.NEVER,
-            Publication.status.in_([
-                DBPublicationStatus.PUBLISHED,
-                DBPublicationStatus.PARTIAL_SUCCESS,
-            ]),
-            Publication.next_repeat_time.isnot(None),
+        query = (
+            select(Publication)
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.repeat_interval != DBRepeatInterval.NEVER,
+                Publication.status.in_([
+                    DBPublicationStatus.PUBLISHED,
+                    DBPublicationStatus.PARTIAL_SUCCESS,
+                ]),
+                Publication.next_repeat_time.isnot(None),
+            )
+            .options(load_only(
+                Publication.id,
+                Publication.next_repeat_time,
+                Publication.repeat_interval,
+                Publication.repeat_custom_days,
+                Publication.repeat_custom_hours,
+                Publication.repeat_end_time,
+                Publication.repeat_custom_unit,
+                Publication.repeat_custom_value,
+                Publication.repeat_weekdays,
+                Publication.repeat_month_days,
+                Publication.repeat_year_month,
+                Publication.repeat_year_days,
+            ))
         )
         result = await self.db.execute(query)
         repeating_pubs = result.scalars().all()

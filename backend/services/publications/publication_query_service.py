@@ -18,6 +18,7 @@ from backend.models.publications import (
     publication_tags,
 )
 from backend.schemas.publications.enums import ContentType, PublicationStatus
+from backend.schemas.publications.publication_response import WeekBatchDay, WeekBatchResponse
 from backend.services.publications.calendar_service import fast_forward_to, strip_tz
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 
@@ -39,6 +40,19 @@ PUB_COMPACT_COLUMNS = [
     Publication.created_at,
     Publication.updated_at,
     Publication.owner_id,
+]
+
+REPEAT_EXTRA_COLUMNS = [
+    Publication.next_repeat_time,
+    Publication.repeat_custom_days,
+    Publication.repeat_custom_hours,
+    Publication.repeat_end_time,
+    Publication.repeat_custom_unit,
+    Publication.repeat_custom_value,
+    Publication.repeat_weekdays,
+    Publication.repeat_month_days,
+    Publication.repeat_year_month,
+    Publication.repeat_year_days,
 ]
 
 CHANNEL_COMPACT_COLUMNS = [
@@ -168,6 +182,7 @@ class PublicationQueryService:
                 Publication.id.notin_(existing_ids) if existing_ids else True,
             )
             .options(
+                load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
                 selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
                 selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
@@ -200,6 +215,92 @@ class PublicationQueryService:
                 )
 
         return posts
+
+    async def get_week_batch(
+        self,
+        owner_id: int,
+        start_date: datetime,
+        end_date: datetime,
+        per_day: int = 20,
+    ) -> WeekBatchResponse:
+        """One query for all days in range, results bucketed by day."""
+        naive_start = strip_tz(start_date)
+        naive_end = strip_tz(end_date)
+
+        query = (
+            select(Publication)
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.scheduled_time >= start_date,
+                Publication.scheduled_time <= end_date,
+            )
+            .options(
+                load_only(*PUB_COMPACT_COLUMNS),
+                selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
+                selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
+            )
+            .order_by(Publication.scheduled_time.asc(), Publication.id.asc())
+            .limit(500)
+        )
+        result = await self.db.execute(query)
+        all_posts = list(result.scalars().all())
+
+        buckets: dict[str, list[Publication]] = {}
+        existing_ids: set[int] = set()
+        for post in all_posts:
+            if post.scheduled_time:
+                day_key = strip_tz(post.scheduled_time).strftime("%Y-%m-%d")
+                buckets.setdefault(day_key, []).append(post)
+                existing_ids.add(post.id)
+
+        repeat_query = (
+            select(Publication)
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.repeat_interval != DBRepeatInterval.NEVER,
+                Publication.status.in_([
+                    DBPublicationStatus.PUBLISHED,
+                    DBPublicationStatus.PARTIAL_SUCCESS,
+                ]),
+                Publication.next_repeat_time.isnot(None),
+                Publication.id.notin_(existing_ids) if existing_ids else True,
+            )
+            .options(
+                load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
+                selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
+                selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
+            )
+        )
+        repeat_result = await self.db.execute(repeat_query)
+        repeating_pubs = list(repeat_result.scalars().all())
+
+        for pub in repeating_pubs:
+            current = fast_forward_to(
+                pub.next_repeat_time, naive_start,
+                pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
+            )
+            if current is None:
+                continue
+            while current and current <= naive_end:
+                if current >= naive_start:
+                    day_key = current.strftime("%Y-%m-%d")
+                    buckets.setdefault(day_key, []).append(pub)
+                current = calculate_next_repeat_time(
+                    current, pub.repeat_interval,
+                    pub.repeat_custom_days, pub.repeat_custom_hours,
+                    pub.repeat_end_time, pub.repeat_custom_unit,
+                    pub.repeat_custom_value, pub.repeat_weekdays,
+                    pub.repeat_month_days, pub.repeat_year_month,
+                    pub.repeat_year_days,
+                )
+
+        days: dict[str, WeekBatchDay] = {}
+        for day_key, posts in buckets.items():
+            days[day_key] = WeekBatchDay(
+                items=posts[:per_day],
+                has_more=len(posts) > per_day,
+            )
+        return WeekBatchResponse(days=days)
 
     def apply_filters(self, id_query, status, content_type, channel_id,
                        tag_names, tag_ids, series_id, start_date, end_date,

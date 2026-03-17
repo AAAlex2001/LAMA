@@ -9,6 +9,7 @@ from backend.schemas.publications.publication_update import PublicationUpdate
 from backend.schemas.publications.publication_response import (
     PublicationResponse,
     PublicationCompactListResponse,
+    WeekBatchResponse,
 )
 from backend.services.publications.publication_create_service import PublicationCreateService
 from backend.services.publications.publication_query_service import PublicationQueryService
@@ -103,6 +104,22 @@ async def get_publications(
         limit=page_size,
     )
     return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
+
+
+@router.get("/week-batch", response_model=WeekBatchResponse)
+async def get_week_batch(
+    start_date: datetime,
+    end_date: datetime,
+    per_day: int = Query(20, ge=1, le=50),
+    query: PublicationQueryService = Depends(get_query_service),
+    current_user: User = Depends(get_current_user),
+):
+    return await query.get_week_batch(
+        owner_id=current_user.id,
+        start_date=start_date,
+        end_date=end_date,
+        per_day=per_day,
+    )
 
 
 @router.get("/{publication_id}", response_model=PublicationResponse)

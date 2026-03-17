@@ -4,6 +4,15 @@ import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calendar-helpers';
 
+interface WeekBatchDay {
+  items: Draft[];
+  has_more: boolean;
+}
+
+interface WeekBatchResponse {
+  days: Record<string, WeekBatchDay>;
+}
+
 type GridDayResult = { dateKey: string; items: Draft[]; hasMore: boolean };
 
 type CalendarRequestMeta = {
@@ -53,17 +62,21 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
 
     if (view === 'week') {
       const keys = getVisibleDayKeys(view, date);
-      const results = await Promise.all(
-        keys.map(async (dateKey): Promise<GridDayResult> => {
-          const pageSize = 20;
-          const params = new URLSearchParams({
-            page: '1', page_size: String(pageSize),
-            start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
-          });
-          const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
-          return { dateKey, items: res.items, hasMore: res.items.length === pageSize };
-        }),
-      );
+      const range = getRangeForView(view, date);
+      const params = new URLSearchParams({
+        start_date: `${range.startDate}T00:00:00`,
+        end_date: `${range.endDate}T23:59:59`,
+        per_day: '20',
+      });
+      const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
+      const results: GridDayResult[] = keys.map((dateKey) => {
+        const day = res.days[dateKey];
+        return {
+          dateKey,
+          items: day?.items ?? [],
+          hasMore: day?.has_more ?? false,
+        };
+      });
       return { type: 'grid', keys, results, request };
     }
 
