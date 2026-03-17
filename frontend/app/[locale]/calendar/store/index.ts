@@ -12,14 +12,14 @@ export type AppDispatch = typeof calendarStore.dispatch;
 
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
-export type { CalendarView, DayPageState, CalendarState } from './slices/calendar';
+export type { CalendarView, DayPageState, DayStatusCount, CalendarState } from './slices/calendar';
 export {
   setSelectedDate, setSidebarDate, setListDateRange, clearListDateRange,
   setCurrentView, setListSortOrder, setListStatusFilter, setCountsMonthAnchor, removeItem,
 } from './slices/calendar';
 export {
   selectSortedPosts, selectSidebarPosts, selectMobilePosts,
-  selectGridPostCounts, selectDayLoadingMap, selectDayHasMoreMap,
+  selectGridPostCounts, selectMonthStatusCounts, selectDayLoadingMap, selectDayHasMoreMap,
   selectSelectedDateObj, selectSidebarDateObj,
   selectListRangeStartObj, selectListRangeEndObj,
   selectIsGridView, selectMobileFilterConfigs,

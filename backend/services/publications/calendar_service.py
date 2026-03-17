@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import (
@@ -45,11 +45,36 @@ class CalendarService:
         if owner_id is not None:
             filters.insert(0, Publication.owner_id == owner_id)
 
+        published_count = func.count(case(
+            (Publication.status.in_([DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]), 1),
+        ))
+        scheduled_count = func.count(case(
+            (Publication.status == DBPublicationStatus.SCHEDULED, 1),
+        ))
+        draft_count = func.count(case(
+            (Publication.status == DBPublicationStatus.DRAFT, 1),
+        ))
+
         query = (
-            select(date_expr.label("day"), func.count().label("cnt"))
+            select(
+                date_expr.label("day"),
+                func.count().label("cnt"),
+                published_count.label("published"),
+                scheduled_count.label("scheduled"),
+                draft_count.label("draft"),
+            )
             .where(and_(*filters))
             .group_by(date_expr)
         )
 
         result = await self.db.execute(query)
-        return [DayCount(date=str(row.day), count=row.cnt) for row in result.all()]
+        return [
+            DayCount(
+                date=str(row.day),
+                count=row.cnt,
+                published=row.published,
+                scheduled=row.scheduled,
+                draft=row.draft,
+            )
+            for row in result.all()
+        ]

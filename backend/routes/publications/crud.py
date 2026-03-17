@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from typing import Optional, List, Literal
 
 from backend.schemas.publications.enums import PublicationStatus, ContentType
@@ -111,10 +111,7 @@ async def get_publication(
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
-    return publication
+    return await query.get_publication_or_404(publication_id, owner_id=current_user.id)
 
 
 @router.put("/{publication_id}", response_model=PublicationResponse)
@@ -125,9 +122,7 @@ async def update_publication(
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     return await updater.update_publication(publication, data, owner_id=current_user.id)
 
 
@@ -139,9 +134,7 @@ async def patch_publication(
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     return await updater.update_publication(publication, data, owner_id=current_user.id)
 
 
@@ -152,7 +145,5 @@ async def delete_publication(
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     await updater.delete_publication(publication)

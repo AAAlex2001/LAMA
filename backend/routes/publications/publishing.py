@@ -27,9 +27,7 @@ async def publish_now(
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     if not publication.channels:
         raise HTTPException(status_code=400, detail="No channels selected")
 
@@ -56,9 +54,7 @@ async def reschedule_publication(
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     return await updater.reschedule_publication(publication, data.scheduled_time)
 
 
@@ -69,9 +65,7 @@ async def edit_published_message(
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     return await message_editor.edit_published_message(
         publication, data, query.db, lambda ch: resolve_for_channel(query.db, ch),
     )
@@ -83,9 +77,7 @@ async def delete_telegram_messages(
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     return await message_editor.delete_telegram_messages(
         publication, query.db, lambda ch: resolve_for_channel(query.db, ch),
     )

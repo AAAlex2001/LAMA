@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
+from fastapi import HTTPException
 from sqlalchemy import and_, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, load_only
@@ -78,6 +79,12 @@ class PublicationQueryService:
             query = query.where(Publication.owner_id == owner_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
+
+    async def get_publication_or_404(self, publication_id: int, owner_id: Optional[int] = None) -> Publication:
+        publication = await self.get_publication(publication_id, owner_id)
+        if not publication:
+            raise HTTPException(status_code=404, detail="Publication not found")
+        return publication
 
     async def get_publications_compact(
         self,

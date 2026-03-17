@@ -6,12 +6,21 @@ interface FilterConfigOptions {
   withDateSort?: boolean;
   withStatusFilter?: boolean;
   withStatsFilters?: boolean;
+  allChannels?: Array<{ id: number; title: string }>;
+  allTags?: Array<{ id: number; name: string; color?: string }>;
 }
 
 export function buildFilterConfigs(posts: Draft[], opts: FilterConfigOptions = {}): FilterConfig[] {
   const channelMap = new Map<string, string>();
   const tagMap = new Map<string, { name: string; color?: string }>();
   const mediaSet = new Set<string>();
+
+  if (opts.allChannels) {
+    opts.allChannels.forEach((ch) => channelMap.set(String(ch.id), ch.title || `Канал ${ch.id}`));
+  }
+  if (opts.allTags) {
+    opts.allTags.forEach((t) => tagMap.set(String(t.id), { name: t.name, color: t.color }));
+  }
 
   posts.forEach((p) => {
     p.channels?.forEach((ch) => channelMap.set(String(ch.id), ch.title || `Канал ${ch.id}`));

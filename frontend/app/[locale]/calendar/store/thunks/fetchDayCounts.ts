@@ -1,17 +1,22 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import type { RootState } from '..';
+import type { DayStatusCount } from '../slices/calendar';
 import { parseDate, formatDateOnly } from '../../utils/calendar-helpers';
 
 type DayCountItem = {
   date: string;
   count: number;
+  published?: number;
+  scheduled?: number;
+  draft?: number;
 };
 
 type DayCountsResult = {
   monthKey: string;
   anchor: string;
   counts: Record<string, number>;
+  statusCounts: Record<string, DayStatusCount>;
 };
 
 export const fetchDayCounts = createAsyncThunk<DayCountsResult, void, { state: RootState }>(
@@ -32,16 +37,25 @@ export const fetchDayCounts = createAsyncThunk<DayCountsResult, void, { state: R
     const res = await apiRequest<{ counts: Record<string, number> | DayCountItem[] }>(
       `/publications/day-counts?${params}`,
     );
+
+    const counts: Record<string, number> = {};
+    const statusCounts: Record<string, DayStatusCount> = {};
+
     if (Array.isArray(res.counts)) {
-      const counts = res.counts.reduce<Record<string, number>>((acc, item) => {
+      for (const item of res.counts) {
         if (item?.date) {
-          acc[item.date] = item.count || 0;
+          counts[item.date] = item.count || 0;
+          statusCounts[item.date] = {
+            published: item.published ?? 0,
+            scheduled: item.scheduled ?? 0,
+            draft: item.draft ?? 0,
+          };
         }
-        return acc;
-      }, {});
-      return { monthKey, anchor: anchorKey, counts };
+      }
+    } else {
+      Object.assign(counts, res.counts);
     }
 
-    return { monthKey, anchor: anchorKey, counts: res.counts };
+    return { monthKey, anchor: anchorKey, counts, statusCounts };
   },
 );

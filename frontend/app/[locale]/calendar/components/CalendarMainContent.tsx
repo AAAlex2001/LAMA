@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { DayStatusCount } from '../store';
 import CalendarList from './CalendarList';
 import CalendarSidebar from './CalendarSidebar';
 import WeeklyCalendarView from './WeeklyCalendarView';
@@ -26,6 +27,7 @@ interface CalendarMainContentProps {
   listSortOrder: 'asc' | 'desc' | null;
   listStatusFilter: string | null;
   gridPostCounts: Record<string, number>;
+  statusCounts: Record<string, DayStatusCount>;
   dayLoadingMap: Record<string, boolean>;
   dayHasMoreMap: Record<string, boolean>;
   onEdit: (post: Draft) => void;
@@ -53,6 +55,7 @@ export default function CalendarMainContent({
   listSortOrder,
   listStatusFilter,
   gridPostCounts,
+  statusCounts,
   dayLoadingMap,
   dayHasMoreMap,
   onEdit,
@@ -75,6 +78,7 @@ export default function CalendarMainContent({
               selectedDate={selectedDate}
               sidebarDate={sidebarDate}
               postCounts={gridPostCounts}
+              statusCounts={statusCounts}
               onDayClick={onSidebarDateChange}
             />
             <MonthlySidebar

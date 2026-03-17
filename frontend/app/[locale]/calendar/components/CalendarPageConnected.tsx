@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import PostPreviewModal from '@/components/post-preview-modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft, TagsResponse, ChannelsResponse } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import CalendarHeader from './CalendarHeader';
 import CalendarMainContent from './CalendarMainContent';
 import CalendarMobilePopup from './CalendarMobilePopup';
@@ -30,7 +31,8 @@ import {
   selectListRangeStartObj,
   selectListRangeEndObj,
   selectIsGridView,
-  selectMobileFilterConfigs,
+  selectSidebarPosts,
+  selectMonthStatusCounts,
   removeItem,
 } from '../store';
 import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts } from '../store/thunks';
@@ -64,7 +66,8 @@ export default function CalendarPageConnected() {
   const dayLoadingMap = useAppSelector(selectDayLoadingMap);
   const dayHasMoreMap = useAppSelector(selectDayHasMoreMap);
   const isGridView = useAppSelector(selectIsGridView);
-  const mobileFilterConfigs = useAppSelector(selectMobileFilterConfigs);
+  const sidebarPosts = useAppSelector(selectSidebarPosts);
+  const monthStatusCounts = useAppSelector(selectMonthStatusCounts);
 
   const [showMobile, setShowMobile] = React.useState(false);
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
@@ -103,6 +106,18 @@ export default function CalendarPageConnected() {
     staleTime: 0,
     gcTime: 0,
     refetchOnMount: 'always',
+  });
+
+  const { data: allTags } = useQuery({
+    queryKey: ['calendar-all-tags'],
+    queryFn: () => apiRequest<TagsResponse>('/publications/tags/?page=1&page_size=200'),
+    staleTime: Infinity,
+  });
+
+  const { data: allChannels } = useQuery({
+    queryKey: ['calendar-all-channels'],
+    queryFn: () => apiRequest<ChannelsResponse>('/channels?page=1&page_size=200'),
+    staleTime: Infinity,
   });
 
   function handleLoadMoreList() {
@@ -152,8 +167,24 @@ export default function CalendarPageConnected() {
         ? Object.values(calendar.weekItems).flat()
         : [] as Draft[];
 
+  const filterOpts = {
+    allChannels: allChannels?.items,
+    allTags: allTags?.items,
+  };
+
   const desktopFilterConfigs =
-    calendar.currentView === 'list' ? [] : buildFilterConfigs(nonListFilterSourcePosts, {});
+    calendar.currentView === 'list' ? [] : buildFilterConfigs(nonListFilterSourcePosts, filterOpts);
+
+  const mobileFilterConfigs = React.useMemo(() => {
+    const isList = calendar.currentView === 'list';
+    const posts = isGridView ? sidebarPosts : sortedPosts;
+    return buildFilterConfigs(posts, {
+      withDateSort: isList,
+      withStatusFilter: isList,
+      withStatsFilters: isList,
+      ...filterOpts,
+    });
+  }, [calendar.currentView, isGridView, sidebarPosts, sortedPosts, allChannels, allTags]);
 
   const filteredSortedPosts =
     calendar.currentView === 'list' ? sortedPosts : applyPostFilters(sortedPosts, mobileActiveFilters);
@@ -283,6 +314,7 @@ export default function CalendarPageConnected() {
           listSortOrder={calendar.listSortOrder}
           listStatusFilter={calendar.listStatusFilter}
           gridPostCounts={gridPostCounts}
+          statusCounts={monthStatusCounts}
           dayLoadingMap={dayLoadingMap}
           dayHasMoreMap={dayHasMoreMap}
           mobileActiveFilters={mobileActiveFilters}

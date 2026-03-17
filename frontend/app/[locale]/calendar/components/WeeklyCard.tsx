@@ -2,8 +2,9 @@
 
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import {
-  PostIcon,
-  CalendarCheckIcon,
+  CalendarDocPostIcon,
+  CalendarBotMessageIcon,
+  CalendarDraftIcon,
   CalendarRepeatIcon,
   CalendarReactionsIcon,
   CalendarViewsIcon,
@@ -27,7 +28,7 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
   const previewText = getPreviewText(post);
   const isRepeating = hasRepeat(post);
   const isPublished = post.status === 'published';
-  const isSent = post.status === 'published';
+  const isDraft = post.status === 'draft';
   const channel = post.channels?.[0];
   const extraChannelsCount = post.channels && post.channels.length > 1
     ? post.channels.length - 1
@@ -41,10 +42,12 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
       <div className={styles.headerRow}>
         <span className={styles.time}>{time}</span>
         <div className={styles.icons}>
-          {isSent ? (
-            <CalendarCheckIcon />
+          {isPublished ? (
+            <CalendarBotMessageIcon width={14} height={14} />
+          ) : isDraft ? (
+            <CalendarDraftIcon width={14} height={14} />
           ) : (
-            <PostIcon width={16} height={16} color="#3B82F6" />
+            <CalendarDocPostIcon width={14} height={14} />
           )}
           {isRepeating && (
             <CalendarRepeatIcon />

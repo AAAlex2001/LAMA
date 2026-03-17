@@ -69,3 +69,6 @@ export { default as PinIcon } from './pin-icon';
 export { default as BlockedIcon } from './blocked-icon';
 export { default as ChatChevronIcon } from './chat-chevron-icon';
 export { default as CheckListIcon } from './check-list-icon';
+export { default as CalendarBotMessageIcon } from './calendar-bot-message-icon';
+export { default as CalendarDocPostIcon } from './calendar-doc-post-icon';
+export { default as CalendarDraftIcon } from './calendar-draft-icon';

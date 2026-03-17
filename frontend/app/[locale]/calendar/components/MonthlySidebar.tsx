@@ -6,7 +6,7 @@ import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
 import Loader from '@/components/loader';
-import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarBotMessageIcon, CalendarDraftIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
   formatDayTitle,
@@ -146,7 +146,13 @@ export default function MonthlySidebar({
                     onClick={() => onEdit(post)}
                   >
                     <div className={styles.postIcon}>
-                      {isPublished ? <CalendarSidebarSentIcon /> : <CalendarSidebarPostIcon />}
+                      {isPublished ? (
+                        <CalendarBotMessageIcon width={16} height={16} />
+                      ) : post.status === 'draft' ? (
+                        <CalendarDraftIcon width={14} height={14} />
+                      ) : (
+                        <CalendarDocPostIcon width={16} height={16} />
+                      )}
                     </div>
                     <span className={styles.postTime}>{time}</span>
                     <span className={styles.postPreview}>

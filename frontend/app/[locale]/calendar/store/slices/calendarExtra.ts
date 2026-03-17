@@ -6,6 +6,9 @@ import { fetchCalendarData, fetchMoreListPosts, fetchMoreDayPosts, fetchDayCount
 export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarState>) {
   builder
     .addCase(fetchCalendarData.pending, (state) => {
+      if (state.currentView === 'month' && Object.keys(state.weekItems).length > 0) {
+        return;
+      }
       state.isLoading = true;
     })
     .addCase(fetchCalendarData.fulfilled, (state, action) => {
@@ -81,5 +84,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       }
       state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
       state.monthPostCounts = action.payload.counts;
+      state.monthStatusCountsCache[action.payload.monthKey] = action.payload.statusCounts;
+      state.monthStatusCounts = action.payload.statusCounts;
     });
 }

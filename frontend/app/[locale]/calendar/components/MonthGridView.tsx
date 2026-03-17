@@ -2,8 +2,13 @@
 
 import React from 'react';
 import {
-  InboxIcon,
+  CalendarDocPostIcon,
+  CalendarBotMessageIcon,
+  CalendarDraftIcon,
+  CalendarReactionsIcon,
+  CalendarViewsIcon,
 } from '@/components/icons';
+import type { DayStatusCount } from '../store';
 import {
   formatDateOnly,
   isSameDay,
@@ -15,6 +20,7 @@ interface MonthGridViewProps {
   selectedDate: Date;
   sidebarDate: Date;
   postCounts: Record<string, number>;
+  statusCounts: Record<string, DayStatusCount>;
   onDayClick: (date: Date) => void;
 }
 
@@ -54,6 +60,7 @@ export default function MonthGridView({
   selectedDate,
   sidebarDate,
   postCounts,
+  statusCounts,
   onDayClick,
 }: MonthGridViewProps) {
   const gridDates = getMonthGridDates(selectedDate);
@@ -67,7 +74,6 @@ export default function MonthGridView({
 
   return (
     <div className={styles.monthGrid}>
-      {/* Weekday header */}
       <div className={styles.weekdayRow}>
         {WEEKDAY_LABELS.map((label) => (
           <div key={label} className={styles.weekdayCell}>
@@ -86,6 +92,7 @@ export default function MonthGridView({
               const isToday = isSameDay(dayDate, today);
               const isSelected = isSameDay(dayDate, sidebarDate);
               const total = postCounts[dateKey] || 0;
+              const sc = statusCounts[dateKey];
 
               const cellClasses = [
                 styles.dayCell,
@@ -105,14 +112,32 @@ export default function MonthGridView({
                     {dayDate.getDate()}
                   </span>
 
-                  {total > 0 && (
+                  {total > 0 && sc && (
                     <div className={styles.statsBlock}>
-                      <div className={styles.statsRow}>
-                        <div className={styles.statItem}>
-                          <InboxIcon width={12} height={12} color="#3B82F6" />
-                          <span className={styles.statValueBlue}>{total}</span>
+                      {(sc.scheduled > 0 || sc.published > 0) && (
+                        <div className={styles.statsRow}>
+                          {sc.scheduled > 0 && (
+                            <div className={styles.statItem}>
+                              <CalendarDocPostIcon width={12} height={12} />
+                              <span className={styles.statValueBlue}>{sc.scheduled}</span>
+                            </div>
+                          )}
+                          {sc.published > 0 && (
+                            <div className={`${styles.statItem} ${styles.statItemRight}`}>
+                              <span className={styles.statValueGreen}>{sc.published}</span>
+                              <CalendarBotMessageIcon width={12} height={12} />
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      )}
+                      {sc.draft > 0 && (
+                        <div className={styles.statsRow}>
+                          <div className={styles.statItem}>
+                            <CalendarDraftIcon width={12} height={12} />
+                            <span className={styles.statValueGray}>{sc.draft}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

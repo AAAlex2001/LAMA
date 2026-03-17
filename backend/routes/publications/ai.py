@@ -83,9 +83,7 @@ async def edit_content_with_ai(
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication(publication_id, owner_id=current_user.id)
-    if not publication:
-        raise HTTPException(status_code=404, detail="Publication not found")
+    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
     if not publication.text_content:
         raise HTTPException(status_code=400, detail="Publication has no text content to edit")
 

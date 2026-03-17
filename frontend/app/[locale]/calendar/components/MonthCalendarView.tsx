@@ -5,7 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
-import { CalendarSidebarPostIcon, CalendarSidebarSentIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarBotMessageIcon, CalendarDraftIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
   formatTime,
@@ -32,9 +32,12 @@ interface MonthCalendarViewProps {
 
 function PostStatusIcon({ status }: { status: string }) {
   if (status === 'published') {
-    return <CalendarSidebarSentIcon width={16} height={16} color="#34C759" />;
+    return <CalendarBotMessageIcon width={16} height={16} />;
   }
-  return <CalendarSidebarPostIcon width={16} height={16} color="#3B82F6" />;
+  if (status === 'draft') {
+    return <CalendarDraftIcon width={14} height={14} />;
+  }
+  return <CalendarDocPostIcon width={16} height={16} />;
 }
 
 export default function MonthCalendarView({
@@ -67,14 +70,6 @@ export default function MonthCalendarView({
     }
   }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dayKey]);
 
-  if (isLoading) {
-    return (
-      <div className={styles.loaderWrap}>
-        <Loader size={32} color="blue" />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.monthWrap}>
       <div className={styles.calendarCard}>
@@ -101,7 +96,11 @@ export default function MonthCalendarView({
         </div>
 
         <div className={styles.postList}>
-          {dayPosts.length === 0 ? (
+          {isLoading && dayPosts.length === 0 ? (
+            <div className={styles.loadMoreWrap}>
+              <Loader size={20} color="blue" />
+            </div>
+          ) : dayPosts.length === 0 ? (
             <div className={styles.empty}>Нет публикаций</div>
           ) : (
             dayPosts.map((post) => {

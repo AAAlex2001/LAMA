@@ -10,6 +10,12 @@ export type DayPageState = {
   isLoading: boolean;
 };
 
+export type DayStatusCount = {
+  published: number;
+  scheduled: number;
+  draft: number;
+};
+
 export interface CalendarState {
   items: Draft[];
   weekItems: Record<string, Draft[]>;
@@ -21,6 +27,8 @@ export interface CalendarState {
   currentView: CalendarView;
   monthPostCounts: Record<string, number>;
   monthPostCountsCache: Record<string, Record<string, number>>;
+  monthStatusCounts: Record<string, DayStatusCount>;
+  monthStatusCountsCache: Record<string, Record<string, DayStatusCount>>;
   countsMonthAnchor: string;
   currentRangeKey: string;
   currentPage: number;
@@ -44,6 +52,8 @@ export const initialState: CalendarState = {
   currentView: 'day',
   monthPostCounts: {},
   monthPostCountsCache: {},
+  monthStatusCounts: {},
+  monthStatusCountsCache: {},
   countsMonthAnchor: todayStr,
   currentRangeKey: '',
   currentPage: 1,
@@ -64,6 +74,7 @@ const calendarSlice = createSlice({
       state.countsMonthAnchor = `${action.payload.slice(0, 7)}-01`;
       const monthKey = action.payload.slice(0, 7);
       state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
+      state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
     },
     setSidebarDate: (state, action: PayloadAction<string>) => {
       state.sidebarDate = action.payload;
@@ -89,6 +100,7 @@ const calendarSlice = createSlice({
       state.countsMonthAnchor = action.payload;
       const monthKey = action.payload.slice(0, 7);
       state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
+      state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
     },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);

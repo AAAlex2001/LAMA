@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
-import { PostIcon, CalendarRepeatIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarBotMessageIcon, CalendarDraftIcon, CalendarRepeatIcon } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import Loader from '@/components/loader';
 import {
@@ -57,11 +57,19 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
       <div className={styles.topSection}>
         <div className={styles.headerRow}>
           <div className={listMode ? styles.timeBlockList : styles.timeBlock}>
-            {!listMode && <PostIcon width={16} height={16} color="#3B82F6" />}
+            {!listMode && (
+              post.status === 'published' ? <CalendarBotMessageIcon width={16} height={16} /> :
+              post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
+              <CalendarDocPostIcon width={16} height={16} />
+            )}
             <span className={listMode ? styles.timeList : styles.time}>{listMode ? date : time}</span>
           </div>
           <div className={listMode ? styles.statusIconsOnly : styles.statusBlock}>
-            {listMode && <PostIcon width={16} height={16} color="#3B82F6" />}
+            {listMode && (
+              post.status === 'published' ? <CalendarBotMessageIcon width={16} height={16} /> :
+              post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
+              <CalendarDocPostIcon width={16} height={16} />
+            )}
             {!listMode && <span className={styles.statusText}>{getStatusLabel(post.status)}</span>}
             {isRepeating && (
               <CalendarRepeatIcon width={listMode ? 16 : 14} height={listMode ? 16 : 14} color={listMode ? '#3B82F6' : '#B0B4B8'} />

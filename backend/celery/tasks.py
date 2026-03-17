@@ -41,15 +41,22 @@ class RetriableTask(Task):
     max_retries = 3
 
 
-@celery_app.task(name="backend.celery.tasks.publish_publication", soft_time_limit=120, time_limit=180, acks_late=True)
-def publish_publication(publication_id: int) -> str:
-    """Опубликовать одну публикацию. Без auto-retry — channel_sender сам обрабатывает ошибки."""
+@celery_app.task(
+    bind=True, name="backend.celery.tasks.publish_publication",
+    soft_time_limit=120, time_limit=180, acks_late=True, max_retries=2,
+)
+def publish_publication(self, publication_id: int) -> str:
+    """Опубликовать одну публикацию. Retry для разовых (не серийных) при неудаче."""
 
-    return run(publish_publication_async(publication_id))
+    result, is_series = run(publish_publication_async(publication_id))
+    if result.startswith("publish_failed:") and not is_series:
+        run(reset_publication_for_retry(publication_id))
+        raise self.retry(countdown=30 * (self.request.retries + 1))
+    return result
 
 
-async def publish_publication_async(publication_id: int) -> str:
-    """Async-реализация публикации одной записи."""
+async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
+    """Async-реализация публикации одной записи. Возвращает (result_str, is_series)."""
 
     next_id = None
     owner_id = None
@@ -59,7 +66,7 @@ async def publish_publication_async(publication_id: int) -> str:
         publication = await query_svc.get_publication(publication_id)
         if not publication or not publication.channels:
             await db.commit()
-            return f"skip:{publication_id}"
+            return f"skip:{publication_id}", False
 
         if publication.status in (DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS):
             result = PublishResult(
@@ -107,11 +114,23 @@ async def publish_publication_async(publication_id: int) -> str:
         logger.info("Series ended, queued retry check for owner=%s", owner_id)
 
     if result.success:
-        return f"published:{publication_id}"
+        return f"published:{publication_id}", is_series
     else:
         logger.warning("publish partial/failed: publication_id=%s, %s/%s channels",
                         publication_id, result.success_count, result.total_count)
-        return f"publish_failed:{publication_id}"
+        return f"publish_failed:{publication_id}", is_series
+
+
+async def reset_publication_for_retry(publication_id: int):
+    """Сбросить статус публикации для повторной попытки."""
+
+    async with CelerySessionLocal() as db:
+        await db.execute(
+            update(Publication)
+            .where(Publication.id == publication_id)
+            .values(status=DBPublicationStatus.SCHEDULED, published_time=None)
+        )
+        await db.commit()
 
 
 @celery_app.task(name="backend.celery.tasks.retry_failed_series_posts")

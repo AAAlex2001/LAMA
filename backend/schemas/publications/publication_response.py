@@ -121,3 +121,6 @@ class PublicationPreview(BaseModel):
 class DayCount(BaseModel):
     date: str
     count: int
+    published: int = 0
+    scheduled: int = 0
+    draft: int = 0

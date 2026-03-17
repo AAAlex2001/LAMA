@@ -101,6 +101,11 @@ export const selectIsGridView = createSelector(
   (calendar) => calendar.currentView === 'week' || calendar.currentView === 'month',
 );
 
+export const selectMonthStatusCounts = createSelector(
+  [(s: RootState) => s.calendar.monthStatusCounts],
+  (statusCounts) => statusCounts,
+);
+
 export const selectMobileFilterConfigs = createSelector(
   [selectCalendar, selectIsGridView, selectSidebarPosts, selectSortedPosts],
   (calendar, isGridView, sidebarPosts, sortedPosts) => {
