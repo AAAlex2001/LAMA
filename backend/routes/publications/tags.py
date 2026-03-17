@@ -63,4 +63,3 @@ async def delete_tag(
     current_user: User = Depends(get_current_user),
 ):
     await service.delete_tag(tag_id, current_user.id)
-    await service.delete_tag(tag_id, current_user.id)

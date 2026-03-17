@@ -9,6 +9,7 @@ type GridDayResult = { dateKey: string; items: Draft[]; hasMore: boolean };
 type CalendarRequestMeta = {
   view: RootState['calendar']['currentView'];
   selectedDate: string;
+  sidebarDate: string;
   listRangeStart: string | null;
   listRangeEnd: string | null;
   listSortOrder: RootState['calendar']['listSortOrder'];
@@ -16,7 +17,7 @@ type CalendarRequestMeta = {
 };
 
 type FetchDataResult =
-  | { type: 'grid'; keys: string[]; results: GridDayResult[]; request: CalendarRequestMeta }
+  | { type: 'grid'; merge?: boolean; keys: string[]; results: GridDayResult[]; request: CalendarRequestMeta }
   | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string; request: CalendarRequestMeta };
 
 export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state: RootState }>(
@@ -28,13 +29,29 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
     const request: CalendarRequestMeta = {
       view,
       selectedDate: s.selectedDate,
+      sidebarDate: s.sidebarDate,
       listRangeStart: s.listRangeStart,
       listRangeEnd: s.listRangeEnd,
       listSortOrder: s.listSortOrder,
       listStatusFilter: s.listStatusFilter,
     };
 
-    if (view === 'week' || view === 'month') {
+    if (view === 'month') {
+      const dayKey = s.sidebarDate;
+      const pageSize = 20;
+      const params = new URLSearchParams({
+        page: '1', page_size: String(pageSize),
+        start_date: `${dayKey}T00:00:00`, end_date: `${dayKey}T23:59:59`,
+        sort_order: 'asc',
+      });
+      const res = await apiRequest<DraftListResponse>(`/publications?${params}`);
+      const results: GridDayResult[] = [
+        { dateKey: dayKey, items: res.items, hasMore: res.items.length === pageSize },
+      ];
+      return { type: 'grid', merge: true, keys: [dayKey], results, request };
+    }
+
+    if (view === 'week') {
       const keys = getVisibleDayKeys(view, date);
       const results = await Promise.all(
         keys.map(async (dateKey): Promise<GridDayResult> => {

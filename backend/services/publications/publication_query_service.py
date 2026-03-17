@@ -79,58 +79,6 @@ class PublicationQueryService:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_publications(
-        self,
-        owner_id: Optional[int] = None,
-        status: Optional[PublicationStatus] = None,
-        content_type: Optional[ContentType] = None,
-        channel_id: Optional[int] = None,
-        tag_names: Optional[List[str]] = None,
-        tag_ids: Optional[List[int]] = None,
-        series_id: Optional[int] = None,
-        start_date: Optional[datetime] = None,
-        end_date: Optional[datetime] = None,
-        search: Optional[str] = None,
-        sort_order: Optional[str] = None,
-        date_mode: Optional[str] = "scheduled",
-        skip: int = 0,
-        limit: int = 100,
-    ) -> List[Publication]:
-        skip = max(0, skip)
-        limit = min(max(1, limit), 500)
-
-        id_query = select(Publication.id)
-        if owner_id is not None:
-            id_query = id_query.where(Publication.owner_id == owner_id)
-
-        id_query = self.apply_filters(
-            id_query, status, content_type, channel_id, tag_names, tag_ids,
-            series_id, start_date, end_date, search, owner_id, date_mode,
-        )
-
-        normalized_mode = (date_mode or "scheduled").lower()
-        primary_date = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
-        source_date = primary_date
-        order_asc = (sort_order or "").lower() == "asc"
-        order_expr = source_date.asc() if order_asc else source_date.desc()
-        id_tie = Publication.id.asc() if order_asc else Publication.id.desc()
-
-        id_subquery = id_query.order_by(order_expr, id_tie).offset(skip).limit(limit).subquery()
-
-        full_query = (
-            select(Publication)
-            .join(id_subquery, Publication.id == id_subquery.c.id)
-            .options(
-                selectinload(Publication.channels).selectinload(Channel.bot),
-                selectinload(Publication.tags),
-                selectinload(Publication.series),
-            )
-            .order_by(order_expr, id_tie)
-        )
-
-        result = await self.db.execute(full_query)
-        return list(result.scalars().all())
-
     async def get_publications_compact(
         self,
         owner_id: Optional[int] = None,

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from typing import Optional, List, Literal
 
 from backend.schemas.publications.enums import PublicationStatus, ContentType
@@ -10,8 +10,10 @@ from backend.schemas.publications.publication_response import (
     PublicationResponse,
     PublicationCompactListResponse,
 )
-from backend.services.publications.publication_service import PublicationService
-from backend.routes.publications.dependencies import get_publication_service
+from backend.services.publications.publication_create_service import PublicationCreateService
+from backend.services.publications.publication_query_service import PublicationQueryService
+from backend.services.publications.publication_update_service import PublicationUpdateService
+from backend.routes.publications.dependencies import get_create_service, get_query_service, get_update_service
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
@@ -21,10 +23,10 @@ router = APIRouter()
 @router.post("/", response_model=PublicationResponse, status_code=201)
 async def create_publication(
     data: PublicationCreate,
-    service: PublicationService = Depends(get_publication_service),
+    creator: PublicationCreateService = Depends(get_create_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create_publication(data, owner_id=current_user.id)
+    return await creator.create_publication(data, owner_id=current_user.id)
 
 
 @router.get("/drafts", response_model=PublicationCompactListResponse)
@@ -33,11 +35,11 @@ async def get_drafts(
     tag_ids: Optional[List[int]] = None,
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications_compact(
+    publications = await query.get_publications_compact(
         owner_id=current_user.id,
         status=PublicationStatus.DRAFT,
         tag_names=tag_names,
@@ -52,11 +54,11 @@ async def get_drafts(
 async def get_scheduled(
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications_compact(
+    publications = await query.get_publications_compact(
         owner_id=current_user.id,
         status=PublicationStatus.SCHEDULED,
         skip=skip,
@@ -80,11 +82,11 @@ async def get_publications(
     date_mode: Optional[Literal["scheduled", "published"]] = Query("scheduled"),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
-    publications = await service.get_publications_compact(
+    publications = await query.get_publications_compact(
         owner_id=current_user.id,
         status=status,
         content_type=content_type,
@@ -106,36 +108,51 @@ async def get_publications(
 @router.get("/{publication_id}", response_model=PublicationResponse)
 async def get_publication(
     publication_id: int,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get_publication(publication_id, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return publication
 
 
 @router.put("/{publication_id}", response_model=PublicationResponse)
 async def update_publication(
     publication_id: int,
     data: PublicationUpdate,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
+    updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.update_publication(publication_id, data, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return await updater.update_publication(publication, data, owner_id=current_user.id)
 
 
 @router.patch("/{publication_id}", response_model=PublicationResponse)
 async def patch_publication(
     publication_id: int,
     data: PublicationUpdate,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
+    updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.update_publication(publication_id, data, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return await updater.update_publication(publication, data, owner_id=current_user.id)
 
 
 @router.delete("/{publication_id}", status_code=204)
 async def delete_publication(
     publication_id: int,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
+    updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    await service.delete_publication(publication_id, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    await updater.delete_publication(publication)

@@ -7,7 +7,7 @@ import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import (
-    Publication, TelegramMessage,
+    Publication, PublicationNotification, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
@@ -16,6 +16,20 @@ from backend.schemas.publications import ChannelPublishResult
 from backend.services.channel import ChannelService
 
 logger = logging.getLogger(__name__)
+
+
+def make_notification_callback(db: AsyncSession):
+    """Фабрика callback-а для создания уведомлений."""
+
+    async def callback(publication_id: int, status: str, message: str, error_details=None):
+        notification = PublicationNotification(
+            publication_id=publication_id, status=status,
+            message=message, error_details=error_details,
+        )
+        db.add(notification)
+        await db.flush()
+
+    return callback
 
 
 async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncSession) -> None:

@@ -85,6 +85,7 @@ export default function CalendarPageConnected() {
       'calendar-data',
       calendar.currentView,
       calendar.selectedDate,
+      calendar.currentView === 'month' ? calendar.sidebarDate : null,
       calendar.listRangeStart,
       calendar.listRangeEnd,
       calendar.listSortOrder,

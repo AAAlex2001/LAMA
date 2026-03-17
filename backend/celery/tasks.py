@@ -6,20 +6,25 @@ import logging
 from datetime import datetime, timezone
 
 from celery import Task
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import case, func, or_, select, update
 
 from backend.celery.app import celery_app
 from backend.celery.async_runner import run
-from backend.config import OPENAI_API_KEY
-from backend.services.bot_provider import resolve_for_bot_id, resolve_master, use_user_bots
+from backend.services.bot_provider import resolve_for_bot_id, resolve_for_channel, resolve_master, use_user_bots
 from backend.database import CelerySessionLocal
 from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
+from backend.schemas.publications.publishing import PublishResult
 from backend.services.bot import RecurringMessageService, TriggerService
-from backend.services.publications import PublicationService
+from backend.services.channel import ChannelService
+from backend.services.publications.publication_query_service import PublicationQueryService
+from backend.services.publications.series_service import SeriesService
+from backend.services.publications import publisher, message_editor
+from backend.services.publications.publish_helpers import make_notification_callback
+from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 from backend.tasks.channel_backup import process_instant_backups as channel_process_instant_backups
 
 logger = logging.getLogger(__name__)
@@ -47,30 +52,59 @@ async def publish_publication_async(publication_id: int) -> str:
     """Async-реализация публикации одной записи."""
 
     next_id = None
+    owner_id = None
+    is_series = False
     async with CelerySessionLocal() as db:
-        service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-        result = await service.publish_now(publication_id)
+        query_svc = PublicationQueryService(db)
+        publication = await query_svc.get_publication(publication_id)
+        if not publication or not publication.channels:
+            await db.commit()
+            return f"skip:{publication_id}"
 
-        cur = (
-            select(Publication.series_id, Publication.series_order)
-            .where(Publication.id == publication_id)
-            .subquery()
-        )
-        next_id = (await db.execute(
-            select(Publication.id).where(
-                Publication.series_id == cur.c.series_id,
-                Publication.series_order == cur.c.series_order + 1,
-                Publication.status == DBPublicationStatus.SCHEDULED,
+        if publication.status in (DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS):
+            result = PublishResult(
+                success=True, results=[], success_count=0, total_count=0,
+                publication_id=publication_id, error="Already published",
             )
-        )).scalar_one_or_none()
+        elif publication.series_id and publication.series and publication.series.reply_to_previous:
+            series_service = SeriesService(db)
+            result = await series_service.publish_series_post(
+                publication, lambda ch: resolve_for_channel(db, ch),
+            )
+        else:
+            channel_service = ChannelService(db=db)
+            result = await publisher.publish_to_channels(
+                publication, db, channel_service,
+                lambda ch: resolve_for_channel(db, ch),
+                make_notification_callback(db),
+                calculate_next_repeat_time,
+            )
+
+        pub = (await db.execute(
+            select(Publication.series_id, Publication.series_order, Publication.owner_id)
+            .where(Publication.id == publication_id)
+        )).one_or_none()
+
+        if pub and pub.series_id:
+            is_series = True
+            owner_id = pub.owner_id
+            next_id = (await db.execute(
+                select(Publication.id).where(
+                    Publication.series_id == pub.series_id,
+                    Publication.series_order == pub.series_order + 1,
+                    Publication.status == DBPublicationStatus.SCHEDULED,
+                )
+            )).scalar_one_or_none()
 
         await db.commit()
 
-    # even if current post failed permanently (e.g. "message too long")
     if next_id:
         countdown = 30 if not result.success else 5
         publish_publication.apply_async(args=[next_id], queue="high", countdown=countdown)
         logger.info("Chained next series post: publication_id=%s, countdown=%s", next_id, countdown)
+    elif is_series and owner_id:
+        retry_failed_series_posts.apply_async(args=[owner_id], queue="high", countdown=10)
+        logger.info("Series ended, queued retry check for owner=%s", owner_id)
 
     if result.success:
         return f"published:{publication_id}"
@@ -78,6 +112,53 @@ async def publish_publication_async(publication_id: int) -> str:
         logger.warning("publish partial/failed: publication_id=%s, %s/%s channels",
                         publication_id, result.success_count, result.total_count)
         return f"publish_failed:{publication_id}"
+
+
+@celery_app.task(name="backend.celery.tasks.retry_failed_series_posts")
+def retry_failed_series_posts(owner_id: int) -> str:
+    """После завершения всех серий юзера — ретраить FAILED посты."""
+
+    return run(retry_failed_series_posts_async(owner_id))
+
+
+async def retry_failed_series_posts_async(owner_id: int) -> str:
+    """Проверить что все серии закончились, собрать FAILED и перезапустить."""
+
+    async with CelerySessionLocal() as db:
+        scheduled_count = (await db.execute(
+            select(func.count()).select_from(Publication).where(
+                Publication.owner_id == owner_id,
+                Publication.series_id.isnot(None),
+                Publication.status == DBPublicationStatus.SCHEDULED,
+            )
+        )).scalar()
+
+        if scheduled_count > 0:
+            logger.info("series_retry_skipped: owner=%s, %s posts still scheduled", owner_id, scheduled_count)
+            return f"retry_skipped:{owner_id}:scheduled:{scheduled_count}"
+
+        result = await db.execute(
+            update(Publication)
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.series_id.isnot(None),
+                Publication.status == DBPublicationStatus.FAILED,
+            )
+            .values(status=DBPublicationStatus.SCHEDULED, published_time=None)
+            .returning(Publication.id)
+        )
+        failed_ids = list(result.scalars().all())
+        await db.commit()
+
+    if not failed_ids:
+        logger.info("series_retry_none: owner=%s, no failed posts", owner_id)
+        return f"retry_none:{owner_id}"
+
+    for i, pub_id in enumerate(failed_ids):
+        publish_publication.apply_async(args=[pub_id], queue="high", countdown=5 + i * 3)
+
+    logger.info("series_retry_queued: owner=%s, %s failed posts re-queued", owner_id, len(failed_ids))
+    return f"retry_queued:{owner_id}:{len(failed_ids)}"
 
 
 @celery_app.task(name="backend.celery.tasks.delete_publication_messages", base=RetriableTask, max_retries=1)
@@ -91,8 +172,13 @@ async def delete_publication_messages_async(publication_id: int) -> str:
     """Async-реализация удаления Telegram-сообщений публикации."""
 
     async with CelerySessionLocal() as db:
-        service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-        await service.delete_telegram_messages(publication_id)
+        query_svc = PublicationQueryService(db)
+        publication = await query_svc.get_publication(publication_id)
+        if not publication:
+            return f"not_found:{publication_id}"
+        await message_editor.delete_telegram_messages(
+            publication, db, lambda ch: resolve_for_channel(db, ch),
+        )
         await db.commit()
         return f"deleted_messages:{publication_id}"
 
@@ -108,8 +194,13 @@ async def republish_publication_async(publication_id: int) -> str:
     """Async-реализация переопубликации."""
 
     async with CelerySessionLocal() as db:
-        service = PublicationService(db=db, openai_api_key=OPENAI_API_KEY)
-        await service.republish(publication_id)
+        query_svc = PublicationQueryService(db)
+        publication = await query_svc.get_publication(publication_id)
+        if not publication or not publication.channels:
+            return f"skip:{publication_id}"
+        await publisher.republish(
+            publication, db, lambda ch: resolve_for_channel(db, ch), calculate_next_repeat_time,
+        )
         await db.commit()
         return f"republished:{publication_id}"
 
@@ -126,7 +217,6 @@ async def process_scheduled_publications_async() -> str:
 
     async with CelerySessionLocal() as db:
         now = datetime.now(timezone.utc)
-        from sqlalchemy import update
         stmt = (
             update(Publication)
             .where(
@@ -165,7 +255,7 @@ async def process_auto_delete_async() -> str:
             else_=Publication.auto_delete_hours * 3600,
         )
 
-        query = (
+        q = (
             select(Publication.id)
             .where(
                 Publication.status == DBPublicationStatus.PUBLISHED,
@@ -181,7 +271,7 @@ async def process_auto_delete_async() -> str:
             .limit(50)
         )
 
-        result = await db.execute(query)
+        result = await db.execute(q)
         ids = list(result.scalars().all())
 
     for publication_id in ids:
@@ -259,7 +349,7 @@ async def process_repeating_publications_async() -> str:
 
     async with CelerySessionLocal() as db:
         now = datetime.now(timezone.utc)
-        query = (
+        q = (
             select(Publication.id)
             .where(
                 Publication.status.in_(
@@ -271,7 +361,7 @@ async def process_repeating_publications_async() -> str:
             )
             .limit(50)
         )
-        result = await db.execute(query)
+        result = await db.execute(q)
         ids = list(result.scalars().all())
 
     for publication_id in ids:

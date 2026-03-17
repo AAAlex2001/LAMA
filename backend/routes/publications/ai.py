@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from backend.schemas.publications.enums import PublicationStatus
@@ -12,11 +12,11 @@ from backend.schemas.publications.ai import (
 )
 from backend.services.publications.ai_service import AIService
 from backend.services.publications.publication_create_service import PublicationCreateService
-from backend.services.publications.publication_service import PublicationService
+from backend.services.publications.publication_query_service import PublicationQueryService
 from backend.routes.publications.dependencies import (
     get_ai_service,
     get_create_service,
-    get_publication_service,
+    get_query_service,
 )
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -79,8 +79,19 @@ async def edit_text_with_ai_stream(
 async def edit_content_with_ai(
     publication_id: int,
     data: AIEditRequest,
-    service: PublicationService = Depends(get_publication_service),
+    ai: AIService = Depends(get_ai_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    payload = data.model_copy(update={"publication_id": publication_id})
-    return await service.edit_with_ai(payload, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    if not publication.text_content:
+        raise HTTPException(status_code=400, detail="Publication has no text content to edit")
+
+    edited = await ai.edit_content(publication.text_content, data.instruction)
+    publication.text_content = edited
+    publication.ai_generated = True
+    await query.db.flush()
+    await query.db.refresh(publication)
+    return publication

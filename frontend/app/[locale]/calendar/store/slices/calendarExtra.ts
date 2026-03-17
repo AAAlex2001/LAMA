@@ -13,6 +13,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       const isStaleResponse =
         request.view !== state.currentView
         || request.selectedDate !== state.selectedDate
+        || request.sidebarDate !== state.sidebarDate
         || request.listRangeStart !== state.listRangeStart
         || request.listRangeEnd !== state.listRangeEnd
         || request.listSortOrder !== state.listSortOrder
@@ -24,8 +25,9 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
 
       state.isLoading = false;
       if (action.payload.type === 'grid') {
-        const weekItems: Record<string, Draft[]> = {};
-        const dayPageState: Record<string, DayPageState> = {};
+        const merge = action.payload.merge === true;
+        const weekItems: Record<string, Draft[]> = merge ? { ...state.weekItems } : {};
+        const dayPageState: Record<string, DayPageState> = merge ? { ...state.dayPageState } : {};
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };

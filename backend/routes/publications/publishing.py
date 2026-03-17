@@ -1,15 +1,18 @@
 from datetime import datetime, timezone
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from backend.schemas.publications.common import RescheduleRequest
 from backend.schemas.publications.publication_response import PublicationResponse
 from backend.schemas.publications.publishing import EditPublishedRequest
 from backend.models.publications import PublicationStatus as DBPublicationStatus
 from backend.celery.tasks import publish_publication
-from backend.services.publications.publication_service import PublicationService
-from backend.routes.publications.dependencies import get_publication_service
+from backend.services.publications.publication_query_service import PublicationQueryService
+from backend.services.publications.publication_update_service import PublicationUpdateService
+from backend.services.publications import message_editor
+from backend.services.bot_provider import resolve_for_channel
+from backend.routes.publications.dependencies import get_query_service, get_update_service
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 
@@ -21,10 +24,19 @@ router = APIRouter()
 @router.post("/{publication_id}/publish", response_model=PublicationResponse, status_code=202)
 async def publish_now(
     publication_id: int,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await service.prepare_for_publishing(publication_id, owner_id=current_user.id)
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    if not publication.channels:
+        raise HTTPException(status_code=400, detail="No channels selected")
+
+    publication.status = DBPublicationStatus.SCHEDULED
+    publication.published_time = datetime.now(timezone.utc)
+    await query.db.flush()
+    await query.db.refresh(publication)
 
     if publication.series_id and publication.series_order and publication.series_order > 0:
         logger.info("Series post deferred (publication_id=%s, series_order=%s)",
@@ -40,30 +52,40 @@ async def publish_now(
 async def reschedule_publication(
     publication_id: int,
     data: RescheduleRequest,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
+    updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.reschedule_publication(
-        publication_id, data.scheduled_time, owner_id=current_user.id
-    )
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return await updater.reschedule_publication(publication, data.scheduled_time)
 
 
 @router.post("/{publication_id}/edit-published")
 async def edit_published_message(
     publication_id: int,
     data: EditPublishedRequest,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    result = await service.edit_published_message(publication_id, data, owner_id=current_user.id)
-    return result
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return await message_editor.edit_published_message(
+        publication, data, query.db, lambda ch: resolve_for_channel(query.db, ch),
+    )
 
 
 @router.delete("/{publication_id}/telegram-messages")
 async def delete_telegram_messages(
     publication_id: int,
-    service: PublicationService = Depends(get_publication_service),
+    query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
-    result = await service.delete_telegram_messages(publication_id, owner_id=current_user.id)
-    return result
+    publication = await query.get_publication(publication_id, owner_id=current_user.id)
+    if not publication:
+        raise HTTPException(status_code=404, detail="Publication not found")
+    return await message_editor.delete_telegram_messages(
+        publication, query.db, lambda ch: resolve_for_channel(query.db, ch),
+    )
