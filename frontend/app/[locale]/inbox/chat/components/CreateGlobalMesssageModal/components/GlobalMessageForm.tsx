@@ -127,6 +127,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
         />
       )}
       <ResponseTextSection
+        title=""
         ref={responseTextSectionRef}
         responseText={formState.text_content}
         onResponseTextChange={(value) => dispatch(setTextContent(value))}

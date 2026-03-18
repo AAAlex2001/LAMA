@@ -5,7 +5,6 @@
   position: relative;
   background: #FFFFFF;
   border-radius: 16px;
-  height: 100%;
   min-height: 0;
   gap: 16px;
   // overflow: hidden;
@@ -17,9 +16,9 @@
 .directChatWrapper {
   display: flex;
   flex-direction: column;
-  // min-height: 80vh; 
-  // padding-bottom: 10px;
   width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 .header {
   display: flex;

@@ -13,6 +13,7 @@ import CreateAutoRepliesModal from "../../../CreateAutoRepliesModal";
 import CreateTriggersModal from "../../../CreateTriggersModal";
 import CreateCommandModal from "../../../CreateCommandModal";
 import AutomatizationModal from "../../../AutomatizationModal";
+import type { CheckedItemsAction } from "../../hooks/useCheckedItems";
 
 export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
 
@@ -22,9 +23,9 @@ type ModerationStatusType = 'new' | 'processed' | 'banned' | null;
 
 interface ListHeaderProps {
   type: ListHeaderType;
-  setIsChecking: (isChecking: boolean) => void;
+  selectionDispatch: React.Dispatch<CheckedItemsAction>;
   isChecking: boolean;
-  onSelectAll?: () => void;
+  allIds?: string[];
   isSelectedAll?: boolean;
   checkedItems?: number;
   botId?: number;
@@ -38,9 +39,9 @@ interface ListHeaderProps {
 
 const ListHeader: FC<ListHeaderProps> = ({
   type,
-  setIsChecking,
+  selectionDispatch,
   isChecking,
-  onSelectAll,
+  allIds,
   isSelectedAll,
   checkedItems,
   onBulkAction,
@@ -156,12 +157,12 @@ const ListHeader: FC<ListHeaderProps> = ({
                     <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
                       Удалить
                     </Button>
-                    {/* <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
+                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                       Заблокировать
-                    </Button> */}
-                    {/* <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
+                    </Button>
+                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                       <span className={buttonStyles.label}>Разблокировать</span>
-                    </Button> */}
+                    </Button>
                   </div>
                 )
               }
@@ -170,7 +171,7 @@ const ListHeader: FC<ListHeaderProps> = ({
                   variant="outline" 
                   intent={isSelectedAll ? "primary" : "neutral"}
                   size="sm"
-                  onClick={onSelectAll} 
+                  onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
                   className={styles.controlButton}
                 >
                   <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
@@ -179,7 +180,7 @@ const ListHeader: FC<ListHeaderProps> = ({
                   variant="outline" 
                   intent={isChecking ? "primary" : "neutral"}
                   size="sm"  
-                  onClick={() => setIsChecking(!isChecking)} 
+                  onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
                   className={styles.controlButton}
                 >
                   <span>{!isChecking ? 'Выбрать' : 'Отменить'}</span>
@@ -195,7 +196,7 @@ const ListHeader: FC<ListHeaderProps> = ({
                     variant="outline" 
                     intent={isSelectedAll ? "primary" : "neutral"}
                     size="sm"
-                    onClick={onSelectAll} 
+                    onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
                     className={styles.controlButton}
                   >
                     <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
@@ -204,7 +205,7 @@ const ListHeader: FC<ListHeaderProps> = ({
                     variant="outline" 
                     intent={isChecking ? "primary" : "neutral"}
                     size="sm"  
-                    onClick={() => setIsChecking(!isChecking)} 
+                    onClick={() => selectionDispatch({ type: "setMode", checking: false })}
                     className={styles.controlButton}
                   >
                     <span>Отменить</span>
@@ -417,7 +418,7 @@ const ListHeader: FC<ListHeaderProps> = ({
             variant="outline" 
             intent="neutral"
             size="sm"
-            onClick={onSelectAll} 
+            onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
             className={styles.controlButton}
           >
             <span>Выбрать все</span>
@@ -426,7 +427,7 @@ const ListHeader: FC<ListHeaderProps> = ({
             variant="outline" 
             intent={isChecking ? "gradient" : "neutral"}
             size="sm"  
-            onClick={() => setIsChecking(!isChecking)} 
+            onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
             className={styles.controlButton}
           >
             <span>Выбрать</span>

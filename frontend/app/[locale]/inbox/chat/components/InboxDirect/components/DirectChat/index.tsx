@@ -137,6 +137,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
         <Header
           userName={userName}
           botName={activeChat?.bot_username ?? undefined}
+          userPhoto={activeChat?.tg_photo_url ?? undefined}
           isPinned={isPinned}
           isBlocked={isBlocked}
           onClose={onClose}

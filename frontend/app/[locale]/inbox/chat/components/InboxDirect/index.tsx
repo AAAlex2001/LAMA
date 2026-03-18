@@ -88,13 +88,11 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
   return (
     <>
-      <DesktopWrapper>
-        <div className={styles.inboxDirect}>
-          <DirectChat onClose={handleDesktopClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>
-          <DirectMenu onChatOpen={handleChatOpen} />
-        </div>
+      <DesktopWrapper className={styles.inboxDirectDesktop}>
+        <DirectChat onClose={handleDesktopClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>
+        <DirectMenu onChatOpen={handleChatOpen} />
       </DesktopWrapper>
-      <MobileWrapper>
+      <MobileWrapper className={styles.inboxDirectMobile}>
         {activeChatId === null && <DirectMenu onChatOpen={handleChatOpen} />}
         {activeChatId !== null && <DirectChat onClose={handleMobileClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>}
       </MobileWrapper>

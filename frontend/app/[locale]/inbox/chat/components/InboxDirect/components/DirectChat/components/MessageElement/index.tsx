@@ -4,8 +4,8 @@ import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import styles from './styles.module.scss';
 import EditIcon from '@/components/icons/edit-icon';
 import TrashIcon from '@/components/icons/trash-icon';
-import UserIcon from '@/components/icons/user-icon';
-import { ReplyIcon } from '@/components/icons';
+import { ReplyToIcon } from '@/components/icons';
+import Avatar from '@/components/avatar';
 import DeleteConfirmationModal from '@/components/modal';
 import { createObjectUrls, revokeObjectUrls, createMediaRuns } from '@/components/post-preview-modal/store';
 import MediaPreview from '@/components/post-preview-modal/media-preview/media-preview';
@@ -153,16 +153,14 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
           { 
           !isOutgoing  && 
             <div className={styles.avatarWrapper}>
-              <div className={styles.avatar}>
-                {userPhoto ? <img src={userPhoto} alt="User photo" className={styles.avatar} /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
-              </div>
+              <Avatar src={userPhoto} size={40} alt="User photo" />
             </div>
           }
         </DesktopWrapper>
         {isOutgoing && onReply && (
           <div className={styles.outgoingMeta}>
             <button className={styles.outgoingReplyAction} onClick={onReply} type="button">
-              <ReplyIcon width={20} height={20} />
+              <ReplyToIcon width={20} height={20} />
             </button>
           </div>
         )}
@@ -180,7 +178,7 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
         {!isOutgoing && onReply && (
           <div className={styles.incomingMeta}>
             <button className={styles.incomingReplyAction} onClick={onReply} type="button">
-              <ReplyIcon width={20} height={20} />
+              <ReplyToIcon width={20} height={20} />
             </button>
           </div>
         )}
@@ -194,9 +192,7 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
       <div className={styles.incomingWrapper}>
         <DesktopWrapper>
           <div className={styles.avatarWrapper}>
-            <div className={styles.avatar}>
-              {userPhoto ? <img src={userPhoto} alt="User" className={styles.avatar} /> : <UserIcon width={22} height={22} color="#B0B4B8" />}
-            </div>
+            <Avatar src={userPhoto} size={40} alt="User" />
           </div>
         </DesktopWrapper>
         <div className={styles.incomingBubble}>
@@ -213,10 +209,10 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
             </div>
           )}
           {text && <p className={styles.messageText}>{text}</p>}
-          <div className={styles.incomingMeta}>
+          <div className={styles.outgoingMeta}>
             {onReply && (
               <button className={styles.incomingReplyAction} onClick={onReply} type="button">
-                <ReplyIcon width={20} height={20} />
+                <ReplyToIcon width={20} height={20} />
               </button>
             )}
             {time && <span className={styles.incomingTime}>{time}</span>}
@@ -248,7 +244,7 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
               <div className={styles.msgActions}>
                 {onReply && (
                   <button className={styles.msgAction} onClick={onReply}>
-                    <ReplyIcon width={20} height={20} color="#F1F5FB" />
+                    <ReplyToIcon width={20} height={20} color="#F1F5FB" />
                   </button>
                 )}
                 {onEdit && (

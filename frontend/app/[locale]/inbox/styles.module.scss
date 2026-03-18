@@ -8,6 +8,18 @@
   }
 }
 
+.chatContainer {
+  display: flex;
+  flex-direction: column;
+  
+  overflow: hidden;
+  height: 100%;
+  padding: 20px 10px 20px;
+  @media(min-width: 1440px) {
+    padding: 20px 20px 20px;
+  }
+}
+
 .list {
   gap: 30px;
 }

@@ -1,4 +1,4 @@
-import { FC, memo, useState, useCallback } from "react";
+import { FC, memo, useState, MouseEvent, KeyboardEvent, useRef } from "react";
 import styles from "./styles.module.scss";
 import Checkbox from "@/components/checkbox/checkbox";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
@@ -11,6 +11,8 @@ import { ListHeaderType } from "../ListHeader";
 import type { InboxEventResponse, EventType, InboxActionType, SpecificActionResponse } from "../../../../store/thunks/inboxEvents";
 import { useRouter } from "next/navigation";
 import { useNotifications } from "@/components/notifications/NotificationProvider";
+import type { CheckedItemsAction } from "../../hooks/useCheckedItems";
+import { useAppDispatch, specificInboxActionThunk } from "../../../../store";
 
 const SOURCE_LABELS: Record<string, string> = {
   bot: 'Бот',
@@ -45,18 +47,16 @@ interface ListElementProps {
   item: InboxEventResponse;
   isChecked?: boolean;
   type?: ListHeaderType;
-  onCheck?: (id: string) => void;
-  onHold?: (id: string) => void;
-  onSpecificAction?: (eventId: number, actionType: InboxActionType, payload?: Record<string, unknown>) => any;
+  selectionDispatch?: React.Dispatch<CheckedItemsAction>;
+  blockDispatch?: React.Dispatch<{ type: "open"; eventId: number; username?: string; payload?: Record<string, unknown> }>;
 }
 
 const ListElement: FC<ListElementProps> = ({
   item,
   isChecked,
   type,
-  onCheck,
-  onHold,
-  onSpecificAction,
+  selectionDispatch,
+  blockDispatch,
 }) => {
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
@@ -68,13 +68,58 @@ const ListElement: FC<ListElementProps> = ({
     message_id: number | null;
     affected_channels: number[] | null;
   } | null>(null);
+  const dispatch = useAppDispatch();
   const router = useRouter();
   const { showError } = useNotifications();
 
   const itemId = item.id.toString();
 
-  const handleCheck = useCallback(() => onCheck?.(itemId), [onCheck, itemId]);
-  const handleHold = useCallback(() => onHold?.(itemId), [onHold, itemId]);
+  const handleCheck = (_checked?: boolean) => {
+    selectionDispatch?.({ type: "toggle", id: itemId });
+  };
+
+  const handleHold = () => {
+    selectionDispatch?.({ type: "holdSelect", id: itemId });
+  };
+
+  const isSelectionMode = isChecked !== undefined;
+  const toggledByPointerRef = useRef(false);
+
+  const isInteractiveTarget = (target: EventTarget | null) => {
+    const el = target as HTMLElement | null;
+    if (!el) return false;
+    return Boolean(
+      el.closest(
+        'button, a, input, textarea, select, label, [role="button"], [role="link"], [data-prevent-row-toggle]'
+      )
+    );
+  };
+
+  const handleRowClick = (e: MouseEvent) => {
+    if (!isSelectionMode) return;
+    if (toggledByPointerRef.current) {
+      toggledByPointerRef.current = false;
+      return;
+    }
+    if (isInteractiveTarget(e.target)) return;
+    handleCheck();
+  };
+
+  const handleRowPointerUp = (e: React.PointerEvent) => {
+    if (!isSelectionMode) return;
+    if (isInteractiveTarget(e.target)) return;
+    toggledByPointerRef.current = true;
+    handleCheck();
+  };
+
+  const handleRowKeyDown = (e: KeyboardEvent) => {
+    if (!isSelectionMode) return;
+    if (isInteractiveTarget(e.target)) return;
+    // if (e.key === 'Enter' || e.key === ' ') {
+      // e.preventDefault();
+      handleCheck();
+    // }
+  };
 
   const longPressProps = useLongPress({
     duration: 800,
@@ -99,8 +144,13 @@ const ListElement: FC<ListElementProps> = ({
 
   const handleAction = async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
     try {
-      const result = await onSpecificAction?.(item.id, actionType, payload);
-      const response = result?.payload?.response as SpecificActionResponse | undefined;
+      if (actionType === 'block') {
+        blockDispatch?.({ type: "open", eventId: item.id, username: item.tg_username || undefined, payload });
+        return;
+      }
+
+      const result = await dispatch(specificInboxActionThunk({ eventId: item.id, action_type: actionType, payload }));
+      const response = (result as any)?.payload?.response as SpecificActionResponse | undefined;
       if (!response) return;
 
       saveActionResult(response);
@@ -267,7 +317,16 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'system_trigger') {
-      return null;
+      if (status === 'replied' || isProcessed) {
+        return <div className={styles.statusText}>Ответ отправлен</div>;
+      }
+      return (
+        <div className={styles.actionButtons}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Ответить в боте</span>
+          </Button>
+        </div>
+      );
     }
 
     if (item.event_type === 'system_autoreply') {
@@ -301,7 +360,15 @@ const ListElement: FC<ListElementProps> = ({
         onActionResult={handleBlockModalResult}
       />
       <DesktopWrapper>
-        <div className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}>
+        <div
+          className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}
+          // onClick={handleRowClick}
+          // onPointerUp={handleRowPointerUp}
+          // onKeyDown={handleRowKeyDown}
+          // tabIndex={isSelectionMode ? 0 : -1}
+          // role={isSelectionMode ? "checkbox" : undefined}
+          // aria-checked={isSelectionMode ? Boolean(isChecked) : undefined}
+        >
           <div className={styles.gridCell}>
             {isChecked !== undefined ? (
               <Checkbox checked={isChecked} onChange={handleCheck} />
@@ -337,6 +404,12 @@ const ListElement: FC<ListElementProps> = ({
         <div
           className={`${styles.elementMobileWrapper} ${item.is_new ? styles.unread : ''} ${isHolding ? styles.holding : ''} ${isChecked ? styles.checked : ''}`}
           {...(shouldEnableLongPress ? longPressProps : {})}
+          onClick={handleRowClick}
+          onPointerUp={handleRowPointerUp}
+          onKeyDown={handleRowKeyDown}
+          tabIndex={isSelectionMode ? 0 : -1}
+          role={isSelectionMode ? "checkbox" : undefined}
+          aria-checked={isSelectionMode ? Boolean(isChecked) : undefined}
         >
           <div className={styles.holdOverlay} />
           <div>

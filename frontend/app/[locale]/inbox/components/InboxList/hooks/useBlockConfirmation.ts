@@ -1,58 +1,59 @@
-import { useState, useRef } from "react";
-import {
-  useAppDispatch,
-  specificInboxActionThunk,
-} from "../../../store";
-import type { InboxActionType, InboxEventResponse } from "../../../store";
+import { useReducer } from "react";
+import { useAppDispatch, specificInboxActionThunk } from "../../../store";
 
-interface PendingAction {
-  eventId: number;
-  payload?: Record<string, unknown>;
+type BlockConfirmState = {
+  isOpen: boolean;
+  eventId: number | null;
   username?: string;
-  resolve?: (value: unknown) => void;
+  payload?: Record<string, unknown>;
+};
+
+type BlockConfirmAction =
+  | { type: "open"; eventId: number; username?: string; payload?: Record<string, unknown> }
+  | { type: "close" }
+  | { type: "clear" };
+
+function reducer(state: BlockConfirmState, action: BlockConfirmAction): BlockConfirmState {
+  switch (action.type) {
+    case "open":
+      return { isOpen: true, eventId: action.eventId, username: action.username, payload: action.payload };
+    case "close":
+      return { ...state, isOpen: false };
+    case "clear":
+      return { isOpen: false, eventId: null };
+    default:
+      return state;
+  }
 }
 
-export function useBlockConfirmation(data: InboxEventResponse[]) {
+export function useBlockConfirmation() {
   const dispatch = useAppDispatch();
-  const dataRef = useRef(data);
-  dataRef.current = data;
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [pending, setPending] = useState<PendingAction | null>(null);
-
-  const handleAction = (
-    eventId: number,
-    actionType: InboxActionType,
-    payload?: Record<string, unknown>
-  ) => {
-    if (actionType === 'block') {
-      const item = dataRef.current.find(i => i.id === eventId);
-      return new Promise((resolve) => {
-        setPending({ eventId, payload, username: item?.tg_username || undefined, resolve });
-        setIsOpen(true);
-      });
-    }
-    return dispatch(specificInboxActionThunk({ eventId, action_type: actionType, payload }));
-  };
+  const [blockConfirm, blockDispatch] = useReducer(reducer, { isOpen: false, eventId: null });
 
   const confirm = async () => {
-    if (!pending) return;
-    const result = await dispatch(specificInboxActionThunk({
-      eventId: pending.eventId,
-      action_type: 'block',
-      payload: pending.payload,
-    }));
-    pending.resolve?.(result);
-    setPending(null);
+    if (!blockConfirm.eventId) return;
+    await dispatch(
+      specificInboxActionThunk({
+        eventId: blockConfirm.eventId,
+        action_type: "block",
+        payload: blockConfirm.payload,
+      })
+    );
+    blockDispatch({ type: "clear" });
   };
 
-  const cancel = () => {
-    pending?.resolve?.(undefined);
-    setPending(null);
+  const cancel = () => blockDispatch({ type: "clear" });
+  const onOpenChange = (open: boolean) => {
+    if (!open) blockDispatch({ type: "clear" });
   };
 
   return {
-    blockModal: { isOpen, setIsOpen, username: pending?.username, confirm, cancel },
-    handleAction,
+    blockConfirm,
+    blockDispatch,
+    confirm,
+    cancel,
+    onOpenChange,
   };
 }
+
+export type { BlockConfirmAction };

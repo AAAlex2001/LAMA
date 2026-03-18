@@ -21,6 +21,7 @@ export interface ResponseTextSectionRef {
 
 interface ResponseTextSectionProps {
   responseText: string;
+  title?: string;
   onResponseTextChange: (value: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   onMediaTypeChange?: (mediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT') => void;
@@ -32,6 +33,7 @@ interface ResponseTextSectionProps {
 
 const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSectionProps>(({
   responseText,
+  title = 'Текст ответа',
   onResponseTextChange,
   onKeyDown,
   onMediaTypeChange,
@@ -143,7 +145,7 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
 
   return (
     <div className={styles.section}>
-      <div className={styles.sectionTitle}>Текст ответа</div>
+      <div className={styles.sectionTitle}>{title}</div>
       <MediaPreview
         files={limitedMediaFiles}
         onRemove={handleRemoveFile}

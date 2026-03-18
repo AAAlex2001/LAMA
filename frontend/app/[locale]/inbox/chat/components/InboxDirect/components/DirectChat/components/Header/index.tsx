@@ -1,11 +1,13 @@
 import { FC } from 'react';
 import classNames from 'classnames';
 import { ChatChevronIcon, PinIcon, BlockedIcon } from '@/components/icons';
+import Avatar from '@/components/avatar';
 import styles from '../../styles.module.scss';
 
 interface HeaderProps {
   userName: string;
   botName?: string | null;
+  userPhoto?: string | null;
   isPinned: boolean;
   isBlocked: boolean;
   onClose?: () => void;
@@ -16,6 +18,7 @@ interface HeaderProps {
 const Header: FC<HeaderProps> = ({
   userName,
   botName,
+  userPhoto,
   isPinned,
   isBlocked,
   onClose,
@@ -27,6 +30,8 @@ const Header: FC<HeaderProps> = ({
       <button className={styles.backButton} type="button" onClick={onClose}>
         <ChatChevronIcon width={32} height={32} />
       </button>
+
+      <Avatar src={userPhoto ?? undefined} name={userName} size={40} alt={userName} />
       <div className={styles.userInfo}>
         <span className={styles.userName}>{userName}</span>
         {botName && <span className={styles.botName}>{botName}</span>}

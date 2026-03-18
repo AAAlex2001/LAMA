@@ -44,9 +44,10 @@ interface InboxListProps {
     handleStatusFilterChange: (status: 'new' | 'processed' | 'banned' | null) => void;
     handleEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
   }) => void;
+  isReady?: boolean;
 }
 
-const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
+const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }) => {
   const dispatch = useAppDispatch();
   const data = useAppSelector(selectInboxItems);
   const itemsLoading = useAppSelector(selectInboxItemsLoading);
@@ -65,8 +66,8 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
   const scrollContainer = useScrollContainer();
   const { ref: sentinelRef, inView } = useInView({ root: scrollContainer, rootMargin: '0px 0px 500px 0px' });
   const { ref: bottomRef, inView: isAtBottom } = useInView({ root: scrollContainer });
-  const { checkedItems, isChecking, toggle, selectAll, holdSelect, setMode, clear } = useCheckedItems(data);
-  const { blockModal, handleAction } = useBlockConfirmation(data);
+  const { checkedItems, isChecking, dispatch: checkedItemsDispatch } = useCheckedItems();
+  const { blockConfirm, blockDispatch, confirm, cancel, onOpenChange } = useBlockConfirmation();
 
   const isEmpty = !itemsLoading && data.length === 0;
 
@@ -99,9 +100,11 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
   }, [onHandlersReady]);
 
   useEffect(() => {
+    if (!isReady) return;
     dispatch(fetchInboxEventsThunk({ ...fetchParams, offset: 0 }));
   }, [
     dispatch, 
+    isReady,
     selectedFilter, 
     statusFilter, 
     sortDir, 
@@ -124,8 +127,11 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
     const eventIds = Array.from(checkedItems).map(Number);
     if (eventIds.length === 0) return;
     dispatch(bulkInboxActionThunk({ event_ids: eventIds, action }));
-    clear();
+    checkedItemsDispatch({ type: "clear" });
   };
+
+  const handleModerationSubFilterChange = (status: 'new' | 'processed' | 'banned' | null) => dispatch(setStatusFilter(status));
+  const allIds = data.map((item) => item.id.toString());
 
   if (itemsLoading && data.length === 0) {
     return (
@@ -138,25 +144,25 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
   return (
     <>
       <ConfirmBlockModal
-        isOpen={blockModal.isOpen}
-        onOpenChange={blockModal.setIsOpen}
-        username={blockModal.username}
-        onConfirm={blockModal.confirm}
-        onCancel={blockModal.cancel}
+        isOpen={blockConfirm.isOpen}
+        onOpenChange={onOpenChange}
+        username={blockConfirm.username}
+        onConfirm={confirm}
+        onCancel={cancel}
       />
       <div className={styles.container}>
         <ListHeader
           type={type}
-          setIsChecking={setMode}
+          selectionDispatch={checkedItemsDispatch}
           isChecking={isChecking}
-          onSelectAll={selectAll}
+          allIds={allIds}
           isSelectedAll={checkedItems.size > 0 && checkedItems.size === data.length}
           checkedItems={checkedItems.size}
           onBulkAction={handleBulkAction}
           automationSubFilter={typeAutoReplies ? 'system_autoreply' : typeTriggers ? 'system_trigger' : typeCommands ? 'bot_command' : null}
           onAutomationSubFilterChange={handleEventTypeFilterChange}
           moderationSubFilter={statusFilter}
-          onModerationSubFilterChange={(status) => dispatch(setStatusFilter(status))}
+            onModerationSubFilterChange={handleModerationSubFilterChange}
         />
         {isEmpty ? (
           <EmptyState />
@@ -168,10 +174,9 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady }) => {
                   <ListElement
                     item={item}
                     isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined}
-                    onCheck={toggle}
-                    onHold={holdSelect}
+                    selectionDispatch={checkedItemsDispatch}
+                    blockDispatch={blockDispatch}
                     type={type}
-                    onSpecificAction={handleAction}
                   />
                 </div>
               ))}

@@ -14,7 +14,7 @@ const ChatView = () => {
   };
 
   return (
-    <div className={`${styles.container} ${styles.direct}`}>
+    <div className={`${styles.chatContainer} ${styles.direct}`}>
       <ChatSortingBar
         onNavigateToOtherView={handleNavigateToInbox}
       />

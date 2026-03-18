@@ -12,7 +12,7 @@ import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHand
 import { useMessageMedia } from './hooks/useMessageMedia';
 import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
-import { SendIcon, CloseIcon, ReplyIcon } from '@/components/icons';
+import { SendIcon, CloseIcon, ReplyToIcon } from '@/components/icons';
 import EditIcon from '@/components/icons/edit-icon';
 import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -290,7 +290,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
         )}
         {!editingMessage && replyingTo && (
           <div className={styles.replyBar}>
-            <ReplyIcon width={20} height={20} color="var(--color-lama-blue)" />
+            <ReplyToIcon width={20} height={20} color="var(--color-lama-blue)" />
             <div className={styles.editBarContent}>
               <span className={styles.editBarLabel}>Ответ</span>
               <span className={styles.editBarText}>{replyingTo.text}</span>

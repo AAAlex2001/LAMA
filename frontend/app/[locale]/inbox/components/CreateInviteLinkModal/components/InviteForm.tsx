@@ -125,18 +125,18 @@ const InviteForm: React.FC<InviteFormProps> = ({
               <span className={styles.channelItemName}>{channel.title}</span>
             </div>
           ))}
-          <Button 
-            type="button"
-            variant="outline"
-            intent="gradient"
-            size="lg"
-            style={{ width: '100%', gap: "10px" }}
-            onClick={() => setShowCreateChannel(true)}
-          >
-            <span className={buttonStyles.label}>Подключить новый</span>
-            <span className={styles.channelsCount}>{`${channels.length}/${maxChannels}`}</span>
-          </Button>
         </div>
+        <Button 
+          type="button"
+          variant="outline"
+          intent="gradient"
+          size="lg"
+          style={{ width: '100%', gap: "10px" }}
+          onClick={() => setShowCreateChannel(true)}
+        >
+          <span className={buttonStyles.label}>Подключить новый</span>
+          <span className={styles.channelsCount}>{`${channels.length}/${maxChannels}`}</span>
+        </Button>
       </div>
 
       <div className={styles.section}>

@@ -39,6 +39,7 @@ interface InboxSortingBarProps {
   onTimeSortChange?: (sort: 'new' | 'old') => void;
   onStatusFilterChange?: (status: 'new' | 'processed' | 'banned' | null) => void;
   onEventTypeFilterChange?: (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => void;
+  isReady?: boolean;
 }
 
 const InboxSortingBar: FC<InboxSortingBarProps> = ({
@@ -48,6 +49,7 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   onTimeSortChange,
   onStatusFilterChange,
   onEventTypeFilterChange,
+  isReady = true,
 }) => {
   const [isFilterPopupOpen, setIsFilterPopupOpen] = useState(false);
   const filterButtonRef = useRef<HTMLDivElement>(null);
@@ -153,10 +155,6 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     sortState.resetSortValues();
     sourceFilter.reset();
     typeFilter.reset();
-    filterApplication.clearAllFilters();
-    onTimeSortChange?.('new');
-    onStatusFilterChange?.(null);
-    onEventTypeFilterChange?.(null);
   }, [selectedFilter]);
 
   useEffect(() => {
@@ -175,6 +173,10 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sortState.openFilter, applySourceFilters, applyTypeFilters]);
+
+  if (!isReady) {
+    return null;
+  }
 
   return (
     <>

@@ -1,41 +1,50 @@
-import { useState } from "react";
-import type { InboxEventResponse } from "../../../store";
+import { useReducer } from "react";
 
-export function useCheckedItems(data: InboxEventResponse[]) {
-  const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
-  const [isChecking, setIsChecking] = useState(false);
+export type CheckedItemsAction =
+  | { type: "toggle"; id: string }
+  | { type: "selectAll"; allIds: string[] }
+  | { type: "holdSelect"; id: string }
+  | { type: "setMode"; checking: boolean }
+  | { type: "clear" };
 
-  const toggle = (id: string) => {
-    setCheckedItems(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+interface CheckedItemsState {
+  checkedItems: Set<string>;
+  isChecking: boolean;
+}
 
-  const selectAll = () => {
-    if (checkedItems.size === data.length && data.length > 0) {
-      setCheckedItems(new Set());
-    } else {
-      setCheckedItems(new Set(data.map(item => item.id.toString())));
-      setIsChecking(true);
+const initialState: CheckedItemsState = {
+  checkedItems: new Set(),
+  isChecking: false,
+};
+
+function reducer(state: CheckedItemsState, action: CheckedItemsAction): CheckedItemsState {
+  switch (action.type) {
+    case "toggle": {
+      const next = new Set(state.checkedItems);
+      next.has(action.id) ? next.delete(action.id) : next.add(action.id);
+      return { ...state, checkedItems: next };
     }
-  };
+    case "selectAll": {
+      const allIds = action.allIds;
+      if (state.checkedItems.size === allIds.length && allIds.length > 0) {
+        return { ...state, checkedItems: new Set() };
+      }
+      return { isChecking: true, checkedItems: new Set(allIds) };
+    }
+    case "holdSelect":
+      return { isChecking: true, checkedItems: new Set([action.id]) };
+    case "setMode":
+      return action.checking
+        ? { ...state, isChecking: true }
+        : { isChecking: false, checkedItems: new Set() };
+    case "clear":
+      return { isChecking: false, checkedItems: new Set() };
+    default:
+      return state;
+  }
+}
 
-  const holdSelect = (id: string) => {
-    setIsChecking(true);
-    setCheckedItems(new Set([id]));
-  };
-
-  const setMode = (checking: boolean) => {
-    if (!checking) setCheckedItems(new Set());
-    setIsChecking(checking);
-  };
-
-  const clear = () => {
-    setCheckedItems(new Set());
-    setIsChecking(false);
-  };
-
-  return { checkedItems, isChecking, toggle, selectAll, holdSelect, setMode, clear };
+export function useCheckedItems() {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return { ...state, dispatch };
 }
