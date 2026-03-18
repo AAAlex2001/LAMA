@@ -7,6 +7,7 @@ import {
   CalendarRepeatIcon,
   CalendarReactionsIcon,
   CalendarViewsIcon,
+  CalendarBotMessageIcon,
 } from '@/components/icons';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import {
@@ -28,6 +29,7 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
   const isRepeating = hasRepeat(post);
   const isPublished = post.status === 'published';
   const isDraft = post.status === 'draft';
+  const isBotMessage = post.is_bot_message === true;
   const channel = post.channels?.[0];
   const extraChannelsCount = post.channels && post.channels.length > 1
     ? post.channels.length - 1
@@ -41,7 +43,9 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
       <div className={styles.headerRow}>
         <span className={styles.time}>{time}</span>
         <div className={styles.icons}>
-          {isDraft ? (
+          {isBotMessage ? (
+            <CalendarBotMessageIcon width={14} height={14} />
+          ) : isDraft ? (
             <CalendarDraftIcon width={14} height={14} />
           ) : (
             <CalendarDocPostIcon width={14} height={14} />
@@ -75,12 +79,14 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
         <div className={styles.preview}>{previewText}</div>
       )}
 
-      {channel && (
+      {isBotMessage ? (
+        <span className={styles.channelName}>@{post.bot_username}</span>
+      ) : channel ? (
         <span className={styles.channelName}>
           {channel.title}
           {extraChannelsCount > 0 && ` +${extraChannelsCount}`}
         </span>
-      )}
+      ) : null}
 
       {isPublished ? (
         <div className={styles.statsRow}>

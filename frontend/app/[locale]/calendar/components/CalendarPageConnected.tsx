@@ -145,9 +145,11 @@ export default function CalendarPageConnected() {
 
   function handleViewChange(view: typeof calendar.currentView) {
     if (
-      view === 'day'
-      && (calendar.currentView === 'week' || calendar.currentView === 'month')
-      && calendar.sidebarDate !== calendar.selectedDate
+      calendar.sidebarDate !== calendar.selectedDate
+      && (
+        view === 'day'
+        || (view === 'week' && (calendar.currentView === 'month' || calendar.currentView === 'list'))
+      )
     ) {
       dispatch(setSelectedDate(calendar.sidebarDate));
     }
@@ -203,6 +205,7 @@ export default function CalendarPageConnected() {
     calendar.currentView === 'list' ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
 
   function handlePostClick(post: Draft) {
+    if (post.is_bot_message) return;
     setSelectedPost(post);
   }
 
@@ -327,6 +330,8 @@ export default function CalendarPageConnected() {
           onListStatusChange={(status) => dispatch(setListStatusFilter(status))}
           onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}
           onSidebarDateChange={(date) => dispatch(sidebarDateChange(date))}
+          allChannels={allChannels?.items}
+          allTags={allTags?.items}
         />
       </div>
 

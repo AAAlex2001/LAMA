@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon } from '@/components/icons';
-import { useInView } from '../store/useInView';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import {
   formatDayTitle,
   formatTime,
@@ -14,6 +13,7 @@ import {
   getSourceDate,
   formatDateOnly,
   buildCreatePostUrl,
+  hasRepeat,
 } from '../utils/calendar-helpers';
 import styles from './monthly-sidebar.module.scss';
 
@@ -42,13 +42,42 @@ export default function MonthlySidebar({
   const isDayLoading = !!dayLoadingMap[dateKey];
   const hasDayMore = !!dayHasMoreMap[dateKey];
 
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0, skip: isDayLoading || !hasDayMore });
+  const scrollElRef = React.useRef<HTMLDivElement | null>(null);
+  const cleanupRef = React.useRef<(() => void) | null>(null);
+  const loadingRef = React.useRef(isDayLoading);
+  loadingRef.current = isDayLoading;
+  const hasMoreRef = React.useRef(hasDayMore);
+  hasMoreRef.current = hasDayMore;
+  const onLoadRef = React.useRef(onLoadMoreDay);
+  onLoadRef.current = onLoadMoreDay;
+  const dayKeyRef = React.useRef(dateKey);
+  dayKeyRef.current = dateKey;
+
+  const checkNeedMore = React.useCallback(() => {
+    const el = scrollElRef.current;
+    if (!el || loadingRef.current || !hasMoreRef.current) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+      onLoadRef.current(dayKeyRef.current);
+    }
+  }, []);
+
+  const scrollRootRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+    scrollElRef.current = node;
+    if (!node) return;
+    node.addEventListener('scroll', checkNeedMore, { passive: true });
+    cleanupRef.current = () => node.removeEventListener('scroll', checkNeedMore);
+    requestAnimationFrame(checkNeedMore);
+  }, [checkNeedMore]);
 
   React.useEffect(() => {
-    if (inView && hasDayMore && !isDayLoading) {
-      onLoadMoreDay(dateKey);
+    if (!isDayLoading && hasDayMore) {
+      requestAnimationFrame(checkNeedMore);
     }
-  }, [inView, hasDayMore, isDayLoading, onLoadMoreDay, dateKey]);
+  }, [isDayLoading, hasDayMore, checkNeedMore]);
 
   return (
     <div className={styles.sidebar}>
@@ -66,7 +95,7 @@ export default function MonthlySidebar({
       </div>
 
       <div className={styles.postsSection}>
-        <div className={styles.postsList}>
+        <div className={styles.postsList} ref={scrollRootRef}>
           <div className={styles.postsInner}>
             {isDayLoading && posts.length === 0 ? (
               <div className={styles.dayLoader}>
@@ -86,7 +115,9 @@ export default function MonthlySidebar({
                     onClick={() => onEdit(post)}
                   >
                     <div className={styles.postIcon}>
-                      {post.status === 'draft' ? (
+                      {post.is_bot_message ? (
+                        <CalendarBotMessageIcon width={14} height={14} />
+                      ) : post.status === 'draft' ? (
                         <CalendarDraftIcon width={14} height={14} />
                       ) : (
                         <CalendarDocPostIcon width={16} height={16} />
@@ -96,6 +127,7 @@ export default function MonthlySidebar({
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}
                     </span>
+                    {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                   </div>
                 );
               })
@@ -107,9 +139,6 @@ export default function MonthlySidebar({
               </div>
             )}
 
-            {hasDayMore && !isDayLoading && (
-              <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
-            )}
           </div>
         </div>
       </div>

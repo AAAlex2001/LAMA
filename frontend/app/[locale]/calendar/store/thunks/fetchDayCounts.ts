@@ -10,6 +10,7 @@ type DayCountItem = {
   published?: number;
   scheduled?: number;
   draft?: number;
+  bot_messages?: number;
 };
 
 type DayCountsResult = {
@@ -49,6 +50,7 @@ export const fetchDayCounts = createAsyncThunk<DayCountsResult, void, { state: R
             published: item.published ?? 0,
             scheduled: item.scheduled ?? 0,
             draft: item.draft ?? 0,
+            bot_messages: item.bot_messages ?? 0,
           };
         }
       }

@@ -103,7 +103,16 @@ async def get_publications(
         skip=skip,
         limit=page_size,
     )
-    return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
+    bot_messages = []
+    if start_date and end_date:
+        bot_messages = await query.get_bot_messages_in_range(
+            owner_id=current_user.id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+    return PublicationCompactListResponse(
+        items=publications, page=page, page_size=page_size, bot_messages=bot_messages,
+    )
 
 
 @router.get("/week-batch", response_model=WeekBatchResponse)

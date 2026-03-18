@@ -5,7 +5,6 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
-import { useInView } from '../store/useInView';
 import styles from './day-calendar-view.module.scss';
 
 interface DayCalendarViewProps {
@@ -29,13 +28,40 @@ export default function DayCalendarView({
   onAddPost,
   selectedDate,
 }: DayCalendarViewProps) {
-  const { ref: sentinelRef, inView } = useInView({ threshold: 0 });
+  const scrollElRef = React.useRef<HTMLDivElement | null>(null);
+  const cleanupRef = React.useRef<(() => void) | null>(null);
+  const loadingRef = React.useRef(isLoadingMore);
+  loadingRef.current = isLoadingMore;
+  const hasMoreRef = React.useRef(hasMore);
+  hasMoreRef.current = hasMore;
+  const onLoadMoreRef = React.useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  const checkNeedMore = React.useCallback(() => {
+    const el = scrollElRef.current;
+    if (!el || loadingRef.current || !hasMoreRef.current) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
+      onLoadMoreRef.current?.();
+    }
+  }, []);
+
+  const scrollRootRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+    scrollElRef.current = node;
+    if (!node) return;
+    node.addEventListener('scroll', checkNeedMore, { passive: true });
+    cleanupRef.current = () => node.removeEventListener('scroll', checkNeedMore);
+    requestAnimationFrame(checkNeedMore);
+  }, [checkNeedMore]);
 
   React.useEffect(() => {
-    if (inView && hasMore && !isLoadingMore && onLoadMore) {
-      onLoadMore();
+    if (!isLoadingMore && hasMore) {
+      requestAnimationFrame(checkNeedMore);
     }
-  }, [inView, hasMore, isLoadingMore, onLoadMore]);
+  }, [isLoadingMore, hasMore, checkNeedMore]);
 
   if (isLoading) {
     return (
@@ -62,7 +88,7 @@ export default function DayCalendarView({
       {posts.length === 0 ? (
         <div className={styles.empty}>Нет публикаций на этот день</div>
       ) : (
-        <div className={styles.scrollContainer}>
+        <div className={styles.scrollContainer} ref={scrollRootRef}>
           <div className={styles.list}>
             {posts.map((post) => (
               <CalendarCard
@@ -76,9 +102,6 @@ export default function DayCalendarView({
             <div className={styles.listLoader}>
               <Loader size={20} color="blue" />
             </div>
-          )}
-          {hasMore && !isLoadingMore && (
-            <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
           )}
         </div>
       )}

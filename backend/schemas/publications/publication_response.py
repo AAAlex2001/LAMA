@@ -57,10 +57,22 @@ class PublicationCompact(BaseModel):
     tags: List[TagCompact] = []
 
 
+class BotMessageCompact(BaseModel):
+    id: int
+    name: str
+    text_content: Optional[str] = None
+    media_url: Optional[str] = None
+    bot_username: str
+    sent_at: datetime
+    total_chats: int
+    success_chats: int
+
+
 class PublicationCompactListResponse(BaseModel):
     items: List[PublicationCompact]
     page: int
     page_size: int
+    bot_messages: List[BotMessageCompact] = []
 
 
 class PublicationResponse(BaseModel):
@@ -124,11 +136,14 @@ class DayCount(BaseModel):
     published: int = 0
     scheduled: int = 0
     draft: int = 0
+    bot_messages: int = 0
 
 
 class WeekBatchDay(BaseModel):
     items: List[PublicationCompact]
     has_more: bool = False
+    bot_messages: List[BotMessageCompact] = []
+    total: int = 0
 
 
 class WeekBatchResponse(BaseModel):

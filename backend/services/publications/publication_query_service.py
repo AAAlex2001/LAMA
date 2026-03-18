@@ -1,12 +1,14 @@
-from datetime import datetime
+from datetime import date, datetime
+from types import SimpleNamespace
 from typing import List, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import and_, exists, func, select
+from sqlalchemy import and_, case, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, load_only
 
 from backend.models.channels import ChannelGroup as Channel
+from backend.models.bots import Bot, BotMessage, RecurringMessage, RecurringMessageLog
 from backend.models.publications import (
     ContentType as DBContentType,
     Publication,
@@ -18,7 +20,11 @@ from backend.models.publications import (
     publication_tags,
 )
 from backend.schemas.publications.enums import ContentType, PublicationStatus
-from backend.schemas.publications.publication_response import WeekBatchDay, WeekBatchResponse
+from backend.schemas.publications.publication_response import (
+    BotMessageCompact,
+    WeekBatchDay,
+    WeekBatchResponse,
+)
 from backend.services.publications.calendar_service import fast_forward_to, strip_tz
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 
@@ -71,6 +77,18 @@ TAG_COMPACT_COLUMNS = [
 
 def escape_like(s: str) -> str:
     return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def make_scheduled_projection(pub: Publication, projected_time: datetime) -> SimpleNamespace:
+    """Создаёт копию публикации со статусом SCHEDULED и проецированным scheduled_time для будущих повторов."""
+    proxy = SimpleNamespace()
+    for col in PUB_COMPACT_COLUMNS:
+        setattr(proxy, col.key, getattr(pub, col.key))
+    proxy.status = DBPublicationStatus.SCHEDULED
+    proxy.scheduled_time = projected_time
+    proxy.channels = pub.channels
+    proxy.tags = pub.tags
+    return proxy
 
 
 class PublicationQueryService:
@@ -192,6 +210,7 @@ class PublicationQueryService:
 
         naive_start = strip_tz(start_date)
         naive_end = strip_tz(end_date)
+        today = date.today()
 
         for pub in repeating_pubs:
             current = fast_forward_to(
@@ -203,7 +222,10 @@ class PublicationQueryService:
 
             while current and current <= naive_end:
                 if current >= naive_start:
-                    posts.append(pub)
+                    if current.date() > today:
+                        posts.append(make_scheduled_projection(pub, current))
+                    else:
+                        posts.append(pub)
                     break
                 current = calculate_next_repeat_time(
                     current, pub.repeat_interval,
@@ -233,6 +255,7 @@ class PublicationQueryService:
                 Publication.owner_id == owner_id,
                 Publication.scheduled_time >= start_date,
                 Publication.scheduled_time <= end_date,
+                Publication.status.notin_([DBPublicationStatus.DELETED]),
             )
             .options(
                 load_only(*PUB_COMPACT_COLUMNS),
@@ -240,18 +263,17 @@ class PublicationQueryService:
                 selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
             .order_by(Publication.scheduled_time.asc(), Publication.id.asc())
-            .limit(500)
         )
         result = await self.db.execute(query)
         all_posts = list(result.scalars().all())
 
         buckets: dict[str, list[Publication]] = {}
-        existing_ids: set[int] = set()
+        day_post_ids: dict[str, set[int]] = {}
         for post in all_posts:
             if post.scheduled_time:
                 day_key = strip_tz(post.scheduled_time).strftime("%Y-%m-%d")
                 buckets.setdefault(day_key, []).append(post)
-                existing_ids.add(post.id)
+                day_post_ids.setdefault(day_key, set()).add(post.id)
 
         repeat_query = (
             select(Publication)
@@ -263,17 +285,18 @@ class PublicationQueryService:
                     DBPublicationStatus.PARTIAL_SUCCESS,
                 ]),
                 Publication.next_repeat_time.isnot(None),
-                Publication.id.notin_(existing_ids) if existing_ids else True,
             )
             .options(
                 load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
                 selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),
                 selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
+            .limit(200)
         )
         repeat_result = await self.db.execute(repeat_query)
         repeating_pubs = list(repeat_result.scalars().all())
 
+        today = date.today()
         for pub in repeating_pubs:
             current = fast_forward_to(
                 pub.next_repeat_time, naive_start,
@@ -281,10 +304,14 @@ class PublicationQueryService:
             )
             if current is None:
                 continue
-            while current and current <= naive_end:
+            iterations = 0
+            while current and current <= naive_end and iterations < 50:
                 if current >= naive_start:
                     day_key = current.strftime("%Y-%m-%d")
-                    buckets.setdefault(day_key, []).append(pub)
+                    if pub.id not in day_post_ids.get(day_key, set()):
+                        item = make_scheduled_projection(pub, current) if current.date() > today else pub
+                        buckets.setdefault(day_key, []).append(item)
+                        day_post_ids.setdefault(day_key, set()).add(pub.id)
                 current = calculate_next_repeat_time(
                     current, pub.repeat_interval,
                     pub.repeat_custom_days, pub.repeat_custom_hours,
@@ -293,14 +320,122 @@ class PublicationQueryService:
                     pub.repeat_month_days, pub.repeat_year_month,
                     pub.repeat_year_days,
                 )
+                iterations += 1
 
+        bot_messages = await self.get_bot_messages_in_range(owner_id, start_date, end_date)
+        bot_buckets: dict[str, list[BotMessageCompact]] = {}
+        for msg in bot_messages:
+            day_key = strip_tz(msg.sent_at).strftime("%Y-%m-%d")
+            bot_buckets.setdefault(day_key, []).append(msg)
+
+        all_day_keys = set(buckets.keys()) | set(bot_buckets.keys())
         days: dict[str, WeekBatchDay] = {}
-        for day_key, posts in buckets.items():
+        for day_key in all_day_keys:
+            posts = buckets.get(day_key, [])
+            bots = bot_buckets.get(day_key, [])
             days[day_key] = WeekBatchDay(
                 items=posts[:per_day],
                 has_more=len(posts) > per_day,
+                bot_messages=bots,
+                total=len(posts) + len(bots),
             )
         return WeekBatchResponse(days=days)
+
+    async def get_bot_messages_in_range(
+        self,
+        owner_id: int,
+        start_date: datetime,
+        end_date: datetime,
+    ) -> List[BotMessageCompact]:
+        """Собирает бот-сообщения из двух источников: массовые рассылки и повторяющиеся сообщения."""
+        results: List[BotMessageCompact] = []
+
+        broadcast_query = (
+            select(
+                func.min(BotMessage.id).label('msg_id'),
+                BotMessage.text_content,
+                BotMessage.media_url,
+                Bot.username.label('bot_username'),
+                func.min(BotMessage.created_at).label('first_sent_at'),
+                func.count().label('total_chats'),
+            )
+            .select_from(BotMessage)
+            .join(Bot, Bot.id == BotMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                BotMessage.is_incoming.is_(False),
+                BotMessage.is_system.is_(False),
+                BotMessage.created_at >= start_date,
+                BotMessage.created_at <= end_date,
+            )
+            .group_by(
+                Bot.id,
+                BotMessage.text_content,
+                BotMessage.media_url,
+                Bot.username,
+                func.date(BotMessage.created_at),
+            )
+            .having(func.count() > 1)
+            .order_by(func.min(BotMessage.created_at).asc())
+        )
+        broadcast_result = await self.db.execute(broadcast_query)
+        for row in broadcast_result.all():
+            results.append(BotMessageCompact(
+                id=row.msg_id,
+                name=(row.text_content or '')[:50],
+                text_content=row.text_content,
+                media_url=row.media_url,
+                bot_username=row.bot_username,
+                sent_at=row.first_sent_at,
+                total_chats=row.total_chats,
+                success_chats=row.total_chats,
+            ))
+
+        recurring_query = (
+            select(
+                RecurringMessage.id.label('recurring_message_id'),
+                RecurringMessage.name,
+                RecurringMessage.text_content,
+                RecurringMessage.media_url,
+                Bot.username.label('bot_username'),
+                func.date(RecurringMessageLog.sent_at).label('send_date'),
+                func.min(RecurringMessageLog.sent_at).label('first_sent_at'),
+                func.count().label('total_chats'),
+                func.sum(case((RecurringMessageLog.success.is_(True), 1), else_=0)).label('success_chats'),
+            )
+            .select_from(RecurringMessageLog)
+            .join(RecurringMessage, RecurringMessage.id == RecurringMessageLog.recurring_message_id)
+            .join(Bot, Bot.id == RecurringMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                RecurringMessageLog.sent_at >= start_date,
+                RecurringMessageLog.sent_at <= end_date,
+            )
+            .group_by(
+                RecurringMessage.id,
+                RecurringMessage.name,
+                RecurringMessage.text_content,
+                RecurringMessage.media_url,
+                Bot.username,
+                func.date(RecurringMessageLog.sent_at),
+            )
+            .order_by(func.min(RecurringMessageLog.sent_at).asc())
+        )
+        recurring_result = await self.db.execute(recurring_query)
+        for row in recurring_result.all():
+            results.append(BotMessageCompact(
+                id=row.recurring_message_id + 10000000,
+                name=row.name,
+                text_content=row.text_content,
+                media_url=row.media_url,
+                bot_username=row.bot_username,
+                sent_at=row.first_sent_at,
+                total_chats=row.total_chats,
+                success_chats=row.success_chats,
+            ))
+
+        results.sort(key=lambda m: m.sent_at)
+        return results
 
     def apply_filters(self, id_query, status, content_type, channel_id,
                        tag_names, tag_ids, series_id, start_date, end_date,

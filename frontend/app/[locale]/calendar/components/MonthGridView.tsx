@@ -4,6 +4,7 @@ import React from 'react';
 import {
   CalendarDocPostIcon,
   CalendarDraftIcon,
+  CalendarBotMessageIcon,
 } from '@/components/icons';
 import type { DayStatusCount } from '../store';
 import {
@@ -124,6 +125,14 @@ export default function MonthGridView({
                           <div className={styles.statItem}>
                             <CalendarDraftIcon width={12} height={12} />
                             <span className={styles.statValueGray}>{sc.draft}</span>
+                          </div>
+                        </div>
+                      )}
+                      {sc.bot_messages > 0 && (
+                        <div className={styles.statsRow}>
+                          <div className={styles.statItem}>
+                            <CalendarBotMessageIcon width={12} height={12} />
+                            <span className={styles.statValueGray}>{sc.bot_messages}</span>
                           </div>
                         </div>
                       )}

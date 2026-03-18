@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func, select
@@ -11,12 +11,13 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
+from backend.models.bots import Bot, BotMessage, RecurringMessage, RecurringMessageLog
 from backend.schemas.publications.publication_response import DayCount
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 
 
 class CalendarService:
-    """Calendar and day-count queries for publications."""
+    """Запросы для календаря и подсчётов по дням."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -28,6 +29,7 @@ class CalendarService:
         owner_id: Optional[int] = None,
         mode: str = "scheduled",
     ) -> List[DayCount]:
+        """Считает публикации, повторы и бот-сообщения по дням."""
         normalized_mode = (mode or "scheduled").lower()
 
         if normalized_mode == "published":
@@ -72,10 +74,10 @@ class CalendarService:
         )
 
         result = await self.db.execute(query)
-        counts: Dict[str, DayCount] = {}
+        counts_map: dict[str, DayCount] = {}
         for row in result.all():
             date_str = str(row.day)
-            counts[date_str] = DayCount(
+            counts_map[date_str] = DayCount(
                 date=date_str,
                 count=row.cnt,
                 published=row.published,
@@ -84,34 +86,113 @@ class CalendarService:
             )
 
         if owner_id is not None:
-            projections = await self.project_repeats(start_date, end_date, owner_id)
-            for date_str, proj_count in projections.items():
-                if date_str in counts:
-                    dc = counts[date_str]
-                    counts[date_str] = DayCount(
-                        date=date_str,
-                        count=dc.count + proj_count,
-                        published=dc.published + proj_count,
-                        scheduled=dc.scheduled,
-                        draft=dc.draft,
+            for dc in await self.project_repeats(start_date, end_date, owner_id):
+                if dc.date in counts_map:
+                    existing = counts_map[dc.date]
+                    counts_map[dc.date] = DayCount(
+                        date=dc.date,
+                        count=existing.count + dc.count,
+                        published=existing.published + dc.published,
+                        scheduled=existing.scheduled,
+                        draft=existing.draft,
                     )
                 else:
-                    counts[date_str] = DayCount(
-                        date=date_str,
-                        count=proj_count,
-                        published=proj_count,
-                        scheduled=0,
-                        draft=0,
-                    )
+                    counts_map[dc.date] = dc
 
-        return list(counts.values())
+            for bc in await self.count_bot_messages_per_day(start_date, end_date, owner_id):
+                if bc.date in counts_map:
+                    existing = counts_map[bc.date]
+                    counts_map[bc.date] = DayCount(
+                        date=bc.date,
+                        count=existing.count + bc.count,
+                        published=existing.published + bc.published,
+                        scheduled=existing.scheduled,
+                        draft=existing.draft,
+                        bot_messages=existing.bot_messages + bc.bot_messages,
+                    )
+                else:
+                    counts_map[bc.date] = bc
+
+        return list(counts_map.values())
+
+    async def count_bot_messages_per_day(
+        self,
+        start_date: datetime,
+        end_date: datetime,
+        owner_id: int,
+    ) -> List[DayCount]:
+        """Считает бот-сообщения по дням (рассылки + рекурентные логи)."""
+        naive_start = strip_tz(start_date)
+        naive_end = strip_tz(end_date)
+
+        broadcast_sub = (
+            select(
+                func.date(BotMessage.created_at).label("day"),
+                Bot.id.label("bot_id"),
+                BotMessage.text_content,
+                BotMessage.media_url,
+            )
+            .select_from(BotMessage)
+            .join(Bot, Bot.id == BotMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                BotMessage.is_incoming.is_(False),
+                BotMessage.is_system.is_(False),
+                BotMessage.created_at >= naive_start,
+                BotMessage.created_at <= naive_end,
+            )
+            .group_by(
+                Bot.id,
+                func.date(BotMessage.created_at),
+                BotMessage.text_content,
+                BotMessage.media_url,
+            )
+            .having(func.count() > 1)
+            .subquery()
+        )
+        broadcast_query = (
+            select(
+                broadcast_sub.c.day,
+                func.count().label("cnt"),
+            )
+            .group_by(broadcast_sub.c.day)
+        )
+        result = await self.db.execute(broadcast_query)
+        per_day: dict[str, int] = {}
+        for row in result.all():
+            per_day[str(row.day)] = row.cnt
+
+        recurring_query = (
+            select(
+                func.date(RecurringMessageLog.sent_at).label("day"),
+                func.count(func.distinct(RecurringMessageLog.recurring_message_id)).label("cnt"),
+            )
+            .select_from(RecurringMessageLog)
+            .join(RecurringMessage, RecurringMessage.id == RecurringMessageLog.recurring_message_id)
+            .join(Bot, Bot.id == RecurringMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                RecurringMessageLog.sent_at >= naive_start,
+                RecurringMessageLog.sent_at <= naive_end,
+            )
+            .group_by(func.date(RecurringMessageLog.sent_at))
+        )
+        result = await self.db.execute(recurring_query)
+        for row in result.all():
+            date_str = str(row.day)
+            per_day[date_str] = per_day.get(date_str, 0) + row.cnt
+
+        return [
+            DayCount(date=date_str, count=cnt, published=cnt, bot_messages=cnt)
+            for date_str, cnt in per_day.items()
+        ]
 
     async def project_repeats(
         self,
         start_date: datetime,
         end_date: datetime,
         owner_id: int,
-    ) -> Dict[str, int]:
+    ) -> List[DayCount]:
         """Проецирует будущие повторы на даты в диапазоне."""
         query = (
             select(Publication)
@@ -142,7 +223,7 @@ class CalendarService:
         result = await self.db.execute(query)
         repeating_pubs = result.scalars().all()
 
-        projections: Dict[str, int] = {}
+        per_day: dict[str, int] = {}
         seen: set = set()
         naive_start = strip_tz(start_date)
         naive_end = strip_tz(end_date)
@@ -163,7 +244,7 @@ class CalendarService:
                     date_str = current.strftime("%Y-%m-%d")
                     key = (pub.id, date_str)
                     if key not in seen:
-                        projections[date_str] = projections.get(date_str, 0) + 1
+                        per_day[date_str] = per_day.get(date_str, 0) + 1
                         seen.add(key)
 
                 current = calculate_next_repeat_time(
@@ -181,7 +262,10 @@ class CalendarService:
                 )
                 iterations += 1
 
-        return projections
+        return [
+            DayCount(date=date_str, count=cnt, published=cnt)
+            for date_str, cnt in per_day.items()
+        ]
 
 
 def strip_tz(dt: datetime) -> datetime:

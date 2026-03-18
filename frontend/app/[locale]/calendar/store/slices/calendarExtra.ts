@@ -19,20 +19,10 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       state.isLoading = true;
     })
     .addCase(fetchCalendarData.fulfilled, (state, action) => {
-      const request = action.payload.request;
-      const isStaleResponse =
-        request.view !== state.currentView
-        || request.selectedDate !== state.selectedDate
-        || request.sidebarDate !== state.sidebarDate
-        || request.listRangeStart !== state.listRangeStart
-        || request.listRangeEnd !== state.listRangeEnd
-        || request.listSortOrder !== state.listSortOrder
-        || request.listStatusFilter !== state.listStatusFilter;
-
-      if (isStaleResponse) {
+      const requestView = action.payload.request.view;
+      if (requestView !== state.currentView) {
         return;
       }
-
       state.isLoading = false;
       if (action.payload.type === 'grid') {
         const merge = action.payload.merge === true;
@@ -41,6 +31,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
+          state.monthPostCounts[r.dateKey] = r.total;
         }
         state.weekItems = weekItems;
         state.dayPageState = dayPageState;
@@ -90,7 +81,13 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         return;
       }
       state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
-      state.monthPostCounts = action.payload.counts;
+      const merged = { ...action.payload.counts };
+      for (const dateKey of Object.keys(state.weekItems)) {
+        if (state.monthPostCounts[dateKey] !== undefined) {
+          merged[dateKey] = state.monthPostCounts[dateKey];
+        }
+      }
+      state.monthPostCounts = merged;
       state.monthStatusCountsCache[action.payload.monthKey] = action.payload.statusCounts;
       state.monthStatusCounts = action.payload.statusCounts;
     });
