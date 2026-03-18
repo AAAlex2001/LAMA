@@ -205,6 +205,7 @@ export default function CalendarPageConnected() {
     calendar.currentView === 'list' ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
 
   function handlePostClick(post: Draft) {
+    if (post.is_bot_message) return;
     setSelectedPost(post);
   }
 

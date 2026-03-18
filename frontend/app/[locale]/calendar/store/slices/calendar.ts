@@ -14,6 +14,7 @@ export type DayStatusCount = {
   published: number;
   scheduled: number;
   draft: number;
+  bot_messages: number;
 };
 
 export interface CalendarState {
@@ -40,6 +41,7 @@ export interface CalendarState {
 }
 
 const todayStr = new Date().toISOString().split('T')[0];
+const todayMonthAnchor = `${todayStr.slice(0, 7)}-01`;
 
 export const initialState: CalendarState = {
   items: [],
@@ -54,7 +56,7 @@ export const initialState: CalendarState = {
   monthPostCountsCache: {},
   monthStatusCounts: {},
   monthStatusCountsCache: {},
-  countsMonthAnchor: todayStr,
+  countsMonthAnchor: todayMonthAnchor,
   currentRangeKey: '',
   currentPage: 1,
   hasMore: false,

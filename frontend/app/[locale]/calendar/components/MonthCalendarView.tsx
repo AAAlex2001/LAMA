@@ -61,29 +61,17 @@ export default function MonthCalendarView({
   const dayKeyRef = React.useRef(dayKey);
   dayKeyRef.current = dayKey;
 
-  const { ref: sentinelRef, inView } = useInView({
+  const { ref: sentinelRef } = useInView({
     root: scrollContainer,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore,
+    skip: !hasDayMore || isDayLoading,
+    onChange(inView) {
+      if (inView && hasMoreRef.current && !loadingRef.current) {
+        onLoadRef.current(dayKeyRef.current);
+      }
+    },
   });
-
-  React.useEffect(() => {
-    if (inView && hasMoreRef.current && !loadingRef.current) {
-      onLoadRef.current(dayKeyRef.current);
-    }
-  }, [inView]);
-
-  React.useEffect(() => {
-    if (!isDayLoading && inView && hasDayMore) {
-      const id = setTimeout(() => {
-        if (hasMoreRef.current && !loadingRef.current) {
-          onLoadRef.current(dayKeyRef.current);
-        }
-      }, 100);
-      return () => clearTimeout(id);
-    }
-  }, [isDayLoading, hasDayMore]);
 
   return (
     <div className={styles.monthWrap}>

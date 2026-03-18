@@ -255,6 +255,7 @@ class PublicationQueryService:
                 Publication.owner_id == owner_id,
                 Publication.scheduled_time >= start_date,
                 Publication.scheduled_time <= end_date,
+                Publication.status.notin_([DBPublicationStatus.DELETED]),
             )
             .options(
                 load_only(*PUB_COMPACT_COLUMNS),
@@ -262,7 +263,6 @@ class PublicationQueryService:
                 selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
             .order_by(Publication.scheduled_time.asc(), Publication.id.asc())
-            .limit(500)
         )
         result = await self.db.execute(query)
         all_posts = list(result.scalars().all())
@@ -332,10 +332,12 @@ class PublicationQueryService:
         days: dict[str, WeekBatchDay] = {}
         for day_key in all_day_keys:
             posts = buckets.get(day_key, [])
+            bots = bot_buckets.get(day_key, [])
             days[day_key] = WeekBatchDay(
                 items=posts[:per_day],
                 has_more=len(posts) > per_day,
-                bot_messages=bot_buckets.get(day_key, []),
+                bot_messages=bots,
+                total=len(posts) + len(bots),
             )
         return WeekBatchResponse(days=days)
 

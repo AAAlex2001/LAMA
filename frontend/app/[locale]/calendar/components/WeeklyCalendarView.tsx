@@ -5,7 +5,6 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
-import { useInView } from '../store/useInView';
 import {
   DAY_NAMES_SHORT,
   getWeekStart,
@@ -57,7 +56,7 @@ function DayColumn({
   onReachEnd?: (dateKey: string) => void;
   onDayClick?: (date: Date) => void;
 }) {
-  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const scrollRootRef = React.useRef<HTMLDivElement | null>(null);
   const loadingRef = React.useRef(dayLoading);
   loadingRef.current = dayLoading;
   const hasMoreRef = React.useRef(dayHasMore);
@@ -67,29 +66,27 @@ function DayColumn({
   const dateKeyRef = React.useRef(dateKey);
   dateKeyRef.current = dateKey;
 
-  const { ref: sentinelRef, inView } = useInView({
-    root: scrollRoot,
-    rootMargin: '0px 0px 200px 0px',
-    threshold: 0,
-    skip: !dayHasMore || !scrollRoot,
-  });
-
-  React.useEffect(() => {
-    if (inView && hasMoreRef.current && !loadingRef.current) {
+  const checkNeedMore = React.useCallback(() => {
+    const el = scrollRootRef.current;
+    if (!el || loadingRef.current || !hasMoreRef.current) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
       onReachEndRef.current?.(dateKeyRef.current);
     }
-  }, [inView]);
+  }, []);
 
   React.useEffect(() => {
-    if (!dayLoading && inView && dayHasMore) {
-      const id = setTimeout(() => {
-        if (hasMoreRef.current && !loadingRef.current) {
-          onReachEndRef.current?.(dateKeyRef.current);
-        }
-      }, 100);
-      return () => clearTimeout(id);
+    const el = scrollRootRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkNeedMore, { passive: true });
+    requestAnimationFrame(checkNeedMore);
+    return () => el.removeEventListener('scroll', checkNeedMore);
+  }, [checkNeedMore]);
+
+  React.useEffect(() => {
+    if (!dayLoading && dayHasMore) {
+      requestAnimationFrame(checkNeedMore);
     }
-  }, [dayLoading, dayHasMore]);
+  }, [dayLoading, dayHasMore, checkNeedMore]);
 
   const sorted = sortPostsByTime(posts);
 
@@ -135,7 +132,7 @@ function DayColumn({
       <div
         className={cardsClasses}
         data-date-key={dateKey}
-        ref={setScrollRoot}
+        ref={scrollRootRef}
       >
         {isLoading ? (
           <div className={styles.dayLoader}>
@@ -156,9 +153,6 @@ function DayColumn({
               <div className={styles.dayLoader}>
                 <Loader size={16} color="blue" />
               </div>
-            )}
-            {dayHasMore && !dayLoading && (
-              <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}
           </>
         )}

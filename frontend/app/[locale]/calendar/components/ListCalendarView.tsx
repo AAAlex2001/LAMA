@@ -12,12 +12,11 @@ import {
   PhotoIcon,
   QuizIcon,
   VideoIcon,
+  CalendarBotMessageIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
-import { CalendarBotMessageIcon } from '@/components/icons';
 import CalendarCard from './CalendarCard';
 import ListFilterBar from './ListFilterBar';
-import { useInView } from '../store/useInView';
 import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 import { applyPostFilters } from '../utils/filterPosts';
 import {
@@ -80,7 +79,8 @@ export default function ListCalendarView({
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
 
-  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const scrollElRef = React.useRef<HTMLDivElement | null>(null);
+  const cleanupRef = React.useRef<(() => void) | null>(null);
   const loadingRef = React.useRef(isLoadingMore);
   loadingRef.current = isLoadingMore;
   const hasMoreRef = React.useRef(hasMore);
@@ -88,29 +88,31 @@ export default function ListCalendarView({
   const onLoadMoreRef = React.useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
 
-  const { ref: sentinelRef, inView } = useInView({
-    root: scrollRoot,
-    rootMargin: '0px 0px 400px 0px',
-    threshold: 0,
-    skip: !hasMore || !scrollRoot,
-  });
-
-  React.useEffect(() => {
-    if (inView && hasMoreRef.current && !loadingRef.current) {
+  const checkNeedMore = React.useCallback(() => {
+    const el = scrollElRef.current;
+    if (!el || loadingRef.current || !hasMoreRef.current) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
       onLoadMoreRef.current?.();
     }
-  }, [inView]);
+  }, []);
+
+  const scrollRootRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+    scrollElRef.current = node;
+    if (!node) return;
+    node.addEventListener('scroll', checkNeedMore, { passive: true });
+    cleanupRef.current = () => node.removeEventListener('scroll', checkNeedMore);
+    requestAnimationFrame(checkNeedMore);
+  }, [checkNeedMore]);
 
   React.useEffect(() => {
-    if (!isLoadingMore && inView && hasMore) {
-      const id = setTimeout(() => {
-        if (hasMoreRef.current && !loadingRef.current) {
-          onLoadMoreRef.current?.();
-        }
-      }, 100);
-      return () => clearTimeout(id);
+    if (!isLoadingMore && hasMore) {
+      requestAnimationFrame(checkNeedMore);
     }
-  }, [isLoadingMore, hasMore]);
+  }, [isLoadingMore, hasMore, checkNeedMore]);
 
   const filterConfigs = buildFilterConfigs(posts, {
     withDateSort: true,
@@ -156,6 +158,9 @@ export default function ListCalendarView({
     );
   }
 
+  const hasAnyFilter = Object.values(activeFilters).some((v) => v.length > 0)
+    || Object.values(mobileActiveFilters || {}).some((v) => v.length > 0);
+
   return (
     <>
       <div className={styles.mobileMiniTabs}>
@@ -192,11 +197,13 @@ export default function ListCalendarView({
         </div>
       )}
 
-      {posts.length === 0 ? (
-        <div className={styles.empty}>Нет публикаций в этом периоде</div>
+      {filteredPosts.length === 0 ? (
+        <div className={styles.empty}>
+          {hasAnyFilter ? 'Нет публикаций по выбранным фильтрам' : 'Нет публикаций в этом периоде'}
+        </div>
       ) : (
 
-      <div className={styles.scrollContainer} ref={setScrollRoot}>
+      <div className={styles.scrollContainer} ref={scrollRootRef}>
         <div className={styles.desktopList}>
           {filteredPosts.map((post) => {
             const sourceDate = getSourceDate(post);
@@ -279,9 +286,6 @@ export default function ListCalendarView({
           <div className={styles.listLoader}>
             <Loader size={18} color="blue" />
           </div>
-        )}
-        {hasMore && !isLoadingMore && (
-          <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
         )}
       </div>
       )}

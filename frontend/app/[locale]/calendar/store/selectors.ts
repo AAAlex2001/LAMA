@@ -46,19 +46,7 @@ export const selectGridPostCounts = createSelector(
     (s: RootState) => s.calendar.items,
   ],
   (monthCounts, weekItems, currentView, selectedDate, items) => {
-    if (currentView === 'month') {
-      return { ...monthCounts };
-    }
-
-    const merged: Record<string, number> = {};
-    const allKeys = new Set([...Object.keys(monthCounts), ...Object.keys(weekItems)]);
-    for (const key of allKeys) {
-      if (Object.prototype.hasOwnProperty.call(weekItems, key)) {
-        merged[key] = weekItems[key]?.length || 0;
-      } else {
-        merged[key] = monthCounts[key] || 0;
-      }
-    }
+    const merged: Record<string, number> = { ...monthCounts };
     if (currentView === 'day') {
       merged[selectedDate] = items.length;
     }

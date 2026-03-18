@@ -81,7 +81,7 @@ export default function WeeklySidebar({
       {isLoading && !hasPosts ? (
         <div className={styles.postsSection}>
           <div className={styles.dayTitle}>{dayTitle}</div>
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+          <div className={styles.dayLoader}>
             <Loader size={20} color="blue" />
           </div>
         </div>

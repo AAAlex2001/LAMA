@@ -8,13 +8,14 @@ interface WeekBatchDay {
   items: Draft[];
   has_more: boolean;
   bot_messages?: BotMessageCompact[];
+  total?: number;
 }
 
 interface WeekBatchResponse {
   days: Record<string, WeekBatchDay>;
 }
 
-type GridDayResult = { dateKey: string; items: Draft[]; hasMore: boolean };
+type GridDayResult = { dateKey: string; items: Draft[]; hasMore: boolean; total: number };
 
 type CalendarRequestMeta = {
   view: RootState['calendar']['currentView'];
@@ -67,19 +68,18 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
 
     if (view === 'month') {
       const dayKey = s.sidebarDate;
-      const pageSize = 20;
       const params = new URLSearchParams({
-        page: '1', page_size: String(pageSize),
-        start_date: `${dayKey}T00:00:00`, end_date: `${dayKey}T23:59:59`,
-        sort_order: 'asc',
+        start_date: `${dayKey}T00:00:00`,
+        end_date: `${dayKey}T23:59:59`,
+        per_day: '20',
       });
-      const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
-      const allItems = [
-        ...res.items,
-        ...(res.bot_messages ?? []).map(botMessageToDraft),
-      ];
+      const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
+      const day = res.days[dayKey];
+      const pubItems = day?.items ?? [];
+      const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
+      const total = day?.total ?? (pubItems.length + botItems.length);
       const results: GridDayResult[] = [
-        { dateKey: dayKey, items: allItems, hasMore: res.items.length === pageSize },
+        { dateKey: dayKey, items: [...pubItems, ...botItems], hasMore: day?.has_more ?? false, total },
       ];
       return { type: 'grid', merge: true, keys: [dayKey], results, request };
     }
@@ -97,10 +97,12 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
         const day = res.days[dateKey];
         const pubItems = day?.items ?? [];
         const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
+        const total = day?.total ?? (pubItems.length + botItems.length);
         return {
           dateKey,
           items: [...pubItems, ...botItems],
           hasMore: day?.has_more ?? false,
+          total,
         };
       });
       return { type: 'grid', keys, results, request };

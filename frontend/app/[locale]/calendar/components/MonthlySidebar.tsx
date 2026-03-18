@@ -6,7 +6,6 @@ import Button from '@/components/button/button';
 import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import { useInView } from '../store/useInView';
 import {
   formatDayTitle,
   formatTime,
@@ -43,7 +42,8 @@ export default function MonthlySidebar({
   const isDayLoading = !!dayLoadingMap[dateKey];
   const hasDayMore = !!dayHasMoreMap[dateKey];
 
-  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const scrollElRef = React.useRef<HTMLDivElement | null>(null);
+  const cleanupRef = React.useRef<(() => void) | null>(null);
   const loadingRef = React.useRef(isDayLoading);
   loadingRef.current = isDayLoading;
   const hasMoreRef = React.useRef(hasDayMore);
@@ -53,29 +53,31 @@ export default function MonthlySidebar({
   const dayKeyRef = React.useRef(dateKey);
   dayKeyRef.current = dateKey;
 
-  const { ref: sentinelRef, inView } = useInView({
-    root: scrollRoot,
-    rootMargin: '0px 0px 200px 0px',
-    threshold: 0,
-    skip: !hasDayMore || !scrollRoot,
-  });
-
-  React.useEffect(() => {
-    if (inView && hasMoreRef.current && !loadingRef.current) {
+  const checkNeedMore = React.useCallback(() => {
+    const el = scrollElRef.current;
+    if (!el || loadingRef.current || !hasMoreRef.current) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
       onLoadRef.current(dayKeyRef.current);
     }
-  }, [inView]);
+  }, []);
+
+  const scrollRootRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+    scrollElRef.current = node;
+    if (!node) return;
+    node.addEventListener('scroll', checkNeedMore, { passive: true });
+    cleanupRef.current = () => node.removeEventListener('scroll', checkNeedMore);
+    requestAnimationFrame(checkNeedMore);
+  }, [checkNeedMore]);
 
   React.useEffect(() => {
-    if (!isDayLoading && inView && hasDayMore) {
-      const id = setTimeout(() => {
-        if (hasMoreRef.current && !loadingRef.current) {
-          onLoadRef.current(dayKeyRef.current);
-        }
-      }, 100);
-      return () => clearTimeout(id);
+    if (!isDayLoading && hasDayMore) {
+      requestAnimationFrame(checkNeedMore);
     }
-  }, [isDayLoading, hasDayMore]);
+  }, [isDayLoading, hasDayMore, checkNeedMore]);
 
   return (
     <div className={styles.sidebar}>
@@ -93,7 +95,7 @@ export default function MonthlySidebar({
       </div>
 
       <div className={styles.postsSection}>
-        <div className={styles.postsList} ref={setScrollRoot}>
+        <div className={styles.postsList} ref={scrollRootRef}>
           <div className={styles.postsInner}>
             {isDayLoading && posts.length === 0 ? (
               <div className={styles.dayLoader}>
@@ -137,9 +139,6 @@ export default function MonthlySidebar({
               </div>
             )}
 
-            {hasDayMore && !isDayLoading && (
-              <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
-            )}
           </div>
         </div>
       </div>

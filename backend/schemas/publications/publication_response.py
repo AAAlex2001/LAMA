@@ -136,12 +136,14 @@ class DayCount(BaseModel):
     published: int = 0
     scheduled: int = 0
     draft: int = 0
+    bot_messages: int = 0
 
 
 class WeekBatchDay(BaseModel):
     items: List[PublicationCompact]
     has_more: bool = False
     bot_messages: List[BotMessageCompact] = []
+    total: int = 0
 
 
 class WeekBatchResponse(BaseModel):
