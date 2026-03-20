@@ -1,0 +1,170 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 16px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #3B82F6;
+  }
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.nameRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.name {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+}
+
+.statusGreen {
+  width: 16px;
+  height: 16px;
+  background: #32CB37;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.statusGray {
+  width: 16px;
+  height: 16px;
+  background: #CED2D6;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.detailRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.detailLabel {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+}
+
+.detailValue {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #B0B4B8;
+}
+
+.channelRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.actionBtn {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  height: 32px;
+  flex: 1;
+  border: 1px solid rgba(176, 180, 184, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+
+  svg {
+    transition: filter 0.2s;
+  }
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.3);
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
+    }
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.actionBtnDanger {
+  border-color: #E33326;
+
+  &:hover {
+    background: rgba(227, 51, 38, 0.05);
+  }
+}
+
+.actionBtnSmall {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  gap: 10px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: 1px solid rgba(176, 180, 184, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+
+  svg {
+    transition: filter 0.2s;
+  }
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.3);
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
+    }
+  }
+}

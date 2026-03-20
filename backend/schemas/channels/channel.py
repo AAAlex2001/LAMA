@@ -23,9 +23,14 @@ class ChannelGroupCreate(BaseModel):
 
 class ChannelGroupUpdate(BaseModel):
     """Обновление канала - только для изменения локальных настроек"""
+    title: Optional[str] = Field(None, max_length=255)
+    description: Optional[str] = None
     backup_mode: Optional[BackupMode] = None
     backup_target_id: Optional[int] = None
+    bot_id: Optional[int] = None
     is_active: Optional[bool] = None
+    is_bot_active: Optional[bool] = None
+    clear_bot: Optional[bool] = None
 
 
 class ChannelTelegramUpdate(BaseModel):
@@ -150,6 +155,7 @@ class ChannelGroupResponse(BaseModel):
     backup_mode: BackupMode
     backup_target_id: Optional[int] = None
     bot_id: Optional[int] = None
+    is_bot_active: bool = True
 
     # Metadata
     is_active: bool

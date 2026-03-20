@@ -1,0 +1,52 @@
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.backBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 37px;
+  height: 37px;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+  color: #383F45;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.2);
+  }
+}
+
+.connectBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+
+.connectBtn {
+  align-self: stretch;
+}
+
+.info {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}

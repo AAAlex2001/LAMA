@@ -1,0 +1,129 @@
+.info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #e0e4e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  font-size: 20px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3B82F6, #26539D);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: -0.01em;
+  color: #383F45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleInput {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: -0.01em;
+  color: #383F45;
+  border: 1px solid #3B82F6;
+  border-radius: 6px;
+  padding: 2px 6px;
+  outline: none;
+  width: 100%;
+  min-width: 0;
+  font-family: inherit;
+
+  &:disabled {
+    opacity: 0.5;
+  }
+}
+
+.editBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  svg {
+    transition: filter 0.2s;
+  }
+
+  &:hover svg {
+    filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
+  }
+}
+
+.username {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  color: #8E8E93;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.members {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+}

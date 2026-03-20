@@ -47,6 +47,7 @@ class ChannelGroup(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     bot_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), index=True)
+    is_bot_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     channel_type: Mapped[ChannelType] = mapped_column(SQLEnum(ChannelType))
     

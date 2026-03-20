@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+import asyncio
 from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -51,8 +52,10 @@ class SyncService:
         raw_bot = rate_limited_bot.bot
 
         try:
-            await validate_access(raw_bot, chat_identifier, bot_model.telegram_id, user_telegram_id)
-            chat = await raw_bot.get_chat(chat_identifier)
+            _, chat = await asyncio.gather(
+                validate_access(raw_bot, chat_identifier, bot_model.telegram_id, user_telegram_id),
+                raw_bot.get_chat(chat_identifier),
+            )
             chat_data = await build_chat_data(raw_bot, chat, bot_model.token)
             return await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
         except TelegramForbiddenError:
@@ -136,11 +139,12 @@ def resolve_chat_identifier(
 async def validate_access(bot: RateLimitedBot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
     try:
-        bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
+        bot_member, user_member = await asyncio.gather(
+            bot.get_chat_member(chat_identifier, bot_telegram_id),
+            bot.get_chat_member(chat_identifier, user_telegram_id),
+        )
         if bot_member.status in ["left", "kicked"]:
             raise HTTPException(status_code=403, detail="Bot is not a member of this channel/group")
-
-        user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
         if user_member.status not in ["administrator", "creator"]:
             raise HTTPException(status_code=403, detail="User is not an admin in this channel/group")
         return

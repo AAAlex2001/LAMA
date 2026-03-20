@@ -1,0 +1,90 @@
+'use client';
+
+import { FC } from 'react';
+import type { Channel } from '@/types/channel';
+import SettingsIcon from '@/components/icons/settings-icon';
+import TrashIcon from '@/components/icons/trash-icon';
+import MathOperationsIcon from '@/components/icons/math-operations-icon';
+import BackupOutlineIcon from '@/components/icons/backup-outline-icon';
+import styles from './styles.module.scss';
+
+interface ChannelCardProps {
+  channel: Channel;
+  onSettings: (channel: Channel) => void;
+  onDelete: (channel: Channel) => void;
+}
+
+function formatMembersCount(count: number): string {
+  if (count >= 1000000) return `${(count / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (count >= 1000) return `${(count / 1000).toFixed(0).replace(/\.0$/, '')} ${count >= 1000 ? String(count).slice(-3).replace(/^0+/, '') ? (count / 1000).toFixed(0) : (count / 1000).toFixed(0) : count}`;
+  return String(count);
+}
+
+function formatMembers(count: number): string {
+  const formatted = count.toLocaleString('ru-RU');
+  const lastTwo = count % 100;
+  const lastOne = count % 10;
+  let word: string;
+  if (lastTwo >= 11 && lastTwo <= 19) word = 'пользователей';
+  else if (lastOne === 1) word = 'пользователь';
+  else if (lastOne >= 2 && lastOne <= 4) word = 'пользователя';
+  else word = 'пользователей';
+  return `${formatted} ${word}`;
+}
+
+const ChannelCard: FC<ChannelCardProps> = ({ channel, onSettings, onDelete }) => {
+  const photoUrl = channel.photo_url || null;
+  const initial = channel.title?.charAt(0)?.toUpperCase() || '?';
+  const hasCaptcha = channel.join_by_request;
+  const hasBackup = channel.backup_mode && channel.backup_mode !== 'DISABLED';
+
+  return (
+    <div className={styles.card}>
+      <div className={styles.info}>
+        <div className={styles.header}>
+          <div className={styles.avatar}>
+            {photoUrl ? (
+              <img src={photoUrl} alt={channel.title} className={styles.avatarImg} />
+            ) : (
+              <span className={styles.avatarFallback}>{initial}</span>
+            )}
+          </div>
+          <div className={styles.meta}>
+            <span className={styles.title}>{channel.title}</span>
+            <span className={styles.members}>{formatMembers(channel.members_count || 0)}</span>
+          </div>
+        </div>
+
+        {channel.username && (
+          <div className={styles.username}>@{channel.username}</div>
+        )}
+
+        {channel.description && (
+          <div className={styles.description}>{channel.description}</div>
+        )}
+      </div>
+
+      <div className={styles.features}>
+        <div className={styles.featureItem}>
+          <span className={styles.featureText}>Капча</span>
+          <MathOperationsIcon width={20} height={20} color="#B0B4B8" />
+        </div>
+        <div className={styles.featureItem}>
+          <span className={styles.featureText}>Резервное копирование</span>
+          <BackupOutlineIcon width={20} height={20} color="#B0B4B8" />
+        </div>
+      </div>
+
+      <div className={styles.actions}>
+        <button className={styles.actionBtn} onClick={() => onSettings(channel)}>
+          <SettingsIcon width={24} height={24} color="#B0B4B8" />
+        </button>
+        <button className={styles.actionBtn} onClick={() => onDelete(channel)}>
+          <TrashIcon width={15} height={17} color="#B0B4B8" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default ChannelCard;

@@ -104,6 +104,11 @@ class ChannelService:
         channel = await self.get(channel_id, owner_id=owner_id)
 
         update_data = data.model_dump(exclude_unset=True)
+
+        if update_data.pop('clear_bot', False):
+            channel.bot_id = None
+            channel.is_bot_active = True
+
         for field, value in update_data.items():
             setattr(channel, field, value)
 

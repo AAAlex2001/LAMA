@@ -62,6 +62,13 @@ async def safe_send_to_channel(
     """Безопасная отправка в канал с обработкой ошибок."""
     channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
 
+    if not getattr(channel, "is_bot_active", True):
+        logger.info("Bot disabled for channel %s, skipping", channel_name)
+        return ChannelPublishResult(
+            channel=channel_name, success=False,
+            error="Bot is disabled for this channel",
+        )
+
     try:
         bot = await get_bot_callback(channel)
     except ValueError as e:

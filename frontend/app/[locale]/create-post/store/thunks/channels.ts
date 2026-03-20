@@ -11,36 +11,30 @@ import {
   setTotal 
 } from '../slices/channels';
 
-// Парсинг ввода пользователя для добавления канала
 const MASTER_BOT_TOKEN = '8308599165:AAGZ3NgOQE34lZ8EwTPB_8HPH_fsqpfffUw';
 
 function parseChannelInput(input: string): SyncChannelRequest {
   const trimmed = input.trim();
   const base = { token: MASTER_BOT_TOKEN };
   
-  // Числовой ID
   if (/^-?\d+$/.test(trimmed)) {
     return { ...base, telegram_id: parseInt(trimmed, 10) };
   }
   
-  // Ссылка t.me
   if (trimmed.includes('t.me/')) {
     return { ...base, invite_link: trimmed };
   }
   
-  // Username (с или без @)
   const username = trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
   return { ...base, username };
 }
 
-// Загрузка списка каналов
 export const fetchChannelsThunk = createAsyncThunk(
   'channels/fetchChannels',
   async (params: { page?: number; pageSize?: number; force?: boolean } = {}, { getState, dispatch, rejectWithValue }) => {
     const { page = 1, pageSize = 50, force = false } = params;
     const state = getState() as { channels: { channels: Channel[]; loading: boolean } };
     
-    // Если уже загружаются или есть данные и не forced reload
     if (state.channels.loading) return;
     if (!force && state.channels.channels.length > 0) return;
     
@@ -58,7 +52,6 @@ export const fetchChannelsThunk = createAsyncThunk(
         { method: 'GET' }
       );
       
-      // Устанавливаем selected = true для всех каналов по умолчанию
       const channelsWithSelection = (response.items || []).map((ch: Channel) => ({
         ...ch,
         selected: true,
@@ -77,7 +70,6 @@ export const fetchChannelsThunk = createAsyncThunk(
   }
 );
 
-// Добавление нового канала
 export const addChannelThunk = createAsyncThunk(
   'channels/addChannel',
   async (input: string, { dispatch, rejectWithValue }) => {
@@ -119,7 +111,6 @@ export const addChannelThunk = createAsyncThunk(
   }
 );
 
-// Удаление канала
 export const deleteChannelThunk = createAsyncThunk(
   'channels/deleteChannel',
   async (channelId: number, { dispatch, rejectWithValue }) => {

@@ -1,0 +1,50 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px;
+  gap: 16px;
+
+  @media (min-width: 1440px) {
+    padding: 20px;
+  }
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.connectBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.connectBtn {
+  align-self: stretch;
+}
+
+.connectedInfo {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
