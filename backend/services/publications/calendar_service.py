@@ -206,6 +206,7 @@ class CalendarService:
             )
             .options(load_only(
                 Publication.id,
+                Publication.scheduled_time,
                 Publication.next_repeat_time,
                 Publication.repeat_interval,
                 Publication.repeat_custom_days,

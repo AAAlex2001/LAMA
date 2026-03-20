@@ -65,8 +65,11 @@ def project_repeat_occurrences(
     naive_start = strip_tz(start)
     naive_end = strip_tz(end)
 
+    base_time = strip_tz(
+        getattr(pub, "scheduled_time", None) or pub.next_repeat_time
+    )
     current = fast_forward_to(
-        pub.next_repeat_time, naive_start,
+        base_time, naive_start,
         pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
     )
     if current is None:
