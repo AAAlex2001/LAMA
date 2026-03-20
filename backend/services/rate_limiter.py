@@ -108,7 +108,7 @@ class RedisTelegramRateLimiter:
                 return
             await self.client.decrby(key, weight)
             wait = 60 - (now % 60)
-            if wait > 5:
+            if wait > 15:
                 raise RateLimitTimeout(chat_id, wait)
             await asyncio.sleep(wait + 0.1)
         raise RateLimitTimeout(chat_id, 60)

@@ -37,6 +37,7 @@ class ChannelPublishResult(BaseModel):
     channel: str
     success: bool
     error: Optional[str] = None
+    permanent: bool = False
     message_ids: Optional[List[int]] = None
     replied_to: Optional[int] = None
     telegram_messages_data: Optional[List[dict[str, Any]]] = None

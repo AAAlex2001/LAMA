@@ -25,8 +25,7 @@ from backend.schemas.publications.publication_response import (
     WeekBatchDay,
     WeekBatchResponse,
 )
-from backend.services.publications.calendar_service import fast_forward_to, strip_tz
-from backend.services.publications.repeat_calculator import calculate_next_repeat_time
+from backend.services.publications.repeat_utils import strip_tz, project_repeat_occurrences
 
 PUB_COMPACT_COLUMNS = [
     Publication.id,
@@ -208,33 +207,15 @@ class PublicationQueryService:
         result = await self.db.execute(query)
         repeating_pubs = list(result.scalars().all())
 
-        naive_start = strip_tz(start_date)
-        naive_end = strip_tz(end_date)
         today = date.today()
 
         for pub in repeating_pubs:
-            current = fast_forward_to(
-                pub.next_repeat_time, naive_start,
-                pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
-            )
-            if current is None:
-                continue
-
-            while current and current <= naive_end:
-                if current >= naive_start:
-                    if current.date() > today:
-                        posts.append(make_scheduled_projection(pub, current))
-                    else:
-                        posts.append(pub)
-                    break
-                current = calculate_next_repeat_time(
-                    current, pub.repeat_interval,
-                    pub.repeat_custom_days, pub.repeat_custom_hours,
-                    pub.repeat_end_time, pub.repeat_custom_unit,
-                    pub.repeat_custom_value, pub.repeat_weekdays,
-                    pub.repeat_month_days, pub.repeat_year_month,
-                    pub.repeat_year_days,
-                )
+            for _, projected_time in project_repeat_occurrences(pub, start_date, end_date):
+                if projected_time.date() > today:
+                    posts.append(make_scheduled_projection(pub, projected_time))
+                else:
+                    posts.append(pub)
+                break
 
         return posts
 
@@ -246,8 +227,6 @@ class PublicationQueryService:
         per_day: int = 20,
     ) -> WeekBatchResponse:
         """One query for all days in range, results bucketed by day."""
-        naive_start = strip_tz(start_date)
-        naive_end = strip_tz(end_date)
 
         query = (
             select(Publication)
@@ -298,29 +277,11 @@ class PublicationQueryService:
 
         today = date.today()
         for pub in repeating_pubs:
-            current = fast_forward_to(
-                pub.next_repeat_time, naive_start,
-                pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
-            )
-            if current is None:
-                continue
-            iterations = 0
-            while current and current <= naive_end and iterations < 50:
-                if current >= naive_start:
-                    day_key = current.strftime("%Y-%m-%d")
-                    if pub.id not in day_post_ids.get(day_key, set()):
-                        item = make_scheduled_projection(pub, current) if current.date() > today else pub
-                        buckets.setdefault(day_key, []).append(item)
-                        day_post_ids.setdefault(day_key, set()).add(pub.id)
-                current = calculate_next_repeat_time(
-                    current, pub.repeat_interval,
-                    pub.repeat_custom_days, pub.repeat_custom_hours,
-                    pub.repeat_end_time, pub.repeat_custom_unit,
-                    pub.repeat_custom_value, pub.repeat_weekdays,
-                    pub.repeat_month_days, pub.repeat_year_month,
-                    pub.repeat_year_days,
-                )
-                iterations += 1
+            for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
+                if pub.id not in day_post_ids.get(day_key, set()):
+                    item = make_scheduled_projection(pub, projected_time) if projected_time.date() > today else pub
+                    buckets.setdefault(day_key, []).append(item)
+                    day_post_ids.setdefault(day_key, set()).add(pub.id)
 
         bot_messages = await self.get_bot_messages_in_range(owner_id, start_date, end_date)
         bot_buckets: dict[str, list[BotMessageCompact]] = {}
@@ -332,6 +293,10 @@ class PublicationQueryService:
         days: dict[str, WeekBatchDay] = {}
         for day_key in all_day_keys:
             posts = buckets.get(day_key, [])
+            posts.sort(
+                key=lambda p: strip_tz(getattr(p, "scheduled_time", None) or datetime.min),
+                reverse=True,
+            )
             bots = bot_buckets.get(day_key, [])
             days[day_key] = WeekBatchDay(
                 items=posts[:per_day],

@@ -97,8 +97,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
     deploy:
-      replicas: 3
-    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,default,low"]
+      replicas: 2
+    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,default,low", "--max-tasks-per-child=100"]
 
   celery-beat:
     build:

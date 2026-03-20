@@ -10,6 +10,8 @@ from kombu import Queue
 from backend.celery.config import load_celery_config
 from backend.models import load_models
 
+import backend.celery.signals  # noqa: F401
+
 
 load_models()
 

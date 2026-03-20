@@ -146,3 +146,16 @@ async def resolve_for_chat(
             )
         return get_cached_bot(channel.bot.token)
     return resolve_master()
+
+
+async def cleanup_bot_cache():
+    """Закрыть все бот-сессии и очистить кеш."""
+    for rate_limited_bot in cache.values():
+        try:
+            session = rate_limited_bot.bot.session
+            if session and not session.closed:
+                await session.close()
+        except Exception:
+            pass
+    cache.clear()
+    bot_info_cache.clear()
