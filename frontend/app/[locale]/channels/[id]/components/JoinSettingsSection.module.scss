@@ -1,0 +1,146 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.rowActive {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.label {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  flex: 1;
+  text-align: left;
+}
+
+.chevron {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+}
+
+.chevronOpen {
+  transform: rotate(0deg);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.toggleRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  gap: 12px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.toggleLabel {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  flex: 1;
+}
+
+.subSection {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.subRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.subLabel {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  flex: 1;
+}
+
+.selectedChannels {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #B0B4B8;
+  width: 100%;
+}
+
+.channelPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding-top: 4px;
+}
+
+.channelList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.channelItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.emptyText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 19px;
+  color: #B0B4B8;
+  padding: 8px 0;
+}

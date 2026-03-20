@@ -115,6 +115,13 @@
     transition: filter 0.2s;
   }
 
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.actionBtnBlue {
   &:hover {
     background: rgba(59, 130, 246, 0.05);
     border-color: rgba(59, 130, 246, 0.3);
@@ -123,10 +130,16 @@
       filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
     }
   }
+}
 
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+.actionBtnBan {
+  &:hover {
+    background: rgba(227, 51, 38, 0.05);
+    border-color: rgba(227, 51, 38, 0.3);
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(28%) sepia(96%) saturate(3500%) hue-rotate(350deg) brightness(91%) contrast(90%);
+    }
   }
 }
 
@@ -135,6 +148,11 @@
 
   &:hover {
     background: rgba(227, 51, 38, 0.05);
+    border-color: #E33326;
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(28%) sepia(96%) saturate(3500%) hue-rotate(350deg) brightness(91%) contrast(90%);
+    }
   }
 }
 
@@ -160,11 +178,11 @@
   }
 
   &:hover {
-    background: rgba(59, 130, 246, 0.05);
-    border-color: rgba(59, 130, 246, 0.3);
+    background: rgba(227, 51, 38, 0.05);
+    border-color: rgba(227, 51, 38, 0.3);
 
     svg {
-      filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
+      filter: brightness(0) saturate(100%) invert(28%) sepia(96%) saturate(3500%) hue-rotate(350deg) brightness(91%) contrast(90%);
     }
   }
 }

@@ -14,12 +14,6 @@ interface ChannelCardProps {
   onDelete: (channel: Channel) => void;
 }
 
-function formatMembersCount(count: number): string {
-  if (count >= 1000000) return `${(count / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
-  if (count >= 1000) return `${(count / 1000).toFixed(0).replace(/\.0$/, '')} ${count >= 1000 ? String(count).slice(-3).replace(/^0+/, '') ? (count / 1000).toFixed(0) : (count / 1000).toFixed(0) : count}`;
-  return String(count);
-}
-
 function formatMembers(count: number): string {
   const formatted = count.toLocaleString('ru-RU');
   const lastTwo = count % 100;
@@ -35,8 +29,6 @@ function formatMembers(count: number): string {
 const ChannelCard: FC<ChannelCardProps> = ({ channel, onSettings, onDelete }) => {
   const photoUrl = channel.photo_url || null;
   const initial = channel.title?.charAt(0)?.toUpperCase() || '?';
-  const hasCaptcha = channel.join_by_request;
-  const hasBackup = channel.backup_mode && channel.backup_mode !== 'DISABLED';
 
   return (
     <div className={styles.card}>
@@ -76,11 +68,11 @@ const ChannelCard: FC<ChannelCardProps> = ({ channel, onSettings, onDelete }) =>
       </div>
 
       <div className={styles.actions}>
-        <button className={styles.actionBtn} onClick={() => onSettings(channel)}>
+        <button className={`${styles.actionBtn} ${styles.actionBtnBlue}`} onClick={() => onSettings(channel)}>
           <SettingsIcon width={24} height={24} color="#B0B4B8" />
         </button>
-        <button className={styles.actionBtn} onClick={() => onDelete(channel)}>
-          <TrashIcon width={15} height={17} color="#B0B4B8" />
+        <button className={`${styles.actionBtn} ${styles.actionBtnDelete}`} onClick={() => onDelete(channel)}>
+          <TrashIcon width={18} height={20} color="#B0B4B8" />
         </button>
       </div>
     </div>

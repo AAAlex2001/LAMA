@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -34,6 +34,22 @@ async def delete_channel_telegram_photo(
     current_user: User = Depends(get_current_user),
 ):
     return await service.delete_photo(channel_id=channel_id, owner_id=current_user.id)
+
+
+@router.post("/{channel_id}/telegram-photo", response_model=ChannelGroupResponse, status_code=200)
+async def upload_channel_telegram_photo(
+    channel_id: int,
+    photo: UploadFile = File(...),
+    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    current_user: User = Depends(get_current_user),
+):
+    data = await photo.read()
+    return await service.upload_photo_bytes(
+        channel_id=channel_id,
+        owner_id=current_user.id,
+        data=data,
+        filename=photo.filename or "photo.jpg",
+    )
 
 
 @router.put("/{channel_id}/permissions", response_model=ChannelGroupResponse)

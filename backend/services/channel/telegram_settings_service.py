@@ -184,7 +184,7 @@ class TelegramSettingsService:
             raise HTTPException(status_code=400, detail=f"Failed to unpin message: {str(e)}")
 
     async def upload_photo(self, bot: RateLimitedBot, channel: ChannelGroup, photo_file_path: str):
-        """Загрузить фото канала."""
+        """Загрузить фото канала по URL или пути."""
         if photo_file_path.startswith(("http://", "https://")):
             async with aiohttp.ClientSession() as session:
                 async with session.get(photo_file_path) as resp:
@@ -196,6 +196,36 @@ class TelegramSettingsService:
             photo = FSInputFile(photo_file_path)
             await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
 
+        await self.refresh_photo(bot, channel)
+
+    async def upload_photo_bytes(
+        self,
+        channel_id: int,
+        owner_id: int,
+        data: bytes,
+        filename: str,
+    ) -> ChannelGroup:
+        """Загрузить фото канала из байтов (multipart upload)."""
+        channel = await get_channel(self.db, channel_id, owner_id)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+
+        bot = await self.resolve_bot(channel)
+
+        try:
+            photo = BufferedInputFile(data, filename=filename)
+            await bot.set_chat_photo(chat_id=channel.telegram_id, photo=photo)
+            await self.refresh_photo(bot, channel)
+
+            channel.updated_at = datetime.now(timezone.utc)
+            await self.db.flush()
+            await self.db.refresh(channel)
+            return channel
+        except TelegramBadRequest as e:
+            raise HTTPException(status_code=400, detail=f"Failed to upload photo: {str(e)}")
+
+    async def refresh_photo(self, bot: RateLimitedBot, channel: ChannelGroup):
+        """Обновить фото-поля канала после загрузки."""
         chat = await bot.get_chat(channel.telegram_id)
         if chat.photo:
             try:

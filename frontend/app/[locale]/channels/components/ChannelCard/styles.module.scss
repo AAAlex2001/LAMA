@@ -143,9 +143,31 @@
   border-radius: 8px;
   background: transparent;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
 
+  svg {
+    transition: filter 0.2s;
+  }
+}
+
+.actionBtnBlue {
   &:hover {
-    background: rgba(176, 180, 184, 0.1);
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.3);
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%) hue-rotate(196deg) brightness(99%) contrast(101%);
+    }
+  }
+}
+
+.actionBtnDelete {
+  &:hover {
+    background: rgba(227, 51, 38, 0.05);
+    border-color: rgba(227, 51, 38, 0.3);
+
+    svg {
+      filter: brightness(0) saturate(100%) invert(28%) sepia(96%) saturate(3500%) hue-rotate(350deg) brightness(91%) contrast(90%);
+    }
   }
 }

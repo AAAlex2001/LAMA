@@ -41,14 +41,14 @@ const BotCard: FC<BotCardProps> = ({ bot, isBotActive, toggling, botChannels, on
       ))}
 
       <div className={styles.actions}>
-        <button className={styles.actionBtn} type="button">
+        <button className={`${styles.actionBtn} ${styles.actionBtnBlue}`} type="button">
           <SettingsIcon width={24} height={24} color="#B0B4B8" />
         </button>
-        <button className={styles.actionBtn} type="button">
+        <button className={`${styles.actionBtn} ${styles.actionBtnBlue}`} type="button">
           <ChartIcon width={20} height={20} color="#B0B4B8" />
         </button>
         <button
-          className={`${styles.actionBtn} ${!isBotActive ? styles.actionBtnDanger : ''}`}
+          className={`${styles.actionBtn} ${styles.actionBtnBan} ${!isBotActive ? styles.actionBtnDanger : ''}`}
           type="button"
           onClick={onToggleActive}
           disabled={toggling}

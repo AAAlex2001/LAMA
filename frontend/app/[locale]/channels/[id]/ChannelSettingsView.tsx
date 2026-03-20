@@ -12,6 +12,7 @@ import ConnectChannelModal from '../components/ConnectChannelModal';
 import SettingsHeader from './components/SettingsHeader';
 import ChannelInfoCard from './components/ChannelInfoCard';
 import DescriptionEditor from './components/DescriptionEditor';
+import EditChannelModal from './components/EditChannelModal';
 import BotsSection from './components/BotsSection';
 import DeleteButton from './components/DeleteButton';
 import styles from './styles.module.scss';
@@ -33,6 +34,7 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const botChannels = channels.filter((ch) => ch.bot_id === channel?.bot_id && channel?.bot_id);
 
@@ -66,11 +68,17 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
       />
 
       <div className={styles.card}>
-        <ChannelInfoCard channel={channel} />
+        <ChannelInfoCard channel={channel} onEdit={() => setEditOpen(true)} />
         <DescriptionEditor channel={channel} />
         <BotsSection channel={channel} botChannels={botChannels} />
         <DeleteButton onClick={() => setDeleteOpen(true)} />
       </div>
+
+      <EditChannelModal
+        channel={channel}
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+      />
 
       <DeleteConfirmationModal
         isOpen={deleteOpen}

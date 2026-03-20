@@ -8,12 +8,9 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { fetchChannelBotThunk, toggleBotActiveThunk, removeBotThunk } from '../../store/thunks/bots';
 import type { Channel } from '@/types/channel';
 import BotCard from './BotCard';
+import JoinSettingsSection from './JoinSettingsSection';
+import InviteLinksSection from './InviteLinksSection';
 import styles from './BotsSection.module.scss';
-
-const INACTIVE_SECTIONS = [
-  { id: 'invite-links', label: 'Ссылки-приглашения' },
-  { id: 'join-settings', label: 'Настройки вступления' },
-];
 
 interface BotsSectionProps {
   channel: Channel;
@@ -62,12 +59,9 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
 
   return (
     <div className={styles.sections}>
-      {INACTIVE_SECTIONS.map((section) => (
-        <button key={section.id} className={styles.row} type="button" disabled>
-          <span className={styles.label}>{section.label}</span>
-          <ChevronDownIcon width={16} height={16} color="#383F45" className={styles.chevron} />
-        </button>
-      ))}
+      <InviteLinksSection channel={channel} />
+
+      <JoinSettingsSection channel={channel} />
 
       <button
         className={`${styles.row} ${styles.rowActive}`}

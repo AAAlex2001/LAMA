@@ -1,14 +1,15 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { Channel, ChannelsResponse, SyncChannelRequest, SyncChannelResponse } from '../types';
 import { apiRequest } from './api';
-import { 
-  setChannels, 
+import {
+  setChannels,
   addChannel as addChannelAction,
+  updateChannel as updateChannelAction,
   removeChannel as removeChannelAction,
-  setLoading, 
+  setLoading,
   setSyncing,
   setError,
-  setTotal 
+  setTotal
 } from '../slices/channels';
 
 const MASTER_BOT_TOKEN = '8308599165:AAGZ3NgOQE34lZ8EwTPB_8HPH_fsqpfffUw';
@@ -72,17 +73,17 @@ export const fetchChannelsThunk = createAsyncThunk(
 
 export const addChannelThunk = createAsyncThunk(
   'channels/addChannel',
-  async (input: string, { dispatch, rejectWithValue }) => {
+  async (input: string, { getState, dispatch, rejectWithValue }) => {
     if (!input.trim()) {
       return rejectWithValue('Введите ссылку, username или ID канала');
     }
-    
+
     dispatch(setSyncing(true));
     dispatch(setError(null));
-    
+
     try {
       const syncData = parseChannelInput(input);
-      
+
       const response = await apiRequest<SyncChannelResponse>(
         '/channels/sync',
         {
@@ -90,16 +91,26 @@ export const addChannelThunk = createAsyncThunk(
           body: JSON.stringify(syncData),
         }
       );
-      
+
       if (!response.success || !response.channel) {
         const errorMessage = response.message || 'Не удалось подключить канал';
         dispatch(setError(errorMessage));
         return rejectWithValue(errorMessage);
       }
-      
+
       const channelWithSelection = { ...response.channel, selected: true };
+
+      const state = getState() as { channels: { channels: Channel[] } };
+      const exists = state.channels.channels.some(
+        (ch) => ch.id === response.channel!.id,
+      );
+
+      if (exists) {
+        dispatch(updateChannelAction(channelWithSelection));
+        return rejectWithValue('Этот канал уже подключён');
+      }
+
       dispatch(addChannelAction(channelWithSelection));
-      
       return channelWithSelection;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка подключения канала';

@@ -1,0 +1,161 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 16px;
+  gap: 24px;
+  width: 340px;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.heading {
+  width: 100%;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: -0.01em;
+  color: #383F45;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.fieldLabel {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #0D0D0D;
+  width: 100%;
+}
+
+/* Avatar */
+.avatarWrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 72px;
+  background: #F1F5FB;
+  border-radius: 50px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: padding-right 0.3s ease;
+  padding: 12px;
+}
+
+.avatarCircle {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.avatarImg {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatarText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  color: #3B82F6;
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease;
+  margin-left: 0;
+}
+
+.avatarWrap:hover .avatarText {
+  max-width: 120px;
+  opacity: 1;
+  margin-left: 10px;
+}
+
+.fileInput {
+  display: none;
+}
+
+/* Textarea */
+.textareaWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 10px;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border: 1px solid #CED2D6;
+  border-radius: 10px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 50px;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #858585;
+}
+
+.counter {
+  align-self: flex-end;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #AEAEB2;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+}
+
+.actionBtn {
+  width: 100%;
+}
