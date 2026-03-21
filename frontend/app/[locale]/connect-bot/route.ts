@@ -53,11 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const botEndpoint = `${API_BASE_URL}/bots`;
-    const botRequest: BotRequest = {
-      token: botToken.trim(),
-      description: botDescription.trim(),
-    };
+    const botEndpoint = `${API_BASE_URL}/bots/sync`;
 
     const botResponse = await fetch(botEndpoint, {
       method: 'POST',
@@ -65,7 +61,7 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'application/json',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
-      body: JSON.stringify(botRequest),
+      body: JSON.stringify({ token: botToken.trim(), description: botDescription?.trim() || null }),
     });
 
     if (!botResponse.ok) {
@@ -80,12 +76,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const botData = await botResponse.json();
+    const syncData = await botResponse.json();
 
     return NextResponse.json({
       success: true,
       message: 'Bot connected and created successfully',
-      botData,
+      botData: syncData.bot,
     });
   } catch (error) {
     console.error('Error connecting bot:', error);

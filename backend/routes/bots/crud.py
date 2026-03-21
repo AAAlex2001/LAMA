@@ -23,7 +23,7 @@ async def sync_bot(
 ):
     """Синхронизировать бота через Telegram API."""
 
-    bot = await service.sync_from_telegram(data.token, owner_id=current_user.id)
+    bot = await service.sync_from_telegram(data.token, owner_id=current_user.id, description=data.description)
     return SyncBotResponse(success=True, bot=bot,
                            message="Bot synchronized successfully")
 

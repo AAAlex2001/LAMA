@@ -63,6 +63,7 @@ class BotListResponse(BaseModel):
 class SyncBotRequest(BaseModel):
     """Схема запроса синхронизации бота"""
     token: str = Field(..., min_length=10)
+    description: Optional[str] = None
 
 class SyncBotResponse(BaseModel):
     """Схема ответа синхронизации бота"""
