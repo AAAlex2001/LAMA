@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import type { MediaFile } from '@/components/media-preview';
 
 export function getMediaType(url: string): 'image' | 'video' | 'document' {

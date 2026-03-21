@@ -62,11 +62,18 @@ async def safe_send_to_channel(
     """Безопасная отправка в канал с обработкой ошибок."""
     channel_name = getattr(channel, "title", getattr(channel, "name", str(channel.telegram_id)))
 
+    if not getattr(channel, "is_bot_active", True):
+        logger.info("Bot disabled for channel %s, skipping", channel_name)
+        return ChannelPublishResult(
+            channel=channel_name, success=False,
+            error="Bot is disabled for this channel",
+        )
+
     try:
         bot = await get_bot_callback(channel)
     except ValueError as e:
         return ChannelPublishResult(
-            channel=channel_name, success=False, error=str(e),
+            channel=channel_name, success=False, error=str(e), permanent=True,
             notification_error=f"Failed to publish to {channel_name}: {str(e)}",
         )
 
@@ -125,18 +132,23 @@ async def send_to_channel_with_retry(
                 "TelegramRetryAfter in %s: retry_after=%ss, attempt=%s/%s",
                 channel_name, e.retry_after, attempt + 1, MAX_RETRY_ATTEMPTS,
             )
-            return ChannelPublishResult(
-                channel=channel_name, success=False,
-                error=f"Rate limit: {e.retry_after}s",
-                notification_error=f"Failed to publish to {channel_name}: Rate limit",
-            )
+            if e.retry_after > LARGE_RETRY_AFTER_THRESHOLD:
+                return ChannelPublishResult(
+                    channel=channel_name, success=False,
+                    error=f"Rate limit: {e.retry_after}s",
+                    notification_error=f"Failed to publish to {channel_name}: Rate limit",
+                )
+            await asyncio.sleep(e.retry_after)
 
         except RateLimitTimeout as e:
             logger.info("Rate limit timeout for %s: %s", channel_name, e)
-            return ChannelPublishResult(
-                channel=channel_name, success=False,
-                error=f"Rate limit timeout: {e.wait_seconds:.0f}s",
-            )
+            if e.wait_seconds <= 30 and attempt < MAX_RETRY_ATTEMPTS - 1:
+                await asyncio.sleep(e.wait_seconds)
+            else:
+                return ChannelPublishResult(
+                    channel=channel_name, success=False,
+                    error=f"Rate limit timeout: {e.wait_seconds:.0f}s",
+                )
 
         except Exception as e:
             logger.error(

@@ -3,7 +3,7 @@
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import DraftCard from './DraftCard';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import styles from '../drafts.module.scss';
 
 interface DraftsListProps {

@@ -1,4 +1,4 @@
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import type { InlineKeyboard } from '@/types/post';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface BotCommand {

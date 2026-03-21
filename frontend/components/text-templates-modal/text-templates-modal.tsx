@@ -9,7 +9,7 @@ import { EditNameIcon, CheckIcon, CloseIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
 import DeleteConfirmationModal from '@/components/modal';
-import type { TemplatesModalProps, TextTemplate } from '@/app/[locale]/create-post/store/types';
+import type { TemplatesModalProps, TextTemplate } from '@/types/post';
 
 export default function TextTemplatesModal({
   isOpen,

@@ -8,7 +8,7 @@ import { resetTags } from '../store/slices/tags';
 import { toggleChannelSelected, deselectAllChannels } from '../store/slices/channels';
 import { resetDatePicker } from '../store/slices/datePicker';
 import { resetReplyToPost } from '../store/slices/replyToPost';
-import { fetchChannelsThunk, addChannelThunk } from '../store/thunks';
+import { fetchChannelsThunk } from '../store/thunks';
 import type { RepeatOption, RepeatCustomUnit, AutoDeleteOption } from '../store/types';
 
 interface PostSettingsConnectedProps {
@@ -65,14 +65,9 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
     }
   };
 
-  const handleAddChannel = async (link: string) => {
-    try {
-      await dispatch(addChannelThunk(link)).unwrap();
-      dispatch(settingsSlice.setShowCreateChannel(false));
-      return true;
-    } catch {
-      return false;
-    }
+  const handleChannelAdded = () => {
+    dispatch(fetchChannelsThunk({ force: true }));
+    dispatch(settingsSlice.setShowCreateChannel(false));
   };
 
   return (
@@ -81,15 +76,14 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       previewDisabled={previewDisabled}
       channelOptions={channelOptions}
       channelsLoading={channelsState.loading}
-      channelsSyncing={channelsState.syncing}
       selectedCount={selectedCount}
       totalChannels={channelsState.channels.length}
       showCreateChannel={showCreateChannel}
       onFetchChannels={handleFetchChannels}
       onChannelChange={handleChannelChange}
-      onAddChannel={handleAddChannel}
       onOpenCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(true))}
       onCloseCreateChannel={() => dispatch(settingsSlice.setShowCreateChannel(false))}
+      onChannelAdded={handleChannelAdded}
       repeatInterval={repeatInterval}
       repeatPublishTimeType={repeatPublishTimeType}
       repeatPublishHours={repeatPublishHours}

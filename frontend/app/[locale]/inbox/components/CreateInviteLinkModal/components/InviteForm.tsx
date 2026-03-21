@@ -9,7 +9,7 @@ import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';
-import CreateChannel from '@/components/create-channel/create-channel';
+import ConnectChannelModal from '@/components/connect-channel-modal';
 import styles from '../styles.module.scss';
 import { ChannelBasic } from '@/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -31,7 +31,6 @@ import {
   setHasCaptcha,
   buildPreviewData,
   setStep,
-  addChannelThunk,
   fetchChannelsThunk,
 } from '../../../store';
 
@@ -39,12 +38,14 @@ interface InviteFormProps {
   channels: ChannelBasic[];
   maxChannels: number;
   onEditingConfirm?: () => void;
+  fixedChannelId?: number;
 }
 
 const InviteForm: React.FC<InviteFormProps> = ({
   channels,
   maxChannels,
   onEditingConfirm,
+  fixedChannelId,
 }) => {
   const dispatch = useAppDispatch();
   const modalState = useAppSelector((state) => state.createInviteLinkModal);
@@ -87,57 +88,50 @@ const InviteForm: React.FC<InviteFormProps> = ({
     }
   };
 
-  const handleAddChannel = async (link: string) => {
-    try {
-      await dispatch(addChannelThunk(link)).unwrap();
-      await dispatch(fetchChannelsThunk({ force: true }));
-      showSuccess('Канал успешно подключен');
-      setShowCreateChannel(false);
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось подключить канал';
-      showError(errorMessage);
-      return false;
-    }
+  const handleChannelAdded = () => {
+    dispatch(fetchChannelsThunk({ force: true }));
+    setShowCreateChannel(false);
   };
 
-  const isSubmitDisabled = !linkName?.trim() || !selectedChannelId;
+  const isSubmitDisabled = !linkName?.trim() || (!selectedChannelId && !fixedChannelId);
 
   return (
     <>
-      <div className={styles.section}>
-        <div className={styles.sectionTitle}>Выберите канал</div>
-        <div className={styles.searchContainer}>
-          <SearchBar
-            placeholder="Поиск по каналам"
-            value={channelSearch}
-            onChange={(value) => dispatch(setChannelSearch(value))}
-          />
+      {!fixedChannelId && (
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>Выберите канал</div>
+          <div className={styles.searchContainer}>
+            <SearchBar
+              placeholder="Поиск по каналам"
+              value={channelSearch}
+              onChange={(value) => dispatch(setChannelSearch(value))}
+            />
+          </div>
+          <div className={styles.channelsList}>
+            {filteredChannels.map((channel) => (
+              <div key={channel.id} className={styles.channelItem}>
+                <Checkbox
+                  variant="radio"
+                  checked={selectedChannelId === channel.id.toString()}
+                  onChange={() => dispatch(setSelectedChannelId(channel.id.toString()))}
+                />
+                <span className={styles.channelItemName}>{channel.title}</span>
+              </div>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            intent="gradient"
+            size="lg"
+            style={{ width: '100%', gap: "10px" }}
+            onClick={() => setShowCreateChannel(true)}
+          >
+            <span className={buttonStyles.label}>Подключить новый</span>
+            <span className={styles.channelsCount}>{`${channels.length}/${maxChannels}`}</span>
+          </Button>
         </div>
-        <div className={styles.channelsList}>
-          {filteredChannels.map((channel) => (
-            <div key={channel.id} className={styles.channelItem}>
-              <Checkbox
-                variant="radio"
-                checked={selectedChannelId === channel.id.toString()}
-                onChange={() => dispatch(setSelectedChannelId(channel.id.toString()))}
-              />
-              <span className={styles.channelItemName}>{channel.title}</span>
-            </div>
-          ))}
-        </div>
-        <Button 
-          type="button"
-          variant="outline"
-          intent="gradient"
-          size="lg"
-          style={{ width: '100%', gap: "10px" }}
-          onClick={() => setShowCreateChannel(true)}
-        >
-          <span className={buttonStyles.label}>Подключить новый</span>
-          <span className={styles.channelsCount}>{`${channels.length}/${maxChannels}`}</span>
-        </Button>
-      </div>
+      )}
 
       <div className={styles.section}>
         <div className={styles.channelItemName}>Название ссылки</div>
@@ -342,17 +336,11 @@ const InviteForm: React.FC<InviteFormProps> = ({
         </Button>
       </div>
 
-      {showCreateChannel && (
-        <div className={styles.createChannelModalOverlay} onClick={() => setShowCreateChannel(false)}>
-          <div className={styles.createChannelModalContent} onClick={e => e.stopPropagation()}>
-            <CreateChannel
-              onSubmit={handleAddChannel}
-              onCancel={() => setShowCreateChannel(false)}
-              loading={channelsState.syncing}
-            />
-          </div>
-        </div>
-      )}
+      <ConnectChannelModal
+        isOpen={showCreateChannel}
+        onOpenChange={setShowCreateChannel}
+        onSuccess={handleChannelAdded}
+      />
     </>
   );
 };

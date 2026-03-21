@@ -1,0 +1,80 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px;
+  gap: 16px;
+
+  @media (min-width: 1440px) {
+    padding: 20px;
+  }
+}
+
+.top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+}
+
+.tabs {
+  @media (min-width: 1440px) {
+    span {
+      flex: none !important;
+    }
+  }
+}
+
+.connectBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: auto;
+    flex-shrink: 0;
+    order: -1;
+  }
+}
+
+.connectBtn {
+  width: 100% !important;
+
+  @media (min-width: 1440px) {
+    width: fit-content !important;
+    white-space: nowrap;
+  }
+}
+
+.connectedInfo {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}

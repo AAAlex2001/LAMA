@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { buildExtraReducers } from './calendarExtra';
 
 export type CalendarView = 'day' | 'week' | 'month' | 'list';

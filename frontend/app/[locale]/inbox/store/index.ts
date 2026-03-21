@@ -11,7 +11,7 @@ import createCommandModalReducer from './slices/createCommandModal';
 import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
 import botsReducer from './slices/bots';
 import directChatReducer from './slices/directChat';
-import channelsReducer from '@/app/[locale]/create-post/store/slices/channels';
+import { channelsReducer } from '@/store/channels';
 
 export const inboxStore = configureStore({
   reducer: { 
@@ -125,12 +125,12 @@ export {
   setTotal,
   clearError,
   resetChannels,
-} from '@/app/[locale]/create-post/store/slices/channels';
-export { 
-  fetchChannelsThunk, 
-  addChannelThunk, 
-  deleteChannelThunk 
-} from '@/app/[locale]/create-post/store/thunks/channels';
+} from '@/store/channels';
+export {
+  fetchChannelsThunk,
+  addChannelThunk,
+  deleteChannelThunk
+} from '@/store/channels';
 
 export {
   createInviteLinkThunk,

@@ -2,6 +2,10 @@ import type { RootState } from '../index';
 import type { InlineKeyboard, CreatePostRequest, PollData, MediaFile, ButtonRow, SettingsState, UploadedFile, QuizAnswer, QuizMode } from '../types';
 import { uploadMediaFile, API_BASE_URL } from './api';
 
+// Re-export from shared utils
+import { buildInlineKeyboard } from '@/store/utils';
+export { buildInlineKeyboard };
+
 export function extractPlainText(html: string): string {
   return (html || '')
     .replace(/<br\s*\/?\s*>/gi, '\n')
@@ -12,19 +16,6 @@ export function extractPlainText(html: string): string {
 
 export function hasSupportedFormatting(html: string): boolean {
   return /<\/?(?:strong|em|b|i|s|u|code|pre|tg-spoiler)[\s>\/]|<a\b/i.test(html || '');
-}
-
-export function buildInlineKeyboard(rows: ButtonRow[]): InlineKeyboard | undefined {
-  const buttons = rows
-    .map(row => row.buttons.filter(btn => btn.text?.trim()).map(btn => ({
-      text: btn.text, type: btn.type, url: btn.url,
-      hidden_text_subscribed: btn.hidden_text_subscribed,
-      hidden_text_unsubscribed: btn.hidden_text_unsubscribed,
-      callback_action: btn.callback_action,
-      callback_response: btn.callback_response,
-    })))
-    .filter(row => row.length > 0);
-  return buttons.length > 0 ? { buttons } : undefined;
 }
 
 export function convertAutoDeleteToSeconds(interval: string, customDays: number, customHours: number): number | undefined {

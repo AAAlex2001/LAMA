@@ -1,0 +1,39 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.label {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  color: #383F45;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.text {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 19px;
+  color: #383F45;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  flex: 1;
+}

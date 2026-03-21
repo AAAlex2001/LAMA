@@ -8,7 +8,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useSendGlobalMessage } from '../../../store/hooks/useGlobalMessages';
 import { useAppDispatch, useAppSelector } from '../../../store';
 import { setCreateGlobalMessageModalOpen, resetGlobalMessageForm, setGlobalMessageSelectedBotIds, setGlobalMessageIsLoading } from '../../../store';
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import type { InlineKeyboard } from '@/types/post';
 
 interface CreateGlobalMessageModalProps {
   isOpen: boolean;

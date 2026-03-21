@@ -15,6 +15,8 @@ from backend.models.publications import (
 )
 from backend.schemas.publications import PublishResult, ChannelPublishResult
 from backend.services.channel import ChannelService
+from backend.services.channel.backup_service import BackupService
+from backend.services.channel.retransmit_service import RetransmitService
 from backend.services.publications.channel_sender import process_batch, send_to_channel_with_retry
 from backend.services.publications.publish_helpers import (
     save_telegram_messages,
@@ -63,7 +65,9 @@ async def publish_to_channels(
             await asyncio.sleep(0.3)
 
     await save_telegram_messages(results, db)
-    await handle_backups(results, publication.id, channel_service, create_notification_callback)
+    backup_service = BackupService(db)
+    retransmit_service = RetransmitService(db)
+    await handle_backups(results, publication.id, backup_service, retransmit_service, create_notification_callback)
     await create_notifications(results, publication.id, create_notification_callback)
 
     success_count = sum(1 for r in results if r.success)

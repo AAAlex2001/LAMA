@@ -18,9 +18,8 @@ import {
 import { selectBots, selectBotsLoading } from '../../../../store/selectors';
 import BotSearchSelector from '../../../../components/BotSearchSelector';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../../../components/ResponseTextSection';
-import { uploadMediaFile } from '@/app/[locale]/create-post/store/thunks/api';
-import { API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
-import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
+import { uploadMediaFile, API_BASE_URL } from '@/store/api';
+import { buildInlineKeyboard } from '@/store/utils';
 import { useRef } from 'react';
 
 interface GlobalMessageFormProps {

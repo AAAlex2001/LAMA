@@ -14,7 +14,7 @@ import { useInlineButtons } from './hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
 import { SendIcon, CloseIcon, ReplyToIcon } from '@/components/icons';
 import EditIcon from '@/components/icons/edit-icon';
-import type { TextTemplate } from '@/app/[locale]/create-post/store/types';
+import type { TextTemplate } from '@/types/post';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import classNames from 'classnames';
 import type { MediaFile } from '@/components/media-preview';

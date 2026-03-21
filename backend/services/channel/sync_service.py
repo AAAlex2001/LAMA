@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
+import asyncio
 from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
@@ -8,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import TELEGRAM_BOT_TOKEN
 from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
@@ -34,7 +36,7 @@ class SyncService:
     ) -> ChannelGroup:
         """Синхронизировать канал через Telegram API."""
         if not bot_id and not token:
-            raise HTTPException(status_code=400, detail="Either bot_id or token must be provided")
+            token = TELEGRAM_BOT_TOKEN
         if not telegram_id and not username and not invite_link:
             raise HTTPException(status_code=400, detail="One of telegram_id, username, or invite_link must be provided")
 
@@ -45,14 +47,18 @@ class SyncService:
             bot_model = await bot_service.sync_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
 
-        bot_model = await self.get_bot_model(bot_id, owner_id)
-        user_telegram_id = await self.get_user_telegram_id(owner_id)
+        bot_model, user_telegram_id = await asyncio.gather(
+            self.get_bot_model(bot_id, owner_id),
+            self.get_user_telegram_id(owner_id),
+        )
         rate_limited_bot = get_cached_bot(bot_model.token)
         raw_bot = rate_limited_bot.bot
 
         try:
-            await validate_access(raw_bot, chat_identifier, bot_model.telegram_id, user_telegram_id)
-            chat = await raw_bot.get_chat(chat_identifier)
+            _, chat = await asyncio.gather(
+                validate_access(raw_bot, chat_identifier, bot_model.telegram_id, user_telegram_id),
+                raw_bot.get_chat(chat_identifier),
+            )
             chat_data = await build_chat_data(raw_bot, chat, bot_model.token)
             return await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
         except TelegramForbiddenError:
@@ -136,11 +142,12 @@ def resolve_chat_identifier(
 async def validate_access(bot: RateLimitedBot, chat_identifier, bot_telegram_id: int, user_telegram_id: int):
     """Проверить доступ бота и пользователя к чату."""
     try:
-        bot_member = await bot.get_chat_member(chat_identifier, bot_telegram_id)
+        bot_member, user_member = await asyncio.gather(
+            bot.get_chat_member(chat_identifier, bot_telegram_id),
+            bot.get_chat_member(chat_identifier, user_telegram_id),
+        )
         if bot_member.status in ["left", "kicked"]:
             raise HTTPException(status_code=403, detail="Bot is not a member of this channel/group")
-
-        user_member = await bot.get_chat_member(chat_identifier, user_telegram_id)
         if user_member.status not in ["administrator", "creator"]:
             raise HTTPException(status_code=403, detail="User is not an admin in this channel/group")
         return

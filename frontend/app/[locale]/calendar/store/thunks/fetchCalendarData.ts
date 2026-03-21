@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { DraftListResponse, Draft, BotMessageCompact } from '@/app/[locale]/create-post/store/types';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import type { DraftListResponse, Draft, BotMessageCompact } from '@/types/post';
+import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calendar-helpers';
 

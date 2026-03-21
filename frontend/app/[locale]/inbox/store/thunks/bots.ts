@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
 import type { Bot, BotCreate, BotStatus } from '../slices/bots';
 import {
   setBots,

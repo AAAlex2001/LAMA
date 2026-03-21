@@ -35,7 +35,10 @@ async def update_backup_mode(
     channel = await service.update_mode(
         channel_id=channel_id,
         backup_mode=data.backup_mode,
-        backup_target_id=data.backup_target_id,
+        backup_target_ids=data.backup_target_ids,
+        backup_post_types=data.backup_post_types,
+        backup_content_types=data.backup_content_types,
+        backup_ai_prompt=data.backup_ai_prompt,
         owner_id=current_user.id,
     )
     return channel

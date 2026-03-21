@@ -34,6 +34,7 @@ interface LinkInvitesModalProps {
   links?: InvitationLink[];
   onCreateLink?: () => void;
   onEditLink?: (link: InvitationLink) => void;
+  channelId?: number;
 }
 
 const getFilterOptions = (
@@ -79,6 +80,7 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
   links: propLinks,
   onCreateLink,
   onEditLink,
+  channelId,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'expired'>('all');
@@ -98,7 +100,9 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
     }
   }, [isOpen, channels.length, dispatch]);
 
-  const allInviteLinks = Object.values(inviteLinksState).flat();
+  const allInviteLinks = channelId
+    ? (inviteLinksState[channelId] || [])
+    : Object.values(inviteLinksState).flat();
 
   const isLoading = Object.values(inviteLinksLoadingState).some(loading => loading === true);
 

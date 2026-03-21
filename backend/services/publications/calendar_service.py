@@ -1,7 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional
 
-from dateutil.relativedelta import relativedelta
 from sqlalchemy import and_, case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
@@ -13,7 +12,7 @@ from backend.models.publications import (
 )
 from backend.models.bots import Bot, BotMessage, RecurringMessage, RecurringMessageLog
 from backend.schemas.publications.publication_response import DayCount
-from backend.services.publications.repeat_calculator import calculate_next_repeat_time
+from backend.services.publications.repeat_utils import strip_tz, project_repeat_occurrences
 
 
 class CalendarService:
@@ -207,6 +206,7 @@ class CalendarService:
             )
             .options(load_only(
                 Publication.id,
+                Publication.scheduled_time,
                 Publication.next_repeat_time,
                 Publication.repeat_interval,
                 Publication.repeat_custom_days,
@@ -225,88 +225,15 @@ class CalendarService:
 
         per_day: dict[str, int] = {}
         seen: set = set()
-        naive_start = strip_tz(start_date)
-        naive_end = strip_tz(end_date)
 
         for pub in repeating_pubs:
-            current = fast_forward_to(
-                pub.next_repeat_time, naive_start,
-                pub.repeat_interval, pub.repeat_custom_days, pub.repeat_custom_hours,
-            )
-            if current is None:
-                continue
-
-            max_in_range = 200
-            iterations = 0
-
-            while current and current <= naive_end and iterations < max_in_range:
-                if current >= naive_start:
-                    date_str = current.strftime("%Y-%m-%d")
-                    key = (pub.id, date_str)
-                    if key not in seen:
-                        per_day[date_str] = per_day.get(date_str, 0) + 1
-                        seen.add(key)
-
-                current = calculate_next_repeat_time(
-                    current,
-                    pub.repeat_interval,
-                    pub.repeat_custom_days,
-                    pub.repeat_custom_hours,
-                    pub.repeat_end_time,
-                    pub.repeat_custom_unit,
-                    pub.repeat_custom_value,
-                    pub.repeat_weekdays,
-                    pub.repeat_month_days,
-                    pub.repeat_year_month,
-                    pub.repeat_year_days,
-                )
-                iterations += 1
+            for date_str, _ in project_repeat_occurrences(pub, start_date, end_date):
+                key = (pub.id, date_str)
+                if key not in seen:
+                    per_day[date_str] = per_day.get(date_str, 0) + 1
+                    seen.add(key)
 
         return [
             DayCount(date=date_str, count=cnt, published=cnt)
             for date_str, cnt in per_day.items()
         ]
-
-
-def strip_tz(dt: datetime) -> datetime:
-    """Убирает timezone info для безопасного сравнения."""
-    return dt.replace(tzinfo=None) if dt.tzinfo else dt
-
-
-def fast_forward_to(
-    current: datetime,
-    target: datetime,
-    interval: DBRepeatInterval,
-    custom_days: Optional[int],
-    custom_hours: Optional[int],
-) -> Optional[datetime]:
-    """Прыжок к target без пошаговой итерации."""
-    current = strip_tz(current)
-    target = strip_tz(target)
-
-    if current >= target:
-        return current
-
-    diff = target - current
-
-    if interval == DBRepeatInterval.DAILY:
-        return current + timedelta(days=diff.days)
-    if interval == DBRepeatInterval.WEEKLY:
-        return current + timedelta(weeks=diff.days // 7)
-    if interval == DBRepeatInterval.BIWEEKLY:
-        return current + timedelta(weeks=(diff.days // 14) * 2)
-    if interval == DBRepeatInterval.MONTHLY:
-        months = (target.year - current.year) * 12 + target.month - current.month
-        return current + relativedelta(months=max(0, months - 1))
-    if interval == DBRepeatInterval.YEARLY:
-        years = target.year - current.year
-        return current + relativedelta(years=max(0, years - 1))
-    if interval == DBRepeatInterval.CUSTOM:
-        days = custom_days or 0
-        hours = custom_hours or 0
-        step_seconds = days * 86400 + hours * 3600
-        if step_seconds > 0:
-            jumps = int(diff.total_seconds() // step_seconds)
-            return current + timedelta(seconds=jumps * step_seconds)
-
-    return current

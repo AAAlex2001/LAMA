@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ButtonRow, InlineButton } from '@/app/[locale]/create-post/store/types';
+import type { ButtonRow, InlineButton } from '@/types/post';
 
 function createButton(): InlineButton {
   return {

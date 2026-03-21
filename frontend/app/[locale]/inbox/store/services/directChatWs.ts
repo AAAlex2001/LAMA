@@ -1,4 +1,4 @@
-import { getAuthToken, API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { getAuthToken, API_BASE_URL } from '@/store/api';
 
 export interface WsEvent {
   type: 'message_new' | 'message_edited' | 'message_deleted' | 'chat_updated';

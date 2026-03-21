@@ -49,8 +49,10 @@ def publish_publication(self, publication_id: int) -> str:
     """Опубликовать одну публикацию. Retry для разовых (не серийных) при неудаче."""
 
     result, is_series = run(publish_publication_async(publication_id))
+    if result.startswith("publish_permanent_failed:"):
+        logger.error("Постоянная ошибка (нет бота/канала): %s", result)
+        return result
     if result.startswith("publish_failed:") and not is_series:
-        run(reset_publication_for_retry(publication_id))
         raise self.retry(countdown=30 * (self.request.retries + 1))
     return result
 
@@ -115,10 +117,20 @@ async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
 
     if result.success:
         return f"published:{publication_id}", is_series
-    else:
-        logger.warning("publish partial/failed: publication_id=%s, %s/%s channels",
-                        publication_id, result.success_count, result.total_count)
-        return f"publish_failed:{publication_id}", is_series
+
+    failed = [r for r in result.results if not r.success]
+    for r in failed:
+        logger.error(
+            "channel_failed: publication_id=%s, channel=%s, permanent=%s, error=%s",
+            publication_id, r.channel, r.permanent, r.error,
+        )
+    logger.warning(
+        "publish partial/failed: publication_id=%s, %s/%s channels",
+        publication_id, result.success_count, result.total_count,
+    )
+    if failed and all(r.permanent for r in failed):
+        return f"publish_permanent_failed:{publication_id}", is_series
+    return f"publish_failed:{publication_id}", is_series
 
 
 async def reset_publication_for_retry(publication_id: int):

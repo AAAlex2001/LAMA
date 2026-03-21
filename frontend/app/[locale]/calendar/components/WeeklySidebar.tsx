@@ -2,7 +2,7 @@
 
 import React from 'react';
 import DatePicker from '@/components/date-picker/date-picker';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import {

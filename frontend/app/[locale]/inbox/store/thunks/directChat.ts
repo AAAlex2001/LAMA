@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
-import type { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/store/api';
+import type { InlineKeyboard } from '@/types/post';
 
 export type MessageType = 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'VOICE' | 'STICKER' | 'ANIMATION';
 

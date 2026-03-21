@@ -3,7 +3,7 @@ import type { DirectChatResponse, EditDirectMessageParams, MessageType, SendDire
 import type { MessageFieldRef } from '../components/MessageField';
 import type { MessageInputModeReturn } from './useMessageInputMode';
 import type { MessageScrollReturn } from './useMessageScroll';
-import { buildInlineKeyboard } from '@/app/[locale]/create-post/store/thunks/utils';
+import { buildInlineKeyboard } from '@/store/utils';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { processMediaFiles } from '../utils/processMediaFiles';
 

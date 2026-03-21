@@ -36,7 +36,7 @@
   padding: 0;
   gap: 16px;
   width: 100%;
-  max-height: 232px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -152,4 +152,71 @@
   align-items: center;
   padding: 0;
   width: 100%;
+}
+
+.botList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.botListLoading,
+.botListEmpty {
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+  padding: 8px 0;
+}
+
+.botItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  width: 100%;
+  background: #F8FAFF;
+  border: 1px solid rgba(176, 180, 184, 0.2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+.botItemSelected {
+  border-color: #3B82F6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.botName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 16px;
+  color: #383F45;
+}
+
+.botBadge {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 12px;
+  color: #3B82F6;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.botUsername {
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
 }

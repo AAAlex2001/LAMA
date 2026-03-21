@@ -64,7 +64,12 @@ export interface Channel {
   personal_chat: Record<string, any>;
   backup_mode: BackupMode;
   backup_target_id: number;
+  backup_target_ids: number[] | null;
+  backup_post_types: string[] | null;
+  backup_content_types: string[] | null;
+  backup_ai_prompt: string | null;
   bot_id: number;
+  is_bot_active: boolean;
   is_active: boolean;
   last_sync_at: string;
   created_at: string;
@@ -80,6 +85,10 @@ export interface ChannelBasic {
   photo_url?: string;
   username?: string;
   invite_link?: string;
+  channel_type?: ChannelType;
+  description?: string;
+  bot_id?: number;
+  is_bot_active?: boolean;
 }
 
 export interface ChannelListResponse {
@@ -103,7 +112,8 @@ export interface FetchChannelsParams {
 }
 
 export interface SyncChannelRequest {
-  token: string;
+  token?: string;
+  bot_id?: number;
   telegram_id?: number;
   username?: string;
   invite_link?: string;

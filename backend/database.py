@@ -19,7 +19,7 @@ engine = create_async_engine(
 )
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-celery_state = {"factory": None}
+celery_state = {"factory": None, "engine": None}
 
 
 def CelerySessionLocal() -> AsyncSession:
@@ -33,10 +33,19 @@ def CelerySessionLocal() -> AsyncSession:
             pool_timeout=60,
             pool_recycle=1800,
         )
+        celery_state["engine"] = celery_engine
         celery_state["factory"] = async_sessionmaker(
             celery_engine, class_=AsyncSession, expire_on_commit=False
         )
     return celery_state["factory"]()
+
+
+async def dispose_celery_engine():
+    """Закрыть Celery DB engine и сбросить фабрику."""
+    if celery_state["engine"] is not None:
+        await celery_state["engine"].dispose()
+    celery_state["engine"] = None
+    celery_state["factory"] = None
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

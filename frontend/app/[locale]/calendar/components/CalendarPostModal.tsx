@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { CloseIcon, PostIcon, CalendarRepeatIcon } from '@/components/icons';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
 import DraftCardActions from '@/app/[locale]/drafts/components/DraftCardActions';
 import {

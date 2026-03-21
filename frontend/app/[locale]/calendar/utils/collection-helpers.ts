@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { formatDateOnly } from './date-helpers';
 
 export function mergeUniqueById(existing: Draft[], incoming: Draft[]): Draft[] {

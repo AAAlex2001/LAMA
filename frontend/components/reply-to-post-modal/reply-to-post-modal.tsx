@@ -5,7 +5,7 @@ import styles from './reply-to-post-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
-import type { ReplyToPostModalProps, Post } from '@/app/[locale]/create-post/store/types';
+import type { ReplyToPostModalProps, Post } from '@/types/post';
 
 const getPostPreview = (post: Post): string => {
   const text = post.formatted_content?.text || post.text_content || '';

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { TriggerType, ActionType, ChatType } from './triggers';
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import type { InlineKeyboard } from '@/types/post';
 
 export type TriggerTypeEnum = 
   | 'JOIN_REQUEST_CREATED'

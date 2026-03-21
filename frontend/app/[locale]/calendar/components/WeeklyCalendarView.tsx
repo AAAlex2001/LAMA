@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';

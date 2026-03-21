@@ -14,6 +14,7 @@ import {
   useAppDispatch,
   setModalOpen,
   setStep,
+  setSelectedChannelId,
   setEditingLinkIds,
   populateFormFromInviteLink,
   resetForm,
@@ -87,12 +88,15 @@ const CreateInviteLinkModal: React.FC<{
   
   useEffect(() => {
     dispatch(setModalOpen(isOpen));
-    
+
     if (isOpen) {
       if (linkId && channelId) {
         dispatch(setStep('confirm'));
       } else {
         dispatch(setStep('form'));
+      }
+      if (channelId && !linkId) {
+        dispatch(setSelectedChannelId(channelId.toString()));
       }
     }
   }, [isOpen, linkId, channelId, dispatch]);
@@ -236,6 +240,7 @@ const CreateInviteLinkModal: React.FC<{
               channels={channelsOptions}
               maxChannels={maxChannels}
               onEditingConfirm={handleEditingConfirm}
+              fixedChannelId={channelId}
             />
           </ModalBase.Body>
         )}

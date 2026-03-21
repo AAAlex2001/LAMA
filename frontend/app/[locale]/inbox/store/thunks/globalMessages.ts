@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/store/api';
+import type { InlineKeyboard } from '@/types/post';
 
 export interface SendMessageRequest {
   text_content?: string;

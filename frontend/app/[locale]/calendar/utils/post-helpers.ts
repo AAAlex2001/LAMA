@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 
 export function getSourceDate(post: Draft): string {
   return post.scheduled_time || post.updated_at || post.created_at;

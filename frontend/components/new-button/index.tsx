@@ -71,7 +71,7 @@ export function Button({
   const buttonContent = loading ? (
     <Loader size={getLoaderSize()} color={getLoaderColor()} />
   ) : (
-    children
+    <span className={styles.label}>{children}</span>
   );
 
   if (href) {

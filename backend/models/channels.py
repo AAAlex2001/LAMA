@@ -47,6 +47,7 @@ class ChannelGroup(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     owner_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     bot_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), index=True)
+    is_bot_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     telegram_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     channel_type: Mapped[ChannelType] = mapped_column(SQLEnum(ChannelType))
     
@@ -133,6 +134,10 @@ class ChannelGroup(Base):
     # Настройки бекапа
     backup_mode: Mapped[BackupMode] = mapped_column(SQLEnum(BackupMode), default=BackupMode.DISABLED)
     backup_target_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="SET NULL"))
+    backup_target_ids: Mapped[Optional[list]] = mapped_column(JSON)
+    backup_post_types: Mapped[Optional[list]] = mapped_column(JSON)
+    backup_content_types: Mapped[Optional[list]] = mapped_column(JSON)
+    backup_ai_prompt: Mapped[Optional[str]] = mapped_column(Text)
     
     # Настройки антиспама
     link_filter_mode: Mapped[LinkFilterMode] = mapped_column(SQLEnum(LinkFilterMode), default=LinkFilterMode.DISABLED)

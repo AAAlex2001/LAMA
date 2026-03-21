@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { inboxStore } from './index';
 import type { ReactNode } from 'react';
-import { fetchChannelsThunk } from '@/app/[locale]/create-post/store/thunks/channels';
+import { fetchChannelsThunk } from '@/store/channels';
 import { fetchBotsThunk } from './thunks/bots';
 
 interface InboxProviderProps {

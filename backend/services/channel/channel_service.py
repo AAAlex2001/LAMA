@@ -1,14 +1,18 @@
 from datetime import datetime, timezone
 from typing import List, Optional
 
+import logging
 from fastapi import HTTPException
 
-from sqlalchemy import select, func, distinct
+from sqlalchemy import select, func, distinct, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from backend.models.bots import RecurringMessage, ScheduledTriggerTask, Trigger
 from backend.models.channels import ChannelGroup, ChannelType, BackupMode
 from backend.schemas.channels import ChannelGroupCreate, ChannelGroupUpdate
+
+logger = logging.getLogger(__name__)
 
 
 class ChannelService:
@@ -104,6 +108,15 @@ class ChannelService:
         channel = await self.get(channel_id, owner_id=owner_id)
 
         update_data = data.model_dump(exclude_unset=True)
+
+        if update_data.pop('clear_bot', False):
+            old_bot_id = channel.bot_id
+            channel_tg_id = channel.telegram_id
+            channel.bot_id = None
+            channel.is_bot_active = True
+            if old_bot_id and channel_tg_id:
+                await self.cleanup_bot_channel_link(old_bot_id, channel_tg_id)
+
         for field, value in update_data.items():
             setattr(channel, field, value)
 
@@ -111,6 +124,53 @@ class ChannelService:
         await self.db.flush()
         await self.db.refresh(channel)
         return channel
+
+    async def cleanup_bot_channel_link(self, bot_id: int, channel_telegram_id: int) -> None:
+        """Очистить все связи бота с каналом: триггеры, отложенные задачи, рекуррентные сообщения."""
+        scheduled_query = (
+            select(ScheduledTriggerTask)
+            .join(Trigger, ScheduledTriggerTask.trigger_id == Trigger.id)
+            .where(
+                Trigger.bot_id == bot_id,
+                ScheduledTriggerTask.chat_id == channel_telegram_id,
+                ScheduledTriggerTask.is_executed == False,
+            )
+        )
+        result = await self.db.execute(scheduled_query)
+        tasks = list(result.scalars().all())
+        for task in tasks:
+            task.is_executed = True
+        if tasks:
+            logger.info("Cancelled %d scheduled trigger tasks for bot %d, channel %d", len(tasks), bot_id, channel_telegram_id)
+
+        recurring_query = select(RecurringMessage).where(
+            RecurringMessage.bot_id == bot_id,
+            RecurringMessage.is_active == True,
+        )
+        result = await self.db.execute(recurring_query)
+        recurring_messages = list(result.scalars().all())
+        for rm in recurring_messages:
+            if channel_telegram_id in rm.target_chats:
+                new_targets = [c for c in rm.target_chats if c != channel_telegram_id]
+                rm.target_chats = new_targets
+                if not new_targets:
+                    rm.is_active = False
+                    logger.info("Deactivated recurring message %d (no target chats left)", rm.id)
+
+        trigger_query = select(Trigger).where(
+            Trigger.bot_id == bot_id,
+            Trigger.is_active == True,
+        )
+        result = await self.db.execute(trigger_query)
+        triggers = list(result.scalars().all())
+        for trigger in triggers:
+            if trigger.filters and isinstance(trigger.filters, dict):
+                chat_ids = trigger.filters.get("chat_ids", [])
+                if channel_telegram_id in chat_ids:
+                    new_chat_ids = [c for c in chat_ids if c != channel_telegram_id]
+                    trigger.filters = {**trigger.filters, "chat_ids": new_chat_ids}
+
+        await self.db.flush()
 
     async def delete(self, channel_id: int, owner_id: int) -> bool:
         """Удалить канал."""
