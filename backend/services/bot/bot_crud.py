@@ -172,22 +172,25 @@ class BotCrudService:
         raw_bot = get_cached_bot(bot.token).bot
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
+        bot.is_webhook_enabled = True
+        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{bot.token}"
         bot.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
         await self.db.refresh(bot)
         return bot
 
-    async def sync_from_telegram(self, token: str, owner_id: int) -> BotModel:
+    async def sync_from_telegram(self, token: str, owner_id: int, description: str = None) -> BotModel:
         """Синхронизировать информацию о боте через Telegram API."""
-        bot_info, description, short_description = await self.fetch_bot_info(token)
+        bot_info, tg_description, short_description = await self.fetch_bot_info(token)
+        final_description = description if description else tg_description
 
         bot = await self.get_by_telegram_id(bot_info.id, owner_id=owner_id)
         if bot:
             bot.username = bot_info.username or ""
             bot.first_name = bot_info.first_name
             bot.token = token
-            if description is not None:
-                bot.description = description or ""
+            if final_description is not None:
+                bot.description = final_description or ""
             if short_description is not None:
                 bot.short_description = short_description
             bot.last_sync_at = datetime.now(timezone.utc)
@@ -205,7 +208,7 @@ class BotCrudService:
                 username=bot_info.username,
                 first_name=bot_info.first_name,
                 token=token,
-                description=description,
+                description=final_description,
                 short_description=short_description,
                 status=BotStatus.ACTIVE,
                 last_sync_at=datetime.now(timezone.utc),
@@ -214,6 +217,14 @@ class BotCrudService:
 
         await self.db.flush()
         await self.db.refresh(bot)
+
+        raw_bot = get_cached_bot(token).bot
+        await self.setup_webhook(raw_bot, token)
+        bot.is_webhook_enabled = True
+        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
+        await self.db.flush()
+        await self.db.refresh(bot)
+
         return bot
 
     async def fetch_bot_info(self, token: str) -> tuple:
