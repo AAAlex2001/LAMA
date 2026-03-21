@@ -4,7 +4,7 @@ import DatePicker from './date-picker';
 import { TimePicker } from '../time-picker';
 import styles from './date-picker-modal.module.scss';
 import Button from '../button/button';
-import type { DatePickerModalProps } from '@/app/[locale]/create-post/store/types';
+import type { DatePickerModalProps } from '@/types/post';
 
 export default function DatePickerModal({
   isOpen,

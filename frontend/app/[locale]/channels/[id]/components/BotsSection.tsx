@@ -28,6 +28,12 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
   const [removeBotOpen, setRemoveBotOpen] = useState(false);
 
   useEffect(() => {
+    if (window.matchMedia('(min-width: 1440px)').matches) {
+      setBotsOpen(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (channel.bot_id) {
       dispatch(fetchChannelBotThunk(channel.bot_id))
         .unwrap()

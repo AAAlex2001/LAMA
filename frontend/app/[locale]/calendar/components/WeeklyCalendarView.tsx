@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
@@ -78,10 +78,12 @@ function DayColumn({
     const el = scrollRootRef.current;
     if (!el) return;
     el.addEventListener('scroll', checkNeedMore, { passive: true });
+    // Initial check: if content doesn't fill the column, trigger load more
     requestAnimationFrame(checkNeedMore);
     return () => el.removeEventListener('scroll', checkNeedMore);
   }, [checkNeedMore]);
 
+  // Check after loading finishes (user might already be at bottom)
   React.useEffect(() => {
     if (!dayLoading && dayHasMore) {
       requestAnimationFrame(checkNeedMore);

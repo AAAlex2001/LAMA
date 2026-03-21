@@ -27,6 +27,12 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
   const [open, setOpen] = useState(false);
   const [channelsOpen, setChannelsOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1440px)').matches) {
+      setOpen(true);
+    }
+  }, []);
   const [search, setSearch] = useState('');
 
   const [approvalMode, setApprovalMode] = useState<'AUTO' | 'MANUAL' | 'CRITERIA'>('MANUAL');

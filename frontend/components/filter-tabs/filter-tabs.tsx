@@ -14,11 +14,12 @@ interface FilterTabsProps {
   selectedFilter: string;
   onFilterChange: (filterId: string) => void;
   className?: string;
+  stretch?: boolean;
 }
 
-const FilterTabs: FC<FilterTabsProps> = ({ options, selectedFilter, onFilterChange, className }) => {
+const FilterTabs: FC<FilterTabsProps> = ({ options, selectedFilter, onFilterChange, className, stretch }) => {
   return (
-    <div className={classNames(styles.filterTabs, className)}>
+    <div className={classNames(styles.filterTabs, stretch && styles.filterTabsStretch, className)}>
       {options.map((option) => (
         <span
           key={option.id}

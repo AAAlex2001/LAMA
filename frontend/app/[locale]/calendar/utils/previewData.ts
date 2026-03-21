@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { draftToMediaFiles } from './media-helpers';
 
 export function getPreviewData(post: Draft) {

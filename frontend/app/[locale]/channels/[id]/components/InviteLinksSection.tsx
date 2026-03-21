@@ -17,6 +17,12 @@ interface InviteLinksSectionProps {
 
 const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (window.matchMedia('(min-width: 1440px)').matches) {
+      setOpen(true);
+    }
+  }, []);
   const [linksOpen, setLinksOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [links, setLinks] = useState<InviteLink[]>([]);

@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState } from './index';
-import type { DraftListResponse } from '@/app/[locale]/create-post/store/types';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import type { DraftListResponse } from '@/types/post';
+import { apiRequest } from '@/store/api';
 import {
   setDrafts,
   appendDrafts,
@@ -11,7 +11,7 @@ import {
   setHasMore,
   setPage,
   setTagIdsFilter,
-} from '@/app/[locale]/create-post/store/slices/drafts';
+} from '@/store/drafts';
 
 const PAGE_SIZE = 30;
 

@@ -5,7 +5,7 @@ import ModalBase from '@/components/modal-base';
 import Input from '@/components/input';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
 import styles from './styles.module.scss';
 
 interface ConnectBotModalProps {

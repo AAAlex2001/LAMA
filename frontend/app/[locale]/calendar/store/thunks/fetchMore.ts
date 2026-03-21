@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { DraftListResponse, Draft } from '@/app/[locale]/create-post/store/types';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import type { DraftListResponse, Draft } from '@/types/post';
+import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, mergeUniqueById } from '../../utils/calendar-helpers';
 

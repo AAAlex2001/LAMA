@@ -1,5 +1,5 @@
 import type { ActionReducerMapBuilder } from '@reduxjs/toolkit';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import type { CalendarState, DayPageState } from './calendar';
 import { fetchCalendarData, fetchMoreListPosts, fetchMoreDayPosts, fetchDayCounts } from '../thunks';
 
@@ -81,6 +81,8 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         return;
       }
       state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
+      // Merge: use day-counts as baseline, but preserve week-batch totals
+      // for dates where we have actual loaded items (more accurate)
       const merged = { ...action.payload.counts };
       for (const dateKey of Object.keys(state.weekItems)) {
         if (state.monthPostCounts[dateKey] !== undefined) {

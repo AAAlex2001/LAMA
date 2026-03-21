@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import { getMediaFilterTypes } from './calendar-helpers';
 
 function matchesCriteria(post: Draft, filters: Record<string, string[]>): boolean {

@@ -1,18 +1,26 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Button } from '@/components/new-button';
 import { ChatChevronIcon } from '@/components/icons';
+import FilterTabs from '@/components/filter-tabs/filter-tabs';
 import styles from './SettingsHeader.module.scss';
+
+const SETTINGS_TABS = [
+  { id: 'settings', label: 'Настройки и ссылки' },
+  { id: 'bots', label: 'Подключенные боты' },
+];
 
 interface SettingsHeaderProps {
   connectedCount: number;
   total: number;
   onConnect: () => void;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const SettingsHeader: FC<SettingsHeaderProps> = ({ connectedCount, total, onConnect }) => {
+const SettingsHeader: FC<SettingsHeaderProps> = ({ connectedCount, total, onConnect, activeTab = 'settings', onTabChange }) => {
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'ru';
@@ -23,6 +31,16 @@ const SettingsHeader: FC<SettingsHeaderProps> = ({ connectedCount, total, onConn
         <button className={styles.backBtn} onClick={() => router.push(`/${locale}/channels`)} type="button">
           <ChatChevronIcon width={37} height={37} />
         </button>
+
+        <div className={styles.desktopTabs}>
+          <FilterTabs
+            options={SETTINGS_TABS}
+            selectedFilter={activeTab}
+            onFilterChange={(id) => onTabChange?.(id)}
+            stretch
+          />
+        </div>
+
         <div className={styles.connectBlock}>
           <Button variant="fill" intent="gradient" size="lg" className={styles.connectBtn} onClick={onConnect}>
             Подключить канал или группу

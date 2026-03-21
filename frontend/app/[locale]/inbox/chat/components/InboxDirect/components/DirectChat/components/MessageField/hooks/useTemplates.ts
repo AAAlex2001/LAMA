@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { TextTemplate, TextTemplateListResponse, UpdateTextTemplateRequest } from '@/app/[locale]/create-post/store/types';
+import type { TextTemplate, TextTemplateListResponse, UpdateTextTemplateRequest } from '@/types/post';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
 const PAGE_SIZE = 20;

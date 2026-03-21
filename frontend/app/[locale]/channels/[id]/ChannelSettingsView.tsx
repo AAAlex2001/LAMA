@@ -35,6 +35,7 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState('settings');
 
   const botChannels = channels.filter((ch) => ch.bot_id === channel?.bot_id && channel?.bot_id);
 
@@ -65,11 +66,15 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
         connectedCount={channels.length}
         total={total}
         onConnect={() => setConnectOpen(true)}
+        activeTab={settingsTab}
+        onTabChange={setSettingsTab}
       />
 
       <div className={styles.card}>
-        <ChannelInfoCard channel={channel} onEdit={() => setEditOpen(true)} />
-        <DescriptionEditor channel={channel} />
+        <div className={styles.infoRow}>
+          <ChannelInfoCard channel={channel} onEdit={() => setEditOpen(true)} />
+          <DescriptionEditor channel={channel} />
+        </div>
         <BotsSection channel={channel} botChannels={botChannels} />
         <DeleteButton onClick={() => setDeleteOpen(true)} />
       </div>

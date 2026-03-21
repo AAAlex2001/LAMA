@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import DraftContentIcons from './DraftContentIcons';
 import DraftCardActions from './DraftCardActions';
 import Loader from '@/components/loader';

@@ -1,5 +1,5 @@
 import { createAsyncThunk, ThunkDispatch, UnknownAction } from '@reduxjs/toolkit';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
 
 export type InboxCategory = 'moderation' | 'system' | 'automation';
 export type EntityType = 'bot' | 'channel' | 'system';

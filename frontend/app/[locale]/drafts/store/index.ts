@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import draftsReducer from '@/app/[locale]/create-post/store/slices/drafts';
+import { draftsReducer } from '@/store/drafts';
 
 export const draftsStore = configureStore({
   reducer: {

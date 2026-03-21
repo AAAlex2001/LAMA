@@ -9,7 +9,7 @@ import {
   QuizIcon,
   InlineButtonIcon,
 } from '@/components/icons';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import styles from './draft-card.module.scss';
 
 interface DraftContentIconsProps {

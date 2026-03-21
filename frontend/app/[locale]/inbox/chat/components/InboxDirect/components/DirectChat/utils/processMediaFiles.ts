@@ -1,4 +1,4 @@
-import { uploadMediaFile, API_BASE_URL } from '@/app/[locale]/create-post/store/thunks/api';
+import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 
 interface ProcessedMedia {
   urls: string[];

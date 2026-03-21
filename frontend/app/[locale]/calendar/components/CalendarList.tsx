@@ -4,7 +4,7 @@ import React from 'react';
 import Loader from '@/components/loader';
 import Button from '@/components/button/button';
 import CalendarCard from './CalendarCard';
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import styles from '../calendar.module.scss';
 
 interface CalendarListProps {

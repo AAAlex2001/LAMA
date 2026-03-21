@@ -8,7 +8,7 @@ import EyeIcon from '@/components/icons/eye-icon';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
 import DeleteConfirmationModal from '@/components/modal';
-import type { DraftsModalProps, Draft } from '@/app/[locale]/create-post/store/types';
+import type { DraftsModalProps, Draft } from '@/types/post';
 
 function getDraftPreview(draft: Draft): string {
   const text = draft.formatted_content?.text || draft.text_content || '';

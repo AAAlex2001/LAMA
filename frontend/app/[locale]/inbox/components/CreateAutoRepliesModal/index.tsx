@@ -8,7 +8,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useCreateAutoReply } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
 import { setCreateAutoReplyModalOpen, resetAutoReplyForm, setAutoReplyIsSubmitting } from '../../store';
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import type { InlineKeyboard } from '@/types/post';
 
 interface CreateAutoRepliesModalProps {
   isOpen: boolean;

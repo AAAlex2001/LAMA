@@ -1,4 +1,4 @@
-import type { Draft } from '@/app/[locale]/create-post/store/types';
+import type { Draft } from '@/types/post';
 import type { FilterConfig } from '../components/ListFilterBar';
 import { getMediaFilterTypes, getStatusLabel, MEDIA_TYPE_LABELS } from './calendar-helpers';
 

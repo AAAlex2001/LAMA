@@ -8,7 +8,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useCreateCommand } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
 import { setCreateCommandModalOpen, resetCommandForm, setCommandIsSubmitting } from '../../store';
-import { InlineKeyboard } from '@/app/[locale]/create-post/store/types';
+import type { InlineKeyboard } from '@/types/post';
 
 interface CreateCommandModalProps {
   isOpen: boolean;

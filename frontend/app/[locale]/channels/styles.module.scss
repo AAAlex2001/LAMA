@@ -40,6 +40,11 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .loaderContainer {

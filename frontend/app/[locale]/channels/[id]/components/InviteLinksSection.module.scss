@@ -14,11 +14,20 @@
   background: transparent;
   border: none;
   cursor: pointer;
+
+  @media (min-width: 1440px) {
+    cursor: default;
+    padding: 0;
+  }
 }
 
 .rowActive {
   opacity: 1;
   cursor: pointer;
+
+  @media (min-width: 1440px) {
+    cursor: default;
+  }
 }
 
 .label {
@@ -34,6 +43,10 @@
   flex-shrink: 0;
   transform: rotate(-90deg);
   transition: transform 0.2s;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
 }
 
 .chevronOpen {
@@ -47,8 +60,27 @@
   align-items: flex-start;
   gap: 12px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: center;
+  }
 }
 
 .fullWidth {
   width: 100%;
+
+  @media (min-width: 1440px) {
+    width: auto;
+    flex: none;
+  }
+}
+
+@media (min-width: 1440px) {
+  .section {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
 }

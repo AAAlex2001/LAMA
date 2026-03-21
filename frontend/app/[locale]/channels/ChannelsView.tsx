@@ -86,6 +86,7 @@ const ChannelsView: FC = () => {
           options={TAB_OPTIONS}
           selectedFilter={activeTab}
           onFilterChange={(id) => setActiveTab(id as TabFilter)}
+          stretch
         />
 
         <div className={styles.connectBlock}>

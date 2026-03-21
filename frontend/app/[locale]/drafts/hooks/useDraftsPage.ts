@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAppDispatch, useAppSelector } from '../store';
 import { fetchDrafts, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks';
-import { setSortOrder } from '@/app/[locale]/create-post/store/slices/drafts';
+import { setSortOrder } from '@/store/drafts';
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
-import type { Draft, MediaFile, Tag, TagsResponse } from '@/app/[locale]/create-post/store/types';
+import { apiRequest } from '@/store/api';
+import type { Draft, MediaFile } from '@/types/post';
+import type { Tag, TagsResponse } from '@/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 type SortKey = 'date' | 'tags' | 'source' | null;
