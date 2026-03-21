@@ -3,6 +3,13 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
 }
 
 .row {
@@ -17,7 +24,10 @@
 
   @media (min-width: 1440px) {
     cursor: default;
+    pointer-events: none;
     padding: 0;
+    width: auto;
+    flex-shrink: 0;
   }
 }
 
@@ -64,6 +74,8 @@
   @media (min-width: 1440px) {
     flex-direction: row;
     align-items: center;
+    justify-content: flex-end;
+    width: auto;
   }
 }
 
@@ -73,14 +85,5 @@
   @media (min-width: 1440px) {
     width: auto;
     flex: none;
-  }
-}
-
-@media (min-width: 1440px) {
-  .section {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
   }
 }

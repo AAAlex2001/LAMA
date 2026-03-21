@@ -8,8 +8,8 @@ import FilterTabs from '@/components/filter-tabs/filter-tabs';
 import styles from './SettingsHeader.module.scss';
 
 const SETTINGS_TABS = [
-  { id: 'settings', label: 'Настройки и ссылки' },
-  { id: 'bots', label: 'Подключенные боты' },
+  { id: 'settings', label: 'Общая информация' },
+  { id: 'backup', label: 'Резервное копирование' },
 ];
 
 interface SettingsHeaderProps {
@@ -32,15 +32,6 @@ const SettingsHeader: FC<SettingsHeaderProps> = ({ connectedCount, total, onConn
           <ChatChevronIcon width={37} height={37} />
         </button>
 
-        <div className={styles.desktopTabs}>
-          <FilterTabs
-            options={SETTINGS_TABS}
-            selectedFilter={activeTab}
-            onFilterChange={(id) => onTabChange?.(id)}
-            stretch
-          />
-        </div>
-
         <div className={styles.connectBlock}>
           <Button variant="fill" intent="gradient" size="lg" className={styles.connectBtn} onClick={onConnect}>
             Подключить канал или группу
@@ -50,6 +41,14 @@ const SettingsHeader: FC<SettingsHeaderProps> = ({ connectedCount, total, onConn
           </span>
         </div>
       </div>
+
+      <FilterTabs
+        options={SETTINGS_TABS}
+        selectedFilter={activeTab}
+        onFilterChange={(id) => onTabChange?.(id)}
+        stretch
+        className={styles.tabs}
+      />
     </div>
   );
 };

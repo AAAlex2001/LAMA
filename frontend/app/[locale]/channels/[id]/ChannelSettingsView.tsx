@@ -14,6 +14,7 @@ import ChannelInfoCard from './components/ChannelInfoCard';
 import DescriptionEditor from './components/DescriptionEditor';
 import EditChannelModal from './components/EditChannelModal';
 import BotsSection from './components/BotsSection';
+import BackupSection from './components/BackupSection';
 import DeleteButton from './components/DeleteButton';
 import styles from './styles.module.scss';
 
@@ -73,10 +74,21 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
       <div className={styles.card}>
         <div className={styles.infoRow}>
           <ChannelInfoCard channel={channel} onEdit={() => setEditOpen(true)} />
-          <DescriptionEditor channel={channel} />
+          {settingsTab === 'settings' && (
+            <DescriptionEditor channel={channel} />
+          )}
         </div>
-        <BotsSection channel={channel} botChannels={botChannels} />
-        <DeleteButton onClick={() => setDeleteOpen(true)} />
+
+        {settingsTab === 'settings' && (
+          <>
+            <BotsSection channel={channel} botChannels={botChannels} />
+            <DeleteButton onClick={() => setDeleteOpen(true)} />
+          </>
+        )}
+
+        {settingsTab === 'backup' && (
+          <BackupSection channel={channel} />
+        )}
       </div>
 
       <EditChannelModal

@@ -17,6 +17,7 @@
 
   @media (min-width: 1440px) {
     cursor: default;
+    pointer-events: none;
     padding: 0;
   }
 }
@@ -50,6 +51,16 @@
 }
 
 .chevronOpen {
+  transform: rotate(0deg);
+}
+
+.subChevron {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+}
+
+.subChevronOpen {
   transform: rotate(0deg);
 }
 
@@ -125,6 +136,10 @@
   gap: 8px;
   width: 100%;
   padding-top: 4px;
+
+  @media (min-width: 1440px) {
+    max-width: 500px;
+  }
 }
 
 .channelList {

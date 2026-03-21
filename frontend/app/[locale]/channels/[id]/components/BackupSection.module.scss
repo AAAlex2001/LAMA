@@ -1,0 +1,47 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.headerRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.title {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  flex: 1;
+}
+
+.toggleList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.toggleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  gap: 12px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.toggleLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex: 1;
+}

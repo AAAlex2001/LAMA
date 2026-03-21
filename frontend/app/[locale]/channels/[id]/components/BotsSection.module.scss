@@ -18,6 +18,8 @@
   opacity: 0.5;
 
   @media (min-width: 1440px) {
+    cursor: default;
+    pointer-events: none;
     padding: 0;
   }
 }

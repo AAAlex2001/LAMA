@@ -2,9 +2,8 @@
 
 import { FC, useState, useEffect, useMemo } from 'react';
 import { ChevronDownIcon } from '@/components/icons';
-import SearchIcon from '@/components/icons/search-icon';
 import Toggle from '@/components/toggle/toggle';
-import Input from '@/components/input/input';
+import SearchBar from '@/components/search-bar/search-bar';
 import Checkbox from '@/components/checkbox/checkbox';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppSelector } from '../../store';
@@ -165,7 +164,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                 width={16}
                 height={16}
                 color="#383F45"
-                className={`${styles.chevron} ${channelsOpen ? styles.chevronOpen : ''}`}
+                className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
               />
             </button>
             {selectedNames && (
@@ -174,16 +173,18 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
             {channelsOpen && (
               <div className={styles.channelPicker}>
-                <Input
+                <SearchBar
                   value={search}
                   onChange={setSearch}
-                  placeholder="Поиск канала..."
-                  variant="white"
-                  icon={<SearchIcon width={16} height={16} />}
+                  placeholder="Введите название канала"
                 />
                 <div className={styles.channelList}>
                   {filteredChannels.map((ch) => (
-                    <div key={ch.id} className={styles.channelItem}>
+                    <div
+                      key={ch.id}
+                      className={styles.channelItem}
+                      onClick={() => handleToggleChannel(ch.telegram_id!)}
+                    >
                       <Checkbox
                         checked={requiredChannels.includes(ch.telegram_id!)}
                         onChange={() => handleToggleChannel(ch.telegram_id!)}
