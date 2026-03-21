@@ -68,6 +68,15 @@ class JoinRequestHandler:
                     },
                 )
 
+                db_link = await self.get_db_link(join_request)
+
+                if db_link and db_link.protection_type == "captcha":
+                    captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+                    if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+                        await self.handle_manual_mode(telegram_bot, join_request)
+                        await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
+                        return
+
                 should_approve, missing = (
                     await self.settings_service.check_approval_criteria(
                         self.bot_model, user_id
@@ -85,19 +94,8 @@ class JoinRequestHandler:
                     await self.db.flush()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    db_link = await self.get_db_link(join_request)
-
-                    if db_link and db_link.protection_type == "captcha":
-                        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-                        if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-                            await self.handle_manual_mode(telegram_bot, join_request)
-                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
-                        else:
-                            await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                            await self.create_join_event(join_request, status=EventStatus.NEW)
-                    else:
-                        await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                        await self.create_join_event(join_request, status=EventStatus.NEW)
+                    await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
+                    await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
 
                 elif (

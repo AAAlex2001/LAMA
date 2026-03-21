@@ -57,10 +57,8 @@ def should_retransmit(publication: Publication, channel: Channel) -> bool:
             return True
         return False
 
-    if "text_posts" in post_types:
-        is_text = not has_media and not has_buttons
-        if is_text:
-            return True
+    if "text_posts" in post_types and not has_media:
+        return True
 
     return False
 

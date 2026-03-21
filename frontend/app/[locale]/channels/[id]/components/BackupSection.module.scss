@@ -1,14 +1,21 @@
 .section {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 10px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    padding: 16px;
+    gap: 30px;
+    background: #FFFFFF;
+    border-radius: 12px;
+  }
 }
 
 .headerRow {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
   align-items: center;
   padding: 10px 0;
   width: 100%;
@@ -22,11 +29,28 @@
   flex: 1;
 }
 
-.toggleList {
+.columnsGrid {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 40px;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+  }
 }
 
 .toggleRow {
@@ -55,28 +79,25 @@
   width: 100%;
 }
 
-/* Channel selector */
-.channelSelector {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-}
-
-.subRow {
+/* Канал-ретранслятор / Канал для восстановления — в одну строку */
+.channelSelectorRow {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
+  align-items: center;
+  gap: 4px;
   width: 100%;
   padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
   text-align: left;
+}
+
+.channelSelectorValue {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
 }
 
 .subLabel {
@@ -96,23 +117,11 @@
   transform: rotate(0deg);
 }
 
-.selectedChannels {
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  color: #B0B4B8;
-  width: 100%;
-}
-
 .channelPicker {
   display: flex;
   flex-direction: column;
   gap: 8px;
   width: 100%;
-
-  @media (min-width: 1440px) {
-    max-width: 500px;
-  }
 }
 
 .channelList {
@@ -146,7 +155,7 @@
   padding: 8px 0;
 }
 
-/* AI section */
+/* AI секция */
 .aiSection {
   display: flex;
   flex-direction: column;
@@ -161,12 +170,40 @@
   color: #383F45;
 }
 
-/* Post type checkboxes */
-.postTypes {
+/* Типы публикаций + Настройки ретранслятора — горизонтально на десктопе */
+.postTypesRow {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0;
+  }
+}
+
+.postTypesColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  @media (min-width: 1440px) {
+    flex: 0 0 auto;
+    padding: 12px 0;
+  }
+}
+
+.contentTypesColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    padding: 12px 0;
+  }
 }
 
 .checkboxList {
@@ -185,22 +222,6 @@
   cursor: pointer;
 }
 
-/* Content type checkboxes (nested under "Посты с вложениями") */
-.contentTypes {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: 100%;
-  padding: 4px 0 4px 24px;
-}
-
-.contentTypesLabel {
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  color: #B0B4B8;
-}
-
 .contentTypeGrid {
   display: flex;
   flex-direction: row;
@@ -216,7 +237,7 @@
   flex: 1;
 }
 
-/* Archive section */
+/* Архив */
 .archiveContent {
   display: flex;
   flex-direction: column;
@@ -229,12 +250,23 @@
   flex-direction: column;
   gap: 8px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
 }
 
 .archiveHeader {
   display: flex;
   flex-direction: column;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+  }
 }
 
 .archiveTitle {
@@ -254,41 +286,9 @@
 .archiveBtn {
   width: 100% !important;
   border-radius: 10px;
-}
 
-/* Restore channel selector */
-.restoreRow {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-}
-
-.restoreInfo {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  flex: 1;
-}
-
-.restoreLabel {
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 17px;
-  color: #383F45;
-}
-
-.restoreValue {
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  color: #383F45;
+  @media (min-width: 1440px) {
+    width: auto !important;
+    flex-shrink: 0;
+  }
 }

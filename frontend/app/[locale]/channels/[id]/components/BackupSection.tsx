@@ -176,23 +176,23 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
         <span className={styles.title}>Резервное копирование</span>
       </div>
 
-      <div className={styles.toggleList}>
-        {/* --- Copy toggle --- */}
-        <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>Копировать новые посты в резервный канал</span>
-          <Toggle checked={copyEnabled} onChange={handleToggleCopy} disabled={saving} />
-        </div>
+      <div className={styles.columnsGrid}>
+        {/* Left column: Copy to channel */}
+        <div className={styles.column}>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Копировать новые посты в резервный канал</span>
+            <Toggle checked={copyEnabled} onChange={handleToggleCopy} disabled={saving} />
+          </div>
 
-        {copyEnabled && (
-          <div className={styles.expandedContent}>
-            {/* Channel selector */}
-            <div className={styles.channelSelector}>
+          {copyEnabled && (
+            <div className={styles.expandedContent}>
               <button
-                className={styles.subRow}
+                className={styles.channelSelectorRow}
                 type="button"
                 onClick={() => setChannelsOpen(!channelsOpen)}
               >
-                <span className={styles.subLabel}>Выбор каналов-ретрансляторов</span>
+                <span className={styles.subLabel}>Канал-ретранслятор:</span>
+                <span className={styles.channelSelectorValue}>{selectedNames || 'Не выбран'}</span>
                 <ChevronDownIcon
                   width={16}
                   height={16}
@@ -200,9 +200,6 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                   className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
                 />
               </button>
-              {selectedNames && (
-                <span className={styles.selectedChannels}>{selectedNames}</span>
-              )}
 
               {channelsOpen && (
                 <div className={styles.channelPicker}>
@@ -231,157 +228,153 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* AI prompt */}
-            <div className={styles.aiSection}>
-              <span className={styles.sectionLabel}>ИИ-промпт для ретрансляции поста</span>
-              <AiInputBar onSubmit={handleAiSubmit} />
-            </div>
+              <div className={styles.aiSection}>
+                <span className={styles.sectionLabel}>ИИ-промт для ретранслятора</span>
+                <AiInputBar onSubmit={handleAiSubmit} />
+              </div>
 
-            {/* Post type checkboxes */}
-            <div className={styles.postTypes}>
-              <span className={styles.sectionLabel}>Типы публикаций</span>
-              <div className={styles.checkboxList}>
-                {POST_TYPE_OPTIONS.map((opt) => (
-                  <div key={opt.id}>
-                    <div
-                      className={styles.checkboxItem}
-                      onClick={() => handleTogglePostType(opt.id)}
-                    >
-                      <Checkbox
-                        checked={postTypes.includes(opt.id)}
-                        onChange={() => handleTogglePostType(opt.id)}
-                        label={opt.label}
-                      />
-                    </div>
-
-                    {/* Content types — only when "Посты с вложениями" checked */}
-                    {opt.id === 'with_attachments' && hasAttachments && (
-                      <div className={styles.contentTypes}>
-                        <span className={styles.contentTypesLabel}>Типы вложений</span>
-                        <div className={styles.contentTypeGrid}>
-                          <div className={styles.contentTypeColumn}>
-                            {CONTENT_TYPE_LEFT.map((ct) => (
-                              <div
-                                key={ct.id}
-                                className={styles.checkboxItem}
-                                onClick={() => handleToggleContentType(ct.id)}
-                              >
-                                <Checkbox
-                                  checked={contentTypes.includes(ct.id)}
-                                  onChange={() => handleToggleContentType(ct.id)}
-                                  label={ct.label}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <div className={styles.contentTypeColumn}>
-                            {CONTENT_TYPE_RIGHT.map((ct) => (
-                              <div
-                                key={ct.id}
-                                className={styles.checkboxItem}
-                                onClick={() => handleToggleContentType(ct.id)}
-                              >
-                                <Checkbox
-                                  checked={contentTypes.includes(ct.id)}
-                                  onChange={() => handleToggleContentType(ct.id)}
-                                  label={ct.label}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
+              <div className={styles.postTypesRow}>
+                <div className={styles.postTypesColumn}>
+                  <span className={styles.sectionLabel}>Типы публикаций:</span>
+                  <div className={styles.checkboxList}>
+                    {POST_TYPE_OPTIONS.map((opt) => (
+                      <div
+                        key={opt.id}
+                        className={styles.checkboxItem}
+                        onClick={() => handleTogglePostType(opt.id)}
+                      >
+                        <Checkbox
+                          checked={postTypes.includes(opt.id)}
+                          onChange={() => handleTogglePostType(opt.id)}
+                          label={opt.label}
+                        />
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {hasAttachments && (
+                  <div className={styles.contentTypesColumn}>
+                    <span className={styles.sectionLabel}>Настройки ретранслятора:</span>
+                    <div className={styles.contentTypeGrid}>
+                      <div className={styles.contentTypeColumn}>
+                        {CONTENT_TYPE_LEFT.map((ct) => (
+                          <div
+                            key={ct.id}
+                            className={styles.checkboxItem}
+                            onClick={() => handleToggleContentType(ct.id)}
+                          >
+                            <Checkbox
+                              checked={contentTypes.includes(ct.id)}
+                              onChange={() => handleToggleContentType(ct.id)}
+                              label={ct.label}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <div className={styles.contentTypeColumn}>
+                        {CONTENT_TYPE_RIGHT.map((ct) => (
+                          <div
+                            key={ct.id}
+                            className={styles.checkboxItem}
+                            onClick={() => handleToggleContentType(ct.id)}
+                          >
+                            <Checkbox
+                              checked={contentTypes.includes(ct.id)}
+                              onChange={() => handleToggleContentType(ct.id)}
+                              label={ct.label}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* --- Archive toggle --- */}
-        <div className={styles.toggleRow}>
-          <span className={styles.toggleLabel}>Сохранять архив в системе LamaPlanner</span>
-          <Toggle checked={saveArchive} onChange={(v) => dispatch(setSaveArchive(v))} disabled={saving} />
+          )}
         </div>
 
-        {saveArchive && (
-          <div className={styles.archiveContent}>
-            {/* Restore block */}
-            <div className={styles.archiveBlock}>
-              <div className={styles.archiveHeader}>
-                <span className={styles.archiveTitle}>Восстановление данных</span>
-                <span className={styles.archiveDesc}>Все сохранённые посты будут скопированы в выбранный канал</span>
-              </div>
-              <Button
-                variant="outline"
-                intent="gradient"
-                size="md"
-                className={styles.archiveBtn}
-                onClick={handleRestore}
-                disabled={saving || !restoreTargetId}
-              >
-                Восстановить данные
-              </Button>
-            </div>
-
-            <button
-              className={styles.restoreRow}
-              type="button"
-              onClick={() => setRestoreOpen(!restoreOpen)}
-            >
-              <div className={styles.restoreInfo}>
-                <span className={styles.restoreLabel}>Канал для восстановления</span>
-                <span className={styles.restoreValue}>{restoreTargetName || 'Не выбран'}</span>
-              </div>
-              <ChevronDownIcon
-                width={16}
-                height={16}
-                color="#383F45"
-                className={`${styles.subChevron} ${restoreOpen ? styles.subChevronOpen : ''}`}
-              />
-            </button>
-
-            {restoreOpen && (
-              <div className={styles.channelPicker}>
-                <div className={styles.channelList}>
-                  {otherChannels.map((ch) => (
-                    <div
-                      key={ch.id}
-                      className={styles.channelItem}
-                      onClick={() => { setRestoreTargetId(ch.id); setRestoreOpen(false); }}
-                    >
-                      <Checkbox
-                        checked={restoreTargetId === ch.id}
-                        onChange={() => { setRestoreTargetId(ch.id); setRestoreOpen(false); }}
-                        label={ch.title}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Export block */}
-            <div className={styles.archiveBlock}>
-              <div className={styles.archiveHeader}>
-                <span className={styles.archiveTitle}>Экспорт архива</span>
-                <span className={styles.archiveDesc}>Скачать архив постов канала в формате JSON</span>
-              </div>
-              <Button
-                variant="fill"
-                intent="gradient"
-                size="md"
-                className={styles.archiveBtn}
-                onClick={handleExport}
-              >
-                Скачать
-              </Button>
-            </div>
+        {/* Right column: Archive & restore */}
+        <div className={styles.column}>
+          <div className={styles.toggleRow}>
+            <span className={styles.toggleLabel}>Сохранять архив в системе LamaPlanner</span>
+            <Toggle checked={saveArchive} onChange={(v) => dispatch(setSaveArchive(v))} disabled={saving} />
           </div>
-        )}
+
+          {saveArchive && (
+            <div className={styles.archiveContent}>
+              <div className={styles.archiveBlock}>
+                <div className={styles.archiveHeader}>
+                  <span className={styles.archiveTitle}>Восстановление данных</span>
+                  <span className={styles.archiveDesc}>Все сохранённые посты будут скопированы в выбранный канал</span>
+                </div>
+                <Button
+                  variant="outline"
+                  intent="gradient"
+                  size="md"
+                  className={styles.archiveBtn}
+                  onClick={handleRestore}
+                  disabled={saving || !restoreTargetId}
+                >
+                  Восстановить данные
+                </Button>
+              </div>
+
+              <button
+                className={styles.channelSelectorRow}
+                type="button"
+                onClick={() => setRestoreOpen(!restoreOpen)}
+              >
+                <span className={styles.subLabel}>Канал для восстановления:</span>
+                <span className={styles.channelSelectorValue}>{restoreTargetName || 'Не выбран'}</span>
+                <ChevronDownIcon
+                  width={16}
+                  height={16}
+                  color="#383F45"
+                  className={`${styles.subChevron} ${restoreOpen ? styles.subChevronOpen : ''}`}
+                />
+              </button>
+
+              {restoreOpen && (
+                <div className={styles.channelPicker}>
+                  <div className={styles.channelList}>
+                    {otherChannels.map((ch) => (
+                      <div
+                        key={ch.id}
+                        className={styles.channelItem}
+                        onClick={() => { setRestoreTargetId(ch.id); setRestoreOpen(false); }}
+                      >
+                        <Checkbox
+                          checked={restoreTargetId === ch.id}
+                          onChange={() => { setRestoreTargetId(ch.id); setRestoreOpen(false); }}
+                          label={ch.title}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className={styles.archiveBlock}>
+                <div className={styles.archiveHeader}>
+                  <span className={styles.archiveTitle}>Экспорт архива</span>
+                  <span className={styles.archiveDesc}>Скачать архив постов канала в формате JSON</span>
+                </div>
+                <Button
+                  variant="fill"
+                  intent="gradient"
+                  size="md"
+                  className={styles.archiveBtn}
+                  onClick={handleExport}
+                >
+                  Скачать
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
