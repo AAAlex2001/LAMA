@@ -101,7 +101,7 @@ export default function ListCalendarView({
     root: isMobile ? null : scrollRootEl,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasMore || isLoadingMore,
+    skip: !hasMore || isLoadingMore || (!isMobile && !scrollRootEl),
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadMoreRef.current?.();

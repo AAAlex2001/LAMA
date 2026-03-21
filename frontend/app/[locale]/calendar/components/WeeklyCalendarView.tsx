@@ -42,6 +42,7 @@ function DayColumn({
   dayHasMore,
   onReachEnd,
   onDayClick,
+  isMobile,
 }: {
   dayDate: Date;
   dateKey: string;
@@ -55,6 +56,7 @@ function DayColumn({
   dayHasMore: boolean;
   onReachEnd?: (dateKey: string) => void;
   onDayClick?: (date: Date) => void;
+  isMobile: boolean;
 }) {
   const scrollRootRef = React.useRef<HTMLDivElement | null>(null);
   const [scrollRootEl, setScrollRootEl] = React.useState<HTMLDivElement | null>(
@@ -70,10 +72,10 @@ function DayColumn({
   dateKeyRef.current = dateKey;
 
   const { ref: sentinelRef } = useInView({
-    root: scrollRootEl,
+    root: isMobile ? null : scrollRootEl,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !dayHasMore || dayLoading,
+    skip: !dayHasMore || dayLoading || (!isMobile && !scrollRootEl),
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onReachEndRef.current?.(dateKeyRef.current);
@@ -175,6 +177,15 @@ export default function WeeklyCalendarView({
   dayHasMore,
   onDayClick,
 }: WeeklyCalendarViewProps) {
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1439px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const weekStart = getWeekStart(selectedDate);
 
   const weekDays = (() => {
@@ -214,6 +225,7 @@ export default function WeeklyCalendarView({
             dayHasMore={!!dayHasMore?.[dateKey]}
             onReachEnd={onReachEnd}
             onDayClick={onDayClick}
+            isMobile={isMobile}
           />
         );
       })}

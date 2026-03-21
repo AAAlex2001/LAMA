@@ -54,6 +54,16 @@ export default function MonthCalendarView({
   const isPast = isBeforeToday(sidebarDate);
 
   const scrollContainer = useScrollContainer();
+
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1439px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const loadingRef = React.useRef(isDayLoading);
   loadingRef.current = isDayLoading;
   const hasMoreRef = React.useRef(hasDayMore);
@@ -64,10 +74,10 @@ export default function MonthCalendarView({
   dayKeyRef.current = dayKey;
 
   const { ref: sentinelRef } = useInView({
-    root: scrollContainer,
+    root: isMobile ? null : scrollContainer,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore || isDayLoading,
+    skip: !hasDayMore || isDayLoading || (!isMobile && !scrollContainer),
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadRef.current(dayKeyRef.current);
