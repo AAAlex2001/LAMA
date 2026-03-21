@@ -180,7 +180,7 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
               <div className={styles.emptyState}>Нет ссылок-приглашений</div>
             )}
             
-            {filteredLinks?.length && !isLoading && (
+            {!!filteredLinks?.length && !isLoading && (
               filteredLinks?.map((link) => (
                 <InvitationLinkItem
                   key={link.id}

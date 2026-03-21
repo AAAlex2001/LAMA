@@ -193,6 +193,9 @@ const ListElement: FC<ListElementProps> = ({
     const btnClass = `${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`;
     const btnWidth = isMobile ? '100%' : '136px';
     const status = blockStatus?.status;
+    const isBanned = item.status === 'banned' || status === 'banned';
+
+    if (isBanned) return null;
 
     if (item.event_type === 'bot_command') {
       if (status === 'resolved' || status === 'deleted' || status === 'blocked') return (

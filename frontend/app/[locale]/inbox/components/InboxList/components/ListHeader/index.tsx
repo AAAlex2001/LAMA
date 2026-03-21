@@ -225,12 +225,12 @@ const ListHeader: FC<ListHeaderProps> = ({
                 <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
                   Удалить
                 </Button>
-                {/* <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
+                <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                   Заблокировать
-                </Button> */}
-                {/* <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
+                </Button> 
+                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                   <span className={buttonStyles.label}>Разблокировать</span>
-                </Button> */}
+                </Button>
               </div>
             </MobileWrapper>
           )}
