@@ -162,7 +162,7 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
           userPhoto={activeChat?.tg_photo_url ?? undefined}
           scrollToMessage={scrollToMessage}
         />
-        {!isBlocked && (
+        {!!activeChatId && !isBlocked && (
           <MessageField
             ref={messageFieldRef}
             value={inputMode.message}

@@ -42,20 +42,24 @@ const Header: FC<HeaderProps> = ({
       </div>
       <div className={styles.headerActionsWrapper}>
         <div className={styles.headerActions}>
-          <button
-            className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
-            type="button"
-            onClick={onTogglePin}
-          >
-            <PinIcon width={16} height={16} />
-          </button>
-          <button
-            className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
-            type="button"
-            onClick={onToggleBlock}
-          >
-            <BlockedIcon width={16} height={16} />
-          </button>
+          {hasChat && (
+            <>
+              <button
+                className={classNames(styles.iconButtonPin, { [styles.blue]: isPinned })}
+                type="button"
+                onClick={onTogglePin}
+              >
+                <PinIcon width={16} height={16} />
+              </button>
+              <button
+                className={classNames(styles.iconButtonBlock, { [styles.destructive]: isBlocked })}
+                type="button"
+                onClick={onToggleBlock}
+              >
+                <BlockedIcon width={16} height={16} />
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
