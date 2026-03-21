@@ -12,6 +12,7 @@ import {
   getSourceDate,
   buildCreatePostUrl,
   hasRepeat,
+  isBeforeToday,
 } from '../utils/calendar-helpers';
 import styles from './calendar-sidebar.module.scss';
 
@@ -37,6 +38,7 @@ export default function CalendarSidebar({
   onMonthChange,
 }: CalendarSidebarProps) {
   const router = useRouter();
+  const isPast = isBeforeToday(selectedDate);
 
   return (
     <div className={styles.sidebar}>
@@ -53,16 +55,18 @@ export default function CalendarSidebar({
       </div>
 
       <div className={styles.bottomSection}>
-        <div className={styles.createBtnWrapper}>
-          <Button
-            text="Создать публикацию"
-            showArrow={false}
-            active
-            fullWidth
-            className={styles.createBtn}
-            onClick={() => router.push(buildCreatePostUrl(selectedDate))}
-          />
-        </div>
+        {!isPast && (
+          <div className={styles.createBtnWrapper}>
+            <Button
+              text="Создать публикацию"
+              showArrow={false}
+              active
+              fullWidth
+              className={styles.createBtn}
+              onClick={() => router.push(buildCreatePostUrl(selectedDate))}
+            />
+          </div>
+        )}
 
         {posts.length > 0 && (
           <div className={styles.postsSection}>

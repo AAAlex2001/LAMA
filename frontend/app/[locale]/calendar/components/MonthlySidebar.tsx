@@ -14,6 +14,7 @@ import {
   formatDateOnly,
   buildCreatePostUrl,
   hasRepeat,
+  isBeforeToday,
 } from '../utils/calendar-helpers';
 import styles from './monthly-sidebar.module.scss';
 
@@ -41,6 +42,7 @@ export default function MonthlySidebar({
   const posts = weekItems[dateKey] || [];
   const isDayLoading = !!dayLoadingMap[dateKey];
   const hasDayMore = !!dayHasMoreMap[dateKey];
+  const isPast = isBeforeToday(sidebarDate);
 
   const scrollElRef = React.useRef<HTMLDivElement | null>(null);
   const cleanupRef = React.useRef<(() => void) | null>(null);
@@ -83,16 +85,18 @@ export default function MonthlySidebar({
     <div className={styles.sidebar}>
       <div className={styles.dayTitle}>{dayTitle}</div>
 
-      <div className={styles.createBtnWrapper}>
-        <Button
-          text="Создать публикацию"
-          showArrow={false}
-          active
-          fullWidth
-          className={styles.createBtn}
-          onClick={() => router.push(buildCreatePostUrl(sidebarDate))}
-        />
-      </div>
+      {!isPast && (
+        <div className={styles.createBtnWrapper}>
+          <Button
+            text="Создать публикацию"
+            showArrow={false}
+            active
+            fullWidth
+            className={styles.createBtn}
+            onClick={() => router.push(buildCreatePostUrl(sidebarDate))}
+          />
+        </div>
+      )}
 
       <div className={styles.postsSection}>
         <div className={styles.postsList} ref={scrollRootRef}>

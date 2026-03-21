@@ -5,6 +5,7 @@ import type { Draft } from '@/app/[locale]/create-post/store/types';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import CalendarCard from './CalendarCard';
+import { isBeforeToday } from '../utils/calendar-helpers';
 import styles from './day-calendar-view.module.scss';
 
 interface DayCalendarViewProps {
@@ -36,6 +37,8 @@ export default function DayCalendarView({
   hasMoreRef.current = hasMore;
   const onLoadMoreRef = React.useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
+
+  const isPast = isBeforeToday(selectedDate);
 
   const checkNeedMore = React.useCallback(() => {
     const el = scrollElRef.current;
@@ -74,15 +77,17 @@ export default function DayCalendarView({
   return (
     <div className={styles.dayWrap}>
       <div className={styles.mobileControls}>
-        <div className={styles.createWrap}>
-          <Button
-            text="Создать публикацию"
-            showArrow={false}
-            active
-            className={styles.createBtn}
-            onClick={() => onAddPost(selectedDate)}
-          />
-        </div>
+          {!isPast && (
+            <div className={styles.createWrap}>
+              <Button
+                text="Создать публикацию"
+                showArrow={false}
+                active
+                className={styles.createBtn}
+                onClick={() => onAddPost(selectedDate)}
+              />
+            </div>
+          )}
       </div>
 
       {posts.length === 0 ? (

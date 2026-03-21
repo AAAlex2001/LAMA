@@ -34,6 +34,7 @@ export interface CalendarState {
   currentRangeKey: string;
   currentPage: number;
   hasMore: boolean;
+  listTotal: number;
   isLoadingMore: boolean;
   dayPageState: Record<string, DayPageState>;
   listSortOrder: 'asc' | 'desc' | null;
@@ -60,6 +61,7 @@ export const initialState: CalendarState = {
   currentRangeKey: '',
   currentPage: 1,
   hasMore: false,
+  listTotal: 0,
   isLoadingMore: false,
   dayPageState: {},
   listSortOrder: null,

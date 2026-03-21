@@ -37,11 +37,13 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         state.dayPageState = dayPageState;
         state.items = [];
         state.hasMore = false;
+        state.listTotal = 0;
       } else {
         state.items = action.payload.items;
         state.weekItems = {};
         state.currentRangeKey = action.payload.rangeKey;
         state.currentPage = 1;
+        state.listTotal = action.payload.total;
         state.hasMore = action.payload.hasMore;
         if (state.currentView === 'day') {
           state.monthPostCounts[state.selectedDate] = action.payload.items.length;
@@ -51,6 +53,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
     .addCase(fetchCalendarData.rejected, (state) => {
       state.isLoading = false;
       state.hasMore = false;
+      state.listTotal = 0;
     })
 
     .addCase(fetchMoreListPosts.pending, (state) => { state.isLoadingMore = true; })
@@ -58,6 +61,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       state.isLoadingMore = false;
       state.items = action.payload.items;
       state.currentPage = action.payload.page;
+      state.listTotal = action.payload.total;
       state.hasMore = action.payload.hasMore;
     })
     .addCase(fetchMoreListPosts.rejected, (state) => { state.isLoadingMore = false; })

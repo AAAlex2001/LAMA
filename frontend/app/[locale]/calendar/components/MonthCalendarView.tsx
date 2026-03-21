@@ -14,6 +14,7 @@ import {
   getPreviewText,
   formatDateOnly,
   hasRepeat,
+  isBeforeToday,
 } from '../utils/calendar-helpers';
 import styles from './month-calendar-view.module.scss';
 
@@ -50,6 +51,7 @@ export default function MonthCalendarView({
   const dayPosts = weekItems[dayKey] || [];
   const isDayLoading = !!dayLoadingMap[dayKey];
   const hasDayMore = !!dayHasMoreMap[dayKey];
+  const isPast = isBeforeToday(sidebarDate);
 
   const scrollContainer = useScrollContainer();
   const loadingRef = React.useRef(isDayLoading);
@@ -88,15 +90,17 @@ export default function MonthCalendarView({
       </div>
 
       <div className={styles.postsCard}>
-        <div className={styles.createWrap}>
-          <Button
-            text="Создать публикацию"
-            showArrow={false}
-            active
-            className={styles.createBtn}
-            onClick={() => onAddPost(sidebarDate)}
-          />
-        </div>
+        {!isPast && (
+          <div className={styles.createWrap}>
+            <Button
+              text="Создать публикацию"
+              showArrow={false}
+              active
+              className={styles.createBtn}
+              onClick={() => onAddPost(sidebarDate)}
+            />
+          </div>
+        )}
 
         <div className={styles.postList}>
           {(isLoading || isDayLoading) && dayPosts.length === 0 ? (

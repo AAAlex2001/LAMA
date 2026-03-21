@@ -5,7 +5,7 @@ import type { RootState } from '..';
 import { parseDate, getRangeForView, mergeUniqueById } from '../../utils/calendar-helpers';
 
 export const fetchMoreListPosts = createAsyncThunk<
-  { items: Draft[]; page: number; hasMore: boolean }, void, { state: RootState }
+  { items: Draft[]; page: number; total: number; hasMore: boolean }, void, { state: RootState }
 >(
   'calendar/fetchMoreList',
   async (_, { getState }) => {
@@ -33,7 +33,8 @@ export const fetchMoreListPosts = createAsyncThunk<
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const merged = mergeUniqueById(s.items, res.items);
-    return { items: merged, page: nextPage, hasMore: res.items.length === pageSize };
+    const total = s.listTotal;
+    return { items: merged, page: nextPage, total, hasMore: merged.length < total };
   },
   {
     condition: (_, { getState }) => {
