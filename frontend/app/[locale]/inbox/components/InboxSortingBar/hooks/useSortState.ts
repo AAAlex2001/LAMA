@@ -1,5 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { SortOptionType } from "../../sortTypes";
+import { useAppSelector } from "../../../store";
+import { selectSortDir, selectStatusFilter } from "../../../store/selectors";
 
 const DEFAULT_VALUES: Record<SortOptionType, string> = {
   time: "",
@@ -22,20 +24,42 @@ const getButtonText = (option: { value?: string; type: SortOptionType; label: st
 };
 
 export const useSortState = () => {
-  const [sortValues, setSortValues] = useState<Record<SortOptionType, string>>({ ...DEFAULT_VALUES });
+  const reduxSortDir = useAppSelector(selectSortDir);
+  const reduxStatusFilter = useAppSelector(selectStatusFilter);
+
+  const [localValues, setLocalValues] = useState<Pick<Record<SortOptionType, string>, 'source' | 'type'>>({
+    source: DEFAULT_VALUES.source,
+    type: DEFAULT_VALUES.type,
+  });
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
 
+  const sortValues: Record<SortOptionType, string> = {
+    time: reduxSortDir === 'old' ? 'oldest' : '',
+    status: reduxStatusFilter || 'default',
+    source: localValues.source,
+    type: localValues.type,
+  };
+
+  const setSortValues = (updater: Record<SortOptionType, string> | ((prev: Record<SortOptionType, string>) => Record<SortOptionType, string>)) => {
+    const next = typeof updater === 'function' ? updater(sortValues) : updater;
+    setLocalValues({ source: next.source, type: next.type });
+  };
+
   const resetSortValues = () => {
-    setSortValues({ ...DEFAULT_VALUES });
+    setLocalValues({ source: DEFAULT_VALUES.source, type: DEFAULT_VALUES.type });
     setOpenFilter(null);
   };
 
   const handleSortChange = (sortType: SortOptionType, value: string) => {
-    setSortValues(prev => ({ ...prev, [sortType]: value }));
+    if (sortType === 'source' || sortType === 'type') {
+      setLocalValues(prev => ({ ...prev, [sortType]: value }));
+    }
   };
 
   const handleSortClear = (sortType: SortOptionType) => {
-    setSortValues(prev => ({ ...prev, [sortType]: DEFAULT_VALUES[sortType] }));
+    if (sortType === 'source' || sortType === 'type') {
+      setLocalValues(prev => ({ ...prev, [sortType]: DEFAULT_VALUES[sortType] }));
+    }
   };
 
   return {

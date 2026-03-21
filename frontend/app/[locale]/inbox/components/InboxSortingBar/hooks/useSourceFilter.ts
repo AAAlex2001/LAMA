@@ -1,5 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SourceFilterOption } from "../components/SourceComponent";
+import { useAppSelector } from "../../../store";
+import {
+  selectBotIds,
+  selectChannelIds,
+  selectSystem,
+  selectChannels,
+  selectBots,
+} from "../../../store/selectors";
 
 const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (item: string) => {
   setter((prev) => {
@@ -15,6 +23,12 @@ interface UseSourceFilterProps {
 }
 
 export const useSourceFilter = ({ channelNames, botNames }: UseSourceFilterProps) => {
+  const reduxChannelIds = useAppSelector(selectChannelIds);
+  const reduxBotIds = useAppSelector(selectBotIds);
+  const reduxSystem = useAppSelector(selectSystem);
+  const channels = useAppSelector(selectChannels);
+  const bots = useAppSelector(selectBots);
+
   const [sourceDefault, setSourceDefault] = useState(true);
   const [sourceChannels, setSourceChannels] = useState(false);
   const [selectedChannels, setSelectedChannels] = useState<Set<string>>(new Set());
@@ -22,6 +36,53 @@ export const useSourceFilter = ({ channelNames, botNames }: UseSourceFilterProps
   const [selectedBots, setSelectedBots] = useState<Set<string>>(new Set());
   const [sourceSharedSearch, setSourceSharedSearch] = useState("");
   const [systemChecked, setSystemChecked] = useState<boolean | null>(null);
+
+  const hasSyncedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasSyncedRef.current) return;
+
+    const hasReduxState =
+      reduxChannelIds !== null || reduxBotIds !== null || reduxSystem !== null;
+    if (!hasReduxState) return;
+
+    const needsChannels = reduxChannelIds !== null && reduxChannelIds.length > 0;
+    const needsBots = reduxBotIds !== null && reduxBotIds.length > 0;
+    if (needsChannels && channels.length === 0) return;
+    if (needsBots && bots.length === 0) return;
+
+    hasSyncedRef.current = true;
+
+    if (reduxChannelIds && reduxChannelIds.length > 0) {
+      const channelMap = new Map(channels.map((c) => [c.id, c.title]));
+      const names = new Set(
+        reduxChannelIds
+          .map((id) => channelMap.get(id))
+          .filter(Boolean) as string[]
+      );
+      setSelectedChannels(names);
+      setSourceChannels(true);
+    }
+
+    if (reduxBotIds && reduxBotIds.length > 0) {
+      const botMap = new Map(
+        bots.map((b) => [b.id, b.title || b.username])
+      );
+      const names = new Set(
+        reduxBotIds
+          .map((id) => botMap.get(id))
+          .filter(Boolean) as string[]
+      );
+      setSelectedBots(names);
+      setSourceBots(true);
+    }
+
+    if (reduxSystem !== null) {
+      setSystemChecked(reduxSystem);
+    }
+
+    setSourceDefault(false);
+  }, [reduxChannelIds, reduxBotIds, reduxSystem, channels, bots]);
 
   const handleSourceChannelsChange = (checked: boolean) => {
     setSourceChannels(checked);
@@ -47,12 +108,12 @@ export const useSourceFilter = ({ channelNames, botNames }: UseSourceFilterProps
     }
   };
 
-  const filteredSourceChannels = !sourceSharedSearch 
-    ? channelNames 
+  const filteredSourceChannels = !sourceSharedSearch
+    ? channelNames
     : channelNames.filter(c => c.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
-  
-  const filteredSourceBots = !sourceSharedSearch 
-    ? botNames 
+
+  const filteredSourceBots = !sourceSharedSearch
+    ? botNames
     : botNames.filter(b => b.toLowerCase().includes(sourceSharedSearch.toLowerCase()));
 
   const sourceFilterOptions: SourceFilterOption[] = [
@@ -102,6 +163,7 @@ export const useSourceFilter = ({ channelNames, botNames }: UseSourceFilterProps
     setSelectedBots(new Set());
     setSourceSharedSearch("");
     setSystemChecked(null);
+    hasSyncedRef.current = false;
   };
 
   return {

@@ -1,5 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { SourceFilterOption } from "../components/SourceComponent";
+import { useAppSelector } from "../../../store";
+import {
+  selectTypeAutoReplies,
+  selectTypeTriggers,
+  selectTypeCommands,
+  selectBotIds,
+  selectBots,
+} from "../../../store/selectors";
 
 const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (item: string) => {
   setter((prev) => {
@@ -14,12 +22,53 @@ interface UseTypeFilterProps {
 }
 
 export const useTypeFilter = ({ botNames }: UseTypeFilterProps) => {
+  const reduxTypeAutoReplies = useAppSelector(selectTypeAutoReplies);
+  const reduxTypeTriggers = useAppSelector(selectTypeTriggers);
+  const reduxTypeCommands = useAppSelector(selectTypeCommands);
+  const reduxBotIds = useAppSelector(selectBotIds);
+  const bots = useAppSelector(selectBots);
+
   const [typeDefault, setTypeDefault] = useState(true);
   const [typeAutoReply, setTypeAutoReply] = useState(false);
   const [typeTrigger, setTypeTrigger] = useState(false);
   const [typeCommand, setTypeCommand] = useState(false);
   const [selectedTypeBots, setSelectedTypeBots] = useState<Set<string>>(new Set());
   const [typeSharedSearch, setTypeSharedSearch] = useState("");
+
+  const hasSyncedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasSyncedRef.current) return;
+
+    const hasReduxState =
+      reduxTypeAutoReplies !== null ||
+      reduxTypeTriggers !== null ||
+      reduxTypeCommands !== null;
+    if (!hasReduxState) return;
+
+    const needsBots = reduxBotIds !== null && reduxBotIds.length > 0;
+    if (needsBots && bots.length === 0) return;
+
+    hasSyncedRef.current = true;
+
+    if (reduxTypeAutoReplies) setTypeAutoReply(true);
+    if (reduxTypeTriggers) setTypeTrigger(true);
+    if (reduxTypeCommands) setTypeCommand(true);
+
+    if (reduxBotIds && reduxBotIds.length > 0) {
+      const botMap = new Map(
+        bots.map((b) => [b.id, b.title || b.username])
+      );
+      const names = new Set(
+        reduxBotIds
+          .map((id) => botMap.get(id))
+          .filter(Boolean) as string[]
+      );
+      setSelectedTypeBots(names);
+    }
+
+    setTypeDefault(false);
+  }, [reduxTypeAutoReplies, reduxTypeTriggers, reduxTypeCommands, reduxBotIds, bots]);
 
   const handleTypeAutoReplyChange = (checked: boolean) => {
     setTypeAutoReply(checked);
@@ -57,8 +106,8 @@ export const useTypeFilter = ({ botNames }: UseTypeFilterProps) => {
     }
   };
 
-  const filteredTypeBots = !typeSharedSearch 
-    ? botNames 
+  const filteredTypeBots = !typeSharedSearch
+    ? botNames
     : botNames.filter(b => b.toLowerCase().includes(typeSharedSearch.toLowerCase()));
 
   const typeFilterOptions: SourceFilterOption[] = [
@@ -116,6 +165,7 @@ export const useTypeFilter = ({ botNames }: UseTypeFilterProps) => {
     setTypeCommand(false);
     setSelectedTypeBots(new Set());
     setTypeSharedSearch("");
+    hasSyncedRef.current = false;
   };
 
   return {
