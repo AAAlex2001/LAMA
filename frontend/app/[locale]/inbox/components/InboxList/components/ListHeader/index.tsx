@@ -62,7 +62,7 @@ const ListHeader: FC<ListHeaderProps> = ({
     { id: "all", label: "Все" },
     { id: "new", label: "Ожидают" },
     { id: "processed", label: "Обработанные" },
-    // { id: "banned", label: "Заблокированные" },
+    { id: "banned", label: "Заблокированные" },
   ];
 
   const filterOptionsAutomation = [
@@ -109,7 +109,7 @@ const ListHeader: FC<ListHeaderProps> = ({
       case 'processed':
         return 'processed';
       case 'banned':
-        return 'ingnored';
+        return 'banned';
       default:
         return 'all';
     }
@@ -123,7 +123,7 @@ const ListHeader: FC<ListHeaderProps> = ({
       case 'processed':
         onModerationSubFilterChange?.('processed');
         break;
-      case 'ingnored':
+      case 'banned':
         onModerationSubFilterChange?.('banned');
         break;
       default:
