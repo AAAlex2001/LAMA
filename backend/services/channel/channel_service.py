@@ -1,6 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
+import asyncio
 import logging
 from fastapi import HTTPException
 
@@ -11,8 +12,12 @@ from sqlalchemy.orm import selectinload
 from backend.models.bots import RecurringMessage, ScheduledTriggerTask, Trigger
 from backend.models.channels import ChannelGroup, ChannelType, BackupMode
 from backend.schemas.channels import ChannelGroupCreate, ChannelGroupUpdate
+from backend.services.bot_provider import get_cached_bot
+from backend.services.channel.utils.chat_data_utils import build_chat_data
 
 logger = logging.getLogger(__name__)
+
+REFRESH_THRESHOLD = timedelta(minutes=5)
 
 
 class ChannelService:
@@ -78,7 +83,7 @@ class ChannelService:
         backup_mode: Optional[BackupMode] = None,
     ) -> tuple[List[ChannelGroup], int]:
         """Список каналов с фильтрацией."""
-        query = select(ChannelGroup).where(ChannelGroup.owner_id == owner_id)
+        query = select(ChannelGroup).options(selectinload(ChannelGroup.bot)).where(ChannelGroup.owner_id == owner_id)
         count_query = select(func.count(distinct(ChannelGroup.id))).where(
             ChannelGroup.owner_id == owner_id,
         )
@@ -101,7 +106,35 @@ class ChannelService:
         result = await self.db.execute(query)
         channels = list(result.scalars().all())
 
+        await self.refresh_stale_channels(channels)
+
         return channels, total
+
+    async def refresh_stale_channels(self, channels: List[ChannelGroup]) -> None:
+        """Обновить данные каналов из Telegram, если last_sync_at устарел."""
+        now = datetime.now(timezone.utc)
+        stale = [
+            ch for ch in channels
+            if ch.bot and ch.bot.token
+            and (not ch.last_sync_at or now - ch.last_sync_at > REFRESH_THRESHOLD)
+        ]
+        if not stale:
+            return
+
+        async def refresh_one(channel: ChannelGroup) -> None:
+            try:
+                bot = get_cached_bot(channel.bot.token)
+                chat = await bot.get_chat(channel.telegram_id)
+                chat_data = await build_chat_data(bot, chat, channel.bot.token)
+                for field, value in chat_data.items():
+                    setattr(channel, field, value)
+                channel.last_sync_at = now
+                channel.updated_at = now
+            except Exception as e:
+                logger.debug("Failed to refresh channel %s: %s", channel.id, e)
+
+        await asyncio.gather(*[refresh_one(ch) for ch in stale])
+        await self.db.flush()
 
     async def update(self, channel_id: int, data: ChannelGroupUpdate, owner_id: int) -> ChannelGroup:
         """Обновить канал."""
