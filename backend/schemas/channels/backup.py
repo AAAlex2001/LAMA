@@ -7,7 +7,10 @@ from backend.schemas.channels.enums import BackupMode, BackupStatus
 
 class BackupModeUpdateRequest(BaseModel):
     backup_mode: BackupMode
-    backup_target_id: Optional[int] = None
+    backup_target_ids: Optional[List[int]] = None
+    backup_post_types: Optional[List[str]] = None
+    backup_content_types: Optional[List[str]] = None
+    backup_ai_prompt: Optional[str] = None
 
 
 class BackedUpPostResponse(BaseModel):

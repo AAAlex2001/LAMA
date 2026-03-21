@@ -56,10 +56,10 @@
 }
 
 .connectBtn {
-  width: 100%;
+  width: 100% !important;
 
   @media (min-width: 1440px) {
-    width: fit-content;
+    width: fit-content !important;
     white-space: nowrap;
   }
 }

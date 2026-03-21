@@ -27,7 +27,10 @@ class BackupService:
         self,
         channel_id: int,
         backup_mode: BackupMode,
-        backup_target_id: Optional[int] = None,
+        backup_target_ids: Optional[list] = None,
+        backup_post_types: Optional[list] = None,
+        backup_content_types: Optional[list] = None,
+        backup_ai_prompt: Optional[str] = None,
         owner_id: int = None,
     ) -> ChannelGroup:
         """Обновить режим бекапа."""
@@ -35,13 +38,18 @@ class BackupService:
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
 
-        if backup_mode == BackupMode.INSTANT and backup_target_id:
-            target = await get_channel(self.db, backup_target_id, owner_id)
-            if not target:
-                raise HTTPException(status_code=404, detail="Target channel not found")
+        if backup_mode == BackupMode.INSTANT and backup_target_ids:
+            for tid in backup_target_ids:
+                target = await get_channel(self.db, tid, owner_id)
+                if not target:
+                    raise HTTPException(status_code=404, detail=f"Target channel {tid} not found")
 
         channel.backup_mode = backup_mode
-        channel.backup_target_id = backup_target_id
+        channel.backup_target_ids = backup_target_ids
+        channel.backup_target_id = backup_target_ids[0] if backup_target_ids else None
+        channel.backup_post_types = backup_post_types
+        channel.backup_content_types = backup_content_types
+        channel.backup_ai_prompt = backup_ai_prompt
         channel.updated_at = datetime.now(timezone.utc)
 
         await self.db.flush()

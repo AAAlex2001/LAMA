@@ -64,6 +64,10 @@ export interface Channel {
   personal_chat: Record<string, any>;
   backup_mode: BackupMode;
   backup_target_id: number;
+  backup_target_ids: number[] | null;
+  backup_post_types: string[] | null;
+  backup_content_types: string[] | null;
+  backup_ai_prompt: string | null;
   bot_id: number;
   is_bot_active: boolean;
   is_active: boolean;

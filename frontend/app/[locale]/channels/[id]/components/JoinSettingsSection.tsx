@@ -6,8 +6,12 @@ import Toggle from '@/components/toggle/toggle';
 import SearchBar from '@/components/search-bar/search-bar';
 import Checkbox from '@/components/checkbox/checkbox';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppSelector } from '../../store';
-import { apiRequest } from '@/store/api';
+import { useAppDispatch, useAppSelector } from '../../store';
+import {
+  fetchJoinSettingsThunk,
+  toggleAutoApproveThunk,
+  toggleRequiredChannelThunk,
+} from '../../store/thunks/join-settings';
 import type { Channel } from '@/types/channel';
 import styles from './JoinSettingsSection.module.scss';
 
@@ -15,92 +19,55 @@ interface JoinSettingsSectionProps {
   channel: Channel;
 }
 
-interface AutoApprovalData {
-  auto_approval_mode: 'AUTO' | 'MANUAL' | 'CRITERIA';
-  approval_criteria: { required_channels?: number[] } | null;
-}
-
 const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
+  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const channels = useAppSelector((s) => s.channels.channels) as Channel[];
+  const { approvalMode, requiredChannels, loaded, saving, error } = useAppSelector((s) => s.joinSettings);
 
   const [open, setOpen] = useState(false);
   const [channelsOpen, setChannelsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+
+  const botId = channel.bot_id;
 
   useEffect(() => {
     if (window.matchMedia('(min-width: 1440px)').matches) {
       setOpen(true);
     }
   }, []);
-  const [search, setSearch] = useState('');
-
-  const [approvalMode, setApprovalMode] = useState<'AUTO' | 'MANUAL' | 'CRITERIA'>('MANUAL');
-  const [requiredChannels, setRequiredChannels] = useState<number[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const botId = channel.bot_id;
 
   useEffect(() => {
-    if (!botId) return;
-    apiRequest<AutoApprovalData>(`/bots/${botId}/auto-approval`)
-      .then((data) => {
-        setApprovalMode(data.auto_approval_mode);
-        setRequiredChannels(data.approval_criteria?.required_channels || []);
-      })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, [botId]);
+    if (botId) {
+      dispatch(fetchJoinSettingsThunk(botId));
+    }
+  }, [dispatch, botId]);
+
+  useEffect(() => {
+    if (error) showError(error);
+  }, [error]);
 
   const isAutoApprove = approvalMode === 'AUTO';
 
-  const handleToggleAutoApprove = async (checked: boolean) => {
+  const handleToggleAutoApprove = (checked: boolean) => {
     if (!botId) return;
-    const newMode = checked ? 'AUTO' : 'MANUAL';
-    setSaving(true);
-    try {
-      const data = await apiRequest<AutoApprovalData>(`/bots/${botId}/auto-approval`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          auto_approval_mode: newMode,
-          approval_criteria: null,
-        }),
-      });
-      setApprovalMode(data.auto_approval_mode);
-      showSuccess(checked ? 'Автоодобрение включено' : 'Автоодобрение выключено');
-    } catch {
-      showError('Ошибка обновления настроек');
-    } finally {
-      setSaving(false);
-    }
+    dispatch(toggleAutoApproveThunk({ botId, checked }))
+      .unwrap()
+      .then(() => showSuccess(checked ? 'Автоодобрение включено' : 'Автоодобрение выключено'))
+      .catch(() => {});
   };
 
-  const handleToggleChannel = async (telegramId: number) => {
+  const handleToggleChannel = (telegramId: number) => {
     if (!botId) return;
-    const isSelected = requiredChannels.includes(telegramId);
-    const newChannels = isSelected
-      ? requiredChannels.filter((id) => id !== telegramId)
-      : [...requiredChannels, telegramId];
-
-    const newMode = newChannels.length > 0 ? 'CRITERIA' : approvalMode === 'CRITERIA' ? 'MANUAL' : approvalMode;
-
-    setSaving(true);
-    try {
-      const data = await apiRequest<AutoApprovalData>(`/bots/${botId}/auto-approval`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          auto_approval_mode: newMode,
-          approval_criteria: newChannels.length > 0 ? { required_channels: newChannels } : null,
-        }),
-      });
-      setApprovalMode(data.auto_approval_mode);
-      setRequiredChannels(data.approval_criteria?.required_channels || []);
-      showSuccess('Настройки обновлены');
-    } catch {
-      showError('Ошибка обновления настроек');
-    } finally {
-      setSaving(false);
-    }
+    dispatch(toggleRequiredChannelThunk({
+      botId,
+      telegramId,
+      currentChannels: requiredChannels,
+      currentMode: approvalMode,
+    }))
+      .unwrap()
+      .then(() => showSuccess('Настройки обновлены'))
+      .catch(() => {});
   };
 
   const otherChannels = useMemo(

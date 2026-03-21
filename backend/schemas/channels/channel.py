@@ -11,6 +11,7 @@ class ChannelGroupBase(BaseModel):
     description: Optional[str] = None
     backup_mode: BackupMode = BackupMode.DISABLED
     backup_target_id: Optional[int] = None
+    backup_target_ids: Optional[List[int]] = None
 
 
 class ChannelGroupCreate(BaseModel):
@@ -27,6 +28,7 @@ class ChannelGroupUpdate(BaseModel):
     description: Optional[str] = None
     backup_mode: Optional[BackupMode] = None
     backup_target_id: Optional[int] = None
+    backup_target_ids: Optional[List[int]] = None
     bot_id: Optional[int] = None
     is_active: Optional[bool] = None
     is_bot_active: Optional[bool] = None
@@ -154,6 +156,10 @@ class ChannelGroupResponse(BaseModel):
     # Backup settings
     backup_mode: BackupMode
     backup_target_id: Optional[int] = None
+    backup_target_ids: Optional[list] = None
+    backup_post_types: Optional[list] = None
+    backup_content_types: Optional[list] = None
+    backup_ai_prompt: Optional[str] = None
     bot_id: Optional[int] = None
     is_bot_active: bool = True
 

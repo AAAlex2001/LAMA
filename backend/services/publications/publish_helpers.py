@@ -13,7 +13,8 @@ from backend.models.publications import (
 )
 from backend.models.channels import ChannelGroup as Channel, BackupMode
 from backend.schemas.publications import ChannelPublishResult
-from backend.services.channel import ChannelService
+from backend.services.channel.backup_service import BackupService
+from backend.services.channel.retransmit_service import RetransmitService
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,8 @@ async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncS
 async def handle_backups(
     results: List[ChannelPublishResult],
     publication_id: int,
-    channel_service: ChannelService,
+    backup_service: BackupService,
+    retransmit_service: RetransmitService,
     create_notification_callback,
 ) -> None:
     """Обработать бэкапы для успешных отправок."""
@@ -59,7 +61,8 @@ async def handle_backups(
             try:
                 await handle_instant_backup(
                     result.channel_obj, result.sent_messages,
-                    publication_id, channel_service, create_notification_callback,
+                    publication_id, backup_service, retransmit_service,
+                    create_notification_callback,
                 )
             except Exception as e:
                 logger.error("Failed to handle instant backup for %s: %s", result.channel, e)
@@ -69,22 +72,25 @@ async def handle_instant_backup(
     channel: Channel,
     messages: List[Any],
     publication_id: int,
-    channel_service: ChannelService,
+    backup_service: BackupService,
+    retransmit_service: RetransmitService,
     create_notification_callback,
 ) -> None:
     """Обработать мгновенный бэкап и ретрансляцию."""
     if channel.backup_mode == BackupMode.DISABLED:
         return
 
+    target_ids = channel.backup_target_ids or (
+        [channel.backup_target_id] if channel.backup_target_id else []
+    )
+
     try:
         for message in messages:
-            backed_up_post = await channel_service.save_post_backup(channel.id, message)
-            if (
-                channel.backup_mode == BackupMode.INSTANT
-                and channel.backup_target_id
-                and channel.backup_target_id != channel.id
-            ):
-                await channel_service.retransmit_post(backed_up_post, channel.backup_target_id)
+            backed_up_post = await backup_service.save_post(channel.id, message)
+            if channel.backup_mode == BackupMode.INSTANT:
+                for target_id in target_ids:
+                    if target_id != channel.id:
+                        await retransmit_service.retransmit_post(backed_up_post, target_id)
     except Exception as error:
         await create_notification_callback(
             publication_id, "error",

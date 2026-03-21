@@ -8,6 +8,7 @@
 .headerRow {
   display: flex;
   flex-direction: row;
+  justify-content: space-between;
   align-items: center;
   padding: 10px 0;
   width: 100%;
@@ -24,6 +25,7 @@
 .toggleList {
   display: flex;
   flex-direction: column;
+  gap: 8px;
   width: 100%;
 }
 
@@ -44,4 +46,249 @@
   line-height: 17px;
   color: #383F45;
   flex: 1;
+}
+
+.expandedContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Channel selector */
+.channelSelector {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.subRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.subLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.subChevron {
+  flex-shrink: 0;
+  transform: rotate(-90deg);
+  transition: transform 0.2s;
+}
+
+.subChevronOpen {
+  transform: rotate(0deg);
+}
+
+.selectedChannels {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  width: 100%;
+}
+
+.channelPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    max-width: 500px;
+  }
+}
+
+.channelList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.channelItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 4px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.emptyText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  padding: 8px 0;
+}
+
+/* AI section */
+.aiSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.sectionLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+/* Post type checkboxes */
+.postTypes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.checkboxList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.checkboxItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 0;
+  gap: 16px;
+  cursor: pointer;
+}
+
+/* Content type checkboxes (nested under "Посты с вложениями") */
+.contentTypes {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  padding: 4px 0 4px 24px;
+}
+
+.contentTypesLabel {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}
+
+.contentTypeGrid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+}
+
+.contentTypeColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+}
+
+/* Archive section */
+.archiveContent {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.archiveBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.archiveHeader {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.archiveTitle {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.archiveDesc {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #B0B4B8;
+}
+
+.archiveBtn {
+  width: 100% !important;
+  border-radius: 10px;
+}
+
+/* Restore channel selector */
+.restoreRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.restoreInfo {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.restoreLabel {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.restoreValue {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
 }

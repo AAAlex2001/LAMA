@@ -4,6 +4,11 @@
   align-items: flex-start;
   gap: 6px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    min-width: 0;
+  }
 }
 
 .label {

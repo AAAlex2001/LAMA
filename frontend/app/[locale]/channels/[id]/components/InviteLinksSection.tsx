@@ -6,9 +6,9 @@ import { Button } from '@/components/new-button';
 import { InboxProvider } from '@/app/[locale]/inbox/store/provider';
 import CreateInviteLinkModal from '@/app/[locale]/inbox/components/CreateInviteLinkModal';
 import LinkInvitesModal from '@/app/[locale]/inbox/components/LinkInvitesModal';
-import { apiRequest } from '@/store/api';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { fetchInviteLinksThunk } from '../../store/thunks/invite-links';
 import type { Channel } from '@/types/channel';
-import type { InviteLink } from '@/types';
 import styles from './InviteLinksSection.module.scss';
 
 interface InviteLinksSectionProps {
@@ -16,38 +16,27 @@ interface InviteLinksSectionProps {
 }
 
 const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
+  const dispatch = useAppDispatch();
+  const { links, loaded } = useAppSelector((s) => s.inviteLinks);
+
   const [open, setOpen] = useState(false);
+  const [linksOpen, setLinksOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     if (window.matchMedia('(min-width: 1440px)').matches) {
       setOpen(true);
     }
   }, []);
-  const [linksOpen, setLinksOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [links, setLinks] = useState<InviteLink[]>([]);
-  const [linksLoaded, setLinksLoaded] = useState(false);
-
-  const fetchLinks = () => {
-    if (!channel.id) return;
-    apiRequest<{ items: InviteLink[]; total: number }>(`/channels/${channel.id}/invite-links`, { method: 'GET' })
-      .then((result) => {
-        const items = result.items || [];
-        setLinks(items);
-        setLinksLoaded(true);
-      })
-      .catch(() => {
-        setLinks([]);
-        setLinksLoaded(true);
-      });
-  };
 
   useEffect(() => {
-    fetchLinks();
-  }, [channel.id]);
+    if (channel.id) {
+      dispatch(fetchInviteLinksThunk(channel.id));
+    }
+  }, [dispatch, channel.id]);
 
   const handleCreateDone = () => {
-    fetchLinks();
+    dispatch(fetchInviteLinksThunk(channel.id));
   };
 
   return (
@@ -68,7 +57,7 @@ const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
 
       {open && (
         <div className={styles.content}>
-          {linksLoaded && links.length > 0 && (
+          {loaded && links.length > 0 && (
             <Button
               variant="outline"
               intent="gradient"
