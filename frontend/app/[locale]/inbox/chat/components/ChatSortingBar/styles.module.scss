@@ -185,9 +185,9 @@
 
 .mobileWrapper {
   align-items: center;
-  display: flex;
+  display: flex !important;
   @media(min-width: 1440px) {
-    display: none;
+    display: none !important;
   }
   gap: 10px;
 }

@@ -9,7 +9,8 @@ import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/Bloc
 import { useLongPress } from "./hooks/useLongPress";
 import { ListHeaderType } from "../ListHeader";
 import type { InboxEventResponse, EventType, InboxActionType, SpecificActionResponse } from "../../../../store/thunks/inboxEvents";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
+import Link from "next/link";
 import { useNotifications } from "@/components/notifications/NotificationProvider";
 import type { CheckedItemsAction } from "../../hooks/useCheckedItems";
 import { useAppDispatch, specificInboxActionThunk } from "../../../../store";
@@ -70,6 +71,7 @@ const ListElement: FC<ListElementProps> = ({
   } | null>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
+  const { locale } = useParams();
   const { showError } = useNotifications();
 
   const itemId = item.id.toString();
@@ -160,8 +162,8 @@ const ListElement: FC<ListElementProps> = ({
         const messageId = item.payload?.message_id;
         const botId = response.bot_id;
         const url = messageId
-          ? `/inbox/chat?chat_id=${chatId}&message_id=${messageId}&bot_id=${botId}`
-          : `/inbox/chat?chat_id=${chatId}&bot_id=${botId}`;
+          ? `/${locale}/inbox/chat?chat_id=${chatId}&message_id=${messageId}&bot_id=${botId}`
+          : `/${locale}/inbox/chat?chat_id=${chatId}&bot_id=${botId}`;
         setTimeout(() => router.push(url), 500);
       }
     } catch {
@@ -347,6 +349,10 @@ const ListElement: FC<ListElementProps> = ({
   };
 
   const dateStr = formatDate(item.created_at);
+  const chatLink =
+    item.tg_user_id && item.bot_id
+      ? `/${locale}/inbox/chat?chat_id=${item.tg_user_id}&bot_id=${item.bot_id}`
+      : null;
 
   return (
     <>
@@ -384,7 +390,13 @@ const ListElement: FC<ListElementProps> = ({
           {(item.tg_username || item.tg_first_name) ? (
             <>
               <div className={styles.gridCell}>
-                <span className={styles.username}>{item.tg_username || item.tg_first_name}</span>
+                {chatLink ? (
+                  <Link href={chatLink} className={styles.username}>
+                    {item.tg_username || item.tg_first_name}
+                  </Link>
+                ) : (
+                  <span className={styles.username}>{item.tg_username || item.tg_first_name}</span>
+                )}
               </div>
               <div className={styles.gridCell}>
                 <span className={styles.commandPath}>{item.description}</span>
@@ -437,9 +449,15 @@ const ListElement: FC<ListElementProps> = ({
                     {renderEventType()}
                   </div>
                   { item.tg_username || item.tg_first_name ? (
-                    <div className={styles.username}>
-                      {item.tg_username || item.tg_first_name}
-                    </div>
+                    chatLink ? (
+                      <Link href={chatLink} className={styles.username}>
+                        {item.tg_username || item.tg_first_name}
+                      </Link>
+                    ) : (
+                      <div className={styles.username}>
+                        {item.tg_username || item.tg_first_name}
+                      </div>
+                    )
                   ) : null}
                 </div>
                 <div className={styles.descriptionMobile}>
