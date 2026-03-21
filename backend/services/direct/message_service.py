@@ -184,8 +184,6 @@ class DirectMessageService:
             reply_to_message_id=reply_to_message_id,
         )
         self.db.add(msg)
-        await self.db.flush()
-        await self.db.refresh(msg)
         return msg
 
     async def broadcast_new_message(self, owner_id: int, bot_id: int, tg_chat_id: int, message_id: int) -> None:
@@ -309,7 +307,9 @@ class DirectMessageService:
         await self.db.flush()
         for message in saved_messages:
             await self.db.refresh(message)
-            await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, message.id)
+
+        if saved_messages:
+            await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, saved_messages[-1].id)
 
         return saved_messages
 
@@ -407,8 +407,6 @@ class DirectMessageService:
 
         msg_type, media_file_id = self.extract_incoming_media(message)
 
-        media_url = await self.resolve_media_url(bot.token, media_file_id)
-
         reply_to = self.message_get(message, "reply_to_message")
         if reply_to is None:
             reply_to = raw_data.get("reply_to_message")
@@ -422,7 +420,7 @@ class DirectMessageService:
             message_type=msg_type,
             text_content=text,
             media_file_id=media_file_id,
-            media_url=media_url,
+            media_url=None,
             is_incoming=True,
             raw_data=raw_data,
             reply_to_message_id=reply_to_msg_id,

@@ -7,8 +7,9 @@ import { Button } from '@/components/new-button';
 import Loader from '@/components/loader/loader';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppDispatch, useAppSelector } from './store';
-import { deleteChannelThunk } from '@/store/channels';
+import { deleteChannelThunk, refreshChannelsThunk } from '@/store/channels';
 import type { Channel } from '@/types/channel';
+import { CalendarRepeatIcon } from '@/components/icons';
 import ChannelCard from './components/ChannelCard';
 import DeleteConfirmationModal from '@/components/modal';
 import EmptyState from './components/EmptyState';
@@ -32,6 +33,7 @@ const ChannelsView: FC = () => {
 
   const channels = useAppSelector((s) => s.channels.channels) as Channel[];
   const loading = useAppSelector((s) => s.channels.loading);
+  const syncing = useAppSelector((s) => s.channels.syncing);
   const total = useAppSelector((s) => s.channels.total);
 
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
@@ -45,6 +47,15 @@ const ChannelsView: FC = () => {
   }, [channels, activeTab]);
 
   const connectedCount = channels.length;
+
+  const handleRefresh = async () => {
+    try {
+      await dispatch(refreshChannelsThunk()).unwrap();
+      showSuccess('Каналы обновлены');
+    } catch (err) {
+      showError(typeof err === 'string' ? err : 'Ошибка обновления');
+    }
+  };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -91,15 +102,25 @@ const ChannelsView: FC = () => {
         />
 
         <div className={styles.connectBlock}>
-          <Button
-            variant="fill"
-            intent="gradient"
-            size="lg"
-            className={styles.connectBtn}
-            onClick={() => setConnectOpen(true)}
-          >
-            Подключить канал или группу
-          </Button>
+          <div className={styles.connectRow}>
+            <Button
+              variant="fill"
+              intent="gradient"
+              size="lg"
+              className={styles.connectBtn}
+              onClick={() => setConnectOpen(true)}
+            >
+              Подключить канал или группу
+            </Button>
+            <button
+              className={`${styles.refreshBtn} ${syncing ? styles.refreshSpin : ''}`}
+              onClick={handleRefresh}
+              disabled={syncing}
+              title="Обновить данные каналов"
+            >
+              <CalendarRepeatIcon width={22} height={22} color="#383F45" />
+            </button>
+          </div>
           <span className={styles.connectedInfo}>
             Подключено каналов и групп: {connectedCount}/{total}
           </span>

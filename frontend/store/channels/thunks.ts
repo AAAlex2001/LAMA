@@ -133,6 +133,36 @@ export const addChannelThunk = createAsyncThunk(
   }
 );
 
+export const refreshChannelsThunk = createAsyncThunk(
+  'channels/refreshChannels',
+  async (_, { dispatch, rejectWithValue }) => {
+    dispatch(setSyncing(true));
+    dispatch(setError(null));
+
+    try {
+      const response = await apiRequest<ChannelsResponse>(
+        '/channels?force_refresh=true',
+        { method: 'GET' },
+      );
+
+      const channelsWithSelection = (response.items || []).map((ch: ChannelBasic) => ({
+        ...ch,
+        selected: true,
+      }));
+
+      dispatch(setChannels(channelsWithSelection));
+      dispatch(setTotal(response.total || 0));
+      return channelsWithSelection;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка обновления каналов';
+      dispatch(setError(errorMessage));
+      return rejectWithValue(errorMessage);
+    } finally {
+      dispatch(setSyncing(false));
+    }
+  },
+);
+
 export const deleteChannelThunk = createAsyncThunk(
   'channels/deleteChannel',
   async (channelId: number, { dispatch, rejectWithValue }) => {

@@ -1,6 +1,5 @@
 from typing import Optional
-
-from typing import Optional
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -56,8 +55,7 @@ async def get_backed_up_posts(
     backup_service: BackupService = Depends(get_backup_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-
+    await channel_service.get(channel_id, owner_id=current_user.id)
     posts, total = await backup_service.get_posts(channel_id=channel_id, page=page, page_size=page_size)
     return BackedUpPostListResponse(items=posts, total=total, page=page, page_size=page_size)
 
@@ -69,8 +67,7 @@ async def get_channel_stats(
     backup_service: BackupService = Depends(get_backup_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-
+    await channel_service.get(channel_id, owner_id=current_user.id)
     stats = await backup_service.get_stats(channel_id)
     return ChannelStatsResponse(**stats)
 
@@ -82,7 +79,7 @@ async def create_backup_job(
     current_user: User = Depends(get_current_user),
 ):
     job = await service.create(data, owner_id=current_user.id)
-    process_backup_job.delay(job.id)
+    process_backup_job.apply_async(args=[job.id], countdown=2)
     return job
 
 
@@ -123,7 +120,7 @@ async def restore_backup(
         target_channel_id=data.target_channel_id,
     )
     job = await service.create(job_data, owner_id=current_user.id)
-    process_backup_job.delay(job.id)
+    process_backup_job.apply_async(args=[job.id], countdown=2)
     return RestoreBackupResponse(success=True, job_id=job.id, message="Восстановление запущено")
 
 
@@ -136,7 +133,6 @@ async def export_backed_up_posts(
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     posts, total = await backup_service.get_posts(channel_id=channel_id, page=1, page_size=10000)
-    from datetime import datetime, timezone
     export_data = {
         "channel_id": channel_id,
         "channel_title": channel.title,

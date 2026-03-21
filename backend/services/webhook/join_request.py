@@ -51,14 +51,8 @@ class JoinRequestHandler:
                 user_id = join_request.from_user.id
                 chat_id = join_request.chat.id
 
-                # Обновляем метрику invite link, если есть
-                if (
-                    hasattr(join_request, "invite_link")
-                    and join_request.invite_link
-                ):
-                    await self.update_invite_link_metrics(
-                        join_request.invite_link.invite_link
-                    )
+                if hasattr(join_request, "invite_link") and join_request.invite_link:
+                    await self.update_invite_link_metrics(join_request.invite_link.invite_link)
 
                 await self.trigger_service.fire_event(
                     bot_id=self.bot_model.id,
@@ -69,12 +63,19 @@ class JoinRequestHandler:
                     chat_type=join_request.chat.type,
                     context={
                         "username": join_request.from_user.username,
-                        "first_name": (
-                                    join_request.from_user.first_name
-                                ),
+                        "first_name": join_request.from_user.first_name,
                         "chat_title": join_request.chat.title,
                     },
                 )
+
+                db_link = await self.get_db_link(join_request)
+
+                if db_link and db_link.protection_type == "captcha":
+                    captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+                    if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+                        await self.handle_manual_mode(telegram_bot, join_request)
+                        await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
+                        return
 
                 should_approve, missing = (
                     await self.settings_service.check_approval_criteria(
@@ -93,37 +94,8 @@ class JoinRequestHandler:
                     await self.db.flush()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    link_protection = await self.get_link_protection(join_request)
-
-                    if link_protection == "captcha":
-                        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-                        if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-                            await self.handle_manual_mode(telegram_bot, join_request)
-                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
-                        else:
-                            await self.create_join_event(join_request, status=EventStatus.NEW)
-                    elif link_protection in (None, "none"):
-                        approved = await self.approve_join_request(chat_id, user_id)
-                        if approved:
-                            if hasattr(join_request, "invite_link") and join_request.invite_link:
-                                await self.increment_member_count(join_request.invite_link.invite_link)
-                            await self.trigger_service.fire_event(
-                                bot_id=self.bot_model.id,
-                                trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                                user_id=user_id,
-                                chat_id=chat_id,
-                                telegram_bot=telegram_bot,
-                                chat_type=join_request.chat.type,
-                                context={
-                                    "username": join_request.from_user.username,
-                                    "first_name": join_request.from_user.first_name,
-                                },
-                            )
-                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="accepted")
-                        else:
-                            await self.create_join_event(join_request, status=EventStatus.NEW)
-                    else:
-                        await self.create_join_event(join_request, status=EventStatus.NEW)
+                    await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
+                    await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
 
                 elif (
@@ -138,7 +110,7 @@ class JoinRequestHandler:
 
                 if should_approve:
                     approved = await self.approve_join_request(
-                        chat_id, user_id
+                        telegram_bot, chat_id, user_id
                     )
                     if approved:
                         if hasattr(join_request, "invite_link") and join_request.invite_link:
@@ -152,9 +124,7 @@ class JoinRequestHandler:
                             chat_type=join_request.chat.type,
                             context={
                                 "username": join_request.from_user.username,
-                                "first_name": (
-                                    join_request.from_user.first_name
-                                ),
+                                "first_name": join_request.from_user.first_name,
                             },
                         )
                         await self.create_join_event(
@@ -166,15 +136,25 @@ class JoinRequestHandler:
         except Exception as e:
             logger.error(f"Join request error: {e}", exc_info=True)
 
-    async def get_link_protection(self, join_request: ChatJoinRequest) -> str | None:
-        """Получить protection_type для пригласительной ссылки."""
+    async def get_db_link(self, join_request: ChatJoinRequest) -> ChatInviteLink | None:
         if not (hasattr(join_request, "invite_link") and join_request.invite_link):
             return None
         result = await self.db.execute(
-            select(ChatInviteLink.protection_type)
-            .where(ChatInviteLink.invite_link == join_request.invite_link.invite_link)
+            select(ChatInviteLink).where(ChatInviteLink.invite_link == join_request.invite_link.invite_link)
         )
         return result.scalar_one_or_none()
+
+    async def notify_pending(self, telegram_bot, user_id: int, chat_title: str) -> None:
+        try:
+            await telegram_bot.send_message(
+                chat_id=user_id,
+                text=(
+                    f"📩 Ваша заявка на вступление в «{chat_title}» отправлена.\n"
+                    f"Ожидайте одобрения администратором."
+                ),
+            )
+        except TelegramAPIError as e:
+            logger.warning(f"Failed to send pending message: {e}")
 
     async def handle_manual_mode(
         self, telegram_bot, join_request: ChatJoinRequest
@@ -368,15 +348,13 @@ class JoinRequestHandler:
         except Exception as e:
             logger.warning(f"Не удалось обновить метрику invite link: {e}")
 
-    async def approve_join_request(self, chat_id: int, user_id: int) -> bool:
-        """Одобрить заявку на вступление"""
+    async def approve_join_request(self, telegram_bot, chat_id: int, user_id: int) -> bool:
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                await telegram_bot.approve_chat_join_request(
-                    chat_id=chat_id, user_id=user_id
-                )
-                logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
-                return True
+            await telegram_bot.approve_chat_join_request(
+                chat_id=chat_id, user_id=user_id
+            )
+            logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
+            return True
         except TelegramAPIError as e:
             logger.warning(f"Approve join request failed: {e}")
             return False
