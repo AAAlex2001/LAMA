@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.models.auth import User, UserSession
 
@@ -81,7 +82,7 @@ class TokenService:
             session.last_used_at = datetime.now(timezone.utc)
             await self.db.flush()
 
-            user_query = select(User).where(User.id == user_id)
+            user_query = select(User).options(selectinload(User.telegram_account)).where(User.id == user_id)
             user_result = await self.db.execute(user_query)
             user = user_result.scalar_one_or_none()
 

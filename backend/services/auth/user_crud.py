@@ -7,6 +7,7 @@ from typing import Optional, List, Tuple
 from fastapi import HTTPException
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from backend.models.auth import User, TelegramAccount, UserRole
 from backend.schemas.auth import UserUpdateRequest
@@ -20,13 +21,13 @@ class UserCRUDService:
 
     async def get_user(self, user_id: int) -> Optional[User]:
         """Получить пользователя по ID"""
-        query = select(User).where(User.id == user_id)
+        query = select(User).options(selectinload(User.telegram_account)).where(User.id == user_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def get_user_by_telegram_id(self, telegram_id: int) -> Optional[User]:
         """Получить пользователя по Telegram ID"""
-        query = select(User).join(TelegramAccount).where(
+        query = select(User).options(selectinload(User.telegram_account)).join(TelegramAccount).where(
             TelegramAccount.telegram_id == telegram_id)
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -39,7 +40,7 @@ class UserCRUDService:
         limit: int = 50
     ) -> Tuple[List[User], int]:
         """Получить список пользователей с фильтрацией"""
-        query = select(User)
+        query = select(User).options(selectinload(User.telegram_account))
 
         if role:
             query = query.where(User.role == role)
