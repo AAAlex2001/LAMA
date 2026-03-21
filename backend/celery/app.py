@@ -41,7 +41,7 @@ celery_app.conf.update(
         "backend.celery.tasks.process_scheduled_triggers": {"queue": "default"},
         "backend.celery.tasks.process_recurring_messages": {"queue": "default"},
         "backend.celery.tasks.process_repeating_publications": {"queue": "default"},
-        "backend.celery.tasks.process_instant_backups": {"queue": "low"},
+        "backend.celery.tasks.process_backup_job": {"queue": "low"},
         "backend.celery.tasks.delete_publication_messages": {"queue": "default"},
         "backend.celery.tasks.republish_publication": {"queue": "default"},
     },
@@ -53,10 +53,6 @@ celery_app.conf.update(
         "process-auto-delete": {
             "task": "backend.celery.tasks.process_auto_delete",
             "schedule": timedelta(seconds=30),
-        },
-        "process-instant-backups": {
-            "task": "backend.celery.tasks.process_instant_backups",
-            "schedule": timedelta(minutes=2),
         },
         "process-scheduled-triggers": {
             "task": "backend.celery.tasks.process_scheduled_triggers",

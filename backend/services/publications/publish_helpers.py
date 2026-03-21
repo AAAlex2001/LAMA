@@ -10,6 +10,7 @@ from backend.models.publications import (
     Publication, PublicationNotification, TelegramMessage,
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
+    ContentType as DBContentType,
 )
 from backend.models.channels import ChannelGroup as Channel, BackupMode
 from backend.schemas.publications import ChannelPublishResult
@@ -18,10 +19,53 @@ from backend.services.channel.retransmit_service import RetransmitService
 
 logger = logging.getLogger(__name__)
 
+MEDIA_CONTENT_TYPES = {
+    DBContentType.TEXT_WITH_MEDIA,
+    DBContentType.IMAGE,
+    DBContentType.VIDEO,
+    DBContentType.AUDIO,
+    DBContentType.DOCUMENT,
+}
+
+CONTENT_TYPE_MAP = {
+    DBContentType.IMAGE: "photo",
+    DBContentType.VIDEO: "video",
+    DBContentType.AUDIO: "document",
+    DBContentType.DOCUMENT: "document",
+}
+
+
+def should_retransmit(publication: Publication, channel: Channel) -> bool:
+    post_types = channel.backup_post_types
+    if not post_types:
+        return True
+
+    has_buttons = bool(publication.inline_keyboard)
+    has_media = publication.content_type in MEDIA_CONTENT_TYPES
+
+    if "with_buttons" in post_types and has_buttons:
+        return True
+
+    if "with_attachments" in post_types and has_media:
+        content_types = channel.backup_content_types
+        if not content_types:
+            return True
+        if publication.content_type == DBContentType.TEXT_WITH_MEDIA:
+            return any(ct in content_types for ct in ("photo", "video", "animation", "document"))
+        mapped = CONTENT_TYPE_MAP.get(publication.content_type)
+        if mapped and mapped in content_types:
+            return True
+        return False
+
+    if "text_posts" in post_types:
+        is_text = not has_media and not has_buttons
+        if is_text:
+            return True
+
+    return False
+
 
 def make_notification_callback(db: AsyncSession):
-    """Фабрика callback-а для создания уведомлений."""
-
     async def callback(publication_id: int, status: str, message: str, error_details=None):
         notification = PublicationNotification(
             publication_id=publication_id, status=status,
@@ -34,7 +78,6 @@ def make_notification_callback(db: AsyncSession):
 
 
 async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncSession) -> None:
-    """Сохранить telegram_messages в БД (bulk)."""
     objects = []
     for result in results:
         if result.success and result.telegram_messages_data:
@@ -50,18 +93,17 @@ async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncS
 
 async def handle_backups(
     results: List[ChannelPublishResult],
-    publication_id: int,
+    publication: Publication,
     backup_service: BackupService,
     retransmit_service: RetransmitService,
     create_notification_callback,
 ) -> None:
-    """Обработать бэкапы для успешных отправок."""
     for result in results:
         if result.success and result.sent_messages and result.channel_obj:
             try:
                 await handle_instant_backup(
                     result.channel_obj, result.sent_messages,
-                    publication_id, backup_service, retransmit_service,
+                    publication, backup_service, retransmit_service,
                     create_notification_callback,
                 )
             except Exception as e:
@@ -71,13 +113,15 @@ async def handle_backups(
 async def handle_instant_backup(
     channel: Channel,
     messages: List[Any],
-    publication_id: int,
+    publication: Publication,
     backup_service: BackupService,
     retransmit_service: RetransmitService,
     create_notification_callback,
 ) -> None:
-    """Обработать мгновенный бэкап и ретрансляцию."""
     if channel.backup_mode == BackupMode.DISABLED:
+        return
+
+    if not should_retransmit(publication, channel):
         return
 
     target_ids = channel.backup_target_ids or (
@@ -85,15 +129,17 @@ async def handle_instant_backup(
     )
 
     try:
+        saved_post = None
         for message in messages:
-            backed_up_post = await backup_service.save_post(channel.id, message)
-            if channel.backup_mode == BackupMode.INSTANT:
-                for target_id in target_ids:
-                    if target_id != channel.id:
-                        await retransmit_service.retransmit_post(backed_up_post, target_id)
+            saved_post = await backup_service.save_post(channel.id, message)
+
+        if saved_post and channel.backup_mode == BackupMode.INSTANT:
+            for target_id in target_ids:
+                if target_id != channel.id:
+                    await retransmit_service.retransmit_post(saved_post, target_id)
     except Exception as error:
         await create_notification_callback(
-            publication_id, "error",
+            publication.id, "error",
             f"Instant backup failed for {getattr(channel, 'title', channel.telegram_id)}",
             {"error": str(error)},
         )
@@ -104,7 +150,6 @@ async def create_notifications(
     publication_id: int,
     create_notification_callback,
 ) -> None:
-    """Создать уведомления о результатах публикации."""
     for result in results:
         if result.success:
             await create_notification_callback(publication_id, "success", f"Published to {result.channel}")
@@ -118,7 +163,6 @@ def update_publication_status(
     total_count: int,
     calculate_next_repeat_time_callback,
 ) -> None:
-    """Обновить статус публикации после отправки."""
     if success_count == 0:
         publication.status = DBPublicationStatus.FAILED
         return
@@ -135,7 +179,6 @@ def update_publication_status(
 
 
 def compute_next_repeat(publication: Publication, base_time: datetime, calculate_fn) -> Optional[datetime]:
-    """Рассчитать следующее время повтора."""
     return calculate_fn(
         base_time,
         publication.repeat_interval,

@@ -67,7 +67,7 @@ async def publish_to_channels(
     await save_telegram_messages(results, db)
     backup_service = BackupService(db)
     retransmit_service = RetransmitService(db)
-    await handle_backups(results, publication.id, backup_service, retransmit_service, create_notification_callback)
+    await handle_backups(results, publication, backup_service, retransmit_service, create_notification_callback)
     await create_notifications(results, publication.id, create_notification_callback)
 
     success_count = sum(1 for r in results if r.success)
