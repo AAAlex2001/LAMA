@@ -1,10 +1,12 @@
 from typing import Optional
 
-from fastapi import APIRouter, BackgroundTasks, Depends
-from sqlalchemy import select
+from typing import Optional
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 
 from backend.models.auth import User
-from backend.models.channels import BackupJob, BackupStatus
+from backend.models.channels import BackupStatus
 from backend.routes.auth import get_current_user
 from backend.routes.channels.dependencies import get_backup_job_service, get_backup_service, get_channel_service
 from backend.schemas.channels import (
@@ -21,6 +23,7 @@ from backend.schemas.channels import (
 from backend.services.channel.backup_job_service import BackupJobService
 from backend.services.channel.backup_service import BackupService
 from backend.services.channel.channel_service import ChannelService
+from backend.celery.tasks import process_backup_job
 
 router = APIRouter()
 
@@ -75,12 +78,11 @@ async def get_channel_stats(
 @router.post("/backup-jobs", response_model=BackupJobResponse, status_code=201)
 async def create_backup_job(
     data: BackupJobCreate,
-    background_tasks: BackgroundTasks,
     service: BackupJobService = Depends(get_backup_job_service),
     current_user: User = Depends(get_current_user),
 ):
     job = await service.create(data, owner_id=current_user.id)
-    background_tasks.add_task(service.process, job.id)
+    process_backup_job.delay(job.id)
     return job
 
 
@@ -113,7 +115,6 @@ async def get_backup_job(
 @router.post("/restore", response_model=RestoreBackupResponse)
 async def restore_backup(
     data: RestoreBackupRequest,
-    background_tasks: BackgroundTasks,
     service: BackupJobService = Depends(get_backup_job_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -122,5 +123,42 @@ async def restore_backup(
         target_channel_id=data.target_channel_id,
     )
     job = await service.create(job_data, owner_id=current_user.id)
-    background_tasks.add_task(service.process, job.id)
-    return RestoreBackupResponse(success=True, job_id=job.id, message="Backup restore started in background")
+    process_backup_job.delay(job.id)
+    return RestoreBackupResponse(success=True, job_id=job.id, message="Восстановление запущено")
+
+
+@router.get("/{channel_id}/export")
+async def export_backed_up_posts(
+    channel_id: int,
+    channel_service: ChannelService = Depends(get_channel_service),
+    backup_service: BackupService = Depends(get_backup_service),
+    current_user: User = Depends(get_current_user),
+):
+    channel = await channel_service.get(channel_id, owner_id=current_user.id)
+    posts, total = await backup_service.get_posts(channel_id=channel_id, page=1, page_size=10000)
+    from datetime import datetime, timezone
+    export_data = {
+        "channel_id": channel_id,
+        "channel_title": channel.title,
+        "total_posts": total,
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "posts": [
+            {
+                "id": p.id,
+                "telegram_message_id": p.telegram_message_id,
+                "content_type": p.content_type,
+                "text_content": p.text_content,
+                "media_file_ids": p.media_file_ids,
+                "views_count": p.views_count,
+                "forwards_count": p.forwards_count,
+                "original_date": p.original_date.isoformat() if p.original_date else None,
+                "backed_up_at": p.backed_up_at.isoformat() if p.backed_up_at else None,
+                "raw_data": p.raw_data,
+            }
+            for p in posts
+        ],
+    }
+    return JSONResponse(
+        content=export_data,
+        headers={"Content-Disposition": f'attachment; filename="backup_{channel_id}.json"'},
+    )

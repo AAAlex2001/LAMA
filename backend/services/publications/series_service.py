@@ -18,6 +18,9 @@ from backend.models.publications import (
 from backend.models.channels import ChannelGroup
 from backend.schemas.publications.series import PublicationSeriesUpdate
 from backend.schemas.publications import PublishResult, ChannelPublishResult
+from backend.services.channel.backup_service import BackupService
+from backend.services.channel.retransmit_service import RetransmitService
+from backend.services.publications.publish_helpers import handle_backups
 from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
 
@@ -147,7 +150,7 @@ class SeriesService:
             return ChannelPublishResult(
                 channel=channel_name, success=True,
                 message_ids=message_ids, replied_to=reply_to_id,
-                channel_obj=channel,
+                channel_obj=channel, sent_messages=sent_messages,
             )
 
         except (TelegramBadRequest, TelegramForbiddenError, TelegramNotFound) as e:
@@ -240,6 +243,14 @@ class SeriesService:
             publication.status = DBPublicationStatus.FAILED
 
         await self.db.flush()
+
+        backup_service = BackupService(self.db)
+        retransmit_service = RetransmitService(self.db)
+        await handle_backups(
+            results, publication,
+            backup_service, retransmit_service,
+            lambda pub_id, level, msg, extra=None: None,
+        )
 
         return PublishResult(
             success=success_count > 0,

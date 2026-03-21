@@ -25,7 +25,7 @@ from backend.services.publications.series_service import SeriesService
 from backend.services.publications import publisher, message_editor
 from backend.services.publications.publish_helpers import make_notification_callback
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
-from backend.tasks.channel_backup import process_instant_backups as channel_process_instant_backups
+from backend.services.channel.backup_job_service import BackupJobService
 
 logger = logging.getLogger(__name__)
 
@@ -401,15 +401,14 @@ async def process_repeating_publications_async() -> str:
     return f"queued_republish:{len(ids)}"
 
 
-@celery_app.task(name="backend.celery.tasks.process_instant_backups")
-def process_instant_backups() -> str:
-    """Запустить задачу мгновенных бекапов."""
-
-    return run(process_instant_backups_async())
+@celery_app.task(name="backend.celery.tasks.process_backup_job", max_retries=2, default_retry_delay=30)
+def process_backup_job(job_id: int) -> str:
+    return run(process_backup_job_async(job_id))
 
 
-async def process_instant_backups_async() -> str:
-    """Async-реализация мгновенных бекапов."""
-
-    await channel_process_instant_backups()
-    return "instant_backups_ok"
+async def process_backup_job_async(job_id: int) -> str:
+    async with CelerySessionLocal() as db:
+        service = BackupJobService(db)
+        await service.process(job_id)
+        await db.commit()
+    return f"backup_job_done:{job_id}"
