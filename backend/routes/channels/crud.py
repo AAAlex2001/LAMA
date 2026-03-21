@@ -34,6 +34,7 @@ async def list_channels(
     channel_type: Optional[ChannelType] = None,
     is_active: Optional[bool] = None,
     backup_mode: Optional[BackupMode] = None,
+    force_refresh: bool = False,
     service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -44,6 +45,7 @@ async def list_channels(
         channel_type=channel_type,
         is_active=is_active,
         backup_mode=backup_mode,
+        force_refresh=force_refresh,
     )
     return ChannelGroupListResponse(items=channels, total=total, page=page, page_size=page_size)
 

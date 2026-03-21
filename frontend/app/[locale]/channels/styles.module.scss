@@ -44,13 +44,51 @@
   }
 }
 
+.connectRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .connectBtn {
-  width: 100% !important;
+  flex: 1;
 
   @media (min-width: 1440px) {
+    flex: none;
     width: fit-content !important;
     white-space: nowrap;
   }
+}
+
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
+  }
+}
+
+.refreshSpin svg {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .connectedInfo {

@@ -81,6 +81,7 @@ class ChannelService:
         channel_type: Optional[ChannelType] = None,
         is_active: Optional[bool] = None,
         backup_mode: Optional[BackupMode] = None,
+        force_refresh: bool = False,
     ) -> tuple[List[ChannelGroup], int]:
         """Список каналов с фильтрацией."""
         query = select(ChannelGroup).options(selectinload(ChannelGroup.bot)).where(ChannelGroup.owner_id == owner_id)
@@ -106,18 +107,22 @@ class ChannelService:
         result = await self.db.execute(query)
         channels = list(result.scalars().all())
 
-        await self.refresh_stale_channels(channels)
+        if force_refresh:
+            await self.refresh_stale_channels(channels, force=True)
 
         return channels, total
 
-    async def refresh_stale_channels(self, channels: List[ChannelGroup]) -> None:
+    async def refresh_stale_channels(self, channels: List[ChannelGroup], force: bool = False) -> None:
         """Обновить данные каналов из Telegram, если last_sync_at устарел."""
         now = datetime.now(timezone.utc)
-        stale = [
-            ch for ch in channels
-            if ch.bot and ch.bot.token
-            and (not ch.last_sync_at or now - ch.last_sync_at > REFRESH_THRESHOLD)
-        ]
+        if force:
+            stale = [ch for ch in channels if ch.bot and ch.bot.token]
+        else:
+            stale = [
+                ch for ch in channels
+                if ch.bot and ch.bot.token
+                and (not ch.last_sync_at or now - ch.last_sync_at > REFRESH_THRESHOLD)
+            ]
         if not stale:
             return
 
