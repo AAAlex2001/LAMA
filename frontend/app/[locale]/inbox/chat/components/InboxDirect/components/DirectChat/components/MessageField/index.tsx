@@ -357,7 +357,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             variant="tag"
             intent="primary"
             onClick={handleOpenTemplatesModal}
-            style={{ flex: 1 }}
+            style={{ flex: 1, display: "flex" }}
           >
             <TemplatesIcon width={24} height={24} color="#383F45" />
             Шаблоны

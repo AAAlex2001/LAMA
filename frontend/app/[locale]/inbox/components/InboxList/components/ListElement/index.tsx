@@ -362,12 +362,12 @@ const ListElement: FC<ListElementProps> = ({
       <DesktopWrapper>
         <div
           className={`${styles.element} ${item.is_new ? styles.unread : ''} ${isChecked ? styles.checked : ''}`}
-          // onClick={handleRowClick}
-          // onPointerUp={handleRowPointerUp}
-          // onKeyDown={handleRowKeyDown}
-          // tabIndex={isSelectionMode ? 0 : -1}
-          // role={isSelectionMode ? "checkbox" : undefined}
-          // aria-checked={isSelectionMode ? Boolean(isChecked) : undefined}
+          onClick={handleRowClick}
+          onPointerUp={handleRowPointerUp}
+          onKeyDown={handleRowKeyDown}
+          tabIndex={isSelectionMode ? 0 : -1}
+          role={isSelectionMode ? "checkbox" : undefined}
+          aria-checked={isSelectionMode ? Boolean(isChecked) : undefined}
         >
           <div className={styles.gridCell}>
             {isChecked !== undefined ? (
