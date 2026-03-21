@@ -1,19 +1,23 @@
 .inboxDirectMobile {
-  height: 100%;
-  flex: 1;
-  min-height: 0;
-}
-
-.inboxDirectDesktop {
-  height: 100%;
-  flex: 1;
-  min-height: 0;
-}
-
-.desktopContent {
   display: flex;
   gap: 16px;
   height: 100%;
+  flex: 1;
+  min-height: 0;
+  @media(min-width: 1440px) {
+    display: none;
+  }
+}
+
+.inboxDirectDesktop {
+  display: none !important;
+  gap: 16px;
+  height: 100%;
+  flex: 1;
+  min-height: 0;
+  @media(min-width: 1440px) {
+    display: flex !important;
+  }
 }
 
 .directMenuWrapper {
