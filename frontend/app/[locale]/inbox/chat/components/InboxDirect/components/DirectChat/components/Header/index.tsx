@@ -8,6 +8,7 @@ interface HeaderProps {
   userName: string;
   botName?: string | null;
   userPhoto?: string | null;
+  hasChat?: boolean;
   isPinned: boolean;
   isBlocked: boolean;
   onClose?: () => void;
@@ -19,6 +20,7 @@ const Header: FC<HeaderProps> = ({
   userName,
   botName,
   userPhoto,
+  hasChat = true,
   isPinned,
   isBlocked,
   onClose,
@@ -31,7 +33,9 @@ const Header: FC<HeaderProps> = ({
         <ChatChevronIcon width={32} height={32} />
       </button>
 
-      <Avatar src={userPhoto ?? undefined} name={userName} size={40} alt={userName} />
+      {hasChat && (
+        <Avatar src={userPhoto ?? undefined} name={userName} size={40} alt={userName} />
+      )}
       <div className={styles.userInfo}>
         <span className={styles.userName}>{userName}</span>
         {botName && <span className={styles.botName}>{botName}</span>}
