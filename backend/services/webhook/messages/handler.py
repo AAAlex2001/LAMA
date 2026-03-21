@@ -57,8 +57,6 @@ class MessageHandler:
             chat_svc = DirectChatService(self.db)
             msg_svc = DirectMessageService(self.db)
 
-            photo_url = await self.resolve_user_photo(message.from_user.id)
-
             await chat_svc.get_or_create_chat(
                 bot_id=self.bot_model.id,
                 tg_chat_id=message.chat.id,
@@ -66,7 +64,6 @@ class MessageHandler:
                 tg_username=message.from_user.username,
                 tg_first_name=message.from_user.first_name,
                 tg_last_name=message.from_user.last_name,
-                tg_photo_url=photo_url,
             )
             await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
             self.saved_msg = await msg_svc.save_incoming_message(
@@ -268,6 +265,14 @@ class MessageHandler:
                             await self.db.flush()
                     except Exception as e:
                         logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
+
+                if message.chat.type == "private" and message.from_user:
+                    photo_url = await self.resolve_user_photo(message.from_user.id)
+                    if photo_url:
+                        chat_svc = DirectChatService(self.db)
+                        await chat_svc.update_photo(
+                            self.bot_model.id, message.chat.id, photo_url,
+                        )
 
                 auto_delete_service = ChannelAutoDeleteService(self.db)
                 if await auto_delete_service.delete_if_system(telegram_bot, message):

@@ -370,3 +370,13 @@ class DirectChatService:
         )
         await self.db.execute(stmt)
         await self.db.flush()
+
+    async def update_photo(self, bot_id: int, tg_chat_id: int, photo_url: str) -> None:
+        stmt = (
+            update(DirectChat)
+            .where(
+                and_(DirectChat.bot_id == bot_id, DirectChat.tg_chat_id == tg_chat_id)
+            )
+            .values(tg_photo_url=photo_url)
+        )
+        await self.db.execute(stmt)

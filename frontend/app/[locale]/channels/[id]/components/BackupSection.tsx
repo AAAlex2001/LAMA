@@ -18,6 +18,7 @@ import {
   updateBackupAiPromptThunk,
   restoreBackupThunk,
 } from '../../store/thunks/backup';
+import { API_BASE_URL, getAuthToken } from '@/store/api';
 import type { Channel } from '@/types/channel';
 import styles from './BackupSection.module.scss';
 
@@ -151,6 +152,22 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
       .unwrap()
       .then(() => showSuccess('Восстановление запущено'))
       .catch(() => {});
+  };
+
+  const handleExport = async () => {
+    const token = getAuthToken();
+    const url = `${API_BASE_URL}/channels/${channel.id}/export`;
+    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) {
+      showError('Ошибка экспорта');
+      return;
+    }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup_${channel.id}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   };
 
   return (
@@ -358,6 +375,7 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                 intent="gradient"
                 size="md"
                 className={styles.archiveBtn}
+                onClick={handleExport}
               >
                 Скачать
               </Button>

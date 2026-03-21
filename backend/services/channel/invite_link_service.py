@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.schemas.channels import InviteLinkCreate, InviteLinkUpdate
 from backend.services.bot_provider import resolve_for_channel
@@ -168,6 +169,28 @@ class InviteLinkService:
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())
+
+    async def attach_bot_link(self, link: ChatInviteLink, channel: ChannelGroup) -> None:
+        if link.entry_method != "bot" or not channel.bot_id:
+            return
+        result = await self.db.execute(
+            select(BotModel.username).where(BotModel.id == channel.bot_id)
+        )
+        bot_username = result.scalar_one_or_none()
+        if bot_username:
+            link.bot_link = f"https://t.me/{bot_username}?start=invite_{link.id}"
+
+    async def attach_bot_links(self, links: List[ChatInviteLink], channel: ChannelGroup) -> None:
+        bot_links = [l for l in links if l.entry_method == "bot"]
+        if not bot_links or not channel.bot_id:
+            return
+        result = await self.db.execute(
+            select(BotModel.username).where(BotModel.id == channel.bot_id)
+        )
+        bot_username = result.scalar_one_or_none()
+        if bot_username:
+            for link in bot_links:
+                link.bot_link = f"https://t.me/{bot_username}?start=invite_{link.id}"
 
     async def sync_single(self, channel: ChannelGroup, link: ChatInviteLink) -> ChatInviteLink:
         """Обновить member_count одной ссылки через Telegram API."""

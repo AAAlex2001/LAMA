@@ -51,7 +51,7 @@ class BackupJobService:
         result = await self.db.execute(query)
         job = result.scalar_one_or_none()
         if not job:
-            raise HTTPException(status_code=404, detail="Backup job not found")
+            raise ValueError(f"Backup job {job_id} not found")
         if job.status != BackupStatus.IN_PROGRESS:
             return job
 
@@ -61,7 +61,7 @@ class BackupJobService:
 
         target_channel = await get_channel(self.db, job.target_channel_id, job.owner_id)
         if not target_channel:
-            raise HTTPException(status_code=404, detail="Target channel not found")
+            raise ValueError(f"Target channel {job.target_channel_id} not found")
 
         bot = await resolve_for_channel(self.db, target_channel)
         retransmit = RetransmitService(self.db)

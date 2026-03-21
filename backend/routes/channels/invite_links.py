@@ -24,6 +24,7 @@ async def list_invite_links(
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     links = await service.list(channel_id)
+    await service.attach_bot_links(links, channel)
     return InviteLinkListResponse(items=links, total=len(links))
 
 
@@ -37,6 +38,7 @@ async def create_invite_link(
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     link = await service.create(channel, data, current_user.id)
+    await service.attach_bot_link(link, channel)
     return link
 
 
@@ -51,6 +53,7 @@ async def get_invite_link(
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     link = await service.get(link_id, channel_id)
     link = await service.sync_single(channel, link)
+    await service.attach_bot_link(link, channel)
     return link
 
 
@@ -65,6 +68,7 @@ async def update_invite_link(
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     link = await service.update(channel, link_id, data)
+    await service.attach_bot_link(link, channel)
     return link
 
 
@@ -103,4 +107,5 @@ async def sync_invite_links(
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
     links = await service.sync(channel)
+    await service.attach_bot_links(links, channel)
     return InviteLinkListResponse(items=links, total=len(links))

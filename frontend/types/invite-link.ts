@@ -15,6 +15,7 @@ export interface InviteLink {
   subscription_price: number;
   protection_type: string | null;
   entry_method: string | null;
+  bot_link: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -121,9 +121,6 @@ async def handle_instant_backup(
     if channel.backup_mode == BackupMode.DISABLED:
         return
 
-    if not should_retransmit(publication, channel):
-        return
-
     target_ids = channel.backup_target_ids or (
         [channel.backup_target_id] if channel.backup_target_id else []
     )
@@ -133,10 +130,17 @@ async def handle_instant_backup(
         for message in messages:
             saved_post = await backup_service.save_post(channel.id, message)
 
-        if saved_post and channel.backup_mode == BackupMode.INSTANT:
-            for target_id in target_ids:
-                if target_id != channel.id:
-                    await retransmit_service.retransmit_post(saved_post, target_id)
+        if saved_post and channel.backup_mode == BackupMode.INSTANT and target_ids:
+            if should_retransmit(publication, channel):
+                for target_id in target_ids:
+                    if target_id != channel.id:
+                        await retransmit_service.retransmit_post(saved_post, target_id)
+            else:
+                logger.info(
+                    "retransmit_skipped: channel=%s, pub=%s, content_type=%s, post_types=%s",
+                    channel.id, publication.id, publication.content_type,
+                    channel.backup_post_types,
+                )
     except Exception as error:
         await create_notification_callback(
             publication.id, "error",

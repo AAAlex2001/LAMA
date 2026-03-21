@@ -124,9 +124,15 @@ class WebhookDispatcher:
                 if update.message and update.message.text:
                     command = update.message.text.split()[0].lower()
                     if command == "/start":
-                        await WebhookDispatcher.handle_auth_command(
-                            db, update.message, bot_token
-                        )
+                        args = update.message.text.split()
+                        if len(args) > 1 and args[1].startswith("invite_"):
+                            await WebhookDispatcher.handle_invite_start(
+                                db, update.message, bot_token, args[1]
+                            )
+                        else:
+                            await WebhookDispatcher.handle_auth_command(
+                                db, update.message, bot_token
+                            )
                         await db.commit()
                         return
                     if command == "/guest":
@@ -229,6 +235,75 @@ class WebhookDispatcher:
                 text="❌ Ошибка при отправке ссылки. Попробуйте позже.",
                 reply_to_message_id=message.message_id,
             )
+
+    @staticmethod
+    async def handle_invite_start(
+        db: AsyncSession, message: Message, bot_token: str, param: str
+    ) -> None:
+        from sqlalchemy import select
+        from backend.models.channels import ChatInviteLink, ChannelGroup
+
+        bot = resolve_by_token(bot_token)
+
+        try:
+            link_id = int(param.replace("invite_", ""))
+        except ValueError:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text="Ссылка недействительна.",
+                reply_to_message_id=message.message_id,
+            )
+            return
+
+        result = await db.execute(
+            select(ChatInviteLink).where(ChatInviteLink.id == link_id)
+        )
+        link = result.scalar_one_or_none()
+
+        if not link or link.is_revoked:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text="Ссылка не найдена или была отозвана.",
+                reply_to_message_id=message.message_id,
+            )
+            return
+
+        channel_result = await db.execute(
+            select(ChannelGroup).where(ChannelGroup.id == link.channel_id)
+        )
+        channel = channel_result.scalar_one_or_none()
+        if not channel:
+            await bot.send_message(
+                chat_id=message.chat.id,
+                text="Канал не найден.",
+                reply_to_message_id=message.message_id,
+            )
+            return
+
+        first_name = html_escape(
+            message.from_user.first_name if message.from_user else "пользователь"
+        )
+        channel_title = html_escape(channel.title or "канал")
+
+        text = (
+            f"👋 <b>Привет, {first_name}!</b>\n\n"
+            f"Вас приглашают вступить в канал «{channel_title}»."
+        )
+        if link.creates_join_request:
+            text += "\n\nПосле перехода по ссылке ваша заявка будет рассмотрена администратором."
+
+        keyboard = build_keyboard([[{
+            "text": f"📢 Вступить в «{channel.title or 'канал'}»",
+            "url": link.invite_link,
+        }]])
+
+        await bot.send_message(
+            chat_id=message.chat.id,
+            text=text,
+            parse_mode="HTML",
+            reply_markup=keyboard,
+            reply_to_message_id=message.message_id,
+        )
 
     @staticmethod
     async def handle_guest_command(
