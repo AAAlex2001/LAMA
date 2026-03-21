@@ -29,7 +29,19 @@ type CalendarRequestMeta = {
 
 type FetchDataResult =
   | { type: 'grid'; merge?: boolean; keys: string[]; results: GridDayResult[]; request: CalendarRequestMeta }
-  | { type: 'list'; items: Draft[]; hasMore: boolean; rangeKey: string; request: CalendarRequestMeta };
+  | { type: 'list'; items: Draft[]; hasMore: boolean; total: number; rangeKey: string; request: CalendarRequestMeta };
+
+type DayCountItem = {
+  date: string;
+  count: number;
+};
+
+function getCountsTotal(res: { counts: Record<string, number> | DayCountItem[] }): number {
+  if (Array.isArray(res.counts)) {
+    return res.counts.reduce((sum, item) => sum + (item?.count || 0), 0);
+  }
+  return Object.values(res.counts || {}).reduce((sum, n) => sum + (n || 0), 0);
+}
 
 function botMessageToDraft(msg: BotMessageCompact): Draft {
   return {
@@ -122,13 +134,16 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
     const params = new URLSearchParams({
       page: '1', page_size: String(pageSize),
       start_date: `${startDate}T00:00:00`, end_date: `${endDate}T23:59:59`,
+      sort_order: s.listSortOrder ?? 'desc',
     });
     if (view === 'list') {
-      if (s.listSortOrder) params.set('sort_order', s.listSortOrder);
       if (s.listStatusFilter) params.set('status', s.listStatusFilter);
     }
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
+    const countsRes = await apiRequest<{ counts: Record<string, number> | DayCountItem[] }>(
+      `/publications/day-counts?start_date=${startDate}T00:00:00&end_date=${endDate}T23:59:59`,
+    );
     const rangeKey = view === 'list' && s.listRangeStart && s.listRangeEnd
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;
@@ -138,6 +153,8 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       ...(res.bot_messages ?? []).map(botMessageToDraft),
     ];
 
-    return { type: 'list', items: allItems, hasMore: res.items.length === pageSize, rangeKey, request };
+    const total = getCountsTotal(countsRes);
+
+    return { type: 'list', items: allItems, hasMore: allItems.length < total, total, rangeKey, request };
   },
 );

@@ -29,6 +29,7 @@ import {
   formatCompact,
   getMediaFilterTypes,
 } from '../utils/calendar-helpers';
+import { useInView } from '../store/useInView';
 import styles from './list-calendar-view.module.scss';
 
 interface ListCalendarViewProps {
@@ -78,9 +79,17 @@ export default function ListCalendarView({
   allTags,
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
+  const [scrollRootEl, setScrollRootEl] = React.useState<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  const scrollElRef = React.useRef<HTMLDivElement | null>(null);
-  const cleanupRef = React.useRef<(() => void) | null>(null);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1439px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const loadingRef = React.useRef(isLoadingMore);
   loadingRef.current = isLoadingMore;
   const hasMoreRef = React.useRef(hasMore);
@@ -88,31 +97,17 @@ export default function ListCalendarView({
   const onLoadMoreRef = React.useRef(onLoadMore);
   onLoadMoreRef.current = onLoadMore;
 
-  const checkNeedMore = React.useCallback(() => {
-    const el = scrollElRef.current;
-    if (!el || loadingRef.current || !hasMoreRef.current) return;
-    if (el.scrollHeight - el.scrollTop - el.clientHeight < 400) {
-      onLoadMoreRef.current?.();
-    }
-  }, []);
-
-  const scrollRootRef = React.useCallback((node: HTMLDivElement | null) => {
-    if (cleanupRef.current) {
-      cleanupRef.current();
-      cleanupRef.current = null;
-    }
-    scrollElRef.current = node;
-    if (!node) return;
-    node.addEventListener('scroll', checkNeedMore, { passive: true });
-    cleanupRef.current = () => node.removeEventListener('scroll', checkNeedMore);
-    requestAnimationFrame(checkNeedMore);
-  }, [checkNeedMore]);
-
-  React.useEffect(() => {
-    if (!isLoadingMore && hasMore) {
-      requestAnimationFrame(checkNeedMore);
-    }
-  }, [isLoadingMore, hasMore, checkNeedMore]);
+  const { ref: sentinelRef, inView } = useInView({
+    root: isMobile ? null : scrollRootEl,
+    rootMargin: '0px 0px 400px 0px',
+    threshold: 0,
+    skip: !hasMore || isLoadingMore || (!isMobile && !scrollRootEl),
+    onChange(inView) {
+      if (inView && hasMoreRef.current && !loadingRef.current) {
+        onLoadMoreRef.current?.();
+      }
+    },
+  });
 
   const filterConfigs = buildFilterConfigs(posts, {
     withDateSort: true,
@@ -121,6 +116,8 @@ export default function ListCalendarView({
     allChannels,
     allTags,
   });
+
+
   let filteredPosts = applyPostFilters(posts, activeFilters, mobileActiveFilters);
 
   const dateSort = activeFilters['date']?.[0];
@@ -203,7 +200,7 @@ export default function ListCalendarView({
         </div>
       ) : (
 
-      <div className={styles.scrollContainer} ref={scrollRootRef}>
+      <div className={styles.scrollContainer} ref={setScrollRootEl}>
         <div className={styles.desktopList}>
           {filteredPosts.map((post) => {
             const sourceDate = getSourceDate(post);
@@ -287,6 +284,7 @@ export default function ListCalendarView({
             <Loader size={18} color="blue" />
           </div>
         )}
+        {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
       </div>
       )}
     </>

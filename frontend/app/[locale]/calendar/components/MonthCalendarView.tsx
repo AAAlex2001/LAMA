@@ -14,6 +14,7 @@ import {
   getPreviewText,
   formatDateOnly,
   hasRepeat,
+  isBeforeToday,
 } from '../utils/calendar-helpers';
 import styles from './month-calendar-view.module.scss';
 
@@ -50,8 +51,19 @@ export default function MonthCalendarView({
   const dayPosts = weekItems[dayKey] || [];
   const isDayLoading = !!dayLoadingMap[dayKey];
   const hasDayMore = !!dayHasMoreMap[dayKey];
+  const isPast = isBeforeToday(sidebarDate);
 
   const scrollContainer = useScrollContainer();
+
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1439px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const loadingRef = React.useRef(isDayLoading);
   loadingRef.current = isDayLoading;
   const hasMoreRef = React.useRef(hasDayMore);
@@ -62,10 +74,10 @@ export default function MonthCalendarView({
   dayKeyRef.current = dayKey;
 
   const { ref: sentinelRef } = useInView({
-    root: scrollContainer,
+    root: isMobile ? null : scrollContainer,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore || isDayLoading,
+    skip: !hasDayMore || isDayLoading || (!isMobile && !scrollContainer),
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadRef.current(dayKeyRef.current);
@@ -88,15 +100,17 @@ export default function MonthCalendarView({
       </div>
 
       <div className={styles.postsCard}>
-        <div className={styles.createWrap}>
-          <Button
-            text="Создать публикацию"
-            showArrow={false}
-            active
-            className={styles.createBtn}
-            onClick={() => onAddPost(sidebarDate)}
-          />
-        </div>
+        {!isPast && (
+          <div className={styles.createWrap}>
+            <Button
+              text="Создать публикацию"
+              showArrow={false}
+              active
+              className={styles.createBtn}
+              onClick={() => onAddPost(sidebarDate)}
+            />
+          </div>
+        )}
 
         <div className={styles.postList}>
           {(isLoading || isDayLoading) && dayPosts.length === 0 ? (

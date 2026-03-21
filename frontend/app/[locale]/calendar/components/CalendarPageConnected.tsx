@@ -15,6 +15,7 @@ import CalendarPostModal from './CalendarPostModal';
 import {
   useAppDispatch,
   useAppSelector,
+  type RootState,
   setSelectedDate,
   setCurrentView,
   setListDateRange,
@@ -55,7 +56,7 @@ export default function CalendarPageConnected() {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
 
-  const calendar = useAppSelector((state) => state.calendar);
+  const calendar = useAppSelector((state: RootState) => state.calendar);
   const selectedDate = useAppSelector(selectSelectedDateObj);
   const sidebarDate = useAppSelector(selectSidebarDateObj);
   const listRangeStart = useAppSelector(selectListRangeStartObj);
