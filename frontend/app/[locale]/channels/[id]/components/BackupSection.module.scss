@@ -173,37 +173,24 @@
 /* Типы публикаций + Настройки ретранслятора — горизонтально на десктопе */
 .postTypesRow {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 40px;
   width: 100%;
-
-  @media (min-width: 1440px) {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 0;
-  }
 }
 
 .postTypesColumn {
   display: flex;
   flex-direction: column;
   gap: 5px;
-
-  @media (min-width: 1440px) {
-    flex: 0 0 auto;
-    padding: 12px 0;
-  }
+  flex: 1;
 }
 
 .contentTypesColumn {
   display: flex;
   flex-direction: column;
   gap: 5px;
-
-  @media (min-width: 1440px) {
-    flex: 1;
-    padding: 12px 0;
-  }
+  flex: 2;
 }
 
 .checkboxList {
@@ -226,7 +213,7 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 5px;
+  gap: 40px;
   width: 100%;
 }
 

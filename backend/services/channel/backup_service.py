@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 
 from aiogram.types import Message
 from fastapi import HTTPException
-from sqlalchemy import select, func, and_
+from sqlalchemy import select, func, and_, cast, String
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -149,14 +149,36 @@ class BackupService:
         )
         dates = dates_result.one()
 
+        size_result = await self.db.execute(
+            select(
+                func.coalesce(func.sum(func.length(cast(BackedUpPost.raw_data, String))), 0)
+                + func.coalesce(func.sum(func.length(BackedUpPost.text_content)), 0)
+            ).where(BackedUpPost.channel_id == channel_id)
+        )
+        size_bytes = size_result.scalar() or 0
+        backup_size_mb = size_bytes / (1024 * 1024)
+
         return {
             "channel_id": channel_id,
             "total_backed_up_posts": total_posts,
             "total_retransmissions": total_retransmissions,
-            "backup_size_mb": 0.0,
+            "backup_size_mb": round(backup_size_mb, 2),
             "first_post_date": dates[0],
             "last_post_date": dates[1],
         }
+
+    async def get_day_counts(self, channel_id: int) -> Dict[str, int]:
+        """Количество бекапнутых постов по дням."""
+        result = await self.db.execute(
+            select(
+                func.date(BackedUpPost.original_date).label("day"),
+                func.count(BackedUpPost.id).label("cnt"),
+            )
+            .where(BackedUpPost.channel_id == channel_id)
+            .group_by(func.date(BackedUpPost.original_date))
+            .order_by(func.date(BackedUpPost.original_date))
+        )
+        return {str(row.day): row.cnt for row in result.all()}
 
     async def find_by_media_group(self, channel_id: int, media_group_id: str) -> Optional[BackedUpPost]:
         """Найти пост по media_group_id."""

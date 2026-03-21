@@ -1,0 +1,106 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.contentTypes {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.grid {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.checkboxItem {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.selectorRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  gap: 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.selectorLabel {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.calendarWrap {
+  width: 100%;
+
+  :global(.react-calendar) {
+    width: 100% !important;
+  }
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  span {
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 17px;
+    color: #383f45;
+  }
+}
+
+.channelList {
+  display: flex;
+  flex-direction: column;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.channelItem {
+  display: flex;
+  align-items: center;
+  padding: 6px 0;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirmBtn {
+  flex: 1;
+}

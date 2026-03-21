@@ -264,16 +264,21 @@ class BackupJob(Base):
     target_channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
     
     status: Mapped[BackupStatus] = mapped_column(SQLEnum(BackupStatus), default=BackupStatus.IN_PROGRESS)
-    
+
+    # Фильтры восстановления
+    content_types: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    filter_start_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    filter_end_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Прогресс
     total_posts: Mapped[int] = mapped_column(Integer, default=0)
     processed_posts: Mapped[int] = mapped_column(Integer, default=0)
     failed_posts: Mapped[int] = mapped_column(Integer, default=0)
-    
+
     # Временные рамки
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
-    
+
     error_details: Mapped[Optional[dict]] = mapped_column(JSON)
     
     # Relationships

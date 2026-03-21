@@ -40,6 +40,9 @@ class BackedUpPostListResponse(BaseModel):
 class BackupJobCreate(BaseModel):
     source_channel_id: int
     target_channel_id: int
+    content_types: Optional[List[str]] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
 
 class BackupJobResponse(BaseModel):
@@ -66,6 +69,7 @@ class BackupJobListResponse(BaseModel):
 class RestoreBackupRequest(BaseModel):
     source_channel_id: int
     target_channel_id: int
+    content_types: Optional[List[str]] = None
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
 

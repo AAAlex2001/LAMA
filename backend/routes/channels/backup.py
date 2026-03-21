@@ -72,6 +72,17 @@ async def get_channel_stats(
     return ChannelStatsResponse(**stats)
 
 
+@router.get("/{channel_id}/backup-day-counts")
+async def get_backup_day_counts(
+    channel_id: int,
+    channel_service: ChannelService = Depends(get_channel_service),
+    backup_service: BackupService = Depends(get_backup_service),
+    current_user: User = Depends(get_current_user),
+):
+    await channel_service.get(channel_id, owner_id=current_user.id)
+    return await backup_service.get_day_counts(channel_id)
+
+
 @router.post("/backup-jobs", response_model=BackupJobResponse, status_code=201)
 async def create_backup_job(
     data: BackupJobCreate,
@@ -118,6 +129,9 @@ async def restore_backup(
     job_data = BackupJobCreate(
         source_channel_id=data.source_channel_id,
         target_channel_id=data.target_channel_id,
+        content_types=data.content_types,
+        start_date=data.start_date,
+        end_date=data.end_date,
     )
     job = await service.create(job_data, owner_id=current_user.id)
     process_backup_job.apply_async(args=[job.id], countdown=2)

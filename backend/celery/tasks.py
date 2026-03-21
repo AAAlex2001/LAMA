@@ -409,6 +409,11 @@ def process_backup_job(job_id: int) -> str:
 async def process_backup_job_async(job_id: int) -> str:
     async with CelerySessionLocal() as db:
         service = BackupJobService(db)
-        await service.process(job_id)
+        has_more = await service.process(job_id)
         await db.commit()
-    return f"backup_job_done:{job_id}"
+
+    if has_more:
+        process_backup_job.apply_async(args=[job_id], queue="low", countdown=3)
+        logger.info("Chained next backup post: job_id=%s, countdown=3", job_id)
+
+    return f"backup_job:{job_id}"

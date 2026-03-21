@@ -107,10 +107,41 @@ export const updateBackupAiPromptThunk = createAsyncThunk(
   },
 );
 
+export const fetchBackupStatsThunk = createAsyncThunk(
+  'backup/fetchStats',
+  async (channelId: number) => {
+    return apiRequest<{
+      channel_id: number;
+      total_backed_up_posts: number;
+      total_retransmissions: number;
+      backup_size_mb: number;
+      first_post_date: string | null;
+      last_post_date: string | null;
+    }>(`/channels/${channelId}/stats`);
+  },
+);
+
+export const fetchBackupDayCountsThunk = createAsyncThunk(
+  'backup/fetchDayCounts',
+  async (channelId: number) => {
+    return apiRequest<Record<string, number>>(`/channels/${channelId}/backup-day-counts`);
+  },
+);
+
 export const restoreBackupThunk = createAsyncThunk(
   'backup/restore',
   async (
-    { sourceChannelId, targetChannelId }: { sourceChannelId: number; targetChannelId: number },
+    {
+      sourceChannelId,
+      targetChannelId,
+      contentTypes,
+      dateRange,
+    }: {
+      sourceChannelId: number;
+      targetChannelId: number;
+      contentTypes?: string[];
+      dateRange?: { start: Date; end: Date } | null;
+    },
     { dispatch, rejectWithValue },
   ) => {
     dispatch(setSaving(true));
@@ -122,6 +153,9 @@ export const restoreBackupThunk = createAsyncThunk(
           body: JSON.stringify({
             source_channel_id: sourceChannelId,
             target_channel_id: targetChannelId,
+            content_types: contentTypes?.length ? contentTypes : null,
+            start_date: dateRange?.start?.toISOString() ?? null,
+            end_date: dateRange?.end?.toISOString() ?? null,
           }),
         },
       );

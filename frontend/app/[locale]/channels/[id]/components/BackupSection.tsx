@@ -20,6 +20,8 @@ import {
 } from '../../store/thunks/backup';
 import { API_BASE_URL, getAuthToken } from '@/store/api';
 import type { Channel } from '@/types/channel';
+import RestoreModal from './RestoreModal';
+import ExportModal from './ExportModal';
 import styles from './BackupSection.module.scss';
 
 interface BackupSectionProps {
@@ -63,6 +65,8 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
   const [search, setSearch] = useState('');
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restoreTargetId, setRestoreTargetId] = useState<number | null>(null);
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [exportModalOpen, setExportModalOpen] = useState(false);
 
   useEffect(() => {
     dispatch(initFromChannel({
@@ -315,7 +319,7 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                   intent="gradient"
                   size="md"
                   className={styles.archiveBtn}
-                  onClick={handleRestore}
+                  onClick={() => setRestoreModalOpen(true)}
                   disabled={saving || !restoreTargetId}
                 >
                   Восстановить данные
@@ -367,7 +371,7 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                   intent="gradient"
                   size="md"
                   className={styles.archiveBtn}
-                  onClick={handleExport}
+                  onClick={() => setExportModalOpen(true)}
                 >
                   Скачать
                 </Button>
@@ -376,6 +380,27 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
           )}
         </div>
       </div>
+
+      <RestoreModal
+        isOpen={restoreModalOpen}
+        onClose={() => setRestoreModalOpen(false)}
+        onConfirm={(contentTypes, dateRange) => {
+          if (!restoreTargetId) return;
+          dispatch(restoreBackupThunk({ sourceChannelId: channel.id, targetChannelId: restoreTargetId, contentTypes, dateRange }))
+            .unwrap()
+            .then(() => showSuccess('Восстановление запущено'))
+            .catch(() => {});
+        }}
+        channel={channel}
+        targetChannelName={restoreTargetName}
+      />
+
+      <ExportModal
+        isOpen={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onConfirm={() => handleExport()}
+        channel={channel}
+      />
     </div>
   );
 };
