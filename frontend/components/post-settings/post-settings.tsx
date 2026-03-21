@@ -5,7 +5,7 @@ import styles from './post-settings.module.scss';
 import Dropdown from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
-import CreateChannel from '@/components/create-channel/create-channel';
+import ConnectChannelModal from '@/components/connect-channel-modal';
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
@@ -28,15 +28,14 @@ interface PostSettingsProps {
   // Channels
   channelOptions: ChannelOption[];
   channelsLoading: boolean;
-  channelsSyncing: boolean;
   selectedCount: number;
   totalChannels: number;
   showCreateChannel: boolean;
   onFetchChannels: () => void;
   onChannelChange: (id: string, checked: boolean) => void;
-  onAddChannel: (link: string) => Promise<boolean>;
   onOpenCreateChannel: () => void;
   onCloseCreateChannel: () => void;
+  onChannelAdded?: () => void;
 
   // Repeat
   repeatInterval: RepeatOption;
@@ -94,15 +93,14 @@ export default function PostSettings({
 
   channelOptions,
   channelsLoading,
-  channelsSyncing,
   selectedCount,
   totalChannels,
   showCreateChannel,
   onFetchChannels,
   onChannelChange,
-  onAddChannel,
   onOpenCreateChannel,
   onCloseCreateChannel,
+  onChannelAdded,
 
   repeatInterval,
   repeatPublishTimeType,
@@ -263,17 +261,11 @@ export default function PostSettings({
       </div>
 
       {/* Модалка добавления канала */}
-      {showCreateChannel && (
-        <div className={styles.modalOverlay} onClick={onCloseCreateChannel}>
-          <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-            <CreateChannel
-              onSubmit={onAddChannel}
-              onCancel={onCloseCreateChannel}
-              loading={channelsSyncing}
-            />
-          </div>
-        </div>
-      )}
+      <ConnectChannelModal
+        isOpen={showCreateChannel}
+        onOpenChange={(open) => { if (!open) onCloseCreateChannel(); }}
+        onSuccess={onChannelAdded}
+      />
     </>
   );
 }

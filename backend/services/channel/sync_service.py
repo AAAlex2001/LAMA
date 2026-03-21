@@ -9,6 +9,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.config import TELEGRAM_BOT_TOKEN
 from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
@@ -35,7 +36,7 @@ class SyncService:
     ) -> ChannelGroup:
         """Синхронизировать канал через Telegram API."""
         if not bot_id and not token:
-            raise HTTPException(status_code=400, detail="Either bot_id or token must be provided")
+            token = TELEGRAM_BOT_TOKEN
         if not telegram_id and not username and not invite_link:
             raise HTTPException(status_code=400, detail="One of telegram_id, username, or invite_link must be provided")
 
@@ -46,8 +47,10 @@ class SyncService:
             bot_model = await bot_service.sync_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
 
-        bot_model = await self.get_bot_model(bot_id, owner_id)
-        user_telegram_id = await self.get_user_telegram_id(owner_id)
+        bot_model, user_telegram_id = await asyncio.gather(
+            self.get_bot_model(bot_id, owner_id),
+            self.get_user_telegram_id(owner_id),
+        )
         rate_limited_bot = get_cached_bot(bot_model.token)
         raw_bot = rate_limited_bot.bot
 

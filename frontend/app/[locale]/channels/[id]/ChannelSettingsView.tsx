@@ -6,7 +6,7 @@ import Loader from '@/components/loader/loader';
 import DeleteConfirmationModal from '@/components/modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppDispatch, useAppSelector } from '../store';
-import { deleteChannelThunk } from '@/app/[locale]/create-post/store/thunks/channels';
+import { deleteChannelThunk } from '@/store/channels';
 import type { Channel } from '@/types/channel';
 import ConnectChannelModal from '../components/ConnectChannelModal';
 import SettingsHeader from './components/SettingsHeader';

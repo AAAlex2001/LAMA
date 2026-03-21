@@ -7,7 +7,7 @@ import { Button } from '@/components/new-button';
 import Loader from '@/components/loader/loader';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppDispatch, useAppSelector } from './store';
-import { deleteChannelThunk } from '@/app/[locale]/create-post/store/thunks/channels';
+import { deleteChannelThunk } from '@/store/channels';
 import type { Channel } from '@/types/channel';
 import ChannelCard from './components/ChannelCard';
 import DeleteConfirmationModal from '@/components/modal';

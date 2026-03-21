@@ -1,4 +1,4 @@
-// Re-export from shared store
+export { default as channelsReducer } from './slice';
 export {
   setChannels,
   addChannel,
@@ -13,5 +13,6 @@ export {
   setTotal,
   clearError,
   resetChannels,
-} from '@/store/channels/slice';
-export { default } from '@/store/channels/slice';
+} from './slice';
+export { fetchChannelsThunk, addChannelThunk, deleteChannelThunk } from './thunks';
+export type { AddChannelParams } from './thunks';

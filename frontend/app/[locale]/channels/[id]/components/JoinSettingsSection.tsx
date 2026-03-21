@@ -8,7 +8,7 @@ import Input from '@/components/input/input';
 import Checkbox from '@/components/checkbox/checkbox';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppSelector } from '../../store';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
 import type { Channel } from '@/types/channel';
 import styles from './JoinSettingsSection.module.scss';
 
@@ -58,7 +58,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
         method: 'PUT',
         body: JSON.stringify({
           auto_approval_mode: newMode,
-          approval_criteria: newMode === 'CRITERIA' ? { required_channels: requiredChannels } : null,
+          approval_criteria: null,
         }),
       });
       setApprovalMode(data.auto_approval_mode);

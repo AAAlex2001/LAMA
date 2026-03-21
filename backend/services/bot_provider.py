@@ -13,6 +13,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.types import User
 from sqlalchemy import select
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -89,15 +90,20 @@ async def resolve_for_channel(
 ) -> RateLimitedBot:
     """Бот для конкретного канала."""
     if channel.bot_id:
+        state = sa_inspect(channel, raiseerr=False)
+        if state and "bot" not in state.unloaded:
+            bot_rel = channel.bot
+            if bot_rel and bot_rel.token:
+                return get_cached_bot(bot_rel.token)
         bot_model = await load_bot_model(db, channel.bot_id)
         if bot_model and bot_model.token:
             return get_cached_bot(bot_model.token)
-            
+
     if use_user_bots():
         raise ValueError(
             f"Channel {channel.telegram_id} has no bot assigned"
         )
-        
+
     return resolve_master()
 
 

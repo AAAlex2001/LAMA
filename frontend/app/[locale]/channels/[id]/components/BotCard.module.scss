@@ -133,6 +133,10 @@
 }
 
 .actionBtnBan {
+  svg {
+    transition: none;
+  }
+
   &:hover {
     background: rgba(227, 51, 38, 0.05);
     border-color: rgba(227, 51, 38, 0.3);
@@ -145,6 +149,10 @@
 
 .actionBtnDanger {
   border-color: #E33326;
+
+  svg {
+    transition: none;
+  }
 
   &:hover {
     background: rgba(227, 51, 38, 0.05);
@@ -174,7 +182,7 @@
   transition: background 0.2s, border-color 0.2s;
 
   svg {
-    transition: filter 0.2s;
+    transition: none;
   }
 
   &:hover {

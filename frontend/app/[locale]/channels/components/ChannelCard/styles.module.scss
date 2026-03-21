@@ -162,6 +162,10 @@
 }
 
 .actionBtnDelete {
+  svg {
+    transition: none;
+  }
+
   &:hover {
     background: rgba(227, 51, 38, 0.05);
     border-color: rgba(227, 51, 38, 0.3);

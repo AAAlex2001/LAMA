@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest } from '@/app/[locale]/create-post/store/thunks/api';
-import { updateChannel } from '@/app/[locale]/create-post/store/slices/channels';
+import { apiRequest } from '@/store/api';
+import { updateChannel } from '@/store/channels';
 import { setBot, setBotLoading, setBotToggling, setBotError, clearBot, BotData } from '../slices/bots';
 import type { Channel } from '@/types/channel';
 

@@ -108,7 +108,8 @@ export interface FetchChannelsParams {
 }
 
 export interface SyncChannelRequest {
-  token: string;
+  token?: string;
+  bot_id?: number;
   telegram_id?: number;
   username?: string;
   invite_link?: string;

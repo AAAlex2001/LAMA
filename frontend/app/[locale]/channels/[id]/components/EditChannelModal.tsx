@@ -89,7 +89,7 @@ const EditChannelModal: FC<EditChannelModalProps> = ({ channel, isOpen, onClose 
 
         <div className={styles.form}>
           {/* Photo */}
-          <div className={styles.field}>
+          <div className={`${styles.field} ${styles.avatarField}`}>
             <span className={styles.fieldLabel}>Фото канала</span>
             <div
               className={styles.avatarWrap}

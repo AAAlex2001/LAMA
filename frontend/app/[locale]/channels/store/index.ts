@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import channelsReducer from '@/app/[locale]/create-post/store/slices/channels';
+import { channelsReducer } from '@/store/channels';
 import botsReducer from './slices/bots';
 
 export const channelsPageStore = configureStore({

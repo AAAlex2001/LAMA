@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest, API_BASE_URL, getAuthToken } from '@/app/[locale]/create-post/store/thunks/api';
-import { updateChannel } from '@/app/[locale]/create-post/store/slices/channels';
+import { apiRequest, API_BASE_URL, getAuthToken } from '@/store/api';
+import { updateChannel } from '@/store/channels';
 import type { Channel } from '@/types/channel';
 
 interface UpdateChannelTelegramParams {
