@@ -58,7 +58,7 @@ const mapInviteLinkToInvitationLink = (link: InviteLink, channelName?: string): 
 
   return {
     id: link.id.toString(),
-    url: link.bot_link || link.invite_link,
+    url: link.invite_link,
     channelName: channelName || `Channel ${link.channel_id}`,
     expirationDate: expireDate,
     usedCount: link.member_count,

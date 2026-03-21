@@ -68,22 +68,6 @@ class JoinRequestHandler:
                     },
                 )
 
-                db_link = await self.get_db_link(join_request)
-
-                if db_link and db_link.creates_join_request:
-                    if db_link.protection_type == "captcha":
-                        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-                        if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-                            await self.handle_manual_mode(telegram_bot, join_request)
-                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
-                        else:
-                            await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                            await self.create_join_event(join_request, status=EventStatus.NEW)
-                    else:
-                        await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                        await self.create_join_event(join_request, status=EventStatus.NEW)
-                    return
-
                 should_approve, missing = (
                     await self.settings_service.check_approval_criteria(
                         self.bot_model, user_id
@@ -101,8 +85,19 @@ class JoinRequestHandler:
                     await self.db.flush()
 
                 if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                    await self.create_join_event(join_request, status=EventStatus.NEW)
+                    db_link = await self.get_db_link(join_request)
+
+                    if db_link and db_link.protection_type == "captcha":
+                        captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+                        if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+                            await self.handle_manual_mode(telegram_bot, join_request)
+                            await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
+                        else:
+                            await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
+                            await self.create_join_event(join_request, status=EventStatus.NEW)
+                    else:
+                        await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
+                        await self.create_join_event(join_request, status=EventStatus.NEW)
                     return
 
                 elif (
@@ -117,7 +112,7 @@ class JoinRequestHandler:
 
                 if should_approve:
                     approved = await self.approve_join_request(
-                        chat_id, user_id
+                        telegram_bot, chat_id, user_id
                     )
                     if approved:
                         if hasattr(join_request, "invite_link") and join_request.invite_link:
@@ -355,15 +350,13 @@ class JoinRequestHandler:
         except Exception as e:
             logger.warning(f"Не удалось обновить метрику invite link: {e}")
 
-    async def approve_join_request(self, chat_id: int, user_id: int) -> bool:
-        """Одобрить заявку на вступление"""
+    async def approve_join_request(self, telegram_bot, chat_id: int, user_id: int) -> bool:
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                await telegram_bot.approve_chat_join_request(
-                    chat_id=chat_id, user_id=user_id
-                )
-                logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
-                return True
+            await telegram_bot.approve_chat_join_request(
+                chat_id=chat_id, user_id=user_id
+            )
+            logger.info(f"Approved join request: user={user_id}, chat={chat_id}")
+            return True
         except TelegramAPIError as e:
             logger.warning(f"Approve join request failed: {e}")
             return False

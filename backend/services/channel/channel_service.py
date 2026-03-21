@@ -1,11 +1,11 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import List, Optional
 
 import asyncio
 import logging
 from fastapi import HTTPException
 
-from sqlalchemy import select, func, distinct, update
+from sqlalchemy import select, func, distinct
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -16,8 +16,6 @@ from backend.services.bot_provider import get_cached_bot
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 
 logger = logging.getLogger(__name__)
-
-REFRESH_THRESHOLD = timedelta(minutes=5)
 
 
 class ChannelService:
@@ -108,21 +106,14 @@ class ChannelService:
         channels = list(result.scalars().all())
 
         if force_refresh:
-            await self.refresh_stale_channels(channels, force=True)
+            await self.refresh_stale_channels(channels)
 
         return channels, total
 
-    async def refresh_stale_channels(self, channels: List[ChannelGroup], force: bool = False) -> None:
-        """Обновить данные каналов из Telegram, если last_sync_at устарел."""
+    async def refresh_stale_channels(self, channels: List[ChannelGroup]) -> None:
+        """Обновить данные каналов из Telegram."""
         now = datetime.now(timezone.utc)
-        if force:
-            stale = [ch for ch in channels if ch.bot and ch.bot.token]
-        else:
-            stale = [
-                ch for ch in channels
-                if ch.bot and ch.bot.token
-                and (not ch.last_sync_at or now - ch.last_sync_at > REFRESH_THRESHOLD)
-            ]
+        stale = [ch for ch in channels if ch.bot and ch.bot.token]
         if not stale:
             return
 

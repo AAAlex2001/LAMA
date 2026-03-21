@@ -43,7 +43,6 @@ class InviteLinkResponse(BaseModel):
     subscription_price: Optional[int]
     protection_type: Optional[str] = "none"
     entry_method: Optional[str] = "direct"
-    bot_link: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

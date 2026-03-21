@@ -52,6 +52,8 @@ async def get_bot_context(db: AsyncSession, chat_id: Optional[int], token: Optio
         if channel:
             if channel.bot and (not token or channel.bot.token == token):
                 return channel.bot
+            if channel.bot and token and channel.bot.token != token:
+                return None
 
     if token:
         bot_query = select(BotModel).where(BotModel.token == token).order_by(BotModel.id.asc()).limit(1)
