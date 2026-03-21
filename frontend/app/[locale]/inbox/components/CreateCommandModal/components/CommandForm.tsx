@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
@@ -41,6 +41,7 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
 
   useEffect(() => {
     dispatch(setCreateCommandModalOpen(true));
@@ -134,6 +135,7 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
         onKeyDown={handleKeyDown}
         onMediaTypeChange={(mediaType) => dispatch(setCommandResponseMediaType(mediaType))}
         onMediaUrlChange={(mediaUrl) => dispatch(setCommandResponseMediaUrl(mediaUrl))}
+        onMediaUploadLoadingChange={setIsMediaUploading}
       />
 
       <div className={styles.section}>
@@ -172,8 +174,8 @@ const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
           size="lg"
           onClick={handleSubmit}
           className={styles.submitButton}
-          disabled={isSubmitDisabled}
-          loading={formState.isSubmitting}
+          disabled={isSubmitDisabled || isMediaUploading}
+          loading={formState.isSubmitting || isMediaUploading}
           style={{ width: '100%' }}
         >
           Создать команду

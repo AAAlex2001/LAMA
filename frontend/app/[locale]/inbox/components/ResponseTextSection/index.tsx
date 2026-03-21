@@ -17,6 +17,7 @@ export interface ResponseTextSectionRef {
   limitedMediaFiles: MediaFile[];
   inlineButtonRows: ButtonRow[];
   handleClearMedia: () => void;
+  isMediaUploading: boolean;
 }
 
 interface ResponseTextSectionProps {
@@ -27,6 +28,7 @@ interface ResponseTextSectionProps {
   onMediaTypeChange?: (mediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT') => void;
   onMediaUrlChange?: (mediaUrl: string) => void;
   onMediaFilesChange?: (hasMedia: boolean) => void;
+  onMediaUploadLoadingChange?: (isLoading: boolean) => void;
   onCleanup?: () => void;
   placeholder?: string;
 }
@@ -39,11 +41,13 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
   onMediaTypeChange,
   onMediaUrlChange,
   onMediaFilesChange,
+  onMediaUploadLoadingChange,
   onCleanup,
   placeholder = 'Текст ответа на ключевое слово',
 }, ref) => {
   const {
     mediaFiles,
+    isUploadingMedia,
     fileInputRef,
     canAddMedia: _canAddMedia,
     handleFileUpload: _handleFileUpload,
@@ -77,16 +81,21 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
   const prevFirstFileIdRef = useRef(limitedMediaFiles[0]?.id);
   const prevFirstFileUrlRef = useRef(limitedMediaFiles[0]?.url);
   
-  const callbacksRef = useRef({ onMediaTypeChange, onMediaUrlChange, onMediaFilesChange });
+  const callbacksRef = useRef({ onMediaTypeChange, onMediaUrlChange, onMediaFilesChange, onMediaUploadLoadingChange });
   useEffect(() => {
-    callbacksRef.current = { onMediaTypeChange, onMediaUrlChange, onMediaFilesChange };
-  }, [onMediaTypeChange, onMediaUrlChange, onMediaFilesChange]);
+    callbacksRef.current = { onMediaTypeChange, onMediaUrlChange, onMediaFilesChange, onMediaUploadLoadingChange };
+  }, [onMediaTypeChange, onMediaUrlChange, onMediaFilesChange, onMediaUploadLoadingChange]);
 
   useImperativeHandle(ref, () => ({
     limitedMediaFiles,
     inlineButtonRows,
     handleClearMedia,
-  }), [limitedMediaFiles, inlineButtonRows, handleClearMedia]);
+    isMediaUploading: isUploadingMedia,
+  }), [limitedMediaFiles, inlineButtonRows, handleClearMedia, isUploadingMedia]);
+
+  useEffect(() => {
+    callbacksRef.current.onMediaUploadLoadingChange?.(isUploadingMedia);
+  }, [isUploadingMedia]);
 
   useEffect(() => {
     const currentLength = limitedMediaFiles.length;
@@ -175,7 +184,8 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
             intent="neutral"
             size="transparent"
             onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddMedia}
+            disabled={!canAddMedia || isUploadingMedia}
+            loading={isUploadingMedia}
           >
             <PaperclipIcon width={22} height={22} color="currentColor" />
           </Button>

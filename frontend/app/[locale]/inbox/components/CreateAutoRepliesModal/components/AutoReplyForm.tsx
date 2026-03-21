@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
@@ -49,6 +49,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   
   useEffect(() => {
     dispatch(setCreateAutoReplyModalOpen(true));
@@ -165,6 +166,7 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
         onKeyDown={handleKeyDown}
         onMediaTypeChange={(mediaType) => dispatch(setResponseMediaType(mediaType))}
         onMediaUrlChange={(mediaUrl) => dispatch(setResponseMediaUrl(mediaUrl))}
+        onMediaUploadLoadingChange={setIsMediaUploading}
       />
 
       <div className={styles.section}>
@@ -203,8 +205,8 @@ const AutoReplyForm: React.FC<AutoReplyFormProps> = ({
           size="lg"
           onClick={handleSubmit}
           className={styles.submitButton}
-          disabled={isSubmitDisabled}
-          loading={formState.isSubmitting}
+          disabled={isSubmitDisabled || isMediaUploading}
+          loading={formState.isSubmitting || isMediaUploading}
           style={{ width: '100%' }}
         >
           Создать автоответ

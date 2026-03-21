@@ -46,6 +46,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
   const selectedBotIds =  new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
   const [hasMediaFiles, setHasMediaFiles] = useState(false);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
   useEffect(() => {
     dispatch(setCreateGlobalMessageModalOpen(true));
     return () => {
@@ -134,6 +135,7 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
         onMediaTypeChange={(mediaType) => dispatch(setMediaType(mediaType))}
         onMediaUrlChange={(mediaUrl) => dispatch(setMediaUrl(mediaUrl))}
         onMediaFilesChange={setHasMediaFiles}
+        onMediaUploadLoadingChange={setIsMediaUploading}
       />
 
       <div className={styles.submitButtonContainer}>
@@ -143,8 +145,8 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
           size="lg"
           onClick={handleSubmit}
           className={styles.submitButton}
-          disabled={isSubmitDisabled || isLoading}
-          loading={isLoading}
+          disabled={isSubmitDisabled || isLoading || isMediaUploading}
+          loading={isLoading || isMediaUploading}
           style={{ width: '100%' }}
         >
           Отправить сообщение

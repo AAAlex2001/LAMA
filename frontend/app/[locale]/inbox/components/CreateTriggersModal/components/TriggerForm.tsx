@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
@@ -71,6 +71,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);
+  const [isMediaUploading, setIsMediaUploading] = useState(false);
 
   useEffect(() => {
     dispatch(setCreateTriggerModalOpen(true));
@@ -225,6 +226,7 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
           onKeyDown={handleKeyDown}
           onMediaTypeChange={(mediaType) => dispatch(setActionMediaType(mediaType))}
           onMediaUrlChange={(mediaUrl) => dispatch(setActionMediaUrl(mediaUrl))}
+          onMediaUploadLoadingChange={setIsMediaUploading}
         />
       )}
 
@@ -292,8 +294,8 @@ const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: pro
           size="lg"
           onClick={handleSubmit}
           className={styles.submitButton}
-          disabled={isSubmitDisabled}
-          loading={formState.isSubmitting}
+          disabled={isSubmitDisabled || isMediaUploading}
+          loading={formState.isSubmitting || isMediaUploading}
         >
           Создать триггер
         </Button>

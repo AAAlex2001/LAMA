@@ -8,6 +8,7 @@ const MAX_MEDIA_FILES = 10;
 
 export function useMessageMedia() {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canAddMedia = mediaFiles.length < MAX_MEDIA_FILES;
 
@@ -47,13 +48,23 @@ export function useMessageMedia() {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    await processFiles(Array.from(files));
-    e.target.value = '';
+    setIsUploadingMedia(true);
+    try {
+      await processFiles(Array.from(files));
+    } finally {
+      setIsUploadingMedia(false);
+      e.target.value = '';
+    }
   };
 
   const handleFilesAdd = async (files: File[]) => {
     if (!files.length) return;
-    await processFiles(files);
+    setIsUploadingMedia(true);
+    try {
+      await processFiles(files);
+    } finally {
+      setIsUploadingMedia(false);
+    }
   };
 
   const handleRemoveFile = (id: string) => {
@@ -85,6 +96,7 @@ export function useMessageMedia() {
 
   return {
     mediaFiles,
+    isUploadingMedia,
     fileInputRef,
     canAddMedia,
     handleFileUpload,

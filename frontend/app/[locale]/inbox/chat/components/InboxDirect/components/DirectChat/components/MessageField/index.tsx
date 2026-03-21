@@ -49,6 +49,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const {
     mediaFiles,
+    isUploadingMedia,
     fileInputRef,
     canAddMedia,
     handleFileUpload,
@@ -320,7 +321,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             intent="neutral"
             size="transparent"
             onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddMedia || !!editingMessage}
+            disabled={!canAddMedia || !!editingMessage || isUploadingMedia}
           >
             <PaperclipIcon width={22} height={22} color="currentColor" />
           </Button>
@@ -330,8 +331,8 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
               intent="primary"
               size="transparent"
               onClick={handleSendMessage}
-              disabled={isSendingMessage}
-              loading={isSendingMessage}
+              disabled={isSendingMessage || isUploadingMedia}
+              loading={isSendingMessage || isUploadingMedia}
             >
               <SendIcon width={22} height={22} />
             </Button>
