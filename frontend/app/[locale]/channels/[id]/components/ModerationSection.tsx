@@ -39,6 +39,7 @@ import {
 } from '../../store/slices/bannedWords';
 import {
   fetchBannedWordsThunk,
+  toggleBannedWordsThunk,
   addBannedWordThunk,
   deleteBannedWordThunk,
 } from '../../store/thunks/bannedWords';
@@ -135,9 +136,14 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
     }
   };
 
-  const handleBannedToggle = (enabled: boolean) => {
+  const handleBannedToggle = async (enabled: boolean) => {
     dispatch(setBannedWordsEnabled(enabled));
-    dispatch(setBannedEnabled(enabled));
+    try {
+      await dispatch(toggleBannedWordsThunk({ channelId: channel.id, enabled })).unwrap();
+      showSuccess(enabled ? 'Запрещённые слова включены' : 'Запрещённые слова отключены');
+    } catch {
+      showError('Ошибка сохранения');
+    }
   };
 
   const handleAddBannedWord = async () => {
@@ -301,9 +307,9 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
         {/* Запрещенные слова */}
         <div className={styles.settingRow}>
           <span className={styles.settingLabel}>Запрещенные слова</span>
-          <Toggle checked={bannedWordsEnabled} onChange={handleBannedToggle} />
+          <Toggle checked={bannedEnabled} onChange={handleBannedToggle} />
         </div>
-        {bannedWordsEnabled && (
+        {bannedEnabled && (
           <div className={styles.expandedContent}>
             <div className={styles.floodRow}>
               <span className={styles.floodRowLabel}>При наличии</span>

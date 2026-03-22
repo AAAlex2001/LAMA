@@ -135,6 +135,7 @@ class BotMessage(Base):
     __tablename__ = "bot_messages"
     __table_args__ = (
         Index("ix_bot_messages_bot_chat_created", "bot_id", "chat_id", "created_at"),
+        Index("ix_bot_messages_bot_chat_tg_msg", "bot_id", "chat_id", "telegram_message_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

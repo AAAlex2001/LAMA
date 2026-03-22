@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
@@ -20,6 +21,14 @@ from backend.services.channel.antispam_service import AntispamService
 from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.channel_service import ChannelService
 from backend.services.channel.flood_service import FloodService
+
+
+class BannedWordsToggle(BaseModel):
+    enabled: bool
+
+
+class BannedWordsToggleResponse(BaseModel):
+    banned_words_enabled: bool
 
 router = APIRouter()
 
@@ -101,6 +110,28 @@ async def get_flood_settings(
         flood_action=channel.flood_action,
         flood_mute_duration_minutes=channel.flood_mute_duration_minutes,
     )
+
+
+@router.put("/{channel_id}/banned-words/toggle", response_model=BannedWordsToggleResponse)
+async def toggle_banned_words(
+    channel_id: int,
+    data: BannedWordsToggle,
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    channel = await channel_service.get(channel_id, owner_id=current_user.id)
+    channel.banned_words_enabled = data.enabled
+    return BannedWordsToggleResponse(banned_words_enabled=channel.banned_words_enabled)
+
+
+@router.get("/{channel_id}/banned-words/toggle", response_model=BannedWordsToggleResponse)
+async def get_banned_words_toggle(
+    channel_id: int,
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    channel = await channel_service.get(channel_id, owner_id=current_user.id)
+    return BannedWordsToggleResponse(banned_words_enabled=channel.banned_words_enabled)
 
 
 @router.get("/{channel_id}/auto-delete", response_model=ChannelAutoDeleteSettingsResponse)

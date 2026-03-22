@@ -153,6 +153,9 @@ class ChannelGroup(Base):
     night_mode_block_media: Mapped[bool] = mapped_column(Boolean, default=False)
     night_mode_block_text: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Запрещённые слова
+    banned_words_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+
     # Настройки антифлуда
     flood_message_limit: Mapped[Optional[int]] = mapped_column(Integer)  # N сообщений
     flood_interval_seconds: Mapped[Optional[int]] = mapped_column(Integer)  # за M секунд

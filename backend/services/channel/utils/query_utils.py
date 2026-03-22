@@ -1,6 +1,6 @@
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -30,7 +30,12 @@ async def get_channel_by_telegram_id(
     db: AsyncSession,
     telegram_id: int,
 ) -> Optional[ChannelGroup]:
-    """Получить канал по Telegram ID."""
-    query = select(ChannelGroup).where(ChannelGroup.telegram_id == telegram_id)
+    """Получить канал по Telegram ID или linked_chat_id."""
+    query = select(ChannelGroup).where(
+        or_(
+            ChannelGroup.telegram_id == telegram_id,
+            ChannelGroup.linked_chat_id == telegram_id,
+        )
+    )
     result = await db.execute(query)
-    return result.scalar_one_or_none()
+    return result.scalars().first()

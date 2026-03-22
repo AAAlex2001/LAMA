@@ -16,6 +16,7 @@ from backend.services.channel import (
     FloodService,
 )
 from backend.models.channels import ActionType
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.webhook.base import (
     get_bot_session,
     TELEGRAM_API_TIMEOUT,
@@ -68,18 +69,23 @@ class ModerationHandler:
                 return
 
             # Проверка правил модерации (запрещённые слова)
-            moderation_service = ChannelModerationService(self.db)
-            rule = await asyncio.wait_for(
-                moderation_service.check_message_by_telegram_id(
-                    message.chat.id, text_content or ""
-                ),
-                timeout=DB_QUERY_TIMEOUT
+            channel = await asyncio.wait_for(
+                get_channel_by_telegram_id(self.db, message.chat.id),
+                timeout=DB_QUERY_TIMEOUT,
             )
-
-            if rule:
-                await self.apply_action(
-                    message, rule.action, rule.mute_duration_minutes
+            if channel and channel.banned_words_enabled:
+                moderation_service = ChannelModerationService(self.db)
+                rule = await asyncio.wait_for(
+                    moderation_service.check_message_by_telegram_id(
+                        message.chat.id, text_content or ""
+                    ),
+                    timeout=DB_QUERY_TIMEOUT
                 )
+
+                if rule:
+                    await self.apply_action(
+                        message, rule.action, rule.mute_duration_minutes
+                    )
 
         except asyncio.TimeoutError:
             logger.warning(

@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from typing import Tuple, List, Optional, Any, Dict
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, asc, and_, update
+from sqlalchemy.orm import defer
 from datetime import datetime, timezone
 
 from backend.models.direct import DirectChat
@@ -82,16 +83,29 @@ class DirectChatService:
         elif unread_filter == "read":
             base_filter.append(DirectChat.unread_count == 0)
 
-        last_msg_data = (
+        last_msg_ranked = (
             select(
                 BotMessage.bot_id,
                 BotMessage.chat_id,
                 BotMessage.text_content,
                 BotMessage.message_type,
                 BotMessage.created_at.label("last_message_at"),
+                func.row_number().over(
+                    partition_by=(BotMessage.bot_id, BotMessage.chat_id),
+                    order_by=desc(BotMessage.created_at),
+                ).label("rn"),
             )
-            .distinct(BotMessage.bot_id, BotMessage.chat_id)
-            .order_by(BotMessage.bot_id, BotMessage.chat_id, desc(BotMessage.created_at))
+        ).subquery("last_msg_ranked")
+
+        last_msg_data = (
+            select(
+                last_msg_ranked.c.bot_id,
+                last_msg_ranked.c.chat_id,
+                last_msg_ranked.c.text_content,
+                last_msg_ranked.c.message_type,
+                last_msg_ranked.c.last_message_at,
+            )
+            .where(last_msg_ranked.c.rn == 1)
             .subquery("last_msg_data")
         )
 
@@ -192,21 +206,21 @@ class DirectChatService:
             return [], 0
 
         base_filter = and_(BotMessage.bot_id == bot_id, BotMessage.chat_id == tg_chat_id)
-        base_query = select(BotMessage).where(base_filter)
 
-        count_query = select(func.count()).select_from(base_query.subquery())
+        count_query = select(func.count()).where(base_filter).select_from(BotMessage)
         total = (await self.db.execute(count_query)).scalar() or 0
+
+        msg_query = select(BotMessage).where(base_filter).options(defer(BotMessage.raw_data))
 
         if after_message_id:
             target = await self.db.execute(
-                select(BotMessage).where(base_filter, BotMessage.telegram_message_id == after_message_id)
+                select(BotMessage.id).where(base_filter, BotMessage.telegram_message_id == after_message_id)
             )
-            target_msg = target.scalar_one_or_none()
-            if target_msg:
+            target_id = target.scalar_one_or_none()
+            if target_id:
                 messages = list(
                     (await self.db.execute(
-                        select(BotMessage)
-                        .where(base_filter, BotMessage.id > target_msg.id)
+                        msg_query.where(BotMessage.id > target_id)
                         .order_by(desc(BotMessage.created_at))
                         .limit(limit)
                     )).scalars().all()
@@ -214,25 +228,23 @@ class DirectChatService:
             else:
                 messages = list(
                     (await self.db.execute(
-                        base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                        msg_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
                     )).scalars().all()
                 )
         elif around_message_id:
             half = limit // 2
             target = await self.db.execute(
-                select(BotMessage).where(base_filter, BotMessage.telegram_message_id == around_message_id)
+                select(BotMessage.id).where(base_filter, BotMessage.telegram_message_id == around_message_id)
             )
-            target_msg = target.scalar_one_or_none()
-            if target_msg:
+            target_id = target.scalar_one_or_none()
+            if target_id:
                 before_q = (
-                    select(BotMessage)
-                    .where(base_filter, BotMessage.id <= target_msg.id)
+                    msg_query.where(BotMessage.id <= target_id)
                     .order_by(desc(BotMessage.id))
                     .limit(half + 1)
                 )
                 after_q = (
-                    select(BotMessage)
-                    .where(base_filter, BotMessage.id > target_msg.id)
+                    msg_query.where(BotMessage.id > target_id)
                     .order_by(asc(BotMessage.id))
                     .limit(half)
                 )
@@ -243,18 +255,18 @@ class DirectChatService:
             else:
                 messages = list(
                     (await self.db.execute(
-                        base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                        msg_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
                     )).scalars().all()
                 )
         else:
             messages = list(
                 (await self.db.execute(
-                    base_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
+                    msg_query.order_by(desc(BotMessage.created_at)).offset(skip).limit(limit)
                 )).scalars().all()
             )
 
         reply_ids = [m.reply_to_message_id for m in messages if m.reply_to_message_id]
-        reply_texts = {}
+        reply_texts: Dict[int, Dict[str, Any]] = {}
         if reply_ids:
             reply_q = select(
                 BotMessage.telegram_message_id,
@@ -266,44 +278,81 @@ class DirectChatService:
                 base_filter, BotMessage.telegram_message_id.in_(reply_ids)
             )
             rows = (await self.db.execute(reply_q)).all()
+            type_labels = {
+                MessageType.PHOTO: "Фотография",
+                MessageType.VIDEO: "Видео",
+                MessageType.DOCUMENT: "Документ",
+                MessageType.AUDIO: "Аудио",
+                MessageType.VOICE: "Голосовое",
+                MessageType.ANIMATION: "GIF",
+                MessageType.STICKER: "Стикер",
+            }
             for tg_msg_id, text, msg_type, media_url, is_sys in rows:
-                if text:
-                    reply_texts[tg_msg_id] = {
-                        "text": text[:200],
-                        "media_url": media_url if is_sys else None,
-                        "message_type": msg_type.value if msg_type else None,
-                        "is_post": is_sys or False,
-                    }
-                else:
-                    type_labels = {
-                        MessageType.PHOTO: "Фотография",
-                        MessageType.VIDEO: "Видео",
-                        MessageType.DOCUMENT: "Документ",
-                        MessageType.AUDIO: "Аудио",
-                        MessageType.VOICE: "Голосовое",
-                        MessageType.ANIMATION: "GIF",
-                        MessageType.STICKER: "Стикер",
-                    }
-                    label = type_labels.get(msg_type, "Медиа")
-                    reply_texts[tg_msg_id] = {
-                        "text": label,
-                        "media_url": media_url if is_sys else None,
-                        "message_type": msg_type.value if msg_type else None,
-                        "is_post": is_sys or False,
-                    }
+                reply_texts[tg_msg_id] = {
+                    "text": text[:200] if text else type_labels.get(msg_type, "Медиа"),
+                    "media_url": media_url if is_sys else None,
+                    "message_type": msg_type.value if msg_type else None,
+                    "is_post": is_sys or False,
+                }
 
         enriched = []
         for m in messages:
-            data = {c.name: getattr(m, c.name) for c in m.__table__.columns}
-            data["media_group_id"] = m.media_group_id
-            data["media_name"] = m.media_name
-            data["media_size"] = m.media_size
+            data = {
+                "id": m.id,
+                "bot_id": m.bot_id,
+                "telegram_message_id": m.telegram_message_id,
+                "chat_id": m.chat_id,
+                "user_id": m.user_id,
+                "message_type": m.message_type,
+                "text_content": m.text_content,
+                "media_file_id": m.media_file_id,
+                "media_url": m.media_url,
+                "reply_to_message_id": m.reply_to_message_id,
+                "is_incoming": m.is_incoming,
+                "is_system": m.is_system,
+                "created_at": m.created_at,
+                "media_group_id": None,
+                "media_name": None,
+                "media_size": None,
+            }
             reply_data = reply_texts.get(m.reply_to_message_id) if m.reply_to_message_id else None
             data["reply_message_text"] = reply_data["text"] if reply_data else None
             data["reply_media_url"] = reply_data["media_url"] if reply_data else None
             data["reply_message_type"] = reply_data["message_type"] if reply_data else None
             data["reply_is_post"] = reply_data["is_post"] if reply_data else False
             enriched.append(data)
+
+        if enriched:
+            msg_ids = [d["id"] for d in enriched]
+            raw_q = select(
+                BotMessage.id,
+                BotMessage.raw_data,
+            ).where(
+                BotMessage.id.in_(msg_ids),
+                BotMessage.raw_data.isnot(None),
+            )
+            raw_rows = (await self.db.execute(raw_q)).all()
+            raw_map: Dict[int, dict] = {row[0]: row[1] for row in raw_rows if row[1]}
+
+            for data in enriched:
+                raw = raw_map.get(data["id"])
+                if not raw:
+                    continue
+                data["media_group_id"] = str(raw["media_group_id"]) if raw.get("media_group_id") else None
+                doc = raw.get("document")
+                audio = raw.get("audio")
+                voice = raw.get("voice")
+                if doc and doc.get("file_name"):
+                    data["media_name"] = str(doc["file_name"])
+                elif audio:
+                    data["media_name"] = str(audio.get("file_name") or audio.get("title") or "")
+                elif voice and voice.get("file_unique_id"):
+                    data["media_name"] = f"voice_{voice['file_unique_id']}"
+                for key in ("document", "audio", "voice", "video", "animation"):
+                    media = raw.get(key)
+                    if media and media.get("file_size") is not None:
+                        data["media_size"] = int(media["file_size"])
+                        break
 
         return enriched, total
 
@@ -339,15 +388,18 @@ class DirectChatService:
 
     async def reset_unread(self, bot_id: int, tg_chat_id: int, owner_id: int) -> bool:
         """Сбросить счетчик непрочитанных (с проверкой владельца)."""
+        bot_check = await self.db.execute(
+            select(Bot.id).where(and_(Bot.id == bot_id, Bot.owner_id == owner_id))
+        )
+        if not bot_check.scalar_one_or_none():
+            return False
+
         stmt = (
             update(DirectChat)
             .where(
                 and_(
                     DirectChat.bot_id == bot_id,
                     DirectChat.tg_chat_id == tg_chat_id,
-                    DirectChat.bot_id.in_(
-                        select(Bot.id).where(Bot.owner_id == owner_id)
-                    ),
                 )
             )
             .values(unread_count=0)

@@ -30,18 +30,42 @@ export const fetchBannedWordsThunk = createAsyncThunk(
   'bannedWords/fetch',
   async (channelId: number, { dispatch }) => {
     try {
-      const data = await apiRequest<RulesListResponse>(`/channels/${channelId}/moderation/rules`);
-      const rules = data.items.map((r) => ({
+      const [rulesData, toggleData] = await Promise.all([
+        apiRequest<RulesListResponse>(`/channels/${channelId}/moderation/rules`),
+        apiRequest<{ banned_words_enabled: boolean }>(`/channels/${channelId}/banned-words/toggle`),
+      ]);
+      const rules = rulesData.items.map((r) => ({
         id: r.id,
         phrase: r.phrase,
         action: r.action,
         mute_duration_minutes: r.mute_duration_minutes,
       }));
       dispatch(setRules(rules));
-      dispatch(setEnabled(rules.length > 0));
+      dispatch(setEnabled(toggleData.banned_words_enabled));
       return rules;
     } catch {
       return [];
+    }
+  },
+);
+
+export const toggleBannedWordsThunk = createAsyncThunk(
+  'bannedWords/toggle',
+  async (
+    { channelId, enabled }: { channelId: number; enabled: boolean },
+    { dispatch, rejectWithValue },
+  ) => {
+    dispatch(setEnabled(enabled));
+    try {
+      await apiRequest(`/channels/${channelId}/banned-words/toggle`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      });
+      return enabled;
+    } catch (error) {
+      dispatch(setEnabled(!enabled));
+      const msg = error instanceof Error ? error.message : 'Ошибка сохранения';
+      return rejectWithValue(msg);
     }
   },
 );
