@@ -10,6 +10,7 @@ import styles from './SettingsHeader.module.scss';
 const SETTINGS_TABS = [
   { id: 'settings', label: 'Общая информация' },
   { id: 'backup', label: 'Резервное копирование' },
+  { id: 'moderation', label: 'Модерация' },
 ];
 
 interface SettingsHeaderProps {

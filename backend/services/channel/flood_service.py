@@ -77,14 +77,11 @@ class FloodService:
         if not channel:
             raise HTTPException(status_code=404, detail='Channel not found')
 
-        if flood_message_limit is not None:
-            channel.flood_message_limit = flood_message_limit
-        if flood_interval_seconds is not None:
-            channel.flood_interval_seconds = flood_interval_seconds
+        channel.flood_message_limit = flood_message_limit
+        channel.flood_interval_seconds = flood_interval_seconds
         if flood_action is not None:
             channel.flood_action = flood_action
-        if flood_mute_duration_minutes is not None:
-            channel.flood_mute_duration_minutes = flood_mute_duration_minutes
+        channel.flood_mute_duration_minutes = flood_mute_duration_minutes
 
         channel.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
