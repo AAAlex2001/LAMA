@@ -86,7 +86,10 @@ class WebhookDispatcher:
 
                 handler = ModerationHandler(db, bot_model)
                 await handler.process(message)
-                await db.commit()
+                try:
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
         except Exception as e:
             logger.error("Moderation processing error: %s", e, exc_info=True)
 

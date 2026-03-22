@@ -73,6 +73,9 @@ class FloodService:
         )
 
         if state.message_count > channel.flood_message_limit:
+            state.message_count = 0
+            state.window_start = now
+            await self.db.flush()
             return True, channel.flood_action, channel.flood_mute_duration_minutes
 
         return False, None, None
