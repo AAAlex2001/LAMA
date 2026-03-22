@@ -5,7 +5,6 @@ import type { Draft } from '@/types/post';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
-import { useScrollContainer } from '@/components/app-layout';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import { useInView } from '../store/useInView';
 import {
@@ -53,16 +52,7 @@ export default function MonthCalendarView({
   const hasDayMore = !!dayHasMoreMap[dayKey];
   const isPast = isBeforeToday(sidebarDate);
 
-  const scrollContainer = useScrollContainer();
-
-  const [isMobile, setIsMobile] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1439px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  const [postListEl, setPostListEl] = React.useState<HTMLDivElement | null>(null);
 
   const loadingRef = React.useRef(isDayLoading);
   loadingRef.current = isDayLoading;
@@ -74,10 +64,10 @@ export default function MonthCalendarView({
   dayKeyRef.current = dayKey;
 
   const { ref: sentinelRef } = useInView({
-    root: isMobile ? null : scrollContainer,
+    root: postListEl,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore || isDayLoading || (!isMobile && !scrollContainer),
+    skip: !hasDayMore || isDayLoading || !postListEl,
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadRef.current(dayKeyRef.current);
@@ -112,7 +102,7 @@ export default function MonthCalendarView({
           </div>
         )}
 
-        <div className={styles.postList}>
+        <div className={styles.postList} ref={setPostListEl}>
           {(isLoading || isDayLoading) && dayPosts.length === 0 ? (
             <div className={styles.loadMoreWrap}>
               <Loader size={20} color="blue" />

@@ -52,6 +52,17 @@
   overflow-y: hidden;
 }
 
+.pageMonth {
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
+  min-height: auto;
+  overflow: hidden;
+
+  @media (min-width: 1440px) {
+    overflow: hidden;
+  }
+}
+
 .mainContentWeek {
   min-height: 0;
   overflow: hidden;
@@ -71,10 +82,6 @@
 }
 
 .monthMode {
-  @media (max-width: 1439px) {
-    overflow: visible;
-    min-height: auto;
-  }
 }
 
 .monthDesktopGrid {

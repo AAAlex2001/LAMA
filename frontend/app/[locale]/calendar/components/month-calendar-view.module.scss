@@ -6,6 +6,9 @@
   max-width: 100%;
   margin: 0;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 
   @media (min-width: 1440px) {
     display: none;
@@ -49,6 +52,9 @@
   gap: 14px;
   background: #FFFFFF;
   border-radius: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .createWrap {
@@ -74,6 +80,9 @@
   width: 100%;
   gap: 4px;
   padding-bottom: 30px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .loadMoreWrap {

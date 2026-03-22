@@ -330,7 +330,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
               variant="ghost"
               intent="primary"
               size="transparent"
-              onClick={handleSendMessage}
+              onClick={isSendingMessage || isUploadingMedia ? undefined : handleSendMessage}
               disabled={isSendingMessage || isUploadingMedia}
               loading={isSendingMessage || isUploadingMedia}
             >
