@@ -37,6 +37,11 @@ class ModerationHandler:
         """Обработка модерации сообщения"""
         try:
             text_content = message.text or message.caption
+            logger.info(
+                "Moderation check: chat=%s type=%s from_user=%s",
+                message.chat.id, message.chat.type,
+                message.from_user.id if message.from_user else None,
+            )
 
             # Проверка антифлуда (только для групп с from_user)
             if (message.chat.type in {"group", "supergroup"}

@@ -75,6 +75,16 @@ class DirectChatService:
         unread_filter: Optional[str] = None,
     ) -> Tuple[List[Dict[str, Any]], int]:
         """Получить список чатов с превью последнего сообщения (1 запрос вместо N+1)."""
+        type_labels = {
+            MessageType.PHOTO: "Фотография",
+            MessageType.VIDEO: "Видео",
+            MessageType.DOCUMENT: "Документ",
+            MessageType.AUDIO: "Аудио",
+            MessageType.VOICE: "Голосовое",
+            MessageType.ANIMATION: "GIF",
+            MessageType.STICKER: "Стикер",
+        }
+
         base_filter = [Bot.owner_id == owner_id]
         if bot_id:
             base_filter.append(DirectChat.bot_id == bot_id)
@@ -83,49 +93,13 @@ class DirectChatService:
         elif unread_filter == "read":
             base_filter.append(DirectChat.unread_count == 0)
 
-        last_msg_ranked = (
-            select(
-                BotMessage.bot_id,
-                BotMessage.chat_id,
-                BotMessage.text_content,
-                BotMessage.message_type,
-                BotMessage.created_at.label("last_message_at"),
-                func.row_number().over(
-                    partition_by=(BotMessage.bot_id, BotMessage.chat_id),
-                    order_by=desc(BotMessage.created_at),
-                ).label("rn"),
-            )
-        ).subquery("last_msg_ranked")
-
-        last_msg_data = (
-            select(
-                last_msg_ranked.c.bot_id,
-                last_msg_ranked.c.chat_id,
-                last_msg_ranked.c.text_content,
-                last_msg_ranked.c.message_type,
-                last_msg_ranked.c.last_message_at,
-            )
-            .where(last_msg_ranked.c.rn == 1)
-            .subquery("last_msg_data")
-        )
-
         query = (
             select(
                 DirectChat,
-                last_msg_data.c.text_content.label("_last_text"),
-                last_msg_data.c.message_type.label("_last_type"),
-                last_msg_data.c.last_message_at.label("_last_at"),
                 Bot.username.label("_bot_username"),
                 Bot.first_name.label("_bot_first_name"),
             )
             .join(Bot, DirectChat.bot_id == Bot.id)
-            .outerjoin(
-                last_msg_data,
-                and_(
-                    DirectChat.bot_id == last_msg_data.c.bot_id,
-                    DirectChat.tg_chat_id == last_msg_data.c.chat_id,
-                ),
-            )
             .where(and_(*base_filter))
         )
 
@@ -148,24 +122,15 @@ class DirectChatService:
         enriched_chats = []
         for row in rows:
             chat = row[0]
-            last_text = row[1]
-            last_type = row[2]
-            last_at = row[3]
-            bot_username = row[4]
-            bot_first_name = row[5]
+            bot_username = row[1]
+            bot_first_name = row[2]
 
             preview = None
-            if last_at is not None:
-                if last_type == MessageType.TEXT or last_type == MessageType.TEXT.value:
-                    preview = last_text
-                elif last_type == MessageType.PHOTO or last_type == MessageType.PHOTO.value:
-                    preview = "Фотография"
-                elif last_type == MessageType.VIDEO or last_type == MessageType.VIDEO.value:
-                    preview = "Видео"
-                elif last_type == MessageType.DOCUMENT or last_type == MessageType.DOCUMENT.value:
-                    preview = "Документ"
+            if chat.last_message_at is not None:
+                if chat.last_message_type == MessageType.TEXT or chat.last_message_type is None:
+                    preview = chat.last_message_text
                 else:
-                    preview = "Медиа"
+                    preview = type_labels.get(chat.last_message_type, "Медиа")
 
             enriched_chats.append({
                 "id": chat.id,
@@ -184,7 +149,7 @@ class DirectChatService:
                 "bot_username": bot_username,
                 "bot_first_name": bot_first_name,
                 "last_message_preview": preview,
-                "last_message_at": last_at,
+                "last_message_at": chat.last_message_at,
             })
 
         return enriched_chats, total
@@ -408,17 +373,55 @@ class DirectChatService:
         await self.db.flush()
         return result.rowcount > 0
 
-    async def increment_unread(self, bot_id: int, tg_chat_id: int) -> None:
-        """Атомарно увеличить счетчик непрочитанных сообщений."""
+    async def increment_unread(
+        self,
+        bot_id: int,
+        tg_chat_id: int,
+        last_message_text: Optional[str] = None,
+        last_message_type: Optional[str] = None,
+    ) -> None:
+        """Атомарно увеличить счетчик непрочитанных и обновить превью последнего сообщения."""
+        now = datetime.now(timezone.utc)
+        values: dict = {
+            "unread_count": DirectChat.unread_count + 1,
+            "updated_at": now,
+            "last_message_at": now,
+        }
+        if last_message_text is not None:
+            values["last_message_text"] = last_message_text[:200]
+        if last_message_type is not None:
+            values["last_message_type"] = last_message_type
         stmt = (
             update(DirectChat)
             .where(
                 and_(DirectChat.bot_id == bot_id, DirectChat.tg_chat_id == tg_chat_id)
             )
-            .values(
-                unread_count=DirectChat.unread_count + 1,
-                updated_at=datetime.now(timezone.utc),
-            )
+            .values(**values)
+        )
+        await self.db.execute(stmt)
+        await self.db.flush()
+
+    async def update_last_message(
+        self,
+        bot_id: int,
+        tg_chat_id: int,
+        text: Optional[str],
+        message_type: Optional[str],
+    ) -> None:
+        """Обновить превью последнего сообщения (для исходящих)."""
+        now = datetime.now(timezone.utc)
+        values: dict = {
+            "updated_at": now,
+            "last_message_at": now,
+        }
+        if text is not None:
+            values["last_message_text"] = text[:200]
+        if message_type is not None:
+            values["last_message_type"] = message_type
+        stmt = (
+            update(DirectChat)
+            .where(and_(DirectChat.bot_id == bot_id, DirectChat.tg_chat_id == tg_chat_id))
+            .values(**values)
         )
         await self.db.execute(stmt)
         await self.db.flush()

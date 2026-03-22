@@ -9,9 +9,11 @@ from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.bots import Bot as BotModel
+from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, MessageType
+from backend.models.channels import ChannelGroup
 from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
 from backend.services.channel.utils.message_utils import is_system_message
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT, get_bot_session
@@ -65,7 +67,13 @@ class MessageHandler:
                 tg_first_name=message.from_user.first_name,
                 tg_last_name=message.from_user.last_name,
             )
-            await chat_svc.increment_unread(self.bot_model.id, message.chat.id)
+            msg_type = self.detect_message_type(message)
+            await chat_svc.increment_unread(
+                self.bot_model.id,
+                message.chat.id,
+                last_message_text=text_content,
+                last_message_type=msg_type,
+            )
             self.saved_msg = await msg_svc.save_incoming_message(
                 bot_id=self.bot_model.id,
                 owner_id=self.bot_model.owner_id,
@@ -130,10 +138,6 @@ class MessageHandler:
             return None
 
         try:
-            from sqlalchemy import select, or_
-            from backend.models.channels import ChannelGroup
-            from backend.models.bots import BotMessage as BotMessageModel
-
             chat_id = message.chat.id
             query = select(ChannelGroup).where(
                 ChannelGroup.owner_id == self.bot_model.owner_id,
@@ -197,7 +201,13 @@ class MessageHandler:
                 self.db.add(post_msg)
                 await self.db.flush()
 
-            await chat_svc.increment_unread(self.bot_model.id, chat_id)
+            msg_type = self.detect_message_type(message)
+            await chat_svc.increment_unread(
+                self.bot_model.id,
+                chat_id,
+                last_message_text=text_content,
+                last_message_type=msg_type,
+            )
 
             self.saved_msg = await msg_svc.save_incoming_message(
                 bot_id=self.bot_model.id,
@@ -245,6 +255,24 @@ class MessageHandler:
             logger.error("Failed to handle group comment: %s", e, exc_info=True)
 
         return None
+
+    @staticmethod
+    def detect_message_type(message: Message) -> MessageType:
+        if message.photo:
+            return MessageType.PHOTO
+        if message.video:
+            return MessageType.VIDEO
+        if message.document:
+            return MessageType.DOCUMENT
+        if message.audio:
+            return MessageType.AUDIO
+        if message.voice:
+            return MessageType.VOICE
+        if message.animation:
+            return MessageType.ANIMATION
+        if message.sticker:
+            return MessageType.STICKER
+        return MessageType.TEXT
 
     async def process_side_effects(self, message: Message) -> None:
         """Обработка триггеров, автоответов, медиа и прочей логики."""

@@ -5,7 +5,7 @@ import logging
 from typing import Optional
 from contextlib import asynccontextmanager
 
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -45,9 +45,13 @@ async def get_master_bot_model(db: AsyncSession) -> Optional[BotModel]:
 
 async def get_bot_context(db: AsyncSession, chat_id: Optional[int], token: Optional[str]) -> Optional[BotModel]:
     if chat_id:
-        channel_query = select(ChannelGroup).where(ChannelGroup.telegram_id == chat_id).options(joinedload(ChannelGroup.bot))
+        channel_query = (
+            select(ChannelGroup)
+            .where(or_(ChannelGroup.telegram_id == chat_id, ChannelGroup.linked_chat_id == chat_id))
+            .options(joinedload(ChannelGroup.bot))
+        )
         channel_res = await db.execute(channel_query)
-        channel = channel_res.unique().scalar_one_or_none()
+        channel = channel_res.unique().scalars().first()
 
         if channel:
             if channel.bot and (not token or channel.bot.token == token):
@@ -66,11 +70,11 @@ async def get_bot_by_chat_id(db: AsyncSession, chat_id: int) -> Optional[BotMode
     """Найти бота по telegram chat_id через привязку канала."""
     query = (
         select(ChannelGroup)
-        .where(ChannelGroup.telegram_id == chat_id)
+        .where(or_(ChannelGroup.telegram_id == chat_id, ChannelGroup.linked_chat_id == chat_id))
         .options(joinedload(ChannelGroup.bot))
     )
     result = await db.execute(query)
-    channel = result.unique().scalar_one_or_none()
+    channel = result.unique().scalars().first()
     if channel and channel.bot:
         return channel.bot
     return await get_master_bot_model(db)

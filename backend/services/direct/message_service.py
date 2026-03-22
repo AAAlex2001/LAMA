@@ -11,6 +11,7 @@ from backend.models.direct import DirectChat
 from backend.models.bots import BotMessage, Bot, MessageType
 from backend.schemas.bots.messages import SendMessageRequest
 from backend.schemas.direct.message import EditMessageRequest
+from backend.services.direct.chat_service import DirectChatService
 from backend.services.publications.utils.media_utils import is_audio_url, is_document_url, is_video_url
 from backend.services.webhook.base import get_bot_session
 from backend.utils.keyboard import build_keyboard
@@ -309,7 +310,15 @@ class DirectMessageService:
             await self.db.refresh(message)
 
         if saved_messages:
-            await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, saved_messages[-1].id)
+            last = saved_messages[-1]
+            chat_svc = DirectChatService(self.db)
+            await chat_svc.update_last_message(
+                bot_id=bot_id,
+                tg_chat_id=tg_chat_id,
+                text=last.text_content,
+                message_type=last.message_type,
+            )
+            await self.broadcast_new_message(owner_id, bot_id, tg_chat_id, last.id)
 
         return saved_messages
 

@@ -8,6 +8,7 @@ import os
 from html import escape as html_escape
 from urllib.parse import quote as url_quote
 
+import aiohttp
 from aiogram.types import Update, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -76,7 +77,7 @@ class WebhookDispatcher:
                 bot_model = await get_bot_context(db, message.chat.id, bot_token)
 
                 if not bot_model:
-                    logger.warning(
+                    logger.debug(
                         "Bot with requested token/chat not found in DB")
                     return
 
@@ -113,7 +114,7 @@ class WebhookDispatcher:
                 bot_model = await get_bot_context(db, chat_id, bot_token)
 
                 if not bot_model:
-                    logger.warning(
+                    logger.debug(
                         "Bot with requested token/chat not found in DB")
                     return
 
@@ -242,9 +243,6 @@ class WebhookDispatcher:
         bot = resolve_by_token(bot_token)
 
         try:
-            import aiohttp
-
-            # Получаем URL бэкенда и фронтенда
             api_base_url = os.getenv(
                 "API_BASE_URL", "http://localhost:8000/api")
             frontend_url = os.getenv("FRONTEND_URL", "https://lamaplanner.com")

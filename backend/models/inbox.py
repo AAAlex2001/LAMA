@@ -10,6 +10,7 @@ class InboxEvent(Base):
     __table_args__ = (
         Index("ix_inbox_events_owner_created", "owner_id", "created_at"),
         Index("ix_inbox_events_owner_status_created", "owner_id", "status", "created_at"),
+        Index("ix_inbox_events_owner_category_created", "owner_id", "category", "created_at"),
     )
 
     id = Column(Integer, primary_key=True, index=True)
