@@ -17,10 +17,15 @@ interface ModerationState {
   muteHours: number;
   muteMinutes: number;
 
-  antispamEnabled: boolean;
   bannedWordsEnabled: boolean;
+
   mediaBlockEnabled: boolean;
+  mediaBlockTypes: string[];
+
   autoDeleteEnabled: boolean;
+  autoDeleteSystemMessages: boolean;
+  autoDeleteCommandMessages: boolean;
+
   nightModeEnabled: boolean;
 
   saving: boolean;
@@ -44,10 +49,15 @@ const initialState: ModerationState = {
   muteHours: 1,
   muteMinutes: 1,
 
-  antispamEnabled: false,
   bannedWordsEnabled: false,
+
   mediaBlockEnabled: false,
+  mediaBlockTypes: [],
+
   autoDeleteEnabled: false,
+  autoDeleteSystemMessages: false,
+  autoDeleteCommandMessages: false,
+
   nightModeEnabled: false,
 
   saving: false,
@@ -60,8 +70,18 @@ const moderationSlice = createSlice({
   reducers: {
     initFromChannel(state, action: PayloadAction<{
       nightModeEnabled: boolean;
+      commandsEnabled: boolean;
+      enabledCommands: string[] | null;
+      blockMediaTypes: string[] | null;
     }>) {
       state.nightModeEnabled = action.payload.nightModeEnabled;
+      state.commandsEnabled = action.payload.commandsEnabled;
+      if (action.payload.enabledCommands !== null) {
+        state.selectedCommands = action.payload.enabledCommands;
+      }
+      const types = action.payload.blockMediaTypes ?? [];
+      state.mediaBlockTypes = types;
+      state.mediaBlockEnabled = types.length > 0;
     },
     setCommandsEnabled(state, action: PayloadAction<boolean>) {
       state.commandsEnabled = action.payload;
@@ -102,17 +122,49 @@ const moderationSlice = createSlice({
     setMuteMinutes(state, action: PayloadAction<number>) {
       state.muteMinutes = action.payload;
     },
-    setAntispamEnabled(state, action: PayloadAction<boolean>) {
-      state.antispamEnabled = action.payload;
-    },
     setBannedWordsEnabled(state, action: PayloadAction<boolean>) {
       state.bannedWordsEnabled = action.payload;
     },
     setMediaBlockEnabled(state, action: PayloadAction<boolean>) {
       state.mediaBlockEnabled = action.payload;
+      if (!action.payload) {
+        state.mediaBlockTypes = [];
+      } else if (state.mediaBlockTypes.length === 0) {
+        state.mediaBlockTypes = ['photo', 'video', 'gif', 'files', 'voice'];
+      }
+    },
+    setMediaBlockTypes(state, action: PayloadAction<string[]>) {
+      state.mediaBlockTypes = action.payload;
+      state.mediaBlockEnabled = action.payload.length > 0;
+    },
+    toggleMediaType(state, action: PayloadAction<string>) {
+      const type = action.payload;
+      const idx = state.mediaBlockTypes.indexOf(type);
+      if (idx >= 0) {
+        state.mediaBlockTypes.splice(idx, 1);
+      } else {
+        state.mediaBlockTypes.push(type);
+      }
+      state.mediaBlockEnabled = state.mediaBlockTypes.length > 0;
     },
     setAutoDeleteEnabled(state, action: PayloadAction<boolean>) {
       state.autoDeleteEnabled = action.payload;
+    },
+    setAutoDeleteSystemMessages(state, action: PayloadAction<boolean>) {
+      state.autoDeleteSystemMessages = action.payload;
+      state.autoDeleteEnabled = action.payload || state.autoDeleteCommandMessages;
+    },
+    setAutoDeleteCommandMessages(state, action: PayloadAction<boolean>) {
+      state.autoDeleteCommandMessages = action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || action.payload;
+    },
+    initAutoDeleteSettings(state, action: PayloadAction<{
+      delete_system_messages: boolean;
+      delete_command_messages: boolean;
+    }>) {
+      state.autoDeleteSystemMessages = action.payload.delete_system_messages;
+      state.autoDeleteCommandMessages = action.payload.delete_command_messages;
+      state.autoDeleteEnabled = action.payload.delete_system_messages || action.payload.delete_command_messages;
     },
     setNightModeEnabled(state, action: PayloadAction<boolean>) {
       state.nightModeEnabled = action.payload;
@@ -137,10 +189,14 @@ export const {
   setMuteDays,
   setMuteHours,
   setMuteMinutes,
-  setAntispamEnabled,
   setBannedWordsEnabled,
   setMediaBlockEnabled,
+  setMediaBlockTypes,
+  toggleMediaType,
   setAutoDeleteEnabled,
+  setAutoDeleteSystemMessages,
+  setAutoDeleteCommandMessages,
+  initAutoDeleteSettings,
   setNightModeEnabled,
   setSaving,
   setError,

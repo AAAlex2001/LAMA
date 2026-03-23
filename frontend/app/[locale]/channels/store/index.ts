@@ -7,6 +7,8 @@ import joinSettingsReducer from './slices/joinSettings';
 import inviteLinksReducer from './slices/inviteLinks';
 import moderationReducer from './slices/moderation';
 import bannedWordsReducer from './slices/bannedWords';
+import antispamReducer from './slices/antispam';
+import nightModeReducer from './slices/nightMode';
 
 export const channelsPageStore = configureStore({
   reducer: {
@@ -17,6 +19,8 @@ export const channelsPageStore = configureStore({
     inviteLinks: inviteLinksReducer,
     moderation: moderationReducer,
     bannedWords: bannedWordsReducer,
+    antispam: antispamReducer,
+    nightMode: nightModeReducer,
   },
 });
 

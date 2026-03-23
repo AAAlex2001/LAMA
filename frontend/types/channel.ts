@@ -29,6 +29,9 @@ export interface Channel {
   night_mode_end: string;
   night_mode_block_media: boolean;
   night_mode_block_text: boolean;
+  commands_enabled: boolean;
+  enabled_commands: string[] | null;
+  block_media_types: string[] | null;
   has_private_forwards: boolean;
   has_restricted_voice_and_video_messages: boolean;
   has_aggressive_anti_spam_enabled: boolean;

@@ -163,6 +163,13 @@ class ChannelGroupResponse(BaseModel):
     bot_id: Optional[int] = None
     is_bot_active: bool = True
 
+    # Quick commands
+    commands_enabled: bool = False
+    enabled_commands: Optional[list] = None
+
+    # Media block
+    block_media_types: Optional[list] = None
+
     # Metadata
     is_active: bool
     last_sync_at: Optional[datetime] = None
