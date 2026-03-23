@@ -14,6 +14,7 @@ from backend.services.channel.utils.message_utils import (
     is_text_only_message, is_media_message,
 )
 from backend.services.channel.utils.query_utils import get_channel
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
@@ -125,11 +126,13 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
-    async def safe_delete(self, telegram_bot: RateLimitedBot, chat_id: int, message_id: int) -> bool:
-        """Безопасно удалить сообщение."""
+    async def safe_delete(self, telegram_bot: RateLimitedBot, chat_id: int, message_id: int) -> str:
+        """Безопасно удалить сообщение. Возвращает строку-результат."""
         try:
             await telegram_bot.delete_message(chat_id=chat_id, message_id=message_id)
-            return True
-        except TelegramAPIError as e:
+            return f"deleted:{chat_id}/{message_id}"
+        except RateLimitTimeout as e:
+            return f"rate_limited:{int(e.wait_seconds) + 1}"
+        except Exception as e:
             logger.warning("safe_delete failed: chat=%s msg=%s error=%s", chat_id, message_id, e)
-            return False
+            return f"failed:{chat_id}/{message_id}:{e}"

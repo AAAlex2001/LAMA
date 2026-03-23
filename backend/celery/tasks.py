@@ -27,6 +27,7 @@ from backend.services.publications import publisher, message_editor
 from backend.services.publications.publish_helpers import make_notification_callback
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 from backend.services.channel.backup_job_service import BackupJobService
+from backend.services.channel.auto_delete_service import AutoDeleteService
 
 logger = logging.getLogger(__name__)
 
@@ -402,11 +403,15 @@ async def process_repeating_publications_async() -> str:
     return f"queued_republish:{len(ids)}"
 
 
-@celery_app.task(name="backend.celery.tasks.delayed_delete_message", max_retries=1, default_retry_delay=5)
-def delayed_delete_message(bot_id: int, chat_id: int, message_id: int) -> str:
+@celery_app.task(bind=True, name="backend.celery.tasks.delayed_delete_message", max_retries=3)
+def delayed_delete_message(self, bot_id: int, chat_id: int, message_id: int) -> str:
     """Удалить одно сообщение в чате (используется для отложенного автоудаления)."""
 
-    return run(delayed_delete_message_async(bot_id, chat_id, message_id))
+    result = run(delayed_delete_message_async(bot_id, chat_id, message_id))
+    if result.startswith("rate_limited:"):
+        wait = int(result.split(":")[1])
+        raise self.retry(countdown=wait)
+    return result
 
 
 async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: int) -> str:
@@ -414,14 +419,10 @@ async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: in
 
     async with CelerySessionLocal() as db:
         telegram_bot = await resolve_for_bot_id(db, bot_id)
-        try:
-            await telegram_bot.delete_message(chat_id=chat_id, message_id=message_id)
-            await db.commit()
-            return f"deleted:{chat_id}/{message_id}"
-        except TelegramAPIError as e:
-            logger.warning("delayed_delete_message failed: chat=%s msg=%s error=%s", chat_id, message_id, e)
-            await db.commit()
-            return f"failed:{chat_id}/{message_id}:{e}"
+        service = AutoDeleteService(db)
+        result = await service.safe_delete(telegram_bot, chat_id, message_id)
+        await db.commit()
+        return result
 
 
 @celery_app.task(name="backend.celery.tasks.process_backup_job", max_retries=2, default_retry_delay=30)
