@@ -2,11 +2,9 @@ import logging
 from typing import Optional, List, Dict, Any
 
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
-from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.channel import ChannelAutoDeleteService
 from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
@@ -31,11 +29,11 @@ class TextProcessor:
 
     async def resolve_channel(self, chat_id: int):
         """Получить канал по telegram_id (кешируется на время обработки)."""
-        if not hasattr(self, '_resolved_channels'):
-            self._resolved_channels = {}
-        if chat_id not in self._resolved_channels:
-            self._resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
-        return self._resolved_channels[chat_id]
+        if not hasattr(self, 'resolved_channels'):
+            self.resolved_channels = {}
+        if chat_id not in self.resolved_channels:
+            self.resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
+        return self.resolved_channels[chat_id]
 
     def build_shortcode_context(self, message: Message) -> Dict[str, Any]:
         """Построить контекст для шорткодов"""
@@ -148,12 +146,11 @@ class TextProcessor:
         message: Message,
         text_content: str,
         chat_type: Optional[str],
-        auto_delete_service: ChannelAutoDeleteService
     ) -> None:
         """Обработка текстового сообщения"""
         if text_content.startswith("/"):
             await self.command_processor.process_command(
-                message, text_content, chat_type, auto_delete_service
+                message, text_content, chat_type,
             )
             return
 

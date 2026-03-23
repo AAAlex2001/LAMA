@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone
 
 from celery import Task
+from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import case, func, or_, select, update
 
 from backend.celery.app import celery_app
@@ -399,6 +400,28 @@ async def process_repeating_publications_async() -> str:
         republish_publication.apply_async(args=[publication_id], queue="default")
 
     return f"queued_republish:{len(ids)}"
+
+
+@celery_app.task(name="backend.celery.tasks.delayed_delete_message", max_retries=1, default_retry_delay=5)
+def delayed_delete_message(bot_id: int, chat_id: int, message_id: int) -> str:
+    """Удалить одно сообщение в чате (используется для отложенного автоудаления)."""
+
+    return run(delayed_delete_message_async(bot_id, chat_id, message_id))
+
+
+async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: int) -> str:
+    """Async-реализация удаления одного сообщения."""
+
+    async with CelerySessionLocal() as db:
+        telegram_bot = await resolve_for_bot_id(db, bot_id)
+        try:
+            await telegram_bot.delete_message(chat_id=chat_id, message_id=message_id)
+            await db.commit()
+            return f"deleted:{chat_id}/{message_id}"
+        except TelegramAPIError as e:
+            logger.warning("delayed_delete_message failed: chat=%s msg=%s error=%s", chat_id, message_id, e)
+            await db.commit()
+            return f"failed:{chat_id}/{message_id}:{e}"
 
 
 @celery_app.task(name="backend.celery.tasks.process_backup_job", max_retries=2, default_retry_delay=30)

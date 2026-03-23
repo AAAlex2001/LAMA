@@ -24,6 +24,11 @@ interface AutoDeleteSettings {
   channel_id: number;
   delete_system_messages: boolean;
   delete_command_messages: boolean;
+  delete_join_messages: boolean;
+  delete_all_messages: boolean;
+  delete_text_only: boolean;
+  delete_media_only: boolean;
+  delete_delay_seconds: number;
   created_at: string;
   updated_at: string;
 }
@@ -127,6 +132,11 @@ export const fetchAutoDeleteThunk = createAsyncThunk(
       dispatch(initAutoDeleteSettings({
         delete_system_messages: data.delete_system_messages,
         delete_command_messages: data.delete_command_messages,
+        delete_join_messages: data.delete_join_messages,
+        delete_all_messages: data.delete_all_messages,
+        delete_text_only: data.delete_text_only,
+        delete_media_only: data.delete_media_only,
+        delete_delay_seconds: data.delete_delay_seconds,
       }));
       return data;
     } catch {
@@ -142,7 +152,11 @@ export const updateAutoDeleteThunk = createAsyncThunk(
     { dispatch, getState, rejectWithValue },
   ) => {
     const state = getState() as ChannelsPageState;
-    const { autoDeleteSystemMessages, autoDeleteCommandMessages } = state.moderation;
+    const {
+      autoDeleteSystemMessages, autoDeleteCommandMessages,
+      autoDeleteJoinMessages, autoDeleteAllMessages,
+      autoDeleteTextOnly, autoDeleteMediaOnly, autoDeleteDelaySeconds,
+    } = state.moderation;
 
     dispatch(setSaving(true));
     try {
@@ -151,11 +165,21 @@ export const updateAutoDeleteThunk = createAsyncThunk(
         body: JSON.stringify({
           delete_system_messages: autoDeleteSystemMessages,
           delete_command_messages: autoDeleteCommandMessages,
+          delete_join_messages: autoDeleteJoinMessages,
+          delete_all_messages: autoDeleteAllMessages,
+          delete_text_only: autoDeleteTextOnly,
+          delete_media_only: autoDeleteMediaOnly,
+          delete_delay_seconds: autoDeleteDelaySeconds,
         }),
       });
       dispatch(initAutoDeleteSettings({
         delete_system_messages: data.delete_system_messages,
         delete_command_messages: data.delete_command_messages,
+        delete_join_messages: data.delete_join_messages,
+        delete_all_messages: data.delete_all_messages,
+        delete_text_only: data.delete_text_only,
+        delete_media_only: data.delete_media_only,
+        delete_delay_seconds: data.delete_delay_seconds,
       }));
       return data;
     } catch (error) {

@@ -2,8 +2,32 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 30px;
+  gap: 16px;
   width: 100%;
+}
+
+.desktopGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    gap: 40px;
+    align-items: flex-start;
+  }
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+  }
 }
 
 .settingsList {
@@ -17,7 +41,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 10px 0;
+  padding: 16px 0;
   width: 100%;
 }
 

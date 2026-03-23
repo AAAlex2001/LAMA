@@ -347,6 +347,11 @@ class ChannelAutoDeleteSettings(Base):
     )
     delete_system_messages: Mapped[bool] = mapped_column(Boolean, default=False)
     delete_command_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_join_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_all_messages: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_text_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_media_only: Mapped[bool] = mapped_column(Boolean, default=False)
+    delete_delay_seconds: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 

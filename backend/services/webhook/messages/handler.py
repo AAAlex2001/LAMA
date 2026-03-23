@@ -302,10 +302,6 @@ class MessageHandler:
                             self.bot_model.id, message.chat.id, photo_url,
                         )
 
-                auto_delete_service = ChannelAutoDeleteService(self.db)
-                if await auto_delete_service.delete_if_system(telegram_bot, message):
-                    return
-
                 member_processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
 
                 if message.new_chat_members:
@@ -317,8 +313,11 @@ class MessageHandler:
                 if text_content:
                     text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
                     await text_processor.process_text(
-                        message, text_content, chat_type, auto_delete_service
+                        message, text_content, chat_type,
                     )
+
+                auto_delete_service = ChannelAutoDeleteService(self.db)
+                await auto_delete_service.process_auto_delete(telegram_bot, message, bot_id=self.bot_model.id)
 
         except Exception as e:
             logger.error(f"Side effects processing error: {e}", exc_info=True)

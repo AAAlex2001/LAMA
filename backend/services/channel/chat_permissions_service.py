@@ -42,6 +42,7 @@ class ChatPermissionsService:
             await bot.set_chat_permissions(
                 chat_id=chat_id,
                 permissions=permissions,
+                use_independent_chat_permissions=True,
             )
             logger.info(
                 "Applied chat permissions for channel %s (chat_id=%s)",

@@ -33,6 +33,29 @@ def is_command_message(message: Message) -> bool:
     return bool(text and text.strip().startswith("/"))
 
 
+def is_join_message(message: Message) -> bool:
+    """Определить, является ли сообщение о вступлении/выходе."""
+    return bool(getattr(message, "new_chat_members", None) or getattr(message, "left_chat_member", None))
+
+
+MEDIA_ATTRS = [
+    "photo", "video", "document", "audio",
+    "voice", "video_note", "animation", "sticker",
+]
+
+
+def is_text_only_message(message: Message) -> bool:
+    """Определить, является ли сообщение текстовым без медиа."""
+    if not message.text:
+        return False
+    return not any(getattr(message, attr, None) for attr in MEDIA_ATTRS)
+
+
+def is_media_message(message: Message) -> bool:
+    """Определить, содержит ли сообщение медиа."""
+    return any(getattr(message, attr, None) for attr in MEDIA_ATTRS)
+
+
 def time_to_minutes(value: Optional[str]) -> Optional[int]:
     """Преобразовать строку HH:MM в минуты от начала суток."""
     if not value:

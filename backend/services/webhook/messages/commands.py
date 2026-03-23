@@ -3,11 +3,9 @@ import os
 from typing import Optional, List, Dict, Any
 
 from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaDocument
-from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.channel import ChannelAutoDeleteService
 from backend.services.bot import BotCommandService, ModerationTriggerService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.utils import build_keyboard
@@ -89,11 +87,11 @@ class CommandProcessor:
 
     async def resolve_channel(self, chat_id: int):
         """Получить канал по telegram_id (кешируется на время обработки)."""
-        if not hasattr(self, '_resolved_channels'):
-            self._resolved_channels = {}
-        if chat_id not in self._resolved_channels:
-            self._resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
-        return self._resolved_channels[chat_id]
+        if not hasattr(self, 'resolved_channels'):
+            self.resolved_channels = {}
+        if chat_id not in self.resolved_channels:
+            self.resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
+        return self.resolved_channels[chat_id]
 
     async def create_command_inbox_event(
         self,
@@ -206,7 +204,6 @@ class CommandProcessor:
         message: Message,
         text_content: str,
         chat_type: Optional[str],
-        auto_delete_service: ChannelAutoDeleteService
     ) -> None:
         """Обработка команды"""
         raw_command_text = text_content.split()[0]
@@ -248,25 +245,16 @@ class CommandProcessor:
                 reply_to_message_id=message.message_id
             )
 
-            await auto_delete_service.delete_if_command(
-                self.telegram_bot, message
-            )
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
             channel_obj = await self.resolve_channel(message.chat.id)
             if channel_obj:
                 if not channel_obj.commands_enabled:
-                    await auto_delete_service.delete_if_command(
-                        self.telegram_bot, message
-                    )
                     return
                 cmd_name = command_text.lstrip("/").lower()
                 allowed = channel_obj.enabled_commands
                 if allowed is not None and cmd_name not in allowed:
-                    await auto_delete_service.delete_if_command(
-                        self.telegram_bot, message
-                    )
                     return
 
             moderation_trigger_service = ModerationTriggerService()
@@ -328,10 +316,6 @@ class CommandProcessor:
             except Exception as e:
                 logger.error(f"Failed to create inbox event for command {command_text}: {e}", exc_info=True)
 
-            if handled:
-                await auto_delete_service.delete_if_command(
-                    self.telegram_bot, message
-                )
             return
 
         command_service = BotCommandService(self.db)
@@ -400,12 +384,4 @@ class CommandProcessor:
                 except Exception as e:
                     logger.error(f"Failed to save system message for command: {e}", exc_info=True)
 
-            await auto_delete_service.delete_if_command(
-                self.telegram_bot, message
-            )
             return
-
-        # Команда не найдена, но удаляем исходное сообщение
-        await auto_delete_service.delete_if_command(
-            self.telegram_bot, message
-        )
