@@ -4,6 +4,9 @@ import {
   setFloodEnabled,
   setFloodSettings,
   setAutoDeleteEnabled,
+  initAutoDeleteSettings,
+  setMediaBlockTypes,
+  setCommandsEnabled,
   setSaving,
   setError,
 } from '../slices/moderation';
@@ -14,6 +17,24 @@ interface FloodSettings {
   flood_interval_seconds: number | null;
   flood_action: string | null;
   flood_mute_duration_minutes: number | null;
+}
+
+interface AutoDeleteSettings {
+  id: number;
+  channel_id: number;
+  delete_system_messages: boolean;
+  delete_command_messages: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface MediaBlockResponse {
+  block_media_types: string[] | null;
+}
+
+interface QuickCommandsResponse {
+  commands_enabled: boolean;
+  enabled_commands: string[] | null;
 }
 
 export const fetchFloodSettingsThunk = createAsyncThunk(
@@ -98,26 +119,125 @@ export const disableFloodThunk = createAsyncThunk(
   },
 );
 
+export const fetchAutoDeleteThunk = createAsyncThunk(
+  'moderation/fetchAutoDelete',
+  async (channelId: number, { dispatch }) => {
+    try {
+      const data = await apiRequest<AutoDeleteSettings>(`/channels/${channelId}/auto-delete`);
+      dispatch(initAutoDeleteSettings({
+        delete_system_messages: data.delete_system_messages,
+        delete_command_messages: data.delete_command_messages,
+      }));
+      return data;
+    } catch {
+      return null;
+    }
+  },
+);
+
 export const updateAutoDeleteThunk = createAsyncThunk(
   'moderation/updateAutoDelete',
   async (
-    { channelId, enabled }: { channelId: number; enabled: boolean },
-    { dispatch, rejectWithValue },
+    { channelId }: { channelId: number },
+    { dispatch, getState, rejectWithValue },
   ) => {
-    dispatch(setAutoDeleteEnabled(enabled));
+    const state = getState() as ChannelsPageState;
+    const { autoDeleteSystemMessages, autoDeleteCommandMessages } = state.moderation;
+
     dispatch(setSaving(true));
     try {
-      await apiRequest(`/channels/${channelId}/auto-delete`, {
+      const data = await apiRequest<AutoDeleteSettings>(`/channels/${channelId}/auto-delete`, {
         method: 'PUT',
         body: JSON.stringify({
-          delete_system_messages: enabled,
-          delete_command_messages: enabled,
+          delete_system_messages: autoDeleteSystemMessages,
+          delete_command_messages: autoDeleteCommandMessages,
         }),
       });
-      return enabled;
+      dispatch(initAutoDeleteSettings({
+        delete_system_messages: data.delete_system_messages,
+        delete_command_messages: data.delete_command_messages,
+      }));
+      return data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Ошибка сохранения';
       dispatch(setError(msg));
+      return rejectWithValue(msg);
+    } finally {
+      dispatch(setSaving(false));
+    }
+  },
+);
+
+export const fetchMediaBlockThunk = createAsyncThunk(
+  'moderation/fetchMediaBlock',
+  async (channelId: number, { dispatch }) => {
+    try {
+      const data = await apiRequest<MediaBlockResponse>(`/channels/${channelId}/media-block`);
+      dispatch(setMediaBlockTypes(data.block_media_types ?? []));
+      return data;
+    } catch {
+      return null;
+    }
+  },
+);
+
+export const updateMediaBlockThunk = createAsyncThunk(
+  'moderation/updateMediaBlock',
+  async ({ channelId }: { channelId: number }, { dispatch, getState, rejectWithValue }) => {
+    const state = getState() as ChannelsPageState;
+    const { mediaBlockTypes } = state.moderation;
+
+    dispatch(setSaving(true));
+    try {
+      const data = await apiRequest<MediaBlockResponse>(`/channels/${channelId}/media-block`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          block_media_types: mediaBlockTypes.length > 0 ? mediaBlockTypes : null,
+        }),
+      });
+      dispatch(setMediaBlockTypes(data.block_media_types ?? []));
+      return data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Ошибка сохранения';
+      return rejectWithValue(msg);
+    } finally {
+      dispatch(setSaving(false));
+    }
+  },
+);
+
+export const fetchQuickCommandsThunk = createAsyncThunk(
+  'moderation/fetchQuickCommands',
+  async (channelId: number, { dispatch }) => {
+    try {
+      const data = await apiRequest<QuickCommandsResponse>(`/channels/${channelId}/quick-commands`);
+      dispatch(setCommandsEnabled(data.commands_enabled));
+      return data;
+    } catch {
+      return null;
+    }
+  },
+);
+
+export const updateQuickCommandsThunk = createAsyncThunk(
+  'moderation/updateQuickCommands',
+  async ({ channelId }: { channelId: number }, { dispatch, getState, rejectWithValue }) => {
+    const state = getState() as ChannelsPageState;
+    const { commandsEnabled, selectedCommands } = state.moderation;
+
+    dispatch(setSaving(true));
+    try {
+      const data = await apiRequest<QuickCommandsResponse>(`/channels/${channelId}/quick-commands`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          commands_enabled: commandsEnabled,
+          enabled_commands: commandsEnabled ? selectedCommands : null,
+        }),
+      });
+      dispatch(setCommandsEnabled(data.commands_enabled));
+      return data;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Ошибка сохранения';
       return rejectWithValue(msg);
     } finally {
       dispatch(setSaving(false));

@@ -356,3 +356,95 @@
     color: #EF4444;
   }
 }
+
+.pickerRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pickerRowBorder {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.pickerLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex-shrink: 0;
+}
+
+.pickerRight {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pickerValueText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.pickerChevron {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.2s;
+  color: #858585;
+
+  &.open {
+    transform: rotate(180deg);
+  }
+}
+
+.pickerOptions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 2px;
+}
+
+
+.mediaGrid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+}
+
+.mediaColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  gap: 4px;
+}
+
+.mediaItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+.checkboxRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 0;
+  cursor: pointer;
+  width: 100%;
+}

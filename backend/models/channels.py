@@ -156,6 +156,13 @@ class ChannelGroup(Base):
     # Запрещённые слова
     banned_words_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
 
+    # Быстрые команды
+    commands_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    enabled_commands: Mapped[Optional[list]] = mapped_column(JSON)
+
+    # Блокировка медиа
+    block_media_types: Mapped[Optional[list]] = mapped_column(JSON)
+
     # Настройки антифлуда
     flood_message_limit: Mapped[Optional[int]] = mapped_column(Integer)  # N сообщений
     flood_interval_seconds: Mapped[Optional[int]] = mapped_column(Integer)  # за M секунд
