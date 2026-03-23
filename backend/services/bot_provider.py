@@ -10,6 +10,7 @@ from typing import Dict, Optional
 
 from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 from aiogram.types import User
 from sqlalchemy import select
@@ -40,8 +41,11 @@ def bot_key_from_token(token: str) -> str:
 def get_cached_bot(token: str) -> RateLimitedBot:
     """Получить или создать RateLimitedBot по токену с кешированием."""
     if token not in cache:
+        proxy = os.getenv("TELEGRAM_PROXY")
+        session = AiohttpSession(proxy=proxy) if proxy else None
         bot = Bot(
             token=token,
+            session=session,
             default=DefaultBotProperties(parse_mode=ParseMode.HTML),
         )
         cache[token] = RateLimitedBot(bot, bot_key=bot_key_from_token(token))
