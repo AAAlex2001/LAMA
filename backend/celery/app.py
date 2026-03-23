@@ -44,6 +44,7 @@ celery_app.conf.update(
         "backend.celery.tasks.process_backup_job": {"queue": "low"},
         "backend.celery.tasks.delete_publication_messages": {"queue": "default"},
         "backend.celery.tasks.republish_publication": {"queue": "default"},
+        "backend.celery.tasks.delayed_delete_message": {"queue": "high"},
     },
     beat_schedule={
         "process-scheduled-publications": {

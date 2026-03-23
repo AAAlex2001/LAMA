@@ -317,7 +317,7 @@ class MessageHandler:
                     )
 
                 auto_delete_service = ChannelAutoDeleteService(self.db)
-                await auto_delete_service.process_auto_delete(telegram_bot, message, bot_id=self.bot_model.id)
+                await auto_delete_service.process_auto_delete(message, bot_id=self.bot_model.id)
 
         except Exception as e:
             logger.error(f"Side effects processing error: {e}", exc_info=True)

@@ -60,7 +60,7 @@ class AutoDeleteService:
             self.settings_cache[telegram_id] = await self.get_settings_by_telegram_id(telegram_id)
         return self.settings_cache[telegram_id]
 
-    async def process_auto_delete(self, telegram_bot: RateLimitedBot, message: Message, bot_id: int) -> bool:
+    async def process_auto_delete(self, message: Message, bot_id: int) -> bool:
         """Единая точка проверки автоудаления. Возвращает True если сообщение удалено/будет удалено."""
         if not message or not message.chat:
             return False
@@ -90,15 +90,12 @@ class AutoDeleteService:
             return False
 
         delay = settings.delete_delay_seconds or 0
-        if delay > 0:
-            from backend.celery.tasks import delayed_delete_message
-            delayed_delete_message.apply_async(
-                args=[bot_id, message.chat.id, message.message_id],
-                countdown=delay,
-            )
-            return True
-
-        return await self.safe_delete(telegram_bot, message.chat.id, message.message_id)
+        from backend.celery.tasks import delayed_delete_message
+        delayed_delete_message.apply_async(
+            args=[bot_id, message.chat.id, message.message_id],
+            countdown=delay,
+        )
+        return True
 
     async def get_settings_by_telegram_id(self, telegram_id: int) -> Optional[ChannelAutoDeleteSettings]:
         """Получить настройки по Telegram ID (включая linked_chat_id)."""
