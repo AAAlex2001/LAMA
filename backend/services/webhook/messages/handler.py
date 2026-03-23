@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, MessageType
 from backend.models.channels import ChannelGroup
-from backend.services.channel import ChannelAutoDeleteService, ChannelNightModeService
+from backend.services.channel import ChannelAutoDeleteService
 from backend.services.channel.utils.message_utils import is_system_message
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT, get_bot_session
 from backend.services.webhook.messages.members import MemberProcessor
@@ -306,9 +306,6 @@ class MessageHandler:
                 if await auto_delete_service.delete_if_system(telegram_bot, message):
                     return
 
-                if await self.check_night_mode(telegram_bot, message):
-                    return
-
                 member_processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
 
                 if message.new_chat_members:
@@ -339,43 +336,3 @@ class MessageHandler:
         except Exception as e:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None
-
-    async def check_night_mode(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
-        """Проверка ночного режима. Возвращает True, если сообщение заблокировано"""
-        is_media = any([
-            getattr(message, attr, None)
-            for attr in ["photo", "video", "document", "audio", "voice", "sticker", "animation"]
-        ])
-
-        night_mode_service = ChannelNightModeService(self.db)
-        should_block, notice = await night_mode_service.should_block_message(
-            message.chat.id,
-            is_media=is_media,
-        )
-
-        if should_block:
-            try:
-                await asyncio.wait_for(
-                    telegram_bot.delete_message(
-                        chat_id=message.chat.id,
-                        message_id=message.message_id,
-                    ),
-                    timeout=TELEGRAM_API_TIMEOUT
-                )
-            except (TelegramAPIError, asyncio.TimeoutError) as e:
-                logger.warning(f"Failed to delete message: {e}")
-
-            if notice:
-                try:
-                    await asyncio.wait_for(
-                        telegram_bot.send_message(
-                            chat_id=message.chat.id,
-                            text=notice,
-                        ),
-                        timeout=TELEGRAM_API_TIMEOUT
-                    )
-                except (TelegramAPIError, asyncio.TimeoutError) as e:
-                    logger.warning(f"Failed to send night mode notice: {e}")
-            return True
-
-        return False

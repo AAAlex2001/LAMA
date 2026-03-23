@@ -5,7 +5,7 @@ from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelAutoDeleteSettings, ChannelGroup
@@ -76,11 +76,14 @@ class AutoDeleteService:
         return await self.safe_delete(telegram_bot, message.chat.id, message.message_id)
 
     async def get_settings_by_telegram_id(self, telegram_id: int) -> Optional[ChannelAutoDeleteSettings]:
-        """Получить настройки по Telegram ID."""
+        """Получить настройки по Telegram ID (включая linked_chat_id)."""
         query = (
             select(ChannelAutoDeleteSettings)
             .join(ChannelGroup)
-            .where(ChannelGroup.telegram_id == telegram_id)
+            .where(or_(
+                ChannelGroup.telegram_id == telegram_id,
+                ChannelGroup.linked_chat_id == telegram_id,
+            ))
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()

@@ -43,7 +43,7 @@ class ModerationHandler:
                 message.from_user.id if message.from_user else None,
             )
 
-            # Проверка антифлуда (только для групп с from_user)
+            # Проверка антифлуда (только для групп с from_user, для ЛЮБЫХ сообщений)
             if (message.chat.type in {"group", "supergroup"}
                     and message.from_user):
                 flood_service = FloodService(self.db)
@@ -59,12 +59,15 @@ class ModerationHandler:
                     await self.apply_action(message, flood_action, flood_mute)
                     return
 
+            if not text_content:
+                return
+
             # Проверка антиспама (ссылки)
             antispam_service = AntispamService(self.db)
             should_block, action, mute_duration, reason = \
                 await asyncio.wait_for(
                     antispam_service.check_by_telegram_id(
-                        message.chat.id, text_content or ""
+                        message.chat.id, text_content
                     ),
                     timeout=DB_QUERY_TIMEOUT
                 )
@@ -82,7 +85,7 @@ class ModerationHandler:
                 moderation_service = ChannelModerationService(self.db)
                 rule = await asyncio.wait_for(
                     moderation_service.check_message_by_telegram_id(
-                        message.chat.id, text_content or ""
+                        message.chat.id, text_content
                     ),
                     timeout=DB_QUERY_TIMEOUT
                 )

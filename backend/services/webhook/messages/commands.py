@@ -246,6 +246,21 @@ class CommandProcessor:
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
+            channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+            if channel_obj:
+                if not channel_obj.commands_enabled:
+                    await auto_delete_service.delete_if_command(
+                        self.telegram_bot, message
+                    )
+                    return
+                cmd_name = command_text.lstrip("/").lower()
+                allowed = channel_obj.enabled_commands
+                if allowed is not None and cmd_name not in allowed:
+                    await auto_delete_service.delete_if_command(
+                        self.telegram_bot, message
+                    )
+                    return
+
             moderation_trigger_service = ModerationTriggerService()
             handled = await moderation_trigger_service.handle_command(
                 command=command_text,

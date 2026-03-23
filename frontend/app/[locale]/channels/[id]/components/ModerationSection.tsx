@@ -407,7 +407,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
   const leftMediaCol = MEDIA_TYPES.filter((_, i) => i % 2 === 0);
   const rightMediaCol = MEDIA_TYPES.filter((_, i) => i % 2 === 1);
 
-  const nightBlockType = nightBlockMedia && nightBlockText ? 'all' : nightBlockMedia ? 'media' : nightBlockText ? 'text' : 'none';
+  const nightBlockType = nightBlockMedia && nightBlockText ? 'all' : nightBlockMedia ? 'media' : nightBlockText ? 'text' : 'all';
 
   const handleNightBlockTypeChange = (type: string) => {
     dispatch(setBlockMedia(type === 'media' || type === 'all'));
@@ -530,7 +530,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
         {antispamEnabled && antispamLoaded && (
           <div className={styles.expandedContent}>
             <div
-              className={`${styles.pickerRow} ${styles.pickerRowBorder}`}
+              className={styles.pickerRow}
               onClick={() => setOpenPicker(openPicker === 'antispamMode' ? null : 'antispamMode')}
             >
               <span className={styles.pickerLabel}>Режим</span>
@@ -605,7 +605,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
             )}
 
             <div
-              className={`${styles.pickerRow} ${styles.pickerRowBorder}`}
+              className={styles.pickerRow}
               onClick={() => setOpenPicker(openPicker === 'antispamAction' ? null : 'antispamAction')}
             >
               <span className={styles.pickerLabel}>При наличии</span>
@@ -812,7 +812,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
         {autoDeleteEnabled && (
           <div className={styles.expandedContent}>
             <div
-              className={`${styles.pickerRow} ${styles.pickerRowBorder}`}
+              className={styles.pickerRow}
               onClick={() => setOpenPicker(openPicker === 'autoDeleteWhat' ? null : 'autoDeleteWhat')}
             >
               <span className={styles.pickerLabel}>Что удалять:</span>

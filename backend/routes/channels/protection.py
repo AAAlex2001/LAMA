@@ -9,6 +9,8 @@ from backend.routes.channels.dependencies import (
     get_auto_delete_service,
     get_channel_service,
     get_flood_service,
+    get_moderation_service,
+    get_night_mode_service,
 )
 from backend.schemas.channels import (
     AntispamSettingsResponse,
@@ -22,6 +24,8 @@ from backend.services.channel.antispam_service import AntispamService
 from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.channel_service import ChannelService
 from backend.services.channel.flood_service import FloodService
+from backend.services.channel.moderation_service import ModerationService
+from backend.services.channel.night_mode_service import NightModeService
 
 
 class BannedWordsToggle(BaseModel):
@@ -152,11 +156,10 @@ async def get_flood_settings(
 async def toggle_banned_words(
     channel_id: int,
     data: BannedWordsToggle,
-    channel_service: ChannelService = Depends(get_channel_service),
+    service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    channel.banned_words_enabled = data.enabled
+    channel = await service.toggle_banned_words(channel_id, data.enabled, owner_id=current_user.id)
     return BannedWordsToggleResponse(banned_words_enabled=channel.banned_words_enabled)
 
 
@@ -206,12 +209,12 @@ async def get_quick_commands(
 async def update_quick_commands(
     channel_id: int,
     data: QuickCommandsUpdate,
-    channel_service: ChannelService = Depends(get_channel_service),
+    service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    channel.commands_enabled = data.commands_enabled
-    channel.enabled_commands = data.enabled_commands
+    channel = await service.update_quick_commands(
+        channel_id, data.commands_enabled, data.enabled_commands, owner_id=current_user.id,
+    )
     return QuickCommandsResponse(
         commands_enabled=channel.commands_enabled,
         enabled_commands=channel.enabled_commands,
@@ -232,11 +235,12 @@ async def get_media_block(
 async def update_media_block(
     channel_id: int,
     data: MediaBlockUpdate,
-    channel_service: ChannelService = Depends(get_channel_service),
+    service: ModerationService = Depends(get_moderation_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    channel.block_media_types = data.block_media_types
+    channel = await service.update_media_block(
+        channel_id, data.block_media_types, owner_id=current_user.id,
+    )
     return MediaBlockResponse(block_media_types=channel.block_media_types)
 
 
@@ -260,15 +264,18 @@ async def get_night_mode(
 async def update_night_mode(
     channel_id: int,
     data: NightModeUpdate,
-    channel_service: ChannelService = Depends(get_channel_service),
+    service: NightModeService = Depends(get_night_mode_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    channel.night_mode_enabled = data.night_mode_enabled
-    channel.night_mode_start = data.night_mode_start
-    channel.night_mode_end = data.night_mode_end
-    channel.night_mode_block_media = data.night_mode_block_media
-    channel.night_mode_block_text = data.night_mode_block_text
+    channel = await service.update_settings(
+        channel_id=channel_id,
+        owner_id=current_user.id,
+        night_mode_enabled=data.night_mode_enabled,
+        night_mode_start=data.night_mode_start,
+        night_mode_end=data.night_mode_end,
+        night_mode_block_media=data.night_mode_block_media,
+        night_mode_block_text=data.night_mode_block_text,
+    )
     return NightModeResponse(
         night_mode_enabled=channel.night_mode_enabled,
         night_mode_start=channel.night_mode_start,

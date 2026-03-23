@@ -47,7 +47,7 @@ class WebhookDispatcher:
         )
 
         # Задача 1: Модерация сообщений (независимая, для групп/каналов)
-        if message and message.chat and (message.text or message.caption):
+        if message and message.chat:
             if message.chat.type in {"group", "supergroup", "channel"}:
                 tasks.append(WebhookDispatcher.process_moderation(
                     message, bot_token))
