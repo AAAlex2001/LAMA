@@ -29,6 +29,14 @@ class TextProcessor:
         self.trigger_service = TriggerService(db)
         self.command_processor = CommandProcessor(db, bot_model, telegram_bot)
 
+    async def resolve_channel(self, chat_id: int):
+        """Получить канал по telegram_id (кешируется на время обработки)."""
+        if not hasattr(self, '_resolved_channels'):
+            self._resolved_channels = {}
+        if chat_id not in self._resolved_channels:
+            self._resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
+        return self._resolved_channels[chat_id]
+
     def build_shortcode_context(self, message: Message) -> Dict[str, Any]:
         """Построить контекст для шорткодов"""
         from_user = message.from_user
@@ -172,7 +180,7 @@ class TextProcessor:
 
             try:
                 inbox_service = InboxActionService(self.db)
-                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
                 await inbox_service.create_event({
@@ -224,7 +232,7 @@ class TextProcessor:
 
             try:
                 inbox_service = InboxActionService(self.db)
-                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
                 await inbox_service.create_event({

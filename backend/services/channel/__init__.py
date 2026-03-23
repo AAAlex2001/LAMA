@@ -14,7 +14,6 @@ from backend.services.channel.chat_permissions_service import ChatPermissionsSer
 
 ChannelModerationService = ModerationService
 ChannelAutoDeleteService = AutoDeleteService
-ChannelNightModeService = NightModeService
 
 __all__ = [
     "ChannelService",
@@ -31,6 +30,5 @@ __all__ = [
     "NightModeService",
     "ChannelModerationService",
     "ChannelAutoDeleteService",
-    "ChannelNightModeService",
     "ChatPermissionsService",
 ]

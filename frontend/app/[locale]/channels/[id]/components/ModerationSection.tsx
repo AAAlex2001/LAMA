@@ -821,7 +821,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                   {autoDeleteSystemMessages && autoDeleteCommandMessages
                     ? 'Всё'
                     : autoDeleteSystemMessages
-                      ? 'Сообщения о вступлении'
+                      ? 'Системные сообщения'
                       : autoDeleteCommandMessages
                         ? 'Команды'
                         : 'Не выбрано'}
@@ -835,7 +835,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                   <Checkbox
                     checked={autoDeleteSystemMessages}
                     onChange={() => handleAutoDeleteSystemToggle(!autoDeleteSystemMessages)}
-                    label="Сообщения о вступлении"
+                    label="Системные сообщения"
                   />
                 </div>
                 <div className={styles.checkboxRow} onClick={() => handleAutoDeleteCommandToggle(!autoDeleteCommandMessages)}>

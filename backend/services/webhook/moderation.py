@@ -43,13 +43,21 @@ class ModerationHandler:
                 message.from_user.id if message.from_user else None,
             )
 
-            # Проверка антифлуда (только для групп с from_user, для ЛЮБЫХ сообщений)
+            channel = await asyncio.wait_for(
+                get_channel_by_telegram_id(self.db, message.chat.id),
+                timeout=DB_QUERY_TIMEOUT,
+            )
+            if not channel:
+                return
+
             if (message.chat.type in {"group", "supergroup"}
-                    and message.from_user):
+                    and message.from_user
+                    and channel.flood_message_limit
+                    and channel.flood_interval_seconds):
                 flood_service = FloodService(self.db)
                 is_flood, flood_action, flood_mute = await asyncio.wait_for(
-                    flood_service.check_by_telegram_id(
-                        telegram_id=message.chat.id,
+                    flood_service.check_flood(
+                        channel=channel,
                         user_id=message.from_user.id,
                     ),
                     timeout=DB_QUERY_TIMEOUT
@@ -62,30 +70,19 @@ class ModerationHandler:
             if not text_content:
                 return
 
-            # Проверка антиспама (ссылки)
             antispam_service = AntispamService(self.db)
             should_block, action, mute_duration, reason = \
-                await asyncio.wait_for(
-                    antispam_service.check_by_telegram_id(
-                        message.chat.id, text_content
-                    ),
-                    timeout=DB_QUERY_TIMEOUT
-                )
+                antispam_service.check_channel_links(channel, text_content)
 
             if should_block:
                 await self.apply_action(message, action, mute_duration)
                 return
 
-            # Проверка правил модерации (запрещённые слова)
-            channel = await asyncio.wait_for(
-                get_channel_by_telegram_id(self.db, message.chat.id),
-                timeout=DB_QUERY_TIMEOUT,
-            )
-            if channel and channel.banned_words_enabled:
+            if channel.banned_words_enabled:
                 moderation_service = ChannelModerationService(self.db)
                 rule = await asyncio.wait_for(
-                    moderation_service.check_message_by_telegram_id(
-                        message.chat.id, text_content
+                    moderation_service.check_message(
+                        channel.id, text_content
                     ),
                     timeout=DB_QUERY_TIMEOUT
                 )

@@ -27,7 +27,8 @@ class ChatPermissionsService:
 
     async def apply_permissions(self, channel: ChannelGroup) -> bool:
         """Build and apply merged permissions for a channel. Returns True on success."""
-        if not channel.telegram_id:
+        chat_id = channel.linked_chat_id or channel.telegram_id
+        if not chat_id:
             return False
 
         bot = self.resolve_bot(channel)
@@ -39,16 +40,16 @@ class ChatPermissionsService:
 
         try:
             await bot.set_chat_permissions(
-                chat_id=channel.telegram_id,
+                chat_id=chat_id,
                 permissions=permissions,
             )
             logger.info(
-                "Applied chat permissions for channel %s (tg=%s)",
-                channel.id, channel.telegram_id,
+                "Applied chat permissions for channel %s (chat_id=%s)",
+                channel.id, chat_id,
             )
             return True
         except TelegramAPIError as e:
-            logger.error("Failed to set chat permissions for %s: %s", channel.telegram_id, e)
+            logger.error("Failed to set chat permissions for %s: %s", chat_id, e)
             return False
 
     def build_permissions(self, channel: ChannelGroup) -> ChatPermissions:

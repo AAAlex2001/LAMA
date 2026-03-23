@@ -87,6 +87,14 @@ class CommandProcessor:
 
         return f"чат {message.chat.id}"
 
+    async def resolve_channel(self, chat_id: int):
+        """Получить канал по telegram_id (кешируется на время обработки)."""
+        if not hasattr(self, '_resolved_channels'):
+            self._resolved_channels = {}
+        if chat_id not in self._resolved_channels:
+            self._resolved_channels[chat_id] = await get_channel_by_telegram_id(self.db, chat_id)
+        return self._resolved_channels[chat_id]
+
     async def create_command_inbox_event(
         self,
         message: Message,
@@ -96,7 +104,7 @@ class CommandProcessor:
     ) -> None:
         """Записать использование команды в inbox."""
         inbox_service = InboxActionService(self.db)
-        channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+        channel_obj = await self.resolve_channel(message.chat.id)
         channel_id = channel_obj.id if channel_obj else None
         chat_name = self.get_chat_display_name(message)
 
@@ -246,7 +254,7 @@ class CommandProcessor:
             return
 
         if command_text.lower() in MODERATION_COMMANDS:
-            channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+            channel_obj = await self.resolve_channel(message.chat.id)
             if channel_obj:
                 if not channel_obj.commands_enabled:
                     await auto_delete_service.delete_if_command(
@@ -270,7 +278,7 @@ class CommandProcessor:
 
             try:
                 inbox_service = InboxActionService(self.db)
-                channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
                 cmd = command_text.lower()
 
@@ -347,7 +355,7 @@ class CommandProcessor:
             if triggered_count > 0:
                 try:
                     inbox_service = InboxActionService(self.db)
-                    channel_obj = await get_channel_by_telegram_id(self.db, message.chat.id)
+                    channel_obj = await self.resolve_channel(message.chat.id)
                     channel_id = channel_obj.id if channel_obj else None
 
                     await inbox_service.create_event(event_data={

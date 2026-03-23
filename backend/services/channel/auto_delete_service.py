@@ -47,12 +47,20 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
+    async def resolve_settings(self, telegram_id: int) -> Optional[ChannelAutoDeleteSettings]:
+        """Получить настройки по Telegram ID с кешированием на время жизни сервиса."""
+        if not hasattr(self, '_settings_cache'):
+            self._settings_cache = {}
+        if telegram_id not in self._settings_cache:
+            self._settings_cache[telegram_id] = await self.get_settings_by_telegram_id(telegram_id)
+        return self._settings_cache[telegram_id]
+
     async def delete_if_system(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
         """Удалить системное сообщение если настроено."""
         if not message or not message.chat:
             return False
 
-        settings = await self.get_settings_by_telegram_id(message.chat.id)
+        settings = await self.resolve_settings(message.chat.id)
         if not settings or not settings.delete_system_messages:
             return False
 
@@ -66,7 +74,7 @@ class AutoDeleteService:
         if not message or not message.chat:
             return False
 
-        settings = await self.get_settings_by_telegram_id(message.chat.id)
+        settings = await self.resolve_settings(message.chat.id)
         if not settings or not settings.delete_command_messages:
             return False
 
