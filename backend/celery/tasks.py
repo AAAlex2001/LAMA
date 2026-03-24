@@ -509,10 +509,18 @@ async def captcha_timeout_check_async(
                     user_id=user_id,
                     permissions=ChatPermissions(
                         can_send_messages=False,
+                        can_send_audios=False,
+                        can_send_documents=False,
+                        can_send_photos=False,
+                        can_send_videos=False,
+                        can_send_video_notes=False,
+                        can_send_voice_notes=False,
+                        can_send_polls=False,
                         can_send_other_messages=False,
                         can_add_web_page_previews=False,
                     ),
                     until_date=until,
+                    use_independent_chat_permissions=True,
                 )
             elif fail_action == CaptchaFailAction.BAN:
                 if fail_duration:
@@ -520,22 +528,27 @@ async def captcha_timeout_check_async(
                 await bot.ban_chat_member(chat_id=chat_id, user_id=user_id, until_date=until)
             else:
                 await bot.ban_chat_member(chat_id=chat_id, user_id=user_id)
-                await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+                await bot.unban_chat_member(chat_id=chat_id, user_id=user_id, only_if_banned=True)
 
             await bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
         except TelegramAPIError as e:
-            logger.warning("Captcha fail action error for user %s: %s", user_id, e)
+            logger.error("Captcha fail action error for user %s: %s", user_id, e)
 
         if fail_text and pending:
             try:
-                context = {
-                    "user": {
-                        "first_name": "",
-                        "username": "",
-                        "last_name": "",
-                        "id": user_id,
-                    },
-                }
+                user_info = {"first_name": "", "username": "", "last_name": "", "id": user_id}
+                try:
+                    member = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+                    if member and member.user:
+                        user_info = {
+                            "first_name": member.user.first_name or "",
+                            "username": member.user.username or "",
+                            "last_name": member.user.last_name or "",
+                            "id": member.user.id,
+                        }
+                except TelegramAPIError as exc:
+                    logger.error("captcha_get_chat_member_failed: user=%s chat=%s %s", user_id, chat_id, exc)
+                context = {"user": user_info}
                 text = ShortcodeProcessor.process(fail_text, context)
                 fail_msg = await bot.send_message(chat_id=chat_id, text=text)
                 delayed_delete_message.apply_async(

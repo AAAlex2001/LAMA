@@ -79,6 +79,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
   const botId = channel.bot_id;
   const channelId = channel.id;
+  const isSupergroup = channel.channel_type === 'SUPERGROUP';
 
   useEffect(() => {
     if (window.matchMedia('(min-width: 1440px)').matches) {
@@ -93,10 +94,10 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   }, [dispatch, botId]);
 
   useEffect(() => {
-    if (channelId) {
+    if (channelId && isSupergroup) {
       dispatch(fetchCaptchaSettingsThunk(channelId));
     }
-  }, [dispatch, channelId]);
+  }, [dispatch, channelId, isSupergroup]);
 
   useEffect(() => {
     if (error) showError(error);
@@ -262,6 +263,8 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
             )}
           </div>
 
+          {isSupergroup && (
+            <>
           <div className={styles.divider} />
 
           <div className={styles.toggleRow}>
@@ -415,6 +418,8 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
             onOpenChange={(v) => dispatch(setCaptchaModalOpen(v))}
             channelId={channelId}
           />
+            </>
+          )}
         </div>
       )}
     </div>

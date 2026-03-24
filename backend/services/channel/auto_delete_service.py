@@ -66,6 +66,9 @@ class AutoDeleteService:
         if not message or not message.chat:
             return False
 
+        if message.from_user and message.from_user.is_bot:
+            return False
+
         settings = await self.resolve_settings(message.chat.id)
         if not settings:
             return False

@@ -80,7 +80,14 @@ class MemberProcessor:
             )
 
     async def send_group_captcha(self, message: Message, new_member, channel=None) -> None:
-        """Отправить капчу в группе после вступления."""
+        """Отправить капчу в группе после вступления (только supergroups)."""
+        if message.chat.type != "supergroup":
+            logger.info(
+                "Captcha skipped: chat %s is %s, not supergroup",
+                message.chat.id, message.chat.type,
+            )
+            return
+
         try:
             captcha_service = CaptchaService(self.db)
             question, answer = captcha_service.generate()
@@ -98,6 +105,7 @@ class MemberProcessor:
                     chat_id=message.chat.id,
                     user_id=new_member.id,
                     permissions=restriction,
+                    use_independent_chat_permissions=True,
                 )
             except Exception as e:
                 logger.error(
@@ -167,38 +175,50 @@ class MemberProcessor:
             logger.error(f"Failed to send group captcha: {e}", exc_info=True)
 
     def _build_captcha_restriction(self, channel=None) -> ChatPermissions:
-        """Построить ограничения на основе captcha_restriction_type канала."""
+        """Построить ограничения на основе captcha_restriction_type канала.
+
+        Все поля указываются явно — вызов restrict_chat_member использует
+        use_independent_chat_permissions=True.
+        """
         restriction_type = channel.captcha_restriction_type if channel else None
 
         if restriction_type == "send_media":
             return ChatPermissions(
                 can_send_messages=True,
+                can_send_audios=False,
+                can_send_documents=False,
                 can_send_photos=False,
                 can_send_videos=False,
                 can_send_video_notes=False,
                 can_send_voice_notes=False,
-                can_send_audios=False,
-                can_send_documents=False,
+                can_send_polls=False,
                 can_send_other_messages=False,
                 can_add_web_page_previews=False,
             )
         elif restriction_type == "full":
             return ChatPermissions(
                 can_send_messages=False,
+                can_send_audios=False,
+                can_send_documents=False,
                 can_send_photos=False,
                 can_send_videos=False,
                 can_send_video_notes=False,
                 can_send_voice_notes=False,
-                can_send_audios=False,
-                can_send_documents=False,
-                can_send_other_messages=False,
                 can_send_polls=False,
+                can_send_other_messages=False,
                 can_add_web_page_previews=False,
                 can_invite_users=False,
             )
         else:
             return ChatPermissions(
                 can_send_messages=False,
+                can_send_audios=False,
+                can_send_documents=False,
+                can_send_photos=False,
+                can_send_videos=False,
+                can_send_video_notes=False,
+                can_send_voice_notes=False,
+                can_send_polls=False,
                 can_send_other_messages=False,
                 can_add_web_page_previews=False,
             )

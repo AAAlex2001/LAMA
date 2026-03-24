@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Optional
 from sqlalchemy import select, update
@@ -13,6 +12,7 @@ from backend.schemas.inbox.enums import EventType, EventStatus
 from backend.services.bot_provider import resolve_by_token
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.webhook.welcome import WelcomeHandler
+from backend.celery.tasks import delayed_delete_message
 from backend.services.webhook.callbacks.base import BaseCallbackProcessor
 
 logger = logging.getLogger(__name__)
@@ -172,11 +172,10 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             }
             text = ShortcodeProcessor.process(channel.captcha_message_success, context)
             msg = await bot.send_message(chat_id=chat_id, text=text)
-            await asyncio.sleep(30)
-            try:
-                await bot.delete_message(chat_id=chat_id, message_id=msg.message_id)
-            except TelegramAPIError:
-                pass
+            delayed_delete_message.apply_async(
+                args=[self.bot_model.id, chat_id, msg.message_id],
+                countdown=30,
+            )
         except Exception as e:
             logger.error(f"Failed to send captcha success text: {e}")
 
@@ -310,17 +309,25 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             logger.debug(f"Failed to delete captcha message: {e}")
 
     async def unrestrict_user(self, bot, chat_id: int, user_id: int) -> None:
-        """Снять ограничения после капчи."""
+        """Снять ограничения после капчи (только для supergroups)."""
         try:
             await bot.restrict_chat_member(
                 chat_id=chat_id,
                 user_id=user_id,
                 permissions=ChatPermissions(
                     can_send_messages=True,
-                    can_send_media_messages=True,
+                    can_send_audios=True,
+                    can_send_documents=True,
+                    can_send_photos=True,
+                    can_send_videos=True,
+                    can_send_video_notes=True,
+                    can_send_voice_notes=True,
+                    can_send_polls=True,
                     can_send_other_messages=True,
                     can_add_web_page_previews=True,
+                    can_invite_users=True,
                 ),
+                use_independent_chat_permissions=True,
             )
         except TelegramAPIError as e:
             logger.warning(

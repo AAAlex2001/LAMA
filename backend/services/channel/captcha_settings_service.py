@@ -4,12 +4,12 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.channels import CaptchaFailAction, ChannelGroup
+from backend.models.channels import CaptchaFailAction, ChannelGroup, ChannelType
 from backend.services.channel.utils.query_utils import get_channel
 
 
 class CaptchaSettingsService:
-    """Управление per-channel настройками капчи."""
+    """Управление per-channel настройками капчи (только для supergroups)."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
@@ -36,6 +36,12 @@ class CaptchaSettingsService:
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
+
+        if captcha_enabled and channel.channel_type != ChannelType.SUPERGROUP:
+            raise HTTPException(
+                status_code=400,
+                detail="Капча доступна только для супергрупп",
+            )
 
         if captcha_enabled is not None:
             channel.captcha_enabled = captcha_enabled
