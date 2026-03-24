@@ -313,8 +313,12 @@ async def update_captcha_settings(
     channel_service: ChannelService = Depends(get_channel_service),
     current_user: User = Depends(get_current_user),
 ):
+    channel = await channel_service.get(channel_id, owner_id=current_user.id)
     update_data = data.model_dump(exclude_none=True)
-    channel = await channel_service.update(channel_id, owner_id=current_user.id, **update_data)
+    for field, value in update_data.items():
+        setattr(channel, field, value)
+    await channel_service.db.flush()
+    await channel_service.db.refresh(channel)
     return CaptchaSettingsResponse(
         captcha_enabled=channel.captcha_enabled,
         captcha_timeout_seconds=channel.captcha_timeout_seconds,
