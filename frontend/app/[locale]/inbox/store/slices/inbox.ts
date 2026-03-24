@@ -306,7 +306,7 @@ const inboxSlice = createSlice({
           }
         } else if (params.action === 'read' || params.action === 'ignore') {
           const idsToUpdate = new Set(params.event_ids);
-          const newStatus: BackendEventStatus = params.action === 'read' ? 'processed' : 'banned';
+          const newStatus: BackendEventStatus = params.action === 'read' ? 'processed' : 'ignored';
           state.items = state.items.map((item) =>
             idsToUpdate.has(item.id) || params.apply_to_all
               ? { ...item, status: newStatus, is_new: false }
