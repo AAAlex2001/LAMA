@@ -14,7 +14,7 @@ from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
-from backend.services.webhook.base import get_bot_session
+from backend.services.bot_provider import resolve_by_token
 from backend.services.bot import TriggerService
 
 logger = logging.getLogger(__name__)
@@ -100,8 +100,8 @@ class InboxActionService:
                         continue
 
                     try:
-                        async with get_bot_session(bot.token) as client:
-                            await client.ban_chat_member(channel.telegram_id, event.tg_user_id)
+                        client = resolve_by_token(bot.token)
+                        await client.ban_chat_member(channel.telegram_id, event.tg_user_id)
                         event.status = EventStatus.BANNED
                         await self.create_block_notification(event)
                         modified_count += 1
@@ -122,8 +122,8 @@ class InboxActionService:
                         continue
 
                     try:
-                        async with get_bot_session(bot.token) as client:
-                            await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
+                        client = resolve_by_token(bot.token)
+                        await client.unban_chat_member(channel.telegram_id, event.tg_user_id)
                         event.status = EventStatus.PROCESSED
                         modified_count += 1
                     except Exception as e:
@@ -206,13 +206,13 @@ class InboxActionService:
                 )
                 link = result.scalar_one_or_none()
                 if link and link.member_limit and link.member_count >= link.member_limit and not link.is_revoked:
-                    async with get_bot_session((await self.db.get(Bot, event.bot_id)).token) as bot:
-                        try:
-                            await bot.revoke_chat_invite_link(
-                                chat_id=channel.telegram_id, invite_link=link_url,
-                            )
-                        except Exception as e:
-                            logger.warning("Failed to revoke link: %s", e)
+                    bot = resolve_by_token((await self.db.get(Bot, event.bot_id)).token)
+                    try:
+                        await bot.revoke_chat_invite_link(
+                            chat_id=channel.telegram_id, invite_link=link_url,
+                        )
+                    except Exception as e:
+                        logger.warning("Failed to revoke link: %s", e)
                     link.is_revoked = True
                     await self.db.flush()
         except Exception as e:
@@ -224,21 +224,21 @@ class InboxActionService:
         """Запустить триггер при принятии/отклонении заявки из инбокса."""
         try:
             trigger_service = TriggerService(self.db)
-            async with get_bot_session(bot.token) as telegram_bot:
-                await trigger_service.fire_event(
-                    bot_id=bot.id,
-                    trigger_type=trigger_type,
-                    user_id=event.tg_user_id,
-                    chat_id=channel.telegram_id,
-                    telegram_bot=telegram_bot,
-                    chat_type="supergroup",
-                    context={
-                        "username": event.tg_username,
-                        "first_name": (event.payload or {}).get("first_name"),
-                        "chat_title": (event.payload or {}).get("chat_title"),
-                        "admin_action": True,
-                    },
-                )
+            telegram_bot = resolve_by_token(bot.token)
+            await trigger_service.fire_event(
+                bot_id=bot.id,
+                trigger_type=trigger_type,
+                user_id=event.tg_user_id,
+                chat_id=channel.telegram_id,
+                telegram_bot=telegram_bot,
+                chat_type="supergroup",
+                context={
+                    "username": event.tg_username,
+                    "first_name": (event.payload or {}).get("first_name"),
+                    "chat_title": (event.payload or {}).get("chat_title"),
+                    "admin_action": True,
+                },
+            )
         except Exception as e:
             logger.error("fire_join_trigger failed: %s", e)
 
@@ -286,252 +286,252 @@ class InboxActionService:
             raise HTTPException(status_code=404, detail="Event not found")
 
         try:
-            async with get_bot_session(bot.token) as client:
+            client = resolve_by_token(bot.token)
 
-                if action_type in ("accept", "reject"):
-                    channel = (
-                        await self.db.get(ChannelGroup, event.channel_id)
-                        if event.channel_id else None
+            if action_type in ("accept", "reject"):
+                channel = (
+                    await self.db.get(ChannelGroup, event.channel_id)
+                    if event.channel_id else None
+                )
+                if not (channel and channel.telegram_id and event.tg_user_id):
+                    raise HTTPException(status_code=404, detail="Event not found")
+
+                if action_type == "accept":
+                    await client.approve_chat_join_request(
+                        chat_id=channel.telegram_id,
+                        user_id=event.tg_user_id,
                     )
-                    if not (channel and channel.telegram_id and event.tg_user_id):
-                        raise HTTPException(status_code=404, detail="Event not found")
+                    join_state = "accepted"
+                    trigger_type = TriggerType.JOIN_REQUEST_APPROVED
+                    await self.increment_link_counter(event, channel)
+                else:
+                    await client.decline_chat_join_request(
+                        chat_id=channel.telegram_id,
+                        user_id=event.tg_user_id,
+                    )
+                    join_state = "rejected"
+                    trigger_type = TriggerType.JOIN_REQUEST_REJECTED
 
-                    if action_type == "accept":
-                        await client.approve_chat_join_request(
+                new_payload = dict(event.payload or {})
+                new_payload["join_state"] = join_state
+                event.payload = new_payload
+                event.status = EventStatus.PROCESSED
+                self.mark_payload_handled(event)
+                await self.db.flush()
+
+                await self.fire_join_trigger(
+                    bot, trigger_type, event, channel,
+                )
+
+                return SpecificActionResult(status=join_state)
+
+            if action_type == "unban":
+                channel = (
+                    await self.db.get(ChannelGroup, event.channel_id)
+                    if event.channel_id else None
+                )
+                if not (channel and channel.telegram_id and event.tg_user_id):
+                    raise HTTPException(status_code=404, detail="Event not found")
+
+                if str(channel.telegram_id).startswith("-"):
+                    try:
+                        await client.restrict_chat_member(
                             chat_id=channel.telegram_id,
                             user_id=event.tg_user_id,
+                            permissions=ChatPermissions(
+                                can_send_messages=True,
+                                can_send_audios=True,
+                                can_send_documents=True,
+                                can_send_photos=True,
+                                can_send_videos=True,
+                                can_send_video_notes=True,
+                                can_send_voice_notes=True,
+                                can_send_polls=True,
+                                can_send_other_messages=True,
+                                can_add_web_page_previews=True,
+                                can_change_info=True,
+                                can_invite_users=True,
+                                can_pin_messages=True,
+                                can_manage_topics=True,
+                            )
                         )
-                        join_state = "accepted"
-                        trigger_type = TriggerType.JOIN_REQUEST_APPROVED
-                        await self.increment_link_counter(event, channel)
-                    else:
-                        await client.decline_chat_join_request(
-                            chat_id=channel.telegram_id,
-                            user_id=event.tg_user_id,
-                        )
-                        join_state = "rejected"
-                        trigger_type = TriggerType.JOIN_REQUEST_REJECTED
-
-                    new_payload = dict(event.payload or {})
-                    new_payload["join_state"] = join_state
-                    event.payload = new_payload
-                    event.status = EventStatus.PROCESSED
-                    self.mark_payload_handled(event)
-                    await self.db.flush()
-
-                    await self.fire_join_trigger(
-                        bot, trigger_type, event, channel,
-                    )
-
-                    return SpecificActionResult(status=join_state)
-
-                if action_type == "unban":
-                    channel = (
-                        await self.db.get(ChannelGroup, event.channel_id)
-                        if event.channel_id else None
-                    )
-                    if not (channel and channel.telegram_id and event.tg_user_id):
-                        raise HTTPException(status_code=404, detail="Event not found")
-
-                    if str(channel.telegram_id).startswith("-"):
+                    except Exception as e:
+                        logger.warning("Не удалось снять мут через restrict_chat_member, пробуем unban: %s", e)
                         try:
-                            await client.restrict_chat_member(
+                            await client.unban_chat_member(
                                 chat_id=channel.telegram_id,
                                 user_id=event.tg_user_id,
-                                permissions=ChatPermissions(
-                                    can_send_messages=True,
-                                    can_send_audios=True,
-                                    can_send_documents=True,
-                                    can_send_photos=True,
-                                    can_send_videos=True,
-                                    can_send_video_notes=True,
-                                    can_send_voice_notes=True,
-                                    can_send_polls=True,
-                                    can_send_other_messages=True,
-                                    can_add_web_page_previews=True,
-                                    can_change_info=True,
-                                    can_invite_users=True,
-                                    can_pin_messages=True,
-                                    can_manage_topics=True,
-                                )
+                                only_if_banned=True
                             )
-                        except Exception as e:
-                            logger.warning("Не удалось снять мут через restrict_chat_member, пробуем unban: %s", e)
-                            try:
-                                await client.unban_chat_member(
-                                    chat_id=channel.telegram_id,
-                                    user_id=event.tg_user_id,
-                                    only_if_banned=True
-                                )
-                            except Exception as unban_e:
-                                logger.error("Ошибка при unban_chat_member: %s", unban_e)
+                        except Exception as unban_e:
+                            logger.error("Ошибка при unban_chat_member: %s", unban_e)
 
-                    new_payload = dict(event.payload or {})
-                    new_payload["is_unbanned"] = True
-                    event.payload = new_payload
-                    event.status = EventStatus.PROCESSED
-                    self.mark_payload_handled(event)
-                    await self.db.flush()
-                    return SpecificActionResult(status="unbanned")
+                new_payload = dict(event.payload or {})
+                new_payload["is_unbanned"] = True
+                event.payload = new_payload
+                event.status = EventStatus.PROCESSED
+                self.mark_payload_handled(event)
+                await self.db.flush()
+                return SpecificActionResult(status="unbanned")
 
-                if action_type == "block":
-                    if not event.channel_id:
-                        dm_chat_id = (event.payload or {}).get("chat_id")
-                        if dm_chat_id and event.bot_id:
-                            await self.db.execute(
-                                update(DirectChat)
-                                .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == dm_chat_id)
-                                .values(is_blocked=True)
-                            )
-                        event.status = EventStatus.BANNED
-                        await self.create_block_notification(event)
-                        self.mark_payload_handled(event)
-                        await self.db.flush()
-                        return SpecificActionResult(status="blocked")
-
-                    channel = await self.db.get(ChannelGroup, event.channel_id)
-                    if not (channel and channel.telegram_id and event.tg_user_id):
-                        raise HTTPException(status_code=404, detail="Event not found")
-
-                    if str(channel.telegram_id).startswith("-"):
-                        try:
-                            await client.ban_chat_member(
-                                chat_id=channel.telegram_id,
-                                user_id=event.tg_user_id,
-                            )
-                        except Exception as e:
-                            logger.error("Не удалось забанить пользователя в канале %s: %s", channel.telegram_id, e)
-
+            if action_type == "block":
+                if not event.channel_id:
+                    dm_chat_id = (event.payload or {}).get("chat_id")
+                    if dm_chat_id and event.bot_id:
+                        await self.db.execute(
+                            update(DirectChat)
+                            .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == dm_chat_id)
+                            .values(is_blocked=True)
+                        )
                     event.status = EventStatus.BANNED
                     await self.create_block_notification(event)
                     self.mark_payload_handled(event)
                     await self.db.flush()
                     return SpecificActionResult(status="blocked")
 
-                if action_type == "delete_and_block":
-                    msg_chat_id = (event.payload or {}).get("chat_id")
-                    msg_id = (event.payload or {}).get("message_id")
+                channel = await self.db.get(ChannelGroup, event.channel_id)
+                if not (channel and channel.telegram_id and event.tg_user_id):
+                    raise HTTPException(status_code=404, detail="Event not found")
 
-                    if msg_chat_id and msg_id:
-                        try:
-                            await client.delete_message(chat_id=msg_chat_id, message_id=msg_id)
-                        except Exception as e:
-                            logger.warning("delete_and_block: не удалось удалить сообщение: %s", e)
-
-                    if not event.channel_id:
-                        if msg_chat_id and event.bot_id:
-                            await self.db.execute(
-                                update(DirectChat)
-                                .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == msg_chat_id)
-                                .values(is_blocked=True)
-                            )
-                    else:
-                        channel = await self.db.get(ChannelGroup, event.channel_id)
-                        if channel and channel.telegram_id and event.tg_user_id:
-                            if str(channel.telegram_id).startswith("-"):
-                                try:
-                                    await client.ban_chat_member(
-                                        chat_id=channel.telegram_id,
-                                        user_id=event.tg_user_id,
-                                    )
-                                except Exception as e:
-                                    logger.error("delete_and_block: бан не удался: %s", e)
-
-                    event.status = EventStatus.BANNED
-                    await self.create_block_notification(event)
-                    self.mark_payload_handled(event)
-                    await self.db.flush()
-                    return SpecificActionResult(status="deleted_and_blocked")
-
-                if action_type == "delete_message":
-                    msg_chat_id = (event.payload or {}).get("chat_id")
-                    msg_id = (event.payload or {}).get("message_id")
-                    if not msg_chat_id or not msg_id:
-                        logger.warning(
-                            "delete_message: в payload события %s отсутствует chat_id или message_id",
-                            event.id,
+                if str(channel.telegram_id).startswith("-"):
+                    try:
+                        await client.ban_chat_member(
+                            chat_id=channel.telegram_id,
+                            user_id=event.tg_user_id,
                         )
-                        raise HTTPException(status_code=404, detail="Event not found")
+                    except Exception as e:
+                        logger.error("Не удалось забанить пользователя в канале %s: %s", channel.telegram_id, e)
 
-                    await client.delete_message(
-                        chat_id=msg_chat_id,
-                        message_id=msg_id,
+                event.status = EventStatus.BANNED
+                await self.create_block_notification(event)
+                self.mark_payload_handled(event)
+                await self.db.flush()
+                return SpecificActionResult(status="blocked")
+
+            if action_type == "delete_and_block":
+                msg_chat_id = (event.payload or {}).get("chat_id")
+                msg_id = (event.payload or {}).get("message_id")
+
+                if msg_chat_id and msg_id:
+                    try:
+                        await client.delete_message(chat_id=msg_chat_id, message_id=msg_id)
+                    except Exception as e:
+                        logger.warning("delete_and_block: не удалось удалить сообщение: %s", e)
+
+                if not event.channel_id:
+                    if msg_chat_id and event.bot_id:
+                        await self.db.execute(
+                            update(DirectChat)
+                            .where(DirectChat.bot_id == event.bot_id, DirectChat.tg_chat_id == msg_chat_id)
+                            .values(is_blocked=True)
+                        )
+                else:
+                    channel = await self.db.get(ChannelGroup, event.channel_id)
+                    if channel and channel.telegram_id and event.tg_user_id:
+                        if str(channel.telegram_id).startswith("-"):
+                            try:
+                                await client.ban_chat_member(
+                                    chat_id=channel.telegram_id,
+                                    user_id=event.tg_user_id,
+                                )
+                            except Exception as e:
+                                logger.error("delete_and_block: бан не удался: %s", e)
+
+                event.status = EventStatus.BANNED
+                await self.create_block_notification(event)
+                self.mark_payload_handled(event)
+                await self.db.flush()
+                return SpecificActionResult(status="deleted_and_blocked")
+
+            if action_type == "delete_message":
+                msg_chat_id = (event.payload or {}).get("chat_id")
+                msg_id = (event.payload or {}).get("message_id")
+                if not msg_chat_id or not msg_id:
+                    logger.warning(
+                        "delete_message: в payload события %s отсутствует chat_id или message_id",
+                        event.id,
                     )
-                    event.status = EventStatus.PROCESSED
-                    self.mark_payload_handled(event)
-                    await self.db.flush()
-                    return SpecificActionResult(status="deleted")
+                    raise HTTPException(status_code=404, detail="Event not found")
 
-                if action_type == "change_ban":
-                    ban_type = payload.get("ban_type", "ban")           # "ban" или "mute"
-                    duration_seconds = payload.get("duration_seconds")  # None = навсегда
-                    everywhere = payload.get("everywhere", False)
+                await client.delete_message(
+                    chat_id=msg_chat_id,
+                    message_id=msg_id,
+                )
+                event.status = EventStatus.PROCESSED
+                self.mark_payload_handled(event)
+                await self.db.flush()
+                return SpecificActionResult(status="deleted")
 
-                    if not event.tg_user_id:
-                        raise HTTPException(status_code=404, detail="Event not found")
+            if action_type == "change_ban":
+                ban_type = payload.get("ban_type", "ban")           # "ban" или "mute"
+                duration_seconds = payload.get("duration_seconds")  # None = навсегда
+                everywhere = payload.get("everywhere", False)
 
-                    until_date = None
-                    if duration_seconds:
-                        until_date = datetime.now(timezone.utc) + timedelta(
-                            seconds=int(duration_seconds)
-                        )
+                if not event.tg_user_id:
+                    raise HTTPException(status_code=404, detail="Event not found")
 
-                    if everywhere:
-                        stmt = select(ChannelGroup).where(ChannelGroup.owner_id == event.owner_id)
-                        result = await self.db.execute(stmt)
-                        target_channels = result.scalars().all()
-                    else:
-                        ch = (
-                            await self.db.get(ChannelGroup, event.channel_id)
-                            if event.channel_id else None
-                        )
-                        target_channels = [ch] if (ch and ch.telegram_id) else []
+                until_date = None
+                if duration_seconds:
+                    until_date = datetime.now(timezone.utc) + timedelta(
+                        seconds=int(duration_seconds)
+                    )
 
-                    affected = []
-                    for ch in target_channels:
-                        if not ch or not ch.telegram_id:
-                            continue
-                        try:
-                            if ban_type == "mute":
-                                if until_date:
-                                    await client.restrict_chat_member(
-                                        chat_id=ch.telegram_id,
-                                        user_id=event.tg_user_id,
-                                        permissions=ChatPermissions(can_send_messages=False),
-                                        until_date=until_date,
-                                    )
-                                else:
-                                    await client.restrict_chat_member(
-                                        chat_id=ch.telegram_id,
-                                        user_id=event.tg_user_id,
-                                        permissions=ChatPermissions(can_send_messages=False),
-                                    )
+                if everywhere:
+                    stmt = select(ChannelGroup).where(ChannelGroup.owner_id == event.owner_id)
+                    result = await self.db.execute(stmt)
+                    target_channels = result.scalars().all()
+                else:
+                    ch = (
+                        await self.db.get(ChannelGroup, event.channel_id)
+                        if event.channel_id else None
+                    )
+                    target_channels = [ch] if (ch and ch.telegram_id) else []
+
+                affected = []
+                for ch in target_channels:
+                    if not ch or not ch.telegram_id:
+                        continue
+                    try:
+                        if ban_type == "mute":
+                            if until_date:
+                                await client.restrict_chat_member(
+                                    chat_id=ch.telegram_id,
+                                    user_id=event.tg_user_id,
+                                    permissions=ChatPermissions(can_send_messages=False),
+                                    until_date=until_date,
+                                )
                             else:
-                                if until_date:
-                                    await client.ban_chat_member(
-                                        chat_id=ch.telegram_id,
-                                        user_id=event.tg_user_id,
-                                        until_date=until_date,
-                                    )
-                                else:
-                                    await client.ban_chat_member(
-                                        chat_id=ch.telegram_id,
-                                        user_id=event.tg_user_id,
-                                    )
-                            affected.append(ch.id)
-                        except Exception as e:
-                            logger.error("Не удалось изменить бан для канала %s: %s", ch.id, e)
+                                await client.restrict_chat_member(
+                                    chat_id=ch.telegram_id,
+                                    user_id=event.tg_user_id,
+                                    permissions=ChatPermissions(can_send_messages=False),
+                                )
+                        else:
+                            if until_date:
+                                await client.ban_chat_member(
+                                    chat_id=ch.telegram_id,
+                                    user_id=event.tg_user_id,
+                                    until_date=until_date,
+                                )
+                            else:
+                                await client.ban_chat_member(
+                                    chat_id=ch.telegram_id,
+                                    user_id=event.tg_user_id,
+                                )
+                        affected.append(ch.id)
+                    except Exception as e:
+                        logger.error("Не удалось изменить бан для канала %s: %s", ch.id, e)
 
-                    new_payload = dict(event.payload or {})
-                    new_payload["ban_type"] = ban_type
-                    new_payload["duration_seconds"] = duration_seconds
-                    new_payload["everywhere"] = everywhere
-                    new_payload["is_unbanned"] = False
-                    event.payload = new_payload
-                    event.status = EventStatus.PROCESSED
-                    self.mark_payload_handled(event)
-                    await self.db.flush()
-                    return SpecificActionResult(status="ban_updated", affected_channels=affected)
+                new_payload = dict(event.payload or {})
+                new_payload["ban_type"] = ban_type
+                new_payload["duration_seconds"] = duration_seconds
+                new_payload["everywhere"] = everywhere
+                new_payload["is_unbanned"] = False
+                event.payload = new_payload
+                event.status = EventStatus.PROCESSED
+                self.mark_payload_handled(event)
+                await self.db.flush()
+                return SpecificActionResult(status="ban_updated", affected_channels=affected)
 
         except Exception as e:
             logger.error(

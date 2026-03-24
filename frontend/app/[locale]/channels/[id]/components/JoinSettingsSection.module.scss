@@ -171,3 +171,102 @@
   color: #B0B4B8;
   padding: 8px 0;
 }
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: #E8EAED;
+  margin: 4px 0;
+}
+
+.captchaDescription {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+}
+
+.captchaSettings {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 2px;
+}
+
+.pickerRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pickerLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex-shrink: 0;
+}
+
+.pickerRight {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pickerValueText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+}
+
+.pickerChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.pickerChevronOpen {
+  transform: rotate(180deg);
+}
+
+.pickerOptions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 2px;
+}
+
+.radioRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.radioRowActive {
+  background: #EBF2FE;
+  color: #3B82F6;
+}
+
+.configButton {
+  margin-top: 8px;
+  align-self: flex-start;
+}

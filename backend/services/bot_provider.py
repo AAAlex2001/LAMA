@@ -158,6 +158,17 @@ async def resolve_for_chat(
     return resolve_master()
 
 
+async def evict_bot(token: str) -> None:
+    """Удалить бота из кешей и закрыть aiohttp-сессию."""
+    bot = cache.pop(token, None)
+    bot_info_cache.pop(token, None)
+    if bot:
+        try:
+            await bot.bot.session.close()
+        except Exception:
+            pass
+
+
 async def cleanup_bot_cache():
     """Закрыть все бот-сессии и очистить кеш."""
     for rate_limited_bot in cache.values():

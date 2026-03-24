@@ -8,7 +8,7 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
-from backend.services.bot_provider import get_cached_bot
+from backend.services.bot_provider import resolve_by_token, resolve_master
 from backend.services.channel.utils.message_utils import time_to_minutes, is_within_window
 
 logger = logging.getLogger(__name__)
@@ -125,8 +125,8 @@ class ChatPermissionsService:
     def resolve_bot(self, channel: ChannelGroup):
         """Resolve bot for channel. Returns RateLimitedBot or None."""
         if channel.bot and channel.bot.token:
-            return get_cached_bot(channel.bot.token)
-        master_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-        if master_token:
-            return get_cached_bot(master_token)
-        return None
+            return resolve_by_token(channel.bot.token)
+        try:
+            return resolve_master()
+        except ValueError:
+            return None

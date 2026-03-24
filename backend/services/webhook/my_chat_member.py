@@ -5,7 +5,7 @@ from aiogram.types import ChatMemberUpdated
 from backend.models.bots import Bot as BotModel
 from backend.services.channel.sync_service import SyncService
 from backend.services.channel.utils.chat_data_utils import build_chat_data
-from backend.services.bot_provider import get_cached_bot
+from backend.services.bot_provider import resolve_by_token
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class MyChatMemberHandler:
             try:
                 sync_service = SyncService(self.db)
                 
-                rate_limited_bot = get_cached_bot(self.bot_model.token)
+                rate_limited_bot = resolve_by_token(self.bot_model.token)
                 bot = rate_limited_bot.bot
                 
                 full_chat = await bot.get_chat(chat.id)

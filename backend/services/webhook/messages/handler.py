@@ -16,7 +16,8 @@ from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, 
 from backend.models.channels import ChannelGroup
 from backend.services.channel import ChannelAutoDeleteService
 from backend.services.channel.utils.message_utils import is_system_message
-from backend.services.webhook.base import TELEGRAM_API_TIMEOUT, get_bot_session
+from backend.services.bot_provider import resolve_by_token
+from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
@@ -281,43 +282,43 @@ class MessageHandler:
         saved_msg = self.saved_msg
 
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                if saved_msg and saved_msg.media_file_id and not saved_msg.media_url:
-                    try:
-                        tg_file = await telegram_bot.get_file(saved_msg.media_file_id)
-                        if tg_file.file_path:
-                            saved_msg.media_url = (
-                                f"https://api.telegram.org/file/"
-                                f"bot{self.bot_model.token}/{tg_file.file_path}"
-                            )
-                            await self.db.flush()
-                    except Exception as e:
-                        logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
-
-                if message.chat.type == "private" and message.from_user:
-                    photo_url = await self.resolve_user_photo(message.from_user.id)
-                    if photo_url:
-                        chat_svc = DirectChatService(self.db)
-                        await chat_svc.update_photo(
-                            self.bot_model.id, message.chat.id, photo_url,
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            if saved_msg and saved_msg.media_file_id and not saved_msg.media_url:
+                try:
+                    tg_file = await telegram_bot.get_file(saved_msg.media_file_id)
+                    if tg_file.file_path:
+                        saved_msg.media_url = (
+                            f"https://api.telegram.org/file/"
+                            f"bot{self.bot_model.token}/{tg_file.file_path}"
                         )
+                        await self.db.flush()
+                except Exception as e:
+                    logger.error(f"Не удалось получить URL медиафайла: {e}", exc_info=True)
 
-                member_processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
-
-                if message.new_chat_members:
-                    await member_processor.handle_new_members(message)
-
-                if message.left_chat_member:
-                    await member_processor.handle_member_left(message)
-
-                if text_content:
-                    text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
-                    await text_processor.process_text(
-                        message, text_content, chat_type,
+            if message.chat.type == "private" and message.from_user:
+                photo_url = await self.resolve_user_photo(message.from_user.id)
+                if photo_url:
+                    chat_svc = DirectChatService(self.db)
+                    await chat_svc.update_photo(
+                        self.bot_model.id, message.chat.id, photo_url,
                     )
 
-                auto_delete_service = ChannelAutoDeleteService(self.db)
-                await auto_delete_service.process_auto_delete(message, bot_id=self.bot_model.id)
+            member_processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
+
+            if message.new_chat_members:
+                await member_processor.handle_new_members(message)
+
+            if message.left_chat_member:
+                await member_processor.handle_member_left(message)
+
+            if text_content:
+                text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
+                await text_processor.process_text(
+                    message, text_content, chat_type,
+                )
+
+            auto_delete_service = ChannelAutoDeleteService(self.db)
+            await auto_delete_service.process_auto_delete(message, bot_id=self.bot_model.id)
 
         except Exception as e:
             logger.error(f"Side effects processing error: {e}", exc_info=True)
@@ -325,13 +326,13 @@ class MessageHandler:
     async def resolve_user_photo(self, user_id: int) -> Optional[str]:
         """Получить URL аватара пользователя через Telegram API."""
         try:
-            async with get_bot_session(self.bot_model.token) as client:
-                photos = await client.get_user_profile_photos(user_id=user_id, limit=1)
-                if photos.photos and photos.photos[0]:
-                    smallest = photos.photos[0][-1]
-                    tg_file = await client.get_file(smallest.file_id)
-                    if tg_file.file_path:
-                        return f"https://api.telegram.org/file/bot{self.bot_model.token}/{tg_file.file_path}"
+            client = resolve_by_token(self.bot_model.token)
+            photos = await client.get_user_profile_photos(user_id=user_id, limit=1)
+            if photos.photos and photos.photos[0]:
+                smallest = photos.photos[0][-1]
+                tg_file = await client.get_file(smallest.file_id)
+                if tg_file.file_path:
+                    return f"https://api.telegram.org/file/bot{self.bot_model.token}/{tg_file.file_path}"
         except Exception as e:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None

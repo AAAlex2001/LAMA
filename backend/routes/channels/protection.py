@@ -15,6 +15,8 @@ from backend.routes.channels.dependencies import (
 from backend.schemas.channels import (
     AntispamSettingsResponse,
     AntispamSettingsUpdate,
+    CaptchaSettingsResponse,
+    CaptchaSettingsUpdate,
     ChannelAutoDeleteSettingsResponse,
     ChannelAutoDeleteSettingsUpdate,
     FloodSettingsResponse,
@@ -282,4 +284,44 @@ async def update_night_mode(
         night_mode_end=channel.night_mode_end,
         night_mode_block_media=channel.night_mode_block_media,
         night_mode_block_text=channel.night_mode_block_text,
+    )
+
+
+@router.get("/{channel_id}/captcha", response_model=CaptchaSettingsResponse)
+async def get_captcha_settings(
+    channel_id: int,
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    channel = await channel_service.get(channel_id, owner_id=current_user.id)
+    return CaptchaSettingsResponse(
+        captcha_enabled=channel.captcha_enabled,
+        captcha_timeout_seconds=channel.captcha_timeout_seconds,
+        captcha_fail_action=channel.captcha_fail_action,
+        captcha_fail_duration_seconds=channel.captcha_fail_duration_seconds,
+        captcha_restriction_type=channel.captcha_restriction_type,
+        captcha_message_before=channel.captcha_message_before,
+        captcha_message_fail=channel.captcha_message_fail,
+        captcha_message_success=channel.captcha_message_success,
+    )
+
+
+@router.put("/{channel_id}/captcha", response_model=CaptchaSettingsResponse)
+async def update_captcha_settings(
+    channel_id: int,
+    data: CaptchaSettingsUpdate,
+    channel_service: ChannelService = Depends(get_channel_service),
+    current_user: User = Depends(get_current_user),
+):
+    update_data = data.model_dump(exclude_none=True)
+    channel = await channel_service.update(channel_id, owner_id=current_user.id, **update_data)
+    return CaptchaSettingsResponse(
+        captcha_enabled=channel.captcha_enabled,
+        captcha_timeout_seconds=channel.captcha_timeout_seconds,
+        captcha_fail_action=channel.captcha_fail_action,
+        captcha_fail_duration_seconds=channel.captcha_fail_duration_seconds,
+        captcha_restriction_type=channel.captcha_restriction_type,
+        captcha_message_before=channel.captcha_message_before,
+        captcha_message_fail=channel.captcha_message_fail,
+        captcha_message_success=channel.captcha_message_success,
     )

@@ -13,7 +13,7 @@ from backend.schemas.bots.messages import SendMessageRequest
 from backend.schemas.direct.message import EditMessageRequest
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.publications.utils.media_utils import is_audio_url, is_document_url, is_video_url
-from backend.services.webhook.base import get_bot_session
+from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
 from backend.websockets.manager import ws_manager
 
@@ -202,11 +202,11 @@ class DirectMessageService:
             return None
 
         try:
-            async with get_bot_session(bot_token) as client:
-                tg_file = await client.get_file(media_file_id)
-                if not tg_file.file_path:
-                    raise HTTPException(status_code=404, detail="Media file not found")
-                return f"https://api.telegram.org/file/bot{bot_token}/{tg_file.file_path}"
+            client = resolve_by_token(bot_token)
+            tg_file = await client.get_file(media_file_id)
+            if not tg_file.file_path:
+                raise HTTPException(status_code=404, detail="Media file not found")
+            return f"https://api.telegram.org/file/bot{bot_token}/{tg_file.file_path}"
         except Exception as e:
             logger.error(f"Error resolving media URL for file_id={media_file_id}: {e}", exc_info=True)
             raise HTTPException(status_code=400, detail="Failed to resolve media file")
@@ -242,45 +242,45 @@ class DirectMessageService:
         # Always use URLs for Direct messages — they work with any bot.
         tg_responses: List[Message] = []
         try:
-            async with get_bot_session(bot.token) as client:
-                if len(media_urls) > 1:
-                    media_group = [
-                        self.build_media_item(
-                            media_url,
-                            request.text_content if index == 0 else None,
-                        )
-                        for index, media_url in enumerate(media_urls[:10])
-                    ]
-                    tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
-                elif len(media_urls) == 1:
-                    media_url = media_urls[0]
-                    message_type = request.media_type or self.detect_media_type(media_url)
-                    if message_type in (MessageType.VIDEO, MessageType.DOCUMENT, MessageType.AUDIO, MessageType.VOICE):
-                        filename = media_url.rsplit("/", 1)[-1].split("?")[0]
-                        media = URLInputFile(media_url, filename=filename)
-                    else:
-                        media = media_url
+            client = resolve_by_token(bot.token)
+            if len(media_urls) > 1:
+                media_group = [
+                    self.build_media_item(
+                        media_url,
+                        request.text_content if index == 0 else None,
+                    )
+                    for index, media_url in enumerate(media_urls[:10])
+                ]
+                tg_responses = list(await client.send_media_group(chat_id=tg_chat_id, media=media_group, **reply_params))
+            elif len(media_urls) == 1:
+                media_url = media_urls[0]
+                message_type = request.media_type or self.detect_media_type(media_url)
+                if message_type in (MessageType.VIDEO, MessageType.DOCUMENT, MessageType.AUDIO, MessageType.VOICE):
+                    filename = media_url.rsplit("/", 1)[-1].split("?")[0]
+                    media = URLInputFile(media_url, filename=filename)
+                else:
+                    media = media_url
 
-                    if message_type == MessageType.PHOTO:
-                        tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.VIDEO:
-                        tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.DOCUMENT:
-                        tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.AUDIO:
-                        tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.VOICE:
-                        tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.ANIMATION:
-                        tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    elif message_type == MessageType.STICKER:
-                        tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media, reply_markup=reply_markup, **reply_params)]
-                    elif request.text_content:
-                        tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
-                    else:
-                        return []
+                if message_type == MessageType.PHOTO:
+                    tg_responses = [await client.send_photo(chat_id=tg_chat_id, photo=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.VIDEO:
+                    tg_responses = [await client.send_video(chat_id=tg_chat_id, video=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.DOCUMENT:
+                    tg_responses = [await client.send_document(chat_id=tg_chat_id, document=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.AUDIO:
+                    tg_responses = [await client.send_audio(chat_id=tg_chat_id, audio=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.VOICE:
+                    tg_responses = [await client.send_voice(chat_id=tg_chat_id, voice=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.ANIMATION:
+                    tg_responses = [await client.send_animation(chat_id=tg_chat_id, animation=media, caption=request.text_content, reply_markup=reply_markup, **reply_params)]
+                elif message_type == MessageType.STICKER:
+                    tg_responses = [await client.send_sticker(chat_id=tg_chat_id, sticker=media, reply_markup=reply_markup, **reply_params)]
                 elif request.text_content:
                     tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
+                else:
+                    return []
+            elif request.text_content:
+                tg_responses = [await client.send_message(chat_id=tg_chat_id, text=request.text_content, reply_markup=reply_markup, **reply_params)]
 
             if not tg_responses:
                 return []
@@ -337,29 +337,29 @@ class DirectMessageService:
         msg, bot = row[0], row[1]
         
         try:
-            async with get_bot_session(bot.token) as client:
-                if request.text_content:
-                    if msg.message_type == MessageType.TEXT:
-                        await client.edit_message_text(
-                            text=request.text_content,
-                            chat_id=msg.chat_id,
-                            message_id=msg.telegram_message_id,
-                        )
-                    else:
-                        await client.edit_message_caption(
-                            caption=request.text_content,
-                            chat_id=msg.chat_id,
-                            message_id=msg.telegram_message_id,
-                        )
-
-                    msg.text_content = request.text_content
-                    await self.db.flush()
-                    await self.db.refresh(msg)
-
-                    await ws_manager.broadcast_chat_update(
-                        user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,
-                        event_type="message_edited", payload={"message_id": msg.id}
+            client = resolve_by_token(bot.token)
+            if request.text_content:
+                if msg.message_type == MessageType.TEXT:
+                    await client.edit_message_text(
+                        text=request.text_content,
+                        chat_id=msg.chat_id,
+                        message_id=msg.telegram_message_id,
                     )
+                else:
+                    await client.edit_message_caption(
+                        caption=request.text_content,
+                        chat_id=msg.chat_id,
+                        message_id=msg.telegram_message_id,
+                    )
+
+                msg.text_content = request.text_content
+                await self.db.flush()
+                await self.db.refresh(msg)
+
+                await ws_manager.broadcast_chat_update(
+                    user_id=owner_id, bot_id=msg.bot_id, chat_id=msg.chat_id,
+                    event_type="message_edited", payload={"message_id": msg.id}
+                )
         except Exception as e:
             logger.error(f"Error editing message via Direct API: {e}", exc_info=True)
             raise HTTPException(status_code=400, detail="Failed to edit message")
@@ -381,8 +381,8 @@ class DirectMessageService:
         msg, bot = row[0], row[1]
         
         try:
-            async with get_bot_session(bot.token) as client:
-                await client.delete_message(chat_id=msg.chat_id, message_id=msg.telegram_message_id)
+            client = resolve_by_token(bot.token)
+            await client.delete_message(chat_id=msg.chat_id, message_id=msg.telegram_message_id)
             await self.db.delete(msg)
             await self.db.flush()
 

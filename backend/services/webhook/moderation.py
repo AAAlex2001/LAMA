@@ -17,8 +17,8 @@ from backend.services.channel import (
 )
 from backend.models.channels import ActionType
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import (
-    get_bot_session,
     TELEGRAM_API_TIMEOUT,
     DB_QUERY_TIMEOUT,
 )
@@ -109,29 +109,29 @@ class ModerationHandler:
             return
 
         try:
-            async with get_bot_session(self.bot_model.token) as bot:
-                # Удаляем сообщение
-                try:
-                    await asyncio.wait_for(
-                        bot.delete_message(
-                            chat_id=message.chat.id,
-                            message_id=message.message_id,
-                        ),
-                        timeout=TELEGRAM_API_TIMEOUT
-                    )
-                except (TelegramAPIError, asyncio.TimeoutError) as e:
-                    logger.debug(f"Failed to delete message: {e}")
+            bot = resolve_by_token(self.bot_model.token)
+            # Удаляем сообщение
+            try:
+                await asyncio.wait_for(
+                    bot.delete_message(
+                        chat_id=message.chat.id,
+                        message_id=message.message_id,
+                    ),
+                    timeout=TELEGRAM_API_TIMEOUT
+                )
+            except (TelegramAPIError, asyncio.TimeoutError) as e:
+                logger.debug(f"Failed to delete message: {e}")
 
-                # Применяем действие к пользователю
-                if not message.from_user:
-                    return
+            # Применяем действие к пользователю
+            if not message.from_user:
+                return
 
-                if action == ActionType.MUTE:
-                    await self.mute_user(bot, message, mute_duration)
-                elif action == ActionType.KICK:
-                    await self.kick_user(bot, message)
-                elif action == ActionType.UNMUTE:
-                    await self.unmute_user(bot, message)
+            if action == ActionType.MUTE:
+                await self.mute_user(bot, message, mute_duration)
+            elif action == ActionType.KICK:
+                await self.kick_user(bot, message)
+            elif action == ActionType.UNMUTE:
+                await self.unmute_user(bot, message)
 
         except asyncio.TimeoutError:
             uid = message.from_user.id if message.from_user else 'unknown'

@@ -14,7 +14,7 @@ from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
 from backend.services.bot import BotService
-from backend.services.bot_provider import get_cached_bot
+from backend.services.bot_provider import resolve_by_token
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 
@@ -51,7 +51,7 @@ class SyncService:
             self.get_bot_model(bot_id, owner_id),
             self.get_user_telegram_id(owner_id),
         )
-        rate_limited_bot = get_cached_bot(bot_model.token)
+        rate_limited_bot = resolve_by_token(bot_model.token)
         raw_bot = rate_limited_bot.bot
 
         try:

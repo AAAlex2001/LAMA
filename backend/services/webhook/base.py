@@ -3,7 +3,6 @@
 import os
 import logging
 from typing import Optional
-from contextlib import asynccontextmanager
 
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,19 +10,11 @@ from sqlalchemy.orm import joinedload
 
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
-from backend.services.bot_provider import get_cached_bot
-from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
 
 TELEGRAM_API_TIMEOUT = 5.0
 DB_QUERY_TIMEOUT = 3.0
-
-
-@asynccontextmanager
-async def get_bot_session(token: str):
-    """Context manager для Telegram Bot с rate limiting. Кеш общий с bot_provider."""
-    yield get_cached_bot(token)
 
 
 async def get_bot_by_token(db: AsyncSession, token: str) -> Optional[BotModel]:

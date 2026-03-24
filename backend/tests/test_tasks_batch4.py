@@ -240,9 +240,7 @@ class TestInboxBlockNotification:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.get_bot_session") as mock_session:
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
+        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
 
             result = await service.execute_specific_action(
                 event=event, action_type="block",
@@ -291,9 +289,7 @@ class TestInboxBlockNotification:
         db.get = mock_get
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.get_bot_session") as mock_session:
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
+        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
 
             result = await service.execute_specific_action(
                 event=event, action_type="block",
@@ -340,9 +336,7 @@ class TestBulkBlockNotification:
         db.commit = AsyncMock()
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.get_bot_session") as mock_session:
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=False)
+        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
 
             affected = await service.execute_bulk_action(
                 owner_id=1,

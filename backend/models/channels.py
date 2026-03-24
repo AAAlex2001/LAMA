@@ -41,6 +41,12 @@ class LinkFilterMode(str, enum.Enum):
     BLACKLIST = "BLACKLIST"
 
 
+class CaptchaFailAction(str, enum.Enum):
+    KICK = "KICK"
+    MUTE = "MUTE"
+    BAN = "BAN"
+
+
 class ChannelGroup(Base):
     __tablename__ = "channel_groups"
 
@@ -168,7 +174,19 @@ class ChannelGroup(Base):
     flood_interval_seconds: Mapped[Optional[int]] = mapped_column(Integer)  # за M секунд
     flood_action: Mapped[ActionType] = mapped_column(SQLEnum(ActionType), default=ActionType.MUTE)
     flood_mute_duration_minutes: Mapped[Optional[int]] = mapped_column(Integer)
-    
+
+    # Капча для новых участников
+    captcha_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    captcha_timeout_seconds: Mapped[int] = mapped_column(Integer, default=30)
+    captcha_fail_action: Mapped[CaptchaFailAction] = mapped_column(
+        SQLEnum(CaptchaFailAction), default=CaptchaFailAction.KICK
+    )
+    captcha_fail_duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)
+    captcha_restriction_type: Mapped[Optional[str]] = mapped_column(String(32), default="send_messages")
+    captcha_message_before: Mapped[Optional[str]] = mapped_column(Text)
+    captcha_message_fail: Mapped[Optional[str]] = mapped_column(Text)
+    captcha_message_success: Mapped[Optional[str]] = mapped_column(Text)
+
     # Метаданные
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))

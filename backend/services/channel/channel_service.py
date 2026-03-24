@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from backend.models.bots import RecurringMessage, ScheduledTriggerTask, Trigger
 from backend.models.channels import ChannelGroup, ChannelType, BackupMode
 from backend.schemas.channels import ChannelGroupCreate, ChannelGroupUpdate
-from backend.services.bot_provider import get_cached_bot
+from backend.services.bot_provider import resolve_by_token
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 
 logger = logging.getLogger(__name__)
@@ -119,7 +119,7 @@ class ChannelService:
 
         async def refresh_one(channel: ChannelGroup) -> None:
             try:
-                bot = get_cached_bot(channel.bot.token)
+                bot = resolve_by_token(channel.bot.token)
                 chat = await bot.get_chat(channel.telegram_id)
                 chat_data = await build_chat_data(bot, chat, channel.bot.token)
                 for field, value in chat_data.items():

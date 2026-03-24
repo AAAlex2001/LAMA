@@ -8,7 +8,8 @@ from aiogram.exceptions import TelegramAPIError
 
 from backend.models.publications import Publication, ButtonClick
 from backend.schemas.publications.common import InlineButton
-from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
+from backend.services.bot_provider import resolve_by_token
+from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.callbacks.base import BaseCallbackProcessor
 
 logger = logging.getLogger(__name__)
@@ -41,16 +42,16 @@ class PostsCallbackProcessor(BaseCallbackProcessor):
         if not button:
             return
 
-        async with get_bot_session(self.bot_model.token) as bot:
-            is_subscriber = await self.check_subscriber(bot, chat_id, user_id)
-            text = (
-                button.hidden_text_subscribed
-                if is_subscriber
-                else button.hidden_text_unsubscribed
-            )
-            if not text:
-                return
-            await self.answer_callback(bot, callback_query.id, text, True)
+        bot = resolve_by_token(self.bot_model.token)
+        is_subscriber = await self.check_subscriber(bot, chat_id, user_id)
+        text = (
+            button.hidden_text_subscribed
+            if is_subscriber
+            else button.hidden_text_unsubscribed
+        )
+        if not text:
+            return
+        await self.answer_callback(bot, callback_query.id, text, True)
 
     async def process_callback_action(
         self, callback_query: CallbackQuery
@@ -74,26 +75,26 @@ class PostsCallbackProcessor(BaseCallbackProcessor):
 
         await self.record_click(publication_id, button_id, user_id)
 
-        async with get_bot_session(self.bot_model.token) as bot:
-            if button.callback_action == "send_dm":
-                await self.handle_send_dm(
-                    bot, callback_query, user_id, button.callback_response
-                )
-            elif button.callback_action == "reply_in_chat":
-                text = button.callback_response or "✅"
-                await self.answer_callback(
-                    bot,
-                    callback_query.id,
-                    text,
-                    bool(button.callback_response),
-                )
-            elif button.callback_action == "track_click":
-                count = await self.get_click_count(publication_id, button_id)
-                await self.answer_callback(
-                    bot, callback_query.id, f"✅ Кликов: {count}"
-                )
-            else:
-                await self.answer_callback(bot, callback_query.id, "✅")
+        bot = resolve_by_token(self.bot_model.token)
+        if button.callback_action == "send_dm":
+            await self.handle_send_dm(
+                bot, callback_query, user_id, button.callback_response
+            )
+        elif button.callback_action == "reply_in_chat":
+            text = button.callback_response or "✅"
+            await self.answer_callback(
+                bot,
+                callback_query.id,
+                text,
+                bool(button.callback_response),
+            )
+        elif button.callback_action == "track_click":
+            count = await self.get_click_count(publication_id, button_id)
+            await self.answer_callback(
+                bot, callback_query.id, f"✅ Кликов: {count}"
+            )
+        else:
+            await self.answer_callback(bot, callback_query.id, "✅")
 
     async def handle_send_dm(
         self,

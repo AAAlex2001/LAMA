@@ -26,7 +26,8 @@ from backend.schemas.inbox.enums import (
 from backend.services.bot import TriggerService
 from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.webhook.base import get_bot_session, TELEGRAM_API_TIMEOUT
+from backend.services.bot_provider import resolve_by_token
+from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -91,36 +92,36 @@ class SubscriptionHandler:
         if is_direct_link_join:
             link_val = chat_member.invite_link.invite_link if chat_member.invite_link else None
             await self.create_link_join_event(chat_member, link_val)
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                await self.trigger_service.fire_event(
-                    bot_id=self.bot_model.id,
-                    trigger_type=TriggerType.JOIN_REQUEST_CREATED,
-                    user_id=user_id,
-                    chat_id=chat_id,
-                    telegram_bot=telegram_bot,
-                    chat_type=chat_member.chat.type,
-                    context={
-                        "username": chat_member.from_user.username,
-                        "first_name": chat_member.from_user.first_name,
-                        "chat_title": chat_member.chat.title,
-                        "link_url": link_val,
-                    },
-                )
-                await self.trigger_service.fire_event(
-                    bot_id=self.bot_model.id,
-                    trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                    user_id=user_id,
-                    chat_id=chat_id,
-                    telegram_bot=telegram_bot,
-                    chat_type=chat_member.chat.type,
-                    context={
-                        "username": chat_member.from_user.username,
-                        "first_name": chat_member.from_user.first_name,
-                        "chat_title": chat_member.chat.title,
-                        "auto_approved": True,
-                        "link_url": link_val,
-                    },
-                )
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            await self.trigger_service.fire_event(
+                bot_id=self.bot_model.id,
+                trigger_type=TriggerType.JOIN_REQUEST_CREATED,
+                user_id=user_id,
+                chat_id=chat_id,
+                telegram_bot=telegram_bot,
+                chat_type=chat_member.chat.type,
+                context={
+                    "username": chat_member.from_user.username,
+                    "first_name": chat_member.from_user.first_name,
+                    "chat_title": chat_member.chat.title,
+                    "link_url": link_val,
+                },
+            )
+            await self.trigger_service.fire_event(
+                bot_id=self.bot_model.id,
+                trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                user_id=user_id,
+                chat_id=chat_id,
+                telegram_bot=telegram_bot,
+                chat_type=chat_member.chat.type,
+                context={
+                    "username": chat_member.from_user.username,
+                    "first_name": chat_member.from_user.first_name,
+                    "chat_title": chat_member.chat.title,
+                    "auto_approved": True,
+                    "link_url": link_val,
+                },
+            )
         else:
             await self.mark_join_event_accepted(user_id, chat_id)
 
@@ -170,14 +171,14 @@ class SubscriptionHandler:
             if not link or not link.member_limit:
                 return
             if link.member_count >= link.member_limit and not link.is_revoked:
-                async with get_bot_session(self.bot_model.token) as bot:
-                    try:
-                        await bot.revoke_chat_invite_link(
-                            chat_id=chat_id,
-                            invite_link=invite_link_url,
-                        )
-                    except TelegramAPIError as e:
-                        logger.warning(f"Failed to revoke link via Telegram: {e}")
+                bot = resolve_by_token(self.bot_model.token)
+                try:
+                    await bot.revoke_chat_invite_link(
+                        chat_id=chat_id,
+                        invite_link=invite_link_url,
+                    )
+                except TelegramAPIError as e:
+                    logger.warning(f"Failed to revoke link via Telegram: {e}")
                 link.is_revoked = True
                 await self.db.flush()
                 logger.info(
@@ -311,40 +312,40 @@ class SubscriptionHandler:
                     approved_pendings.append(pending)
 
             if approved_pendings:
-                async with get_bot_session(
+                telegram_bot = resolve_by_token(
                     self.bot_model.token
-                ) as telegram_bot:
-                    for pending in approved_pendings:
-                        try:
-                            await asyncio.wait_for(
-                                telegram_bot.approve_chat_join_request(
-                                    chat_id=pending.chat_id,
-                                    user_id=pending.user_id,
-                                ),
-                                timeout=TELEGRAM_API_TIMEOUT,
-                            )
-
-                            await self.trigger_service.fire_event(
-                                bot_id=self.bot_model.id,
-                                trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                                user_id=pending.user_id,
+                )
+                for pending in approved_pendings:
+                    try:
+                        await asyncio.wait_for(
+                            telegram_bot.approve_chat_join_request(
                                 chat_id=pending.chat_id,
-                                telegram_bot=telegram_bot,
-                                chat_type=chat_member.chat.type,
-                                context={
-                                    "auto_approved": True,
-                                    "channel_id": channel_id,
-                                },
-                            )
+                                user_id=pending.user_id,
+                            ),
+                            timeout=TELEGRAM_API_TIMEOUT,
+                        )
 
-                            await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
+                        await self.trigger_service.fire_event(
+                            bot_id=self.bot_model.id,
+                            trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                            user_id=pending.user_id,
+                            chat_id=pending.chat_id,
+                            telegram_bot=telegram_bot,
+                            chat_type=chat_member.chat.type,
+                            context={
+                                "auto_approved": True,
+                                "channel_id": channel_id,
+                            },
+                        )
 
-                        except (TelegramAPIError, asyncio.TimeoutError) as e:
-                            logger.warning(
-                                f"Failed to approve join request: {e}"
-                            )
+                        await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
 
-                        await self.db.delete(pending)
+                    except (TelegramAPIError, asyncio.TimeoutError) as e:
+                        logger.warning(
+                            f"Failed to approve join request: {e}"
+                        )
+
+                    await self.db.delete(pending)
 
             await self.db.flush()
 
