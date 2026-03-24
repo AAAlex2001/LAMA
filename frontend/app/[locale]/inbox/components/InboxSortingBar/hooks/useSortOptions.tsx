@@ -4,7 +4,7 @@ import type { SortOptionType, SortOption } from "../../sortTypes";
 import { ListHeaderType } from "../../InboxList/components/ListHeader";
 
 const DEFAULT_VALUES: Record<SortOptionType, string> = {
-  time: "",
+  time: "newest",
   source: "",
   status: "default",
   type: "",

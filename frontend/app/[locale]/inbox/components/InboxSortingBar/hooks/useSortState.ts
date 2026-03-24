@@ -4,7 +4,7 @@ import { useAppSelector } from "../../../store";
 import { selectSortDir, selectStatusFilter } from "../../../store/selectors";
 
 const DEFAULT_VALUES: Record<SortOptionType, string> = {
-  time: "",
+  time: "newest",
   source: "",
   status: "default",
   type: "",
@@ -34,7 +34,7 @@ export const useSortState = () => {
   const [openFilter, setOpenFilter] = useState<SortOptionType | null>(null);
 
   const sortValues: Record<SortOptionType, string> = {
-    time: reduxSortDir === 'old' ? 'oldest' : '',
+    time: reduxSortDir === 'old' ? 'oldest' : 'newest',
     status: reduxStatusFilter || 'default',
     source: localValues.source,
     type: localValues.type,

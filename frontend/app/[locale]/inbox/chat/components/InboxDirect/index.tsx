@@ -10,7 +10,7 @@ import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
-const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
+const InboxDirect = ( { onClose, isReady = true }: { onClose: () => void; isReady?: boolean } ) => {
   const { 
     activeChatId, 
     chatsById,
@@ -41,6 +41,7 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
 
 
   useEffect(() => {
+    if (!isReady) return;
     if (initialParamsProcessedRef.current) return;
     if (!tgChatId || !botIdNumber) return;
 
@@ -56,7 +57,7 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
         setActiveChat(chatKey);
       }
     }
-  }, [chatOrder, chatsById, chatsLoading, botIdNumber, tgChatId]);
+  }, [isReady, chatOrder, chatsById, chatsLoading, botIdNumber, tgChatId]);
 
   const handleChatOpen = (chatKey: string) => {
     const chat = chatsById[chatKey];
@@ -90,10 +91,10 @@ const InboxDirect = ( { onClose }: { onClose: () => void } ) => {
     <>
       <DesktopWrapper className={styles.inboxDirectDesktop}>
         <DirectChat onClose={handleDesktopClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>
-        <DirectMenu onChatOpen={handleChatOpen} />
+        <DirectMenu onChatOpen={handleChatOpen} isReady={isReady} />
       </DesktopWrapper>
       <MobileWrapper className={styles.inboxDirectMobile}>
-        {activeChatId === null && <DirectMenu onChatOpen={handleChatOpen} />}
+        {activeChatId === null && <DirectMenu onChatOpen={handleChatOpen} isReady={isReady} />}
         {activeChatId !== null && <DirectChat onClose={handleMobileClose} replyMessageId={messageIdNumber} onReplySent={handleReplySent}/>}
       </MobileWrapper>
     </>

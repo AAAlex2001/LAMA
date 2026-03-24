@@ -24,9 +24,10 @@ function formatChatTime(dateStr: string | null): string {
 
 interface DirectMenuProps {
   onChatOpen: (chatKey: string) => void;
+  isReady?: boolean;
 }
 
-const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
+const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen, isReady = true }) => {
   const {
     activeChatId,
     chatsById,
@@ -44,8 +45,9 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
   const { ref: sentinelRef, inView } = useInView({ threshold: 0.1 });
 
   useEffect(() => {
+    if (!isReady) return;
     fetchChats();
-  }, [chatSort, chatUnreadFilter]);
+  }, [isReady, chatSort, chatUnreadFilter]);
 
   useEffect(() => {
     if (inView && chatsHasMore && !chatsLoading) {
@@ -124,7 +126,7 @@ const DirectMenu: FC<DirectMenuProps> = ({ onChatOpen }) => {
               </div>
             )}
             <div className={styles.section}>
-              <h3 className={styles.sectionTitle}>Все чаты</h3>
+              {chatsLoading && pinnedChats.length === 0 && unpinnedChats.length === 0 ? null : <h3 className={styles.sectionTitle}>Все чаты</h3>}
               <div className={styles.chatList}>
                 {chatsLoading && pinnedChats.length === 0 && unpinnedChats.length === 0 && (
                   <div className={styles.loaderContainer}>
