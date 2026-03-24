@@ -15,7 +15,7 @@ export type EventType =
   | 'system_trigger'
   | 'system_autoreply'
   | 'system_update';
-export type EventStatus = 'new' | 'processed' | 'banned';
+export type EventStatus = 'new' | 'processed' | 'banned' | 'ignored';
 export type SortDir = 'new' | 'old';
 export type BulkActionType = 'read' | 'ignore' | 'delete' | 'block' | 'unblock';
 

@@ -1,4 +1,4 @@
-import { FC, memo, useState, MouseEvent, KeyboardEvent, useRef } from "react";
+import { FC, memo, useState, MouseEvent, KeyboardEvent, useRef, useCallback } from "react";
 import styles from "./styles.module.scss";
 import Checkbox from "@/components/checkbox/checkbox";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
@@ -69,6 +69,7 @@ const ListElement: FC<ListElementProps> = ({
     message_id: number | null;
     affected_channels: number[] | null;
   } | null>(null);
+  const [loadingAction, setLoadingAction] = useState<InboxActionType | null>(null);
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { locale } = useParams();
@@ -144,14 +145,21 @@ const ListElement: FC<ListElementProps> = ({
     });
   };
 
-  const handleAction = async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
+  const handleAction = useCallback(async (actionType: InboxActionType, payload?: Record<string, unknown>) => {
+    if (actionType === 'block') {
+      blockDispatch?.({ type: "open", eventId: item.id, username: item.tg_username || undefined, payload });
+      return;
+    }
+
+    setLoadingAction(actionType);
     try {
-      if (actionType === 'block') {
-        blockDispatch?.({ type: "open", eventId: item.id, username: item.tg_username || undefined, payload });
+      const result = await dispatch(specificInboxActionThunk({ eventId: item.id, action_type: actionType, payload }));
+
+      if (specificInboxActionThunk.rejected.match(result)) {
+        showError((result.payload as string) || 'Не удалось выполнить действие');
         return;
       }
 
-      const result = await dispatch(specificInboxActionThunk({ eventId: item.id, action_type: actionType, payload }));
       const response = (result as any)?.payload?.response as SpecificActionResponse | undefined;
       if (!response) return;
 
@@ -168,8 +176,10 @@ const ListElement: FC<ListElementProps> = ({
       }
     } catch {
       showError('Не удалось выполнить действие');
+    } finally {
+      setLoadingAction(null);
     }
-  };
+  }, [dispatch, item, locale, router, showError, blockDispatch]);
 
   const handleBlockSave = (data: BlockModalData) => {
     setIsBlockModalOpen(false);
@@ -194,8 +204,16 @@ const ListElement: FC<ListElementProps> = ({
     const btnWidth = isMobile ? '100%' : '136px';
     const status = blockStatus?.status;
     const isBanned = item.status === 'banned' || status === 'banned';
+    const isBusy = loadingAction !== null;
 
-    if (isBanned) return null;
+    if (isBanned){
+      return <div className={`${styles.statusText} ${styles.declined}`}>Заблокирован</div>;
+    };
+    
+    if (item.status === 'ignored' || status === 'ignored') {
+      return <div className={`${styles.statusText} ${styles.ignored}`}>Проигнорировано</div>;
+    }
+
 
     if (item.event_type === 'bot_command') {
       if (status === 'resolved' || status === 'deleted' || status === 'blocked') return (
@@ -226,13 +244,13 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Заблокировать</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('delete_message')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('delete_message')} loading={loadingAction === 'delete_message'} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Удалить</span>
           </Button>
-          <Button variant="ghost" intent="primary" size="transparent" onClick={()=> handleAction('mark_resolved')}>
+          <Button variant="ghost" intent="primary" size="transparent" onClick={() => handleAction('mark_resolved')} loading={loadingAction === 'mark_resolved'} disabled={isBusy}>
             <CheckListIcon width={24} height={24} />
           </Button>
         </div>
@@ -245,7 +263,7 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} loading={loadingAction === 'reply'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
@@ -258,7 +276,7 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} loading={loadingAction === 'reply'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
@@ -274,10 +292,10 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} loading={loadingAction === 'accept'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} loading={loadingAction === 'reject'} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
@@ -290,10 +308,10 @@ const ListElement: FC<ListElementProps> = ({
       if (isProcessed) return null;
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('accept')} loading={loadingAction === 'accept'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Принять</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('reject')} loading={loadingAction === 'reject'} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Отклонить</span>
           </Button>
         </div>
@@ -307,10 +325,10 @@ const ListElement: FC<ListElementProps> = ({
       if (isProcessed) return <span className={styles.statusText}>Разблокирован</span>;
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unban')} className={btnClass}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unban')} loading={loadingAction === 'unban'} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Разблокировать</span>
           </Button>
-          <Button variant="outline" intent="primary" size="md" onClick={() => setIsBlockModalOpen(true)} className={btnClass}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => setIsBlockModalOpen(true)} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Настройки</span>
           </Button>
         </div>
@@ -327,7 +345,7 @@ const ListElement: FC<ListElementProps> = ({
       }
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} className={btnClass} style={{ width: btnWidth }}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('reply')} loading={loadingAction === 'reply'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
             <span className={buttonStyles.label}>Ответить в боте</span>
           </Button>
         </div>
@@ -341,7 +359,7 @@ const ListElement: FC<ListElementProps> = ({
     if (item.event_type === 'bot_error') {
       return (
         <div className={styles.actionButtons}>
-          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('mark_resolved')} className={btnClass}>
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('mark_resolved')} loading={loadingAction === 'mark_resolved'} disabled={isBusy} className={btnClass}>
             <span className={buttonStyles.label}>Ошибка доступа</span>
           </Button>
         </div>
