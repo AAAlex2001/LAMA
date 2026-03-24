@@ -133,36 +133,29 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   };
 
   const handleCaptchaPickerChange = (field: string, value: number | string) => {
+    let data: Record<string, unknown> = {};
     switch (field) {
       case 'timeout':
         dispatch(setCaptchaTimeoutSeconds(value as number));
-        dispatch(updateCaptchaSettingsThunk({
-          channelId,
-          data: { captcha_timeout_seconds: value as number },
-        }));
+        data = { captcha_timeout_seconds: value };
         break;
       case 'failAction':
         dispatch(setCaptchaFailAction(value as CaptchaFailActionType));
-        dispatch(updateCaptchaSettingsThunk({
-          channelId,
-          data: { captcha_fail_action: value as CaptchaFailActionType },
-        }));
+        data = { captcha_fail_action: value };
         break;
       case 'failDuration':
         dispatch(setCaptchaFailDurationSeconds(value as number));
-        dispatch(updateCaptchaSettingsThunk({
-          channelId,
-          data: { captcha_fail_duration_seconds: value as number },
-        }));
+        data = { captcha_fail_duration_seconds: value };
         break;
       case 'restriction':
         dispatch(setCaptchaRestrictionType(value as string));
-        dispatch(updateCaptchaSettingsThunk({
-          channelId,
-          data: { captcha_restriction_type: value as string },
-        }));
+        data = { captcha_restriction_type: value };
         break;
     }
+    dispatch(updateCaptchaSettingsThunk({ channelId, data }))
+      .unwrap()
+      .then(() => showSuccess('Настройки капчи обновлены'))
+      .catch(() => {});
     setOpenPicker(null);
   };
 

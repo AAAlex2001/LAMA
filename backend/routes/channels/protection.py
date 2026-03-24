@@ -7,6 +7,7 @@ from backend.routes.auth import get_current_user
 from backend.routes.channels.dependencies import (
     get_antispam_service,
     get_auto_delete_service,
+    get_captcha_settings_service,
     get_channel_service,
     get_flood_service,
     get_moderation_service,
@@ -27,6 +28,7 @@ from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.channel_service import ChannelService
 from backend.services.channel.flood_service import FloodService
 from backend.services.channel.moderation_service import ModerationService
+from backend.services.channel.captcha_settings_service import CaptchaSettingsService
 from backend.services.channel.night_mode_service import NightModeService
 
 
@@ -310,15 +312,21 @@ async def get_captcha_settings(
 async def update_captcha_settings(
     channel_id: int,
     data: CaptchaSettingsUpdate,
-    channel_service: ChannelService = Depends(get_channel_service),
+    service: CaptchaSettingsService = Depends(get_captcha_settings_service),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    update_data = data.model_dump(exclude_none=True)
-    for field, value in update_data.items():
-        setattr(channel, field, value)
-    await channel_service.db.flush()
-    await channel_service.db.refresh(channel)
+    channel = await service.update_settings(
+        channel_id=channel_id,
+        owner_id=current_user.id,
+        captcha_enabled=data.captcha_enabled,
+        captcha_timeout_seconds=data.captcha_timeout_seconds,
+        captcha_fail_action=data.captcha_fail_action,
+        captcha_fail_duration_seconds=data.captcha_fail_duration_seconds,
+        captcha_restriction_type=data.captcha_restriction_type,
+        captcha_message_before=data.captcha_message_before,
+        captcha_message_fail=data.captcha_message_fail,
+        captcha_message_success=data.captcha_message_success,
+    )
     return CaptchaSettingsResponse(
         captcha_enabled=channel.captcha_enabled,
         captcha_timeout_seconds=channel.captcha_timeout_seconds,

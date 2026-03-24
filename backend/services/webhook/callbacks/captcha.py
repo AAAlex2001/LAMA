@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import Optional
 from sqlalchemy import select, update
@@ -156,7 +157,9 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
     async def _send_captcha_success_text(self, bot, chat_id: int, user) -> None:
         """Отправить кастомный текст при успешном прохождении капчи."""
         try:
-            channel = await get_channel_by_telegram_id(self.db, chat_id)
+            channel = await get_channel_by_telegram_id(
+                self.db, chat_id, bot_id=self.bot_model.id
+            )
             if not channel or not channel.captcha_message_success:
                 return
             context = {
@@ -169,7 +172,6 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             }
             text = ShortcodeProcessor.process(channel.captcha_message_success, context)
             msg = await bot.send_message(chat_id=chat_id, text=text)
-            import asyncio
             await asyncio.sleep(30)
             try:
                 await bot.delete_message(chat_id=chat_id, message_id=msg.message_id)

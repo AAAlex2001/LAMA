@@ -1,15 +1,10 @@
-import asyncio
 import logging
 import random
 
 from aiogram.types import Message, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
-from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from backend.database import AsyncSessionLocal
 
 from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
@@ -20,10 +15,9 @@ from backend.models.bots import (
     Bot as BotModel,
     TriggerType,
     CaptchaMode,
-    PendingApproval,
 )
-from backend.models.channels import CaptchaFailAction
 from backend.utils import build_keyboard
+from backend.celery.tasks import captcha_timeout_check
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +44,9 @@ class MemberProcessor:
         if not message.new_chat_members:
             return
 
-        channel = await get_channel_by_telegram_id(self.db, message.chat.id)
+        channel = await get_channel_by_telegram_id(
+            self.db, message.chat.id, bot_id=self.bot_model.id
+        )
 
         for new_member in message.new_chat_members:
             if bot_id and new_member.id == bot_id:
@@ -156,16 +152,15 @@ class MemberProcessor:
                 reply_markup=build_keyboard(buttons_data),
             )
 
-            asyncio.create_task(
-                self.captcha_timeout_kick(
-                    chat_id=message.chat.id,
-                    user_id=new_member.id,
-                    captcha_message_id=captcha_message.message_id,
-                    pending_id=pending.id,
-                    timeout_seconds=timeout_seconds,
-                    channel=channel,
-                    shortcode_context=shortcode_context,
-                )
+            captcha_timeout_check.apply_async(
+                args=[
+                    self.bot_model.id,
+                    message.chat.id,
+                    new_member.id,
+                    captcha_message.message_id,
+                    pending.id,
+                ],
+                countdown=timeout_seconds + 1,
             )
 
         except Exception as e:
@@ -206,110 +201,6 @@ class MemberProcessor:
                 can_send_messages=False,
                 can_send_other_messages=False,
                 can_add_web_page_previews=False,
-            )
-
-    async def captcha_timeout_kick(
-        self,
-        chat_id: int,
-        user_id: int,
-        captcha_message_id: int,
-        pending_id: int,
-        timeout_seconds: int,
-        channel=None,
-        shortcode_context=None,
-    ) -> None:
-        """Таймаут проверки капчи. Пробуждается в фоне через N секунд."""
-        await asyncio.sleep(timeout_seconds + 1)
-
-        try:
-            async with AsyncSessionLocal() as db:
-                query = select(PendingApproval).where(
-                    PendingApproval.id == pending_id)
-                result = await db.execute(query)
-                pending = result.scalar_one_or_none()
-
-                if not pending or pending.is_approved:
-                    try:
-                        await self.telegram_bot.delete_message(
-                            chat_id=chat_id, message_id=captcha_message_id
-                        )
-                    except TelegramAPIError as e:
-                        logger.warning(
-                            f"Failed to delete captcha message: {e}", exc_info=True
-                        )
-                    return
-
-                fail_action = CaptchaFailAction.KICK
-                fail_duration = None
-                fail_text = None
-                if channel:
-                    fail_action = channel.captcha_fail_action or CaptchaFailAction.KICK
-                    fail_duration = channel.captcha_fail_duration_seconds
-                    fail_text = channel.captcha_message_fail
-
-                try:
-                    await self._apply_fail_action(
-                        chat_id, user_id, fail_action, fail_duration
-                    )
-                    await self.telegram_bot.delete_message(
-                        chat_id=chat_id, message_id=captcha_message_id
-                    )
-                except TelegramAPIError as e:
-                    logger.warning(f"Failed to apply captcha fail action for user {user_id}: {e}")
-
-                if fail_text and shortcode_context:
-                    try:
-                        text = ShortcodeProcessor.process(fail_text, shortcode_context)
-                        msg = await self.telegram_bot.send_message(
-                            chat_id=chat_id, text=text
-                        )
-                        await asyncio.sleep(10)
-                        await self.telegram_bot.delete_message(
-                            chat_id=chat_id, message_id=msg.message_id
-                        )
-                    except TelegramAPIError:
-                        pass
-
-        except Exception as e:
-            logger.error(f"Captcha timeout check failed: {e}")
-
-    async def _apply_fail_action(
-        self,
-        chat_id: int,
-        user_id: int,
-        action: CaptchaFailAction,
-        duration_seconds: int | None,
-    ) -> None:
-        """Применить действие при провале капчи."""
-        from datetime import datetime, timezone, timedelta
-
-        if action == CaptchaFailAction.MUTE:
-            until = None
-            if duration_seconds:
-                until = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
-            await self.telegram_bot.restrict_chat_member(
-                chat_id=chat_id,
-                user_id=user_id,
-                permissions=ChatPermissions(
-                    can_send_messages=False,
-                    can_send_other_messages=False,
-                    can_add_web_page_previews=False,
-                ),
-                until_date=until,
-            )
-        elif action == CaptchaFailAction.BAN:
-            until = None
-            if duration_seconds:
-                until = datetime.now(timezone.utc) + timedelta(seconds=duration_seconds)
-            await self.telegram_bot.ban_chat_member(
-                chat_id=chat_id, user_id=user_id, until_date=until
-            )
-        else:
-            await self.telegram_bot.ban_chat_member(
-                chat_id=chat_id, user_id=user_id
-            )
-            await self.telegram_bot.unban_chat_member(
-                chat_id=chat_id, user_id=user_id
             )
 
     async def handle_member_left(self, message: Message) -> None:

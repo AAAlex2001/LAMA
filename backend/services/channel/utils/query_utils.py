@@ -29,6 +29,7 @@ async def get_channel(
 async def get_channel_by_telegram_id(
     db: AsyncSession,
     telegram_id: int,
+    bot_id: Optional[int] = None,
 ) -> Optional[ChannelGroup]:
     """Получить канал по Telegram ID или linked_chat_id."""
     query = select(ChannelGroup).where(
@@ -37,5 +38,7 @@ async def get_channel_by_telegram_id(
             ChannelGroup.linked_chat_id == telegram_id,
         )
     )
+    if bot_id is not None:
+        query = query.where(ChannelGroup.bot_id == bot_id)
     result = await db.execute(query)
     return result.scalars().first()
