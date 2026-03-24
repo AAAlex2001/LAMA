@@ -32,8 +32,10 @@ export default function Avatar({
   style,
 }: AvatarProps) {
   const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
-  const showImage = !!src && !imgError;
+  const hasSrc = !!src && !imgError;
+  const showImage = hasSrc && imgLoaded;
 
   const initials = useMemo(() => (name ? getInitials(name) : ''), [name]);
 
@@ -57,15 +59,16 @@ export default function Avatar({
       className={classNames(styles.avatar, className)}
       style={{ width: size, height: size, ...style }}
     >
-      {showImage ? (
+      {!showImage && renderFallback()}
+      {hasSrc && (
         <img
           className={styles.image}
           src={src}
           alt={alt}
+          onLoad={() => setImgLoaded(true)}
           onError={() => setImgError(true)}
+          style={showImage ? undefined : { position: 'absolute', opacity: 0 }}
         />
-      ) : (
-        renderFallback()
       )}
     </div>
   );
