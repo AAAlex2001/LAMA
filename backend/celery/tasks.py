@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from celery import Task
 from aiogram.exceptions import TelegramAPIError
+from aiogram.types import ChatPermissions
 from sqlalchemy import case, func, or_, select, update
 
 from backend.celery.app import celery_app
 from backend.celery.async_runner import run
 from backend.services.bot_provider import resolve_for_bot_id, resolve_for_channel, resolve_master, use_user_bots
 from backend.database import CelerySessionLocal
+from backend.models.bots import PendingApproval
+from backend.models.channels import CaptchaFailAction
 from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
@@ -20,7 +23,9 @@ from backend.models.publications import (
 )
 from backend.schemas.publications.publishing import PublishResult
 from backend.services.bot import RecurringMessageService, TriggerService
+from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.channel import ChannelService
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.publications.publication_query_service import PublicationQueryService
 from backend.services.publications.series_service import SeriesService
 from backend.services.publications import publisher, message_editor
@@ -441,3 +446,104 @@ async def process_backup_job_async(job_id: int) -> str:
         logger.info("Chained next backup post: job_id=%s, countdown=3", job_id)
 
     return f"backup_job:{job_id}"
+
+
+@celery_app.task(
+    name="backend.celery.tasks.captcha_timeout_check",
+    max_retries=2,
+    default_retry_delay=5,
+)
+def captcha_timeout_check(
+    bot_id: int,
+    chat_id: int,
+    user_id: int,
+    captcha_message_id: int,
+    pending_id: int,
+) -> str:
+    return run(captcha_timeout_check_async(
+        bot_id, chat_id, user_id, captcha_message_id, pending_id,
+    ))
+
+
+async def captcha_timeout_check_async(
+    bot_id: int,
+    chat_id: int,
+    user_id: int,
+    captcha_message_id: int,
+    pending_id: int,
+) -> str:
+    async with CelerySessionLocal() as db:
+        result = await db.execute(
+            select(PendingApproval).where(PendingApproval.id == pending_id)
+        )
+        pending = result.scalar_one_or_none()
+
+        if not pending or pending.is_approved:
+            bot = await resolve_for_bot_id(db, bot_id)
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
+            except TelegramAPIError as exc:
+                logger.error("captcha_delete_message_failed: %s", exc)
+            return f"captcha_already_resolved:{pending_id}"
+
+        channel = await get_channel_by_telegram_id(db, chat_id, bot_id=bot_id)
+
+        fail_action = CaptchaFailAction.KICK
+        fail_duration = None
+        fail_text = None
+        shortcode_context = None
+        if channel:
+            fail_action = channel.captcha_fail_action or CaptchaFailAction.KICK
+            fail_duration = channel.captcha_fail_duration_seconds
+            fail_text = channel.captcha_message_fail
+
+        bot = await resolve_for_bot_id(db, bot_id)
+
+        try:
+            until = None
+            if fail_action == CaptchaFailAction.MUTE:
+                if fail_duration:
+                    until = datetime.now(timezone.utc) + timedelta(seconds=fail_duration)
+                await bot.restrict_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    permissions=ChatPermissions(
+                        can_send_messages=False,
+                        can_send_other_messages=False,
+                        can_add_web_page_previews=False,
+                    ),
+                    until_date=until,
+                )
+            elif fail_action == CaptchaFailAction.BAN:
+                if fail_duration:
+                    until = datetime.now(timezone.utc) + timedelta(seconds=fail_duration)
+                await bot.ban_chat_member(chat_id=chat_id, user_id=user_id, until_date=until)
+            else:
+                await bot.ban_chat_member(chat_id=chat_id, user_id=user_id)
+                await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
+
+            await bot.delete_message(chat_id=chat_id, message_id=captcha_message_id)
+        except TelegramAPIError as e:
+            logger.warning("Captcha fail action error for user %s: %s", user_id, e)
+
+        if fail_text and pending:
+            try:
+                context = {
+                    "user": {
+                        "first_name": "",
+                        "username": "",
+                        "last_name": "",
+                        "id": user_id,
+                    },
+                }
+                text = ShortcodeProcessor.process(fail_text, context)
+                fail_msg = await bot.send_message(chat_id=chat_id, text=text)
+                delayed_delete_message.apply_async(
+                    args=[bot_id, chat_id, fail_msg.message_id],
+                    countdown=10,
+                )
+            except TelegramAPIError as exc:
+                logger.error("captcha_fail_text_send_failed: %s", exc)
+
+        await db.commit()
+    return f"captcha_timeout:{pending_id}"

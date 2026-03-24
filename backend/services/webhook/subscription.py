@@ -4,8 +4,9 @@
 
 import asyncio
 import logging
+from datetime import datetime, timezone, timedelta
 
-from aiogram.types import ChatMemberUpdated
+from aiogram.types import ChatMemberUpdated, Message
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,6 +29,7 @@ from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
+from backend.services.webhook.messages.members import MemberProcessor
 
 logger = logging.getLogger(__name__)
 
@@ -75,13 +77,19 @@ class SubscriptionHandler:
 
         await self.update_member_count(chat_member)
 
-        channel = await get_channel_by_telegram_id(self.db, chat_id)
+        channel = await get_channel_by_telegram_id(
+            self.db, chat_id, bot_id=self.bot_model.id
+        )
         channel_db_id = channel.id if channel else None
 
         if await self.has_recent_join_event(user_id, channel_db_id):
             logger.debug(
                 f"Skipping duplicate join processing: user={user_id}, channel={channel_db_id}"
             )
+            return
+
+        if channel and channel.captcha_enabled:
+            await self.send_captcha(chat_member, channel)
             return
 
         is_direct_link_join = (
@@ -193,7 +201,9 @@ class SubscriptionHandler:
     ) -> None:
         """Создать InboxEvent для вступления по открытой ссылке (автопринятие)."""
         try:
-            channel = await get_channel_by_telegram_id(self.db, chat_member.chat.id)
+            channel = await get_channel_by_telegram_id(
+                self.db, chat_member.chat.id, bot_id=self.bot_model.id
+            )
             channel_id = channel.id if channel else None
 
             link_id = None
@@ -242,7 +252,6 @@ class SubscriptionHandler:
         if not channel_id:
             return False
         try:
-            from datetime import datetime, timezone, timedelta
             cutoff = datetime.now(timezone.utc) - timedelta(minutes=2)
             result = await self.db.execute(
                 select(InboxEvent.id)
@@ -381,3 +390,34 @@ class SubscriptionHandler:
                 await self.db.flush()
         except Exception as e:
             logger.error(f"mark_join_event_accepted failed: {e}")
+
+    async def send_captcha(
+        self, chat_member: ChatMemberUpdated, channel: ChannelGroup
+    ) -> None:
+        """Отправить капчу для нового участника в публичной группе (chat_member update)."""
+        try:
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            processor = MemberProcessor(self.db, self.bot_model, telegram_bot)
+            fake_message = Message(
+                message_id=0,
+                date=chat_member.date,
+                chat=chat_member.chat,
+            )
+            await processor.send_group_captcha(
+                fake_message, chat_member.from_user, channel
+            )
+            await self.trigger_service.fire_event(
+                bot_id=self.bot_model.id,
+                trigger_type=TriggerType.MEMBER_JOINED,
+                user_id=chat_member.from_user.id,
+                chat_id=chat_member.chat.id,
+                telegram_bot=telegram_bot,
+                chat_type=chat_member.chat.type,
+                context={
+                    "username": chat_member.from_user.username,
+                    "first_name": chat_member.from_user.first_name,
+                    "last_name": chat_member.from_user.last_name,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Failed to send captcha via chat_member: {e}", exc_info=True)
