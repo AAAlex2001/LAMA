@@ -25,7 +25,7 @@ from backend.models.bots import (
     CaptchaMode,
 )
 from backend.models.channels import ChatInviteLink, ChannelGroup
-from backend.services.webhook.base import get_bot_session
+from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
 from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
@@ -47,91 +47,91 @@ class JoinRequestHandler:
     async def process(self, join_request: ChatJoinRequest) -> None:
         """Обработка заявки на вступление"""
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                user_id = join_request.from_user.id
-                chat_id = join_request.chat.id
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            user_id = join_request.from_user.id
+            chat_id = join_request.chat.id
 
-                if hasattr(join_request, "invite_link") and join_request.invite_link:
-                    await self.update_invite_link_metrics(join_request.invite_link.invite_link)
+            if hasattr(join_request, "invite_link") and join_request.invite_link:
+                await self.update_invite_link_metrics(join_request.invite_link.invite_link)
 
-                await self.trigger_service.fire_event(
+            await self.trigger_service.fire_event(
+                bot_id=self.bot_model.id,
+                trigger_type=TriggerType.JOIN_REQUEST_CREATED,
+                user_id=user_id,
+                chat_id=chat_id,
+                telegram_bot=telegram_bot,
+                chat_type=join_request.chat.type,
+                context={
+                    "username": join_request.from_user.username,
+                    "first_name": join_request.from_user.first_name,
+                    "chat_title": join_request.chat.title,
+                },
+            )
+
+            db_link = await self.get_db_link(join_request)
+
+            if db_link and db_link.protection_type == "captcha":
+                captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
+                if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
+                    await self.handle_manual_mode(telegram_bot, join_request)
+                    await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
+                    return
+
+            should_approve, missing = (
+                await self.settings_service.check_approval_criteria(
+                    self.bot_model, user_id
+                )
+            )
+
+            if not should_approve and missing:
+                pending = PendingJoinApproval(
                     bot_id=self.bot_model.id,
-                    trigger_type=TriggerType.JOIN_REQUEST_CREATED,
                     user_id=user_id,
                     chat_id=chat_id,
-                    telegram_bot=telegram_bot,
-                    chat_type=join_request.chat.type,
-                    context={
-                        "username": join_request.from_user.username,
-                        "first_name": join_request.from_user.first_name,
-                        "chat_title": join_request.chat.title,
-                    },
+                    missing_channels=missing,
                 )
+                self.db.add(pending)
+                await self.db.flush()
 
-                db_link = await self.get_db_link(join_request)
+            if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
+                await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
+                await self.create_join_event(join_request, status=EventStatus.NEW)
+                return
 
-                if db_link and db_link.protection_type == "captcha":
-                    captcha_mode = getattr(self.bot_model, "captcha_mode", CaptchaMode.DISABLED)
-                    if captcha_mode in (CaptchaMode.JOIN_REQUEST, CaptchaMode.BOTH):
-                        await self.handle_manual_mode(telegram_bot, join_request)
-                        await self.create_join_event(join_request, status=EventStatus.PROCESSED, join_state="captcha_pending")
-                        return
-
-                should_approve, missing = (
-                    await self.settings_service.check_approval_criteria(
-                        self.bot_model, user_id
+            elif (
+                self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA
+                and not should_approve
+            ):
+                if missing:
+                    await self.send_subscription_requirements(
+                        telegram_bot, user_id, missing
                     )
-                )
+                return
 
-                if not should_approve and missing:
-                    pending = PendingJoinApproval(
+            if should_approve:
+                approved = await self.approve_join_request(
+                    telegram_bot, chat_id, user_id
+                )
+                if approved:
+                    if hasattr(join_request, "invite_link") and join_request.invite_link:
+                        await self.increment_member_count(join_request.invite_link.invite_link)
+                    await self.trigger_service.fire_event(
                         bot_id=self.bot_model.id,
+                        trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
                         user_id=user_id,
                         chat_id=chat_id,
-                        missing_channels=missing,
+                        telegram_bot=telegram_bot,
+                        chat_type=join_request.chat.type,
+                        context={
+                            "username": join_request.from_user.username,
+                            "first_name": join_request.from_user.first_name,
+                        },
                     )
-                    self.db.add(pending)
-                    await self.db.flush()
-
-                if self.bot_model.auto_approval_mode == ApprovalMode.MANUAL:
-                    await self.notify_pending(telegram_bot, user_id, join_request.chat.title)
-                    await self.create_join_event(join_request, status=EventStatus.NEW)
-                    return
-
-                elif (
-                    self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA
-                    and not should_approve
-                ):
-                    if missing:
-                        await self.send_subscription_requirements(
-                            telegram_bot, user_id, missing
-                        )
-                    return
-
-                if should_approve:
-                    approved = await self.approve_join_request(
-                        telegram_bot, chat_id, user_id
+                    await self.create_join_event(
+                        join_request,
+                        status=EventStatus.PROCESSED,
+                        join_state="accepted",
                     )
-                    if approved:
-                        if hasattr(join_request, "invite_link") and join_request.invite_link:
-                            await self.increment_member_count(join_request.invite_link.invite_link)
-                        await self.trigger_service.fire_event(
-                            bot_id=self.bot_model.id,
-                            trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                            user_id=user_id,
-                            chat_id=chat_id,
-                            telegram_bot=telegram_bot,
-                            chat_type=join_request.chat.type,
-                            context={
-                                "username": join_request.from_user.username,
-                                "first_name": join_request.from_user.first_name,
-                            },
-                        )
-                        await self.create_join_event(
-                            join_request,
-                            status=EventStatus.PROCESSED,
-                            join_state="accepted",
-                        )
 
         except Exception as e:
             logger.error(f"Join request error: {e}", exc_info=True)

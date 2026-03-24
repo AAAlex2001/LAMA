@@ -1,61 +1,42 @@
 import os
-from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
-import pytz
+from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
-from backend.services.channel.utils.message_utils import is_within_window, time_to_minutes
-from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.channel.chat_permissions_service import ChatPermissionsService
+from backend.services.channel.utils.query_utils import get_channel
 
 
 class NightModeService:
-    """Проверка ночного режима."""
+    """Управление ночным режимом."""
 
     def __init__(self, db: AsyncSession):
         self.db = db
-        tz_name = os.getenv("NIGHT_MODE_TIMEZONE", "Europe/Moscow")
-        try:
-            self.timezone = pytz.timezone(tz_name)
-        except Exception:
-            self.timezone = pytz.timezone("Europe/Moscow")
 
-    async def should_block_message(self, telegram_chat_id: int, is_media: bool) -> Tuple[bool, Optional[str]]:
-        """Проверить, нужно ли блокировать сообщение."""
-        channel = await get_channel_by_telegram_id(self.db, telegram_chat_id)
-        if not channel or not channel.night_mode_enabled:
-            return False, None
+    async def update_settings(
+        self,
+        channel_id: int,
+        owner_id: int,
+        night_mode_enabled: bool,
+        night_mode_start: Optional[str],
+        night_mode_end: Optional[str],
+        night_mode_block_media: bool,
+        night_mode_block_text: bool,
+    ) -> ChannelGroup:
+        """Обновить настройки ночного режима и применить permissions."""
+        channel = await get_channel(self.db, channel_id, owner_id, load_bot=True)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
 
-        start_minutes = time_to_minutes(channel.night_mode_start)
-        end_minutes = time_to_minutes(channel.night_mode_end)
-        if start_minutes is None or end_minutes is None:
-            return False, None
+        channel.night_mode_enabled = night_mode_enabled
+        channel.night_mode_start = night_mode_start
+        channel.night_mode_end = night_mode_end
+        channel.night_mode_block_media = night_mode_block_media
+        channel.night_mode_block_text = night_mode_block_text
 
-        now = datetime.now(self.timezone)
-        now_minutes = now.hour * 60 + now.minute
-        if not is_within_window(now_minutes, start_minutes, end_minutes):
-            return False, None
+        perms_service = ChatPermissionsService(self.db)
+        await perms_service.apply_permissions(channel)
 
-        if is_media and channel.night_mode_block_media:
-            return True, self.build_notice(channel)
-        if not is_media and channel.night_mode_block_text:
-            return True, self.build_notice(channel)
-        return False, None
-
-    def build_notice(self, channel: ChannelGroup) -> str:
-        """Собрать уведомление о ночном режиме."""
-        start = channel.night_mode_start or "--:--"
-        end = channel.night_mode_end or "--:--"
-
-        blocked_items = []
-        if channel.night_mode_block_text:
-            blocked_items.append("текстовые сообщения")
-        if channel.night_mode_block_media:
-            blocked_items.append("медиа")
-        restrictions = " и ".join(blocked_items) if blocked_items else "сообщения"
-
-        return (
-            f"🌙 Ночной режим активен с {start} до {end} ({self.timezone.zone}). "
-            f"В это время нельзя отправлять {restrictions}."
-        )
+        return channel

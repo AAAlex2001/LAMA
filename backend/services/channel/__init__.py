@@ -10,10 +10,10 @@ from backend.services.channel.flood_service import FloodService
 from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.invite_link_service import InviteLinkService
 from backend.services.channel.night_mode_service import NightModeService
+from backend.services.channel.chat_permissions_service import ChatPermissionsService
 
 ChannelModerationService = ModerationService
 ChannelAutoDeleteService = AutoDeleteService
-ChannelNightModeService = NightModeService
 
 __all__ = [
     "ChannelService",
@@ -30,5 +30,5 @@ __all__ = [
     "NightModeService",
     "ChannelModerationService",
     "ChannelAutoDeleteService",
-    "ChannelNightModeService",
+    "ChatPermissionsService",
 ]

@@ -47,6 +47,8 @@ from backend.schemas.channels.invite_links import (
     InviteLinkListResponse,
 )
 
+from backend.schemas.channels.captcha import CaptchaSettingsUpdate, CaptchaSettingsResponse
+
 __all__ = [
     "ChannelType",
     "BackupMode",
@@ -83,4 +85,6 @@ __all__ = [
     "InviteLinkUpdate",
     "InviteLinkResponse",
     "InviteLinkListResponse",
+    "CaptchaSettingsUpdate",
+    "CaptchaSettingsResponse",
 ]

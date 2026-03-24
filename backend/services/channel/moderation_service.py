@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, ChannelModerationRule
 from backend.schemas.channels import ChannelModerationRuleCreate, ChannelModerationRuleUpdate
+from backend.services.channel.chat_permissions_service import ChatPermissionsService
 from backend.services.channel.utils.query_utils import get_channel
 
 
@@ -98,6 +99,46 @@ class ModerationService:
             if rule.phrase.lower() in lowered:
                 return rule
         return None
+
+    async def toggle_banned_words(self, channel_id: int, enabled: bool, owner_id: int) -> ChannelGroup:
+        """Включить/выключить запрещённые слова."""
+        channel = await get_channel(self.db, channel_id, owner_id)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        channel.banned_words_enabled = enabled
+        return channel
+
+    async def update_quick_commands(
+        self,
+        channel_id: int,
+        commands_enabled: bool,
+        enabled_commands: Optional[List[str]],
+        owner_id: int,
+    ) -> ChannelGroup:
+        """Обновить настройки быстрых команд."""
+        channel = await get_channel(self.db, channel_id, owner_id)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        channel.commands_enabled = commands_enabled
+        channel.enabled_commands = enabled_commands
+        return channel
+
+    async def update_media_block(
+        self,
+        channel_id: int,
+        block_media_types: Optional[List[str]],
+        owner_id: int,
+    ) -> ChannelGroup:
+        """Обновить блокировку медиа и применить permissions."""
+        channel = await get_channel(self.db, channel_id, owner_id, load_bot=True)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        channel.block_media_types = block_media_types
+
+        perms_service = ChatPermissionsService(self.db)
+        await perms_service.apply_permissions(channel)
+
+        return channel
 
     async def get_rule(self, channel_id: int, rule_id: int, owner_id: int) -> Optional[ChannelModerationRule]:
         """Получить правило с проверкой."""

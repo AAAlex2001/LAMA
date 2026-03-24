@@ -60,6 +60,27 @@ class AntispamService:
 
         return False, None
 
+    def check_channel_links(
+        self,
+        channel: ChannelGroup,
+        text: str,
+    ) -> Tuple[bool, Optional[ActionType], Optional[int], Optional[str]]:
+        """Проверить текст на антиспам для уже загруженного канала."""
+        if not text:
+            return False, None, None, None
+
+        should_block, matched_link = self.check_link_filter(
+            text,
+            channel.link_filter_mode,
+            channel.link_whitelist,
+            channel.link_blacklist,
+        )
+
+        if should_block:
+            return True, channel.link_filter_action, channel.link_filter_mute_duration, f"Link filter triggered: {matched_link}"
+
+        return False, None, None, None
+
     async def check_by_telegram_id(
         self,
         telegram_id: int,

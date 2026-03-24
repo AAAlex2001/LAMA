@@ -17,8 +17,8 @@ from backend.services.channel import (
 )
 from backend.models.channels import ActionType
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import (
-    get_bot_session,
     TELEGRAM_API_TIMEOUT,
     DB_QUERY_TIMEOUT,
 )
@@ -43,13 +43,21 @@ class ModerationHandler:
                 message.from_user.id if message.from_user else None,
             )
 
-            # Проверка антифлуда (только для групп с from_user)
+            channel = await asyncio.wait_for(
+                get_channel_by_telegram_id(self.db, message.chat.id),
+                timeout=DB_QUERY_TIMEOUT,
+            )
+            if not channel:
+                return
+
             if (message.chat.type in {"group", "supergroup"}
-                    and message.from_user):
+                    and message.from_user
+                    and channel.flood_message_limit
+                    and channel.flood_interval_seconds):
                 flood_service = FloodService(self.db)
                 is_flood, flood_action, flood_mute = await asyncio.wait_for(
-                    flood_service.check_by_telegram_id(
-                        telegram_id=message.chat.id,
+                    flood_service.check_flood(
+                        channel=channel,
                         user_id=message.from_user.id,
                     ),
                     timeout=DB_QUERY_TIMEOUT
@@ -59,30 +67,22 @@ class ModerationHandler:
                     await self.apply_action(message, flood_action, flood_mute)
                     return
 
-            # Проверка антиспама (ссылки)
+            if not text_content:
+                return
+
             antispam_service = AntispamService(self.db)
             should_block, action, mute_duration, reason = \
-                await asyncio.wait_for(
-                    antispam_service.check_by_telegram_id(
-                        message.chat.id, text_content or ""
-                    ),
-                    timeout=DB_QUERY_TIMEOUT
-                )
+                antispam_service.check_channel_links(channel, text_content)
 
             if should_block:
                 await self.apply_action(message, action, mute_duration)
                 return
 
-            # Проверка правил модерации (запрещённые слова)
-            channel = await asyncio.wait_for(
-                get_channel_by_telegram_id(self.db, message.chat.id),
-                timeout=DB_QUERY_TIMEOUT,
-            )
-            if channel and channel.banned_words_enabled:
+            if channel.banned_words_enabled:
                 moderation_service = ChannelModerationService(self.db)
                 rule = await asyncio.wait_for(
-                    moderation_service.check_message_by_telegram_id(
-                        message.chat.id, text_content or ""
+                    moderation_service.check_message(
+                        channel.id, text_content
                     ),
                     timeout=DB_QUERY_TIMEOUT
                 )
@@ -109,29 +109,29 @@ class ModerationHandler:
             return
 
         try:
-            async with get_bot_session(self.bot_model.token) as bot:
-                # Удаляем сообщение
-                try:
-                    await asyncio.wait_for(
-                        bot.delete_message(
-                            chat_id=message.chat.id,
-                            message_id=message.message_id,
-                        ),
-                        timeout=TELEGRAM_API_TIMEOUT
-                    )
-                except (TelegramAPIError, asyncio.TimeoutError) as e:
-                    logger.debug(f"Failed to delete message: {e}")
+            bot = resolve_by_token(self.bot_model.token)
+            # Удаляем сообщение
+            try:
+                await asyncio.wait_for(
+                    bot.delete_message(
+                        chat_id=message.chat.id,
+                        message_id=message.message_id,
+                    ),
+                    timeout=TELEGRAM_API_TIMEOUT
+                )
+            except (TelegramAPIError, asyncio.TimeoutError) as e:
+                logger.debug(f"Failed to delete message: {e}")
 
-                # Применяем действие к пользователю
-                if not message.from_user:
-                    return
+            # Применяем действие к пользователю
+            if not message.from_user:
+                return
 
-                if action == ActionType.MUTE:
-                    await self.mute_user(bot, message, mute_duration)
-                elif action == ActionType.KICK:
-                    await self.kick_user(bot, message)
-                elif action == ActionType.UNMUTE:
-                    await self.unmute_user(bot, message)
+            if action == ActionType.MUTE:
+                await self.mute_user(bot, message, mute_duration)
+            elif action == ActionType.KICK:
+                await self.kick_user(bot, message)
+            elif action == ActionType.UNMUTE:
+                await self.unmute_user(bot, message)
 
         except asyncio.TimeoutError:
             uid = message.from_user.id if message.from_user else 'unknown'

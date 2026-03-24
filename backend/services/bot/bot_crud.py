@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.config import PUBLIC_DOMAIN, TELEGRAM_WEBHOOK_SECRET
 from backend.models.bots import Bot as BotModel, BotStatus
 from backend.schemas.bots import BotCreate, BotUpdate
-from backend.services.bot_provider import get_cached_bot, cache, bot_info_cache
+from backend.services.bot_provider import resolve_by_token, evict_bot
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +127,7 @@ class BotCrudService:
                 f in update_data for f in ("description", "short_description")
             )
             if needs_api:
-                telegram_bot = get_cached_bot(bot.token).bot
+                telegram_bot = resolve_by_token(bot.token).bot
                 await self.sync_telegram_fields(telegram_bot, bot, new_name, update_data)
 
             for field, value in update_data.items():
@@ -169,7 +169,7 @@ class BotCrudService:
         bot = await self.get(bot_id, owner_id=owner_id)
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")
-        raw_bot = get_cached_bot(bot.token).bot
+        raw_bot = resolve_by_token(bot.token).bot
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
         bot.is_webhook_enabled = True
@@ -218,7 +218,7 @@ class BotCrudService:
         await self.db.flush()
         await self.db.refresh(bot)
 
-        raw_bot = get_cached_bot(token).bot
+        raw_bot = resolve_by_token(token).bot
         await self.setup_webhook(raw_bot, token)
         bot.is_webhook_enabled = True
         bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
@@ -229,7 +229,7 @@ class BotCrudService:
 
     async def fetch_bot_info(self, token: str) -> tuple:
         """Получить информацию о боте из Telegram API и установить вебхук."""
-        raw_bot = get_cached_bot(token).bot
+        raw_bot = resolve_by_token(token).bot
         try:
             bot_info = await raw_bot.get_me()
             webhook_task = self.setup_webhook(raw_bot, token)
@@ -270,20 +270,14 @@ class BotCrudService:
     async def remove_webhook(self, token: str) -> None:
         """Снять вебхук с бота."""
         try:
-            raw_bot = get_cached_bot(token).bot
+            raw_bot = resolve_by_token(token).bot
             await raw_bot.delete_webhook(drop_pending_updates=True)
         except TelegramAPIError as e:
             logger.warning(f"Failed to remove webhook: {e}")
 
     async def evict_from_cache(self, token: str) -> None:
         """Удалить бота из кешей и закрыть его aiohttp-сессию."""
-        bot = cache.pop(token, None)
-        bot_info_cache.pop(token, None)
-        if bot:
-            try:
-                await bot.bot.session.close()
-            except Exception as e:
-                logger.warning("Failed to close bot session: %s", e)
+        await evict_bot(token)
 
     async def sync_telegram_fields(
         self, telegram_bot: RateLimitedBot, bot: BotModel,

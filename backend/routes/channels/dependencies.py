@@ -12,6 +12,7 @@ from backend.services.channel.antispam_service import AntispamService
 from backend.services.channel.flood_service import FloodService
 from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.invite_link_service import InviteLinkService
+from backend.services.channel.night_mode_service import NightModeService
 
 
 async def get_channel_service(db: AsyncSession = Depends(get_db)) -> ChannelService:
@@ -52,3 +53,7 @@ async def get_auto_delete_service(db: AsyncSession = Depends(get_db)) -> AutoDel
 
 async def get_invite_link_service(db: AsyncSession = Depends(get_db)) -> InviteLinkService:
     return InviteLinkService(db)
+
+
+async def get_night_mode_service(db: AsyncSession = Depends(get_db)) -> NightModeService:
+    return NightModeService(db)

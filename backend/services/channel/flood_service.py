@@ -18,6 +18,56 @@ class FloodService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    async def check_flood(
+        self,
+        channel: ChannelGroup,
+        user_id: int,
+    ) -> Tuple[bool, Optional[ActionType], Optional[int]]:
+        """Проверить флуд для уже загруженного канала."""
+        if not channel.flood_message_limit or not channel.flood_interval_seconds:
+            return False, None, None
+
+        now = datetime.now(timezone.utc)
+        state = await self.get_flood_state(channel.id, user_id)
+
+        if not state:
+            state = ChannelFloodState(
+                channel_id=channel.id,
+                user_id=user_id,
+                message_count=1,
+                window_start=now,
+                last_message_at=now,
+            )
+            self.db.add(state)
+            await self.db.flush()
+            return False, None, None
+
+        window_delta = (now - state.window_start).total_seconds()
+        if window_delta > channel.flood_interval_seconds:
+            state.message_count = 1
+            state.window_start = now
+            state.last_message_at = now
+            await self.db.flush()
+            return False, None, None
+
+        state.message_count += 1
+        state.last_message_at = now
+        await self.db.flush()
+
+        logger.info(
+            "Flood check: channel=%s user=%s count=%s/%s window=%.1fs/%ss",
+            channel.id, user_id, state.message_count,
+            channel.flood_message_limit, window_delta, channel.flood_interval_seconds,
+        )
+
+        if state.message_count > channel.flood_message_limit:
+            state.message_count = 0
+            state.window_start = now
+            await self.db.flush()
+            return True, channel.flood_action, channel.flood_mute_duration_minutes
+
+        return False, None, None
+
     async def check_by_telegram_id(
         self,
         telegram_id: int,

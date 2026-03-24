@@ -1,17 +1,23 @@
+import logging
 from typing import Optional
 
-from aiogram import Bot
-from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import Message
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelAutoDeleteSettings, ChannelGroup
 from backend.schemas.channels import ChannelAutoDeleteSettingsUpdate
-from backend.services.channel.utils.message_utils import is_command_message, is_system_message
+from backend.services.channel.utils.message_utils import (
+    is_command_message, is_system_message, is_join_message,
+    is_text_only_message, is_media_message,
+)
 from backend.services.channel.utils.query_utils import get_channel
+from backend.services.rate_limiter import RateLimitTimeout
+from backend.services.telegram_client import RateLimitedBot
+
+logger = logging.getLogger(__name__)
 
 
 class AutoDeleteService:
@@ -21,7 +27,7 @@ class AutoDeleteService:
         self.db = db
 
     async def get_settings(self, channel_id: int, owner_id: int) -> ChannelAutoDeleteSettings:
-        """Получить настройки автоудаления."""
+        """Получить настройки автоудаления для канала."""
         channel = await get_channel(self.db, channel_id, owner_id, load_auto_delete=True)
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
@@ -47,46 +53,66 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
-    async def delete_if_system(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
-        """Удалить системное сообщение если настроено."""
+    async def resolve_settings(self, telegram_id: int) -> Optional[ChannelAutoDeleteSettings]:
+        """Получить настройки по Telegram ID с кешем на время обработки."""
+        if not hasattr(self, 'settings_cache'):
+            self.settings_cache = {}
+        if telegram_id not in self.settings_cache:
+            self.settings_cache[telegram_id] = await self.get_settings_by_telegram_id(telegram_id)
+        return self.settings_cache[telegram_id]
+
+    async def process_auto_delete(self, message: Message, bot_id: int) -> bool:
+        """Единая точка проверки автоудаления. Возвращает True если сообщение удалено/будет удалено."""
         if not message or not message.chat:
             return False
 
-        settings = await self.get_settings_by_telegram_id(message.chat.id)
-        if not settings or not settings.delete_system_messages:
+        settings = await self.resolve_settings(message.chat.id)
+        if not settings:
             return False
 
-        if not is_system_message(message):
+        should_delete = False
+
+        if settings.delete_all_messages:
+            should_delete = True
+        elif is_system_message(message):
+            if settings.delete_system_messages:
+                should_delete = True
+            elif settings.delete_join_messages and is_join_message(message):
+                should_delete = True
+        elif is_command_message(message):
+            if settings.delete_command_messages:
+                should_delete = True
+        elif settings.delete_text_only and is_text_only_message(message):
+            should_delete = True
+        elif settings.delete_media_only and is_media_message(message):
+            should_delete = True
+
+        if not should_delete:
             return False
 
-        return await self.safe_delete(telegram_bot, message.chat.id, message.message_id)
-
-    async def delete_if_command(self, telegram_bot: RateLimitedBot, message: Message) -> bool:
-        """Удалить командное сообщение если настроено."""
-        if not message or not message.chat:
-            return False
-
-        settings = await self.get_settings_by_telegram_id(message.chat.id)
-        if not settings or not settings.delete_command_messages:
-            return False
-
-        if not is_command_message(message):
-            return False
-
-        return await self.safe_delete(telegram_bot, message.chat.id, message.message_id)
+        delay = settings.delete_delay_seconds or 0
+        from backend.celery.tasks import delayed_delete_message
+        delayed_delete_message.apply_async(
+            args=[bot_id, message.chat.id, message.message_id],
+            countdown=delay,
+        )
+        return True
 
     async def get_settings_by_telegram_id(self, telegram_id: int) -> Optional[ChannelAutoDeleteSettings]:
-        """Получить настройки по Telegram ID."""
+        """Получить настройки по Telegram ID (включая linked_chat_id)."""
         query = (
             select(ChannelAutoDeleteSettings)
             .join(ChannelGroup)
-            .where(ChannelGroup.telegram_id == telegram_id)
+            .where(or_(
+                ChannelGroup.telegram_id == telegram_id,
+                ChannelGroup.linked_chat_id == telegram_id,
+            ))
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
     async def ensure_settings(self, channel: ChannelGroup) -> ChannelAutoDeleteSettings:
-        """Создать настройки если не существуют."""
+        """Создать настройки автоудаления если их ещё нет."""
         if channel.auto_delete_settings:
             return channel.auto_delete_settings
 
@@ -100,10 +126,13 @@ class AutoDeleteService:
         await self.db.refresh(settings)
         return settings
 
-    async def safe_delete(self, telegram_bot: RateLimitedBot, chat_id: int, message_id: int) -> bool:
-        """Безопасно удалить сообщение."""
+    async def safe_delete(self, telegram_bot: RateLimitedBot, chat_id: int, message_id: int) -> str:
+        """Безопасно удалить сообщение. Возвращает строку-результат."""
         try:
             await telegram_bot.delete_message(chat_id=chat_id, message_id=message_id)
-            return True
-        except TelegramAPIError:
-            return False
+            return f"deleted:{chat_id}/{message_id}"
+        except RateLimitTimeout as e:
+            return f"rate_limited:{int(e.wait_seconds) + 1}"
+        except Exception as e:
+            logger.warning("safe_delete failed: chat=%s msg=%s error=%s", chat_id, message_id, e)
+            return f"failed:{chat_id}/{message_id}:{e}"

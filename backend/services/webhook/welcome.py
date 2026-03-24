@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
 from backend.services.bot import WelcomeService
-from backend.services.webhook.base import get_bot_session
+from backend.services.bot_provider import resolve_by_token
 
 logger = logging.getLogger(__name__)
 
@@ -28,21 +28,21 @@ class WelcomeHandler:
         Отправляется в личные сообщения
         """
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                message = (
-                    await self.welcome_service.handle_join_request(
-                        telegram_bot=telegram_bot,
-                        bot_model=self.bot_model,
-                        join_request=join_request,
-                    )
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            message = (
+                await self.welcome_service.handle_join_request(
+                    telegram_bot=telegram_bot,
+                    bot_model=self.bot_model,
+                    join_request=join_request,
                 )
+            )
 
-                if message:
-                    logger.info(
-                        f"Welcome sent for join request: "
-                        f"user={join_request.from_user.id}, "
-                        f"chat={join_request.chat.id}"
-                    )
+            if message:
+                logger.info(
+                    f"Welcome sent for join request: "
+                    f"user={join_request.from_user.id}, "
+                    f"chat={join_request.chat.id}"
+                )
 
         except Exception as e:
             logger.error(
@@ -59,43 +59,43 @@ class WelcomeHandler:
         Отправляется в группу (может быть в топик)
         """
         try:
-            async with get_bot_session(self.bot_model.token) as telegram_bot:
-                # Определяем топик:
-                # 1. Если указан конкретный топик (welcome_message_thread_id),
-                #    то отправляем ВСЕГДА в него
-                # 2. Если не указан (None), отправляем в топик, куда добавили
-                message_thread_id = self.bot_model.welcome_message_thread_id
-                if message_thread_id is None:
-                    message_thread_id = getattr(
-                        message, "message_thread_id", None
-                    )
-
-                sent_message = (
-                    await self.welcome_service.handle_member_joined(
-                        telegram_bot=telegram_bot,
-                        bot_model=self.bot_model,
-                        user_id=new_member_user.id,
-                        chat_id=message.chat.id,
-                        user_first_name=new_member_user.first_name,
-                        user_username=getattr(
-                            new_member_user, "username", None
-                        ),
-                        user_last_name=getattr(
-                            new_member_user, "last_name", None
-                        ),
-                        chat_title=(
-                            message.chat.title if message.chat else None
-                        ),
-                        message_thread_id=message_thread_id,
-                    )
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            # Определяем топик:
+            # 1. Если указан конкретный топик (welcome_message_thread_id),
+            #    то отправляем ВСЕГДА в него
+            # 2. Если не указан (None), отправляем в топик, куда добавили
+            message_thread_id = self.bot_model.welcome_message_thread_id
+            if message_thread_id is None:
+                message_thread_id = getattr(
+                    message, "message_thread_id", None
                 )
 
-                if sent_message:
-                    logger.info(
-                        f"Welcome sent for new member: "
-                        f"user={new_member_user.id}, "
-                        f"chat={message.chat.id}, thread={message_thread_id}"
-                    )
+            sent_message = (
+                await self.welcome_service.handle_member_joined(
+                    telegram_bot=telegram_bot,
+                    bot_model=self.bot_model,
+                    user_id=new_member_user.id,
+                    chat_id=message.chat.id,
+                    user_first_name=new_member_user.first_name,
+                    user_username=getattr(
+                        new_member_user, "username", None
+                    ),
+                    user_last_name=getattr(
+                        new_member_user, "last_name", None
+                    ),
+                    chat_title=(
+                        message.chat.title if message.chat else None
+                    ),
+                    message_thread_id=message_thread_id,
+                )
+            )
+
+            if sent_message:
+                logger.info(
+                    f"Welcome sent for new member: "
+                    f"user={new_member_user.id}, "
+                    f"chat={message.chat.id}, thread={message_thread_id}"
+                )
 
         except Exception as e:
             logger.error(

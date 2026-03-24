@@ -25,6 +25,11 @@ interface ModerationState {
   autoDeleteEnabled: boolean;
   autoDeleteSystemMessages: boolean;
   autoDeleteCommandMessages: boolean;
+  autoDeleteJoinMessages: boolean;
+  autoDeleteAllMessages: boolean;
+  autoDeleteTextOnly: boolean;
+  autoDeleteMediaOnly: boolean;
+  autoDeleteDelaySeconds: number;
 
   nightModeEnabled: boolean;
 
@@ -57,6 +62,11 @@ const initialState: ModerationState = {
   autoDeleteEnabled: false,
   autoDeleteSystemMessages: false,
   autoDeleteCommandMessages: false,
+  autoDeleteJoinMessages: false,
+  autoDeleteAllMessages: false,
+  autoDeleteTextOnly: false,
+  autoDeleteMediaOnly: false,
+  autoDeleteDelaySeconds: 0,
 
   nightModeEnabled: false,
 
@@ -152,19 +162,49 @@ const moderationSlice = createSlice({
     },
     setAutoDeleteSystemMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteSystemMessages = action.payload;
-      state.autoDeleteEnabled = action.payload || state.autoDeleteCommandMessages;
+      state.autoDeleteEnabled = action.payload || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
     },
     setAutoDeleteCommandMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteCommandMessages = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || action.payload || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
+    },
+    setAutoDeleteJoinMessages(state, action: PayloadAction<boolean>) {
+      state.autoDeleteJoinMessages = action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || action.payload || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
+    },
+    setAutoDeleteAllMessages(state, action: PayloadAction<boolean>) {
+      state.autoDeleteAllMessages = action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || action.payload || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
+    },
+    setAutoDeleteTextOnly(state, action: PayloadAction<boolean>) {
+      state.autoDeleteTextOnly = action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || action.payload || state.autoDeleteMediaOnly;
+    },
+    setAutoDeleteMediaOnly(state, action: PayloadAction<boolean>) {
+      state.autoDeleteMediaOnly = action.payload;
+      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || action.payload;
+    },
+    setAutoDeleteDelaySeconds(state, action: PayloadAction<number>) {
+      state.autoDeleteDelaySeconds = action.payload;
     },
     initAutoDeleteSettings(state, action: PayloadAction<{
       delete_system_messages: boolean;
       delete_command_messages: boolean;
+      delete_join_messages: boolean;
+      delete_all_messages: boolean;
+      delete_text_only: boolean;
+      delete_media_only: boolean;
+      delete_delay_seconds: number;
     }>) {
-      state.autoDeleteSystemMessages = action.payload.delete_system_messages;
-      state.autoDeleteCommandMessages = action.payload.delete_command_messages;
-      state.autoDeleteEnabled = action.payload.delete_system_messages || action.payload.delete_command_messages;
+      const d = action.payload;
+      state.autoDeleteSystemMessages = d.delete_system_messages;
+      state.autoDeleteCommandMessages = d.delete_command_messages;
+      state.autoDeleteJoinMessages = d.delete_join_messages;
+      state.autoDeleteAllMessages = d.delete_all_messages;
+      state.autoDeleteTextOnly = d.delete_text_only;
+      state.autoDeleteMediaOnly = d.delete_media_only;
+      state.autoDeleteDelaySeconds = d.delete_delay_seconds;
+      state.autoDeleteEnabled = d.delete_system_messages || d.delete_command_messages || d.delete_join_messages || d.delete_all_messages || d.delete_text_only || d.delete_media_only;
     },
     setNightModeEnabled(state, action: PayloadAction<boolean>) {
       state.nightModeEnabled = action.payload;
@@ -196,6 +236,11 @@ export const {
   setAutoDeleteEnabled,
   setAutoDeleteSystemMessages,
   setAutoDeleteCommandMessages,
+  setAutoDeleteJoinMessages,
+  setAutoDeleteAllMessages,
+  setAutoDeleteTextOnly,
+  setAutoDeleteMediaOnly,
+  setAutoDeleteDelaySeconds,
   initAutoDeleteSettings,
   setNightModeEnabled,
   setSaving,

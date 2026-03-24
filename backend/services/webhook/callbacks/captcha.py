@@ -4,11 +4,13 @@ from sqlalchemy import select, update
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 from backend.services.bot import CaptchaService, TriggerService
+from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.models.bots import PendingApproval, TriggerType
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.models.inbox import InboxEvent
 from backend.schemas.inbox.enums import EventType, EventStatus
-from backend.services.webhook.base import get_bot_session
+from backend.services.bot_provider import resolve_by_token
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.services.webhook.callbacks.base import BaseCallbackProcessor
 
@@ -43,49 +45,49 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
 
         group_chat_id = await self.get_pending_chat_id(pending_id)
 
-        async with get_bot_session(self.bot_model.token) as bot:
-            user_id = callback_query.from_user.id
+        bot = resolve_by_token(self.bot_model.token)
+        user_id = callback_query.from_user.id
 
-            if is_correct:
-                await self.answer_callback(
-                    bot,
-                    callback_query.id,
-                    "✅ Правильно! Заявка одобрена.",
-                    True,
-                )
-                pending = await self.approve_join_request(bot, pending_id)
-                if pending:
-                    await self.increment_member_count(pending.user_id, pending.chat_id)
-                    await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
-                    group_chat_id = pending.chat_id
-                await self.fire_captcha_trigger(
-                    bot,
-                    user_id,
-                    group_chat_id,
-                    TriggerType.CAPTCHA_PASSED,
-                    pending_id,
-                    "supergroup",
-                )
-            elif reason == "not_allowed":
-                await self.answer_callback(
-                    bot,
-                    callback_query.id,
-                    "⚠️ Эту капчу может решить только приглашённый.",
-                    True,
-                )
-            else:
-                await self.answer_callback(
-                    bot, callback_query.id, "❌ Неправильный ответ.", True
-                )
-                await self.fire_captcha_trigger(
-                    bot,
-                    user_id,
-                    group_chat_id,
-                    TriggerType.CAPTCHA_FAILED,
-                    pending_id,
-                    "supergroup",
-                    user_answer,
-                )
+        if is_correct:
+            await self.answer_callback(
+                bot,
+                callback_query.id,
+                "✅ Правильно! Заявка одобрена.",
+                True,
+            )
+            pending = await self.approve_join_request(bot, pending_id)
+            if pending:
+                await self.increment_member_count(pending.user_id, pending.chat_id)
+                await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
+                group_chat_id = pending.chat_id
+            await self.fire_captcha_trigger(
+                bot,
+                user_id,
+                group_chat_id,
+                TriggerType.CAPTCHA_PASSED,
+                pending_id,
+                "supergroup",
+            )
+        elif reason == "not_allowed":
+            await self.answer_callback(
+                bot,
+                callback_query.id,
+                "⚠️ Эту капчу может решить только приглашённый.",
+                True,
+            )
+        else:
+            await self.answer_callback(
+                bot, callback_query.id, "❌ Неправильный ответ.", True
+            )
+            await self.fire_captcha_trigger(
+                bot,
+                user_id,
+                group_chat_id,
+                TriggerType.CAPTCHA_FAILED,
+                pending_id,
+                "supergroup",
+                user_answer,
+            )
 
     async def process_group_captcha(
         self, callback_query: CallbackQuery
@@ -108,47 +110,73 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 
-        async with get_bot_session(self.bot_model.token) as bot:
-            user_id = callback_query.from_user.id
-            chat_id = (
-                callback_query.message.chat.id if callback_query.message else 0
+        bot = resolve_by_token(self.bot_model.token)
+        user_id = callback_query.from_user.id
+        chat_id = (
+            callback_query.message.chat.id if callback_query.message else 0
+        )
+
+        if is_correct:
+            await self.answer_callback(
+                bot, callback_query.id, "✅ Правильно! Добро пожаловать!"
+            )
+            await self.delete_captcha_message(bot, callback_query.message)
+            await self.unrestrict_user(bot, chat_id, user_id)
+            await self.send_welcome(callback_query)
+            await self._send_captcha_success_text(bot, chat_id, callback_query.from_user)
+            await self.fire_captcha_trigger(
+                bot,
+                user_id,
+                chat_id,
+                TriggerType.CAPTCHA_PASSED,
+                pending_id,
+                "group",
+            )
+        elif reason == "not_allowed":
+            await self.answer_callback(
+                bot,
+                callback_query.id,
+                "⚠️ Эту капчу может решить только приглашённый.",
+                True,
+            )
+        else:
+            await self.answer_callback(
+                bot, callback_query.id, "❌ Неправильный ответ.", True
+            )
+            await self.fire_captcha_trigger(
+                bot,
+                user_id,
+                chat_id,
+                TriggerType.CAPTCHA_FAILED,
+                pending_id,
+                "group",
+                user_answer,
             )
 
-            if is_correct:
-                await self.answer_callback(
-                    bot, callback_query.id, "✅ Правильно! Добро пожаловать!"
-                )
-                await self.delete_captcha_message(bot, callback_query.message)
-                await self.unrestrict_user(bot, chat_id, user_id)
-                await self.send_welcome(callback_query)
-                await self.fire_captcha_trigger(
-                    bot,
-                    user_id,
-                    chat_id,
-                    TriggerType.CAPTCHA_PASSED,
-                    pending_id,
-                    "group",
-                )
-            elif reason == "not_allowed":
-                await self.answer_callback(
-                    bot,
-                    callback_query.id,
-                    "⚠️ Эту капчу может решить только приглашённый.",
-                    True,
-                )
-            else:
-                await self.answer_callback(
-                    bot, callback_query.id, "❌ Неправильный ответ.", True
-                )
-                await self.fire_captcha_trigger(
-                    bot,
-                    user_id,
-                    chat_id,
-                    TriggerType.CAPTCHA_FAILED,
-                    pending_id,
-                    "group",
-                    user_answer,
-                )
+    async def _send_captcha_success_text(self, bot, chat_id: int, user) -> None:
+        """Отправить кастомный текст при успешном прохождении капчи."""
+        try:
+            channel = await get_channel_by_telegram_id(self.db, chat_id)
+            if not channel or not channel.captcha_message_success:
+                return
+            context = {
+                "user": {
+                    "first_name": user.first_name or "",
+                    "username": user.username or "",
+                    "last_name": user.last_name or "",
+                    "id": user.id,
+                },
+            }
+            text = ShortcodeProcessor.process(channel.captcha_message_success, context)
+            msg = await bot.send_message(chat_id=chat_id, text=text)
+            import asyncio
+            await asyncio.sleep(30)
+            try:
+                await bot.delete_message(chat_id=chat_id, message_id=msg.message_id)
+            except TelegramAPIError:
+                pass
+        except Exception as e:
+            logger.error(f"Failed to send captcha success text: {e}")
 
     async def get_pending_chat_id(self, pending_id: int) -> int:
         """Получить chat_id группы из PendingApproval."""
@@ -225,13 +253,13 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
             if not link or not link.member_limit:
                 return
             if link.member_count >= link.member_limit and not link.is_revoked:
-                async with get_bot_session(self.bot_model.token) as bot:
-                    try:
-                        await bot.revoke_chat_invite_link(
-                            chat_id=chat_id, invite_link=invite_link_url,
-                        )
-                    except TelegramAPIError as e:
-                        logger.warning(f"Failed to revoke link: {e}")
+                bot = resolve_by_token(self.bot_model.token)
+                try:
+                    await bot.revoke_chat_invite_link(
+                        chat_id=chat_id, invite_link=invite_link_url,
+                    )
+                except TelegramAPIError as e:
+                    logger.warning(f"Failed to revoke link: {e}")
                 link.is_revoked = True
                 await self.db.flush()
                 logger.info(f"Auto-revoked link {invite_link_url}")
