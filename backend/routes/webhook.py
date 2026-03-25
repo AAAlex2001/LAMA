@@ -28,11 +28,9 @@ async def telegram_webhook(
     - Параллельная обработка независимых задач
     - Graceful error handling
     """
-    # Валидация секрета (если задан)
 
     validate_webhook_secret(x_telegram_bot_api_secret_token, TELEGRAM_WEBHOOK_SECRET)
 
-    # Парсинг payload
     try:
         body = await request.body()
         if not body:
@@ -45,7 +43,6 @@ async def telegram_webhook(
         logger.warning("Invalid update payload: %s", e)
         return {"ok": True}
 
-    # Запускаем обработку в фоне
     if not bot_token:
         logger.warning("Webhook request missing bot_token in URL")
         return {"ok": False, "error": "bot_token is required"}
