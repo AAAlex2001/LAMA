@@ -130,6 +130,8 @@ class ModerationHandler:
                 await self.mute_user(bot, message, mute_duration)
             elif action == ActionType.KICK:
                 await self.kick_user(bot, message)
+            elif action == ActionType.BAN:
+                await self.ban_user(bot, message)
             elif action == ActionType.UNMUTE:
                 await self.unmute_user(bot, message)
 
@@ -184,6 +186,19 @@ class ModerationHandler:
                 chat_id=message.chat.id,
                 user_id=message.from_user.id,
                 revoke_messages=False,
+            ),
+            timeout=TELEGRAM_API_TIMEOUT
+        )
+
+    async def ban_user(self, bot, message: Message) -> None:
+        """Забанить пользователя (перманентный бан)"""
+        if not message.from_user:
+            return
+
+        await asyncio.wait_for(
+            bot.ban_chat_member(
+                chat_id=message.chat.id,
+                user_id=message.from_user.id,
             ),
             timeout=TELEGRAM_API_TIMEOUT
         )

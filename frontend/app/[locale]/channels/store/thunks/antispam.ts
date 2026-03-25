@@ -7,7 +7,7 @@ interface AntispamResponse {
   link_filter_mode: 'DISABLED' | 'BLOCK_ALL' | 'ALLOW_TME_ONLY' | 'WHITELIST' | 'BLACKLIST';
   link_whitelist: string[] | null;
   link_blacklist: string[] | null;
-  link_filter_action: 'DELETE' | 'MUTE' | 'KICK';
+  link_filter_action: 'BAN' | 'MUTE' | 'KICK' | 'DELETE';
   link_filter_mute_duration: number | null;
 }
 
@@ -37,13 +37,12 @@ export const updateAntispamThunk = createAsyncThunk(
         method: 'PUT',
         body: JSON.stringify({
           link_filter_mode: mode,
-          link_whitelist: whitelist.length > 0 ? whitelist : null,
-          link_blacklist: blacklist.length > 0 ? blacklist : null,
+          link_whitelist: whitelist,
+          link_blacklist: blacklist,
           link_filter_action: action,
           link_filter_mute_duration: action === 'MUTE' ? totalMinutes || 1 : null,
         }),
       });
-      dispatch(initFromResponse(data));
       return data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Ошибка сохранения';

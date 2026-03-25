@@ -14,6 +14,7 @@ import {
   setCommandsEnabled,
   toggleCommand,
   setFloodEnabled,
+  setFloodAction,
   setFloodMessageLimit,
   setFloodIntervalSeconds,
   setMuteDays as setFloodMuteDays,
@@ -41,6 +42,7 @@ import {
 } from '../../store/thunks/moderation';
 import {
   setInputValue as setBannedInput,
+  setAction as setBannedAction,
   setMuteDays as setBannedMuteDays,
   setMuteHours as setBannedMuteHours,
   setMuteMinutes as setBannedMuteMinutes,
@@ -50,6 +52,7 @@ import {
   toggleBannedWordsThunk,
   addBannedWordThunk,
   deleteBannedWordThunk,
+  updateBannedWordsActionThunk,
 } from '../../store/thunks/bannedWords';
 import {
   setMode as setAntispamMode,
@@ -105,9 +108,21 @@ const ANTISPAM_MODES = [
 ] as const;
 
 const ANTISPAM_ACTIONS = [
-  { id: 'DELETE', label: 'Удалить сообщение' },
+  { id: 'BAN', label: 'Забанить' },
   { id: 'MUTE', label: 'Ограничить' },
-  { id: 'KICK', label: 'Удалить из чата' },
+  { id: 'KICK', label: 'Кикнуть' },
+] as const;
+
+const FLOOD_ACTIONS = [
+  { id: 'MUTE', label: 'Ограничить' },
+  { id: 'KICK', label: 'Кикнуть' },
+  { id: 'DELETE', label: 'Удалить сообщение' },
+] as const;
+
+const BANNED_ACTIONS = [
+  { id: 'BAN', label: 'Забанить' },
+  { id: 'MUTE', label: 'Ограничить' },
+  { id: 'KICK', label: 'Кикнуть' },
 ] as const;
 
 const NIGHT_BLOCK_OPTIONS = [
@@ -163,6 +178,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
   const nightModeSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const commandsSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const mediaBlockSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const bannedActionSaveRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const {
     commandsEnabled,
@@ -189,6 +205,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
     enabled: bannedEnabled,
     rules: bannedRules,
     inputValue: bannedInput,
+    action: bannedWordAction,
     muteDays: bannedMuteDays,
     muteHours: bannedMuteHours,
     muteMinutes: bannedMuteMinutes,
@@ -285,6 +302,16 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
     }, 500);
   };
 
+  const scheduleBannedActionSave = () => {
+    if (bannedActionSaveRef.current) clearTimeout(bannedActionSaveRef.current);
+    bannedActionSaveRef.current = setTimeout(() => {
+      dispatch(updateBannedWordsActionThunk({ channelId: channel.id }))
+        .unwrap()
+        .then(() => showSuccess('Действие обновлено'))
+        .catch(() => showError('Ошибка сохранения'));
+    }, 800);
+  };
+
   const handleFloodToggle = async (enabled: boolean) => {
     dispatch(setFloodEnabled(enabled));
     if (!enabled) {
@@ -320,12 +347,8 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
   };
 
   const handleDeleteBannedWord = async (ruleId: number) => {
-    try {
-      await dispatch(deleteBannedWordThunk({ channelId: channel.id, ruleId })).unwrap();
-      showSuccess('Слово удалено');
-    } catch {
-      showError('Ошибка удаления');
-    }
+    dispatch(deleteBannedWordThunk({ channelId: channel.id, ruleId }));
+    showSuccess('Слово удалено');
   };
 
   const handleAntispamToggle = (enabled: boolean) => {
@@ -374,26 +397,6 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
   const handleMediaBlockToggle = async (enabled: boolean) => {
     dispatch(setMediaBlockEnabled(enabled));
     scheduleMediaBlockSave();
-  };
-
-  const handleAutoDeleteSystemToggle = (enabled: boolean) => {
-    dispatch(setAutoDeleteSystemMessages(enabled));
-    setTimeout(() => {
-      dispatch(updateAutoDeleteThunk({ channelId: channel.id }))
-        .unwrap()
-        .then(() => showSuccess('Автоудаление обновлено'))
-        .catch(() => showError('Ошибка сохранения'));
-    }, 0);
-  };
-
-  const handleAutoDeleteCommandToggle = (enabled: boolean) => {
-    dispatch(setAutoDeleteCommandMessages(enabled));
-    setTimeout(() => {
-      dispatch(updateAutoDeleteThunk({ channelId: channel.id }))
-        .unwrap()
-        .then(() => showSuccess('Автоудаление обновлено'))
-        .catch(() => showError('Ошибка сохранения'));
-    }, 0);
   };
 
   const handleAutoDeleteTypeToggle = (typeId: string, enabled: boolean) => {
@@ -457,6 +460,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
   const antispamTotalMinutes = antispamMuteDays * 1440 + antispamMuteHours * 60 + antispamMuteMinutes;
   const floodTotalMinutes = floodMuteDays * 1440 + floodMuteHours * 60 + floodMuteMinutes;
   const bannedTotalMinutes = bannedMuteDays * 1440 + bannedMuteHours * 60 + bannedMuteMinutes;
+  const floodAction = floodSettings.flood_action || 'MUTE';
 
   const leftBannedColumn = bannedRules.filter((_, i) => i % 2 === 0);
   const rightBannedColumn = bannedRules.filter((_, i) => i % 2 === 1);
@@ -485,6 +489,24 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
 
   const autoDeleteDelaySummary = AUTO_DELETE_DELAYS.find((d) => d.value === autoDeleteDelaySeconds)?.label || 'Сразу';
 
+  const floodActionLabel = FLOOD_ACTIONS.find((a) => a.id === floodAction)?.label || 'Ограничить';
+  const floodActionSummary = floodAction === 'MUTE'
+    ? `${floodActionLabel} на ${formatDuration(floodTotalMinutes)}`
+    : floodActionLabel;
+
+  const antispamModeSummary = ANTISPAM_MODES.find((m) => m.id === antispamMode)?.label || 'Запретить все ссылки';
+  const antispamActionLabel = ANTISPAM_ACTIONS.find((a) => a.id === antispamAction)?.label || 'Удалить сообщение';
+  const antispamActionSummary = antispamAction === 'MUTE'
+    ? `${antispamActionLabel} на ${formatDuration(antispamTotalMinutes)}`
+    : antispamActionLabel;
+
+  const bannedActionLabel = BANNED_ACTIONS.find((a) => a.id === bannedWordAction)?.label || 'Ограничить';
+  const bannedActionSummary = bannedWordAction === 'MUTE'
+    ? `${bannedActionLabel} на ${formatDuration(bannedTotalMinutes)}`
+    : bannedActionLabel;
+
+  const nightBlockSummary = NIGHT_BLOCK_OPTIONS.find((o) => o.id === nightBlockType)?.label || 'Все сообщения';
+
   const handleNightBlockTypeChange = (type: string) => {
     dispatch(setBlockMedia(type === 'media' || type === 'all'));
     dispatch(setBlockText(type === 'text' || type === 'all'));
@@ -504,7 +526,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
             <div className={styles.expandedContent}>
               <div className={styles.commandList}>
                 {QUICK_COMMANDS.map((cmd) => (
-                  <div key={cmd.id} className={styles.commandItem} onClick={() => handleCommandToggle(cmd.id)}>
+                  <div key={cmd.id} className={styles.checkboxRow} onClick={() => handleCommandToggle(cmd.id)}>
                     <Checkbox
                       checked={selectedCommands.includes(cmd.id)}
                       onChange={() => handleCommandToggle(cmd.id)}
@@ -526,7 +548,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
               <div className={styles.mediaGrid}>
                 <div className={styles.mediaColumn}>
                   {leftMediaCol.map((type) => (
-                    <div key={type.id} className={styles.mediaItem} onClick={() => handleMediaTypeToggle(type.id)}>
+                    <div key={type.id} className={styles.checkboxRow} onClick={() => handleMediaTypeToggle(type.id)}>
                       <Checkbox
                         checked={mediaBlockTypes.includes(type.id)}
                         onChange={() => handleMediaTypeToggle(type.id)}
@@ -537,7 +559,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                 </div>
                 <div className={styles.mediaColumn}>
                   {rightMediaCol.map((type) => (
-                    <div key={type.id} className={styles.mediaItem} onClick={() => handleMediaTypeToggle(type.id)}>
+                    <div key={type.id} className={styles.checkboxRow} onClick={() => handleMediaTypeToggle(type.id)}>
                       <Checkbox
                         checked={mediaBlockTypes.includes(type.id)}
                         onChange={() => handleMediaTypeToggle(type.id)}
@@ -611,6 +633,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                   {AUTO_DELETE_DELAYS.map((d) => (
                     <div key={d.value} className={styles.checkboxRow} onClick={() => handleAutoDeleteDelayChange(d.value)}>
                       <Checkbox
+                        variant="radio"
                         checked={autoDeleteDelaySeconds === d.value}
                         onChange={() => handleAutoDeleteDelayChange(d.value)}
                         label={d.label}
@@ -658,9 +681,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
               >
                 <span className={styles.pickerLabel}>Что ограничивать:</span>
                 <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>
-                    {NIGHT_BLOCK_OPTIONS.find((o) => o.id === nightBlockType)?.label || 'Все сообщения'}
-                  </span>
+                  <span className={styles.pickerValueText}>{nightBlockSummary}</span>
                   <ChevronIcon className={`${styles.pickerChevron} ${openPicker === 'nightBlock' ? styles.open : ''}`} />
                 </div>
               </div>
@@ -668,7 +689,12 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                 <div className={styles.pickerOptions}>
                   {NIGHT_BLOCK_OPTIONS.map((o) => (
                     <div key={o.id} className={styles.checkboxRow} onClick={() => { handleNightBlockTypeChange(o.id); setOpenPicker(null); }}>
-                      <Checkbox checked={nightBlockType === o.id} onChange={() => { handleNightBlockTypeChange(o.id); setOpenPicker(null); }} label={o.label} />
+                      <Checkbox
+                        variant="radio"
+                        checked={nightBlockType === o.id}
+                        onChange={() => { handleNightBlockTypeChange(o.id); setOpenPicker(null); }}
+                        label={o.label}
+                      />
                     </div>
                   ))}
                 </div>
@@ -713,16 +739,32 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                 <span> секунд</span>
               </div>
 
-              <div className={styles.floodSettings}>
-                <div className={styles.floodRow}>
-                  <span className={styles.floodRowLabel}>При превышении</span>
-                  <div className={styles.floodRowValue}>
-                    <span className={styles.floodRowValueText}>
-                      Ограничить на {formatDuration(floodTotalMinutes)}
-                    </span>
-                  </div>
+              <div
+                className={styles.pickerRow}
+                onClick={() => setOpenPicker(openPicker === 'floodAction' ? null : 'floodAction')}
+              >
+                <span className={styles.pickerLabel}>При превышении</span>
+                <div className={styles.pickerRight}>
+                  <span className={styles.pickerValueText}>{floodActionSummary}</span>
+                  <ChevronIcon className={`${styles.pickerChevron} ${openPicker === 'floodAction' ? styles.open : ''}`} />
                 </div>
+              </div>
+              {openPicker === 'floodAction' && (
+                <div className={styles.pickerOptions}>
+                  {FLOOD_ACTIONS.map((a) => (
+                    <div key={a.id} className={styles.checkboxRow} onClick={() => { dispatch(setFloodAction(a.id)); scheduleFloodSave(); setOpenPicker(null); }}>
+                      <Checkbox
+                        variant="radio"
+                        checked={floodAction === a.id}
+                        onChange={() => { dispatch(setFloodAction(a.id)); scheduleFloodSave(); setOpenPicker(null); }}
+                        label={a.label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
+              {floodAction === 'MUTE' && (
                 <div className={styles.timePicker}>
                   <div className={styles.timeHeader}>
                     <span className={styles.timeLabel}>Срок ограничения:</span>
@@ -757,7 +799,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                     </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -774,9 +816,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
               >
                 <span className={styles.pickerLabel}>Режим</span>
                 <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>
-                    {ANTISPAM_MODES.find((m) => m.id === antispamMode)?.label || 'Запретить все ссылки'}
-                  </span>
+                  <span className={styles.pickerValueText}>{antispamModeSummary}</span>
                   <ChevronIcon className={`${styles.pickerChevron} ${openPicker === 'antispamMode' ? styles.open : ''}`} />
                 </div>
               </div>
@@ -784,7 +824,12 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                 <div className={styles.pickerOptions}>
                   {ANTISPAM_MODES.map((m) => (
                     <div key={m.id} className={styles.checkboxRow} onClick={() => { handleAntispamModeChange(m.id); setOpenPicker(null); }}>
-                      <Checkbox checked={antispamMode === m.id} onChange={() => { handleAntispamModeChange(m.id); setOpenPicker(null); }} label={m.label} />
+                      <Checkbox
+                        variant="radio"
+                        checked={antispamMode === m.id}
+                        onChange={() => { handleAntispamModeChange(m.id); setOpenPicker(null); }}
+                        label={m.label}
+                      />
                     </div>
                   ))}
                 </div>
@@ -849,11 +894,7 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
               >
                 <span className={styles.pickerLabel}>При наличии</span>
                 <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>
-                    {antispamAction === 'MUTE'
-                      ? `Ограничить на ${formatDuration(antispamTotalMinutes)}`
-                      : ANTISPAM_ACTIONS.find((a) => a.id === antispamAction)?.label || 'Удалить сообщение'}
-                  </span>
+                  <span className={styles.pickerValueText}>{antispamActionSummary}</span>
                   <ChevronIcon className={`${styles.pickerChevron} ${openPicker === 'antispamAction' ? styles.open : ''}`} />
                 </div>
               </div>
@@ -861,7 +902,12 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
                 <div className={styles.pickerOptions}>
                   {ANTISPAM_ACTIONS.map((a) => (
                     <div key={a.id} className={styles.checkboxRow} onClick={() => { dispatch(setAntispamAction(a.id)); scheduleAntispamSave(); setOpenPicker(null); }}>
-                      <Checkbox checked={antispamAction === a.id} onChange={() => { dispatch(setAntispamAction(a.id)); scheduleAntispamSave(); setOpenPicker(null); }} label={a.label} />
+                      <Checkbox
+                        variant="radio"
+                        checked={antispamAction === a.id}
+                        onChange={() => { dispatch(setAntispamAction(a.id)); scheduleAntispamSave(); setOpenPicker(null); }}
+                        label={a.label}
+                      />
                     </div>
                   ))}
                 </div>
@@ -913,49 +959,67 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
           </div>
           {bannedEnabled && (
             <div className={styles.expandedContent}>
-              <div className={styles.floodRow}>
-                <span className={styles.floodRowLabel}>При наличии</span>
-                <div className={styles.floodRowValue}>
-                  <span className={styles.floodRowValueText}>
-                    Ограничить на {formatDuration(bannedTotalMinutes)}
-                  </span>
+              <div
+                className={styles.pickerRow}
+                onClick={() => setOpenPicker(openPicker === 'bannedAction' ? null : 'bannedAction')}
+              >
+                <span className={styles.pickerLabel}>При наличии</span>
+                <div className={styles.pickerRight}>
+                  <span className={styles.pickerValueText}>{bannedActionSummary}</span>
+                  <ChevronIcon className={`${styles.pickerChevron} ${openPicker === 'bannedAction' ? styles.open : ''}`} />
                 </div>
               </div>
+              {openPicker === 'bannedAction' && (
+                <div className={styles.pickerOptions}>
+                  {BANNED_ACTIONS.map((a) => (
+                    <div key={a.id} className={styles.checkboxRow} onClick={() => { dispatch(setBannedAction(a.id)); scheduleBannedActionSave(); setOpenPicker(null); }}>
+                      <Checkbox
+                        variant="radio"
+                        checked={bannedWordAction === a.id}
+                        onChange={() => { dispatch(setBannedAction(a.id)); scheduleBannedActionSave(); setOpenPicker(null); }}
+                        label={a.label}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
 
-              <div className={styles.timePicker}>
-                <div className={styles.timeHeader}>
-                  <span className={styles.timeLabel}>Срок ограничения:</span>
-                  <span className={styles.timeValue}>{formatDuration(bannedTotalMinutes)}</span>
-                </div>
-                <div className={styles.timeWheelWrapper}>
-                  <div className={styles.timeLabelsRow}>
-                    <span className={styles.timeLabelUnit}>дней</span>
-                    <span className={styles.timeLabelUnit}>часов</span>
-                    <span className={styles.timeLabelUnit}>минут</span>
+              {bannedWordAction === 'MUTE' && (
+                <div className={styles.timePicker}>
+                  <div className={styles.timeHeader}>
+                    <span className={styles.timeLabel}>Срок ограничения:</span>
+                    <span className={styles.timeValue}>{formatDuration(bannedTotalMinutes)}</span>
                   </div>
-                  <div className={styles.timeWheel}>
-                    <WheelPicker value={bannedMuteDays} onChange={(v) => dispatch(setBannedMuteDays(v))} min={0} max={30} />
-                    <WheelPicker value={bannedMuteHours} onChange={(v) => dispatch(setBannedMuteHours(v))} min={0} max={23} />
-                    <WheelPicker value={bannedMuteMinutes} onChange={(v) => dispatch(setBannedMuteMinutes(v))} min={0} max={59} />
+                  <div className={styles.timeWheelWrapper}>
+                    <div className={styles.timeLabelsRow}>
+                      <span className={styles.timeLabelUnit}>дней</span>
+                      <span className={styles.timeLabelUnit}>часов</span>
+                      <span className={styles.timeLabelUnit}>минут</span>
+                    </div>
+                    <div className={styles.timeWheel}>
+                      <WheelPicker value={bannedMuteDays} onChange={(v) => { dispatch(setBannedMuteDays(v)); scheduleBannedActionSave(); }} min={0} max={30} />
+                      <WheelPicker value={bannedMuteHours} onChange={(v) => { dispatch(setBannedMuteHours(v)); scheduleBannedActionSave(); }} min={0} max={23} />
+                      <WheelPicker value={bannedMuteMinutes} onChange={(v) => { dispatch(setBannedMuteMinutes(v)); scheduleBannedActionSave(); }} min={0} max={59} />
+                    </div>
+                  </div>
+                  <div className={styles.timePresetsRow}>
+                    <div className={styles.timePresetsList}>
+                      <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 1440 ? styles.active : ''}`}
+                        onClick={() => { dispatch(setBannedMuteDays(1)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); scheduleBannedActionSave(); }}>
+                        24 часа
+                      </button>
+                      <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 2880 ? styles.active : ''}`}
+                        onClick={() => { dispatch(setBannedMuteDays(2)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); scheduleBannedActionSave(); }}>
+                        48 часов
+                      </button>
+                      <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 0 ? styles.active : ''}`}
+                        onClick={() => { dispatch(setBannedMuteDays(0)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); scheduleBannedActionSave(); }}>
+                        Навсегда
+                      </button>
+                    </div>
                   </div>
                 </div>
-                <div className={styles.timePresetsRow}>
-                  <div className={styles.timePresetsList}>
-                    <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 1440 ? styles.active : ''}`}
-                      onClick={() => { dispatch(setBannedMuteDays(1)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); }}>
-                      24 часа
-                    </button>
-                    <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 2880 ? styles.active : ''}`}
-                      onClick={() => { dispatch(setBannedMuteDays(2)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); }}>
-                      48 часов
-                    </button>
-                    <button type="button" className={`${styles.timePreset} ${bannedTotalMinutes === 0 ? styles.active : ''}`}
-                      onClick={() => { dispatch(setBannedMuteDays(0)); dispatch(setBannedMuteHours(0)); dispatch(setBannedMuteMinutes(0)); }}>
-                      Навсегда
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
 
               <div className={styles.bannedWordsInputRow}>
                 <input

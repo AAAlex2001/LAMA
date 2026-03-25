@@ -4,11 +4,13 @@ import styles from './tooltip.module.scss';
 interface TooltipProps {
   text: string;
   placement?: 'top' | 'bottom';
+  visible?: boolean;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ text, placement = 'bottom' }) => {
+const Tooltip: React.FC<TooltipProps> = ({ text, placement = 'bottom', visible }) => {
+  const visibilityClass = visible === true ? styles.tooltipVisible : visible === false ? styles.tooltipHidden : '';
   return (
-    <div className={placement === 'top' ? `${styles.tooltip} ${styles.tooltipTop}` : styles.tooltip}>
+    <div className={`${placement === 'top' ? `${styles.tooltip} ${styles.tooltipTop}` : styles.tooltip} ${visibilityClass}`}>
       <div className={styles.content}>
         <span className={styles.text}>{text}</span>
       </div>

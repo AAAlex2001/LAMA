@@ -11,6 +11,7 @@ interface BannedWordsState {
   enabled: boolean;
   rules: BannedWordRule[];
   inputValue: string;
+  action: string;
   muteDays: number;
   muteHours: number;
   muteMinutes: number;
@@ -22,6 +23,7 @@ const initialState: BannedWordsState = {
   enabled: false,
   rules: [],
   inputValue: '',
+  action: 'MUTE',
   muteDays: 0,
   muteHours: 1,
   muteMinutes: 1,
@@ -48,6 +50,9 @@ const bannedWordsSlice = createSlice({
     setInputValue(state, action: PayloadAction<string>) {
       state.inputValue = action.payload;
     },
+    setAction(state, action: PayloadAction<string>) {
+      state.action = action.payload;
+    },
     setMuteDays(state, action: PayloadAction<number>) {
       state.muteDays = action.payload;
     },
@@ -72,6 +77,7 @@ export const {
   addRule,
   removeRule,
   setInputValue,
+  setAction,
   setMuteDays,
   setMuteHours,
   setMuteMinutes,

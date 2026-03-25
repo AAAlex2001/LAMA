@@ -116,6 +116,7 @@ class ChannelGroupResponse(BaseModel):
     join_to_send_messages: Optional[bool] = False
     join_by_request: Optional[bool] = False
     can_send_paid_media: Optional[bool] = False
+    captcha_enabled: bool = False
 
     # Stickers
     sticker_set_name: Optional[str] = None

@@ -77,7 +77,7 @@ export const addBannedWordThunk = createAsyncThunk(
     { dispatch, getState, rejectWithValue },
   ) => {
     const state = getState() as ChannelsPageState;
-    const { inputValue, muteDays, muteHours, muteMinutes } = state.bannedWords;
+    const { inputValue, action: ruleAction, muteDays, muteHours, muteMinutes } = state.bannedWords;
     const phrase = inputValue.trim();
     if (!phrase) return rejectWithValue('Введите слово');
 
@@ -90,8 +90,8 @@ export const addBannedWordThunk = createAsyncThunk(
         method: 'POST',
         body: JSON.stringify({
           phrase,
-          action: 'MUTE',
-          mute_duration_minutes: totalMinutes || 1,
+          action: ruleAction,
+          mute_duration_minutes: ruleAction === 'MUTE' ? (totalMinutes || 1) : null,
         }),
       });
       dispatch(addRule({
@@ -118,16 +118,56 @@ export const deleteBannedWordThunk = createAsyncThunk(
     { channelId, ruleId }: { channelId: number; ruleId: number },
     { dispatch, rejectWithValue },
   ) => {
+    dispatch(removeRule(ruleId));
     dispatch(setSaving(true));
     try {
       await apiRequest(`/channels/${channelId}/moderation/rules/${ruleId}`, {
         method: 'DELETE',
       });
-      dispatch(removeRule(ruleId));
       return ruleId;
+    } catch {
+      return ruleId;
+    } finally {
+      dispatch(setSaving(false));
+    }
+  },
+);
+
+export const updateBannedWordsActionThunk = createAsyncThunk(
+  'bannedWords/updateAction',
+  async (
+    { channelId }: { channelId: number },
+    { dispatch, getState, rejectWithValue },
+  ) => {
+    const state = getState() as ChannelsPageState;
+    const { rules, action: newAction, muteDays, muteHours, muteMinutes } = state.bannedWords;
+    if (rules.length === 0) return;
+
+    const totalMinutes = muteDays * 1440 + muteHours * 60 + muteMinutes;
+
+    dispatch(setSaving(true));
+    try {
+      const updated = await Promise.all(
+        rules.map((rule) =>
+          apiRequest<RuleResponse>(`/channels/${channelId}/moderation/rules/${rule.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              action: newAction,
+              mute_duration_minutes: newAction === 'MUTE' ? (totalMinutes || 1) : null,
+            }),
+          }),
+        ),
+      );
+      const newRules = updated.map((r) => ({
+        id: r.id,
+        phrase: r.phrase,
+        action: r.action,
+        mute_duration_minutes: r.mute_duration_minutes,
+      }));
+      dispatch(setRules(newRules));
+      return newRules;
     } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Ошибка удаления';
-      dispatch(setError(msg));
+      const msg = error instanceof Error ? error.message : 'Ошибка обновления';
       return rejectWithValue(msg);
     } finally {
       dispatch(setSaving(false));

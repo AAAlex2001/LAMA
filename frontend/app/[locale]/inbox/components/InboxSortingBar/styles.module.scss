@@ -247,6 +247,7 @@
   padding: 8px 0;
   cursor: pointer;
   width: 100%;
+  transition: background 0.15s;
 
   &:first-child {
     padding-top: 0;
@@ -254,6 +255,10 @@
 
   &:last-child {
     padding-bottom: 0;
+  }
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
   }
 }
 
@@ -307,6 +312,7 @@
   padding: 8px 0;
   cursor: pointer;
   width: 100%;
+  transition: background 0.15s;
 
   &:first-child {
     padding-top: 0;
@@ -314,6 +320,10 @@
 
   &:last-child {
     padding-bottom: 0;
+  }
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
   }
 }
 

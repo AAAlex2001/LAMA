@@ -14,6 +14,7 @@ import ChannelCard from './components/ChannelCard';
 import DeleteConfirmationModal from '@/components/modal';
 import EmptyState from './components/EmptyState';
 import ConnectChannelModal from './components/ConnectChannelModal';
+import Tooltip from '@/components/tooltip/tooltip';
 import styles from './styles.module.scss';
 
 type TabFilter = 'all' | 'channels' | 'groups';
@@ -39,6 +40,7 @@ const ChannelsView: FC = () => {
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [deleteTarget, setDeleteTarget] = useState<Channel | null>(null);
   const [connectOpen, setConnectOpen] = useState(false);
+  const [refreshHover, setRefreshHover] = useState(false);
 
   const filtered = useMemo(() => {
     if (activeTab === 'all') return channels;
@@ -112,14 +114,20 @@ const ChannelsView: FC = () => {
             >
               Подключить канал или группу
             </Button>
-            <button
-              className={`${styles.refreshBtn} ${syncing ? styles.refreshSpin : ''}`}
-              onClick={handleRefresh}
-              disabled={syncing}
-              title="Обновить данные каналов"
+            <div
+              className={styles.refreshWrapper}
+              onMouseEnter={() => setRefreshHover(true)}
+              onMouseLeave={() => setRefreshHover(false)}
             >
-              <CalendarRepeatIcon width={22} height={22} color="#383F45" />
-            </button>
+              <button
+                className={`${styles.refreshBtn} ${syncing ? styles.refreshSpin : ''}`}
+                onClick={handleRefresh}
+                disabled={syncing}
+              >
+                <CalendarRepeatIcon width={26} height={26} color="#383F45" />
+              </button>
+              <Tooltip text="Обновить информацию о каналах" visible={refreshHover} />
+            </div>
           </div>
           <span className={styles.connectedInfo}>
             Подключено каналов и групп: {connectedCount}/{total}

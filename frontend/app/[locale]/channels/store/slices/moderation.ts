@@ -117,6 +117,9 @@ const moderationSlice = createSlice({
         state.muteMinutes = total % 60;
       }
     },
+    setFloodAction(state, action: PayloadAction<string>) {
+      state.floodSettings.flood_action = action.payload;
+    },
     setFloodMessageLimit(state, action: PayloadAction<number>) {
       state.floodSettings.flood_message_limit = action.payload;
     },
@@ -223,6 +226,7 @@ export const {
   setCommandsEnabled,
   toggleCommand,
   setFloodEnabled,
+  setFloodAction,
   setFloodSettings,
   setFloodMessageLimit,
   setFloodIntervalSeconds,

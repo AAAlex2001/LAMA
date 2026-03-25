@@ -101,6 +101,7 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
       <ModalBase.Content size="lg" padding="sm" className={styles.modal}>
         <div className={styles.header}>
           <span className={styles.title}>Настройка капчи</span>
+          <ModalBase.Close />
         </div>
 
         <div className={styles.body}>

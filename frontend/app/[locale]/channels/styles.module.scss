@@ -60,6 +60,13 @@
   }
 }
 
+.refreshWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .refreshBtn {
   display: flex;
   align-items: center;

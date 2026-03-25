@@ -28,6 +28,8 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
     throw new Error(errorData.detail || errorData.message || 'Ошибка запроса');
   }
 
+  if (response.status === 204) return undefined as T;
+
   return response.json();
 }
 

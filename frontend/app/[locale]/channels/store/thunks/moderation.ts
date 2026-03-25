@@ -76,8 +76,8 @@ export const updateFloodSettingsThunk = createAsyncThunk(
             ? {
                 flood_message_limit: floodSettings.flood_message_limit || 5,
                 flood_interval_seconds: floodSettings.flood_interval_seconds || 10,
-                flood_action: 'MUTE',
-                flood_mute_duration_minutes: totalMinutes || 1,
+                flood_action: floodSettings.flood_action || 'MUTE',
+                flood_mute_duration_minutes: (floodSettings.flood_action || 'MUTE') === 'MUTE' ? (totalMinutes || 1) : null,
               }
             : {
                 flood_message_limit: null,

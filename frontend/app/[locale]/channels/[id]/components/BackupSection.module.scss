@@ -204,9 +204,15 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 6px 0;
+  padding: 6px 4px;
   gap: 16px;
   cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
 }
 
 .contentTypeGrid {

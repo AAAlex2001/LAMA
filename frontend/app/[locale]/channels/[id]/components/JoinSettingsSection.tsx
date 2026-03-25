@@ -5,6 +5,7 @@ import { ChevronDownIcon } from '@/components/icons';
 import Toggle from '@/components/toggle/toggle';
 import SearchBar from '@/components/search-bar/search-bar';
 import Checkbox from '@/components/checkbox/checkbox';
+import WheelPicker from '@/components/wheel-picker/wheel-picker';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -39,7 +40,7 @@ const TIMEOUT_OPTIONS = [
 const FAIL_ACTION_OPTIONS: { value: CaptchaFailActionType; label: string }[] = [
   { value: 'KICK', label: 'Кикнуть' },
   { value: 'MUTE', label: 'Ограничить на время' },
-  { value: 'BAN', label: 'Забанить на время' },
+  { value: 'BAN', label: 'Забанить' },
 ];
 
 const RESTRICTION_OPTIONS = [
@@ -48,14 +49,22 @@ const RESTRICTION_OPTIONS = [
   { value: 'full', label: 'Полное ограничение' },
 ];
 
-const FAIL_DURATION_OPTIONS = [
-  { value: 60, label: '1 минута' },
-  { value: 300, label: '5 минут' },
-  { value: 600, label: '10 минут' },
-  { value: 1800, label: '30 минут' },
-  { value: 3600, label: '1 час' },
-  { value: 86400, label: '24 часа' },
-];
+const ChevronPickerIcon: FC<{ className?: string }> = ({ className }) => (
+  <svg className={className} width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+function formatDuration(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days} дн`);
+  if (hours > 0) parts.push(`${hours} ч`);
+  if (mins > 0) parts.push(`${mins} мин`);
+  return parts.join(' ') || '0 мин';
+}
 
 interface JoinSettingsSectionProps {
   channel: Channel;
@@ -76,7 +85,6 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   const [channelsOpen, setChannelsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [openPicker, setOpenPicker] = useState<string | null>(null);
-
   const botId = channel.bot_id;
   const channelId = channel.id;
   const isSupergroup = channel.channel_type === 'SUPERGROUP';
@@ -156,8 +164,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
     dispatch(updateCaptchaSettingsThunk({ channelId, data }))
       .unwrap()
       .then(() => showSuccess('Настройки капчи обновлены'))
-      .catch(() => {});
-    setOpenPicker(null);
+      .catch(() => showError('Ошибка сохранения'));
   };
 
   const otherChannels = useMemo(
@@ -181,11 +188,30 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
     [otherChannels, requiredChannels],
   );
 
-  const timeoutLabel = TIMEOUT_OPTIONS.find((o) => o.value === captchaTimeoutSeconds)?.label || `${captchaTimeoutSeconds}с`;
-  const failActionLabel = FAIL_ACTION_OPTIONS.find((o) => o.value === captchaFailAction)?.label || captchaFailAction;
-  const restrictionLabel = RESTRICTION_OPTIONS.find((o) => o.value === captchaRestrictionType)?.label || captchaRestrictionType;
-  const failDurationLabel = FAIL_DURATION_OPTIONS.find((o) => o.value === captchaFailDurationSeconds)?.label || '';
-  const showFailDuration = captchaFailAction === 'MUTE' || captchaFailAction === 'BAN';
+  const showFailDuration = captchaFailAction === 'MUTE';
+
+  const timeoutSummary = TIMEOUT_OPTIONS.find((o) => o.value === captchaTimeoutSeconds)?.label || '30 секунд';
+  const failActionSummary = (() => {
+    const label = FAIL_ACTION_OPTIONS.find((o) => o.value === captchaFailAction)?.label || 'Кикнуть';
+    if (captchaFailAction === 'MUTE' && captchaFailDurationSeconds) {
+      return `${label} ${formatDuration(captchaFailDurationSeconds)}`;
+    }
+    return label;
+  })();
+  const restrictionSummary = RESTRICTION_OPTIONS.find((o) => o.value === captchaRestrictionType)?.label || 'Ограничить отправку сообщений';
+
+  const failDurationSeconds = Math.min(captchaFailDurationSeconds ?? 3600, 86400);
+  const failDurHours = Math.floor(failDurationSeconds / 3600);
+  const failDurMinutes = Math.floor((failDurationSeconds % 3600) / 60);
+
+  const handleFailDurChange = (hours: number, mins: number) => {
+    const total = Math.min(hours * 3600 + mins * 60, 86400) || 60;
+    dispatch(setCaptchaFailDurationSeconds(total));
+    dispatch(updateCaptchaSettingsThunk({ channelId, data: { captcha_fail_duration_seconds: total } }))
+      .unwrap()
+      .then(() => showSuccess('Настройки капчи обновлены'))
+      .catch(() => showError('Ошибка сохранения'));
+  };
 
   if (!botId) return null;
 
@@ -207,220 +233,210 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
       {open && (
         <div className={styles.content}>
-          <div className={styles.toggleRow}>
-            <span className={styles.toggleLabel}>Одобрять заявки на вступление</span>
-            <Toggle
-              checked={isAutoApprove}
-              onChange={handleToggleAutoApprove}
-              disabled={saving || !loaded}
-            />
-          </div>
-
-          {isSupergroup && !captchaEnabled && (
-          <div className={styles.subSection}>
-            <button
-              className={styles.subRow}
-              type="button"
-              onClick={() => setChannelsOpen(!channelsOpen)}
-            >
-              <span className={styles.subLabel}>Проверять подписку на другие каналы</span>
-              <ChevronDownIcon
-                width={16}
-                height={16}
-                color="#383F45"
-                className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
+          <div className={styles.column}>
+            <div className={styles.toggleRow}>
+              <span className={styles.toggleLabel}>Одобрять заявки на вступление</span>
+              <Toggle
+                checked={isAutoApprove}
+                onChange={handleToggleAutoApprove}
+                disabled={saving || !loaded}
               />
-            </button>
-            {selectedNames && (
-              <span className={styles.selectedChannels}>{selectedNames}</span>
-            )}
+            </div>
 
-            {channelsOpen && (
-              <div className={styles.channelPicker}>
-                <SearchBar
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Введите название канала"
+            {isSupergroup && !captchaEnabled && (
+            <div className={styles.subSection}>
+              <button
+                className={styles.subRow}
+                type="button"
+                onClick={() => setChannelsOpen(!channelsOpen)}
+              >
+                <span className={styles.subLabel}>Проверять подписку на другие каналы</span>
+                <ChevronDownIcon
+                  width={16}
+                  height={16}
+                  color="#383F45"
+                  className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
                 />
-                <div className={styles.channelList}>
-                  {filteredChannels.map((ch) => (
-                    <div
-                      key={ch.id}
-                      className={styles.channelItem}
-                      onClick={() => handleToggleChannel(ch.telegram_id!)}
-                    >
-                      <Checkbox
-                        checked={requiredChannels.includes(ch.telegram_id!)}
-                        onChange={() => handleToggleChannel(ch.telegram_id!)}
-                        label={ch.title}
-                      />
-                    </div>
-                  ))}
-                  {filteredChannels.length === 0 && (
-                    <span className={styles.emptyText}>Нет каналов</span>
-                  )}
+              </button>
+              {selectedNames && (
+                <span className={styles.selectedChannels}>{selectedNames}</span>
+              )}
+
+              {channelsOpen && (
+                <div className={styles.channelPicker}>
+                  <SearchBar
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Введите название канала"
+                  />
+                  <div className={styles.channelList}>
+                    {filteredChannels.map((ch) => (
+                      <div
+                        key={ch.id}
+                        className={styles.channelItem}
+                        onClick={() => handleToggleChannel(ch.telegram_id!)}
+                      >
+                        <Checkbox
+                          checked={requiredChannels.includes(ch.telegram_id!)}
+                          onChange={() => handleToggleChannel(ch.telegram_id!)}
+                          label={ch.title}
+                        />
+                      </div>
+                    ))}
+                    {filteredChannels.length === 0 && (
+                      <span className={styles.emptyText}>Нет каналов</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
             )}
           </div>
-          )}
 
           {isSupergroup && requiredChannels.length === 0 && (
-            <>
-          <div className={styles.divider} />
-
-          <div className={styles.toggleRow}>
-            <span className={styles.toggleLabel}>Капча для новых участников</span>
-            <Toggle
-              checked={captchaEnabled}
-              onChange={handleToggleCaptcha}
-              disabled={saving || !captchaLoaded}
-            />
-          </div>
-          <span className={styles.captchaDescription}>
-            Математический пример (N + M), который нужно решить для входа в группу
-          </span>
-
-          {captchaEnabled && (
-            <div className={styles.captchaSettings}>
-              <div
-                className={styles.pickerRow}
-                onClick={() => setOpenPicker(openPicker === 'timeout' ? null : 'timeout')}
-              >
-                <span className={styles.pickerLabel}>Время на ответ</span>
-                <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>{timeoutLabel}</span>
-                  <ChevronDownIcon
-                    width={14}
-                    height={14}
-                    color="#858585"
-                    className={`${styles.pickerChevron} ${openPicker === 'timeout' ? styles.pickerChevronOpen : ''}`}
-                  />
-                </div>
+            <div className={styles.column}>
+              <div className={styles.toggleRow}>
+                <span className={styles.toggleLabel}>Капча для новых участников</span>
+                <Toggle
+                  checked={captchaEnabled}
+                  onChange={handleToggleCaptcha}
+                  disabled={saving || !captchaLoaded}
+                />
               </div>
-              {openPicker === 'timeout' && (
-                <div className={styles.pickerOptions}>
-                  {TIMEOUT_OPTIONS.map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={`${styles.radioRow} ${opt.value === captchaTimeoutSeconds ? styles.radioRowActive : ''}`}
-                      onClick={() => handleCaptchaPickerChange('timeout', opt.value)}
-                    >
-                      <span>{opt.label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <span className={styles.captchaDescription}>
+                Математический пример (N + M), который нужно решить для входа в группу
+              </span>
 
-              <div
-                className={styles.pickerRow}
-                onClick={() => setOpenPicker(openPicker === 'failAction' ? null : 'failAction')}
-              >
-                <span className={styles.pickerLabel}>Действие при провале</span>
-                <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>{failActionLabel}</span>
-                  <ChevronDownIcon
-                    width={14}
-                    height={14}
-                    color="#858585"
-                    className={`${styles.pickerChevron} ${openPicker === 'failAction' ? styles.pickerChevronOpen : ''}`}
-                  />
-                </div>
-              </div>
-              {openPicker === 'failAction' && (
-                <div className={styles.pickerOptions}>
-                  {FAIL_ACTION_OPTIONS.map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={`${styles.radioRow} ${opt.value === captchaFailAction ? styles.radioRowActive : ''}`}
-                      onClick={() => handleCaptchaPickerChange('failAction', opt.value)}
-                    >
-                      <span>{opt.label}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {showFailDuration && (
-                <>
+              {captchaEnabled && (
+                <div className={styles.captchaSettings}>
                   <div
                     className={styles.pickerRow}
-                    onClick={() => setOpenPicker(openPicker === 'failDuration' ? null : 'failDuration')}
+                    onClick={() => setOpenPicker(openPicker === 'timeout' ? null : 'timeout')}
                   >
-                    <span className={styles.pickerLabel}>Длительность</span>
+                    <span className={styles.pickerLabel}>Время на ответ</span>
                     <div className={styles.pickerRight}>
-                      <span className={styles.pickerValueText}>{failDurationLabel}</span>
-                      <ChevronDownIcon
-                        width={14}
-                        height={14}
-                        color="#858585"
-                        className={`${styles.pickerChevron} ${openPicker === 'failDuration' ? styles.pickerChevronOpen : ''}`}
-                      />
+                      <span className={styles.pickerValueText}>{timeoutSummary}</span>
+                      <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'timeout' ? styles.pickerChevronOpen : ''}`} />
                     </div>
                   </div>
-                  {openPicker === 'failDuration' && (
+                  {openPicker === 'timeout' && (
                     <div className={styles.pickerOptions}>
-                      {FAIL_DURATION_OPTIONS.map((opt) => (
-                        <div
-                          key={opt.value}
-                          className={`${styles.radioRow} ${opt.value === captchaFailDurationSeconds ? styles.radioRowActive : ''}`}
-                          onClick={() => handleCaptchaPickerChange('failDuration', opt.value)}
-                        >
-                          <span>{opt.label}</span>
+                      {TIMEOUT_OPTIONS.map((opt) => (
+                        <div key={opt.value} className={styles.checkboxRow} onClick={() => { handleCaptchaPickerChange('timeout', opt.value); setOpenPicker(null); }}>
+                          <Checkbox
+                            variant="radio"
+                            checked={opt.value === captchaTimeoutSeconds}
+                            onChange={() => { handleCaptchaPickerChange('timeout', opt.value); setOpenPicker(null); }}
+                            label={opt.label}
+                          />
                         </div>
                       ))}
                     </div>
                   )}
-                </>
-              )}
 
-              <div
-                className={styles.pickerRow}
-                onClick={() => setOpenPicker(openPicker === 'restriction' ? null : 'restriction')}
-              >
-                <span className={styles.pickerLabel}>Ограничение</span>
-                <div className={styles.pickerRight}>
-                  <span className={styles.pickerValueText}>{restrictionLabel}</span>
-                  <ChevronDownIcon
-                    width={14}
-                    height={14}
-                    color="#858585"
-                    className={`${styles.pickerChevron} ${openPicker === 'restriction' ? styles.pickerChevronOpen : ''}`}
-                  />
-                </div>
-              </div>
-              {openPicker === 'restriction' && (
-                <div className={styles.pickerOptions}>
-                  {RESTRICTION_OPTIONS.map((opt) => (
-                    <div
-                      key={opt.value}
-                      className={`${styles.radioRow} ${opt.value === captchaRestrictionType ? styles.radioRowActive : ''}`}
-                      onClick={() => handleCaptchaPickerChange('restriction', opt.value)}
-                    >
-                      <span>{opt.label}</span>
+                  <div
+                    className={styles.pickerRow}
+                    onClick={() => setOpenPicker(openPicker === 'failAction' ? null : 'failAction')}
+                  >
+                    <span className={styles.pickerLabel}>Действие при провале</span>
+                    <div className={styles.pickerRight}>
+                      <span className={styles.pickerValueText}>{failActionSummary}</span>
+                      <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'failAction' ? styles.pickerChevronOpen : ''}`} />
                     </div>
-                  ))}
+                  </div>
+                  {openPicker === 'failAction' && (
+                    <div className={styles.pickerOptions}>
+                      {FAIL_ACTION_OPTIONS.map((opt) => (
+                        <div key={opt.value} className={styles.checkboxRow} onClick={() => { handleCaptchaPickerChange('failAction', opt.value); setOpenPicker(null); }}>
+                          <Checkbox
+                            variant="radio"
+                            checked={opt.value === captchaFailAction}
+                            onChange={() => { handleCaptchaPickerChange('failAction', opt.value); setOpenPicker(null); }}
+                            label={opt.label}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {showFailDuration && (
+                    <div className={styles.timePicker}>
+                      <div className={styles.timeHeader}>
+                        <span className={styles.timeLabel}>Длительность:</span>
+                        <span className={styles.timeValue}>{formatDuration(failDurationSeconds)}</span>
+                      </div>
+                      <div className={styles.timeWheelWrapper}>
+                        <div className={styles.timeLabelsRow}>
+                          <span className={styles.timeLabelUnit}>часов</span>
+                          <span className={styles.timeLabelUnit}>минут</span>
+                        </div>
+                        <div className={styles.timeWheel}>
+                          <WheelPicker value={failDurHours} onChange={(v) => handleFailDurChange(v, failDurMinutes)} min={0} max={24} />
+                          <WheelPicker value={failDurMinutes} onChange={(v) => handleFailDurChange(failDurHours, v)} min={0} max={59} />
+                        </div>
+                      </div>
+                      <div className={styles.timePresetsRow}>
+                        <div className={styles.timePresetsList}>
+                          <button type="button" className={`${styles.timePreset} ${failDurationSeconds === 3600 ? styles.active : ''}`}
+                            onClick={() => handleFailDurChange(1, 0)}>
+                            1 час
+                          </button>
+                          <button type="button" className={`${styles.timePreset} ${failDurationSeconds === 43200 ? styles.active : ''}`}
+                            onClick={() => handleFailDurChange(12, 0)}>
+                            12 часов
+                          </button>
+                          <button type="button" className={`${styles.timePreset} ${failDurationSeconds === 86400 ? styles.active : ''}`}
+                            onClick={() => handleFailDurChange(24, 0)}>
+                            24 часа
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={styles.pickerRow}
+                    onClick={() => setOpenPicker(openPicker === 'restriction' ? null : 'restriction')}
+                  >
+                    <span className={styles.pickerLabel}>Ограничение</span>
+                    <div className={styles.pickerRight}>
+                      <span className={styles.pickerValueText}>{restrictionSummary}</span>
+                      <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'restriction' ? styles.pickerChevronOpen : ''}`} />
+                    </div>
+                  </div>
+                  {openPicker === 'restriction' && (
+                    <div className={styles.pickerOptions}>
+                      {RESTRICTION_OPTIONS.map((opt) => (
+                        <div key={opt.value} className={styles.checkboxRow} onClick={() => { handleCaptchaPickerChange('restriction', opt.value); setOpenPicker(null); }}>
+                          <Checkbox
+                            variant="radio"
+                            checked={opt.value === captchaRestrictionType}
+                            onChange={() => { handleCaptchaPickerChange('restriction', opt.value); setOpenPicker(null); }}
+                            label={opt.label}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Button
+                    variant="fill"
+                    intent="gradient"
+                    size="md"
+                    className={styles.configButton}
+                    onClick={() => dispatch(setCaptchaModalOpen(true))}
+                  >
+                    Настройка капчи
+                  </Button>
                 </div>
               )}
 
-              <Button
-                variant="fill"
-                intent="gradient"
-                size="md"
-                className={styles.configButton}
-                onClick={() => dispatch(setCaptchaModalOpen(true))}
-              >
-                Настройка капчи
-              </Button>
+              <CaptchaSettingsModal
+                isOpen={captchaModalOpen}
+                onOpenChange={(v) => dispatch(setCaptchaModalOpen(v))}
+                channelId={channelId}
+              />
             </div>
-          )}
-
-          <CaptchaSettingsModal
-            isOpen={captchaModalOpen}
-            onOpenChange={(v) => dispatch(setCaptchaModalOpen(v))}
-            channelId={channelId}
-          />
-            </>
           )}
         </div>
       )}

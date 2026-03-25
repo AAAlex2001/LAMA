@@ -31,6 +31,7 @@ class ActionType(str, enum.Enum):
     MUTE = "MUTE"
     UNMUTE = "UNMUTE"
     DELETE = "DELETE"
+    BAN = "BAN"
 
 
 class LinkFilterMode(str, enum.Enum):

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 type LinkFilterMode = 'DISABLED' | 'BLOCK_ALL' | 'ALLOW_TME_ONLY' | 'WHITELIST' | 'BLACKLIST';
-type FilterAction = 'DELETE' | 'MUTE' | 'KICK';
+type FilterAction = 'BAN' | 'MUTE' | 'KICK' | 'DELETE';
 
 interface AntispamState {
   mode: LinkFilterMode;
@@ -20,7 +20,7 @@ const initialState: AntispamState = {
   mode: 'DISABLED',
   whitelist: [],
   blacklist: [],
-  action: 'DELETE',
+  action: 'MUTE',
   muteDays: 0,
   muteHours: 1,
   muteMinutes: 0,

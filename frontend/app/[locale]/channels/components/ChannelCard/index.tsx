@@ -56,16 +56,22 @@ const ChannelCard: FC<ChannelCardProps> = ({ channel, onSettings, onDelete }) =>
         )}
       </div>
 
-      <div className={styles.features}>
-        <div className={styles.featureItem}>
-          <span className={styles.featureText}>Капча</span>
-          <MathOperationsIcon width={20} height={20} color="#B0B4B8" />
+      {(channel.captcha_enabled || channel.backup_mode !== 'DISABLED') && (
+        <div className={styles.features}>
+          {channel.captcha_enabled && (
+            <div className={styles.featureItem}>
+              <span className={styles.featureText}>Капча</span>
+              <MathOperationsIcon width={20} height={20} color="#B0B4B8" />
+            </div>
+          )}
+          {channel.backup_mode !== 'DISABLED' && (
+            <div className={styles.featureItem}>
+              <span className={styles.featureText}>Резервное копирование</span>
+              <BackupOutlineIcon width={20} height={20} color="#B0B4B8" />
+            </div>
+          )}
         </div>
-        <div className={styles.featureItem}>
-          <span className={styles.featureText}>Резервное копирование</span>
-          <BackupOutlineIcon width={20} height={20} color="#B0B4B8" />
-        </div>
-      </div>
+      )}
 
       <div className={styles.actions}>
         <button className={`${styles.actionBtn} ${styles.actionBtnBlue}`} onClick={() => onSettings(channel)}>

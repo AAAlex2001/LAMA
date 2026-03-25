@@ -32,6 +32,11 @@
   align-items: center;
   padding: 10px 0;
   gap: 16px;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
 }
 
 .botItemName {

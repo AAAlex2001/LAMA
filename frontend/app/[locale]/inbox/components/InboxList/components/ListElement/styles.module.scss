@@ -9,7 +9,11 @@
   border-radius: 8px;
   align-items: center;
   padding-left: 8px;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
 }
 
 .gridCell {
@@ -35,7 +39,11 @@
   border-radius: 8px;
   background: #f8f8f8;
   position: relative;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition: transform 0.3s ease, opacity 0.3s ease, background 0.15s;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
 }
 
 .nameContent {

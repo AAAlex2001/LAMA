@@ -32,6 +32,7 @@ export interface Channel {
   commands_enabled: boolean;
   enabled_commands: string[] | null;
   block_media_types: string[] | null;
+  captcha_enabled: boolean;
   has_private_forwards: boolean;
   has_restricted_voice_and_video_messages: boolean;
   has_aggressive_anti_spam_enabled: boolean;
