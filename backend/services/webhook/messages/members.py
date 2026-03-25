@@ -90,6 +90,17 @@ class MemberProcessor:
 
         try:
             captcha_service = CaptchaService(self.db)
+
+            existing = await captcha_service.get_pending(
+                bot_id=self.bot_model.id, user_id=new_member.id,
+            )
+            if existing and existing.chat_id == message.chat.id:
+                logger.info(
+                    "Captcha already pending for user %s in chat %s, skipping",
+                    new_member.id, message.chat.id,
+                )
+                return
+
             question, answer = captcha_service.generate()
             pending = await captcha_service.create_pending(
                 bot_id=self.bot_model.id,

@@ -118,15 +118,10 @@ export interface UpdateDirectChatParams {
   unread_count?: number;
 }
 
-export const fetchDirectChatsThunk = createAsyncThunk<
-  DirectChatListResponse,
-  FetchDirectChatsParams,
-  { state: { directChat: import('../slices/directChat').DirectChatState } }
->(
+export const fetchDirectChatsThunk = createAsyncThunk(
   'directChat/fetchChats',
-  async (params, { getState, rejectWithValue }) => {
-    const s = getState().directChat;
-    const { botId, skip = 0, limit = 50, sort = s.chatSort, unread = s.chatUnreadFilter } = params;
+  async (params: FetchDirectChatsParams, { rejectWithValue }) => {
+    const { botId, skip = 0, limit = 50, sort, unread } = params;
 
     try {
       const queryParams = new URLSearchParams();

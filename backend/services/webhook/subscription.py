@@ -6,7 +6,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
 
-from aiogram.types import ChatMemberUpdated, Message
+from aiogram.types import ChatMemberUpdated, ChatPermissions, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,7 @@ from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.models.bots import (
     Bot as BotModel,
     PendingJoinApproval,
+    ApprovalMode,
     TriggerType,
 )
 from backend.schemas.inbox.enums import (
@@ -25,6 +26,7 @@ from backend.schemas.inbox.enums import (
     EventStatus,
 )
 from backend.services.bot import TriggerService
+from backend.services.bot.bot_settings import BotSettingsService
 from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
@@ -88,9 +90,21 @@ class SubscriptionHandler:
             )
             return
 
-        if channel and channel.captcha_enabled:
+        if channel and channel.captcha_enabled and chat_member.chat.type == "supergroup":
             await self.send_captcha(chat_member, channel)
             return
+
+        if (
+            chat_member.chat.type == "supergroup"
+            and self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA
+        ):
+            settings_service = BotSettingsService(self.db)
+            should_approve, missing = await settings_service.check_approval_criteria(
+                self.bot_model, user_id,
+            )
+            if not should_approve and missing:
+                await self.restrict_for_subscription(chat_member, missing)
+                return
 
         is_direct_link_join = (
             chat_member.invite_link is None
@@ -326,6 +340,30 @@ class SubscriptionHandler:
                 )
                 for pending in approved_pendings:
                     try:
+                        await telegram_bot.restrict_chat_member(
+                            chat_id=pending.chat_id,
+                            user_id=pending.user_id,
+                            permissions=ChatPermissions(
+                                can_send_messages=True,
+                                can_send_audios=True,
+                                can_send_documents=True,
+                                can_send_photos=True,
+                                can_send_videos=True,
+                                can_send_video_notes=True,
+                                can_send_voice_notes=True,
+                                can_send_polls=True,
+                                can_send_other_messages=True,
+                                can_add_web_page_previews=True,
+                                can_invite_users=True,
+                            ),
+                            use_independent_chat_permissions=True,
+                        )
+                    except TelegramAPIError as e:
+                        logger.warning(
+                            f"Failed to unrestrict user {pending.user_id}: {e}"
+                        )
+
+                    try:
                         await asyncio.wait_for(
                             telegram_bot.approve_chat_join_request(
                                 chat_id=pending.chat_id,
@@ -333,27 +371,26 @@ class SubscriptionHandler:
                             ),
                             timeout=TELEGRAM_API_TIMEOUT,
                         )
-
-                        await self.trigger_service.fire_event(
-                            bot_id=self.bot_model.id,
-                            trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
-                            user_id=pending.user_id,
-                            chat_id=pending.chat_id,
-                            telegram_bot=telegram_bot,
-                            chat_type=chat_member.chat.type,
-                            context={
-                                "auto_approved": True,
-                                "channel_id": channel_id,
-                            },
-                        )
-
-                        await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
-
                     except (TelegramAPIError, asyncio.TimeoutError) as e:
-                        logger.warning(
-                            f"Failed to approve join request: {e}"
+                        logger.info(
+                            "approve_chat_join_request skipped for user %s in chat %s: %s",
+                            pending.user_id, pending.chat_id, e,
                         )
 
+                    await self.trigger_service.fire_event(
+                        bot_id=self.bot_model.id,
+                        trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
+                        user_id=pending.user_id,
+                        chat_id=pending.chat_id,
+                        telegram_bot=telegram_bot,
+                        chat_type=chat_member.chat.type,
+                        context={
+                            "auto_approved": True,
+                            "channel_id": channel_id,
+                        },
+                    )
+
+                    await self.mark_join_event_accepted(pending.user_id, pending.chat_id)
                     await self.db.delete(pending)
 
             await self.db.flush()
@@ -421,3 +458,77 @@ class SubscriptionHandler:
             )
         except Exception as e:
             logger.error(f"Failed to send captcha via chat_member: {e}", exc_info=True)
+
+    async def restrict_for_subscription(
+        self, chat_member: ChatMemberUpdated, missing_channels: list[int],
+    ) -> None:
+        """Restrict пользователя и сообщить о необходимых подписках (public supergroups)."""
+        try:
+            telegram_bot = resolve_by_token(self.bot_model.token)
+            chat_id = chat_member.chat.id
+            user_id = chat_member.from_user.id
+
+            try:
+                await telegram_bot.restrict_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    permissions=ChatPermissions(
+                        can_send_messages=False,
+                        can_send_audios=False,
+                        can_send_documents=False,
+                        can_send_photos=False,
+                        can_send_videos=False,
+                        can_send_video_notes=False,
+                        can_send_voice_notes=False,
+                        can_send_polls=False,
+                        can_send_other_messages=False,
+                        can_add_web_page_previews=False,
+                    ),
+                    use_independent_chat_permissions=True,
+                )
+            except TelegramAPIError as e:
+                logger.error(f"Failed to restrict user {user_id} for subscription: {e}")
+
+            pending = PendingJoinApproval(
+                bot_id=self.bot_model.id,
+                user_id=user_id,
+                chat_id=chat_id,
+                missing_channels=missing_channels,
+            )
+            self.db.add(pending)
+            await self.db.flush()
+
+            first_name = chat_member.from_user.first_name or "Пользователь"
+            message_text = f"📢 {first_name}, для участия подпишитесь на каналы:\n\n"
+            buttons = []
+
+            for idx, channel_id in enumerate(missing_channels, 1):
+                try:
+                    chat = await telegram_bot.get_chat(channel_id)
+                    title = chat.title or f"Канал {idx}"
+                    if chat.username:
+                        url = f"https://t.me/{chat.username}"
+                        message_text += f"{idx}. {title}\n"
+                        buttons.append(
+                            [InlineKeyboardButton(text=f"📢 {title}", url=url)]
+                        )
+                    else:
+                        message_text += f"{idx}. {title} (приватный)\n"
+                except TelegramAPIError:
+                    logger.warning(f"Failed to get channel info for {channel_id}")
+                    message_text += f"{idx}. Канал ID: {channel_id}\n"
+
+            message_text += "\nПосле подписки ограничения будут сняты автоматически."
+
+            await telegram_bot.send_message(
+                chat_id=chat_id,
+                text=message_text,
+                reply_markup=(
+                    InlineKeyboardMarkup(inline_keyboard=buttons)
+                    if buttons
+                    else None
+                ),
+            )
+
+        except Exception as e:
+            logger.error(f"restrict_for_subscription failed: {e}", exc_info=True)

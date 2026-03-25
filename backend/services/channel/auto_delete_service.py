@@ -16,6 +16,7 @@ from backend.services.channel.utils.message_utils import (
 from backend.services.channel.utils.query_utils import get_channel
 from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
+from backend.celery.app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,9 @@ class AutoDeleteService:
         if message.from_user and message.from_user.is_bot:
             return False
 
+        if message.sender_chat:
+            return False
+
         settings = await self.resolve_settings(message.chat.id)
         if not settings:
             return False
@@ -94,8 +98,8 @@ class AutoDeleteService:
             return False
 
         delay = settings.delete_delay_seconds or 0
-        from backend.celery.tasks import delayed_delete_message
-        delayed_delete_message.apply_async(
+        celery_app.send_task(
+            "backend.celery.tasks.delayed_delete_message",
             args=[bot_id, message.chat.id, message.message_id],
             countdown=delay,
         )
