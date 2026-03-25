@@ -50,7 +50,7 @@ class BotCaptchaService:
                 PendingApproval.is_rejected == False,
             )
         )
-        return result.scalar_one_or_none()
+        return result.scalars().first()
 
     async def check_answer(
         self, pending_id: int, user_answer: str,

@@ -216,6 +216,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
             />
           </div>
 
+          {isSupergroup && !captchaEnabled && (
           <div className={styles.subSection}>
             <button
               className={styles.subRow}
@@ -262,8 +263,9 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
               </div>
             )}
           </div>
+          )}
 
-          {isSupergroup && (
+          {isSupergroup && requiredChannels.length === 0 && (
             <>
           <div className={styles.divider} />
 

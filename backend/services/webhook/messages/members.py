@@ -4,6 +4,7 @@ import random
 from aiogram.types import Message, ChatPermissions
 from aiogram.exceptions import TelegramAPIError
 from backend.services.telegram_client import RateLimitedBot
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.bot import CaptchaService, TriggerService
@@ -13,6 +14,7 @@ from backend.services.channel.utils.query_utils import get_channel_by_telegram_i
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
+    PendingApproval,
     TriggerType,
     CaptchaMode,
 )
@@ -91,28 +93,17 @@ class MemberProcessor:
         try:
             captcha_service = CaptchaService(self.db)
 
-            existing = await captcha_service.get_pending(
-                bot_id=self.bot_model.id, user_id=new_member.id,
-            )
-            if existing and existing.chat_id == message.chat.id:
-                logger.info(
-                    "Captcha already pending for user %s in chat %s, re-restricting",
-                    new_member.id, message.chat.id,
+            await self.db.execute(
+                update(PendingApproval)
+                .where(
+                    PendingApproval.bot_id == self.bot_model.id,
+                    PendingApproval.user_id == new_member.id,
+                    PendingApproval.is_approved == False,
+                    PendingApproval.is_rejected == False,
                 )
-                restriction = self.build_captcha_restriction(channel)
-                try:
-                    await self.telegram_bot.restrict_chat_member(
-                        chat_id=message.chat.id,
-                        user_id=new_member.id,
-                        permissions=restriction,
-                        use_independent_chat_permissions=True,
-                    )
-                except Exception as e:
-                    logger.error(
-                        "Failed to re-restrict member %s: %s",
-                        new_member.id, e, exc_info=True,
-                    )
-                return
+                .values(is_rejected=True)
+            )
+            await self.db.flush()
 
             question, answer = captcha_service.generate()
             pending = await captcha_service.create_pending(

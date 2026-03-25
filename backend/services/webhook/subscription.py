@@ -86,7 +86,6 @@ class SubscriptionHandler:
 
         if chat_member.chat.type == "supergroup":
             if channel and channel.captcha_enabled:
-                await self.send_captcha(chat_member, channel)
                 return
             elif self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA:
                 settings_service = BotSettingsService(self.db)
