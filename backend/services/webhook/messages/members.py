@@ -96,9 +96,22 @@ class MemberProcessor:
             )
             if existing and existing.chat_id == message.chat.id:
                 logger.info(
-                    "Captcha already pending for user %s in chat %s, skipping",
+                    "Captcha already pending for user %s in chat %s, re-restricting",
                     new_member.id, message.chat.id,
                 )
+                restriction = self.build_captcha_restriction(channel)
+                try:
+                    await self.telegram_bot.restrict_chat_member(
+                        chat_id=message.chat.id,
+                        user_id=new_member.id,
+                        permissions=restriction,
+                        use_independent_chat_permissions=True,
+                    )
+                except Exception as e:
+                    logger.error(
+                        "Failed to re-restrict member %s: %s",
+                        new_member.id, e, exc_info=True,
+                    )
                 return
 
             question, answer = captcha_service.generate()
@@ -110,7 +123,7 @@ class MemberProcessor:
                 answer=answer,
             )
 
-            restriction = self._build_captcha_restriction(channel)
+            restriction = self.build_captcha_restriction(channel)
             try:
                 await self.telegram_bot.restrict_chat_member(
                     chat_id=message.chat.id,
@@ -185,7 +198,7 @@ class MemberProcessor:
         except Exception as e:
             logger.error(f"Failed to send group captcha: {e}", exc_info=True)
 
-    def _build_captcha_restriction(self, channel=None) -> ChatPermissions:
+    def build_captcha_restriction(self, channel=None) -> ChatPermissions:
         """Построить ограничения на основе captcha_restriction_type канала.
 
         Все поля указываются явно — вызов restrict_chat_member использует

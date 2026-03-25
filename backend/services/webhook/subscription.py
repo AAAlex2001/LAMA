@@ -84,27 +84,25 @@ class SubscriptionHandler:
         )
         channel_db_id = channel.id if channel else None
 
+        if chat_member.chat.type == "supergroup":
+            if channel and channel.captcha_enabled:
+                await self.send_captcha(chat_member, channel)
+                return
+            elif self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA:
+                settings_service = BotSettingsService(self.db)
+                should_approve, missing = await settings_service.check_approval_criteria(
+                    self.bot_model, user_id,
+                )
+                missing = [ch for ch in missing if ch != chat_id]
+                if not should_approve and missing:
+                    await self.restrict_for_subscription(chat_member, missing)
+                    return
+
         if await self.has_recent_join_event(user_id, channel_db_id):
             logger.debug(
                 f"Skipping duplicate join processing: user={user_id}, channel={channel_db_id}"
             )
             return
-
-        if channel and channel.captcha_enabled and chat_member.chat.type == "supergroup":
-            await self.send_captcha(chat_member, channel)
-            return
-
-        if (
-            chat_member.chat.type == "supergroup"
-            and self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA
-        ):
-            settings_service = BotSettingsService(self.db)
-            should_approve, missing = await settings_service.check_approval_criteria(
-                self.bot_model, user_id,
-            )
-            if not should_approve and missing:
-                await self.restrict_for_subscription(chat_member, missing)
-                return
 
         is_direct_link_join = (
             chat_member.invite_link is None
@@ -521,7 +519,7 @@ class SubscriptionHandler:
             message_text += "\nПосле подписки ограничения будут сняты автоматически."
 
             await telegram_bot.send_message(
-                chat_id=chat_id,
+                chat_id=user_id,
                 text=message_text,
                 reply_markup=(
                     InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -98,7 +98,7 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
-      <ModalBase.Content size="md" className={styles.modal}>
+      <ModalBase.Content size="lg" padding="sm" className={styles.modal}>
         <div className={styles.header}>
           <span className={styles.title}>Настройка капчи</span>
         </div>
@@ -195,7 +195,7 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
         <div className={styles.footer}>
           <Button
             variant="outline"
-            intent="default"
+            intent="neutral"
             size="lg"
             onClick={() => onOpenChange(false)}
           >

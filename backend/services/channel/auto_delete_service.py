@@ -70,7 +70,9 @@ class AutoDeleteService:
         if message.from_user and message.from_user.is_bot:
             return False
 
-        if message.sender_chat:
+        system = is_system_message(message)
+
+        if message.sender_chat and not system:
             return False
 
         settings = await self.resolve_settings(message.chat.id)
@@ -81,7 +83,7 @@ class AutoDeleteService:
 
         if settings.delete_all_messages:
             should_delete = True
-        elif is_system_message(message):
+        elif system:
             if settings.delete_system_messages:
                 should_delete = True
             elif settings.delete_join_messages and is_join_message(message):

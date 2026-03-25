@@ -82,6 +82,7 @@ class JoinRequestHandler:
                     self.bot_model, user_id
                 )
             )
+            missing = [ch for ch in missing if ch != chat_id]
 
             if not should_approve and missing:
                 pending = PendingJoinApproval(
