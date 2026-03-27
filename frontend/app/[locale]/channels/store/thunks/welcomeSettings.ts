@@ -10,6 +10,7 @@ interface WelcomeResponse {
   welcome_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'VOICE' | 'STICKER' | 'ANIMATION' | null;
   welcome_buttons: { inline_keyboard: { text: string; url?: string }[][] } | null;
   welcome_message_thread_id: number | null;
+  welcome_type: string;
 }
 
 function mapResponse(data: WelcomeResponse) {
@@ -22,6 +23,7 @@ function mapResponse(data: WelcomeResponse) {
     mediaType,
     buttons,
     messageThreadId: data.welcome_message_thread_id,
+    welcomeType: data.welcome_type ?? 'group_message',
   };
 }
 

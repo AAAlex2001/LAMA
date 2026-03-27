@@ -56,45 +56,46 @@ class WelcomeHandler:
     ) -> None:
         """
         Обработать приветствие нового участника в группе
-        Отправляется в группу (может быть в топик)
+        Отправляется в группу (может быть в топик) или в ЛС в зависимости от welcome_type
         """
         try:
             telegram_bot = resolve_by_token(self.bot_model.token)
-            # Определяем топик:
-            # 1. Если указан конкретный топик (welcome_message_thread_id),
-            #    то отправляем ВСЕГДА в него
-            # 2. Если не указан (None), отправляем в топик, куда добавили
-            message_thread_id = self.bot_model.welcome_message_thread_id
-            if message_thread_id is None:
-                message_thread_id = getattr(
-                    message, "message_thread_id", None
-                )
 
-            sent_message = (
-                await self.welcome_service.handle_member_joined(
+            welcome_type = getattr(self.bot_model, "welcome_type", "group_message")
+
+            if welcome_type == "private_message":
+                sent_message = await self.welcome_service.handle_member_joined(
+                    telegram_bot=telegram_bot,
+                    bot_model=self.bot_model,
+                    user_id=new_member_user.id,
+                    chat_id=new_member_user.id,
+                    user_first_name=new_member_user.first_name,
+                    user_username=getattr(new_member_user, "username", None),
+                    user_last_name=getattr(new_member_user, "last_name", None),
+                    chat_title=(message.chat.title if message.chat else None),
+                )
+            else:
+                message_thread_id = self.bot_model.welcome_message_thread_id
+                if message_thread_id is None:
+                    message_thread_id = getattr(message, "message_thread_id", None)
+
+                sent_message = await self.welcome_service.handle_member_joined(
                     telegram_bot=telegram_bot,
                     bot_model=self.bot_model,
                     user_id=new_member_user.id,
                     chat_id=message.chat.id,
                     user_first_name=new_member_user.first_name,
-                    user_username=getattr(
-                        new_member_user, "username", None
-                    ),
-                    user_last_name=getattr(
-                        new_member_user, "last_name", None
-                    ),
-                    chat_title=(
-                        message.chat.title if message.chat else None
-                    ),
+                    user_username=getattr(new_member_user, "username", None),
+                    user_last_name=getattr(new_member_user, "last_name", None),
+                    chat_title=(message.chat.title if message.chat else None),
                     message_thread_id=message_thread_id,
                 )
-            )
 
             if sent_message:
                 logger.info(
                     f"Welcome sent for new member: "
                     f"user={new_member_user.id}, "
-                    f"chat={message.chat.id}, thread={message_thread_id}"
+                    f"chat={message.chat.id}, type={welcome_type}"
                 )
 
         except Exception as e:

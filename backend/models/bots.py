@@ -107,6 +107,7 @@ class Bot(Base):
     welcome_media_type: Mapped[Optional[MessageType]] = mapped_column(SQLEnum(MessageType), nullable=True)
     welcome_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Inline keyboard
     welcome_message_thread_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)  # ID топика для групповых приветствий
+    welcome_type: Mapped[str] = mapped_column(String(32), default='group_message', nullable=False)
     
     # Капча (два режима)
     join_captcha_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # Старое поле для обратной совместимости

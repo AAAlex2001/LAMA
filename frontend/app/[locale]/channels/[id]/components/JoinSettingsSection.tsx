@@ -102,7 +102,6 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   const [search, setSearch] = useState('');
   const [openPicker, setOpenPicker] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [welcomeType, setWelcomeType] = useState('group_message');
   const [hoveredAction, setHoveredAction] = useState<'preview' | 'delete' | 'edit' | null>(null);
   const botId = channel.bot_id;
   const channelId = channel.id;
@@ -264,7 +263,16 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
       .catch(() => showError('Ошибка сохранения'));
   };
 
-  const welcomeTypeSummary = WELCOME_TYPE_OPTIONS.find((o) => o.value === welcomeType)?.label || 'Сообщение в группу';
+  const welcomeTypeSummary = WELCOME_TYPE_OPTIONS.find((o) => o.value === welcome.welcomeType)?.label || 'Сообщение в группу';
+
+  const handleWelcomeTypeSelect = (type: string) => {
+    if (!botId) return;
+    setOpenPicker(null);
+    dispatch(updateWelcomeSettingsThunk({ botId, data: { welcome_type: type } }))
+      .unwrap()
+      .then(() => showSuccess('Тип приветствия обновлён'))
+      .catch(() => showError('Ошибка сохранения'));
+  };
 
   const selectedTopic = welcome.topics.find((t) => t.thread_id === (welcome.messageThreadId ?? 1));
   const topicSummary = selectedTopic?.name || 'Общий';

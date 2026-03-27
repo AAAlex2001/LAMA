@@ -22,6 +22,7 @@ interface WelcomeSettingsState {
   mediaType: WelcomeMediaType;
   buttons: WelcomeButton[][] | null;
   messageThreadId: number | null;
+  welcomeType: string;
   loaded: boolean;
   saving: boolean;
   modalOpen: boolean;
@@ -36,6 +37,7 @@ const initialState: WelcomeSettingsState = {
   mediaType: null,
   buttons: null,
   messageThreadId: null,
+  welcomeType: 'group_message',
   loaded: false,
   saving: false,
   modalOpen: false,
@@ -54,6 +56,7 @@ const welcomeSettingsSlice = createSlice({
       mediaType: WelcomeMediaType;
       buttons: WelcomeButton[][] | null;
       messageThreadId: number | null;
+      welcomeType: string;
     }>) {
       Object.assign(state, action.payload);
       state.loaded = true;
