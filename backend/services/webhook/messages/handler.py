@@ -313,7 +313,7 @@ class MessageHandler:
             if message.left_chat_member:
                 await member_processor.handle_member_left(message)
 
-            await self._process_forum_topic_events(message)
+            await self.process_forum_topic_events(message)
 
             if text_content:
                 text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
@@ -341,7 +341,7 @@ class MessageHandler:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None
 
-    async def _process_forum_topic_events(self, message: Message) -> None:
+    async def process_forum_topic_events(self, message: Message) -> None:
         chat_type = message.chat.type if message.chat else None
         if chat_type not in ("group", "supergroup"):
             return

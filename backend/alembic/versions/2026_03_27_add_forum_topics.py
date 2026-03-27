@@ -1,14 +1,14 @@
 """add forum_topics table
 
 Revision ID: add_forum_topics
-Revises: add_missing_indexes
+Revises: 2026_03_27_indexes
 Create Date: 2026-03-27
 """
 from alembic import op
 import sqlalchemy as sa
 
 revision = "add_forum_topics"
-down_revision = "add_missing_indexes"
+down_revision = "2026_03_27_indexes"
 branch_labels = None
 depends_on = None
 
