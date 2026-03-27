@@ -7,7 +7,7 @@ from typing import Optional
 from datetime import datetime, timezone, timedelta
 
 from aiogram.types import Message, ChatPermissions
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.services.channel import (
@@ -104,13 +104,28 @@ class ModerationHandler:
         action: Optional[ActionType],
         mute_duration: Optional[int]
     ) -> None:
-        """Применить действие модерации"""
         if not action:
             return
 
         try:
             bot = resolve_by_token(self.bot_model.token)
-            # Удаляем сообщение
+
+            if message.from_user:
+                try:
+                    member = await asyncio.wait_for(
+                        bot.get_chat_member(message.chat.id, message.from_user.id),
+                        timeout=TELEGRAM_API_TIMEOUT,
+                    )
+                    if member.status in ("creator", "administrator"):
+                        logger.debug("Skipping moderation for admin/owner user=%s", message.from_user.id)
+                        return
+                except TelegramAPIError as e:
+                    if "can't remove chat owner" in str(e) or "user is an administrator" in str(e):
+                        return
+                    logger.debug("Failed to check member status: %s", e)
+                except asyncio.TimeoutError:
+                    pass
+
             try:
                 await asyncio.wait_for(
                     bot.delete_message(
@@ -122,18 +137,20 @@ class ModerationHandler:
             except (TelegramAPIError, asyncio.TimeoutError) as e:
                 logger.debug(f"Failed to delete message: {e}")
 
-            # Применяем действие к пользователю
             if not message.from_user:
                 return
 
-            if action == ActionType.MUTE:
-                await self.mute_user(bot, message, mute_duration)
-            elif action == ActionType.KICK:
-                await self.kick_user(bot, message)
-            elif action == ActionType.BAN:
-                await self.ban_user(bot, message)
-            elif action == ActionType.UNMUTE:
-                await self.unmute_user(bot, message)
+            try:
+                if action == ActionType.MUTE:
+                    await self.mute_user(bot, message, mute_duration)
+                elif action == ActionType.KICK:
+                    await self.kick_user(bot, message)
+                elif action == ActionType.BAN:
+                    await self.ban_user(bot, message)
+                elif action == ActionType.UNMUTE:
+                    await self.unmute_user(bot, message)
+            except TelegramBadRequest as e:
+                logger.debug("Cannot apply action to user=%s: %s", message.from_user.id, e)
 
         except asyncio.TimeoutError:
             uid = message.from_user.id if message.from_user else 'unknown'

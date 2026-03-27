@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 
 from fastapi import HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ActionType, ChannelFloodState, ChannelGroup
@@ -28,7 +29,10 @@ class FloodService:
             return False, None, None
 
         now = datetime.now(timezone.utc)
-        state = await self.get_flood_state(channel.id, user_id)
+        state, locked = await self.get_flood_state(channel.id, user_id)
+
+        if locked:
+            return False, None, None
 
         if not state:
             state = ChannelFloodState(
@@ -90,7 +94,10 @@ class FloodService:
             return False, None, None
 
         now = datetime.now(timezone.utc)
-        state = await self.get_flood_state(channel.id, user_id)
+        state, locked = await self.get_flood_state(channel.id, user_id)
+
+        if locked:
+            return False, None, None
 
         if not state:
             state = ChannelFloodState(
@@ -155,15 +162,19 @@ class FloodService:
         await self.db.refresh(channel)
         return channel
 
-    async def get_flood_state(self, channel_id: int, user_id: int) -> Optional[ChannelFloodState]:
-        """Получить состояние флуда пользователя."""
+    async def get_flood_state(self, channel_id: int, user_id: int) -> Tuple[Optional[ChannelFloodState], bool]:
         query = (
             select(ChannelFloodState)
             .where(
                 ChannelFloodState.channel_id == channel_id,
                 ChannelFloodState.user_id == user_id,
             )
-            .with_for_update()
+            .with_for_update(nowait=True)
         )
-        result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        try:
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none(), False
+        except OperationalError:
+            await self.db.rollback()
+            logger.debug("Flood state locked for channel=%s user=%s, skipping", channel_id, user_id)
+            return None, True

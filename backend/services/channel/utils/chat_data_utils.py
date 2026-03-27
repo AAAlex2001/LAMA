@@ -76,7 +76,7 @@ async def build_chat_data(bot: RateLimitedBot, chat: Chat, bot_token: str) -> di
         "profile_background_custom_emoji_id": getattr(chat, "profile_background_custom_emoji_id", None),
         "emoji_status_custom_emoji_id": getattr(chat, "emoji_status_custom_emoji_id", None),
         "emoji_status_expiration_date": getattr(chat, "emoji_status_expiration_date", None),
-        "is_forum": getattr(chat, "is_forum", False),
+        "is_forum": bool(getattr(chat, "is_forum", False)),
         "is_direct_messages": getattr(chat, "is_direct_messages", False),
         "max_reaction_count": getattr(chat, "max_reaction_count", None),
         "slow_mode_delay": getattr(chat, "slow_mode_delay", None),
