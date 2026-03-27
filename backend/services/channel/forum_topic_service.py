@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ForumTopic
+from backend.schemas.channels.forum_topics import ForumTopicResponse
 from backend.services.channel.utils.query_utils import get_channel
 
 
@@ -12,7 +13,7 @@ class ForumTopicService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_channel_topics(self, channel_id: int, owner_id: int) -> list[dict]:
+    async def get_channel_topics(self, channel_id: int, owner_id: int) -> list[ForumTopicResponse]:
         channel = await get_channel(self.db, channel_id, owner_id=owner_id)
         if not channel:
             raise HTTPException(status_code=404, detail="Канал не найден")
@@ -21,16 +22,7 @@ class ForumTopicService:
 
         await self.ensure_general_topic(channel_id)
         topics = await self.get_topics(channel_id)
-        return [
-            {
-                "thread_id": t.thread_id,
-                "name": t.name,
-                "icon_color": t.icon_color,
-                "icon_custom_emoji_id": t.icon_custom_emoji_id,
-                "is_closed": t.is_closed,
-            }
-            for t in topics
-        ]
+        return [ForumTopicResponse.model_validate(t) for t in topics]
 
     async def get_topics(self, channel_id: int) -> list[ForumTopic]:
         query = (

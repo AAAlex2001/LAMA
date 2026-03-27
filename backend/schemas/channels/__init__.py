@@ -49,6 +49,8 @@ from backend.schemas.channels.invite_links import (
 
 from backend.schemas.channels.captcha import CaptchaSettingsUpdate, CaptchaSettingsResponse
 
+from backend.schemas.channels.forum_topics import ForumTopicResponse
+
 __all__ = [
     "ChannelType",
     "BackupMode",
@@ -87,4 +89,5 @@ __all__ = [
     "InviteLinkListResponse",
     "CaptchaSettingsUpdate",
     "CaptchaSettingsResponse",
+    "ForumTopicResponse",
 ]

@@ -92,5 +92,7 @@ export function useInlineButtons() {
     updateButton,
     deleteButton,
     reset,
+    setRows,
+    setIsOpen,
   };
 }

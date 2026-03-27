@@ -2,8 +2,8 @@
 
 import { FC, useState, useEffect, useRef } from 'react';
 import ModalBase from '@/components/modal-base';
-import { Button as GradientButton } from '@/components/new-button';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
+import OldButton from '@/components/button/button';
 import MediaPreview from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -12,7 +12,7 @@ import { useInlineButtons } from '@/app/[locale]/inbox/chat/components/InboxDire
 import { uploadMediaFile } from '@/store/api';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { updateWelcomeSettingsThunk } from '../../store/thunks/welcomeSettings';
-import { setModalOpen } from '../../store/slices/welcomeSettings';
+import { setModalOpen, setSaving } from '../../store/slices/welcomeSettings';
 import { EyeIcon, PaperclipIcon, InlineButtonIcon } from '@/components/icons';
 import PostPreviewModal from '@/components/post-preview-modal';
 import styles from './WelcomeMessageModal.module.scss';
@@ -43,6 +43,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
 
   const [text, setText] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [existingMedia, setExistingMedia] = useState<{ url: string; type: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -55,23 +56,38 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
   const {
     isOpen: buttonsOpen, rows, toggle: toggleButtons,
     addRow, addColumn, updateButton, deleteButton, reset: resetButtons,
+    setRows, setIsOpen: setButtonsOpen,
   } = useInlineButtons();
 
-  const canAddMedia = mediaFiles.length < 1;
+  const canAddMedia = mediaFiles.length < 1 && !existingMedia;
 
   useEffect(() => {
-    if (modalOpen) {
-      setText(message || '');
-      handleClearMedia();
-      resetButtons();
+    if (!modalOpen) return;
 
-      if (buttons && buttons.length > 0) {
-        for (const row of buttons) {
-          addRow();
-        }
-      }
+    setText(message || '');
+    handleClearMedia();
+
+    if (mediaUrl && mediaType) {
+      setExistingMedia({ url: mediaUrl, type: mediaType });
+    } else {
+      setExistingMedia(null);
     }
-  }, [modalOpen]);
+
+    if (buttons && buttons.length > 0) {
+      setButtonsOpen(true);
+      setRows(buttons.map((row, ri) => ({
+        id: `row-${ri}-${Date.now()}`,
+        buttons: row.map((btn, bi) => ({
+          id: `btn-${ri}-${bi}-${Date.now()}`,
+          text: btn.text,
+          type: 'url' as const,
+          url: btn.url || '',
+        })),
+      })));
+    } else {
+      resetButtons();
+    }
+  }, [modalOpen, message, mediaUrl, mediaType, buttons]);
 
   const insertShortcode = (code: string) => {
     if (textareaRef.current) {
@@ -92,21 +108,24 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
   };
 
   const handleSave = async () => {
-    if (!text.trim() && mediaFiles.length === 0) {
+    if (!text.trim() && mediaFiles.length === 0 && !existingMedia) {
       showError('Введите текст или прикрепите файл');
       return;
     }
 
+    dispatch(setSaving(true));
+
     let uploadedMediaUrl: string | null = null;
     let uploadedMediaType: string | null = null;
 
-    if (mediaFiles.length > 0) {
+    if (mediaFiles.length > 0 && mediaFiles[0].file) {
       try {
-        const result = await uploadMediaFile(mediaFiles[0].file!);
+        const result = await uploadMediaFile(mediaFiles[0].file);
         uploadedMediaUrl = result.url;
         uploadedMediaType = MEDIA_TYPE_MAP[mediaFiles[0].type] || 'DOCUMENT';
       } catch {
         showError('Ошибка загрузки файла');
+        dispatch(setSaving(false));
         return;
       }
     }
@@ -117,8 +136,8 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
 
     const data: Record<string, unknown> = {
       welcome_message: text || null,
-      welcome_media_url: uploadedMediaUrl ?? (mediaFiles.length === 0 ? null : mediaUrl),
-      welcome_media_type: uploadedMediaType ?? (mediaFiles.length === 0 ? null : mediaType),
+      welcome_media_url: uploadedMediaUrl ?? (existingMedia ? existingMedia.url : null),
+      welcome_media_type: uploadedMediaType ?? (existingMedia ? existingMedia.type : null),
       welcome_buttons: inlineKeyboard ? { inline_keyboard: inlineKeyboard } : null,
     };
 
@@ -175,6 +194,24 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
 
             <div className={styles.mediaSection}>
               <span className={styles.mediaSectionLabel}>Медиа и файлы</span>
+              {existingMedia && mediaFiles.length === 0 && (
+                <div className={styles.existingMedia}>
+                  {existingMedia.type === 'PHOTO' || existingMedia.type === 'ANIMATION' ? (
+                    <img src={existingMedia.url} alt="" className={styles.existingMediaImg} />
+                  ) : existingMedia.type === 'VIDEO' ? (
+                    <video src={existingMedia.url} className={styles.existingMediaImg} />
+                  ) : (
+                    <div className={styles.existingMediaDoc}>DOC</div>
+                  )}
+                  <button
+                    type="button"
+                    className={styles.existingMediaRemove}
+                    onClick={() => setExistingMedia(null)}
+                  >
+                    &times;
+                  </button>
+                </div>
+              )}
               {mediaFiles.length > 0 && (
                 <MediaPreview
                   files={mediaFiles}
@@ -183,7 +220,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
                   onMove={handleMoveMedia}
                 />
               )}
-              <Button
+              <OldButton
                 text="Прикрепить файл"
                 variant="templateCard"
                 showArrow={false}
@@ -199,22 +236,24 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const files = e.target.files;
-                  if (files) handleFilesAdd(Array.from(files).slice(0, 1));
+                  if (files) {
+                    setExistingMedia(null);
+                    handleFilesAdd(Array.from(files).slice(0, 1));
+                  }
                   e.target.value = '';
                 }}
               />
             </div>
 
-            <div className={styles.inlineSection}>
-              <Button
-                text="Кнопки"
-                variant="templateCard"
-                showArrow={false}
-                icon={<InlineButtonIcon width={24} height={24} />}
-                active={buttonsOpen}
-                onClick={toggleButtons}
-              />
-            </div>
+            <OldButton
+              text="Кнопки"
+              variant="templateCard"
+              showArrow={false}
+              icon={<InlineButtonIcon width={24} height={24} />}
+              active={buttonsOpen}
+              fullWidth
+              onClick={toggleButtons}
+            />
 
             <InlineButtons
               isOpen={buttonsOpen}
@@ -229,13 +268,14 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
 
           <div className={styles.footer}>
             <div className={styles.footerLeft}>
-              <button
-                type="button"
-                className={styles.cancelBtn}
+              <Button
+                variant="outline"
+                intent="neutral"
+                size="lg"
                 onClick={() => dispatch(setModalOpen(false))}
               >
                 Отменить
-              </button>
+              </Button>
             </div>
             <button
               type="button"
@@ -244,7 +284,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
             >
               <EyeIcon width={18} height={18} color="#858585" />
             </button>
-            <GradientButton
+            <Button
               variant="fill"
               intent="gradient"
               size="lg"
@@ -252,7 +292,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
               loading={saving}
             >
               Сохранить
-            </GradientButton>
+            </Button>
           </div>
         </ModalBase.Content>
       </ModalBase>
@@ -262,7 +302,17 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
         onClose={() => setPreviewOpen(false)}
         channelTitle={channelTitle}
         html={text}
-        mediaFiles={mediaFiles}
+        mediaFiles={
+          mediaFiles.length > 0
+            ? mediaFiles
+            : existingMedia
+              ? [{
+                  id: 'existing',
+                  type: (existingMedia.type === 'VIDEO' ? 'video' : existingMedia.type === 'DOCUMENT' ? 'document' : 'image') as 'image' | 'video' | 'document',
+                  url: existingMedia.url,
+                }]
+              : []
+        }
         inlineKeyboard={
           buttonsOpen && rows.length > 0
             ? { buttons: rows.map((row) => row.buttons.map((btn) => ({ text: btn.text }))) }

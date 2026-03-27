@@ -31,16 +31,20 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
-          state.monthPostCounts[r.dateKey] = r.total;
-          if (r.items.length > 0) {
-            const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
-            for (const item of r.items) {
-              if ((item as any).is_bot_message) sc.bot_messages++;
-              else if (item.status === 'published') sc.published++;
-              else if (item.status === 'scheduled') sc.scheduled++;
-              else if (item.status === 'draft') sc.draft++;
+          if (!merge || state.monthPostCounts[r.dateKey] === undefined) {
+            state.monthPostCounts[r.dateKey] = r.total;
+          }
+          if (!merge || !state.monthStatusCounts[r.dateKey]) {
+            if (r.items.length > 0) {
+              const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
+              for (const item of r.items) {
+                if ((item as any).is_bot_message) sc.bot_messages++;
+                else if (item.status === 'published') sc.published++;
+                else if (item.status === 'scheduled') sc.scheduled++;
+                else if (item.status === 'draft') sc.draft++;
+              }
+              state.monthStatusCounts[r.dateKey] = sc;
             }
-            state.monthStatusCounts[r.dateKey] = sc;
           }
         }
         state.weekItems = weekItems;

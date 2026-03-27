@@ -573,7 +573,17 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                     </>
                   )}
 
-                  {hasWelcomeMessage ? (
+                  <button
+                    type="button"
+                    className={`${styles.addMessageBtn} ${hasWelcomeMessage ? styles.addMessageBtnDisabled : ''}`}
+                    onClick={() => !hasWelcomeMessage && dispatch(setWelcomeModalOpen(true))}
+                    disabled={hasWelcomeMessage}
+                  >
+                    <PlusIcon width={16} height={16} color={hasWelcomeMessage ? '#B0B4B8' : '#3B82F6'} />
+                    Сообщение
+                  </button>
+
+                  {hasWelcomeMessage && (
                     <div className={styles.messageCard}>
                       <div className={styles.messageHeader}>
                         <span className={styles.messageTitle}>Сообщение</span>
@@ -612,46 +622,36 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                       </div>
 
                       <div className={styles.messageBody}>
+                        {welcome.message && (
+                          <p className={styles.messageText}>{welcome.message}</p>
+                        )}
                         {welcome.mediaUrl && (
-                          <div className={styles.mediaThumbnail}>
-                            {welcome.mediaType === 'PHOTO' || welcome.mediaType === 'ANIMATION' ? (
-                              <img src={welcome.mediaUrl} alt="" className={styles.thumbnailImg} />
-                            ) : welcome.mediaType === 'VIDEO' ? (
-                              <video src={welcome.mediaUrl} className={styles.thumbnailImg} />
-                            ) : (
-                              <div className={styles.thumbnailDoc}>DOC</div>
+                          <div className={styles.messageContentRow}>
+                            <div className={styles.mediaThumbnail}>
+                              {welcome.mediaType === 'PHOTO' || welcome.mediaType === 'ANIMATION' ? (
+                                <img src={welcome.mediaUrl} alt="" className={styles.thumbnailImg} />
+                              ) : welcome.mediaType === 'VIDEO' ? (
+                                <video src={welcome.mediaUrl} className={styles.thumbnailImg} />
+                              ) : (
+                                <div className={styles.thumbnailDoc}>DOC</div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        {welcome.buttons && welcome.buttons.length > 0 && (
+                          <div className={styles.inlineButtonsPreview}>
+                            {welcome.buttons.map((row, rowIdx) =>
+                              row.map((btn, btnIdx) => (
+                                <span key={`${rowIdx}-${btnIdx}`} className={styles.inlineButtonPill}>
+                                  {btn.text}
+                                </span>
+                              ))
                             )}
                           </div>
                         )}
-                        <div className={styles.messageContent}>
-                          {welcome.message && (
-                            <p className={styles.messageText}>{welcome.message}</p>
-                          )}
-                          {welcome.buttons && welcome.buttons.length > 0 && (
-                            <div className={styles.inlineButtonsPreview}>
-                              {welcome.buttons.map((row, rowIdx) =>
-                                row.map((btn, btnIdx) => (
-                                  <span key={`${rowIdx}-${btnIdx}`} className={styles.inlineButtonPill}>
-                                    {btn.text}
-                                  </span>
-                                ))
-                              )}
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </div>
-                  ) : null}
-
-                  <button
-                    type="button"
-                    className={`${styles.addMessageBtn} ${hasWelcomeMessage ? styles.addMessageBtnDisabled : ''}`}
-                    onClick={() => !hasWelcomeMessage && dispatch(setWelcomeModalOpen(true))}
-                    disabled={hasWelcomeMessage}
-                  >
-                    <PlusIcon width={16} height={16} color={hasWelcomeMessage ? '#B0B4B8' : '#3B82F6'} />
-                    Сообщение
-                  </button>
+                  )}
                 </div>
               )}
 

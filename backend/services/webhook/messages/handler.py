@@ -351,20 +351,23 @@ class MessageHandler:
         topic_closed = message.forum_topic_closed
         topic_reopened = message.forum_topic_reopened
 
-        if not any([topic_created, topic_edited, topic_closed, topic_reopened]):
+        has_event = any([topic_created, topic_edited, topic_closed, topic_reopened])
+        has_thread = bool(message.message_thread_id)
+
+        if not has_event and not has_thread:
             return
 
         channel = await get_channel_by_telegram_id(
             self.db, message.chat.id, bot_id=self.bot_model.id,
         )
-        if not channel:
+        if not channel or not channel.is_forum:
             return
 
         service = ForumTopicService(self.db)
-        thread_id = message.message_thread_id or 0
 
         try:
             if topic_created:
+                thread_id = message.message_thread_id or 0
                 await service.upsert_topic(
                     channel_id=channel.id,
                     thread_id=thread_id,
@@ -373,6 +376,7 @@ class MessageHandler:
                     icon_custom_emoji_id=topic_created.icon_custom_emoji_id,
                 )
             elif topic_edited:
+                thread_id = message.message_thread_id or 0
                 if topic_edited.name:
                     await service.upsert_topic(
                         channel_id=channel.id,
@@ -381,8 +385,20 @@ class MessageHandler:
                         icon_custom_emoji_id=topic_edited.icon_custom_emoji_id,
                     )
             elif topic_closed:
+                thread_id = message.message_thread_id or 0
                 await service.close_topic(channel.id, thread_id)
             elif topic_reopened:
+                thread_id = message.message_thread_id or 0
                 await service.reopen_topic(channel.id, thread_id)
+            elif has_thread and message.message_thread_id != 1:
+                existing = await service.get_topics(channel.id)
+                known_ids = {t.thread_id for t in existing}
+                if message.message_thread_id not in known_ids:
+                    topic_name = f"Топик #{message.message_thread_id}"
+                    await service.upsert_topic(
+                        channel_id=channel.id,
+                        thread_id=message.message_thread_id,
+                        name=topic_name,
+                    )
         except Exception as e:
             logger.error(f"Forum topic event error: {e}", exc_info=True)
