@@ -153,7 +153,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
   return (
     <>
       <ModalBase isOpen={modalOpen} onOpenChange={(v) => dispatch(setModalOpen(v))}>
-        <ModalBase.Content size="md" padding="sm" className={styles.modal}>
+        <ModalBase.Content size="xl" padding="sm" className={styles.modal}>
           <div className={styles.header}>
             <span className={styles.title}>Приветственное сообщение</span>
             <ModalBase.Close />

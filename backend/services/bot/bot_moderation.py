@@ -8,6 +8,7 @@ from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
 
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,11 @@ class BotModerationService:
 
         handler = handlers.get(cmd)
         if handler:
-            return await handler()
+            try:
+                return await handler()
+            except RateLimitTimeout:
+                logger.warning("Rate limit hit for command %s in chat %s", cmd, message.chat.id)
+                return True
         return False
 
     async def handle_admin(self, message: Message, telegram_bot: RateLimitedBot) -> bool:
@@ -171,14 +176,17 @@ class BotModerationService:
 
     async def reply(self, bot: RateLimitedBot, chat_id: int, text: str) -> None:
         """Отправить ответ в чат."""
-        await bot.send_message(chat_id=chat_id, text=text)
+        try:
+            await bot.send_message(chat_id=chat_id, text=text)
+        except RateLimitTimeout:
+            logger.warning("Rate limit hit sending reply to chat %s", chat_id)
 
     async def check_is_admin(self, bot: RateLimitedBot, chat_id: int, user_id: int) -> bool:
         """Проверить является ли пользователь администратором."""
         try:
             member = await bot.get_chat_member(chat_id, user_id)
             return member.status in ("administrator", "creator")
-        except TelegramAPIError:
+        except (TelegramAPIError, RateLimitTimeout):
             return False
 
     async def find_group_owner(self, bot: RateLimitedBot, chat_id: int):

@@ -28,6 +28,8 @@ celery_app.conf.update(
     timezone=config.timezone,
     enable_utc=config.enable_utc,
     worker_prefetch_multiplier=1,
+    broker_heartbeat=20,
+    broker_heartbeat_checkrate=3,
     task_default_queue="default",
     task_queues=(
         Queue("high"),

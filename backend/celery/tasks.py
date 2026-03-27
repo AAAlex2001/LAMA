@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 from datetime import datetime, timedelta, timezone
 
 from celery import Task
@@ -408,14 +409,15 @@ async def process_repeating_publications_async() -> str:
     return f"queued_republish:{len(ids)}"
 
 
-@celery_app.task(bind=True, name="backend.celery.tasks.delayed_delete_message", max_retries=3)
+@celery_app.task(bind=True, name="backend.celery.tasks.delayed_delete_message", max_retries=5)
 def delayed_delete_message(self, bot_id: int, chat_id: int, message_id: int) -> str:
     """Удалить одно сообщение в чате (используется для отложенного автоудаления)."""
 
     result = run(delayed_delete_message_async(bot_id, chat_id, message_id))
     if result.startswith("rate_limited:"):
         wait = int(result.split(":")[1])
-        raise self.retry(countdown=wait)
+        jitter = random.randint(0, max(wait // 2, 5))
+        raise self.retry(countdown=wait + jitter)
     return result
 
 

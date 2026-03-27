@@ -1,10 +1,10 @@
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy import case, update
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ActionType, ChannelFloodState, ChannelGroup
@@ -28,46 +28,12 @@ class FloodService:
         if not channel.flood_message_limit or not channel.flood_interval_seconds:
             return False, None, None
 
-        now = datetime.now(timezone.utc)
-        state, locked = await self.get_flood_state(channel.id, user_id)
-
-        if locked:
-            return False, None, None
-
-        if not state:
-            state = ChannelFloodState(
-                channel_id=channel.id,
-                user_id=user_id,
-                message_count=1,
-                window_start=now,
-                last_message_at=now,
-            )
-            self.db.add(state)
-            await self.db.flush()
-            return False, None, None
-
-        window_delta = (now - state.window_start).total_seconds()
-        if window_delta > channel.flood_interval_seconds:
-            state.message_count = 1
-            state.window_start = now
-            state.last_message_at = now
-            await self.db.flush()
-            return False, None, None
-
-        state.message_count += 1
-        state.last_message_at = now
-        await self.db.flush()
-
-        logger.info(
-            "Flood check: channel=%s user=%s count=%s/%s window=%.1fs/%ss",
-            channel.id, user_id, state.message_count,
-            channel.flood_message_limit, window_delta, channel.flood_interval_seconds,
+        count = await self.increment_counter(
+            channel.id, user_id, channel.flood_interval_seconds,
         )
 
-        if state.message_count > channel.flood_message_limit:
-            state.message_count = 0
-            state.window_start = now
-            await self.db.flush()
+        if count > channel.flood_message_limit:
+            await self.reset_counter(channel.id, user_id)
             return True, channel.flood_action, channel.flood_mute_duration_minutes
 
         return False, None, None
@@ -83,59 +49,61 @@ class FloodService:
 
         channel = await get_channel_by_telegram_id(self.db, telegram_id)
         if not channel:
-            logger.info("Flood check: no channel found for telegram_id=%s", telegram_id)
             return False, None, None
 
-        if not channel.flood_message_limit or not channel.flood_interval_seconds:
-            logger.info(
-                "Flood check: channel %s has no flood settings (limit=%s, interval=%s)",
-                channel.id, channel.flood_message_limit, channel.flood_interval_seconds,
-            )
-            return False, None, None
+        return await self.check_flood(channel, user_id)
 
+    async def increment_counter(
+        self, channel_id: int, user_id: int, interval_seconds: int,
+    ) -> int:
         now = datetime.now(timezone.utc)
-        state, locked = await self.get_flood_state(channel.id, user_id)
+        cutoff = now - timedelta(seconds=interval_seconds)
+        window_expired = ChannelFloodState.window_start <= cutoff
 
-        if locked:
-            return False, None, None
-
-        if not state:
-            state = ChannelFloodState(
-                channel_id=channel.id,
-                user_id=user_id,
-                message_count=1,
-                window_start=now,
-                last_message_at=now,
-            )
-            self.db.add(state)
-            await self.db.flush()
-            return False, None, None
-
-        window_delta = (now - state.window_start).total_seconds()
-        if window_delta > channel.flood_interval_seconds:
-            state.message_count = 1
-            state.window_start = now
-            state.last_message_at = now
-            await self.db.flush()
-            return False, None, None
-
-        state.message_count += 1
-        state.last_message_at = now
-        await self.db.flush()
-
-        logger.info(
-            "Flood check: channel=%s user=%s count=%s/%s window=%.1fs/%ss",
-            channel.id, user_id, state.message_count,
-            channel.flood_message_limit, window_delta, channel.flood_interval_seconds,
+        insert_stmt = pg_insert(ChannelFloodState).values(
+            channel_id=channel_id,
+            user_id=user_id,
+            message_count=1,
+            window_start=now,
+            last_message_at=now,
         )
 
-        if state.message_count > channel.flood_message_limit:
-            state.message_count = 0
-            state.window_start = now
-            await self.db.flush()
-            return True, channel.flood_action, channel.flood_mute_duration_minutes
+        stmt = insert_stmt.on_conflict_do_update(
+            index_elements=["channel_id", "user_id"],
+            set_={
+                "message_count": case(
+                    (window_expired, 1),
+                    else_=ChannelFloodState.message_count + 1,
+                ),
+                "window_start": case(
+                    (window_expired, now),
+                    else_=ChannelFloodState.window_start,
+                ),
+                "last_message_at": now,
+            },
+        ).returning(ChannelFloodState.message_count)
 
-        return False, None, None
+        result = await self.db.execute(stmt)
+        count = result.scalar_one()
+
+        logger.info(
+            "Flood check: channel=%s user=%s count=%s",
+            channel_id, user_id, count,
+        )
+
+        return count
+
+    async def reset_counter(self, channel_id: int, user_id: int) -> None:
+        now = datetime.now(timezone.utc)
+        stmt = (
+            update(ChannelFloodState)
+            .where(
+                ChannelFloodState.channel_id == channel_id,
+                ChannelFloodState.user_id == user_id,
+            )
+            .values(message_count=0, window_start=now)
+        )
+        await self.db.execute(stmt)
 
     async def update_settings(
         self,
@@ -161,20 +129,3 @@ class FloodService:
         await self.db.flush()
         await self.db.refresh(channel)
         return channel
-
-    async def get_flood_state(self, channel_id: int, user_id: int) -> tuple[Optional[ChannelFloodState], bool]:
-        query = (
-            select(ChannelFloodState)
-            .where(
-                ChannelFloodState.channel_id == channel_id,
-                ChannelFloodState.user_id == user_id,
-            )
-            .with_for_update(nowait=True)
-        )
-        try:
-            async with self.db.begin_nested():
-                result = await self.db.execute(query)
-                return result.scalar_one_or_none(), False
-        except DBAPIError:
-            logger.debug("Flood state locked for channel=%s user=%s, skipping", channel_id, user_id)
-            return None, True

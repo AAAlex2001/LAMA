@@ -544,7 +544,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                     </div>
                   )}
 
-                  {isForum && welcome.topics.length > 0 && (
+                  {isForum && welcomeType === 'group_message' && welcome.topics.length > 0 && (
                     <>
                       <div
                         className={styles.pickerRow}

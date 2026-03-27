@@ -395,6 +395,9 @@ class MessageHandler:
                 known_ids = {t.thread_id for t in existing}
                 if message.message_thread_id not in known_ids:
                     topic_name = f"Топик #{message.message_thread_id}"
+                    if (message.reply_to_message
+                            and message.reply_to_message.forum_topic_created):
+                        topic_name = message.reply_to_message.forum_topic_created.name
                     await service.upsert_topic(
                         channel_id=channel.id,
                         thread_id=message.message_thread_id,
