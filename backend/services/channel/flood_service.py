@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import Optional
 
 from fastapi import HTTPException
 from sqlalchemy import select
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import DBAPIError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ActionType, ChannelFloodState, ChannelGroup
@@ -23,7 +23,7 @@ class FloodService:
         self,
         channel: ChannelGroup,
         user_id: int,
-    ) -> Tuple[bool, Optional[ActionType], Optional[int]]:
+    ) -> tuple[bool, Optional[ActionType], Optional[int]]:
         """Проверить флуд для уже загруженного канала."""
         if not channel.flood_message_limit or not channel.flood_interval_seconds:
             return False, None, None
@@ -76,7 +76,7 @@ class FloodService:
         self,
         telegram_id: int,
         user_id: Optional[int],
-    ) -> Tuple[bool, Optional[ActionType], Optional[int]]:
+    ) -> tuple[bool, Optional[ActionType], Optional[int]]:
         """Проверить, не флудит ли пользователь."""
         if user_id is None:
             return False, None, None
@@ -162,7 +162,7 @@ class FloodService:
         await self.db.refresh(channel)
         return channel
 
-    async def get_flood_state(self, channel_id: int, user_id: int) -> Tuple[Optional[ChannelFloodState], bool]:
+    async def get_flood_state(self, channel_id: int, user_id: int) -> tuple[Optional[ChannelFloodState], bool]:
         query = (
             select(ChannelFloodState)
             .where(
@@ -172,9 +172,9 @@ class FloodService:
             .with_for_update(nowait=True)
         )
         try:
-            result = await self.db.execute(query)
-            return result.scalar_one_or_none(), False
-        except OperationalError:
-            await self.db.rollback()
+            async with self.db.begin_nested():
+                result = await self.db.execute(query)
+                return result.scalar_one_or_none(), False
+        except DBAPIError:
             logger.debug("Flood state locked for channel=%s user=%s, skipping", channel_id, user_id)
             return None, True
