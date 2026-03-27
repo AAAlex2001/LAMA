@@ -83,8 +83,6 @@ class PublicationCreateService:
         self.db.add(publication)
         await self.db.flush()
         await self.db.refresh(publication, ["channels", "tags", "series"])
-        for channel in publication.channels:
-            await self.db.refresh(channel, ["bot"])
         return publication
 
     async def _get_channels_by_ids(self, channel_ids: List[int], owner_id: int) -> List[Channel]:

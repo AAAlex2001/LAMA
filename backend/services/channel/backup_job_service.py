@@ -197,12 +197,14 @@ class BackupJobService:
             raise HTTPException(status_code=404, detail="Backup job not found")
         return job
 
-    async def get_source_posts(self, channel_id: int) -> List[BackedUpPost]:
-        """Получить все посты канала для обработки."""
+    async def get_source_posts(self, channel_id: int, limit: int = 1000, offset: int = 0) -> List[BackedUpPost]:
+        """Получить посты канала для обработки (пагинация)."""
         query = (
             select(BackedUpPost)
             .where(BackedUpPost.channel_id == channel_id)
             .order_by(BackedUpPost.original_date.asc())
+            .offset(offset)
+            .limit(limit)
         )
         result = await self.db.execute(query)
         return list(result.scalars().all())

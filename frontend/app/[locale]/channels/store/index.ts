@@ -9,6 +9,7 @@ import moderationReducer from './slices/moderation';
 import bannedWordsReducer from './slices/bannedWords';
 import antispamReducer from './slices/antispam';
 import nightModeReducer from './slices/nightMode';
+import welcomeSettingsReducer from './slices/welcomeSettings';
 
 export const channelsPageStore = configureStore({
   reducer: {
@@ -21,6 +22,7 @@ export const channelsPageStore = configureStore({
     bannedWords: bannedWordsReducer,
     antispam: antispamReducer,
     nightMode: nightModeReducer,
+    welcomeSettings: welcomeSettingsReducer,
   },
 });
 

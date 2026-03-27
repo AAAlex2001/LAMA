@@ -30,19 +30,10 @@ class BotSettingsService:
         if not bot:
             raise HTTPException(status_code=404, detail="Bot not found")
 
-        bot.welcome_enabled = data.welcome_enabled
-        bot.welcome_message = data.welcome_message
-        bot.welcome_media_url = data.welcome_media_url
-        bot.welcome_media_type = data.welcome_media_type
-        bot.welcome_buttons = data.welcome_buttons
-        bot.welcome_message_thread_id = data.welcome_message_thread_id
-
-        if data.join_captcha_enabled is not None:
-            bot.join_captcha_enabled = data.join_captcha_enabled
-        if data.captcha_mode is not None:
-            bot.captcha_mode = data.captcha_mode
-        if data.captcha_timeout_seconds is not None:
-            bot.captcha_timeout_seconds = data.captcha_timeout_seconds
+        fields = data.model_dump(exclude_unset=True)
+        for field, value in fields.items():
+            if hasattr(bot, field):
+                setattr(bot, field, value)
 
         bot.updated_at = datetime.now(timezone.utc)
         await self.db.flush()

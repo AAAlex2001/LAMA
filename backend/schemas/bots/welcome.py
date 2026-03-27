@@ -33,14 +33,13 @@ class AutoApprovalResponse(BaseModel):
 # ============================================================================
 
 class WelcomeSettingsUpdate(BaseModel):
-    """Схема обновления настроек приветствия"""
-    welcome_enabled: bool = False
+    """Схема обновления настроек приветствия (partial update)"""
+    welcome_enabled: Optional[bool] = None
     welcome_message: Optional[str] = None
     welcome_media_url: Optional[str] = None
     welcome_media_type: Optional[MessageType] = None
     welcome_buttons: Optional[Dict[str, Any]] = None
-    welcome_message_thread_id: Optional[int] = None  # ID топика для групповых приветствий
-    # Флаг: при заявке отправлять капчу (в MANUAL-режиме) - DEPRECATED
+    welcome_message_thread_id: Optional[int] = None
     join_captcha_enabled: Optional[bool] = None
     captcha_mode: Optional[CaptchaMode] = None
     captcha_timeout_seconds: Optional[int] = Field(None, ge=5, le=300, description="Таймаут капчи в группе (5-300 секунд)")

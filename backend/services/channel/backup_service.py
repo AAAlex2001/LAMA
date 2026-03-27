@@ -39,9 +39,15 @@ class BackupService:
             raise HTTPException(status_code=404, detail="Channel not found")
 
         if backup_mode == BackupMode.INSTANT and backup_target_ids:
+            result = await self.db.execute(
+                select(ChannelGroup.id).where(
+                    ChannelGroup.id.in_(backup_target_ids),
+                    ChannelGroup.owner_id == owner_id,
+                )
+            )
+            found_ids = {row[0] for row in result.all()}
             for tid in backup_target_ids:
-                target = await get_channel(self.db, tid, owner_id)
-                if not target:
+                if tid not in found_ids:
                     raise HTTPException(status_code=404, detail=f"Target channel {tid} not found")
 
         channel.backup_mode = backup_mode
@@ -130,11 +136,18 @@ class BackupService:
         return posts, total
 
     async def get_stats(self, channel_id: int) -> Dict[str, Any]:
-        """Получить статистику канала."""
-        posts_count = await self.db.execute(
-            select(func.count(BackedUpPost.id)).where(BackedUpPost.channel_id == channel_id)
+        """Получить статистику канала (одним запросом)."""
+        stats_result = await self.db.execute(
+            select(
+                func.count(BackedUpPost.id),
+                func.min(BackedUpPost.original_date),
+                func.max(BackedUpPost.original_date),
+                func.coalesce(func.sum(func.length(cast(BackedUpPost.raw_data, String))), 0)
+                + func.coalesce(func.sum(func.length(BackedUpPost.text_content)), 0),
+            ).where(BackedUpPost.channel_id == channel_id)
         )
-        total_posts = posts_count.scalar()
+        row = stats_result.one()
+        total_posts, first_date, last_date, size_bytes = row
 
         retransmissions_count = await self.db.execute(
             select(func.count(PostRetransmission.id))
@@ -143,28 +156,13 @@ class BackupService:
         )
         total_retransmissions = retransmissions_count.scalar()
 
-        dates_result = await self.db.execute(
-            select(func.min(BackedUpPost.original_date), func.max(BackedUpPost.original_date))
-            .where(BackedUpPost.channel_id == channel_id)
-        )
-        dates = dates_result.one()
-
-        size_result = await self.db.execute(
-            select(
-                func.coalesce(func.sum(func.length(cast(BackedUpPost.raw_data, String))), 0)
-                + func.coalesce(func.sum(func.length(BackedUpPost.text_content)), 0)
-            ).where(BackedUpPost.channel_id == channel_id)
-        )
-        size_bytes = size_result.scalar() or 0
-        backup_size_mb = size_bytes / (1024 * 1024)
-
         return {
             "channel_id": channel_id,
             "total_backed_up_posts": total_posts,
             "total_retransmissions": total_retransmissions,
-            "backup_size_mb": round(backup_size_mb, 2),
-            "first_post_date": dates[0],
-            "last_post_date": dates[1],
+            "backup_size_mb": round((size_bytes or 0) / (1024 * 1024), 2),
+            "first_post_date": first_date,
+            "last_post_date": last_date,
         }
 
     async def get_day_counts(self, channel_id: int) -> Dict[str, int]:

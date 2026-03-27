@@ -242,6 +242,7 @@ class PublicationQueryService:
                 selectinload(Publication.tags).load_only(*TAG_COMPACT_COLUMNS),
             )
             .order_by(Publication.scheduled_time.asc(), Publication.id.asc())
+            .limit(500)
         )
         result = await self.db.execute(query)
         all_posts = list(result.scalars().all())

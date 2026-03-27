@@ -146,33 +146,26 @@ class BotMessagingService:
         return list(result.scalars().all()), total
 
     async def get_stats(self, bot_id: int, owner_id: Optional[int] = None) -> Dict[str, Any]:
-        """Получить статистику сообщений бота."""
+        """Получить статистику сообщений бота (одним запросом)."""
         await self.get_bot_or_raise(bot_id, owner_id)
 
-        total = (await self.db.execute(
-            select(func.count()).where(BotMessage.bot_id == bot_id)
-        )).scalar() or 0
-
-        incoming = (await self.db.execute(
-            select(func.count()).where(
-                BotMessage.bot_id == bot_id,
-                BotMessage.is_incoming == True,
-            )
-        )).scalar() or 0
-
-        last_at = (await self.db.execute(
-            select(BotMessage.created_at)
-            .where(BotMessage.bot_id == bot_id)
-            .order_by(desc(BotMessage.created_at))
-            .limit(1)
-        )).scalar_one_or_none()
+        result = await self.db.execute(
+            select(
+                func.count().label("total"),
+                func.count().filter(BotMessage.is_incoming == True).label("incoming"),
+                func.max(BotMessage.created_at).label("last_at"),
+            ).where(BotMessage.bot_id == bot_id)
+        )
+        row = result.one()
+        total = row.total or 0
+        incoming = row.incoming or 0
 
         return {
             "bot_id": bot_id,
             "total_messages": total,
             "incoming_messages": incoming,
             "outgoing_messages": total - incoming,
-            "last_message_at": last_at,
+            "last_message_at": row.last_at,
         }
 
     async def get_bot_or_raise(self, bot_id: int, owner_id: Optional[int] = None) -> BotModel:
@@ -205,6 +198,7 @@ class BotMessagingService:
         reply_markup = build_keyboard(data.buttons) if data.buttons else None
 
         results: List[BroadcastResult] = []
+        pending_messages: list = []
         for chat_id in chat_ids:
             single = SendMessageRequest(
                 chat_id=chat_id,
@@ -219,7 +213,7 @@ class BotMessagingService:
                 msgs = result if isinstance(result, list) else [result]
                 for msg in msgs:
                     file_id = msg.photo[-1].file_id if msg.photo else None
-                    await self.save(
+                    pending_messages.append(BotMessage(
                         bot_id=bot.id,
                         telegram_message_id=msg.message_id,
                         chat_id=chat_id,
@@ -230,10 +224,14 @@ class BotMessagingService:
                         media_url=data.media_url,
                         is_incoming=False,
                         raw_data=msg.model_dump(mode="json"),
-                    )
+                    ))
                 results.append(BroadcastResult(chat_id=chat_id, success=True))
             except Exception as e:
                 results.append(BroadcastResult(chat_id=chat_id, success=False, error=str(e)))
+
+        if pending_messages:
+            self.db.add_all(pending_messages)
+            await self.db.flush()
 
         sent = sum(1 for r in results if r.success)
         return BroadcastResponse(

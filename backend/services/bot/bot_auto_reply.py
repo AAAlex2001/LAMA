@@ -98,18 +98,16 @@ class BotAutoReplyService:
     async def find_by_text(
         self, bot_id: int, text: str, chat_type: Optional[str] = None,
     ) -> Optional[AutoReply]:
-        """Найти автоответ по тексту сообщения с учётом scope."""
+        """Найти автоответ по тексту — streaming без загрузки всех в память."""
         query = select(AutoReply).where(
             AutoReply.bot_id == bot_id,
             AutoReply.is_active == True,
         )
         query = self.apply_scope_filter(query, chat_type)
-
         result = await self.db.execute(query)
-        replies = list(result.scalars().all())
 
         text_lower = text.lower()
-        for reply in replies:
+        for reply in result.scalars():
             for keyword in reply.keywords:
                 if keyword.lower() in text_lower:
                     return reply

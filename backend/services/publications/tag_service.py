@@ -80,7 +80,7 @@ class TagService:
         return tags, total
 
     async def search_tags(self, owner_id: int, query_str: str, limit: int) -> List[Tag]:
-        safe_q = query_str.replace('%', '').replace('_', '')
+        safe_q = query_str.replace("\\", "\\\\").replace('%', '\\%').replace('_', '\\_')
         query = (
             select(Tag)
             .where(Tag.owner_id == owner_id, Tag.name.ilike(f'%{safe_q}%'))

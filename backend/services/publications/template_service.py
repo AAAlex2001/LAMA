@@ -40,8 +40,9 @@ class TemplateService:
         if search:
             text = search.strip()
             if text:
-                query = query.where(TextTemplate.name.ilike(f"%{text}%"))
-                count_query = count_query.where(TextTemplate.name.ilike(f"%{text}%"))
+                safe = text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+                query = query.where(TextTemplate.name.ilike(f"%{safe}%"))
+                count_query = count_query.where(TextTemplate.name.ilike(f"%{safe}%"))
 
         total = int((await self.db.execute(count_query)).scalar() or 0)
         query = query.order_by(TextTemplate.created_at.desc()).offset(skip).limit(limit)

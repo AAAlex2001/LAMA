@@ -146,7 +146,7 @@ async def export_backed_up_posts(
     current_user: User = Depends(get_current_user),
 ):
     channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    posts, total = await backup_service.get_posts(channel_id=channel_id, page=1, page_size=10000)
+    posts, total = await backup_service.get_posts(channel_id=channel_id, page=1, page_size=5000)
     export_data = {
         "channel_id": channel_id,
         "channel_title": channel.title,
