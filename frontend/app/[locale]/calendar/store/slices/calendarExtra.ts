@@ -32,6 +32,16 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
           state.monthPostCounts[r.dateKey] = r.total;
+          if (r.items.length > 0) {
+            const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
+            for (const item of r.items) {
+              if ((item as any).is_bot_message) sc.bot_messages++;
+              else if (item.status === 'published') sc.published++;
+              else if (item.status === 'scheduled') sc.scheduled++;
+              else if (item.status === 'draft') sc.draft++;
+            }
+            state.monthStatusCounts[r.dateKey] = sc;
+          }
         }
         state.weekItems = weekItems;
         state.dayPageState = dayPageState;
@@ -85,8 +95,6 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         return;
       }
       state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
-      // Merge: use day-counts as baseline, but preserve week-batch totals
-      // for dates where we have actual loaded items (more accurate)
       const merged = { ...action.payload.counts };
       for (const dateKey of Object.keys(state.weekItems)) {
         if (state.monthPostCounts[dateKey] !== undefined) {
@@ -95,6 +103,20 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
       }
       state.monthPostCounts = merged;
       state.monthStatusCountsCache[action.payload.monthKey] = action.payload.statusCounts;
-      state.monthStatusCounts = action.payload.statusCounts;
+      const mergedStatus = { ...action.payload.statusCounts };
+      for (const dateKey of Object.keys(state.weekItems)) {
+        const items = state.weekItems[dateKey];
+        if (items && items.length > 0 && !mergedStatus[dateKey]) {
+          const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
+          for (const item of items) {
+            if ((item as any).is_bot_message) sc.bot_messages++;
+            else if (item.status === 'published') sc.published++;
+            else if (item.status === 'scheduled') sc.scheduled++;
+            else if (item.status === 'draft') sc.draft++;
+          }
+          mergedStatus[dateKey] = sc;
+        }
+      }
+      state.monthStatusCounts = mergedStatus;
     });
 }

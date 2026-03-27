@@ -217,6 +217,11 @@ class ChannelGroup(Base):
         back_populates="channel",
         cascade="all, delete-orphan"
     )
+    forum_topics = relationship(
+        "ForumTopic",
+        back_populates="channel",
+        cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index("ix_channel_groups_backup_mode", "backup_mode"),
@@ -415,5 +420,25 @@ class ChatInviteLink(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     channel = relationship("ChannelGroup", back_populates="invite_links")
+
+
+class ForumTopic(Base):
+    __tablename__ = "forum_topics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
+    thread_id: Mapped[int] = mapped_column(BigInteger)
+    name: Mapped[str] = mapped_column(String(255))
+    icon_color: Mapped[Optional[int]] = mapped_column(Integer)
+    icon_custom_emoji_id: Mapped[Optional[str]] = mapped_column(String(255))
+    is_closed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    channel = relationship("ChannelGroup", back_populates="forum_topics")
+
+    __table_args__ = (
+        Index("ix_forum_topics_channel_id", "channel_id"),
+        Index("ix_forum_topics_channel_thread", "channel_id", "thread_id", unique=True),
+    )
 
 

@@ -14,6 +14,7 @@ from backend.services.channel.auto_delete_service import AutoDeleteService
 from backend.services.channel.invite_link_service import InviteLinkService
 from backend.services.channel.night_mode_service import NightModeService
 from backend.services.channel.captcha_settings_service import CaptchaSettingsService
+from backend.services.channel.forum_topic_service import ForumTopicService
 
 
 async def get_channel_service(db: AsyncSession = Depends(get_db)) -> ChannelService:
@@ -62,3 +63,7 @@ async def get_night_mode_service(db: AsyncSession = Depends(get_db)) -> NightMod
 
 async def get_captcha_settings_service(db: AsyncSession = Depends(get_db)) -> CaptchaSettingsService:
     return CaptchaSettingsService(db)
+
+
+async def get_forum_topic_service(db: AsyncSession = Depends(get_db)) -> ForumTopicService:
+    return ForumTopicService(db)

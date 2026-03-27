@@ -7,6 +7,14 @@ interface WelcomeButton {
   url?: string;
 }
 
+export interface ForumTopic {
+  thread_id: number;
+  name: string;
+  icon_color: number | null;
+  icon_custom_emoji_id: string | null;
+  is_closed: boolean;
+}
+
 interface WelcomeSettingsState {
   enabled: boolean;
   message: string | null;
@@ -17,6 +25,8 @@ interface WelcomeSettingsState {
   loaded: boolean;
   saving: boolean;
   modalOpen: boolean;
+  topics: ForumTopic[];
+  topicsLoaded: boolean;
 }
 
 const initialState: WelcomeSettingsState = {
@@ -29,6 +39,8 @@ const initialState: WelcomeSettingsState = {
   loaded: false,
   saving: false,
   modalOpen: false,
+  topics: [],
+  topicsLoaded: false,
 };
 
 const welcomeSettingsSlice = createSlice({
@@ -61,6 +73,10 @@ const welcomeSettingsSlice = createSlice({
       state.mediaType = null;
       state.buttons = null;
     },
+    setTopics(state, action: PayloadAction<ForumTopic[]>) {
+      state.topics = action.payload;
+      state.topicsLoaded = true;
+    },
   },
 });
 
@@ -70,6 +86,7 @@ export const {
   setModalOpen,
   setSaving,
   clearMessage,
+  setTopics,
 } = welcomeSettingsSlice.actions;
 
 export default welcomeSettingsSlice.reducer;

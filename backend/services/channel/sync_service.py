@@ -17,6 +17,7 @@ from backend.services.bot import BotService
 from backend.services.bot_provider import resolve_by_token
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.channel.forum_topic_service import ForumTopicService
 
 
 class SyncService:
@@ -60,7 +61,11 @@ class SyncService:
                 raw_bot.get_chat(chat_identifier),
             )
             chat_data = await build_chat_data(raw_bot, chat, bot_model.token)
-            return await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
+            channel = await self.save_synced_channel(chat.id, chat_data, bot_id, owner_id)
+            if chat_data.get("is_forum"):
+                topic_service = ForumTopicService(self.db)
+                await topic_service.ensure_general_topic(channel.id)
+            return channel
         except TelegramForbiddenError:
             raise HTTPException(status_code=403, detail="Bot doesn't have access to this channel/group")
         except TelegramBadRequest as e:
@@ -111,6 +116,11 @@ class SyncService:
 
         await self.db.flush()
         await self.db.refresh(channel)
+
+        if channel.is_forum:
+            topic_service = ForumTopicService(self.db)
+            await topic_service.ensure_general_topic(channel.id)
+
         return channel
 
 

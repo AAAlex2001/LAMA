@@ -1,6 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/store/api';
-import { setWelcomeData, setEnabled, setSaving, clearMessage } from '../slices/welcomeSettings';
+import { setWelcomeData, setEnabled, setSaving, clearMessage, setTopics } from '../slices/welcomeSettings';
+import type { ForumTopic } from '../slices/welcomeSettings';
 
 interface WelcomeResponse {
   welcome_enabled: boolean;
@@ -100,6 +101,19 @@ export const deleteWelcomeMessageThunk = createAsyncThunk(
       return rejectWithValue(error instanceof Error ? error.message : 'Ошибка удаления');
     } finally {
       dispatch(setSaving(false));
+    }
+  },
+);
+
+export const fetchForumTopicsThunk = createAsyncThunk(
+  'welcomeSettings/fetchTopics',
+  async (channelId: number, { dispatch }) => {
+    try {
+      const data = await apiRequest<ForumTopic[]>(`/channels/${channelId}/topics`);
+      dispatch(setTopics(data));
+      return data;
+    } catch {
+      return null;
     }
   },
 );

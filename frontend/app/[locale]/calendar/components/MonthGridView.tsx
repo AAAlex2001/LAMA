@@ -110,9 +110,9 @@ export default function MonthGridView({
                     {dayDate.getDate()}
                   </span>
 
-                  {total > 0 && sc && (
+                  {total > 0 && (
                     <div className={styles.statsBlock}>
-                      {(sc.scheduled + sc.published) > 0 && (
+                      {sc && (sc.scheduled + sc.published) > 0 && (
                         <div className={styles.statsRow}>
                           <div className={styles.statItem}>
                             <CalendarDocPostIcon width={12} height={12} />
@@ -120,7 +120,7 @@ export default function MonthGridView({
                           </div>
                         </div>
                       )}
-                      {sc.draft > 0 && (
+                      {sc && sc.draft > 0 && (
                         <div className={styles.statsRow}>
                           <div className={styles.statItem}>
                             <CalendarDraftIcon width={12} height={12} />
@@ -128,11 +128,19 @@ export default function MonthGridView({
                           </div>
                         </div>
                       )}
-                      {sc.bot_messages > 0 && (
+                      {sc && sc.bot_messages > 0 && (
                         <div className={styles.statsRow}>
                           <div className={styles.statItem}>
                             <CalendarBotMessageIcon width={12} height={12} />
                             <span className={styles.statValueGray}>{sc.bot_messages}</span>
+                          </div>
+                        </div>
+                      )}
+                      {!sc && (
+                        <div className={styles.statsRow}>
+                          <div className={styles.statItem}>
+                            <CalendarDocPostIcon width={12} height={12} />
+                            <span className={styles.statValueBlue}>{total}</span>
                           </div>
                         </div>
                       )}

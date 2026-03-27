@@ -22,7 +22,9 @@ import {
 import {
   fetchWelcomeSettingsThunk,
   toggleWelcomeThunk,
+  updateWelcomeSettingsThunk,
   deleteWelcomeMessageThunk,
+  fetchForumTopicsThunk,
 } from '../../store/thunks/welcomeSettings';
 import {
   setCaptchaTimeoutSeconds,
@@ -133,6 +135,12 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
       dispatch(fetchWelcomeSettingsThunk(botId));
     }
   }, [dispatch, botId, isGroup]);
+
+  useEffect(() => {
+    if (isForum && channelId) {
+      dispatch(fetchForumTopicsThunk(channelId));
+    }
+  }, [dispatch, isForum, channelId]);
 
   useEffect(() => {
     if (error) showError(error);
@@ -257,6 +265,18 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   };
 
   const welcomeTypeSummary = WELCOME_TYPE_OPTIONS.find((o) => o.value === welcomeType)?.label || 'Сообщение в группу';
+
+  const selectedTopic = welcome.topics.find((t) => t.thread_id === (welcome.messageThreadId ?? 1));
+  const topicSummary = selectedTopic?.name || 'Общий';
+
+  const handleTopicSelect = (threadId: number) => {
+    if (!botId) return;
+    setOpenPicker(null);
+    dispatch(updateWelcomeSettingsThunk({ botId, data: { welcome_message_thread_id: threadId } }))
+      .unwrap()
+      .then(() => showSuccess('Топик обновлён'))
+      .catch(() => showError('Ошибка сохранения'));
+  };
 
   const hasWelcomeMessage = !!welcome.message || !!welcome.mediaUrl;
 
@@ -524,7 +544,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                     </div>
                   )}
 
-                  {isForum && (
+                  {isForum && welcome.topics.length > 0 && (
                     <>
                       <div
                         className={styles.pickerRow}
@@ -532,20 +552,22 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                       >
                         <span className={styles.pickerLabel}>Отправлять в топик</span>
                         <div className={styles.pickerRight}>
-                          <span className={styles.pickerValueText}>Общий</span>
+                          <span className={styles.pickerValueText}>{topicSummary}</span>
                           <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'welcomeTopic' ? styles.pickerChevronOpen : ''}`} />
                         </div>
                       </div>
                       {openPicker === 'welcomeTopic' && (
                         <div className={styles.pickerOptions}>
-                          <div className={styles.checkboxRow} onClick={() => setOpenPicker(null)}>
-                            <Checkbox
-                              variant="radio"
-                              checked={true}
-                              onChange={() => setOpenPicker(null)}
-                              label="Общий"
-                            />
-                          </div>
+                          {welcome.topics.filter((t) => !t.is_closed).map((topic) => (
+                            <div key={topic.thread_id} className={styles.checkboxRow} onClick={() => handleTopicSelect(topic.thread_id)}>
+                              <Checkbox
+                                variant="radio"
+                                checked={topic.thread_id === (welcome.messageThreadId ?? 1)}
+                                onChange={() => handleTopicSelect(topic.thread_id)}
+                                label={topic.name}
+                              />
+                            </div>
+                          ))}
                         </div>
                       )}
                     </>

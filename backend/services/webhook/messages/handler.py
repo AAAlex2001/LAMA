@@ -16,6 +16,8 @@ from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, 
 from backend.models.channels import ChannelGroup
 from backend.services.channel import ChannelAutoDeleteService
 from backend.services.channel.utils.message_utils import is_system_message
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.channel.forum_topic_service import ForumTopicService
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.messages.members import MemberProcessor
@@ -311,6 +313,8 @@ class MessageHandler:
             if message.left_chat_member:
                 await member_processor.handle_member_left(message)
 
+            await self._process_forum_topic_events(message)
+
             if text_content:
                 text_processor = TextProcessor(self.db, self.bot_model, telegram_bot)
                 await text_processor.process_text(
@@ -336,3 +340,49 @@ class MessageHandler:
         except Exception as e:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None
+
+    async def _process_forum_topic_events(self, message: Message) -> None:
+        chat_type = message.chat.type if message.chat else None
+        if chat_type not in ("group", "supergroup"):
+            return
+
+        topic_created = message.forum_topic_created
+        topic_edited = message.forum_topic_edited
+        topic_closed = message.forum_topic_closed
+        topic_reopened = message.forum_topic_reopened
+
+        if not any([topic_created, topic_edited, topic_closed, topic_reopened]):
+            return
+
+        channel = await get_channel_by_telegram_id(
+            self.db, message.chat.id, bot_id=self.bot_model.id,
+        )
+        if not channel:
+            return
+
+        service = ForumTopicService(self.db)
+        thread_id = message.message_thread_id or 0
+
+        try:
+            if topic_created:
+                await service.upsert_topic(
+                    channel_id=channel.id,
+                    thread_id=thread_id,
+                    name=topic_created.name,
+                    icon_color=topic_created.icon_color,
+                    icon_custom_emoji_id=topic_created.icon_custom_emoji_id,
+                )
+            elif topic_edited:
+                if topic_edited.name:
+                    await service.upsert_topic(
+                        channel_id=channel.id,
+                        thread_id=thread_id,
+                        name=topic_edited.name,
+                        icon_custom_emoji_id=topic_edited.icon_custom_emoji_id,
+                    )
+            elif topic_closed:
+                await service.close_topic(channel.id, thread_id)
+            elif topic_reopened:
+                await service.reopen_topic(channel.id, thread_id)
+        except Exception as e:
+            logger.error(f"Forum topic event error: {e}", exc_info=True)
