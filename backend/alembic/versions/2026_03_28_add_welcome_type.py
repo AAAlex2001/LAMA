@@ -16,8 +16,9 @@ depends_on = None
 def upgrade() -> None:
     op.add_column(
         "bots",
-        sa.Column("welcome_type", sa.String(32), nullable=False, server_default="group_message"),
+        sa.Column("welcome_type", sa.String(32), nullable=True),
     )
+    op.execute("UPDATE bots SET welcome_type = 'group_message' WHERE welcome_type IS NULL")
 
 
 def downgrade() -> None:

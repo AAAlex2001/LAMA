@@ -540,11 +540,11 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                   {openPicker === 'welcomeType' && (
                     <div className={styles.pickerOptions}>
                       {WELCOME_TYPE_OPTIONS.map((opt) => (
-                        <div key={opt.value} className={styles.checkboxRow} onClick={() => { setWelcomeType(opt.value); setOpenPicker(null); }}>
+                        <div key={opt.value} className={styles.checkboxRow} onClick={() => handleWelcomeTypeSelect(opt.value)}>
                           <Checkbox
                             variant="radio"
-                            checked={opt.value === welcomeType}
-                            onChange={() => { setWelcomeType(opt.value); setOpenPicker(null); }}
+                            checked={opt.value === welcome.welcomeType}
+                            onChange={() => handleWelcomeTypeSelect(opt.value)}
                             label={opt.label}
                           />
                         </div>
@@ -552,7 +552,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                     </div>
                   )}
 
-                  {isForum && welcomeType === 'group_message' && welcome.topics.length > 0 && (
+                  {isForum && welcome.welcomeType === 'group_message' && welcome.topics.length > 0 && (
                     <>
                       <div
                         className={styles.pickerRow}

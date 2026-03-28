@@ -53,7 +53,7 @@ class WelcomeSettingsResponse(BaseModel):
     welcome_media_type: Optional[MessageType]
     welcome_buttons: Optional[Dict[str, Any]]
     welcome_message_thread_id: Optional[int]
-    welcome_type: str
+    welcome_type: str = 'group_message'
     join_captcha_enabled: bool  # DEPRECATED
     captcha_mode: CaptchaMode
     captcha_timeout_seconds: int

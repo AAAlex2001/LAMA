@@ -64,6 +64,7 @@ class ModerationHandler:
                 )
 
                 if is_flood and flood_action:
+                    await self.db.commit()
                     await self.apply_action(message, flood_action, flood_mute)
                     return
 
@@ -126,6 +127,19 @@ class ModerationHandler:
                 except asyncio.TimeoutError:
                     pass
 
+            if message.from_user:
+                try:
+                    if action == ActionType.MUTE:
+                        await self.mute_user(bot, message, mute_duration)
+                    elif action == ActionType.KICK:
+                        await self.kick_user(bot, message)
+                    elif action == ActionType.BAN:
+                        await self.ban_user(bot, message)
+                    elif action == ActionType.UNMUTE:
+                        await self.unmute_user(bot, message)
+                except TelegramBadRequest as e:
+                    logger.debug("Cannot apply action to user=%s: %s", message.from_user.id, e)
+
             try:
                 await asyncio.wait_for(
                     bot.delete_message(
@@ -136,21 +150,6 @@ class ModerationHandler:
                 )
             except (TelegramAPIError, asyncio.TimeoutError) as e:
                 logger.debug(f"Failed to delete message: {e}")
-
-            if not message.from_user:
-                return
-
-            try:
-                if action == ActionType.MUTE:
-                    await self.mute_user(bot, message, mute_duration)
-                elif action == ActionType.KICK:
-                    await self.kick_user(bot, message)
-                elif action == ActionType.BAN:
-                    await self.ban_user(bot, message)
-                elif action == ActionType.UNMUTE:
-                    await self.unmute_user(bot, message)
-            except TelegramBadRequest as e:
-                logger.debug("Cannot apply action to user=%s: %s", message.from_user.id, e)
 
         except asyncio.TimeoutError:
             uid = message.from_user.id if message.from_user else 'unknown'
