@@ -1,0 +1,114 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.infoMessagesSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.infoMessagesHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 0;
+  width: 100%;
+}
+
+.infoMessagesLabel {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  flex: 1;
+}
+
+.infoMessagesContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+.messageCard {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px 12px;
+  gap: 10px;
+  width: 100%;
+  background: #F0F4FA;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.messageText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.messageActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.messageActionBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  color: #B0B4B8;
+  padding: 0;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3B82F6;
+  }
+}
+
+.messageDeleteBtn {
+  composes: messageActionBtn;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: #EF4444;
+  }
+}
+
+.addMessageBtn {
+  width: 100%;
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 8px !important;
+  color: #3B82F6 !important;
+  gap: 10px;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.15) !important;
+  }
+}
+
+.createBtn {
+  width: 100%;
+}

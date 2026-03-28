@@ -188,6 +188,9 @@ class ChannelGroup(Base):
     captcha_message_fail: Mapped[Optional[str]] = mapped_column(Text)
     captcha_message_success: Mapped[Optional[str]] = mapped_column(Text)
 
+    # Информационные сообщения
+    info_messages_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+
     # Метаданные
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
@@ -214,6 +217,11 @@ class ChannelGroup(Base):
     )
     invite_links = relationship(
         "ChatInviteLink",
+        back_populates="channel",
+        cascade="all, delete-orphan"
+    )
+    info_messages = relationship(
+        "InformationalMessage",
         back_populates="channel",
         cascade="all, delete-orphan"
     )
@@ -440,5 +448,22 @@ class ForumTopic(Base):
         Index("ix_forum_topics_channel_id", "channel_id"),
         Index("ix_forum_topics_channel_thread", "channel_id", "thread_id", unique=True),
     )
+
+
+class InformationalMessage(Base):
+    __tablename__ = "informational_messages"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(Text, default="")
+    media_url: Mapped[Optional[str]] = mapped_column(Text)
+    media_type: Mapped[Optional[str]] = mapped_column(String(32))
+    inline_keyboard: Mapped[Optional[list]] = mapped_column(JSON)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    share_token: Mapped[Optional[str]] = mapped_column(String(64), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    channel = relationship("ChannelGroup", back_populates="info_messages")
 
 

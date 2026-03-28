@@ -11,6 +11,7 @@ const SETTINGS_TABS = [
   { id: 'settings', label: 'Общая информация' },
   { id: 'backup', label: 'Резервное копирование' },
   { id: 'moderation', label: 'Модерация' },
+  { id: 'automation', label: 'Автоматизация' },
 ];
 
 interface SettingsHeaderProps {

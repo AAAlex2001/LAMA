@@ -171,6 +171,9 @@ class ChannelGroupResponse(BaseModel):
     # Media block
     block_media_types: Optional[list] = None
 
+    # Informational messages
+    info_messages_enabled: bool = False
+
     # Metadata
     is_active: bool
     last_sync_at: Optional[datetime] = None

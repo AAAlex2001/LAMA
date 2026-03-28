@@ -16,6 +16,7 @@ import EditChannelModal from './components/EditChannelModal';
 import BotsSection from './components/BotsSection';
 import BackupSection from './components/BackupSection';
 import ModerationSection from './components/ModerationSection';
+import AutomationSection from './components/AutomationSection';
 import DeleteButton from './components/DeleteButton';
 import styles from './styles.module.scss';
 
@@ -93,6 +94,10 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
 
         {settingsTab === 'moderation' && (
           <ModerationSection channel={channel} />
+        )}
+
+        {settingsTab === 'automation' && (
+          <AutomationSection channel={channel} />
         )}
       </div>
 

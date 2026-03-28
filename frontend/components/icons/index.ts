@@ -74,6 +74,7 @@ export { default as CalendarBotMessageIcon } from './calendar-bot-message-icon';
 export { default as CalendarDocPostIcon } from './calendar-doc-post-icon';
 export { default as CalendarDraftIcon } from './calendar-draft-icon';
 export { default as MathOperationsIcon } from './math-operations-icon';
+export { default as ShortcodesIcon } from './shortcodes-icon';
 export { default as BackupOutlineIcon } from './backup-outline-icon';
 export { default as ChartIcon } from './chart-icon';
 export { default as BanIcon } from './ban-icon';

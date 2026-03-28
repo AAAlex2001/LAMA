@@ -51,6 +51,14 @@ from backend.schemas.channels.captcha import CaptchaSettingsUpdate, CaptchaSetti
 
 from backend.schemas.channels.forum_topics import ForumTopicResponse
 
+from backend.schemas.channels.info_messages import (
+    InfoMessageCreate,
+    InfoMessageUpdate,
+    InfoMessageResponse,
+    InfoMessagesListResponse,
+    InfoMessagesToggle,
+)
+
 __all__ = [
     "ChannelType",
     "BackupMode",
@@ -90,4 +98,9 @@ __all__ = [
     "CaptchaSettingsUpdate",
     "CaptchaSettingsResponse",
     "ForumTopicResponse",
+    "InfoMessageCreate",
+    "InfoMessageUpdate",
+    "InfoMessageResponse",
+    "InfoMessagesListResponse",
+    "InfoMessagesToggle",
 ]

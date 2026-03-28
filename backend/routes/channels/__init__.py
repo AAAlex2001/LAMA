@@ -8,6 +8,7 @@ from backend.routes.channels.telegram_settings import router as telegram_setting
 from backend.routes.channels.invite_links import router as invite_links_router
 from backend.routes.channels.crud import router as crud_router
 from backend.routes.channels.forum_topics import router as forum_topics_router
+from backend.routes.channels.info_messages import router as info_messages_router
 
 router = APIRouter(prefix="/channels", tags=["channels"])
 
@@ -19,3 +20,4 @@ router.include_router(telegram_settings_router)
 router.include_router(invite_links_router)
 router.include_router(crud_router)
 router.include_router(forum_topics_router)
+router.include_router(info_messages_router)

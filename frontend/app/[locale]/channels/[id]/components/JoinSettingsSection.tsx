@@ -308,6 +308,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
       {open && (
         <div className={styles.content}>
+          <div className={styles.leftGroup}>
           <div className={styles.column}>
             <div className={styles.toggleRow}>
               <span className={styles.toggleLabel}>Одобрять заявки на вступление</span>
@@ -513,6 +514,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
               />
             </div>
           )}
+          </div>
 
           {isGroup && (
             <div className={styles.column}>
