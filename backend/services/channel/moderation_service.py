@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, ChannelModerationRule
@@ -74,34 +74,31 @@ class ModerationService:
         return True
 
     async def check_message(self, channel_id: int, text: str) -> Optional[ChannelModerationRule]:
-        """Проверить сообщение на запрещённые фразы (фильтрация в SQL)."""
-        query = (
-            select(ChannelModerationRule)
-            .where(
-                ChannelModerationRule.channel_id == channel_id,
-                func.position(func.lower(ChannelModerationRule.phrase), func.lower(text)) > 0,
-            )
-            .limit(1)
-        )
+        """Проверить сообщение на запрещённые фразы."""
+        query = select(ChannelModerationRule).where(ChannelModerationRule.channel_id == channel_id)
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        lowered = text.lower()
+        for rule in result.scalars():
+            if rule.phrase.lower() in lowered:
+                return rule
+        return None
 
     async def check_message_by_telegram_id(self, telegram_id: int, text: str) -> Optional[ChannelModerationRule]:
-        """Проверить сообщение по Telegram ID канала (фильтрация в SQL)."""
+        """Проверить сообщение по Telegram ID канала."""
         if not text:
             return None
 
         query = (
             select(ChannelModerationRule)
             .join(ChannelGroup)
-            .where(
-                ChannelGroup.telegram_id == telegram_id,
-                func.position(func.lower(ChannelModerationRule.phrase), func.lower(text)) > 0,
-            )
-            .limit(1)
+            .where(ChannelGroup.telegram_id == telegram_id)
         )
         result = await self.db.execute(query)
-        return result.scalar_one_or_none()
+        lowered = text.lower()
+        for rule in result.scalars():
+            if rule.phrase.lower() in lowered:
+                return rule
+        return None
 
     async def toggle_banned_words(self, channel_id: int, enabled: bool, owner_id: int) -> ChannelGroup:
         """Включить/выключить запрещённые слова."""

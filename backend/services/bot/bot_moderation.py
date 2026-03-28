@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -216,7 +215,12 @@ class BotModerationService:
         if user.username:
             user_info += f" (@{user.username})"
 
-        chat_link = f"https://t.me/c/{str(message.chat.id)[4:]}/{message.message_id}"
+        chat_id_str = str(message.chat.id)[4:]
+        thread_id = getattr(message, "message_thread_id", None)
+        if thread_id and thread_id != message.message_id:
+            chat_link = f"https://t.me/c/{chat_id_str}/{thread_id}/{message.message_id}"
+        else:
+            chat_link = f"https://t.me/c/{chat_id_str}/{message.message_id}"
         chat_title = message.chat.title or "Unknown Group"
 
         lines = [
@@ -250,10 +254,10 @@ class BotModerationService:
     def build_admin_buttons(self, message: Message):
         """Построить кнопки для уведомления /admin."""
         replied = message.reply_to_message
-        if not replied:
-            raise HTTPException(status_code=404, detail="Auto reply not found")
+        if not replied or not replied.from_user:
+            return None
 
-        replied_user_id = replied.from_user.id if replied.from_user else 0
+        replied_user_id = replied.from_user.id
         return build_keyboard([[
             {"text": "Забанить", "callback_data": f"admincall_ban_{message.chat.id}_{replied_user_id}_{replied.message_id}"},
             {"text": "Удалить", "callback_data": f"admincall_del_{message.chat.id}_{replied_user_id}_{replied.message_id}"},
