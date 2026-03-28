@@ -1,11 +1,11 @@
 from fastapi import HTTPException
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 
 from sqlalchemy import select, func, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.bots import Bot as BotModel, AutoReply
+from backend.models.bots import Bot as BotModel, AutoReply, AutoReplyLog
 
 
 class BotAutoReplyService:
@@ -15,13 +15,14 @@ class BotAutoReplyService:
         self.db = db
 
     async def create(
-        self, bot_id: int, data, owner_id: Optional[int] = None,
+        self, bot_id: int, data, owner_id: Optional[int] = None, channel_id: Optional[int] = None,
     ) -> AutoReply:
         """Создать автоответ."""
         await self.ensure_bot_exists(bot_id, owner_id)
 
         auto_reply = AutoReply(
             bot_id=bot_id,
+            channel_id=channel_id,
             keywords=data.keywords,
             response_text=data.response_text,
             response_media_url=data.response_media_url,
@@ -58,6 +59,7 @@ class BotAutoReplyService:
         skip: int = 0,
         limit: int = 20,
         search: Optional[str] = None,
+        channel_id: Optional[int] = None,
     ) -> Tuple[List[AutoReply], int]:
         """Получить список автоответов бота с пагинацией и поиском."""
         query = select(AutoReply).where(AutoReply.bot_id == bot_id)
@@ -65,6 +67,8 @@ class BotAutoReplyService:
             query = query.join(BotModel, AutoReply.bot_id == BotModel.id).where(
                 BotModel.owner_id == owner_id,
             )
+        if channel_id is not None:
+            query = query.where(AutoReply.channel_id == channel_id)
         if is_active is not None:
             query = query.where(AutoReply.is_active == is_active)
         if search:
@@ -105,13 +109,21 @@ class BotAutoReplyService:
         return True
 
     async def find_by_text(
-        self, bot_id: int, text: str, chat_type: Optional[str] = None,
+        self,
+        bot_id: int,
+        text: str,
+        chat_type: Optional[str] = None,
+        channel_id: Optional[int] = None,
+        chat_id: Optional[int] = None,
+        user_id: Optional[int] = None,
     ) -> Optional[AutoReply]:
-        """Найти автоответ по тексту — streaming без загрузки всех в память."""
+        """Найти автоответ по тексту с учётом частотного ограничения."""
         query = select(AutoReply).where(
             AutoReply.bot_id == bot_id,
             AutoReply.is_active == True,
         )
+        if channel_id is not None:
+            query = query.where(AutoReply.channel_id == channel_id)
         query = self.apply_scope_filter(query, chat_type)
         result = await self.db.execute(query)
 
@@ -119,8 +131,40 @@ class BotAutoReplyService:
         for reply in result.scalars():
             for keyword in reply.keywords:
                 if keyword.lower() in text_lower:
+                    if reply.frequency_limit_minutes and chat_id is not None:
+                        allowed = await self._check_frequency(reply, chat_id, user_id)
+                        if not allowed:
+                            break
+                    if chat_id is not None:
+                        await self._log_trigger(reply.id, chat_id, user_id)
                     return reply
         return None
+
+    async def _check_frequency(
+        self, reply: AutoReply, chat_id: int, user_id: Optional[int],
+    ) -> bool:
+        """True = разрешено отправить. False = заблокировано частотным лимитом."""
+        cutoff = datetime.now(timezone.utc) - timedelta(minutes=reply.frequency_limit_minutes)
+        query = select(func.count()).select_from(AutoReplyLog).where(
+            AutoReplyLog.auto_reply_id == reply.id,
+            AutoReplyLog.triggered_at >= cutoff,
+        )
+        if reply.frequency_limit_type == "per_user" and user_id is not None:
+            query = query.where(AutoReplyLog.user_id == user_id)
+        else:
+            query = query.where(AutoReplyLog.chat_id == chat_id)
+
+        count = (await self.db.execute(query)).scalar() or 0
+        return count == 0
+
+    async def _log_trigger(self, auto_reply_id: int, chat_id: int, user_id: Optional[int]) -> None:
+        log = AutoReplyLog(
+            auto_reply_id=auto_reply_id,
+            chat_id=chat_id,
+            user_id=user_id,
+        )
+        self.db.add(log)
+        await self.db.flush()
 
     def apply_scope_filter(self, query, chat_type: Optional[str]):
         """Применить фильтр по scope для типа чата."""

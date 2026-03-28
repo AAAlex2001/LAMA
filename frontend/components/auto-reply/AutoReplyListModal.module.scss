@@ -87,6 +87,7 @@
   flex-direction: column;
   gap: 16px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
   max-height: 75vh;
 }
@@ -127,6 +128,8 @@
   border: 1px solid rgba(59, 130, 246, 0.1);
   border-radius: 8px;
   box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
 }
 
 /* Card info block */

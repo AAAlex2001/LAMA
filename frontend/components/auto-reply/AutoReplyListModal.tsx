@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useMemo, useState } from 'react';
+import { FC, useEffect, useRef, useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button } from '@/components/new-button';
@@ -9,29 +9,29 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useAutoReplyDispatch, useAutoReplySelector } from './store';
 import { setListModalOpen } from './store/slices/list';
 import { openCreate, openEdit } from './store/slices/form';
-import { deleteAutoReplyThunk } from './store/thunks';
+import { deleteAutoReplyThunk, toggleAutoReplyThunk, fetchAutoRepliesThunk } from './store/thunks';
 import styles from './AutoReplyListModal.module.scss';
 
 interface AutoReplyListModalProps {
   botId: number;
+  channelId?: number;
 }
 
-const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
+const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) => {
   const dispatch = useAutoReplyDispatch();
   const { showSuccess, showError } = useNotifications();
   const { items, listModalOpen } = useAutoReplySelector((s) => s.list);
   const [search, setSearch] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return items;
-    const q = search.toLowerCase();
-    return items.filter(
-      (r) =>
-        r.keywords.some((k) => k.toLowerCase().includes(q)) ||
-        r.response_text.toLowerCase().includes(q),
-    );
-  }, [items, search]);
+  useEffect(() => {
+    if (!listModalOpen) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      dispatch(fetchAutoRepliesThunk({ botId, channelId, search: search.trim() || undefined }));
+    }, 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [search, listModalOpen, botId, channelId, dispatch]);
 
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
 
@@ -39,7 +39,6 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
     try {
       await dispatch(deleteAutoReplyThunk({ botId, replyId: id })).unwrap();
       showSuccess('Автоответ удалён');
-      setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
     } catch {
       showError('Ошибка удаления');
     }
@@ -56,19 +55,19 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
     }));
   };
 
-  const handleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const s = new Set(prev);
-      if (s.has(id)) s.delete(id); else s.add(id);
-      return s;
-    });
+  const handleSelect = async (item: typeof items[0]) => {
+    try {
+      await dispatch(toggleAutoReplyThunk({ botId, replyId: item.id, isActive: !item.is_active })).unwrap();
+    } catch {
+      showError('Ошибка изменения статуса');
+    }
   };
 
   const handleCreate = () => dispatch(openCreate());
 
   const handleClose = (v: boolean) => {
     dispatch(setListModalOpen(v));
-    if (!v) setSelectedIds(new Set());
+    if (!v) setSearch('');
   };
 
   return (
@@ -91,15 +90,14 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
         </ModalBase.Header>
 
         <ModalBase.Body className={styles.body}>
-          {filtered.length === 0 ? (
+          {items.length === 0 ? (
             <div className={styles.empty}>
               {search.trim() ? 'Ничего не найдено' : 'Нет автоответов. Создайте первый!'}
             </div>
           ) : (
             <div className={styles.grid}>
-              {filtered.map((item) => {
-                const isSelected = selectedIds.has(item.id);
-                const isPhoto = item.response_media_type === 'PHOTO' || (item.response_media_url && item.response_media_type !== 'VIDEO');
+              {items.map((item) => {
+                const isSelected = item.is_active;
                 const isVideo = item.response_media_type === 'VIDEO';
                 const hasMedia = !!(item.response_media_url || (item.response_media_urls && item.response_media_urls.length > 0));
                 const hasButtons = !!(item.response_buttons && Object.keys(item.response_buttons).length > 0);
@@ -107,7 +105,6 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
 
                 return (
                   <div key={item.id} className={styles.card}>
-                    {/* Card content */}
                     <div className={styles.cardBody}>
                       <div className={styles.cardRow}>
                         <span className={styles.cardLabel}>Триггер:</span>
@@ -119,7 +116,6 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
                       </div>
                     </div>
 
-                    {/* Actions row */}
                     <div className={`${styles.cardActions} ${hasIcons ? styles.cardActionsSpread : ''}`}>
                       {hasIcons && (
                         <div className={styles.cardIcons}>
@@ -154,7 +150,7 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId }) => {
                           intent="gradient"
                           size="transparent"
                           className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ''}`}
-                          onClick={() => handleSelect(item.id)}
+                          onClick={() => handleSelect(item)}
                         >
                           {isSelected ? 'Выбран' : 'Выбрать'}
                         </Button>

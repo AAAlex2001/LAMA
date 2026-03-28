@@ -8,7 +8,6 @@ import {
   useSelector,
   createDispatchHook,
   createSelectorHook,
-  createStoreHook,
 } from 'react-redux';
 import { createContext, useEffect, FC, ReactNode, useRef } from 'react';
 import listReducer from './slices/list';
@@ -37,10 +36,11 @@ export const useAutoReplySelector: TypedUseSelectorHook<AutoReplyState> =
 
 interface AutoReplyProviderProps {
   botId: number;
+  channelId?: number;
   children: ReactNode;
 }
 
-export const AutoReplyProvider: FC<AutoReplyProviderProps> = ({ botId, children }) => {
+export const AutoReplyProvider: FC<AutoReplyProviderProps> = ({ botId, channelId, children }) => {
   const storeRef = useRef<AutoReplyStore | null>(null);
   if (!storeRef.current) {
     storeRef.current = createAutoReplyStore();
@@ -48,9 +48,9 @@ export const AutoReplyProvider: FC<AutoReplyProviderProps> = ({ botId, children 
 
   useEffect(() => {
     if (botId && storeRef.current) {
-      storeRef.current.dispatch(fetchAutoRepliesThunk(botId));
+      storeRef.current.dispatch(fetchAutoRepliesThunk({ botId, channelId }));
     }
-  }, [botId]);
+  }, [botId, channelId]);
 
   return (
     <Provider store={storeRef.current} context={AutoReplyContext as any}>

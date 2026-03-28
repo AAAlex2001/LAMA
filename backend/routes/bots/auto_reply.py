@@ -21,9 +21,9 @@ async def create_auto_reply(
     current_user: User = Depends(get_current_user),
 ):
     """Создать автоответ на ключевые слова."""
-    bot = await bot_service.get(bot_id, owner_id=current_user.id)
-
-    return await auto_reply_service.create(bot_id, data, owner_id=current_user.id)
+    await bot_service.get(bot_id, owner_id=current_user.id)
+    channel_id = data.channel_id
+    return await auto_reply_service.create(bot_id, data, owner_id=current_user.id, channel_id=channel_id)
 
 
 @router.get("/{bot_id}/auto-replies", response_model=AutoReplyListResponse)
@@ -31,8 +31,9 @@ async def get_auto_replies(
     bot_id: int,
     is_active: Optional[bool] = None,
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(100, ge=1, le=200),
     search: Optional[str] = Query(None, max_length=255),
+    channel_id: Optional[int] = Query(None),
     bot_service: BotCrudService = Depends(get_bot_service),
     auto_reply_service: BotAutoReplyService = Depends(get_auto_reply_service),
     current_user: User = Depends(get_current_user),
@@ -41,7 +42,7 @@ async def get_auto_replies(
     await bot_service.get(bot_id, owner_id=current_user.id)
     replies, total = await auto_reply_service.get_list(
         bot_id, is_active, owner_id=current_user.id,
-        skip=skip, limit=limit, search=search,
+        skip=skip, limit=limit, search=search, channel_id=channel_id,
     )
     return AutoReplyListResponse(items=replies, total=total)
 

@@ -180,21 +180,21 @@
 }
 
 .keywordDeleteBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 0;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 6px !important;
+  padding: 0 !important;
   flex-shrink: 0;
-  color: #B0B4B8;
+  color: #B0B4B8 !important;
+
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 
   &:hover {
-    color: #EF4444;
+    color: #EF4444 !important;
   }
 }
 

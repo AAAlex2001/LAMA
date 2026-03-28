@@ -202,10 +202,14 @@ class TextProcessor:
                 logger.error(f"Failed to create inbox event for trigger execution: {e}", exc_info=True)
 
         auto_reply_service = AutoReplyService(self.db)
+        channel_obj = await self.resolve_channel(message.chat.id)
         auto_reply = await auto_reply_service.find_by_text(
             self.bot_model.id,
             text_content,
-            chat_type=chat_type
+            chat_type=chat_type,
+            channel_id=channel_obj.id if channel_obj else None,
+            chat_id=message.chat.id,
+            user_id=message.from_user.id if message.from_user else None,
         )
 
         logger.info(

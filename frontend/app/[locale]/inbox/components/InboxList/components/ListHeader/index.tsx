@@ -9,7 +9,6 @@ import styles from "./styles.module.scss";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
 import LinkInvitesModal, { InvitationLink } from "../../../LinkInvitesModal";
 import CreateInviteLinkModal from "../../../CreateInviteLinkModal";
-import { AutoReplyProvider, CreateAutoReplyModal } from '@/components/auto-reply';
 import CreateTriggersModal from "../../../CreateTriggersModal";
 import CreateCommandModal from "../../../CreateCommandModal";
 import AutomatizationModal from "../../../AutomatizationModal";
@@ -45,7 +44,6 @@ const ListHeader: FC<ListHeaderProps> = ({
   isSelectedAll,
   checkedItems,
   onBulkAction,
-  botId,
   automationSubFilter,
   onAutomationSubFilterChange,
   moderationSubFilter,
@@ -54,7 +52,6 @@ const ListHeader: FC<ListHeaderProps> = ({
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState<InvitationLink | null>(null);
-  const [isAutoReplyModalOpen, setIsAutoReplyModalOpen] = useState(false);
   const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
   const [isCommandModalOpen, setIsCommandModalOpen] = useState(false);
   const [isAutomatizationModalOpen, setIsAutomatizationModalOpen] = useState(false);
@@ -167,9 +164,9 @@ const ListHeader: FC<ListHeaderProps> = ({
                   </div>
                 )
               }
-              <div className={styles.controls}>    
-                <Button 
-                  variant="outline" 
+              <div className={styles.controls}>
+                <Button
+                  variant="outline"
                   intent={isSelectedAll ? "primary" : "neutral"}
                   size="sm"
                   onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
@@ -177,10 +174,10 @@ const ListHeader: FC<ListHeaderProps> = ({
                 >
                   <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   intent={isChecking ? "primary" : "neutral"}
-                  size="sm"  
+                  size="sm"
                   onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
                   className={styles.controlButton}
                 >
@@ -192,9 +189,9 @@ const ListHeader: FC<ListHeaderProps> = ({
           {isChecking && (
             <MobileWrapper>
               <div className={styles.selectedItemsMobile}>
-                <div className={styles.controls}>    
-                  <Button 
-                    variant="outline" 
+                <div className={styles.controls}>
+                  <Button
+                    variant="outline"
                     intent={isSelectedAll ? "primary" : "neutral"}
                     size="sm"
                     onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
@@ -202,10 +199,10 @@ const ListHeader: FC<ListHeaderProps> = ({
                   >
                     <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     intent={isChecking ? "primary" : "neutral"}
-                    size="sm"  
+                    size="sm"
                     onClick={() => selectionDispatch({ type: "setMode", checking: false })}
                     className={styles.controlButton}
                   >
@@ -228,7 +225,7 @@ const ListHeader: FC<ListHeaderProps> = ({
                 </Button>
                 <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
                   Заблокировать
-                </Button> 
+                </Button>
                 <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
                   <span className={buttonStyles.label}>Разблокировать</span>
                 </Button>
@@ -242,8 +239,8 @@ const ListHeader: FC<ListHeaderProps> = ({
         <>
           <div className={`${styles.headerWrapper} ${!isChecking ? styles.mobileHide : styles.mobileFlex}`}></div>
           <DesktopWrapper>
-            <LinkInvitesModal 
-              isOpen={isLinksModalOpen} 
+            <LinkInvitesModal
+              isOpen={isLinksModalOpen}
               onOpenChange={setIsLinksModalOpen}
               onEditLink={(link) => {
                 setEditingInvite(link);
@@ -257,16 +254,16 @@ const ListHeader: FC<ListHeaderProps> = ({
                 onFilterChange={handleModerationFilterChange}
               />
               <div className={styles.controls}>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   intent="gradient"
                   size="md"
                   onClick={() => setIsLinksModalOpen(true)}
                 >
                   <span className={buttonStyles.label}>Созданные ссылки-приглашения</span>
                 </Button>
-                <Button 
-                  variant="fill" 
+                <Button
+                  variant="fill"
                   intent="gradient"
                   size="md"
                   onClick={() => {
@@ -280,8 +277,8 @@ const ListHeader: FC<ListHeaderProps> = ({
             </div>
           </DesktopWrapper>
           <MobileWrapper>
-            <LinkInvitesModal 
-              isOpen={isLinksModalOpen} 
+            <LinkInvitesModal
+              isOpen={isLinksModalOpen}
               onOpenChange={setIsLinksModalOpen}
               onCreateLink={() => {
                 setEditingInvite(null);
@@ -296,12 +293,12 @@ const ListHeader: FC<ListHeaderProps> = ({
               <FilterTabs
                 options={filterOptionsModeration}
                 selectedFilter={selectedModerationSubFilter}
-                onFilterChange={handleModerationFilterChange} 
+                onFilterChange={handleModerationFilterChange}
                 className={styles.filterTabsMobile}
               />
               <div className={styles.controlsMobile}>
-                <Button 
-                  variant="fill" 
+                <Button
+                  variant="fill"
                   intent="gradient"
                   size="lg"
                   style={{ width: '100%' }}
@@ -312,8 +309,8 @@ const ListHeader: FC<ListHeaderProps> = ({
               </div>
             </div>
           </MobileWrapper>
-          <CreateInviteLinkModal 
-            isOpen={isCreateInviteModalOpen} 
+          <CreateInviteLinkModal
+            isOpen={isCreateInviteModalOpen}
             onCreateLink={() => {}}
             onOpenChange={(open) => {
               setIsCreateInviteModalOpen(open);
@@ -340,26 +337,17 @@ const ListHeader: FC<ListHeaderProps> = ({
                   selectedFilter={selectedAutomationSubFilter}
                   onFilterChange={handleAutomationFilterChange}
                 />
-              <div className={styles.controls}>    
+              <div className={styles.controls}>
                 <Button
                   variant="fill"
-                  intent="gradient"
-                  size="md"
-                  onClick={() => setIsAutoReplyModalOpen(true)}
-                  disabled={!botId}
-                >
-                  <span className={buttonStyles.label}>Создать автоответ</span>
-                </Button>
-                <Button
-                  variant="fill" 
                   intent="gradient"
                   size="md"
                   onClick={() => setIsTriggerModalOpen(true)}
                 >
                   <span className={buttonStyles.label}>Создать триггер</span>
                 </Button>
-                <Button 
-                  variant="fill" 
+                <Button
+                  variant="fill"
                   intent="gradient"
                   size="md"
                   onClick={() => setIsCommandModalOpen(true)}
@@ -371,9 +359,9 @@ const ListHeader: FC<ListHeaderProps> = ({
           </DesktopWrapper>
           <MobileWrapper>
             <div className={`${styles.moderationWrapperMobile} ${styles.mobileFlex}`}>
-              <div className={styles.controlsMobile}>    
-                <Button 
-                  variant="fill" 
+              <div className={styles.controlsMobile}>
+                <Button
+                  variant="fill"
                   intent="gradient"
                   size="lg"
                   style={{ width: '100%' }}
@@ -395,19 +383,10 @@ const ListHeader: FC<ListHeaderProps> = ({
           <AutomatizationModal
             isOpen={isAutomatizationModalOpen}
             onOpenChange={setIsAutomatizationModalOpen}
-            onOpenAutoReply={() => setIsAutoReplyModalOpen(true)}
+            onOpenAutoReply={() => {}}
             onOpenTrigger={() => setIsTriggerModalOpen(true)}
             onOpenCommand={() => setIsCommandModalOpen(true)}
           />
-          {botId && (
-            <AutoReplyProvider botId={botId}>
-              <CreateAutoReplyModal
-                botId={botId}
-                isOpen={isAutoReplyModalOpen}
-                onOpenChange={setIsAutoReplyModalOpen}
-              />
-            </AutoReplyProvider>
-          )}
           <CreateTriggersModal
             isOpen={isTriggerModalOpen}
             onOpenChange={setIsTriggerModalOpen}
@@ -420,9 +399,9 @@ const ListHeader: FC<ListHeaderProps> = ({
       )
     default:
       return (
-        <div className={styles.controls}>    
-          <Button 
-            variant="outline" 
+        <div className={styles.controls}>
+          <Button
+            variant="outline"
             intent="neutral"
             size="sm"
             onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
@@ -430,10 +409,10 @@ const ListHeader: FC<ListHeaderProps> = ({
           >
             <span>Выбрать все</span>
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             intent={isChecking ? "gradient" : "neutral"}
-            size="sm"  
+            size="sm"
             onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
             className={styles.controlButton}
           >

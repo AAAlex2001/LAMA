@@ -17,10 +17,14 @@ interface AutoReplyListResponse {
 
 export const fetchAutoRepliesThunk = createAsyncThunk(
   'autoReply/fetch',
-  async (botId: number, { dispatch }) => {
+  async ({ botId, channelId, search }: { botId: number; channelId?: number; search?: string }, { dispatch }) => {
     dispatch(setLoading(true));
     try {
-      const data = await apiRequest<AutoReplyListResponse>(`/bots/${botId}/auto-replies`);
+      const params = new URLSearchParams();
+      params.set('limit', '200');
+      if (channelId) params.set('channel_id', String(channelId));
+      if (search?.trim()) params.set('search', search.trim());
+      const data = await apiRequest<AutoReplyListResponse>(`/bots/${botId}/auto-replies?${params}`);
       dispatch(setItems(data.items || []));
       return data.items;
     } catch {
@@ -34,14 +38,15 @@ export const fetchAutoRepliesThunk = createAsyncThunk(
 export const createAutoReplyThunk = createAsyncThunk(
   'autoReply/create',
   async (
-    { botId, data }: { botId: number; data: Record<string, unknown> },
+    { botId, channelId, data }: { botId: number; channelId?: number; data: Record<string, unknown> },
     { dispatch, rejectWithValue },
   ) => {
     dispatch(setIsSubmitting(true));
     try {
+      const body = channelId ? { ...data, channel_id: channelId } : data;
       const reply = await apiRequest<AutoReply>(`/bots/${botId}/auto-replies`, {
         method: 'POST',
-        body: JSON.stringify(data),
+        body: JSON.stringify(body),
       });
       dispatch(addItem(reply));
       dispatch(close());

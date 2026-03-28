@@ -40,6 +40,7 @@ import styles from './CreateAutoReplyModal.module.scss';
 
 interface CreateAutoReplyModalProps {
   botId: number;
+  channelId?: number;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -72,7 +73,7 @@ const PREVIEW_REPLACEMENTS: Record<string, string> = {
   '{user.id}': '123456',
   '{bot.first_name}': 'MyBot',
   '{chat.title}': 'Название чата',
-  '{date}': '28.03.2026',
+  '{date}': '29.03.2026',
   '{time}': '12:00',
 };
 
@@ -83,7 +84,7 @@ function renderPreview(text: string): string {
   );
 }
 
-const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: externalOpen, onOpenChange }) => {
+const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId, isOpen: externalOpen, onOpenChange }) => {
   const dispatch = useAutoReplyDispatch();
   const { showSuccess, showError } = useNotifications();
   const form = useAutoReplySelector((s) => s.form);
@@ -92,7 +93,6 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
   const [newKeyword, setNewKeyword] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTooltipVisible, setAiTooltipVisible] = useState(false);
-  // Synonyms are never cleared on new search — user dismisses manually
   const [synonymSuggestions, setSynonymSuggestions] = useState<string[]>([]);
   const [synonymsForWord, setSynonymsForWord] = useState('');
   const [frequencyPickerOpen, setFrequencyPickerOpen] = useState(false);
@@ -125,14 +125,15 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
   const canAddMedia = limitedMediaFiles.length < MAX_MEDIA;
 
   const isEditing = form.editingId !== null;
-  const validKeywordIndices = form.keywords
-    .map((kw, i) => ({ kw, i }))
-    .filter(({ kw }) => kw.trim())
-    .map(({ i }) => i);
 
-  const half = Math.ceil(validKeywordIndices.length / 2);
-  const leftIndices = validKeywordIndices.slice(0, half);
-  const rightIndices = validKeywordIndices.slice(half);
+  // All non-empty keywords with their indices
+  const validKeywords = form.keywords
+    .map((kw, i) => ({ kw, i }))
+    .filter(({ kw }) => kw.trim());
+
+  const half = Math.ceil(validKeywords.length / 2);
+  const leftKeywords = validKeywords.slice(0, half);
+  const rightKeywords = validKeywords.slice(half);
 
   const handleAddKeyword = () => {
     const trimmed = newKeyword.trim();
@@ -152,7 +153,6 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
     const word = newKeyword.trim();
     if (!word) return;
     setAiLoading(true);
-    // Do NOT clear previous synonyms — update after new ones arrive
     setSynonymsForWord(word);
 
     try {
@@ -179,7 +179,6 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
         raw += decoder.decode(value, { stream: true });
       }
 
-      // Strip SSE "data: " prefixes line by line
       const text = raw
         .split('\n')
         .map((line) => (line.startsWith('data: ') ? line.slice(6) : line))
@@ -199,7 +198,11 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
         .filter((w) => w.length > 0 && w.length < 40 && w.toLowerCase() !== word.toLowerCase());
 
       if (words.length > 0) {
-        setSynonymSuggestions(words.slice(0, 10));
+        // Accumulate synonyms — never replace old ones
+        setSynonymSuggestions((prev) => {
+          const combined = [...prev, ...words.slice(0, 10)];
+          return [...new Set(combined)];
+        });
       }
     } catch {
       showError('Не удалось получить синонимы');
@@ -234,12 +237,12 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
     resetInlineButtons();
     setSynonymSuggestions([]);
     setPreviewOpen(false);
+    setInlineButtonsOpen(false);
   };
 
   const handleSubmit = async () => {
-    if (validKeywordIndices.length === 0 || !form.responseText.trim()) return;
+    if (validKeywords.length === 0 || !form.responseText.trim()) return;
 
-    // Show loader immediately
     dispatch(setIsSubmitting(true));
 
     const baseUrl = API_BASE_URL.replace('/api', '');
@@ -257,7 +260,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
       }
 
       const data = {
-        keywords: validKeywordIndices.map((i) => form.keywords[i]),
+        keywords: validKeywords.map(({ kw }) => kw),
         response_text: form.responseText.trim(),
         response_media_url: mediaUrls[0] || undefined,
         response_media_urls: mediaUrls.length > 0 ? mediaUrls : undefined,
@@ -272,7 +275,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
         await dispatch(updateAutoReplyThunk({ botId, replyId: form.editingId!, data })).unwrap();
         showSuccess('Автоответ обновлён');
       } else {
-        await dispatch(createAutoReplyThunk({ botId, data })).unwrap();
+        await dispatch(createAutoReplyThunk({ botId, channelId, data })).unwrap();
         showSuccess('Автоответ создан');
       }
       handleClearMedia();
@@ -283,22 +286,35 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
     }
   };
 
-  const isSubmitDisabled = validKeywordIndices.length === 0 || !form.responseText.trim() || form.isSubmitting;
+  const isSubmitDisabled = validKeywords.length === 0 || !form.responseText.trim() || form.isSubmitting;
   const frequencyLabel = FREQUENCY_OPTIONS.find((o) => o.value === form.frequencyLimitMinutes)?.label ?? `${form.frequencyLimitMinutes} мин`;
 
-  const renderKeywordColumn = (indices: number[]) => (
+  const renderKeywordColumn = (entries: { kw: string; i: number }[]) => (
     <div className={styles.keywordsColumn}>
-      {indices.map((idx) => (
-        <div key={idx} className={styles.keywordRow}>
+      {entries.map(({ kw, i }) => (
+        <div key={i} className={styles.keywordRow}>
           <div className={styles.keywordDot} />
-          <span className={styles.keywordText}>{form.keywords[idx]}</span>
-          <button type="button" className={styles.keywordDeleteBtn} onClick={() => dispatch(removeKeyword(idx))}>
-            <TrashIcon width={15} height={15} color="currentColor" />
-          </button>
+          <span className={styles.keywordText}>{kw}</span>
+          <Button
+            variant="ghost"
+            intent="neutral"
+            size="transparent"
+            className={styles.keywordDeleteBtn}
+            onClick={() => dispatch(removeKeyword(i))}
+          >
+            <TrashIcon width={13} height={13} color="currentColor" />
+          </Button>
         </div>
       ))}
     </div>
   );
+
+  const handleToggleInlineButtons = () => {
+    if (!inlineButtonsOpen && inlineButtonRows.length === 0) {
+      addInlineButtonRow();
+    }
+    setInlineButtonsOpen(!inlineButtonsOpen);
+  };
 
   return (
     <ModalBase isOpen={isModalOpen} onOpenChange={(v) => { if (!v) handleClose(); }}>
@@ -350,10 +366,10 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
                   )}
                 </div>
 
-                {validKeywordIndices.length > 0 && (
+                {validKeywords.length > 0 && (
                   <div className={styles.keywordsColumns}>
-                    {renderKeywordColumn(leftIndices)}
-                    {rightIndices.length > 0 && renderKeywordColumn(rightIndices)}
+                    {renderKeywordColumn(leftKeywords)}
+                    {rightKeywords.length > 0 && renderKeywordColumn(rightKeywords)}
                   </div>
                 )}
 
@@ -361,7 +377,9 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
                   <div className={styles.synonymPanel}>
                     <div className={styles.synonymPanelHeader}>
                       <span className={styles.synonymLabel}>
-                        {aiLoading ? `Ищу синонимы для «${synonymsForWord}»...` : `Синонимы для «${synonymsForWord}»`}
+                        {aiLoading
+                          ? `Ищу синонимы для «${synonymsForWord}»...`
+                          : `Синонимы для «${synonymsForWord}»`}
                       </span>
                       <button type="button" className={styles.synonymDismiss} onClick={() => setSynonymSuggestions([])}>
                         ✕
@@ -431,7 +449,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
                 )}
               </div>
 
-              {/* Scope — under frequency in left column */}
+              {/* Scope */}
               <div className={styles.scopeSection}>
                 <span className={styles.sectionLabel}>Область действия</span>
                 <div className={styles.radioGroup}>
@@ -502,7 +520,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
                 <button
                   type="button"
                   className={`${styles.inlineButtonsRow} ${inlineButtonsOpen ? styles.inlineButtonsRowActive : ''}`}
-                  onClick={() => setInlineButtonsOpen(!inlineButtonsOpen)}
+                  onClick={handleToggleInlineButtons}
                 >
                   <InlineButtonIcon width={24} height={24} color="#383F45" />
                   <span className={styles.inlineButtonsLabel}>Кнопки</span>
@@ -522,7 +540,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
                 )}
               </div>
 
-              {/* Media — inside the dropzone frame */}
+              {/* Media */}
               <div className={styles.mediaSection}>
                 <span className={styles.mediaLabel}>Медиа и файлы</span>
                 <input
@@ -578,7 +596,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, isOpen: ex
             </div>
           </div>
 
-          {/* Active toggle — right-aligned above footer */}
+          {/* Active toggle */}
           <div className={styles.activeRow}>
             <span className={styles.toggleLabel}>Активен</span>
             <Toggle checked={form.isActive} onChange={(v) => dispatch(setIsActive(v))} />

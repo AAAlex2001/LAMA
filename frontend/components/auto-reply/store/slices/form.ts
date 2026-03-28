@@ -17,7 +17,7 @@ interface FormState {
 const initialState: FormState = {
   isOpen: false,
   editingId: null,
-  keywords: [''],
+  keywords: [],
   responseText: '',
   responseMediaType: 'TEXT',
   scope: 'GROUPS',
@@ -46,7 +46,7 @@ const formSlice = createSlice({
       const p = action.payload;
       state.isOpen = true;
       state.editingId = p.id;
-      state.keywords = p.keywords.length > 0 ? [...p.keywords] : [''];
+      state.keywords = [...p.keywords];
       state.responseText = p.responseText;
       state.responseMediaType = p.responseMediaType;
       state.scope = p.scope;
@@ -66,9 +66,7 @@ const formSlice = createSlice({
       state.keywords.push('');
     },
     removeKeyword(state, action: PayloadAction<number>) {
-      if (state.keywords.length > 1) {
-        state.keywords = state.keywords.filter((_, i) => i !== action.payload);
-      }
+      state.keywords = state.keywords.filter((_, i) => i !== action.payload);
     },
     addKeywords(state, action: PayloadAction<string[]>) {
       state.keywords.push(...action.payload);

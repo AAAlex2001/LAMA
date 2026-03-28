@@ -20,6 +20,7 @@ class AutoReplyCreate(BaseModel):
     is_active: bool = True
     frequency_limit_minutes: Optional[int] = Field(None, ge=1, le=1440)
     frequency_limit_type: Optional[str] = None  # 'per_user' | 'per_group'
+    channel_id: Optional[int] = None
 
 class AutoReplyUpdate(BaseModel):
     """Схема обновления автоответа"""
@@ -38,6 +39,7 @@ class AutoReplyResponse(BaseModel):
     """Схема ответа автоответа"""
     id: int
     bot_id: int
+    channel_id: Optional[int] = None
     keywords: List[str]
     response_text: str
     response_media_url: Optional[str]

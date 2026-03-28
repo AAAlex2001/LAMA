@@ -31,7 +31,7 @@ interface AutomationSectionProps {
   channel: Channel;
 }
 
-const AutoRepliesSection: FC<{ botId: number }> = ({ botId }) => {
+const AutoRepliesSection: FC<{ botId: number; channelId: number }> = ({ botId, channelId }) => {
   const dispatch = useAutoReplyDispatch();
   const items = useAutoReplySelector((s) => s.list.items);
   const activeCount = items.filter((r) => r.is_active).length;
@@ -57,8 +57,8 @@ const AutoRepliesSection: FC<{ botId: number }> = ({ botId }) => {
         Библиотека автоответов
       </Button>
 
-      <AutoReplyListModal botId={botId} />
-      <CreateAutoReplyModal botId={botId} />
+      <AutoReplyListModal botId={botId} channelId={channelId} />
+      <CreateAutoReplyModal botId={botId} channelId={channelId} />
     </div>
   );
 };
@@ -75,6 +75,7 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
 
   const channelId = channel.id;
   const botId = channel.bot_id;
+  const isGroup = channel.channel_type === 'GROUP' || channel.channel_type === 'SUPERGROUP';
 
   useEffect(() => {
     dispatch(fetchInfoMessagesThunk(channelId));
@@ -173,10 +174,10 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
           </div>
         </div>
 
-        {botId && (
+        {isGroup && botId && (
           <div className={styles.rightColumn}>
-            <AutoReplyProvider botId={botId}>
-              <AutoRepliesSection botId={botId} />
+            <AutoReplyProvider botId={botId} channelId={channelId}>
+              <AutoRepliesSection botId={botId} channelId={channelId} />
             </AutoReplyProvider>
           </div>
         )}

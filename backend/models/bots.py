@@ -254,19 +254,20 @@ class AutoReply(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
-    
+    channel_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=True, index=True)
+
     # Триггеры
-    keywords: Mapped[list] = mapped_column(JSON, nullable=False)  # Список ключевых слов
-    
+    keywords: Mapped[list] = mapped_column(JSON, nullable=False)
+
     # Ответ
     response_text: Mapped[str] = mapped_column(Text, nullable=False)
     response_media_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     response_media_urls: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     response_media_type: Mapped[Optional[MessageType]] = mapped_column(SQLEnum(MessageType), nullable=True)
-    response_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Inline keyboard
+    response_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     # Настройки
-    scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)  # Область работы (PRIVATE, GROUPS, ALL)
+    scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     frequency_limit_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -278,6 +279,21 @@ class AutoReply(Base):
 
     # Relationships
     bot = relationship("Bot", foreign_keys=[bot_id])
+    logs = relationship("AutoReplyLog", back_populates="auto_reply", cascade="all, delete-orphan")
+
+
+class AutoReplyLog(Base):
+    """Лог срабатываний автоответа — для частотного ограничения"""
+    __tablename__ = "auto_reply_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    auto_reply_id: Mapped[int] = mapped_column(Integer, ForeignKey("bot_auto_replies.id", ondelete="CASCADE"), nullable=False, index=True)
+    chat_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    user_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True, index=True)
+    triggered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    # Relationships
+    auto_reply = relationship("AutoReply", back_populates="logs")
 
 
 class PendingApproval(Base):
