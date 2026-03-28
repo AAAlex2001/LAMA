@@ -1,4 +1,4 @@
-export { default as draftsReducer } from './slice';
+export { default as draftsReducer } from '@/app/[locale]/drafts/store/slices/draftListSlice';
 export {
   setDrafts,
   appendDrafts,
@@ -12,4 +12,4 @@ export {
   setPage,
   setSortOrder,
   resetDrafts,
-} from './slice';
+} from '@/app/[locale]/drafts/store/slices/draftListSlice';

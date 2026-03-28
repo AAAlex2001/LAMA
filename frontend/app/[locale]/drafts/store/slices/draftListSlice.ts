@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { Draft } from '@/types/post';
 
-interface DraftsState {
+export interface DraftListState {
   items: Draft[];
   isLoading: boolean;
   isLoadingMore: boolean;
@@ -13,7 +13,7 @@ interface DraftsState {
   sortOrder: 'asc' | 'desc';
 }
 
-const initialState: DraftsState = {
+const initialState: DraftListState = {
   items: [],
   isLoading: false,
   isLoadingMore: false,
@@ -25,7 +25,7 @@ const initialState: DraftsState = {
   sortOrder: 'desc',
 };
 
-const draftsSlice = createSlice({
+const draftListSlice = createSlice({
   name: 'drafts',
   initialState,
   reducers: {
@@ -33,8 +33,8 @@ const draftsSlice = createSlice({
       state.items = action.payload;
     },
     appendDrafts: (state, action: PayloadAction<Draft[]>) => {
-      const existingIds = new Set(state.items.map(d => d.id));
-      const newItems = action.payload.filter(d => !existingIds.has(d.id));
+      const existingIds = new Set(state.items.map((d) => d.id));
+      const newItems = action.payload.filter((d) => !existingIds.has(d.id));
       state.items = [...state.items, ...newItems];
     },
     removeDraft: (state, action: PayloadAction<number>) => {
@@ -81,6 +81,6 @@ export const {
   setPage,
   setSortOrder,
   resetDrafts,
-} = draftsSlice.actions;
+} = draftListSlice.actions;
 
-export default draftsSlice.reducer;
+export default draftListSlice.reducer;

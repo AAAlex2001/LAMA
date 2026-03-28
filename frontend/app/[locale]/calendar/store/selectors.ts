@@ -40,28 +40,14 @@ export const selectMobilePosts = createSelector(
 export const selectGridPostCounts = createSelector(
   [
     (s: RootState) => s.calendar.monthPostCounts,
-    (s: RootState) => s.calendar.weekItems,
     (s: RootState) => s.calendar.currentView,
     (s: RootState) => s.calendar.selectedDate,
     (s: RootState) => s.calendar.items,
-    (s: RootState) => s.calendar.dayPageState,
   ],
-  (monthCounts, weekItems, currentView, selectedDate, items, dayPageState) => {
+  (monthCounts, currentView, selectedDate, items) => {
     const merged: Record<string, number> = { ...monthCounts };
     if (currentView === 'day') {
       merged[selectedDate] = items.length;
-    }
-    if (currentView === 'month') {
-      for (const dateKey of Object.keys(weekItems)) {
-        const dayItems = weekItems[dateKey];
-        const dps = dayPageState[dateKey];
-        if (dayItems && dayItems.length > 0 && dps) {
-          const total = monthCounts[dateKey];
-          if (!total || total === 0) {
-            merged[dateKey] = dayItems.length;
-          }
-        }
-      }
     }
     return merged;
   },

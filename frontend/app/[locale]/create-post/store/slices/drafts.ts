@@ -1,4 +1,3 @@
-// Re-export from shared drafts slice
 export {
   setDrafts,
   appendDrafts,
@@ -12,6 +11,6 @@ export {
   setPage,
   setSortOrder,
   resetDrafts,
-} from '@/store/drafts/slice';
+} from '@/app/[locale]/drafts/store/slices/draftListSlice';
 
-export { default } from '@/store/drafts/slice';
+export { default } from '@/app/[locale]/drafts/store/slices/draftListSlice';

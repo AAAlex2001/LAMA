@@ -2,44 +2,26 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useAppDispatch, useAppSelector } from '../store';
+import { useAppDispatch, useAppSelector, setSortOrder } from '../store';
 import { fetchDrafts, fetchMoreDrafts, deleteDraftThunk } from '../store/thunks';
-import { setSortOrder } from '@/store/drafts';
 import { getAccessToken } from '@/app/[locale]/register/store/actions';
 import { apiRequest } from '@/store/api';
-import type { Draft, MediaFile } from '@/types/post';
+import type { Draft } from '@/types/post';
 import type { Tag, TagsResponse } from '@/types';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
+import { buildDraftPreviewPayload } from '../utils/draftPreview';
+import { useDraftsInfiniteScroll } from './useDraftsInfiniteScroll';
 
 type SortKey = 'date' | 'tags' | 'source' | null;
-
-function getMediaType(url: string): 'image' | 'video' | 'document' {
-  const ext = url.split('.').pop()?.toLowerCase() || '';
-  if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) return 'image';
-  if (['mp4', 'webm', 'mov', 'avi', 'mkv'].includes(ext)) return 'video';
-  return 'document';
-}
-
-function draftToMediaFiles(draft: Draft): MediaFile[] {
-  if (!draft.media_urls?.length) return [];
-  return draft.media_urls.map((url, index) => ({
-    id: `draft-media-${draft.id}-${index}`,
-    url,
-    type: getMediaType(url),
-    blur: draft.media_blur?.[index] ?? false,
-    thumbnail_url: draft.media_thumbnail_urls?.[index] ?? null,
-    telegram_file_id: draft.media_file_ids?.[index] ?? null,
-  }));
-}
 
 export function useDraftsPage() {
   const dispatch = useAppDispatch();
   const { showSuccess } = useNotifications();
-  const drafts = useAppSelector(state => state.drafts.items);
-  const isLoading = useAppSelector(state => state.drafts.isLoading);
-  const isLoadingMore = useAppSelector(state => state.drafts.isLoadingMore);
-  const hasMore = useAppSelector(state => state.drafts.hasMore);
-  const sortOrder = useAppSelector(state => state.drafts.sortOrder);
+  const drafts = useAppSelector((state) => state.drafts.items);
+  const isLoading = useAppSelector((state) => state.drafts.isLoading);
+  const isLoadingMore = useAppSelector((state) => state.drafts.isLoadingMore);
+  const hasMore = useAppSelector((state) => state.drafts.hasMore);
+  const sortOrder = useAppSelector((state) => state.drafts.sortOrder);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
   const [openSort, setOpenSort] = useState<SortKey>(null);
@@ -86,20 +68,7 @@ export function useDraftsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
-  useEffect(() => {
-    const scrollContainer = document.querySelector('main');
-    if (!scrollContainer) return;
-
-    function handleScroll() {
-      if (!scrollContainer) return;
-      const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
-      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !isLoadingMore) {
-        dispatch(fetchMoreDrafts());
-      }
-    }
-    scrollContainer.addEventListener('scroll', handleScroll);
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
-  }, [dispatch, hasMore, isLoadingMore]);
+  useDraftsInfiniteScroll(dispatch, hasMore, isLoadingMore);
 
   useEffect(() => {
     if (!openSort && !mobileFilterOpen) return;
@@ -123,31 +92,7 @@ export function useDraftsPage() {
     }
   }
 
-  const previewData = previewDraft ? (() => {
-    const channel = previewDraft.channels?.[0];
-    const extraCount = previewDraft.channels?.length > 1
-      ? `+${previewDraft.channels.length - 1}`
-      : undefined;
-    return {
-      channelTitle: channel?.title,
-      channelPhotoUrl: channel?.photo_url,
-      channelMembersCount: channel?.members_count,
-      channelExtraCount: extraCount,
-      html: previewDraft.formatted_content?.text || previewDraft.text_content || '',
-      mediaFiles: draftToMediaFiles(previewDraft),
-      inlineKeyboard: previewDraft.inline_keyboard?.buttons?.length
-        ? { buttons: previewDraft.inline_keyboard.buttons }
-        : undefined,
-      quizData: previewDraft.poll_data?.question ? {
-        mode: (previewDraft.poll_data.is_quiz ? 'quiz' : 'poll') as 'quiz' | 'poll',
-        question: previewDraft.poll_data.question,
-        options: previewDraft.poll_data.options,
-        isAnonymous: previewDraft.poll_data.is_anonymous ?? true,
-        allowsMultipleAnswers: previewDraft.poll_data.allows_multiple_answers ?? false,
-        correctAnswerIndex: previewDraft.poll_data.correct_option_id ?? undefined,
-      } : undefined,
-    };
-  })() : null;
+  const previewData = previewDraft ? buildDraftPreviewPayload(previewDraft) : null;
 
   const token = getAccessToken() || undefined;
   const showPageLoader = !isInitialDraftsLoaded || (isLoading && drafts.length === 0);

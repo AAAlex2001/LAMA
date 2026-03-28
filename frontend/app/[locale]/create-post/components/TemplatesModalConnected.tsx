@@ -12,7 +12,7 @@ import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface TemplatesModalConnectedProps {
-  editorRef: React.RefObject<RichTextEditorRef>;
+  editorRef: React.RefObject<RichTextEditorRef | null>;
 }
 
 export default function TemplatesModalConnected({ editorRef }: TemplatesModalConnectedProps) {

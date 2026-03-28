@@ -31,21 +31,6 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         for (const r of action.payload.results) {
           weekItems[r.dateKey] = r.items;
           dayPageState[r.dateKey] = { page: 1, hasMore: r.hasMore, isLoading: false };
-          if (!merge || state.monthPostCounts[r.dateKey] === undefined) {
-            state.monthPostCounts[r.dateKey] = r.total;
-          }
-          if (!merge || !state.monthStatusCounts[r.dateKey]) {
-            if (r.items.length > 0) {
-              const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
-              for (const item of r.items) {
-                if ((item as any).is_bot_message) sc.bot_messages++;
-                else if (item.status === 'published') sc.published++;
-                else if (item.status === 'scheduled') sc.scheduled++;
-                else if (item.status === 'draft') sc.draft++;
-              }
-              state.monthStatusCounts[r.dateKey] = sc;
-            }
-          }
         }
         state.weekItems = weekItems;
         state.dayPageState = dayPageState;
@@ -99,28 +84,8 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         return;
       }
       state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
-      const merged = { ...action.payload.counts };
-      for (const dateKey of Object.keys(state.weekItems)) {
-        if (state.monthPostCounts[dateKey] !== undefined) {
-          merged[dateKey] = state.monthPostCounts[dateKey];
-        }
-      }
-      state.monthPostCounts = merged;
+      state.monthPostCounts = action.payload.counts;
       state.monthStatusCountsCache[action.payload.monthKey] = action.payload.statusCounts;
-      const mergedStatus = { ...action.payload.statusCounts };
-      for (const dateKey of Object.keys(state.weekItems)) {
-        const items = state.weekItems[dateKey];
-        if (items && items.length > 0 && !mergedStatus[dateKey]) {
-          const sc = { published: 0, scheduled: 0, draft: 0, bot_messages: 0 };
-          for (const item of items) {
-            if ((item as any).is_bot_message) sc.bot_messages++;
-            else if (item.status === 'published') sc.published++;
-            else if (item.status === 'scheduled') sc.scheduled++;
-            else if (item.status === 'draft') sc.draft++;
-          }
-          mergedStatus[dateKey] = sc;
-        }
-      }
-      state.monthStatusCounts = mergedStatus;
+      state.monthStatusCounts = action.payload.statusCounts;
     });
 }

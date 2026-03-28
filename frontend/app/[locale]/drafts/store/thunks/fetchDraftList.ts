@@ -1,17 +1,16 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import type { RootState } from './index';
+import type { RootState } from '../index';
 import type { DraftListResponse } from '@/types/post';
 import { apiRequest } from '@/store/api';
 import {
   setDrafts,
   appendDrafts,
-  removeDraft,
   setIsLoading,
   setIsLoadingMore,
   setHasMore,
   setPage,
   setTagIdsFilter,
-} from '@/store/drafts';
+} from '../slices/draftListSlice';
 
 const PAGE_SIZE = 30;
 
@@ -21,7 +20,7 @@ function areTagIdsEqual(left: number[], right: number[]) {
 }
 
 export const fetchDrafts = createAsyncThunk(
-  'draftsPage/fetchDrafts',
+  'drafts/fetchDrafts',
   async (params: { tagIds?: number[] } = {}, { dispatch, getState, rejectWithValue }) => {
     const requestedTagIds = params.tagIds ?? [];
     const requestedSortOrder = (getState() as RootState).drafts.sortOrder;
@@ -37,7 +36,7 @@ export const fetchDrafts = createAsyncThunk(
       });
       requestedTagIds.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
-        `/publications?${queryParams}`
+        `/publications?${queryParams}`,
       );
 
       const currentState = (getState() as RootState).drafts;
@@ -58,11 +57,11 @@ export const fetchDrafts = createAsyncThunk(
     } finally {
       dispatch(setIsLoading(false));
     }
-  }
+  },
 );
 
 export const fetchMoreDrafts = createAsyncThunk(
-  'draftsPage/fetchMoreDrafts',
+  'drafts/fetchMoreDrafts',
   async (_, { getState, dispatch, rejectWithValue }) => {
     const state = getState() as RootState;
     const { page, isLoadingMore, hasMore, tagIdsFilter, sortOrder } = state.drafts;
@@ -80,7 +79,7 @@ export const fetchMoreDrafts = createAsyncThunk(
       });
       tagIdsFilter.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
-        `/publications?${queryParams}`
+        `/publications?${queryParams}`,
       );
       dispatch(appendDrafts(response.items));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
@@ -91,18 +90,5 @@ export const fetchMoreDrafts = createAsyncThunk(
     } finally {
       dispatch(setIsLoadingMore(false));
     }
-  }
-);
-
-export const deleteDraftThunk = createAsyncThunk(
-  'draftsPage/deleteDraft',
-  async (draftId: number, { dispatch, rejectWithValue }) => {
-    dispatch(removeDraft(draftId));
-    try {
-      await apiRequest(`/publications/${draftId}`, { method: 'DELETE' });
-      return draftId;
-    } catch (err) {
-      return rejectWithValue(err instanceof Error ? err.message : 'Ошибка удаления');
-    }
-  }
+  },
 );
