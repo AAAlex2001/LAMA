@@ -1,13 +1,20 @@
+import logging
 import secrets
 from typing import List
 
+from aiogram.enums import ParseMode
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, InformationalMessage
-from backend.schemas.channels.info_messages import InfoMessageCreate, InfoMessageUpdate
+from backend.schemas.channels.info_messages import InfoMessageCreate, InfoMessageUpdate, InfoMessagesListResponse
+from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
+from backend.services.publications.utils.html_utils import clean_html_for_telegram
+from backend.utils.keyboard import build_keyboard
+
+logger = logging.getLogger(__name__)
 
 
 class InfoMessagesService:
@@ -15,7 +22,7 @@ class InfoMessagesService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list_messages(self, channel_id: int, owner_id: int) -> dict:
+    async def list_messages(self, channel_id: int, owner_id: int) -> InfoMessagesListResponse:
         channel = await get_channel(self.db, channel_id, owner_id)
         if not channel:
             raise HTTPException(status_code=404, detail="Channel not found")
@@ -26,10 +33,10 @@ class InfoMessagesService:
             .order_by(InformationalMessage.created_at.desc())
         )
         messages = list(result.scalars().all())
-        return {
-            "enabled": channel.info_messages_enabled,
-            "items": messages,
-        }
+        return InfoMessagesListResponse(
+            enabled=channel.info_messages_enabled,
+            items=messages,
+        )
 
     async def toggle(self, channel_id: int, enabled: bool, owner_id: int) -> ChannelGroup:
         channel = await get_channel(self.db, channel_id, owner_id)
@@ -105,6 +112,73 @@ class InfoMessagesService:
         msg.share_token = token
         await self.db.flush()
         return token
+
+    async def publish_message(self, channel_id: int, message_id: int, owner_id: int) -> InformationalMessage:
+        channel = await get_channel(self.db, channel_id, owner_id)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        if not channel.telegram_id:
+            raise HTTPException(status_code=400, detail="Channel has no Telegram ID")
+
+        result = await self.db.execute(
+            select(InformationalMessage).where(
+                InformationalMessage.id == message_id,
+                InformationalMessage.channel_id == channel_id,
+            )
+        )
+        msg = result.scalar_one_or_none()
+        if not msg:
+            raise HTTPException(status_code=404, detail="Message not found")
+
+        bot = await resolve_for_channel(self.db, channel)
+        cleaned_text = clean_html_for_telegram(msg.text)
+        keyboard = build_keyboard(msg.inline_keyboard) if msg.inline_keyboard else None
+        chat_id = channel.telegram_id
+
+        if msg.media_url and msg.media_type:
+            media_type = msg.media_type.upper()
+            if media_type == "PHOTO":
+                await bot.send_photo(
+                    chat_id=chat_id,
+                    photo=msg.media_url,
+                    caption=cleaned_text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                )
+            elif media_type == "VIDEO":
+                await bot.send_video(
+                    chat_id=chat_id,
+                    video=msg.media_url,
+                    caption=cleaned_text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                )
+            elif media_type == "DOCUMENT":
+                await bot.send_document(
+                    chat_id=chat_id,
+                    document=msg.media_url,
+                    caption=cleaned_text,
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                )
+            else:
+                await bot.send_message(
+                    chat_id=chat_id,
+                    text=cleaned_text or "",
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                )
+        elif cleaned_text:
+            await bot.send_message(
+                chat_id=chat_id,
+                text=cleaned_text,
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard,
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Message has no content to publish")
+
+        return msg
 
     async def delete_message(self, channel_id: int, message_id: int, owner_id: int) -> None:
         channel = await get_channel(self.db, channel_id, owner_id)

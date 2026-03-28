@@ -66,6 +66,16 @@ async def delete_info_message(
     await service.delete_message(channel_id=channel_id, message_id=message_id, owner_id=current_user.id)
 
 
+@router.post("/{channel_id}/info-messages/{message_id}/publish", response_model=InfoMessageResponse)
+async def publish_info_message(
+    channel_id: int,
+    message_id: int,
+    service: InfoMessagesService = Depends(get_info_messages_service),
+    current_user: User = Depends(get_current_user),
+):
+    return await service.publish_message(channel_id=channel_id, message_id=message_id, owner_id=current_user.id)
+
+
 @router.post("/{channel_id}/info-messages/{message_id}/share")
 async def share_info_message(
     channel_id: int,

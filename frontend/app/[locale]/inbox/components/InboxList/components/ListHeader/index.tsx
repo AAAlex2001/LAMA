@@ -9,7 +9,7 @@ import styles from "./styles.module.scss";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
 import LinkInvitesModal, { InvitationLink } from "../../../LinkInvitesModal";
 import CreateInviteLinkModal from "../../../CreateInviteLinkModal";
-import CreateAutoRepliesModal from "../../../CreateAutoRepliesModal";
+import { AutoReplyProvider, CreateAutoReplyModal } from '@/components/auto-reply';
 import CreateTriggersModal from "../../../CreateTriggersModal";
 import CreateCommandModal from "../../../CreateCommandModal";
 import AutomatizationModal from "../../../AutomatizationModal";
@@ -45,6 +45,7 @@ const ListHeader: FC<ListHeaderProps> = ({
   isSelectedAll,
   checkedItems,
   onBulkAction,
+  botId,
   automationSubFilter,
   onAutomationSubFilterChange,
   moderationSubFilter,
@@ -340,11 +341,12 @@ const ListHeader: FC<ListHeaderProps> = ({
                   onFilterChange={handleAutomationFilterChange}
                 />
               <div className={styles.controls}>    
-                <Button 
-                  variant="fill" 
+                <Button
+                  variant="fill"
                   intent="gradient"
                   size="md"
                   onClick={() => setIsAutoReplyModalOpen(true)}
+                  disabled={!botId}
                 >
                   <span className={buttonStyles.label}>Создать автоответ</span>
                 </Button>
@@ -397,10 +399,15 @@ const ListHeader: FC<ListHeaderProps> = ({
             onOpenTrigger={() => setIsTriggerModalOpen(true)}
             onOpenCommand={() => setIsCommandModalOpen(true)}
           />
-          <CreateAutoRepliesModal
-            isOpen={isAutoReplyModalOpen}
-            onOpenChange={setIsAutoReplyModalOpen}
-          />
+          {botId && (
+            <AutoReplyProvider botId={botId}>
+              <CreateAutoReplyModal
+                botId={botId}
+                isOpen={isAutoReplyModalOpen}
+                onOpenChange={setIsAutoReplyModalOpen}
+              />
+            </AutoReplyProvider>
+          )}
           <CreateTriggersModal
             isOpen={isTriggerModalOpen}
             onOpenChange={setIsTriggerModalOpen}

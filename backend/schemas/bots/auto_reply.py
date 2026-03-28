@@ -18,6 +18,8 @@ class AutoReplyCreate(BaseModel):
     response_buttons: Optional[Dict[str, Any]] = None
     scope: Optional[CommandScope] = None
     is_active: bool = True
+    frequency_limit_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    frequency_limit_type: Optional[str] = None  # 'per_user' | 'per_group'
 
 class AutoReplyUpdate(BaseModel):
     """Схема обновления автоответа"""
@@ -29,6 +31,8 @@ class AutoReplyUpdate(BaseModel):
     response_buttons: Optional[Dict[str, Any]] = None
     scope: Optional[CommandScope] = None
     is_active: Optional[bool] = None
+    frequency_limit_minutes: Optional[int] = Field(None, ge=1, le=1440)
+    frequency_limit_type: Optional[str] = None  # 'per_user' | 'per_group'
 
 class AutoReplyResponse(BaseModel):
     """Схема ответа автоответа"""
@@ -42,6 +46,8 @@ class AutoReplyResponse(BaseModel):
     response_buttons: Optional[Dict[str, Any]]
     scope: Optional[CommandScope]
     is_active: bool
+    frequency_limit_minutes: Optional[int] = None
+    frequency_limit_type: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 

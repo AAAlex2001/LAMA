@@ -22,7 +22,9 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import {
   createInfoMessageThunk,
   updateInfoMessageThunk,
+  publishInfoMessageThunk,
 } from '../../store/thunks/automation';
+import { setSaving, setSavingType } from '../../store/slices/automation';
 import type { SavingType } from '../../store/slices/automation';
 import {
   InlineButtonIcon,
@@ -193,38 +195,48 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
       return;
     }
 
-    const data = buildPayload();
+    dispatch(setSaving(true));
+    dispatch(setSavingType(type));
 
-    if (mediaFiles.length > 0 && mediaFiles[0].file) {
-      try {
+    try {
+      const data = buildPayload();
+
+      if (mediaFiles.length > 0 && mediaFiles[0].file) {
         const result = await uploadMediaFile(mediaFiles[0].file);
         data.media_url = result.url;
         data.media_type = MEDIA_TYPE_MAP[mediaFiles[0].type] || 'DOCUMENT';
-      } catch {
-        showError('Ошибка загрузки файла');
-        return;
+      } else if (existingMedia) {
+        data.media_url = existingMedia.url;
+        data.media_type = existingMedia.type;
       }
-    } else if (existingMedia) {
-      data.media_url = existingMedia.url;
-      data.media_type = existingMedia.type;
-    }
 
-    try {
+      let savedMsg;
       if (isEditing) {
-        await dispatch(updateInfoMessageThunk({
+        savedMsg = await dispatch(updateInfoMessageThunk({
           channelId,
           messageId: editingMessage.id,
           data,
           savingType: type,
         })).unwrap();
-        showSuccess('Сообщение обновлено');
       } else {
-        await dispatch(createInfoMessageThunk({ channelId, data, savingType: type })).unwrap();
-        showSuccess('Сообщение создано');
+        savedMsg = await dispatch(createInfoMessageThunk({ channelId, data, savingType: type })).unwrap();
+      }
+
+      if (type === 'publish' && savedMsg) {
+        await dispatch(publishInfoMessageThunk({
+          channelId,
+          messageId: savedMsg.id,
+        })).unwrap();
+        showSuccess('Сообщение опубликовано');
+      } else {
+        showSuccess(isEditing ? 'Сообщение обновлено' : 'Сообщение создано');
       }
       onClose();
     } catch {
-      showError('Ошибка сохранения');
+      showError(type === 'publish' ? 'Ошибка публикации' : 'Ошибка сохранения');
+    } finally {
+      dispatch(setSaving(false));
+      dispatch(setSavingType(null));
     }
   };
 
@@ -234,32 +246,33 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
   };
 
   const handleShareClick = async () => {
-    if (!isEditing) {
-      showError('Сначала сохраните сообщение');
-      return;
-    }
     setShareModalOpen(true);
-    setIsGeneratingShareLink(true);
-    try {
-      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
-      const token = localStorage.getItem('lamaplanner_access_token');
-      const res = await fetch(`${API_BASE_URL}/channels/${channelId}/info-messages/${editingMessage.id}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-      });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      const link = `${window.location.origin}/channels/${channelId}?shared_message=${data.share_token}`;
-      setShareLink(link);
-    } catch {
+
+    if (isEditing) {
+      setIsGeneratingShareLink(true);
+      try {
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+        const token = localStorage.getItem('lamaplanner_access_token');
+        const res = await fetch(`${API_BASE_URL}/channels/${channelId}/info-messages/${editingMessage.id}/share`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        const link = `${window.location.origin}/channels/${channelId}?shared_message=${data.share_token}`;
+        setShareLink(link);
+      } catch {
+        const plainText = text.replace(/<[^>]*>/g, '').trim();
+        setShareLink(`https://t.me/share/url?url=&text=${encodeURIComponent(plainText)}`);
+      } finally {
+        setIsGeneratingShareLink(false);
+      }
+    } else {
       const plainText = text.replace(/<[^>]*>/g, '').trim();
-      const shareText = encodeURIComponent(plainText);
-      setShareLink(`https://t.me/share/url?url=&text=${shareText}`);
-    } finally {
-      setIsGeneratingShareLink(false);
+      setShareLink(`https://t.me/share/url?url=&text=${encodeURIComponent(plainText)}`);
     }
   };
 
@@ -363,13 +376,14 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/*,.pdf,.doc,.docx"
+                multiple
+                accept="image/*,video/*,.pdf,.doc,.docx,.txt"
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const files = e.target.files;
                   if (files) {
                     setExistingMedia(null);
-                    handleFilesAdd(Array.from(files).slice(0, 1));
+                    handleFilesAdd(Array.from(files));
                   }
                   e.target.value = '';
                 }}
@@ -393,31 +407,67 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                   </button>
                 </div>
               )}
-              {mediaFiles.length > 0 && (
+
+              <div className={styles.mediaMobile}>
                 <MediaPreview
                   files={mediaFiles}
                   onRemove={handleRemoveFile}
                   onToggleBlur={handleToggleBlur}
                   onMove={handleMoveMedia}
                 />
-              )}
-
-              {/* Desktop dropzone */}
-              <div className={styles.mediaDropzone}>
-                <span className={styles.dropzoneText}>
-                  Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-                </span>
+                <Button
+                  variant="ghost"
+                  intent="neutral"
+                  size="lg"
+                  className={styles.attachBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!canAddMedia}
+                >
+                  <PaperclipIcon width={24} height={24} />
+                  Прикрепить файл
+                </Button>
               </div>
 
-              <button
-                type="button"
-                className={styles.attachBtn}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={!canAddMedia}
-              >
-                <PaperclipIcon width={16} height={16} />
-                Прикрепить файл
-              </button>
+              <div className={styles.mediaDropzone}>
+                {mediaFiles.length === 0 && !existingMedia ? (
+                  <>
+                    <span className={styles.dropzoneText}>
+                      Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
+                    </span>
+                    <Button
+                      variant="ghost"
+                      intent="neutral"
+                      size="lg"
+                      className={styles.attachBtn}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!canAddMedia}
+                    >
+                      <PaperclipIcon width={24} height={24} />
+                      Прикрепить файл
+                    </Button>
+                  </>
+                ) : (
+                  <div className={styles.dropzoneContent}>
+                    <MediaPreview
+                      files={mediaFiles}
+                      onRemove={handleRemoveFile}
+                      onToggleBlur={handleToggleBlur}
+                      onMove={handleMoveMedia}
+                    />
+                    <Button
+                      variant="ghost"
+                      intent="neutral"
+                      size="lg"
+                      className={styles.attachBtn}
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={!canAddMedia}
+                    >
+                      <PaperclipIcon width={24} height={24} />
+                      Прикрепить файл
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className={styles.footer}>
@@ -437,6 +487,7 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                   size="sm"
                   className={styles.shareBtn}
                   onClick={handleShareClick}
+                  disabled={!text.trim()}
                 >
                   <ShareIcon width={24} height={24} />
                 </Button>

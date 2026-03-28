@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
@@ -30,13 +30,19 @@ async def create_auto_reply(
 async def get_auto_replies(
     bot_id: int,
     is_active: Optional[bool] = None,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    search: Optional[str] = Query(None, max_length=255),
     bot_service: BotCrudService = Depends(get_bot_service),
     auto_reply_service: BotAutoReplyService = Depends(get_auto_reply_service),
     current_user: User = Depends(get_current_user),
 ):
-    """Получить список автоответов бота."""
-    bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    replies, total = await auto_reply_service.get_list(bot_id, is_active, owner_id=current_user.id)
+    """Получить список автоответов бота с пагинацией и поиском по ключевым словам."""
+    await bot_service.get(bot_id, owner_id=current_user.id)
+    replies, total = await auto_reply_service.get_list(
+        bot_id, is_active, owner_id=current_user.id,
+        skip=skip, limit=limit, search=search,
+    )
     return AutoReplyListResponse(items=replies, total=total)
 
 

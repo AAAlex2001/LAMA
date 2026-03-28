@@ -268,11 +268,14 @@ class AutoReply(Base):
     # Настройки
     scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)  # Область работы (PRIVATE, GROUPS, ALL)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    
+
+    frequency_limit_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    frequency_limit_type: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)  # 'per_user' | 'per_group'
+
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
-    
+
     # Relationships
     bot = relationship("Bot", foreign_keys=[bot_id])
 

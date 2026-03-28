@@ -1,0 +1,288 @@
+/* Modal */
+.modal {
+  width: 100%;
+  overflow-x: hidden;
+
+  @media (min-width: 1440px) {
+    max-width: 1018px !important;
+  }
+}
+
+/* ==================== HEADER ==================== */
+
+.header {
+  /* Override ModalBase.Header default */
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 16px;
+  letter-spacing: -0.01em;
+  color: #383F45;
+
+  /* Mobile: flex:1 so X button goes to right end of same row */
+  order: 1;
+  flex: 1 0 auto;
+
+  @media (min-width: 1440px) {
+    flex: 0 0 auto;
+  }
+}
+
+/* Controls: search + add button */
+.headerControls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  /* Mobile: full row below title+X */
+  order: 3;
+  flex: 1 0 100%;
+
+  @media (min-width: 1440px) {
+    order: 2;
+    flex: 1 0 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}
+
+.searchBar {
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    width: 320px;
+    flex-shrink: 0;
+  }
+}
+
+.addBtn {
+  width: 100% !important;
+
+  @media (min-width: 1440px) {
+    width: 160px !important;
+    flex-shrink: 0;
+  }
+}
+
+/* ModalBase.Close button — last child in header, order 2 → stays on row 1 right of title */
+.header > button:last-child {
+  order: 2;
+  flex-shrink: 0;
+}
+
+/* ==================== BODY ==================== */
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: 75vh;
+}
+
+.empty {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* ==================== GRID ==================== */
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  @media (min-width: 1440px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: start;
+  }
+}
+
+/* ==================== CARD ==================== */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  gap: 16px;
+  background: #FFFFFF;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+/* Card info block */
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  align-self: stretch;
+}
+
+.cardRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+
+.cardResponseBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.cardLabel {
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 15px;
+  color: #383F45;
+  flex-shrink: 0;
+}
+
+.cardTrigger {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #383F45;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardResponse {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #383F45;
+  width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Card actions row */
+.cardActions {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  align-self: stretch;
+}
+
+.cardActionsSpread {
+  justify-content: space-between;
+}
+
+.cardIcons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.cardButtons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Icon buttons (delete / edit) */
+.iconBtn {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(176, 180, 184, 0.2) !important;
+  color: #B0B4B8 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #EF4444 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+  }
+
+  /* span.label wraps the icon — make it flex */
+  span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+.iconBtnEdit {
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
+
+  &:hover {
+    color: #383F45 !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+  }
+}
+
+/* Select button */
+.selectBtn {
+  width: 79px !important;
+  height: 37px !important;
+  padding: 0 10px !important;
+  border-radius: 10px !important;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  flex-shrink: 0;
+
+  span {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 17px;
+  }
+}
+
+.selectBtnActive {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid rgba(59, 130, 246, 0.1) !important;
+  width: 73px !important;
+  box-shadow: none !important;
+
+  span {
+    background: none !important;
+    -webkit-background-clip: unset !important;
+    background-clip: unset !important;
+    -webkit-text-fill-color: #B1CDFB !important;
+    color: #B1CDFB !important;
+  }
+}

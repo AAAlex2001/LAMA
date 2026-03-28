@@ -133,6 +133,31 @@ export const updateInfoMessageThunk = createAsyncThunk(
   },
 );
 
+export const publishInfoMessageThunk = createAsyncThunk(
+  'automation/publishInfoMessage',
+  async (
+    {
+      channelId,
+      messageId,
+    }: {
+      channelId: number;
+      messageId: number;
+    },
+    { rejectWithValue },
+  ) => {
+    try {
+      const msg = await apiRequest<InfoMessage>(
+        `/channels/${channelId}/info-messages/${messageId}/publish`,
+        { method: 'POST' },
+      );
+      return msg;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Ошибка публикации';
+      return rejectWithValue(msg);
+    }
+  },
+);
+
 export const deleteInfoMessageThunk = createAsyncThunk(
   'automation/deleteInfoMessage',
   async (

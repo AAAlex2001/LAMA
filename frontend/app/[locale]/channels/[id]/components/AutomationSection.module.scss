@@ -6,6 +6,71 @@
   width: 100%;
 }
 
+.desktopLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    gap: 32px;
+    align-items: flex-start;
+  }
+}
+
+.leftColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.rightColumn {
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.channelCard {
+  width: 100%;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(206, 210, 214, 0.3);
+}
+
+.togglersBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(206, 210, 214, 0.3);
+}
+
+.toggleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  width: 100%;
+}
+
+.toggleLabel {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
 .infoMessagesSection {
   display: flex;
   flex-direction: column;
@@ -110,5 +175,61 @@
 }
 
 .createBtn {
+  width: 100%;
+}
+
+.autoRepliesSection {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding-top: 16px;
+  border-top: 1px solid rgba(206, 210, 214, 0.3);
+
+  @media (min-width: 1440px) {
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
+.autoRepliesHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.autoRepliesLabelRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.autoRepliesLabel {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+}
+
+.autoRepliesCount {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 15px;
+  color: #3B82F6;
+}
+
+.libraryBtn {
   width: 100%;
 }

@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
-from sqlalchemy import select, func
+from sqlalchemy import select, func, cast, Text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, AutoReply
@@ -30,6 +30,8 @@ class BotAutoReplyService:
             response_buttons=data.response_buttons,
             scope=data.scope,
             is_active=data.is_active,
+            frequency_limit_minutes=data.frequency_limit_minutes,
+            frequency_limit_type=data.frequency_limit_type,
         )
         self.db.add(auto_reply)
         await self.db.flush()
@@ -53,8 +55,11 @@ class BotAutoReplyService:
         self, bot_id: int,
         is_active: Optional[bool] = None,
         owner_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 20,
+        search: Optional[str] = None,
     ) -> Tuple[List[AutoReply], int]:
-        """Получить список автоответов бота."""
+        """Получить список автоответов бота с пагинацией и поиском."""
         query = select(AutoReply).where(AutoReply.bot_id == bot_id)
         if owner_id is not None:
             query = query.join(BotModel, AutoReply.bot_id == BotModel.id).where(
@@ -62,12 +67,16 @@ class BotAutoReplyService:
             )
         if is_active is not None:
             query = query.where(AutoReply.is_active == is_active)
+        if search:
+            query = query.where(cast(AutoReply.keywords, Text).ilike(f"%{search}%"))
 
         total = (await self.db.execute(
             select(func.count()).select_from(query.subquery())
         )).scalar() or 0
 
-        result = await self.db.execute(query.order_by(AutoReply.created_at.desc()))
+        result = await self.db.execute(
+            query.order_by(AutoReply.created_at.desc()).offset(skip).limit(limit)
+        )
         return list(result.scalars().all()), total
 
     async def update(
