@@ -68,7 +68,9 @@ class BotAutoReplyService:
                 BotModel.owner_id == owner_id,
             )
         if channel_id is not None:
-            query = query.where(AutoReply.channel_id == channel_id)
+            query = query.where(
+                (AutoReply.channel_id == channel_id) | (AutoReply.channel_id.is_(None))
+            )
         if is_active is not None:
             query = query.where(AutoReply.is_active == is_active)
         if search:

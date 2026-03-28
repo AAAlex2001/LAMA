@@ -2,11 +2,9 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import inboxReducer from './slices/inbox';
 import createInviteLinkModalReducer from './slices/createInviteLinkModal';
-import autoRepliesReducer from './slices/autoReplies';
 import commandsReducer from './slices/commands';
 import triggersReducer from './slices/triggers';
 import createTriggerModalReducer from './slices/createTriggerModal';
-import createAutoReplyModalReducer from './slices/createAutoReplyModal';
 import createCommandModalReducer from './slices/createCommandModal';
 import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
 import botsReducer from './slices/bots';
@@ -18,11 +16,9 @@ export const inboxStore = configureStore({
     inbox: inboxReducer,
     channels: channelsReducer,
     createInviteLinkModal: createInviteLinkModalReducer,
-    autoReplies: autoRepliesReducer,
     commands: commandsReducer,
     triggers: triggersReducer,
     createTriggerModal: createTriggerModalReducer,
-    createAutoReplyModal: createAutoReplyModalReducer,
     createCommandModal: createCommandModalReducer,
     createGlobalMessageModal: createGlobalMessageModalReducer,
     bots: botsReducer,
@@ -166,14 +162,6 @@ export {
 } from './slices/createInviteLinkModal';
 export type { CreateInviteLinkModalState, ModalStep } from './slices/createInviteLinkModal';
 export {
-  setAutoReplies,
-  addAutoReply,
-  updateAutoReply,
-  removeAutoReply,
-  resetAutoReplies,
-} from './slices/autoReplies';
-export type { AutoReply, AutoReplyCreate } from './slices/autoReplies';
-export {
   setCommands,
   addCommand,
   updateCommand,
@@ -189,11 +177,6 @@ export {
   resetTriggers,
 } from './slices/triggers';
 export type { Trigger, TriggerCreate, TriggerType, ActionType, ChatType } from './slices/triggers';
-export {
-  fetchAutoRepliesThunk,
-  createAutoReplyThunk,
-} from './thunks/autoReplies';
-export type { FetchAutoRepliesParams } from './thunks/autoReplies';
 export {
   fetchCommandsThunk,
   createCommandThunk,
@@ -224,24 +207,6 @@ export {
   resetForm as resetTriggerForm,
 } from './slices/createTriggerModal';
 export type { CreateTriggerModalState, TriggerTypeEnum, ActionTypeEnum } from './slices/createTriggerModal';
-export {
-  setModalOpen as setCreateAutoReplyModalOpen,
-  setKeywords,
-  setKeyword,
-  addKeyword,
-  removeKeyword,
-  setResponseText,
-  setResponseMediaUrl,
-  setResponseMediaType,
-  setScope as setAutoReplyScope,
-  setIsActive as setAutoReplyIsActive,
-  setIsSubmitting as setAutoReplyIsSubmitting,
-  setBotSearch,
-  toggleSelectedBotId,
-  setSelectedBotIds,
-  resetForm as resetAutoReplyForm,
-} from './slices/createAutoReplyModal';
-export type { CreateAutoReplyModalState } from './slices/createAutoReplyModal';
 export {
   setModalOpen as setCreateCommandModalOpen,
   setCommand,

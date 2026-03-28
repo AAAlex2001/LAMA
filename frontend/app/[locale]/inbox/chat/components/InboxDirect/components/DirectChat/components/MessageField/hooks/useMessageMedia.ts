@@ -96,6 +96,7 @@ export function useMessageMedia() {
 
   return {
     mediaFiles,
+    setMediaFiles,
     isUploadingMedia,
     fileInputRef,
     canAddMedia,
