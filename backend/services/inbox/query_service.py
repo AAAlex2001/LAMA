@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 from typing import List, Optional
 from sqlalchemy import select, desc, asc, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.inbox import InboxEvent
+from backend.models.bots import Bot
 from backend.schemas.inbox.enums import InboxCategory, EventStatus, SortDir, EventType
 
 
@@ -20,6 +22,12 @@ AUTOMATION_EVENT_TYPES = (
     EventType.SYSTEM_TRIGGER,
     EventType.SYSTEM_AUTOREPLY,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class BotMeta:
+    tg_bot_username: str
+    tg_bot_name: str
 
 
 class InboxQueryService:
@@ -41,7 +49,7 @@ class InboxQueryService:
         sort_dir: SortDir = SortDir.NEW_FIRST,
         limit: int = 50,
         offset: int = 0,
-    ) -> tuple[List[InboxEvent], int]:
+    ) -> tuple[List[InboxEvent], int, dict[int, BotMeta]]:
 
         base = InboxEvent.owner_id == owner_id
         filters = [base]
@@ -96,4 +104,16 @@ class InboxQueryService:
         count_result = await self.db.execute(count_stmt)
         total = count_result.scalar_one()
 
-        return list(items), total
+        bot_map: dict[int, BotMeta] = {}
+        bot_ids_set = {e.bot_id for e in items if e.bot_id is not None}
+        if bot_ids_set:
+            res = await self.db.execute(
+                select(Bot.id, Bot.username, Bot.first_name).where(Bot.id.in_(bot_ids_set))
+            )
+            for bot_id, username, first_name in res.all():
+                bot_map[int(bot_id)] = BotMeta(
+                    tg_bot_username=str(username) if username is not None else "",
+                    tg_bot_name=str(first_name) if first_name is not None else "",
+                )
+
+        return list(items), total, bot_map

@@ -3,7 +3,8 @@
 """
 import asyncio
 import logging
-from typing import Optional
+from dataclasses import dataclass
+from typing import Optional, Any
 
 from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
@@ -29,6 +30,13 @@ from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True, slots=True)
+class ReplyContext:
+    suffix: str
+    payload: dict[str, Any]
+
 
 class MessageHandler:
     """Обработчик сообщений"""
@@ -89,6 +97,7 @@ class MessageHandler:
                     inbox_service = InboxActionService(self.db)
                     preview = text_content[:100] if text_content else "(медиа)"
                     sender = message.from_user.username or str(message.from_user.id)
+                    reply_ctx = self.build_reply_context(message)
 
                     media_file_id = None
                     if message.photo:
@@ -107,13 +116,14 @@ class MessageHandler:
                         "tg_user_id": message.from_user.id,
                         "tg_username": message.from_user.username,
                         "status": EventStatus.NEW,
-                        "description": f"Сообщение от @{sender}: {preview}",
+                        "description": f"Сообщение от @{sender}: {preview}{reply_ctx.suffix}",
                         "payload": {
                             "message_id": message.message_id,
                             "chat_id": message.chat.id,
                             "text": text_content[:500] if text_content else None,
                             "first_name": message.from_user.first_name,
                             "media_file_id": media_file_id,
+                            **reply_ctx.payload,
                         },
                     })
                 except Exception as e:
@@ -134,6 +144,33 @@ class MessageHandler:
             logger.error(f"Message save error: {e}", exc_info=True)
 
         return None
+
+    def build_reply_context(self, message: Message) -> ReplyContext:
+        """Build human-readable suffix + payload for replied messages."""
+        if not message.reply_to_message:
+            return ReplyContext(suffix="", payload={})
+
+        rt = message.reply_to_message
+        rt_user = rt.from_user
+        if not rt_user:
+            return ReplyContext(suffix="", payload={"reply_to_message_id": rt.message_id})
+
+        rt_text = (rt.text or rt.caption or "").strip()
+        rt_preview = (rt_text[:60] + "…") if len(rt_text) > 60 else rt_text
+
+        rt_name = rt_user.username or rt_user.first_name or str(rt_user.id)
+        if getattr(rt_user, "is_bot", False):
+            rt_name = self.bot_model.username or self.bot_model.first_name or rt_name
+
+        suffix = f"; ответ на @{rt_name}: {rt_preview}" if rt_preview else f"; ответ на @{rt_name}"
+        payload = {
+            "reply_to_message_id": rt.message_id,
+            "reply_to_username": rt_user.username,
+            "reply_to_first_name": rt_user.first_name,
+            "reply_to_is_bot": bool(getattr(rt_user, "is_bot", False)),
+            "reply_to_text": rt_text[:500] if rt_text else None,
+        }
+        return ReplyContext(suffix=suffix, payload=payload)
 
     async def handle_group_comment(self, message: Message, text_content: Optional[str]) -> Optional[DirectChatWsEvent]:
         """Обработать комментарий в группе обсуждений: создать чат, сохранить сообщение, уведомить."""
