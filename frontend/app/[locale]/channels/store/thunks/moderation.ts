@@ -195,6 +195,7 @@ export const updateAutoDeleteThunk = createAsyncThunk(
 export const fetchMediaBlockThunk = createAsyncThunk(
   'moderation/fetchMediaBlock',
   async (channelId: number, { dispatch }) => {
+    dispatch(setMediaBlockTypes([]));
     try {
       const data = await apiRequest<MediaBlockResponse>(`/channels/${channelId}/media-block`);
       dispatch(setMediaBlockTypes(data.block_media_types ?? []));

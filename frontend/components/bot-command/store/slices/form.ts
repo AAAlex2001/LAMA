@@ -14,6 +14,10 @@ interface FormState {
   scope: Exclude<BotCommandScope, null>;
   isActive: boolean;
   isSubmitting: boolean;
+
+  actionType: 'MESSAGE' | 'CLAIM_ADMIN';
+  claimTarget: 'ADMINS' | 'INBOX' | 'SPECIFIC_CHANNEL';
+  claimChannelIds: number[];
 }
 
 const initialState: FormState = {
@@ -28,6 +32,10 @@ const initialState: FormState = {
   scope: 'GROUPS',
   isActive: true,
   isSubmitting: false,
+
+  actionType: 'MESSAGE',
+  claimTarget: 'ADMINS',
+  claimChannelIds: [],
 };
 
 const formSlice = createSlice({
@@ -50,6 +58,9 @@ const formSlice = createSlice({
         responseButtons?: InlineKeyboard | null;
         scope: BotCommandScope;
         isActive: boolean;
+        actionType?: 'MESSAGE' | 'CLAIM_ADMIN';
+        claimTarget?: 'ADMINS' | 'INBOX' | 'SPECIFIC_CHANNEL';
+        claimChannelIds?: number[] | null;
       }>,
     ) {
       const p = action.payload;
@@ -72,6 +83,10 @@ const formSlice = createSlice({
       >;
       state.isActive = p.isActive;
       state.isSubmitting = false;
+
+      state.actionType = action.payload.actionType || 'MESSAGE';
+      state.claimTarget = action.payload.claimTarget || 'ADMINS';
+      state.claimChannelIds = action.payload.claimChannelIds ? [...action.payload.claimChannelIds] : [];
     },
     close(state) {
       state.isOpen = false;

@@ -10,6 +10,9 @@ export interface BotCommand {
   command: string;
   description?: string | null;
   response_text: string;
+  action_type?: 'MESSAGE' | 'CLAIM_ADMIN';
+  claim_target?: 'ADMINS' | 'INBOX' | 'SPECIFIC_CHANNEL' | null;
+  claim_channel_ids?: number[] | null;
   response_media_url?: string | null;
   response_media_urls?: string[] | null;
   response_media_type: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';

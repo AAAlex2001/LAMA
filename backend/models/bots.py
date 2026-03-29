@@ -224,7 +224,8 @@ class BotCommand(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
-    
+    channel_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=True, index=True)
+
     # Команда
     command: Mapped[str] = mapped_column(String(255), nullable=False, index=True)  # Например: /start, /help
     description: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
@@ -239,6 +240,11 @@ class BotCommand(Base):
     # Настройки
     scope: Mapped[Optional[CommandScope]] = mapped_column(SQLEnum(CommandScope), nullable=True)  # Область работы команды
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Тип команды (сообщение или жалоба администратору)
+    action_type: Mapped[str] = mapped_column(String(32), nullable=False, server_default="MESSAGE")
+    claim_target: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)  # ADMINS | INBOX | SPECIFIC_CHANNEL
+    claim_channel_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # список channel_groups.id
 
     # Метаданные
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)

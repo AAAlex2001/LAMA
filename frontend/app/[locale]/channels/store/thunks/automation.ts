@@ -23,6 +23,7 @@ interface InfoMessagesResponse {
 export const fetchInfoMessagesThunk = createAsyncThunk(
   'automation/fetchInfoMessages',
   async (channelId: number, { dispatch }) => {
+    dispatch(setMessages([]));
     dispatch(setLoading(true));
     try {
       const data = await apiRequest<InfoMessagesResponse>(

@@ -29,6 +29,7 @@ interface RulesListResponse {
 export const fetchBannedWordsThunk = createAsyncThunk(
   'bannedWords/fetch',
   async (channelId: number, { dispatch }) => {
+    dispatch(setRules([]));
     try {
       const [rulesData, toggleData] = await Promise.all([
         apiRequest<RulesListResponse>(`/channels/${channelId}/moderation/rules`),

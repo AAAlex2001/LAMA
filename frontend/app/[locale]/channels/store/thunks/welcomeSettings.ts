@@ -110,6 +110,7 @@ export const deleteWelcomeMessageThunk = createAsyncThunk(
 export const fetchForumTopicsThunk = createAsyncThunk(
   'welcomeSettings/fetchTopics',
   async (channelId: number, { dispatch }) => {
+    dispatch(setTopics([]));
     try {
       const data = await apiRequest<ForumTopic[]>(`/channels/${channelId}/topics`);
       dispatch(setTopics(data));

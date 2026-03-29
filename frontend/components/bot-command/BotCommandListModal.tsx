@@ -66,6 +66,9 @@ const BotCommandListModal: FC<BotCommandListModalProps> = ({ botId, channelId })
         responseButtons: item.response_buttons ?? null,
         scope: item.scope ?? 'GROUPS',
         isActive: item.is_active,
+        actionType: (item.action_type as any) || 'MESSAGE',
+        claimTarget: (item.claim_target as any) || 'ADMINS',
+        claimChannelIds: item.claim_channel_ids ?? [],
       }),
     );
   };
@@ -132,7 +135,9 @@ const BotCommandListModal: FC<BotCommandListModalProps> = ({ botId, channelId })
                         </div>
                         <div className={styles.cardResponseBlock}>
                           <span className={styles.cardLabel}>Ответ:</span>
-                          <span className={styles.cardResponse}>{stripHtml(item.response_text)}</span>
+                          <span className={styles.cardResponse}>
+                            {item.action_type === 'CLAIM_ADMIN' ? 'Жалоба администратору' : stripHtml(item.response_text) || '—'}
+                          </span>
                         </div>
                       </div>
 

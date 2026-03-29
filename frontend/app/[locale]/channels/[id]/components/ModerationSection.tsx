@@ -252,6 +252,17 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
     dispatch(fetchAutoDeleteThunk(channel.id));
   }, [channel.id, dispatch]);
 
+  useEffect(() => {
+    return () => {
+      if (floodSaveRef.current) clearTimeout(floodSaveRef.current);
+      if (antispamSaveRef.current) clearTimeout(antispamSaveRef.current);
+      if (nightModeSaveRef.current) clearTimeout(nightModeSaveRef.current);
+      if (commandsSaveRef.current) clearTimeout(commandsSaveRef.current);
+      if (mediaBlockSaveRef.current) clearTimeout(mediaBlockSaveRef.current);
+      if (bannedActionSaveRef.current) clearTimeout(bannedActionSaveRef.current);
+    };
+  }, []);
+
   const scheduleFloodSave = () => {
     if (floodSaveRef.current) clearTimeout(floodSaveRef.current);
     floodSaveRef.current = setTimeout(() => {

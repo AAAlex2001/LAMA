@@ -6,6 +6,7 @@ import type { InviteLink } from '@/types';
 export const fetchInviteLinksThunk = createAsyncThunk(
   'inviteLinks/fetch',
   async (channelId: number, { dispatch, rejectWithValue }) => {
+    dispatch(setLinks([]));
     dispatch(setLoading(true));
     try {
       const result = await apiRequest<{ items: InviteLink[]; total: number }>(

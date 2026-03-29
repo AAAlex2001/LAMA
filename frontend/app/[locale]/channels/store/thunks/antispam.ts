@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/store/api';
-import { initFromResponse, setSaving } from '../slices/antispam';
+import { initFromResponse, setSaving, setWhitelist, setBlacklist } from '../slices/antispam';
 import type { ChannelsPageState } from '../index';
 
 interface AntispamResponse {
@@ -14,6 +14,8 @@ interface AntispamResponse {
 export const fetchAntispamThunk = createAsyncThunk(
   'antispam/fetch',
   async (channelId: number, { dispatch }) => {
+    dispatch(setWhitelist([]));
+    dispatch(setBlacklist([]));
     try {
       const data = await apiRequest<AntispamResponse>(`/channels/${channelId}/antispam`);
       dispatch(initFromResponse(data));

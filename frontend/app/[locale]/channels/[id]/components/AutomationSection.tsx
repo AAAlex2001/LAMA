@@ -90,7 +90,11 @@ const AutoRepliesSection: FC<{ botId: number; channelId: number; channelTitle?: 
   );
 };
 
-const BotCommandsBlock: FC<{ botId: number; channelId: number }> = ({ botId, channelId }) => {
+const BotCommandsBlock: FC<{ botId: number; channelId: number; channelTitle?: string }> = ({
+  botId,
+  channelId,
+  channelTitle,
+}) => {
   const dispatch = useBotCommandDispatch();
   const items = useBotCommandSelector((s) => s.list.items);
   const activeCount = items.filter((c) => c.is_active).length;
@@ -115,7 +119,7 @@ const BotCommandsBlock: FC<{ botId: number; channelId: number }> = ({ botId, cha
             Библиотека команд
           </Button>
           <BotCommandListModal botId={botId} channelId={channelId} />
-          <CreateBotCommandModal botId={botId} channelId={channelId} />
+          <CreateBotCommandModal botId={botId} channelId={channelId} channelTitle={channelTitle} />
         </>
       )}
     </div>
@@ -194,7 +198,7 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
       {isGroup && botId && (
         <div className={styles.automationExtras}>
           <BotCommandProvider botId={botId} channelId={channelId}>
-            <BotCommandsBlock botId={botId} channelId={channelId} />
+            <BotCommandsBlock botId={botId} channelId={channelId} channelTitle={channel.title} />
           </BotCommandProvider>
         </div>
       )}

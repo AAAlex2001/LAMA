@@ -19,6 +19,7 @@ interface AutoApprovalData {
 export const fetchJoinSettingsThunk = createAsyncThunk(
   'joinSettings/fetch',
   async (botId: number, { dispatch, rejectWithValue }) => {
+    dispatch(setApprovalData({ approvalMode: 'MANUAL', requiredChannels: [] }));
     try {
       const data = await apiRequest<AutoApprovalData>(`/bots/${botId}/auto-approval`);
       dispatch(setApprovalData({
