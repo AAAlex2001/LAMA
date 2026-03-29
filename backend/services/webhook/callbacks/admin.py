@@ -70,6 +70,8 @@ class AdminCallbackProcessor(BaseCallbackProcessor):
                     chat_id=chat_id, user_id=target_user_id
                 )
                 answer_text = "🚫 Пользователь забанен."
+            elif action == "ignore":
+                answer_text = "✅ Проигнорировано."
             else:
                 return
 

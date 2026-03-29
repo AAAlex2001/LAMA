@@ -12,7 +12,7 @@ from backend.utils import build_keyboard
 from backend.services.inbox.action_service import InboxActionService
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id, get_channel
-from backend.celery.tasks import send_claim_messages
+from backend.celery.tasks import send_claim_messages, send_claim_to_admins
 from backend.utils.media import is_video_url, is_document_url
 
 logger = logging.getLogger(__name__)
@@ -260,6 +260,12 @@ class CommandProcessor:
                 if target_chat_ids:
                     # Celery handles rate limit retries without blocking webhook.
                     send_claim_messages.apply_async(args=[self.bot_model.id, target_chat_ids, claim_text], queue="default")
+            elif claim_target == 'ADMINS':
+                if reporter and reporter.id:
+                    send_claim_to_admins.apply_async(
+                        args=[self.bot_model.id, int(message.chat.id), int(reporter.id), int(message.message_id), claim_text],
+                        queue="default",
+                    )
             else:
                 inbox_service = InboxActionService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
