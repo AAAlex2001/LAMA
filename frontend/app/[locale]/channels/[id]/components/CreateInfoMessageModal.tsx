@@ -15,6 +15,7 @@ import { useMessageMedia } from '@/app/[locale]/inbox/chat/components/InboxDirec
 import { useInlineButtons } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
 import { useTemplates } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useTemplates';
 import { uploadMediaFile } from '@/store/api';
+import OldButton from '@/components/button/button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
 import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
 import type { TextTemplate } from '@/types/post';
@@ -389,62 +390,47 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                 }}
               />
 
-              {existingMedia && mediaFiles.length === 0 && (
-                <div className={styles.existingMedia}>
-                  {existingMedia.type === 'PHOTO' || existingMedia.type === 'ANIMATION' ? (
-                    <img src={existingMedia.url} alt="" className={styles.existingMediaImg} />
-                  ) : existingMedia.type === 'VIDEO' ? (
-                    <video src={existingMedia.url} className={styles.existingMediaImg} />
-                  ) : (
-                    <div className={styles.existingMediaDoc}>DOC</div>
-                  )}
-                  <button
-                    type="button"
-                    className={styles.existingMediaRemove}
-                    onClick={() => setExistingMedia(null)}
-                  >
-                    &times;
-                  </button>
-                </div>
-              )}
-
-              <div className={styles.mediaMobile}>
-                <MediaPreview
-                  files={mediaFiles}
-                  onRemove={handleRemoveFile}
-                  onToggleBlur={handleToggleBlur}
-                  onMove={handleMoveMedia}
-                />
-                <Button
-                  variant="ghost"
-                  intent="neutral"
-                  size="lg"
-                  className={styles.attachBtn}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={!canAddMedia}
-                >
-                  <PaperclipIcon width={24} height={24} />
-                  Прикрепить файл
-                </Button>
-              </div>
-
+              {/* Unified dropzone */}
               <div className={styles.mediaDropzone}>
-                {mediaFiles.length === 0 && !existingMedia ? (
+                {existingMedia && mediaFiles.length === 0 ? (
+                  <div className={styles.dropzoneContent}>
+                    <div className={styles.existingMedia}>
+                      {existingMedia.type === 'PHOTO' || existingMedia.type === 'ANIMATION' ? (
+                        <img src={existingMedia.url} alt="" className={styles.existingMediaImg} />
+                      ) : existingMedia.type === 'VIDEO' ? (
+                        <video src={existingMedia.url} className={styles.existingMediaImg} />
+                      ) : (
+                        <div className={styles.existingMediaDoc}>DOC</div>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.existingMediaRemove}
+                        onClick={() => setExistingMedia(null)}
+                      >
+                        &times;
+                      </button>
+                    </div>
+                    <OldButton
+                      text="Заменить файл"
+                      variant="templateCard"
+                      showArrow={false}
+                      icon={<PaperclipIcon width={24} height={24} />}
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                  </div>
+                ) : mediaFiles.length === 0 ? (
                   <>
                     <span className={styles.dropzoneText}>
                       Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
                     </span>
-                    <Button
-                      variant="ghost"
-                      intent="neutral"
-                      size="lg"
-                      className={styles.attachBtn}
-                      onClick={() => fileInputRef.current?.click()}
+                    <OldButton
+                      text="Прикрепить файл"
+                      variant="templateCard"
+                      showArrow={false}
+                      icon={<PaperclipIcon width={24} height={24} />}
                       disabled={!canAddMedia}
-                    >
-                      <PaperclipIcon width={24} height={24} />
-                      Прикрепить файл
-                    </Button>
+                      onClick={() => fileInputRef.current?.click()}
+                    />
                   </>
                 ) : (
                   <div className={styles.dropzoneContent}>
@@ -454,17 +440,14 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                       onToggleBlur={handleToggleBlur}
                       onMove={handleMoveMedia}
                     />
-                    <Button
-                      variant="ghost"
-                      intent="neutral"
-                      size="lg"
-                      className={styles.attachBtn}
-                      onClick={() => fileInputRef.current?.click()}
+                    <OldButton
+                      text="Прикрепить ещё"
+                      variant="templateCard"
+                      showArrow={false}
+                      icon={<PaperclipIcon width={24} height={24} />}
                       disabled={!canAddMedia}
-                    >
-                      <PaperclipIcon width={24} height={24} />
-                      Прикрепить файл
-                    </Button>
+                      onClick={() => fileInputRef.current?.click()}
+                    />
                   </div>
                 )}
               </div>

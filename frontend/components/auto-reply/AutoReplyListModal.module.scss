@@ -222,70 +222,85 @@
   flex-shrink: 0;
 }
 
-/* Icon buttons (delete / edit) */
-.iconBtn {
-  width: 32px !important;
-  height: 32px !important;
-  padding: 0 !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(176, 180, 184, 0.2) !important;
-  color: #B0B4B8 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  flex-shrink: 0;
-
-  &:hover {
-    color: #EF4444 !important;
-    border-color: rgba(239, 68, 68, 0.3) !important;
-  }
-
-  /* span.label wraps the icon — make it flex */
-  span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-.iconBtnEdit {
-  border: 1px solid rgba(59, 130, 246, 0.1) !important;
-
-  &:hover {
-    color: #383F45 !important;
-    border-color: rgba(59, 130, 246, 0.3) !important;
-  }
-}
-
 /* Select button */
 .selectBtn {
-  width: 79px !important;
-  height: 37px !important;
-  padding: 0 10px !important;
-  border-radius: 10px !important;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
+  min-width: 75px;
   flex-shrink: 0;
+}
 
-  span {
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 17px;
+/* Icon buttons (delete / edit) */
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  position: relative;
+  color: #B0B4B8;
+  flex-shrink: 0;
+}
+
+.actionButtonBordered {
+  border: 1px solid rgba(176, 180, 184, 0.2);
+}
+
+.actionButtonDelete {
+  &:hover {
+    background: #FEF2F2;
+    border-color: rgba(227, 51, 38, 0.3);
+    color: #E33326;
   }
 }
 
-.selectBtnActive {
-  background: rgba(59, 130, 246, 0.1) !important;
-  border: 1px solid rgba(59, 130, 246, 0.1) !important;
-  width: 73px !important;
-  box-shadow: none !important;
+.actionButtonEdit {
+  border: 1px solid rgba(59, 130, 246, 0.1);
 
-  span {
-    background: none !important;
-    -webkit-background-clip: unset !important;
-    background-clip: unset !important;
-    -webkit-text-fill-color: #B1CDFB !important;
-    color: #B1CDFB !important;
+  &:hover {
+    background: #EBF2FE;
+    border-color: rgba(59, 130, 246, 0.3);
+    color: #3B82F6;
   }
+}
+
+
+/* Confirm delete modal */
+.confirmModal {
+  max-width: 400px !important;
+}
+
+.confirmHeader {
+  justify-content: space-between;
+}
+
+.confirmTitle {
+  font-weight: 600;
+  font-size: 16px;
+  color: #383F45;
+}
+
+.confirmBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 8px;
+}
+
+.confirmText {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #383F45;
+  margin: 0;
+}
+
+.confirmFooter {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: flex-end;
 }

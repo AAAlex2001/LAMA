@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useRef, useState } from 'react';
+import { FC, useRef, useState, useEffect } from 'react';
 import ModalBase from '@/components/modal-base';
 import Input from '@/components/input';
 import Toggle from '@/components/toggle/toggle';
@@ -16,12 +16,18 @@ import {
   PaperclipIcon,
 } from '@/components/icons';
 import MediaPreview from '@/components/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
+import PostPreviewModal from '@/components/post-preview-modal/post-preview-modal';
+import type { InlineKeyboardPreviewData } from '@/components/post-preview-modal/inline-keyboard-preview/inline-keyboard-preview';
+import Loader from '@/components/loader';
+import OldButton from '@/components/button/button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useMessageMedia } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
 import { useInlineButtons } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 import { buildInlineKeyboard } from '@/store/utils';
+import type { InlineKeyboard, ButtonRow } from '@/types/post';
 import { useAutoReplyDispatch, useAutoReplySelector } from './store';
 import {
   close,
@@ -41,6 +47,7 @@ import styles from './CreateAutoReplyModal.module.scss';
 interface CreateAutoReplyModalProps {
   botId: number;
   channelId?: number;
+  channelTitle?: string;
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -84,7 +91,35 @@ function renderPreview(text: string): string {
   );
 }
 
-const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId, isOpen: externalOpen, onOpenChange }) => {
+function mediaFilesFromUrls(urls: string[]): MediaFile[] {
+  return urls.map((url, i) => {
+    const isVideo = /\.(mp4|mov|avi|webm)/i.test(url);
+    return {
+      id: `edit-${i}-${Date.now()}`,
+      type: isVideo ? 'video' : 'image',
+      url,
+      preview_url: url,
+    } as MediaFile;
+  });
+}
+
+function buttonRowsFromKeyboard(kb: InlineKeyboard): ButtonRow[] {
+  return kb.buttons.map((row) => ({
+    id: `row-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    buttons: row.map((btn) => ({
+      id: `btn-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      text: btn.text,
+      type: btn.type ?? 'url',
+      url: btn.url,
+      callback_action: btn.callback_action,
+      callback_response: btn.callback_response,
+      hidden_text_subscribed: btn.hidden_text_subscribed,
+      hidden_text_unsubscribed: btn.hidden_text_unsubscribed,
+    })),
+  }));
+}
+
+const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId, channelTitle, isOpen: externalOpen, onOpenChange }) => {
   const dispatch = useAutoReplyDispatch();
   const { showSuccess, showError } = useNotifications();
   const form = useAutoReplySelector((s) => s.form);
@@ -102,6 +137,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
 
   const {
     mediaFiles,
+    setMediaFiles,
     isUploadingMedia,
     fileInputRef,
     handleFileUpload,
@@ -118,6 +154,8 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
     updateButton: updateInlineButton,
     deleteButton: deleteInlineButton,
     reset: resetInlineButtons,
+    setRows: setInlineButtonRows,
+    setIsOpen: setInlineButtonsIsOpen,
   } = useInlineButtons();
 
   const MAX_MEDIA = 10;
@@ -126,7 +164,22 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
 
   const isEditing = form.editingId !== null;
 
-  // All non-empty keywords with their indices
+  useEffect(() => {
+    if (!form.isOpen || !isEditing) return;
+
+    if (form.responseMediaUrls.length > 0) {
+      setMediaFiles(mediaFilesFromUrls(form.responseMediaUrls));
+    }
+
+    if (form.responseButtons && form.responseButtons.buttons?.length > 0) {
+      const rows = buttonRowsFromKeyboard(form.responseButtons);
+      setInlineButtonRows(rows);
+      setInlineButtonsOpen(true);
+      setInlineButtonsIsOpen(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.editingId]);
+
   const validKeywords = form.keywords
     .map((kw, i) => ({ kw, i }))
     .filter(({ kw }) => kw.trim());
@@ -154,6 +207,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
     if (!word) return;
     setAiLoading(true);
     setSynonymsForWord(word);
+    setSynonymSuggestions([]);
 
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('lamaplanner_access_token') || '' : '';
@@ -198,11 +252,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
         .filter((w) => w.length > 0 && w.length < 40 && w.toLowerCase() !== word.toLowerCase());
 
       if (words.length > 0) {
-        // Accumulate synonyms — never replace old ones
-        setSynonymSuggestions((prev) => {
-          const combined = [...prev, ...words.slice(0, 10)];
-          return [...new Set(combined)];
-        });
+        setSynonymSuggestions(words.slice(0, 10));
       }
     } catch {
       showError('Не удалось получить синонимы');
@@ -316,311 +366,324 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
     setInlineButtonsOpen(!inlineButtonsOpen);
   };
 
+  const previewInlineKeyboard: InlineKeyboardPreviewData | undefined = inlineButtonRows.length > 0
+    ? {
+        buttons: inlineButtonRows
+          .map(row => row.buttons.filter(b => b.text?.trim()).map(b => ({ text: b.text, type: b.type })))
+          .filter(row => row.length > 0),
+      }
+    : undefined;
+
   return (
-    <ModalBase isOpen={isModalOpen} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <ModalBase.Content size="xl" className={styles.modal}>
-        <ModalBase.Header className={styles.header}>
-          <ModalBase.Title className={styles.title}>
-            {isEditing ? 'Редактировать автоответ' : 'Создание автоответа'}
-          </ModalBase.Title>
-          <ModalBase.Close />
-        </ModalBase.Header>
+    <>
+      <ModalBase isOpen={isModalOpen} onOpenChange={(v) => { if (!v) handleClose(); }}>
+        <ModalBase.Content size="xl" className={styles.modal}>
+          <ModalBase.Header className={styles.header}>
+            <ModalBase.Title className={styles.title}>
+              {isEditing ? 'Редактировать автоответ' : 'Создание автоответа'}
+            </ModalBase.Title>
+            <ModalBase.Close />
+          </ModalBase.Header>
 
-        <ModalBase.Body className={styles.body}>
-          <div className={styles.desktopLayout}>
-            {/* LEFT COLUMN */}
-            <div className={styles.leftColumn}>
-              {/* Trigger phrases */}
-              <div>
-                <span className={styles.sectionLabel}>Триггер-фразы</span>
-                <div className={styles.keywordInputWrapper}>
-                  <div className={styles.keywordInputRow}>
-                    <Input
-                      className={styles.keywordInput}
-                      placeholder="Введите слово или фразу"
-                      value={newKeyword}
-                      onChange={setNewKeyword}
-                      onKeyDown={handleKeywordKeyDown}
-                      icons={[
-                        {
-                          icon: <AiEditIcon width={21} height={21} color={aiLoading ? '#3B82F6' : '#383F45'} />,
-                          onClick: handleAiSynonyms,
-                          onMouseEnter: () => setAiTooltipVisible(true),
-                          onMouseLeave: () => setAiTooltipVisible(false),
-                          disabled: aiLoading || !newKeyword.trim(),
-                        },
-                      ]}
-                    />
-                    <button
-                      type="button"
-                      className={styles.addKeywordBtn}
-                      onClick={handleAddKeyword}
-                      disabled={!newKeyword.trim()}
-                    >
-                      <PlusIcon width={16} height={16} color="#3B82F6" />
-                    </button>
-                  </div>
-
-                  {aiTooltipVisible && (
-                    <div className={styles.aiTooltip}>Найти список синонимов</div>
-                  )}
-                </div>
-
-                {validKeywords.length > 0 && (
-                  <div className={styles.keywordsColumns}>
-                    {renderKeywordColumn(leftKeywords)}
-                    {rightKeywords.length > 0 && renderKeywordColumn(rightKeywords)}
-                  </div>
-                )}
-
-                {synonymSuggestions.length > 0 && (
-                  <div className={styles.synonymPanel}>
-                    <div className={styles.synonymPanelHeader}>
-                      <span className={styles.synonymLabel}>
-                        {aiLoading
-                          ? `Ищу синонимы для «${synonymsForWord}»...`
-                          : `Синонимы для «${synonymsForWord}»`}
-                      </span>
-                      <button type="button" className={styles.synonymDismiss} onClick={() => setSynonymSuggestions([])}>
-                        ✕
+          <ModalBase.Body className={styles.body}>
+            <div className={styles.desktopLayout}>
+              {/* LEFT COLUMN */}
+              <div className={styles.leftColumn}>
+                {/* Trigger phrases */}
+                <div>
+                  <span className={styles.sectionLabel}>Триггер-фразы</span>
+                  <div className={styles.keywordInputWrapper}>
+                    <div className={styles.keywordInputRow}>
+                      <Input
+                        className={styles.keywordInput}
+                        placeholder="Введите слово или фразу"
+                        value={newKeyword}
+                        onChange={setNewKeyword}
+                        onKeyDown={handleKeywordKeyDown}
+                        icons={[
+                          {
+                            icon: aiLoading
+                              ? <Loader size={18} color="blue" />
+                              : <AiEditIcon width={21} height={21} color={newKeyword.trim() ? '#3B82F6' : '#383F45'} />,
+                            onClick: handleAiSynonyms,
+                            onMouseEnter: () => setAiTooltipVisible(true),
+                            onMouseLeave: () => setAiTooltipVisible(false),
+                            disabled: aiLoading || !newKeyword.trim(),
+                          },
+                        ]}
+                      />
+                      <button
+                        type="button"
+                        className={styles.addKeywordBtn}
+                        onClick={handleAddKeyword}
+                        disabled={!newKeyword.trim()}
+                      >
+                        <PlusIcon width={16} height={16} color="#3B82F6" />
                       </button>
                     </div>
-                    <div className={styles.synonymChips}>
-                      {synonymSuggestions.map((w, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          className={`${styles.synonymChip} ${form.keywords.includes(w) ? styles.synonymChipAdded : ''}`}
-                          onClick={() => { if (!form.keywords.includes(w)) dispatch(addKeywords([w])); }}
-                          disabled={form.keywords.includes(w)}
-                        >
-                          {form.keywords.includes(w) ? '✓ ' : '+ '}{w}
-                        </button>
-                      ))}
-                    </div>
+
+                    {aiTooltipVisible && (
+                      <div className={styles.aiTooltip}>Найти список синонимов</div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Frequency */}
-              <div className={styles.frequencySection}>
-                <div className={styles.toggleRow}>
-                  <span className={styles.toggleLabel}>Ограничить частоту ответа</span>
-                  <Toggle checked={form.frequencyLimitEnabled} onChange={(v) => dispatch(setFrequencyLimitEnabled(v))} />
-                </div>
+                  {validKeywords.length > 0 && (
+                    <div className={styles.keywordsColumns}>
+                      {renderKeywordColumn(leftKeywords)}
+                      {rightKeywords.length > 0 && renderKeywordColumn(rightKeywords)}
+                    </div>
+                  )}
 
-                {form.frequencyLimitEnabled && (
-                  <>
-                    <div className={styles.pickerRow}>
-                      <span className={styles.pickerLabel}>Не чаще чем:</span>
-                      <div className={styles.pickerRight} onClick={() => setFrequencyPickerOpen(!frequencyPickerOpen)}>
-                        <span className={styles.pickerValueText}>{frequencyLabel}</span>
-                        <div className={`${styles.pickerChevron} ${frequencyPickerOpen ? styles.pickerChevronOpen : ''}`}>
-                          <ChevronDownIcon width={14} height={14} color="#858585" />
-                        </div>
+                  {(synonymSuggestions.length > 0 || aiLoading) && (
+                    <div className={styles.synonymPanel}>
+                      <div className={styles.synonymPanelHeader}>
+                        <span className={styles.synonymLabel}>
+                          {aiLoading
+                            ? `Ищу синонимы для «${synonymsForWord}»...`
+                            : `Синонимы для «${synonymsForWord}»`}
+                        </span>
+                        {!aiLoading && (
+                          <button type="button" className={styles.synonymDismiss} onClick={() => setSynonymSuggestions([])}>
+                            ✕
+                          </button>
+                        )}
                       </div>
-                      {frequencyPickerOpen && (
-                        <div className={styles.pickerDropdown}>
-                          {FREQUENCY_OPTIONS.map((opt) => (
+                      {aiLoading ? (
+                        <div className={styles.synonymLoadingRow}>
+                          <Loader size={18} color="blue" />
+                        </div>
+                      ) : (
+                        <div className={styles.synonymChips}>
+                          {synonymSuggestions.map((w, i) => (
                             <button
-                              key={opt.value}
+                              key={i}
                               type="button"
-                              className={`${styles.pickerOption} ${form.frequencyLimitMinutes === opt.value ? styles.pickerOptionActive : ''}`}
-                              onClick={() => { dispatch(setFrequencyLimitMinutes(opt.value)); setFrequencyPickerOpen(false); }}
+                              className={`${styles.synonymChip} ${form.keywords.includes(w) ? styles.synonymChipAdded : ''}`}
+                              onClick={() => { if (!form.keywords.includes(w)) dispatch(addKeywords([w])); }}
+                              disabled={form.keywords.includes(w)}
                             >
-                              {opt.label}
+                              {form.keywords.includes(w) ? '✓ ' : '+ '}{w}
                             </button>
                           ))}
                         </div>
                       )}
                     </div>
-
-                    <div className={styles.radioGroup}>
-                      <div className={styles.radioRow} onClick={() => dispatch(setFrequencyLimitType('per_user'))}>
-                        <Checkbox variant="radio" checked={form.frequencyLimitType === 'per_user'} onChange={() => dispatch(setFrequencyLimitType('per_user'))} />
-                        <span className={styles.radioLabel}>Для одного пользователя</span>
-                      </div>
-                      <div className={styles.radioRow} onClick={() => dispatch(setFrequencyLimitType('per_group'))}>
-                        <Checkbox variant="radio" checked={form.frequencyLimitType === 'per_group'} onChange={() => dispatch(setFrequencyLimitType('per_group'))} />
-                        <span className={styles.radioLabel}>Для всей группы</span>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Scope */}
-              <div className={styles.scopeSection}>
-                <span className={styles.sectionLabel}>Область действия</span>
-                <div className={styles.radioGroup}>
-                  <div className={styles.radioRow} onClick={() => dispatch(setScope('GROUPS'))}>
-                    <Checkbox variant="radio" checked={form.scope === 'GROUPS'} onChange={() => dispatch(setScope('GROUPS'))} />
-                    <span className={styles.radioLabel}>Публичные чаты</span>
-                  </div>
-                  <div className={styles.radioRow} onClick={() => dispatch(setScope('PRIVATE'))}>
-                    <Checkbox variant="radio" checked={form.scope === 'PRIVATE'} onChange={() => dispatch(setScope('PRIVATE'))} />
-                    <span className={styles.radioLabel}>Приватные чаты</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* RIGHT COLUMN */}
-            <div className={styles.rightColumn}>
-              {/* Response text */}
-              <div className={styles.responseSection}>
-                <div className={styles.responseLabelRow}>
-                  <span className={styles.responseLabel}>Текст ответа</span>
-                  <button
-                    type="button"
-                    className={`${styles.previewBtn} ${previewOpen ? styles.previewBtnActive : ''}`}
-                    title="Предпросмотр"
-                    onClick={() => setPreviewOpen(!previewOpen)}
-                  >
-                    <EyeIcon width={16} height={16} color="currentColor" />
-                  </button>
+                  )}
                 </div>
 
-                <div className={styles.textareaWrapper}>
-                  <textarea
-                    ref={textareaRef}
-                    className={styles.textarea}
-                    placeholder="Введите текст ответа"
-                    value={form.responseText}
-                    onChange={(e) => {
-                      if (e.target.value.length <= MAX_RESPONSE_LENGTH) dispatch(setResponseText(e.target.value));
-                    }}
-                  />
-                  <div className={styles.charCounter}>{form.responseText.length}/{MAX_RESPONSE_LENGTH}</div>
-                </div>
-
-                {previewOpen && (
-                  <div className={styles.previewPanel}>
-                    <span className={styles.previewLabel}>Предпросмотр:</span>
-                    <div className={styles.previewBubble}>
-                      {renderPreview(form.responseText) || <span className={styles.previewEmpty}>Введите текст ответа...</span>}
-                    </div>
+                {/* Frequency */}
+                <div className={styles.frequencySection}>
+                  <div className={styles.toggleRow}>
+                    <span className={styles.toggleLabel}>Ограничить частоту ответа</span>
+                    <Toggle checked={form.frequencyLimitEnabled} onChange={(v) => dispatch(setFrequencyLimitEnabled(v))} />
                   </div>
-                )}
 
-                <div className={styles.shortcodesRow}>
-                  <span className={styles.shortcodesLabelInline}>Доступные шорткоды:</span>
-                  <div className={styles.shortcodeChips}>
-                    {SHORTCODES.map((sc) => (
-                      <button key={sc.code} type="button" className={styles.shortcodeChip} onClick={() => handleInsertShortcode(sc.code)}>
-                        {sc.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Inline buttons */}
-              <div>
-                <button
-                  type="button"
-                  className={`${styles.inlineButtonsRow} ${inlineButtonsOpen ? styles.inlineButtonsRowActive : ''}`}
-                  onClick={handleToggleInlineButtons}
-                >
-                  <InlineButtonIcon width={24} height={24} color="#383F45" />
-                  <span className={styles.inlineButtonsLabel}>Кнопки</span>
-                </button>
-                {inlineButtonsOpen && (
-                  <div className={styles.inlineButtonsContent}>
-                    <InlineButtons
-                      isOpen={inlineButtonsOpen}
-                      rows={inlineButtonRows}
-                      onAddRow={addInlineButtonRow}
-                      onAddColumn={addInlineButtonColumn}
-                      onUpdateButton={updateInlineButton}
-                      onDeleteButton={deleteInlineButton}
-                      hideButtonType
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Media */}
-              <div className={styles.mediaSection}>
-                <span className={styles.mediaLabel}>Медиа и файлы</span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*,video/*,.pdf,.doc,.docx,.txt"
-                  multiple
-                  onChange={handleFileUpload}
-                  style={{ display: 'none' }}
-                />
-                <div
-                  className={styles.mediaDropzone}
-                  onClick={() => canAddMedia && fileInputRef.current?.click()}
-                >
-                  {limitedMediaFiles.length > 0 ? (
-                    <div className={styles.mediaInFrame} onClick={(e) => e.stopPropagation()}>
-                      <MediaPreview
-                        files={limitedMediaFiles}
-                        onRemove={handleRemoveFile}
-                        onToggleBlur={handleToggleBlur}
-                        onMove={handleMoveMedia}
-                      />
-                      {canAddMedia && (
-                        <button
-                          type="button"
-                          className={styles.mediaAttachBtn}
-                          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                          disabled={isUploadingMedia}
-                        >
-                          <PaperclipIcon width={16} height={16} color="#383F45" />
-                          {isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
+                  {form.frequencyLimitEnabled && (
                     <>
-                      <span className={styles.mediaDropzoneText}>
-                        Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
-                      </span>
-                      <button
-                        type="button"
-                        className={styles.mediaAttachBtn}
-                        onClick={(e) => { e.stopPropagation(); if (canAddMedia) fileInputRef.current?.click(); }}
-                        disabled={!canAddMedia || isUploadingMedia}
-                      >
-                        <PaperclipIcon width={16} height={16} color="#383F45" />
-                        {isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
-                      </button>
+                      <div className={styles.pickerRow}>
+                        <span className={styles.pickerLabel}>Не чаще чем:</span>
+                        <div className={styles.pickerRight} onClick={() => setFrequencyPickerOpen(!frequencyPickerOpen)}>
+                          <span className={styles.pickerValueText}>{frequencyLabel}</span>
+                          <div className={`${styles.pickerChevron} ${frequencyPickerOpen ? styles.pickerChevronOpen : ''}`}>
+                            <ChevronDownIcon width={14} height={14} color="#858585" />
+                          </div>
+                        </div>
+                        {frequencyPickerOpen && (
+                          <div className={styles.pickerDropdown}>
+                            {FREQUENCY_OPTIONS.map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                className={`${styles.pickerOption} ${form.frequencyLimitMinutes === opt.value ? styles.pickerOptionActive : ''}`}
+                                onClick={() => { dispatch(setFrequencyLimitMinutes(opt.value)); setFrequencyPickerOpen(false); }}
+                              >
+                                {opt.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className={styles.radioGroup}>
+                        <div className={styles.radioRow} onClick={() => dispatch(setFrequencyLimitType('per_user'))}>
+                          <Checkbox variant="radio" checked={form.frequencyLimitType === 'per_user'} onChange={() => dispatch(setFrequencyLimitType('per_user'))} />
+                          <span className={styles.radioLabel}>Для одного пользователя</span>
+                        </div>
+                        <div className={styles.radioRow} onClick={() => dispatch(setFrequencyLimitType('per_group'))}>
+                          <Checkbox variant="radio" checked={form.frequencyLimitType === 'per_group'} onChange={() => dispatch(setFrequencyLimitType('per_group'))} />
+                          <span className={styles.radioLabel}>Для всей группы</span>
+                        </div>
+                      </div>
                     </>
                   )}
                 </div>
+
+                {/* Scope */}
+                <div className={styles.scopeSection}>
+                  <span className={styles.sectionLabel}>Область действия</span>
+                  <div className={styles.radioGroup}>
+                    <div className={styles.radioRow} onClick={() => dispatch(setScope('GROUPS'))}>
+                      <Checkbox variant="radio" checked={form.scope === 'GROUPS'} onChange={() => dispatch(setScope('GROUPS'))} />
+                      <span className={styles.radioLabel}>Публичные чаты</span>
+                    </div>
+                    <div className={styles.radioRow} onClick={() => dispatch(setScope('PRIVATE'))}>
+                      <Checkbox variant="radio" checked={form.scope === 'PRIVATE'} onChange={() => dispatch(setScope('PRIVATE'))} />
+                      <span className={styles.radioLabel}>Приватные чаты</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN */}
+              <div className={styles.rightColumn}>
+                {/* Response text */}
+                <div className={styles.responseSection}>
+                  <div className={styles.responseLabelRow}>
+                    <span className={styles.responseLabel}>Текст ответа</span>
+                    <button
+                      type="button"
+                      className={`${styles.previewBtn} ${previewOpen ? styles.previewBtnActive : ''}`}
+                      title="Предпросмотр"
+                      onClick={() => setPreviewOpen(true)}
+                    >
+                      <EyeIcon width={16} height={16} color="currentColor" />
+                    </button>
+                  </div>
+
+                  <div className={styles.textareaWrapper}>
+                    <textarea
+                      ref={textareaRef}
+                      className={styles.textarea}
+                      placeholder="Введите текст ответа"
+                      value={form.responseText}
+                      onChange={(e) => {
+                        if (e.target.value.length <= MAX_RESPONSE_LENGTH) dispatch(setResponseText(e.target.value));
+                      }}
+                    />
+                    <div className={styles.charCounter}>{form.responseText.length}/{MAX_RESPONSE_LENGTH}</div>
+                  </div>
+
+                  <div className={styles.shortcodesRow}>
+                    <span className={styles.shortcodesLabelInline}>Доступные шорткоды:</span>
+                    <div className={styles.shortcodeChips}>
+                      {SHORTCODES.map((sc) => (
+                        <button key={sc.code} type="button" className={styles.shortcodeChip} onClick={() => handleInsertShortcode(sc.code)}>
+                          {sc.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Inline buttons */}
+                <div>
+                  <button
+                    type="button"
+                    className={`${styles.inlineButtonsRow} ${inlineButtonsOpen ? styles.inlineButtonsRowActive : ''}`}
+                    onClick={handleToggleInlineButtons}
+                  >
+                    <InlineButtonIcon width={24} height={24} color="#383F45" />
+                    <span className={styles.inlineButtonsLabel}>Кнопки</span>
+                  </button>
+                  {inlineButtonsOpen && (
+                    <div className={styles.inlineButtonsContent}>
+                      <InlineButtons
+                        isOpen={inlineButtonsOpen}
+                        rows={inlineButtonRows}
+                        onAddRow={addInlineButtonRow}
+                        onAddColumn={addInlineButtonColumn}
+                        onUpdateButton={updateInlineButton}
+                        onDeleteButton={deleteInlineButton}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Media */}
+                <div className={styles.mediaSection}>
+                  <span className={styles.mediaLabel}>Медиа и файлы</span>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                    multiple
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                  {/* Unified dropzone */}
+                  <div className={styles.mediaDropzone}>
+                    {limitedMediaFiles.length === 0 ? (
+                      <>
+                        <span className={styles.mediaDropzoneText}>
+                          Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
+                        </span>
+                        <OldButton
+                          text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
+                          variant="templateCard"
+                          showArrow={false}
+                          icon={<PaperclipIcon width={24} height={24} />}
+                          disabled={!canAddMedia || isUploadingMedia}
+                          onClick={() => fileInputRef.current?.click()}
+                        />
+                      </>
+                    ) : (
+                      <div className={styles.mediaDropzoneContent}>
+                        <MediaPreview
+                          files={limitedMediaFiles}
+                          onRemove={handleRemoveFile}
+                          onToggleBlur={handleToggleBlur}
+                          onMove={handleMoveMedia}
+                        />
+                        <OldButton
+                          text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
+                          variant="templateCard"
+                          showArrow={false}
+                          icon={<PaperclipIcon width={24} height={24} />}
+                          disabled={!canAddMedia || isUploadingMedia}
+                          onClick={() => fileInputRef.current?.click()}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Active toggle */}
-          <div className={styles.activeRow}>
-            <span className={styles.toggleLabel}>Активен</span>
-            <Toggle checked={form.isActive} onChange={(v) => dispatch(setIsActive(v))} />
-          </div>
+            {/* Active toggle */}
+            <div className={styles.activeRow}>
+              <span className={styles.toggleLabel}>Активен</span>
+              <Toggle checked={form.isActive} onChange={(v) => dispatch(setIsActive(v))} />
+            </div>
 
-          <div className={styles.footer}>
-            <Button variant="outline" intent="gradient" size="lg" className={styles.cancelBtn} onClick={handleClose}>
-              Отменить
-            </Button>
-            <Button
-              variant="fill"
-              intent="gradient"
-              size="lg"
-              className={styles.submitBtn}
-              onClick={handleSubmit}
-              disabled={isSubmitDisabled}
-              loading={form.isSubmitting}
-            >
-              Сохранить
-            </Button>
-          </div>
-        </ModalBase.Body>
-      </ModalBase.Content>
-    </ModalBase>
+            <div className={styles.footer}>
+              <Button variant="outline" intent="gradient" size="lg" className={styles.cancelBtn} onClick={handleClose}>
+                Отменить
+              </Button>
+              <Button
+                variant="fill"
+                intent="gradient"
+                size="lg"
+                className={styles.submitBtn}
+                onClick={handleSubmit}
+                disabled={isSubmitDisabled}
+                loading={form.isSubmitting}
+              >
+                Сохранить
+              </Button>
+            </div>
+          </ModalBase.Body>
+        </ModalBase.Content>
+      </ModalBase>
+
+      <PostPreviewModal
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+        channelTitle={channelTitle}
+        html={renderPreview(form.responseText)}
+        mediaFiles={limitedMediaFiles}
+        inlineKeyboard={previewInlineKeyboard}
+      />
+    </>
   );
 };
 

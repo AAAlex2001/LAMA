@@ -16,6 +16,7 @@ export interface InfoMessage {
 
 interface AutomationState {
   enabled: boolean;
+  autoReplyEnabled: boolean;
   messages: InfoMessage[];
   editingMessage: InfoMessage | null;
   loading: boolean;
@@ -25,6 +26,7 @@ interface AutomationState {
 
 const initialState: AutomationState = {
   enabled: false,
+  autoReplyEnabled: true,
   messages: [],
   editingMessage: null,
   loading: false,
@@ -38,6 +40,9 @@ const automationSlice = createSlice({
   reducers: {
     setInfoMessagesEnabled(state, action: PayloadAction<boolean>) {
       state.enabled = action.payload;
+    },
+    setAutoReplyEnabled(state, action: PayloadAction<boolean>) {
+      state.autoReplyEnabled = action.payload;
     },
     setMessages(state, action: PayloadAction<InfoMessage[]>) {
       state.messages = action.payload;
@@ -69,6 +74,7 @@ const automationSlice = createSlice({
 
 export const {
   setInfoMessagesEnabled,
+  setAutoReplyEnabled,
   setMessages,
   addMessage,
   updateMessage,

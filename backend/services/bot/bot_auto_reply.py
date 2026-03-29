@@ -3,6 +3,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 
 from sqlalchemy import select, func, cast, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, AutoReply, AutoReplyLog
@@ -68,13 +69,13 @@ class BotAutoReplyService:
                 BotModel.owner_id == owner_id,
             )
         if channel_id is not None:
-            query = query.where(
-                (AutoReply.channel_id == channel_id) | (AutoReply.channel_id.is_(None))
-            )
+            query = query.where(AutoReply.channel_id == channel_id)
         if is_active is not None:
             query = query.where(AutoReply.is_active == is_active)
         if search:
-            query = query.where(cast(AutoReply.keywords, Text).ilike(f"%{search}%"))
+            query = query.where(
+                cast(cast(AutoReply.keywords, JSONB), Text).ilike(f"%{search}%")
+            )
 
         total = (await self.db.execute(
             select(func.count()).select_from(query.subquery())

@@ -35,8 +35,13 @@ class InfoMessageResponse(BaseModel):
 
 class InfoMessagesListResponse(BaseModel):
     enabled: bool
+    auto_reply_enabled: bool
     items: list[InfoMessageResponse]
 
 
 class InfoMessagesToggle(BaseModel):
+    enabled: bool
+
+
+class AutoReplyToggle(BaseModel):
     enabled: bool

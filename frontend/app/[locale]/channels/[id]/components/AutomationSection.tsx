@@ -17,11 +17,13 @@ import type { Channel } from '@/types/channel';
 import { useAppDispatch, useAppSelector } from '../../store';
 import {
   setInfoMessagesEnabled,
+  setAutoReplyEnabled,
   setEditingMessage,
 } from '../../store/slices/automation';
 import {
   fetchInfoMessagesThunk,
   toggleInfoMessagesThunk,
+  toggleAutoReplyEnabledThunk,
   deleteInfoMessageThunk,
 } from '../../store/thunks/automation';
 import CreateInfoMessageModal from './CreateInfoMessageModal';
@@ -31,10 +33,23 @@ interface AutomationSectionProps {
   channel: Channel;
 }
 
-const AutoRepliesSection: FC<{ botId: number; channelId: number }> = ({ botId, channelId }) => {
+const AutoRepliesSection: FC<{ botId: number; channelId: number; channelTitle?: string }> = ({ botId, channelId, channelTitle }) => {
   const dispatch = useAutoReplyDispatch();
+  const appDispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotifications();
   const items = useAutoReplySelector((s) => s.list.items);
   const activeCount = items.filter((r) => r.is_active).length;
+  const autoReplyEnabled = useAppSelector((s) => s.automation.autoReplyEnabled);
+
+  const handleToggleAutoReply = async (enabled: boolean) => {
+    appDispatch(setAutoReplyEnabled(enabled));
+    try {
+      await appDispatch(toggleAutoReplyEnabledThunk({ channelId, enabled })).unwrap();
+      showSuccess(enabled ? 'Автоответы включены' : 'Автоответы отключены');
+    } catch {
+      showError('Ошибка сохранения');
+    }
+  };
 
   return (
     <div className={styles.autoRepliesSection}>
@@ -45,6 +60,7 @@ const AutoRepliesSection: FC<{ botId: number; channelId: number }> = ({ botId, c
             <span className={styles.autoRepliesCount}>{activeCount}</span>
           )}
         </div>
+        <Toggle checked={autoReplyEnabled} onChange={handleToggleAutoReply} />
       </div>
 
       <Button
@@ -58,7 +74,7 @@ const AutoRepliesSection: FC<{ botId: number; channelId: number }> = ({ botId, c
       </Button>
 
       <AutoReplyListModal botId={botId} channelId={channelId} />
-      <CreateAutoReplyModal botId={botId} channelId={channelId} />
+      <CreateAutoReplyModal botId={botId} channelId={channelId} channelTitle={channelTitle} />
     </div>
   );
 };
@@ -177,7 +193,7 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
         {isGroup && botId && (
           <div className={styles.rightColumn}>
             <AutoReplyProvider botId={botId} channelId={channelId}>
-              <AutoRepliesSection botId={botId} channelId={channelId} />
+              <AutoRepliesSection botId={botId} channelId={channelId} channelTitle={channel.title} />
             </AutoReplyProvider>
           </div>
         )}

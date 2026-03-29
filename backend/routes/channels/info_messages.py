@@ -9,6 +9,7 @@ from backend.schemas.channels.info_messages import (
     InfoMessageResponse,
     InfoMessagesListResponse,
     InfoMessagesToggle,
+    AutoReplyToggle,
 )
 from backend.services.channel.info_messages_service import InfoMessagesService
 
@@ -22,6 +23,17 @@ async def list_info_messages(
     current_user: User = Depends(get_current_user),
 ):
     return await service.list_messages(channel_id=channel_id, owner_id=current_user.id)
+
+
+@router.put("/{channel_id}/auto-replies/toggle")
+async def toggle_auto_reply_enabled(
+    channel_id: int,
+    data: AutoReplyToggle,
+    service: InfoMessagesService = Depends(get_info_messages_service),
+    current_user: User = Depends(get_current_user),
+):
+    await service.toggle_auto_reply(channel_id=channel_id, enabled=data.enabled, owner_id=current_user.id)
+    return {"ok": True}
 
 
 @router.put("/{channel_id}/info-messages/toggle")

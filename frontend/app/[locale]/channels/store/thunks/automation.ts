@@ -6,6 +6,7 @@ import {
   updateMessage,
   removeMessage,
   setInfoMessagesEnabled,
+  setAutoReplyEnabled,
   setLoading,
   setSaving,
   setSavingType,
@@ -15,6 +16,7 @@ import {
 
 interface InfoMessagesResponse {
   enabled: boolean;
+  auto_reply_enabled: boolean;
   items: InfoMessage[];
 }
 
@@ -27,6 +29,7 @@ export const fetchInfoMessagesThunk = createAsyncThunk(
         `/channels/${channelId}/info-messages`,
       );
       dispatch(setInfoMessagesEnabled(data.enabled));
+      dispatch(setAutoReplyEnabled(data.auto_reply_enabled ?? true));
       dispatch(setMessages(data.items));
       return data;
     } catch {
@@ -153,6 +156,25 @@ export const publishInfoMessageThunk = createAsyncThunk(
       return msg;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Ошибка публикации';
+      return rejectWithValue(msg);
+    }
+  },
+);
+
+export const toggleAutoReplyEnabledThunk = createAsyncThunk(
+  'automation/toggleAutoReplyEnabled',
+  async (
+    { channelId, enabled }: { channelId: number; enabled: boolean },
+    { dispatch, rejectWithValue },
+  ) => {
+    try {
+      await apiRequest(`/channels/${channelId}/auto-replies/toggle`, {
+        method: 'PUT',
+        body: JSON.stringify({ enabled }),
+      });
+      dispatch(setAutoReplyEnabled(enabled));
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Ошибка сохранения';
       return rejectWithValue(msg);
     }
   },

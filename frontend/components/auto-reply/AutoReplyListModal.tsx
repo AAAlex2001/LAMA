@@ -5,6 +5,7 @@ import ModalBase from '@/components/modal-base';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button } from '@/components/new-button';
 import { EditIcon, TrashIcon, InlineButtonIcon, PhotoIcon, VideoIcon } from '@/components/icons';
+import Tooltip from '@/components/tooltip/tooltip';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAutoReplyDispatch, useAutoReplySelector } from './store';
 import { setListModalOpen } from './store/slices/list';
@@ -22,6 +23,8 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
   const { showSuccess, showError } = useNotifications();
   const { items, listModalOpen } = useAutoReplySelector((s) => s.list);
   const [search, setSearch] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [hoveredBtn, setHoveredBtn] = useState<{ id: number; type: 'delete' | 'edit' } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -36,6 +39,7 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
 
   const handleDelete = async (id: number) => {
+    setConfirmDeleteId(null);
     try {
       await dispatch(deleteAutoReplyThunk({ botId, replyId: id })).unwrap();
       showSuccess('Автоответ удалён');
@@ -50,14 +54,18 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
       keywords: item.keywords,
       responseText: item.response_text,
       responseMediaType: item.response_media_type ?? 'TEXT',
+      responseMediaUrls: item.response_media_urls ?? (item.response_media_url ? [item.response_media_url] : []),
+      responseButtons: item.response_buttons ?? null,
       scope: item.scope ?? 'GROUPS',
       isActive: item.is_active,
     }));
   };
 
   const handleSelect = async (item: typeof items[0]) => {
+    const newActive = !item.is_active;
     try {
-      await dispatch(toggleAutoReplyThunk({ botId, replyId: item.id, isActive: !item.is_active })).unwrap();
+      await dispatch(toggleAutoReplyThunk({ botId, replyId: item.id, isActive: newActive })).unwrap();
+      showSuccess(newActive ? 'Автоответ активирован' : 'Автоответ деактивирован');
     } catch {
       showError('Ошибка изменения статуса');
     }
@@ -70,100 +78,140 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
     if (!v) setSearch('');
   };
 
+  const confirmingItem = confirmDeleteId !== null ? items.find((i) => i.id === confirmDeleteId) : null;
+
   return (
-    <ModalBase isOpen={listModalOpen} onOpenChange={handleClose}>
-      <ModalBase.Content size="xl" className={styles.modal}>
-        <ModalBase.Header className={styles.header}>
-          <span className={styles.title}>Библиотека автоответов</span>
-          <div className={styles.headerControls}>
-            <SearchBar
-              value={search}
-              onChange={setSearch}
-              placeholder="Поиск по автоответам"
-              className={styles.searchBar}
-            />
-            <Button variant="fill" intent="gradient" size="md" className={styles.addBtn} onClick={handleCreate}>
-              Добавить автоответ
-            </Button>
-          </div>
-          <ModalBase.Close />
-        </ModalBase.Header>
-
-        <ModalBase.Body className={styles.body}>
-          {items.length === 0 ? (
-            <div className={styles.empty}>
-              {search.trim() ? 'Ничего не найдено' : 'Нет автоответов. Создайте первый!'}
+    <>
+      <ModalBase isOpen={listModalOpen} onOpenChange={handleClose}>
+        <ModalBase.Content size="xl" className={styles.modal}>
+          <ModalBase.Header className={styles.header}>
+            <span className={styles.title}>Библиотека автоответов</span>
+            <div className={styles.headerControls}>
+              <SearchBar
+                value={search}
+                onChange={setSearch}
+                placeholder="Поиск по автоответам"
+                className={styles.searchBar}
+              />
+              <Button variant="fill" intent="gradient" size="md" className={styles.addBtn} onClick={handleCreate}>
+                Добавить автоответ
+              </Button>
             </div>
-          ) : (
-            <div className={styles.grid}>
-              {items.map((item) => {
-                const isSelected = item.is_active;
-                const isVideo = item.response_media_type === 'VIDEO';
-                const hasMedia = !!(item.response_media_url || (item.response_media_urls && item.response_media_urls.length > 0));
-                const hasButtons = !!(item.response_buttons && Object.keys(item.response_buttons).length > 0);
-                const hasIcons = hasMedia || hasButtons;
+            <ModalBase.Close />
+          </ModalBase.Header>
 
-                return (
-                  <div key={item.id} className={styles.card}>
-                    <div className={styles.cardBody}>
-                      <div className={styles.cardRow}>
-                        <span className={styles.cardLabel}>Триггер:</span>
-                        <span className={styles.cardTrigger}>{item.keywords.join(', ')}</span>
-                      </div>
-                      <div className={styles.cardResponseBlock}>
-                        <span className={styles.cardLabel}>Ответ:</span>
-                        <span className={styles.cardResponse}>{stripHtml(item.response_text)}</span>
-                      </div>
-                    </div>
+          <ModalBase.Body className={styles.body}>
+            {items.length === 0 ? (
+              <div className={styles.empty}>
+                {search.trim() ? 'Ничего не найдено' : 'Нет автоответов. Создайте первый!'}
+              </div>
+            ) : (
+              <div className={styles.grid}>
+                {items.map((item) => {
+                  const isSelected = item.is_active;
+                  const isVideo = item.response_media_type === 'VIDEO';
+                  const hasMedia = !!(item.response_media_url || (item.response_media_urls && item.response_media_urls.length > 0));
+                  const hasButtons = !!(item.response_buttons && Object.keys(item.response_buttons).length > 0);
+                  const hasIcons = hasMedia || hasButtons;
 
-                    <div className={`${styles.cardActions} ${hasIcons ? styles.cardActionsSpread : ''}`}>
-                      {hasIcons && (
-                        <div className={styles.cardIcons}>
-                          {hasMedia && !isVideo && <PhotoIcon width={18} height={18} color="#B0B4B8" />}
-                          {isVideo && <VideoIcon width={18} height={18} color="#B0B4B8" />}
-                          {hasButtons && <InlineButtonIcon width={18} height={18} color="#B0B4B8" />}
+                  return (
+                    <div key={item.id} className={styles.card}>
+                      <div className={styles.cardBody}>
+                        <div className={styles.cardRow}>
+                          <span className={styles.cardLabel}>Триггер:</span>
+                          <span className={styles.cardTrigger}>{item.keywords.join(', ')}</span>
                         </div>
-                      )}
-                      <div className={styles.cardButtons}>
-                        <Button
-                          variant="ghost"
-                          intent="neutral"
-                          size="transparent"
-                          className={styles.iconBtn}
-                          onClick={() => handleDelete(item.id)}
-                          title="Удалить"
-                        >
-                          <TrashIcon width={14} height={15} color="currentColor" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          intent="neutral"
-                          size="transparent"
-                          className={`${styles.iconBtn} ${styles.iconBtnEdit}`}
-                          onClick={() => handleEdit(item)}
-                          title="Редактировать"
-                        >
-                          <EditIcon width={16} height={15} color="currentColor" />
-                        </Button>
-                        <Button
-                          variant="fill"
-                          intent="gradient"
-                          size="transparent"
-                          className={`${styles.selectBtn} ${isSelected ? styles.selectBtnActive : ''}`}
-                          onClick={() => handleSelect(item)}
-                        >
-                          {isSelected ? 'Выбран' : 'Выбрать'}
-                        </Button>
+                        <div className={styles.cardResponseBlock}>
+                          <span className={styles.cardLabel}>Ответ:</span>
+                          <span className={styles.cardResponse}>{stripHtml(item.response_text)}</span>
+                        </div>
+                      </div>
+
+                      <div className={`${styles.cardActions} ${hasIcons ? styles.cardActionsSpread : ''}`}>
+                        {hasIcons && (
+                          <div className={styles.cardIcons}>
+                            {hasMedia && !isVideo && <PhotoIcon width={18} height={18} color="#B0B4B8" />}
+                            {isVideo && <VideoIcon width={18} height={18} color="#B0B4B8" />}
+                            {hasButtons && <InlineButtonIcon width={18} height={18} color="#B0B4B8" />}
+                          </div>
+                        )}
+                        <div className={styles.cardButtons}>
+                          <button
+                            type="button"
+                            className={`${styles.actionButton} ${styles.actionButtonBordered} ${styles.actionButtonDelete}`}
+                            onClick={() => setConfirmDeleteId(item.id)}
+                            onMouseEnter={() => setHoveredBtn({ id: item.id, type: 'delete' })}
+                            onMouseLeave={() => setHoveredBtn(null)}
+                          >
+                            <TrashIcon width={14} height={15} color="currentColor" />
+                            {hoveredBtn?.id === item.id && hoveredBtn?.type === 'delete' && (
+                              <Tooltip text="Удалить" placement="top" />
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            className={`${styles.actionButton} ${styles.actionButtonEdit}`}
+                            onClick={() => handleEdit(item)}
+                            onMouseEnter={() => setHoveredBtn({ id: item.id, type: 'edit' })}
+                            onMouseLeave={() => setHoveredBtn(null)}
+                          >
+                            <EditIcon width={16} height={15} color="currentColor" />
+                            {hoveredBtn?.id === item.id && hoveredBtn?.type === 'edit' && (
+                              <Tooltip text="Редактировать" placement="top" />
+                            )}
+                          </button>
+
+                          <Button
+                            variant={isSelected ? 'outline' : 'fill'}
+                            intent="gradient"
+                            size="sm"
+                            className={styles.selectBtn}
+                            onClick={() => handleSelect(item)}
+                          >
+                            {isSelected ? 'Выбран' : 'Выбрать'}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
+            )}
+          </ModalBase.Body>
+        </ModalBase.Content>
+      </ModalBase>
+
+      {/* Delete confirmation modal */}
+      <ModalBase isOpen={confirmDeleteId !== null} onOpenChange={(v) => { if (!v) setConfirmDeleteId(null); }}>
+        <ModalBase.Content size="sm" className={styles.confirmModal}>
+          <ModalBase.Header className={styles.confirmHeader}>
+            <ModalBase.Title className={styles.confirmTitle}>Удалить автоответ?</ModalBase.Title>
+            <ModalBase.Close />
+          </ModalBase.Header>
+          <ModalBase.Body className={styles.confirmBody}>
+            {confirmingItem && (
+              <p className={styles.confirmText}>
+                Автоответ на «{confirmingItem.keywords.slice(0, 2).join(', ')}{confirmingItem.keywords.length > 2 ? '...' : ''}» будет удалён без возможности восстановления.
+              </p>
+            )}
+            <div className={styles.confirmFooter}>
+              <Button variant="outline" intent="gradient" size="lg" onClick={() => setConfirmDeleteId(null)}>
+                Отменить
+              </Button>
+              <Button
+                variant="fill"
+                intent="destructive"
+                size="lg"
+                onClick={() => confirmDeleteId !== null && handleDelete(confirmDeleteId)}
+              >
+                Удалить
+              </Button>
             </div>
-          )}
-        </ModalBase.Body>
-      </ModalBase.Content>
-    </ModalBase>
+          </ModalBase.Body>
+        </ModalBase.Content>
+      </ModalBase>
+    </>
   );
 };
 

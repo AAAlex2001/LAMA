@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, InformationalMessage
-from backend.schemas.channels.info_messages import InfoMessageCreate, InfoMessageUpdate, InfoMessagesListResponse
+from backend.schemas.channels.info_messages import InfoMessageCreate, InfoMessageUpdate, InfoMessagesListResponse, AutoReplyToggle
 from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
 from backend.services.publications.utils.html_utils import clean_html_for_telegram
@@ -35,8 +35,18 @@ class InfoMessagesService:
         messages = list(result.scalars().all())
         return InfoMessagesListResponse(
             enabled=channel.info_messages_enabled,
+            auto_reply_enabled=channel.auto_reply_enabled,
             items=messages,
         )
+
+    async def toggle_auto_reply(self, channel_id: int, enabled: bool, owner_id: int) -> ChannelGroup:
+        channel = await get_channel(self.db, channel_id, owner_id)
+        if not channel:
+            raise HTTPException(status_code=404, detail="Channel not found")
+        channel.auto_reply_enabled = enabled
+        await self.db.flush()
+        await self.db.refresh(channel)
+        return channel
 
     async def toggle(self, channel_id: int, enabled: bool, owner_id: int) -> ChannelGroup:
         channel = await get_channel(self.db, channel_id, owner_id)

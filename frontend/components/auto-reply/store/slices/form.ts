@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { InlineKeyboard } from '@/types/post';
 
 interface FormState {
   isOpen: boolean;
@@ -6,6 +7,8 @@ interface FormState {
   keywords: string[];
   responseText: string;
   responseMediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+  responseMediaUrls: string[];
+  responseButtons: InlineKeyboard | null;
   scope: 'PRIVATE' | 'GROUPS';
   isActive: boolean;
   isSubmitting: boolean;
@@ -20,6 +23,8 @@ const initialState: FormState = {
   keywords: [],
   responseText: '',
   responseMediaType: 'TEXT',
+  responseMediaUrls: [],
+  responseButtons: null,
   scope: 'GROUPS',
   isActive: true,
   isSubmitting: false,
@@ -40,6 +45,8 @@ const formSlice = createSlice({
       keywords: string[];
       responseText: string;
       responseMediaType: 'TEXT' | 'PHOTO' | 'VIDEO' | 'DOCUMENT';
+      responseMediaUrls?: string[];
+      responseButtons?: InlineKeyboard | null;
       scope: 'PRIVATE' | 'GROUPS';
       isActive: boolean;
     }>) {
@@ -49,6 +56,8 @@ const formSlice = createSlice({
       state.keywords = [...p.keywords];
       state.responseText = p.responseText;
       state.responseMediaType = p.responseMediaType;
+      state.responseMediaUrls = p.responseMediaUrls ?? [];
+      state.responseButtons = p.responseButtons ?? null;
       state.scope = p.scope;
       state.isActive = p.isActive;
       state.isSubmitting = false;

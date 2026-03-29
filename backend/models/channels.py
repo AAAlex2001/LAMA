@@ -191,6 +191,9 @@ class ChannelGroup(Base):
     # Информационные сообщения
     info_messages_enabled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
+    # Автоответы
+    auto_reply_enabled: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+
     # Метаданные
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     last_sync_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
