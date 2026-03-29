@@ -213,6 +213,8 @@ class BotMessagingService:
                 msgs = result if isinstance(result, list) else [result]
                 for msg in msgs:
                     file_id = msg.photo[-1].file_id if msg.photo else None
+                    raw_data = msg.model_dump(mode="json")
+                    raw_data["calendar_source"] = "AUTOMATION_BROADCAST"
                     pending_messages.append(BotMessage(
                         bot_id=bot.id,
                         telegram_message_id=msg.message_id,
@@ -223,7 +225,7 @@ class BotMessagingService:
                         media_file_id=file_id,
                         media_url=data.media_url,
                         is_incoming=False,
-                        raw_data=msg.model_dump(mode="json"),
+                        raw_data=raw_data,
                     ))
                 results.append(BroadcastResult(chat_id=chat_id, success=True))
             except Exception as e:

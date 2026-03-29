@@ -45,7 +45,7 @@ async def list_inbox_events(
     if event_types:
         event_types_list = [EventType(e.strip()) for e in event_types.split(",") if e.strip()]
 
-    items, total = await query_service.get_events(
+    items, total, bot_map = await query_service.get_events(
         owner_id=current_user.id,
         category=category,
         status=status,
@@ -65,6 +65,11 @@ async def list_inbox_events(
     for item in items:
         data = {c.name: getattr(item, c.name) for c in item.__table__.columns}
         data['is_new'] = (item.status == EventStatus.NEW)
+        if item.bot_id is not None:
+            meta = bot_map.get(int(item.bot_id))
+            if meta:
+                data["tg_bot_username"] = meta.tg_bot_username
+                data["tg_bot_name"] = meta.tg_bot_name
         results.append(data)
 
     return InboxListResponse(

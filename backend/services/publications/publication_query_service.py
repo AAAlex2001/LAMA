@@ -3,12 +3,12 @@ from types import SimpleNamespace
 from typing import List, Optional
 
 from fastapi import HTTPException
-from sqlalchemy import and_, case, exists, func, select
+from sqlalchemy import and_, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload, load_only
 
 from backend.models.channels import ChannelGroup as Channel
-from backend.models.bots import Bot, BotMessage, RecurringMessage, RecurringMessageLog
+from backend.models.bots import Bot, BotMessage
 from backend.models.publications import (
     ContentType as DBContentType,
     Publication,
@@ -312,8 +312,41 @@ class PublicationQueryService:
         start_date: datetime,
         end_date: datetime,
     ) -> List[BotMessageCompact]:
-        """Собирает бот-сообщения из двух источников: массовые рассылки и повторяющиеся сообщения."""
+        """Собирает бот-сообщения только из разрешенных источников календаря."""
         results: List[BotMessageCompact] = []
+
+        info_query = (
+            select(
+                BotMessage.id.label("msg_id"),
+                BotMessage.text_content,
+                BotMessage.media_url,
+                Bot.username.label("bot_username"),
+                BotMessage.created_at.label("sent_at"),
+            )
+            .select_from(BotMessage)
+            .join(Bot, Bot.id == BotMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                BotMessage.is_incoming.is_(False),
+                BotMessage.is_system.is_(False),
+                BotMessage.created_at >= start_date,
+                BotMessage.created_at <= end_date,
+                BotMessage.raw_data["calendar_source"].as_string() == "INFO_MESSAGE",
+            )
+            .order_by(BotMessage.created_at.asc(), BotMessage.id.asc())
+        )
+        info_result = await self.db.execute(info_query)
+        for row in info_result.all():
+            results.append(BotMessageCompact(
+                id=row.msg_id,
+                name=(row.text_content or "")[:50],
+                text_content=row.text_content,
+                media_url=row.media_url,
+                bot_username=row.bot_username,
+                sent_at=row.sent_at,
+                total_chats=1,
+                success_chats=1,
+            ))
 
         broadcast_query = (
             select(
@@ -332,6 +365,7 @@ class PublicationQueryService:
                 BotMessage.is_system.is_(False),
                 BotMessage.created_at >= start_date,
                 BotMessage.created_at <= end_date,
+                BotMessage.raw_data["calendar_source"].as_string() == "AUTOMATION_BROADCAST",
             )
             .group_by(
                 Bot.id,
@@ -340,7 +374,6 @@ class PublicationQueryService:
                 Bot.username,
                 func.date(BotMessage.created_at),
             )
-            .having(func.count() > 1)
             .order_by(func.min(BotMessage.created_at).asc())
         )
         broadcast_result = await self.db.execute(broadcast_query)
@@ -354,49 +387,6 @@ class PublicationQueryService:
                 sent_at=row.first_sent_at,
                 total_chats=row.total_chats,
                 success_chats=row.total_chats,
-            ))
-
-        recurring_query = (
-            select(
-                RecurringMessage.id.label('recurring_message_id'),
-                RecurringMessage.name,
-                RecurringMessage.text_content,
-                RecurringMessage.media_url,
-                Bot.username.label('bot_username'),
-                func.date(RecurringMessageLog.sent_at).label('send_date'),
-                func.min(RecurringMessageLog.sent_at).label('first_sent_at'),
-                func.count().label('total_chats'),
-                func.sum(case((RecurringMessageLog.success.is_(True), 1), else_=0)).label('success_chats'),
-            )
-            .select_from(RecurringMessageLog)
-            .join(RecurringMessage, RecurringMessage.id == RecurringMessageLog.recurring_message_id)
-            .join(Bot, Bot.id == RecurringMessage.bot_id)
-            .where(
-                Bot.owner_id == owner_id,
-                RecurringMessageLog.sent_at >= start_date,
-                RecurringMessageLog.sent_at <= end_date,
-            )
-            .group_by(
-                RecurringMessage.id,
-                RecurringMessage.name,
-                RecurringMessage.text_content,
-                RecurringMessage.media_url,
-                Bot.username,
-                func.date(RecurringMessageLog.sent_at),
-            )
-            .order_by(func.min(RecurringMessageLog.sent_at).asc())
-        )
-        recurring_result = await self.db.execute(recurring_query)
-        for row in recurring_result.all():
-            results.append(BotMessageCompact(
-                id=row.recurring_message_id + 10000000,
-                name=row.name,
-                text_content=row.text_content,
-                media_url=row.media_url,
-                bot_username=row.bot_username,
-                sent_at=row.first_sent_at,
-                total_chats=row.total_chats,
-                success_chats=row.success_chats,
             ))
 
         results.sort(key=lambda m: m.sent_at)

@@ -1,4 +1,4 @@
-﻿from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -23,6 +23,8 @@ class InboxEventResponse(InboxEventBase):
     id: int
     created_at: datetime
     is_new: bool
+    tg_bot_username: Optional[str] = None
+    tg_bot_name: Optional[str] = None
 
     class Config:
         from_attributes = True

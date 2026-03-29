@@ -33,6 +33,8 @@ import {
   toggleInfoMessagesThunk,
   toggleAutoReplyEnabledThunk,
 } from '../../store/thunks/automation';
+import { setCommandsEnabled } from '../../store/slices/moderation';
+import { updateQuickCommandsThunk } from '../../store/thunks/moderation';
 import CreateInfoMessageModal from './CreateInfoMessageModal';
 import InfoMessagesListModal from './InfoMessagesListModal';
 import styles from './AutomationSection.module.scss';
@@ -96,17 +98,29 @@ const BotCommandsBlock: FC<{ botId: number; channelId: number; channelTitle?: st
   channelTitle,
 }) => {
   const dispatch = useBotCommandDispatch();
+  const appDispatch = useAppDispatch();
+  const { showSuccess, showError } = useNotifications();
   const items = useBotCommandSelector((s) => s.list.items);
   const activeCount = items.filter((c) => c.is_active).length;
-  const [expanded, setExpanded] = useState(true);
+  const commandsEnabled = useAppSelector((s) => s.moderation.commandsEnabled);
+
+  const handleCommandsToggle = async (enabled: boolean) => {
+    appDispatch(setCommandsEnabled(enabled));
+    try {
+      await appDispatch(updateQuickCommandsThunk({ channelId })).unwrap();
+      showSuccess(enabled ? 'Команды включены' : 'Команды отключены');
+    } catch {
+      showError('Ошибка сохранения');
+    }
+  };
 
   return (
     <div className={styles.userCommandsSection}>
       <div className={styles.userCommandsHeader}>
         <span className={styles.userCommandsLabel}>Пользовательские команды</span>
-        <Toggle checked={expanded} onChange={setExpanded} />
+        <Toggle checked={commandsEnabled} onChange={handleCommandsToggle} />
       </div>
-      {expanded && (
+      {commandsEnabled && (
         <>
           <p className={styles.commandsActiveCount}>Активных: {activeCount}</p>
           <Button
