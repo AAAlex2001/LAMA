@@ -174,9 +174,26 @@ class BotCommandService:
             result = await self.db.execute(generic_query)
             return result.scalar_one_or_none()
 
+        # No channel context (e.g. private chats). Prefer:
+        # 1) generic command (channel_id NULL)
+        # 2) if there's exactly one channel-specific command — use it
         generic_query = base_query.where(BotCommand.channel_id.is_(None))
         result = await self.db.execute(generic_query)
-        return result.scalar_one_or_none()
+        generic = result.scalar_one_or_none()
+        if generic:
+            return generic
+
+        any_query = (
+            base_query
+            .where(BotCommand.channel_id.is_not(None))
+            .order_by(BotCommand.updated_at.desc())
+            .limit(2)
+        )
+        result = await self.db.execute(any_query)
+        items = list(result.scalars().all())
+        if len(items) == 1:
+            return items[0]
+        return None
 
     def apply_scope_filter(self, query, chat_type: Optional[str]):
         """Применить фильтр по scope для типа чата."""

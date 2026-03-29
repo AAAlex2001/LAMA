@@ -12,6 +12,7 @@ from backend.utils import build_keyboard
 from backend.services.inbox.action_service import InboxActionService
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id, get_channel
+from backend.celery.tasks import send_claim_messages
 from backend.utils.media import is_video_url, is_document_url
 
 logger = logging.getLogger(__name__)
@@ -190,13 +191,40 @@ class CommandProcessor:
         context = self.build_shortcode_context(message)
         text = ShortcodeProcessor.process(command.response_text, context)
 
+        buttons = command.response_buttons
+        if buttons and isinstance(buttons, dict) and "buttons" in buttons:
+            prepared_rows = []
+            for r_idx, row in enumerate(buttons.get("buttons", [])):
+                if not isinstance(row, list):
+                    continue
+                out_row = []
+                for b_idx, btn in enumerate(row):
+                    if not isinstance(btn, dict):
+                        continue
+                    btn_id = btn.get("id") or f"{r_idx}-{b_idx}"
+                    btn_type = btn.get("type")
+                    url = btn.get("url")
+                    callback_action = btn.get("callback_action")
+                    has_hidden = bool(btn.get("hidden_text_subscribed") or btn.get("hidden_text_unsubscribed"))
+                    if btn_type == "url" and url:
+                        out_row.append({"text": btn.get("text", ""), "url": url})
+                    elif callback_action or has_hidden:
+                        prefix = "cmd_hidden" if has_hidden else "cmd_callback"
+                        out_row.append({
+                            "text": btn.get("text", ""),
+                            "callback_data": f"{prefix}:{command.id}:{btn_id}",
+                        })
+                if out_row:
+                    prepared_rows.append(out_row)
+            buttons = {"buttons": prepared_rows} if prepared_rows else None
+
         await self.send_response(
             chat_id=message.chat.id,
             text=text,
             media_url=command.response_media_url,
             media_urls=getattr(command, "response_media_urls", None),
             media_type=command.response_media_type,
-            buttons=command.response_buttons,
+            buttons=buttons,
         )
 
     async def send_claim_admin(
@@ -222,11 +250,16 @@ class CommandProcessor:
 
         try:
             if claim_target == 'SPECIFIC_CHANNEL':
+                target_chat_ids: list[int] = []
                 for rid in claim_channel_ids:
                     channel = await get_channel(self.db, rid)
                     if not channel or not channel.telegram_id:
                         continue
-                    await self.telegram_bot.send_message(chat_id=channel.telegram_id, text=claim_text)
+                    target_chat_ids.append(int(channel.telegram_id))
+
+                if target_chat_ids:
+                    # Celery handles rate limit retries without blocking webhook.
+                    send_claim_messages.apply_async(args=[self.bot_model.id, target_chat_ids, claim_text], queue="default")
             else:
                 inbox_service = InboxActionService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
@@ -243,6 +276,8 @@ class CommandProcessor:
                     "status": EventStatus.NEW,
                     "description": f"Жалоба по команде {command.command}",
                     "payload": {
+                        "chat_id": message.chat.id,
+                        "message_id": message.message_id,
                         "claim_target": claim_target,
                         "claim_channel_ids": claim_channel_ids,
                         "command": command.command,

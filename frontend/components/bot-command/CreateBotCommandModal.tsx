@@ -26,6 +26,7 @@ import { useBotCommandDispatch, useBotCommandSelector } from './store';
 import SearchBar from '@/components/search-bar/search-bar';
 import { useAppDispatch as useChannelsAppDispatch, useAppSelector as useChannelsAppSelector } from '@/app/[locale]/channels/store';
 import { fetchChannelsThunk } from '@/store/channels';
+import ChannelsConnectModal from '@/app/[locale]/channels/components/ConnectChannelModal';
 import {
   close,
   setCommand,
@@ -108,6 +109,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
   const [claimSearch, setClaimSearch] = useState('');
   const [claimRecipientTarget, setClaimRecipientTarget] = useState<'ADMINS' | 'INBOX' | 'SPECIFIC_CHANNEL'>('ADMINS');
   const [claimSelectedChannelIds, setClaimSelectedChannelIds] = useState<number[]>([]);
+  const [connectModalOpen, setConnectModalOpen] = useState(false);
 
   const appDispatch = useChannelsAppDispatch();
   const claimChannels = useChannelsAppSelector((s) => s.channels.channels);
@@ -196,6 +198,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
     setClaimSearch('');
     setClaimRecipientTarget('ADMINS');
     setClaimSelectedChannelIds([]);
+    setConnectModalOpen(false);
   };
 
   const handleToggleInlineButtons = () => {
@@ -626,17 +629,19 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
                         </>
                       )}
 
-                      <div className={styles.claimAddRow}>
-                        <Button
-                          variant="outline"
-                          intent="gradient"
-                          size="lg"
-                          className={styles.claimAddBtn}
-                          onClick={() => {}}
-                        >
-                          Подключить новый
-                        </Button>
-                      </div>
+                      {claimRecipientTarget === 'SPECIFIC_CHANNEL' && (
+                        <div className={styles.claimAddRow}>
+                          <Button
+                            variant="outline"
+                            intent="gradient"
+                            size="md"
+                            className={styles.claimAddBtn}
+                            onClick={() => setConnectModalOpen(true)}
+                          >
+                            Подключить новый
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -675,6 +680,8 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
         mediaFiles={limitedMediaFiles}
         inlineKeyboard={previewInlineKeyboard}
       />
+
+      <ChannelsConnectModal isOpen={connectModalOpen} onOpenChange={setConnectModalOpen} />
     </>
   );
 };

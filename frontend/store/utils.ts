@@ -3,6 +3,7 @@ import type { ButtonRow, InlineKeyboard } from '@/types/post';
 export function buildInlineKeyboard(rows: ButtonRow[]): InlineKeyboard | undefined {
   const buttons = rows
     .map(row => row.buttons.filter(btn => btn.text?.trim()).map(btn => ({
+      id: btn.id,
       text: btn.text, type: btn.type, url: btn.url,
       hidden_text_subscribed: btn.hidden_text_subscribed,
       hidden_text_unsubscribed: btn.hidden_text_unsubscribed,

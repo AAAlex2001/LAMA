@@ -14,6 +14,7 @@ from sqlalchemy import case, func, or_, select, update
 from backend.celery.app import celery_app
 from backend.celery.async_runner import run
 from backend.services.bot_provider import resolve_for_bot_id, resolve_for_channel, resolve_master, use_user_bots
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.database import CelerySessionLocal
 from backend.models.bots import PendingApproval
 from backend.models.channels import CaptchaFailAction
@@ -420,6 +421,27 @@ def delayed_delete_message(self, bot_id: int, chat_id: int, message_id: int) -> 
         raise self.retry(countdown=wait + jitter)
     return result
 
+
+@celery_app.task(bind=True, name="backend.celery.tasks.send_claim_messages", max_retries=10)
+def send_claim_messages(self, bot_id: int, target_chat_ids: list[int], text: str) -> str:
+    result = run(send_claim_messages_async(bot_id, target_chat_ids, text))
+    if result.startswith("rate_limited:"):
+        wait = int(result.split(":")[1])
+        jitter = random.randint(0, max(wait // 2, 5))
+        raise self.retry(countdown=wait + jitter)
+    return result
+
+
+async def send_claim_messages_async(bot_id: int, target_chat_ids: list[int], text: str) -> str:
+    async with CelerySessionLocal() as db:
+        telegram_bot = await resolve_for_bot_id(db, bot_id)
+        try:
+            for chat_id in target_chat_ids:
+                await telegram_bot.send_message(chat_id=chat_id, text=text)
+        except RateLimitTimeout as e:
+            return f"rate_limited:{int(e.wait_seconds)}"
+        await db.commit()
+        return f"sent:{len(target_chat_ids)}"
 
 async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: int) -> str:
     """Async-реализация удаления одного сообщения."""
