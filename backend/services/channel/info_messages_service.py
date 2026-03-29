@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, InformationalMessage
+from backend.models.bots import BotMessage, MessageType
 from backend.schemas.channels.info_messages import InfoMessageCreate, InfoMessageUpdate, InfoMessagesListResponse, AutoReplyToggle
 from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
@@ -152,6 +153,9 @@ class InfoMessagesService:
         if not urls and msg.media_url:
             urls = [msg.media_url]
 
+        sent_message = None
+        outgoing_type = MessageType.TEXT
+
         if len(urls) > 1:
             media_group = []
             for i, url in enumerate(urls[:10]):
@@ -163,59 +167,80 @@ class InfoMessagesService:
                     media_group.append(InputMediaDocument(media=url, caption=cap, parse_mode=pm))
                 else:
                     media_group.append(InputMediaPhoto(media=url, caption=cap, parse_mode=pm))
-            await bot.send_media_group(chat_id=chat_id, media=media_group)
+            sent_messages = await bot.send_media_group(chat_id=chat_id, media=media_group)
+            sent_message = sent_messages[0] if sent_messages else None
+            outgoing_type = MessageType.PHOTO
             if keyboard:
                 await bot.send_message(chat_id=chat_id, text="\u200b", reply_markup=keyboard)
-            return msg
-
-        if len(urls) == 1 and msg.media_type:
+        elif len(urls) == 1 and msg.media_type:
             u = urls[0]
             mt = msg.media_type.upper()
             if mt == "PHOTO":
-                await bot.send_photo(
+                sent_message = await bot.send_photo(
                     chat_id=chat_id,
                     photo=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-                return msg
-            if mt == "VIDEO":
-                await bot.send_video(
+                outgoing_type = MessageType.PHOTO
+            elif mt == "VIDEO":
+                sent_message = await bot.send_video(
                     chat_id=chat_id,
                     video=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-                return msg
-            if mt == "DOCUMENT":
-                await bot.send_document(
+                outgoing_type = MessageType.VIDEO
+            elif mt == "DOCUMENT":
+                sent_message = await bot.send_document(
                     chat_id=chat_id,
                     document=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-                return msg
-            await bot.send_message(
-                chat_id=chat_id,
-                text=cleaned_text or "",
-                parse_mode=ParseMode.HTML,
-                reply_markup=keyboard,
-            )
-            return msg
-
-        if cleaned_text:
-            await bot.send_message(
+                outgoing_type = MessageType.DOCUMENT
+            else:
+                sent_message = await bot.send_message(
+                    chat_id=chat_id,
+                    text=cleaned_text or "",
+                    parse_mode=ParseMode.HTML,
+                    reply_markup=keyboard,
+                )
+                outgoing_type = MessageType.TEXT
+        elif cleaned_text:
+            sent_message = await bot.send_message(
                 chat_id=chat_id,
                 text=cleaned_text,
                 parse_mode=ParseMode.HTML,
                 reply_markup=keyboard,
             )
-            return msg
+            outgoing_type = MessageType.TEXT
+        else:
+            raise HTTPException(status_code=400, detail="Message has no content to publish")
 
-        raise HTTPException(status_code=400, detail="Message has no content to publish")
+        if sent_message:
+            raw_data = sent_message.model_dump(mode="json")
+            raw_data["calendar_source"] = "INFO_MESSAGE"
+            self.db.add(
+                BotMessage(
+                    bot_id=channel.bot_id,
+                    telegram_message_id=sent_message.message_id,
+                    chat_id=chat_id,
+                    user_id=None,
+                    message_type=outgoing_type,
+                    text_content=cleaned_text or msg.text,
+                    media_url=urls[0] if urls else None,
+                    is_incoming=False,
+                    is_system=False,
+                    raw_data=raw_data,
+                )
+            )
+            await self.db.flush()
+
+        return msg
 
     async def delete_message(self, channel_id: int, message_id: int, owner_id: int) -> None:
         channel = await get_channel(self.db, channel_id, owner_id)

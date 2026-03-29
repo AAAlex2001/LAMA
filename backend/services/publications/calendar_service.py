@@ -10,7 +10,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
-from backend.models.bots import Bot, BotMessage, RecurringMessage, RecurringMessageLog
+from backend.models.bots import Bot, BotMessage
 from backend.schemas.publications.publication_response import DayCount
 from backend.services.publications.repeat_utils import strip_tz, project_repeat_occurrences
 
@@ -120,9 +120,31 @@ class CalendarService:
         end_date: datetime,
         owner_id: int,
     ) -> List[DayCount]:
-        """Считает бот-сообщения по дням (рассылки + рекурентные логи)."""
+        """Считает бот-сообщения по дням только из разрешенных источников."""
         naive_start = strip_tz(start_date)
         naive_end = strip_tz(end_date)
+        per_day: dict[str, int] = {}
+
+        info_query = (
+            select(
+                func.date(BotMessage.created_at).label("day"),
+                func.count().label("cnt"),
+            )
+            .select_from(BotMessage)
+            .join(Bot, Bot.id == BotMessage.bot_id)
+            .where(
+                Bot.owner_id == owner_id,
+                BotMessage.is_incoming.is_(False),
+                BotMessage.is_system.is_(False),
+                BotMessage.created_at >= naive_start,
+                BotMessage.created_at <= naive_end,
+                BotMessage.raw_data["calendar_source"].as_string() == "INFO_MESSAGE",
+            )
+            .group_by(func.date(BotMessage.created_at))
+        )
+        info_result = await self.db.execute(info_query)
+        for row in info_result.all():
+            per_day[str(row.day)] = per_day.get(str(row.day), 0) + row.cnt
 
         broadcast_sub = (
             select(
@@ -139,6 +161,7 @@ class CalendarService:
                 BotMessage.is_system.is_(False),
                 BotMessage.created_at >= naive_start,
                 BotMessage.created_at <= naive_end,
+                BotMessage.raw_data["calendar_source"].as_string() == "AUTOMATION_BROADCAST",
             )
             .group_by(
                 Bot.id,
@@ -146,7 +169,6 @@ class CalendarService:
                 BotMessage.text_content,
                 BotMessage.media_url,
             )
-            .having(func.count() > 1)
             .subquery()
         )
         broadcast_query = (
@@ -157,29 +179,9 @@ class CalendarService:
             .group_by(broadcast_sub.c.day)
         )
         result = await self.db.execute(broadcast_query)
-        per_day: dict[str, int] = {}
         for row in result.all():
-            per_day[str(row.day)] = row.cnt
-
-        recurring_query = (
-            select(
-                func.date(RecurringMessageLog.sent_at).label("day"),
-                func.count(func.distinct(RecurringMessageLog.recurring_message_id)).label("cnt"),
-            )
-            .select_from(RecurringMessageLog)
-            .join(RecurringMessage, RecurringMessage.id == RecurringMessageLog.recurring_message_id)
-            .join(Bot, Bot.id == RecurringMessage.bot_id)
-            .where(
-                Bot.owner_id == owner_id,
-                RecurringMessageLog.sent_at >= naive_start,
-                RecurringMessageLog.sent_at <= naive_end,
-            )
-            .group_by(func.date(RecurringMessageLog.sent_at))
-        )
-        result = await self.db.execute(recurring_query)
-        for row in result.all():
-            date_str = str(row.day)
-            per_day[date_str] = per_day.get(date_str, 0) + row.cnt
+            day_key = str(row.day)
+            per_day[day_key] = per_day.get(day_key, 0) + row.cnt
 
         return [
             DayCount(date=date_str, count=cnt, published=cnt, bot_messages=cnt)
