@@ -1,9 +1,84 @@
 .section {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 16px;
   width: 100%;
+}
+
+.automationExtras {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  width: 100%;
+  padding-top: 16px;
+
+  @media (min-width: 1440px) {
+    padding-top: 20px;
+  }
+}
+
+.quickSettingsBlock {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.quickToggleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  width: 100%;
+  gap: 12px;
+}
+
+.quickToggleLabel {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383f45;
+  flex: 1;
+  min-width: 0;
+}
+
+.userCommandsSection {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    max-width: 50%;
+  }
+}
+
+.userCommandsHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 0;
+}
+
+.userCommandsLabel {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383f45;
+  flex: 1;
+}
+
+.commandsActiveCount {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  margin: 0;
 }
 
 .desktopLayout {
@@ -16,6 +91,7 @@
     flex-direction: row;
     gap: 32px;
     align-items: flex-start;
+    flex-wrap: nowrap;
   }
 }
 
@@ -74,7 +150,7 @@
 .infoMessagesSection {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 8px;
   width: 100%;
 }
@@ -83,8 +159,10 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   padding: 10px 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .infoMessagesLabel {
@@ -98,7 +176,7 @@
 .infoMessagesContent {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 10px;
   width: 100%;
 }
@@ -163,7 +241,10 @@
 }
 
 .addMessageBtn {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
   background: rgba(59, 130, 246, 0.1) !important;
   border-radius: 8px !important;
   color: #3B82F6 !important;
@@ -175,14 +256,17 @@
 }
 
 .createBtn {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
 }
 
 .autoRepliesSection {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  align-items: stretch;
+  gap: 8px;
   width: 100%;
   padding-top: 16px;
   border-top: 1px solid rgba(206, 210, 214, 0.3);
@@ -199,13 +283,8 @@
   align-items: center;
   justify-content: space-between;
   width: 100%;
-}
-
-.autoRepliesLabelRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
+  padding: 10px 0;
+  box-sizing: border-box;
 }
 
 .autoRepliesLabel {
@@ -213,23 +292,12 @@
   font-size: 16px;
   line-height: 19px;
   color: #383F45;
-}
-
-.autoRepliesCount {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  background: rgba(59, 130, 246, 0.15);
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 15px;
-  color: #3B82F6;
+  flex: 1;
 }
 
 .libraryBtn {
-  width: 100%;
+  width: 100% !important;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-self: stretch;
 }

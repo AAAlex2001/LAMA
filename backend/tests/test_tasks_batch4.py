@@ -520,7 +520,7 @@ class TestMultiMediaSchemas:
         from backend.schemas.bots.commands import BotCommandResponse
 
         resp = BotCommandResponse(
-            id=1, bot_id=1, command="/test",
+            id=1, bot_id=1, channel_id=None, command="/test",
             description=None, response_text="Hi",
             response_media_url=None,
             response_media_urls=["https://example.com/a.jpg"],

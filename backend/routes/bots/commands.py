@@ -30,13 +30,16 @@ async def create_command(
 async def get_commands(
     bot_id: int,
     is_active: Optional[bool] = None,
+    channel_id: Optional[int] = None,
     bot_service: BotCrudService = Depends(get_bot_service),
     command_service: BotCommandService = Depends(get_bot_command_service),
     current_user: User = Depends(get_current_user),
 ):
-    """Получить список команд бота."""
-    bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    commands, total = await command_service.get_list(bot_id, is_active, owner_id=current_user.id)
+    """Получить список команд бота. channel_id — только команды указанной группы/супергруппы."""
+    await bot_service.get(bot_id, owner_id=current_user.id)
+    commands, total = await command_service.get_list(
+        bot_id, is_active, owner_id=current_user.id, channel_id=channel_id,
+    )
     return BotCommandListResponse(items=commands, total=total)
 
 

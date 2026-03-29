@@ -11,6 +11,10 @@ from backend.models.bots import MessageType, CommandScope
 class BotCommandCreate(BaseModel):
     """Схема создания команды"""
     command: str = Field(..., pattern=r"^/[a-zA-Z0-9_]+$", description="Command like /start")
+    channel_id: Optional[int] = Field(
+        None,
+        description="ID группы/супергруппы (channel_groups). Для списка команд конкретного чата.",
+    )
     description: Optional[str] = None
     response_text: str = Field(..., min_length=1)
     response_media_url: Optional[str] = None
@@ -35,6 +39,7 @@ class BotCommandResponse(BaseModel):
     """Схема ответа команды"""
     id: int
     bot_id: int
+    channel_id: Optional[int] = None
     command: str
     description: Optional[str]
     response_text: str

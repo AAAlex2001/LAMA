@@ -1,8 +1,7 @@
-import logging
 import secrets
-from typing import List
 
 from aiogram.enums import ParseMode
+from aiogram.types import InputMediaDocument, InputMediaPhoto, InputMediaVideo
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,8 +12,7 @@ from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.utils.query_utils import get_channel
 from backend.services.publications.utils.html_utils import clean_html_for_telegram
 from backend.utils.keyboard import build_keyboard
-
-logger = logging.getLogger(__name__)
+from backend.utils.media import is_document_url, is_video_url
 
 
 class InfoMessagesService:
@@ -68,6 +66,7 @@ class InfoMessagesService:
             text=data.text,
             media_url=data.media_url,
             media_type=data.media_type,
+            media_urls=data.media_urls if data.media_urls else None,
             inline_keyboard=data.inline_keyboard,
         )
         self.db.add(msg)
@@ -96,8 +95,12 @@ class InfoMessagesService:
             msg.media_url = data.media_url
         if data.media_type is not None:
             msg.media_type = data.media_type
+        if data.media_urls is not None:
+            msg.media_urls = data.media_urls if data.media_urls else None
         if data.inline_keyboard is not None:
             msg.inline_keyboard = data.inline_keyboard
+        if data.is_enabled is not None:
+            msg.is_enabled = data.is_enabled
 
         await self.db.flush()
         await self.db.refresh(msg)
@@ -145,50 +148,74 @@ class InfoMessagesService:
         keyboard = build_keyboard(msg.inline_keyboard) if msg.inline_keyboard else None
         chat_id = channel.telegram_id
 
-        if msg.media_url and msg.media_type:
-            media_type = msg.media_type.upper()
-            if media_type == "PHOTO":
+        urls = [u for u in (msg.media_urls or []) if u]
+        if not urls and msg.media_url:
+            urls = [msg.media_url]
+
+        if len(urls) > 1:
+            media_group = []
+            for i, url in enumerate(urls[:10]):
+                cap = cleaned_text if i == 0 else None
+                pm = ParseMode.HTML if cap else None
+                if is_video_url(url):
+                    media_group.append(InputMediaVideo(media=url, caption=cap, parse_mode=pm))
+                elif is_document_url(url):
+                    media_group.append(InputMediaDocument(media=url, caption=cap, parse_mode=pm))
+                else:
+                    media_group.append(InputMediaPhoto(media=url, caption=cap, parse_mode=pm))
+            await bot.send_media_group(chat_id=chat_id, media=media_group)
+            if keyboard:
+                await bot.send_message(chat_id=chat_id, text="\u200b", reply_markup=keyboard)
+            return msg
+
+        if len(urls) == 1 and msg.media_type:
+            u = urls[0]
+            mt = msg.media_type.upper()
+            if mt == "PHOTO":
                 await bot.send_photo(
                     chat_id=chat_id,
-                    photo=msg.media_url,
+                    photo=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-            elif media_type == "VIDEO":
+                return msg
+            if mt == "VIDEO":
                 await bot.send_video(
                     chat_id=chat_id,
-                    video=msg.media_url,
+                    video=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-            elif media_type == "DOCUMENT":
+                return msg
+            if mt == "DOCUMENT":
                 await bot.send_document(
                     chat_id=chat_id,
-                    document=msg.media_url,
+                    document=u,
                     caption=cleaned_text,
                     parse_mode=ParseMode.HTML,
                     reply_markup=keyboard,
                 )
-            else:
-                await bot.send_message(
-                    chat_id=chat_id,
-                    text=cleaned_text or "",
-                    parse_mode=ParseMode.HTML,
-                    reply_markup=keyboard,
-                )
-        elif cleaned_text:
+                return msg
+            await bot.send_message(
+                chat_id=chat_id,
+                text=cleaned_text or "",
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard,
+            )
+            return msg
+
+        if cleaned_text:
             await bot.send_message(
                 chat_id=chat_id,
                 text=cleaned_text,
                 parse_mode=ParseMode.HTML,
                 reply_markup=keyboard,
             )
-        else:
-            raise HTTPException(status_code=400, detail="Message has no content to publish")
+            return msg
 
-        return msg
+        raise HTTPException(status_code=400, detail="Message has no content to publish")
 
     async def delete_message(self, channel_id: int, message_id: int, owner_id: int) -> None:
         channel = await get_channel(self.db, channel_id, owner_id)

@@ -1,72 +1,80 @@
 'use client';
 
-import { FC, useEffect, useRef, useState } from 'react';
+import { FC, useEffect, useMemo, useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button } from '@/components/new-button';
 import { EditIcon, TrashIcon, InlineButtonIcon, PhotoIcon, VideoIcon } from '@/components/icons';
 import Tooltip from '@/components/tooltip/tooltip';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAutoReplyDispatch, useAutoReplySelector } from './store';
+import { useBotCommandDispatch, useBotCommandSelector } from './store';
 import { setListModalOpen } from './store/slices/list';
 import { openCreate, openEdit } from './store/slices/form';
-import { deleteAutoReplyThunk, toggleAutoReplyThunk, fetchAutoRepliesThunk } from './store/thunks';
+import { deleteBotCommandThunk, toggleBotCommandThunk, fetchBotCommandsThunk } from './store/thunks';
+import type { BotCommand } from './store/slices/list';
 import draftCardStyles from '@/app/[locale]/drafts/components/draft-card.module.scss';
-import styles from './AutoReplyListModal.module.scss';
+import styles from './BotCommandListModal.module.scss';
 
-interface AutoReplyListModalProps {
+interface BotCommandListModalProps {
   botId: number;
-  channelId?: number;
+  channelId: number;
 }
 
-const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) => {
-  const dispatch = useAutoReplyDispatch();
+const BotCommandListModal: FC<BotCommandListModalProps> = ({ botId, channelId }) => {
+  const dispatch = useBotCommandDispatch();
   const { showSuccess, showError } = useNotifications();
-  const { items, listModalOpen } = useAutoReplySelector((s) => s.list);
+  const { items, listModalOpen } = useBotCommandSelector((s) => s.list);
   const [search, setSearch] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<{ id: number; type: 'delete' | 'edit' } | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!listModalOpen) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      dispatch(fetchAutoRepliesThunk({ botId, channelId, search: search.trim() || undefined }));
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [search, listModalOpen, botId, channelId, dispatch]);
+    dispatch(fetchBotCommandsThunk({ botId, channelId }));
+  }, [listModalOpen, botId, channelId, dispatch]);
 
   const stripHtml = (html: string) => html.replace(/<[^>]*>/g, '').trim();
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter(
+      (i) =>
+        i.command.toLowerCase().includes(q) || stripHtml(i.response_text).toLowerCase().includes(q),
+    );
+  }, [items, search]);
 
   const handleDelete = async (id: number) => {
     setConfirmDeleteId(null);
     try {
-      await dispatch(deleteAutoReplyThunk({ botId, replyId: id })).unwrap();
-      showSuccess('Автоответ удалён');
+      await dispatch(deleteBotCommandThunk({ botId, commandId: id })).unwrap();
+      showSuccess('Команда удалена');
     } catch {
       showError('Ошибка удаления');
     }
   };
 
-  const handleEdit = (item: typeof items[0]) => {
-    dispatch(openEdit({
-      id: item.id,
-      keywords: item.keywords,
-      responseText: item.response_text,
-      responseMediaType: item.response_media_type ?? 'TEXT',
-      responseMediaUrls: item.response_media_urls ?? (item.response_media_url ? [item.response_media_url] : []),
-      responseButtons: item.response_buttons ?? null,
-      scope: item.scope ?? 'GROUPS',
-      isActive: item.is_active,
-    }));
+  const handleEdit = (item: BotCommand) => {
+    dispatch(
+      openEdit({
+        id: item.id,
+        command: item.command,
+        description: item.description,
+        responseText: item.response_text,
+        responseMediaType: item.response_media_type ?? 'TEXT',
+        responseMediaUrls: item.response_media_urls ?? (item.response_media_url ? [item.response_media_url] : []),
+        responseButtons: item.response_buttons ?? null,
+        scope: item.scope ?? 'GROUPS',
+        isActive: item.is_active,
+      }),
+    );
   };
 
-  const handleSelect = async (item: typeof items[0]) => {
+  const handleSelect = async (item: BotCommand) => {
     const newActive = !item.is_active;
     try {
-      await dispatch(toggleAutoReplyThunk({ botId, replyId: item.id, isActive: newActive })).unwrap();
-      showSuccess(newActive ? 'Автоответ активирован' : 'Автоответ деактивирован');
+      await dispatch(toggleBotCommandThunk({ botId, entryId: item.id, isActive: newActive })).unwrap();
+      showSuccess(newActive ? 'Команда активирована' : 'Команда отключена');
     } catch {
       showError('Ошибка изменения статуса');
     }
@@ -86,16 +94,16 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
       <ModalBase isOpen={listModalOpen} onOpenChange={handleClose}>
         <ModalBase.Content size="xl" className={styles.modal}>
           <ModalBase.Header className={styles.header}>
-            <span className={styles.title}>Библиотека автоответов</span>
+            <span className={styles.title}>Библиотека команд</span>
             <div className={styles.headerControls}>
               <SearchBar
                 value={search}
                 onChange={setSearch}
-                placeholder="Поиск по автоответам"
+                placeholder="Поиск по командам"
                 className={styles.searchBar}
               />
               <Button variant="fill" intent="gradient" size="md" className={styles.addBtn} onClick={handleCreate}>
-                Добавить автоответ
+                Добавить команду
               </Button>
             </div>
             <ModalBase.Close className={styles.headerClose} />
@@ -103,12 +111,12 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
 
           <ModalBase.Body className={styles.body}>
             {items.length === 0 ? (
-              <div className={styles.empty}>
-                {search.trim() ? 'Ничего не найдено' : 'Нет автоответов. Создайте первый!'}
-              </div>
+              <div className={styles.empty}>Нет команд. Создайте первую!</div>
+            ) : filteredItems.length === 0 ? (
+              <div className={styles.empty}>Ничего не найдено</div>
             ) : (
               <div className={styles.grid}>
-                {items.map((item) => {
+                {filteredItems.map((item) => {
                   const isSelected = item.is_active;
                   const isVideo = item.response_media_type === 'VIDEO';
                   const hasMedia = !!(item.response_media_url || (item.response_media_urls && item.response_media_urls.length > 0));
@@ -119,8 +127,8 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
                     <div key={item.id} className={styles.card}>
                       <div className={styles.cardBody}>
                         <div className={styles.cardRow}>
-                          <span className={styles.cardLabel}>Триггер:</span>
-                          <span className={styles.cardTrigger}>{item.keywords.join(', ')}</span>
+                          <span className={styles.cardLabel}>Команда:</span>
+                          <span className={styles.cardTrigger}>{item.command}</span>
                         </div>
                         <div className={styles.cardResponseBlock}>
                           <span className={styles.cardLabel}>Ответ:</span>
@@ -183,17 +191,16 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
         </ModalBase.Content>
       </ModalBase>
 
-      {/* Delete confirmation modal */}
       <ModalBase isOpen={confirmDeleteId !== null} onOpenChange={(v) => { if (!v) setConfirmDeleteId(null); }}>
         <ModalBase.Content size="sm" className={styles.confirmModal}>
           <ModalBase.Header className={styles.confirmHeader}>
-            <ModalBase.Title className={styles.confirmTitle}>Удалить автоответ?</ModalBase.Title>
+            <ModalBase.Title className={styles.confirmTitle}>Удалить команду?</ModalBase.Title>
             <ModalBase.Close />
           </ModalBase.Header>
           <ModalBase.Body className={styles.confirmBody}>
             {confirmingItem && (
               <p className={styles.confirmText}>
-                Автоответ на «{confirmingItem.keywords.slice(0, 2).join(', ')}{confirmingItem.keywords.length > 2 ? '...' : ''}» будет удалён без возможности восстановления.
+                Команда «{confirmingItem.command}» будет удалена без возможности восстановления.
               </p>
             )}
             <div className={styles.confirmFooter}>
@@ -216,4 +223,4 @@ const AutoReplyListModal: FC<AutoReplyListModalProps> = ({ botId, channelId }) =
   );
 };
 
-export default AutoReplyListModal;
+export default BotCommandListModal;

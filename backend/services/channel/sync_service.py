@@ -13,7 +13,7 @@ from backend.config import TELEGRAM_BOT_TOKEN
 from backend.models.auth import TelegramAccount
 from backend.models.bots import Bot as BotModel
 from backend.models.channels import ChannelGroup
-from backend.services.bot import BotService
+from backend.services.bot.bot_crud import BotCrudService
 from backend.services.bot_provider import resolve_by_token
 from backend.services.channel.utils.chat_data_utils import build_chat_data
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
@@ -44,7 +44,7 @@ class SyncService:
         chat_identifier = resolve_chat_identifier(telegram_id, username, invite_link)
 
         if token and not bot_id:
-            bot_service = BotService(self.db)
+            bot_service = BotCrudService(self.db)
             bot_model = await bot_service.sync_from_telegram(token, owner_id=owner_id)
             bot_id = bot_model.id
 

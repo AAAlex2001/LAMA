@@ -71,7 +71,13 @@ export const createInfoMessageThunk = createAsyncThunk(
       savingType,
     }: {
       channelId: number;
-      data: { text: string; media_url?: string | null; media_type?: string | null; inline_keyboard?: any[][] | null };
+      data: {
+        text: string;
+        media_url?: string | null;
+        media_type?: string | null;
+        media_urls?: string[] | null;
+        inline_keyboard?: any[][] | null;
+      };
       savingType: SavingType;
     },
     { dispatch, rejectWithValue },
@@ -109,7 +115,14 @@ export const updateInfoMessageThunk = createAsyncThunk(
     }: {
       channelId: number;
       messageId: number;
-      data: { text?: string; media_url?: string | null; media_type?: string | null; inline_keyboard?: any[][] | null };
+      data: {
+        text?: string;
+        media_url?: string | null;
+        media_type?: string | null;
+        media_urls?: string[] | null;
+        inline_keyboard?: any[][] | null;
+        is_enabled?: boolean;
+      };
       savingType: SavingType;
     },
     { dispatch, rejectWithValue },

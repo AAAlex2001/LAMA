@@ -7,6 +7,7 @@ import Input from '@/components/input';
 import Loader from '@/components/loader';
 import { Button } from '@/components/new-button';
 import MediaPreview from '@/components/media-preview';
+import type { MediaFile } from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import DatePickerModal from '@/components/date-picker/date-picker-modal';
@@ -14,7 +15,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useMessageMedia } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
 import { useInlineButtons } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
 import { useTemplates } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useTemplates';
-import { uploadMediaFile } from '@/store/api';
+import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 import OldButton from '@/components/button/button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
 import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
@@ -26,7 +27,7 @@ import {
   publishInfoMessageThunk,
 } from '../../store/thunks/automation';
 import { setSaving, setSavingType } from '../../store/slices/automation';
-import type { SavingType } from '../../store/slices/automation';
+import type { InfoMessage, SavingType } from '../../store/slices/automation';
 import {
   InlineButtonIcon,
   TemplatesIcon,
@@ -55,6 +56,57 @@ const MEDIA_TYPE_MAP: Record<string, string> = {
   document: 'DOCUMENT',
 };
 
+const MAX_MEDIA = 10;
+
+function urlsToMediaFiles(urls: string[]): MediaFile[] {
+  return urls.map((url, i) => {
+    const isVideo = /\.(mp4|mov|avi|webm|m4v)/i.test(url);
+    const isDoc = /\.(pdf|doc|docx|txt|zip|rar)/i.test(url);
+    const type: 'video' | 'image' | 'document' = isVideo ? 'video' : isDoc ? 'document' : 'image';
+    return {
+      id: `edit-${i}-${Date.now()}`,
+      type,
+      url,
+      preview_url: type === 'image' ? url : undefined,
+    } as MediaFile;
+  });
+}
+
+function mediaFromInfoMessage(msg: InfoMessage): MediaFile[] {
+  if (msg.media_urls && msg.media_urls.length > 0) {
+    return urlsToMediaFiles(msg.media_urls);
+  }
+  if (msg.media_url && msg.media_type) {
+    const t = msg.media_type.toUpperCase();
+    const type = t === 'VIDEO' ? 'video' : t === 'DOCUMENT' ? 'document' : 'image';
+    return [
+      {
+        id: 'edit-legacy',
+        type,
+        url: msg.media_url,
+        preview_url: type === 'image' ? msg.media_url : undefined,
+      } as MediaFile,
+    ];
+  }
+  return [];
+}
+
+async function resolveUploadedUrls(files: MediaFile[]): Promise<string[]> {
+  const base = API_BASE_URL.replace('/api', '');
+  const out: string[] = [];
+  for (const mf of files) {
+    if (mf.url) {
+      out.push(mf.url.startsWith('http') ? mf.url : `${base}${mf.url}`);
+      continue;
+    }
+    if (!mf.file) continue;
+    const uploaded = await uploadMediaFile(mf.file);
+    const url = uploaded.url.startsWith('http') ? uploaded.url : `${base}${uploaded.url}`;
+    out.push(url);
+  }
+  return out;
+}
+
 interface CreateInfoMessageModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -80,62 +132,77 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduleHours, setScheduleHours] = useState(new Date().getHours());
   const [scheduleMinutes, setScheduleMinutes] = useState(new Date().getMinutes());
-  const [existingMedia, setExistingMedia] = useState<{ url: string; type: string } | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [shareLink, setShareLink] = useState('');
   const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
   const editorRef = useRef<RichTextEditorRef>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
-    mediaFiles, handleRemoveFile,
-    handleToggleBlur, handleMoveMedia, handleClearMedia,
-    handleFilesAdd,
+    mediaFiles,
+    setMediaFiles,
+    isUploadingMedia,
+    fileInputRef,
+    handleFileUpload,
+    handleRemoveFile,
+    handleToggleBlur,
+    handleMoveMedia,
+    handleClearMedia,
   } = useMessageMedia();
 
   const {
-    isOpen: buttonsOpen, rows, toggle: toggleButtons,
-    addRow, addColumn, updateButton, deleteButton, reset: resetButtons,
-    setRows, setIsOpen: setButtonsOpen,
+    isOpen: buttonsOpen,
+    rows,
+    toggle: toggleButtons,
+    addRow,
+    addColumn,
+    updateButton,
+    deleteButton,
+    reset: resetButtons,
+    setRows,
+    setIsOpen: setButtonsOpen,
   } = useInlineButtons();
 
   const {
-    templates, isLoading: templatesLoading, isLoadingMore: templatesLoadingMore,
-    hasMore: templatesHasMore, searchQuery: templatesSearchQuery,
-    selectedTemplateId, setSearchQuery: setTemplatesSearchQuery,
-    fetchMoreTemplates, updateTemplate, deleteTemplate,
+    templates,
+    isLoading: templatesLoading,
+    isLoadingMore: templatesLoadingMore,
+    hasMore: templatesHasMore,
+    searchQuery: templatesSearchQuery,
+    selectedTemplateId,
+    setSearchQuery: setTemplatesSearchQuery,
+    fetchMoreTemplates,
+    updateTemplate,
+    deleteTemplate,
   } = useTemplates();
 
   const isEditing = !!editingMessage;
-  const canAddMedia = mediaFiles.length < 1 && !existingMedia;
+  const limitedMediaFiles = mediaFiles.slice(0, MAX_MEDIA);
+  const canAddMedia = limitedMediaFiles.length < MAX_MEDIA;
 
   useEffect(() => {
     if (!isOpen) return;
 
     if (editingMessage) {
       setText(editingMessage.text || '');
-      if (editingMessage.media_url && editingMessage.media_type) {
-        setExistingMedia({ url: editingMessage.media_url, type: editingMessage.media_type });
-      } else {
-        setExistingMedia(null);
-      }
+      setMediaFiles(mediaFromInfoMessage(editingMessage));
       if (editingMessage.inline_keyboard && editingMessage.inline_keyboard.length > 0) {
         setButtonsOpen(true);
-        setRows(editingMessage.inline_keyboard.map((row, ri) => ({
-          id: `row-${ri}-${Date.now()}`,
-          buttons: row.map((btn: any, bi: number) => ({
-            id: `btn-${ri}-${bi}-${Date.now()}`,
-            text: btn.text,
-            type: 'url' as const,
-            url: btn.url || '',
+        setRows(
+          editingMessage.inline_keyboard.map((row, ri) => ({
+            id: `row-${ri}-${Date.now()}`,
+            buttons: row.map((btn: { text: string; url?: string }, bi: number) => ({
+              id: `btn-${ri}-${bi}-${Date.now()}`,
+              text: btn.text,
+              type: 'url' as const,
+              url: btn.url || '',
+            })),
           })),
-        })));
+        );
       } else {
         resetButtons();
       }
     } else {
       setText('');
-      setExistingMedia(null);
       handleClearMedia();
       resetButtons();
     }
@@ -152,10 +219,10 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
     const plainText = html.replace(/<[^>]*>/g, '').trim();
     const name = plainText.length > 30 ? plainText.substring(0, 30) + '...' : plainText;
 
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
     const token = typeof window !== 'undefined' ? localStorage.getItem('lamaplanner_access_token') : null;
 
-    fetch(`${API_BASE_URL}/publications/text-templates/`, {
+    fetch(`${base}/publications/text-templates/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -177,21 +244,9 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
     setTemplatesOpen(false);
   };
 
-  const buildPayload = () => {
-    const inlineKeyboard = buttonsOpen && rows.length > 0
-      ? rows.map((row) => row.buttons.map((btn) => ({ text: btn.text, url: btn.url || '' })))
-      : null;
-
-    return {
-      text: text || '',
-      media_url: null as string | null,
-      media_type: null as string | null,
-      inline_keyboard: inlineKeyboard,
-    };
-  };
-
   const handleSave = async (type: SavingType) => {
-    if (!text.trim() && mediaFiles.length === 0 && !existingMedia) {
+    const hasText = text.replace(/<[^>]*>/g, '').trim().length > 0;
+    if (!hasText && limitedMediaFiles.length === 0) {
       showError('Введите текст или прикрепите файл');
       return;
     }
@@ -200,34 +255,41 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
     dispatch(setSavingType(type));
 
     try {
-      const data = buildPayload();
+      const inlineKeyboard =
+        buttonsOpen && rows.length > 0
+          ? rows.map((row) => row.buttons.map((btn) => ({ text: btn.text, url: btn.url || '' })))
+          : null;
 
-      if (mediaFiles.length > 0 && mediaFiles[0].file) {
-        const result = await uploadMediaFile(mediaFiles[0].file);
-        data.media_url = result.url;
-        data.media_type = MEDIA_TYPE_MAP[mediaFiles[0].type] || 'DOCUMENT';
-      } else if (existingMedia) {
-        data.media_url = existingMedia.url;
-        data.media_type = existingMedia.type;
-      }
+      const urls = await resolveUploadedUrls(limitedMediaFiles);
+      const data = {
+        text: text || '',
+        inline_keyboard: inlineKeyboard,
+        media_urls: urls.length > 0 ? urls : [],
+        media_url: urls[0] ?? null,
+        media_type: limitedMediaFiles[0] ? MEDIA_TYPE_MAP[limitedMediaFiles[0].type] || 'DOCUMENT' : null,
+      };
 
       let savedMsg;
       if (isEditing) {
-        savedMsg = await dispatch(updateInfoMessageThunk({
-          channelId,
-          messageId: editingMessage.id,
-          data,
-          savingType: type,
-        })).unwrap();
+        savedMsg = await dispatch(
+          updateInfoMessageThunk({
+            channelId,
+            messageId: editingMessage.id,
+            data,
+            savingType: type,
+          }),
+        ).unwrap();
       } else {
         savedMsg = await dispatch(createInfoMessageThunk({ channelId, data, savingType: type })).unwrap();
       }
 
       if (type === 'publish' && savedMsg) {
-        await dispatch(publishInfoMessageThunk({
-          channelId,
-          messageId: savedMsg.id,
-        })).unwrap();
+        await dispatch(
+          publishInfoMessageThunk({
+            channelId,
+            messageId: savedMsg.id,
+          }),
+        ).unwrap();
         showSuccess('Сообщение опубликовано');
       } else {
         showSuccess(isEditing ? 'Сообщение обновлено' : 'Сообщение создано');
@@ -252,9 +314,9 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
     if (isEditing) {
       setIsGeneratingShareLink(true);
       try {
-        const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
+        const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api';
         const token = localStorage.getItem('lamaplanner_access_token');
-        const res = await fetch(`${API_BASE_URL}/channels/${channelId}/info-messages/${editingMessage.id}/share`, {
+        const res = await fetch(`${base}/channels/${channelId}/info-messages/${editingMessage.id}/share`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -262,8 +324,8 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
           },
         });
         if (!res.ok) throw new Error('Failed');
-        const data = await res.json();
-        const link = `${window.location.origin}/channels/${channelId}?shared_message=${data.share_token}`;
+        const payload = await res.json();
+        const link = `${window.location.origin}/channels/${channelId}?shared_message=${payload.share_token}`;
         setShareLink(link);
       } catch {
         const plainText = text.replace(/<[^>]*>/g, '').trim();
@@ -276,6 +338,8 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
       setShareLink(`https://t.me/share/url?url=&text=${encodeURIComponent(plainText)}`);
     }
   };
+
+  const hasShareableContent = text.replace(/<[^>]*>/g, '').trim().length > 0 || limitedMediaFiles.length > 0;
 
   return (
     <>
@@ -373,79 +437,44 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
             </div>
 
             <div className={styles.mediaSection}>
-              <span className={styles.mediaSectionLabel}>Медиа и файлы</span>
+              <span className={styles.mediaLabel}>Медиа и файлы</span>
               <input
                 ref={fileInputRef}
                 type="file"
-                multiple
                 accept="image/*,video/*,.pdf,.doc,.docx,.txt"
+                multiple
+                onChange={handleFileUpload}
                 style={{ display: 'none' }}
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (files) {
-                    setExistingMedia(null);
-                    handleFilesAdd(Array.from(files));
-                  }
-                  e.target.value = '';
-                }}
               />
-
-              {/* Unified dropzone */}
               <div className={styles.mediaDropzone}>
-                {existingMedia && mediaFiles.length === 0 ? (
-                  <div className={styles.dropzoneContent}>
-                    <div className={styles.existingMedia}>
-                      {existingMedia.type === 'PHOTO' || existingMedia.type === 'ANIMATION' ? (
-                        <img src={existingMedia.url} alt="" className={styles.existingMediaImg} />
-                      ) : existingMedia.type === 'VIDEO' ? (
-                        <video src={existingMedia.url} className={styles.existingMediaImg} />
-                      ) : (
-                        <div className={styles.existingMediaDoc}>DOC</div>
-                      )}
-                      <button
-                        type="button"
-                        className={styles.existingMediaRemove}
-                        onClick={() => setExistingMedia(null)}
-                      >
-                        &times;
-                      </button>
-                    </div>
-                    <OldButton
-                      text="Заменить файл"
-                      variant="templateCard"
-                      showArrow={false}
-                      icon={<PaperclipIcon width={24} height={24} />}
-                      onClick={() => fileInputRef.current?.click()}
-                    />
-                  </div>
-                ) : mediaFiles.length === 0 ? (
+                {limitedMediaFiles.length === 0 ? (
                   <>
-                    <span className={styles.dropzoneText}>
+                    <span className={styles.mediaDropzoneText}>
                       Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
                     </span>
                     <OldButton
-                      text="Прикрепить файл"
+                      text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
                       variant="templateCard"
                       showArrow={false}
                       icon={<PaperclipIcon width={24} height={24} />}
-                      disabled={!canAddMedia}
+                      disabled={!canAddMedia || isUploadingMedia}
                       onClick={() => fileInputRef.current?.click()}
                     />
                   </>
                 ) : (
-                  <div className={styles.dropzoneContent}>
+                  <div className={styles.mediaDropzoneContent}>
                     <MediaPreview
-                      files={mediaFiles}
+                      files={limitedMediaFiles}
                       onRemove={handleRemoveFile}
                       onToggleBlur={handleToggleBlur}
                       onMove={handleMoveMedia}
                     />
                     <OldButton
-                      text="Прикрепить ещё"
+                      text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
                       variant="templateCard"
                       showArrow={false}
                       icon={<PaperclipIcon width={24} height={24} />}
-                      disabled={!canAddMedia}
+                      disabled={!canAddMedia || isUploadingMedia}
                       onClick={() => fileInputRef.current?.click()}
                     />
                   </div>
@@ -470,7 +499,7 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                   size="sm"
                   className={styles.shareBtn}
                   onClick={handleShareClick}
-                  disabled={!text.trim()}
+                  disabled={!hasShareableContent}
                 >
                   <ShareIcon width={24} height={24} />
                 </Button>
@@ -483,7 +512,7 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
                   loading={savingType === 'draft'}
                   disabled={savingType !== null}
                 >
-                  Сохранить в черновики
+                  {isEditing ? 'Сохранить' : 'Сохранить в черновики'}
                 </Button>
               </div>
               <div className={styles.footerBottomRow}>
@@ -520,17 +549,7 @@ const CreateInfoMessageModal: FC<CreateInfoMessageModalProps> = ({
         onClose={() => setPreviewOpen(false)}
         channelTitle={channelTitle}
         html={text}
-        mediaFiles={
-          mediaFiles.length > 0
-            ? mediaFiles
-            : existingMedia
-              ? [{
-                  id: 'existing',
-                  type: (existingMedia.type === 'VIDEO' ? 'video' : existingMedia.type === 'DOCUMENT' ? 'document' : 'image') as 'image' | 'video' | 'document',
-                  url: existingMedia.url,
-                }]
-              : []
-        }
+        mediaFiles={limitedMediaFiles}
         inlineKeyboard={
           buttonsOpen && rows.length > 0
             ? { buttons: rows.map((row) => row.buttons.map((btn) => ({ text: btn.text }))) }

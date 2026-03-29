@@ -8,6 +8,7 @@ export interface InfoMessage {
   text: string;
   media_url: string | null;
   media_type: string | null;
+  media_urls: string[] | null;
   inline_keyboard: any[][] | null;
   is_enabled: boolean;
   created_at: string;

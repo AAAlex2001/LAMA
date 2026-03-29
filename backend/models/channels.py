@@ -461,6 +461,7 @@ class InformationalMessage(Base):
     text: Mapped[str] = mapped_column(Text, default="")
     media_url: Mapped[Optional[str]] = mapped_column(Text)
     media_type: Mapped[Optional[str]] = mapped_column(String(32))
+    media_urls: Mapped[Optional[list]] = mapped_column(JSON)
     inline_keyboard: Mapped[Optional[list]] = mapped_column(JSON)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     share_token: Mapped[Optional[str]] = mapped_column(String(64), index=True)

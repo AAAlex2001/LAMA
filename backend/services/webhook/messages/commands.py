@@ -319,10 +319,13 @@ class CommandProcessor:
             return
 
         command_service = BotCommandService(self.db)
+        channel_obj = await self.resolve_channel(message.chat.id)
+        channel_db_id = channel_obj.id if channel_obj else None
         command = await command_service.find_by_text(
             self.bot_model.id,
             command_text,
-            chat_type=chat_type
+            chat_type=chat_type,
+            channel_id=channel_db_id,
         )
 
         if command:
