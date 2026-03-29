@@ -113,7 +113,7 @@ export class DirectChatWsService {
 
         this.onEvent?.(eventData);
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
+        // console.error('Error parsing WebSocket message:', error);
       }
     };
 
@@ -127,7 +127,7 @@ export class DirectChatWsService {
     };
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      // console.error('WebSocket error:', error);
     };
   }
 
