@@ -1,7 +1,6 @@
 
 import type { DirectChatResponse, EditDirectMessageParams, MessageType, SendDirectMessageParams } from '@/app/[locale]/inbox/store/thunks/directChat';
 import type { MessageFieldRef } from '../components/MessageField';
-import type { MessageInputModeReturn } from './useMessageInputMode';
 import type { MessageScrollReturn } from './useMessageScroll';
 import { buildInlineKeyboard } from '@/store/utils';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -10,7 +9,6 @@ import { processMediaFiles } from '../utils/processMediaFiles';
 interface UseMessageSendingProps {
   activeChat: DirectChatResponse | null;
   messageFieldRef: React.RefObject<MessageFieldRef | null>;
-  inputMode: MessageInputModeReturn;
   sendMessage: (params: {
     text_content?: string;
     media_url?: string;
@@ -31,7 +29,6 @@ interface UseMessageSendingProps {
 export function useMessageSending({
   activeChat,
   messageFieldRef,
-  inputMode,
   sendMessage,
   editMessage,
   scroll,
@@ -43,21 +40,25 @@ export function useMessageSending({
 
   const handleSendMessage = async () => {
     if (!activeChat) return;
+    const ref = messageFieldRef.current;
+    if (!ref) return;
 
-    const { mediaFiles, inlineButtonRows } = messageFieldRef.current || { mediaFiles: [], inlineButtonRows: [] };
-    const hasText = inputMode.message.trim().length > 0;
+    const message = ref.getMessage();
+    const replyingTo = ref.getReplyingTo();
+    const { mediaFiles, inlineButtonRows } = ref;
+    const hasText = message.trim().length > 0;
     const hasMedia = mediaFiles.length > 0;
 
     if (!hasText && !hasMedia) return;
 
-    const replyToMessageId = inputMode.replyingTo?.id;
+    const replyToMessageId = replyingTo?.id;
     const inlineKeyboard = buildInlineKeyboard(inlineButtonRows);
 
     try {
       if (hasMedia) {
         const { urls: mediaUrls, fileIds: mediaFileIds } = await processMediaFiles(mediaFiles);
         await sendMessage({
-          text_content: hasText ? inputMode.message : undefined,
+          text_content: hasText ? message : undefined,
           media_urls: mediaUrls,
           media_file_ids: mediaFileIds.length > 0 ? mediaFileIds : undefined,
           reply_to_message_id: replyToMessageId,
@@ -66,7 +67,7 @@ export function useMessageSending({
         });
       } else {
         await sendMessage({
-          text_content: inputMode.message,
+          text_content: message,
           reply_to_message_id: replyToMessageId,
           inline_keyboard: inlineKeyboard,
           buttons: inlineKeyboard,
@@ -78,11 +79,11 @@ export function useMessageSending({
       return;
     }
 
-    const hadReply = Boolean(inputMode.replyingTo);
+    const hadReply = Boolean(replyingTo);
 
-    inputMode.reset();
-    messageFieldRef.current?.handleClearMedia();
-    messageFieldRef.current?.handleResetInlineButtons();
+    ref.reset();
+    ref.handleClearMedia();
+    ref.handleResetInlineButtons();
 
     if (isDetached) {
       onJumpToLatest();
@@ -96,15 +97,20 @@ export function useMessageSending({
   };
 
   const handleSendOrEdit = async () => {
-    if (inputMode.editingMessage) {
-      const trimmed = inputMode.message.trim();
-      if (!trimmed || trimmed === inputMode.editingMessage.text) {
-        inputMode.cancelEdit();
+    const ref = messageFieldRef.current;
+    if (!ref) return;
+
+    const editingMessage = ref.getEditingMessage();
+
+    if (editingMessage) {
+      const trimmed = ref.getMessage().trim();
+      if (!trimmed || trimmed === editingMessage.text) {
+        ref.cancelEdit();
         return;
       }
       if (!activeChat) return;
-      await editMessage({ messageId: inputMode.editingMessage.id, botId: activeChat?.bot_id, chatId: activeChat?.tg_chat_id, text_content: trimmed });
-      inputMode.cancelEdit();
+      await editMessage({ messageId: editingMessage.id, botId: activeChat?.bot_id, chatId: activeChat?.tg_chat_id, text_content: trimmed });
+      ref.cancelEdit();
       return;
     }
     await handleSendMessage();

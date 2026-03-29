@@ -9,7 +9,6 @@ import { useDateSeparator } from './hooks/useDateSeparator';
 import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import { useRenderedMessages } from './hooks/useRenderedMessages';
 import { useMessageScroll } from './hooks/useMessageScroll';
-import { useMessageInputMode } from './hooks/useMessageInputMode';
 import { useReplyFromParam } from './hooks/useReplyFromParam';
 import { useChatActions } from './hooks/useChatActions';
 import { useMessageSending } from './hooks/useMessageSending';
@@ -46,8 +45,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const isPinned = activeChat?.is_pinned ?? false;
   const isBlocked = activeChat?.is_blocked ?? false;
   const userName = activeChat?.tg_username || activeChat?.tg_first_name || '';
-
-  const inputMode = useMessageInputMode(activeChatId);
 
   const handleJumpToLatest = () => {
     jumpToLatest();
@@ -93,10 +90,9 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const renderedMessages = useRenderedMessages(
     messages,
     (msg) => {
-      messageFieldRef.current?.handleClearMedia();
-      inputMode.startEdit(msg);
+      messageFieldRef.current?.startEdit(msg);
     },
-    inputMode.startReply,
+    (msg) => messageFieldRef.current?.startReply(msg),
     handleDeleteMessage
   );
 
@@ -111,7 +107,13 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
     highlightClassName: styles.messageHighlight,
   });
 
-  useReplyFromParam(replyMessageId, messages, inputMode.startReplyById, scrollToMessage, renderedMessages.length);
+  useReplyFromParam(
+    replyMessageId,
+    messages,
+    (id, msgs) => messageFieldRef.current?.startReplyById(id, msgs),
+    scrollToMessage,
+    renderedMessages.length,
+  );
 
   const { visibleDate, showDateSeparator } = useDateSeparator({
     messages: renderedMessages,
@@ -122,7 +124,6 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
   const { handleSendOrEdit } = useMessageSending({
     activeChat,
     messageFieldRef,
-    inputMode,
     sendMessage,
     editMessage,
     scroll,
@@ -165,13 +166,8 @@ const DirectChat: FC<DirectChatProps> = ({ onClose, replyMessageId, onReplySent 
         {!!activeChatId && !isBlocked && (
           <MessageField
             ref={messageFieldRef}
-            value={inputMode.message}
-            onChange={inputMode.setMessage}
+            activeChatId={activeChatId}
             onSendMessage={handleSendOrEdit}
-            editingMessage={inputMode.editingMessage}
-            onCancelEdit={inputMode.cancelEdit}
-            replyingTo={inputMode.replyingTo}
-            onCancelReply={inputMode.cancelReply}
           />
         )}
       </div>

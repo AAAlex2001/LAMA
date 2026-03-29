@@ -19,34 +19,36 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import classNames from 'classnames';
 import type { MediaFile } from '@/components/media-preview';
 import type { ButtonRow } from '@/components/inline-buttons/inline-buttons';
+import { useMessageInputMode } from '../../hooks/useMessageInputMode';
+import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
 
 export interface MessageFieldRef {
   mediaFiles: MediaFile[];
   inlineButtonRows: ButtonRow[];
   handleClearMedia: () => void;
   handleResetInlineButtons: () => void;
+  startEdit: (msg: BotMessageResponse & { date: Date }) => void;
+  startReply: (msg: BotMessageResponse & { date: Date }) => void;
+  startReplyById: (telegramMessageId: number, messages: BotMessageResponse[]) => void;
+  reset: () => void;
+  cancelEdit: () => void;
+  getMessage: () => string;
+  getEditingMessage: () => { id: number; text: string } | null;
+  getReplyingTo: () => { id: number; text: string } | null;
 }
 
 interface MessageFieldProps {
-  value: string;
-  onChange: (value: string) => void;
+  activeChatId: string | null;
   onSendMessage: () => Promise<void>;
-  editingMessage?: { id: number; text: string } | null;
-  onCancelEdit?: () => void;
-  replyingTo?: { id: number; text: string } | null;
-  onCancelReply?: () => void;
 }
 
-const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({ 
-  value, 
-  onChange, 
-  onSendMessage, 
-  editingMessage, 
-  onCancelEdit, 
-  replyingTo, 
-  onCancelReply 
+const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
+  activeChatId,
+  onSendMessage,
 }, ref) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const inputMode = useMessageInputMode(activeChatId);
+
   const {
     mediaFiles,
     isUploadingMedia,
@@ -92,10 +94,10 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   useEffect(() => {
-    if (editingMessage || replyingTo) {
+    if (inputMode.editingMessage || inputMode.replyingTo) {
       textareaRef.current?.focus();
     }
-  }, [editingMessage, replyingTo]);
+  }, [inputMode.editingMessage, inputMode.replyingTo]);
 
   const autoResize = useCallback(() => {
     const textarea = textareaRef.current;
@@ -109,7 +111,11 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
     textarea.style.height = `${newHeight}px`;
   }, []);
-  
+
+  useLayoutEffect(() => {
+    autoResize();
+  }, [inputMode.message, autoResize]);
+
   useEffect(() => {
     if (mediaFiles.length > 1 && (inlineButtonsOpen || inlineButtonRows.length > 0)) {
       resetInlineButtons();
@@ -123,7 +129,18 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     inlineButtonRows,
     handleClearMedia,
     handleResetInlineButtons: resetInlineButtons,
-  }), [mediaFiles, inlineButtonRows, handleClearMedia, resetInlineButtons]);
+    startEdit: (msg: BotMessageResponse & { date: Date }) => {
+      handleClearMedia();
+      inputMode.startEdit(msg);
+    },
+    startReply: inputMode.startReply,
+    startReplyById: inputMode.startReplyById,
+    reset: inputMode.reset,
+    cancelEdit: inputMode.cancelEdit,
+    getMessage: () => inputMode.message,
+    getEditingMessage: () => inputMode.editingMessage,
+    getReplyingTo: () => inputMode.replyingTo,
+  }), [mediaFiles, inlineButtonRows, handleClearMedia, resetInlineButtons, inputMode]);
 
   const handleToggleInlineButtons = () => {
     toggleInlineButtons();
@@ -140,7 +157,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = text;
     const plainText = tempDiv.textContent || tempDiv.innerText || '';
-    onChange(plainText);
+    inputMode.setMessage(plainText);
     setShowTemplatesModal(false);
   };
 
@@ -158,16 +175,13 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     } finally {
       setIsSendingMessage(false);
     }
-    onChange('');
-
-    handleClearMedia();
   };
 
   const ACCEPTED_TYPES = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
   const isAcceptedFile = (file: File) => ACCEPTED_TYPES.some(t => file.type.startsWith(t));
 
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    if (editingMessage || !canAddMedia) return;
+    if (inputMode.editingMessage || !canAddMedia) return;
     const items = e.clipboardData?.items;
     if (!items) return;
 
@@ -185,7 +199,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
       e.preventDefault();
       handleFilesAdd(files);
     }
-  }, [editingMessage, canAddMedia, handleFilesAdd]);
+  }, [inputMode.editingMessage, canAddMedia, handleFilesAdd]);
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -215,13 +229,13 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     e.stopPropagation();
     dragCounterRef.current = 0;
     setIsDragOver(false);
-    if (editingMessage || !canAddMedia) return;
+    if (inputMode.editingMessage || !canAddMedia) return;
 
     const droppedFiles = Array.from(e.dataTransfer.files).filter(isAcceptedFile);
     if (droppedFiles.length > 0) {
       handleFilesAdd(droppedFiles);
     }
-  }, [editingMessage, canAddMedia, handleFilesAdd]);
+  }, [inputMode.editingMessage, canAddMedia, handleFilesAdd]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -229,12 +243,12 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
       handleSendMessage();
     }
     if (e.key === 'Escape') {
-      if (editingMessage) {
+      if (inputMode.editingMessage) {
         e.preventDefault();
-        onCancelEdit?.();
-      } else if (replyingTo) {
+        inputMode.cancelEdit();
+      } else if (inputMode.replyingTo) {
         e.preventDefault();
-        onCancelReply?.();
+        inputMode.cancelReply();
       }
     }
   };
@@ -268,7 +282,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
         multiple
         accept="image/*,video/*,.pdf,.doc,.docx,.txt"
         onChange={(e) => {
-          if (!editingMessage) {
+          if (!inputMode.editingMessage) {
             handleFileUpload(e);
           } else {
             e.target.value = '';
@@ -277,26 +291,26 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
         style={{ display: 'none' }}
       />
       <div className={styles.messageField}>
-        {editingMessage && (
+        {inputMode.editingMessage && (
           <div className={styles.editBar}>
             <EditIcon width={18} height={18} color="var(--color-lama-blue)" />
             <div className={styles.editBarContent}>
               <span className={styles.editBarLabel}>Редактирование</span>
-              <span className={styles.editBarText}>{editingMessage.text}</span>
+              <span className={styles.editBarText}>{inputMode.editingMessage.text}</span>
             </div>
-            <button className={styles.editBarClose} type="button" onClick={onCancelEdit}>
+            <button className={styles.editBarClose} type="button" onClick={inputMode.cancelEdit}>
               <CloseIcon width={18} height={18} />
             </button>
           </div>
         )}
-        {!editingMessage && replyingTo && (
+        {!inputMode.editingMessage && inputMode.replyingTo && (
           <div className={styles.replyBar}>
             <ReplyToIcon width={20} height={20} color="var(--color-lama-blue)" />
             <div className={styles.editBarContent}>
               <span className={styles.editBarLabel}>Ответ</span>
-              <span className={styles.editBarText}>{replyingTo.text}</span>
+              <span className={styles.editBarText}>{inputMode.replyingTo.text}</span>
             </div>
-            <button className={styles.editBarClose} type="button" onClick={onCancelReply}>
+            <button className={styles.editBarClose} type="button" onClick={inputMode.cancelReply}>
               <CloseIcon width={18} height={18} />
             </button>
           </div>
@@ -306,9 +320,9 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             ref={textareaRef}
             className={styles.input}
             placeholder="Сообщение..."
-            value={value}
+            value={inputMode.message}
             onChange={(e) => {
-              onChange(e.target.value);
+              inputMode.setMessage(e.target.value);
               autoResize();
             }}
             onKeyDown={handleKeyDown}
@@ -321,11 +335,11 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             intent="neutral"
             size="transparent"
             onClick={() => fileInputRef.current?.click()}
-            disabled={!canAddMedia || !!editingMessage || isUploadingMedia}
+            disabled={!canAddMedia || !!inputMode.editingMessage || isUploadingMedia}
           >
             <PaperclipIcon width={22} height={22} color="currentColor" />
           </Button>
-          {(!!value || mediaFiles.length > 0) && (
+          {(!!inputMode.message || mediaFiles.length > 0) && (
             <Button
               variant="ghost"
               intent="primary"
