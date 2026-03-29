@@ -189,9 +189,20 @@ const ListElement: FC<ListElementProps> = ({
     saveActionResult(response);
   };
 
+  const getSourceDisplayText = () => {
+    const hasBotContext = item.entity_type === 'bot';
+    const name = item.tg_bot_name?.trim();
+    const username = item.tg_bot_username?.trim();
+    if (hasBotContext && (name || username)) {
+      if (name) return name;
+      return username!.startsWith('@') ? username! : `@${username}`;
+    }
+    return SOURCE_LABELS[item.entity_type] || item.entity_type;
+  };
+
   const renderSource = () => (
-    <div className={styles.source}>
-      <span>{SOURCE_LABELS[item.entity_type] || item.entity_type}</span>
+    <div className={styles.sourceInner}>
+      <span className={styles.sourceLabel}>{getSourceDisplayText()}</span>
     </div>
   );
 
@@ -325,7 +336,16 @@ const ListElement: FC<ListElementProps> = ({
       if (isProcessed) return <span className={styles.statusText}>Разблокирован</span>;
       return (
         <div className={styles.actionButtons}>
-          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('unban')} loading={loadingAction === 'unban'} disabled={isBusy} className={btnClass}>
+          <Button 
+            variant="fill" 
+            intent="primary" 
+            size="md" 
+            onClick={() => handleAction('unban')} 
+            loading={loadingAction === 'unban'} 
+            disabled={isBusy} 
+            className={btnClass}
+            style={{ width: btnWidth }}
+          >
             <span className={buttonStyles.label}>Разблокировать</span>
           </Button>
           <Button variant="outline" intent="primary" size="md" onClick={() => setIsBlockModalOpen(true)} disabled={isBusy} className={btnClass}>

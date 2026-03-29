@@ -25,6 +25,8 @@ export interface InboxEventResponse {
   entity_type: EntityType;
   event_type: EventType;
   bot_id: number | null;
+  tg_bot_name?: string | null;
+  tg_bot_username?: string | null;
   channel_id: number | null;
   tg_user_id: number | null;
   tg_username: string | null;

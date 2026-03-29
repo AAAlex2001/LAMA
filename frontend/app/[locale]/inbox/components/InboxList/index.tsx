@@ -14,6 +14,7 @@ import {
   selectInboxItems,
   selectInboxItemsLoading,
   selectInboxItemsHasMore,
+  selectInboxItemsTotal,
   selectSortDir,
   selectStatusFilter,
   selectSelectedFilter,
@@ -52,6 +53,7 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
   const data = useAppSelector(selectInboxItems);
   const itemsLoading = useAppSelector(selectInboxItemsLoading);
   const itemsHasMore = useAppSelector(selectInboxItemsHasMore);
+  const itemsTotal = useAppSelector(selectInboxItemsTotal);
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
@@ -65,11 +67,14 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
 
   const scrollContainer = useScrollContainer();
   const { ref: sentinelRef, inView } = useInView({ root: scrollContainer, rootMargin: '0px 0px 500px 0px' });
-  const { ref: bottomRef, inView: isAtBottom } = useInView({ root: scrollContainer });
+  const { ref: lastItemRef, inView: isLastItemInView } = useInView({ root: scrollContainer });
   const { checkedItems, isChecking, dispatch: checkedItemsDispatch } = useCheckedItems();
   const { blockConfirm, blockDispatch, confirm, cancel, onOpenChange } = useBlockConfirmation();
 
   const isEmpty = !itemsLoading && data.length === 0;
+
+  const hasLoadedAllFromTotal = itemsTotal > 0 && data.length >= itemsTotal;
+  const showBottomGradient = !hasLoadedAllFromTotal || !isLastItemInView;
 
   const fetchParams = {
     category: CATEGORY_MAP[selectedFilter as ListFilterType] as InboxCategory,
@@ -169,8 +174,8 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
         ) : (
           <>
             <div className={styles.list}>
-              {data.map((item) => (
-                <div key={item.id}>
+              {data.map((item, index) => (
+                <div key={item.id} ref={index === data.length - 1 ? lastItemRef : undefined}>
                   <ListElement
                     item={item}
                     isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined}
@@ -180,18 +185,17 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
                   />
                 </div>
               ))}
+              {itemsHasMore && !itemsLoading ? (
+                <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
+              ) : null}
             </div>
             {itemsLoading && data.length > 0 && (
               <div className={styles.loaderContainer} style={{ padding: '16px 0' }}>
                 <Loader size={24} color="blue" />
               </div>
             )}
-            {!isAtBottom && (
+            {showBottomGradient && (
               <div className={styles.bottomGradient} />
-            )}
-            <div ref={bottomRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
-            {itemsHasMore && !itemsLoading && (
-              <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
             )}
           </>
         )}
