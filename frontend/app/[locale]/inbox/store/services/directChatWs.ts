@@ -11,7 +11,7 @@ type EventHandler = (event: WsEvent) => void;
 type StatusHandler = (connected: boolean) => void;
 
 function buildWsUrl(): string {
-  const token = getAuthToken();
+  const token = getAuthToken()?.trim();
   const base = API_BASE_URL.replace(/^http/, 'ws');
   const url = `${base}/direct/ws`;
   return token ? `${url}?token=${encodeURIComponent(token)}` : url;
@@ -27,6 +27,8 @@ export class DirectChatWsService {
   private shouldReconnect = false;
   private reconnectDelay = 2000;
   private pingInterval: ReturnType<typeof setInterval> | null = null;
+  private consecutiveQuickDrops = 0;
+  private lastOpenTime = 0;
 
   setHandlers(onEvent: EventHandler, onStatus: StatusHandler) {
     this.onEvent = onEvent;
@@ -36,35 +38,39 @@ export class DirectChatWsService {
   connect(botId: number, tgChatId: number) {
     const isSameChat = this.activeBotId === botId && this.activeTgChatId === tgChatId;
 
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      if (isSameChat) return;
-      this.disconnect();
+    if (
+      isSameChat &&
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
     }
+
+    this.closeSocket();
 
     this.activeBotId = botId;
     this.activeTgChatId = tgChatId;
     this.shouldReconnect = true;
-
-    if (!this.ws || this.ws.readyState === WebSocket.CLOSED) {
-      this.createConnection();
-    }
+    this.createConnection();
   }
 
   disconnect() {
     this.shouldReconnect = false;
     this.activeBotId = null;
     this.activeTgChatId = null;
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
-    
+
+    this.closeSocket();
+    this.onStatus?.(false);
+  }
+
+  private closeSocket() {
+    this.clearPingInterval();
+
     if (this.ws) {
       this.ws.onopen = null;
       this.ws.onclose = null;
@@ -75,11 +81,17 @@ export class DirectChatWsService {
       }
       this.ws = null;
     }
-    this.onStatus?.(false);
   }
 
   get isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
+  }
+
+  private clearPingInterval() {
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
   }
 
   private createConnection() {
@@ -87,9 +99,10 @@ export class DirectChatWsService {
     this.ws = new WebSocket(url);
 
     this.ws.onopen = () => {
+      this.lastOpenTime = Date.now();
       this.reconnectDelay = 2000;
       this.onStatus?.(true);
-      
+
       this.pingInterval = setInterval(() => {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
           this.ws.send('ping');
@@ -104,7 +117,7 @@ export class DirectChatWsService {
         }
 
         const eventData: WsEvent = JSON.parse(event.data);
-        
+
         if (this.activeBotId !== null && this.activeTgChatId !== null) {
           if (eventData.bot_id !== this.activeBotId || eventData.chat_id !== this.activeTgChatId) {
             return;
@@ -113,33 +126,44 @@ export class DirectChatWsService {
 
         this.onEvent?.(eventData);
       } catch (error) {
-        // console.error('Error parsing WebSocket message:', error);
       }
     };
 
     this.ws.onclose = () => {
-      if (this.pingInterval) {
-        clearInterval(this.pingInterval);
-        this.pingInterval = null;
-      }
+      this.clearPingInterval();
       this.onStatus?.(false);
+
+      // Track connections that drop shortly after opening to avoid hammering the server
+      const uptime = Date.now() - this.lastOpenTime;
+      if (this.lastOpenTime > 0 && uptime < 5000) {
+        this.consecutiveQuickDrops++;
+      } else {
+        this.consecutiveQuickDrops = 0;
+      }
+
       this.scheduleReconnect();
     };
 
-    this.ws.onerror = (error) => {
-      // console.error('WebSocket error:', error);
+    this.ws.onerror = () => {
+      this.clearPingInterval();
     };
   }
 
   private scheduleReconnect() {
     if (!this.shouldReconnect) return;
+
+    const delay =
+      this.consecutiveQuickDrops >= 3
+        ? Math.min(this.reconnectDelay * Math.pow(1.5, this.consecutiveQuickDrops), 30000)
+        : this.reconnectDelay;
+
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       if (this.shouldReconnect) {
         this.createConnection();
         this.reconnectDelay = Math.min(this.reconnectDelay * 1.5, 30000);
       }
-    }, this.reconnectDelay);
+    }, delay);
   }
 }
 
