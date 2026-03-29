@@ -9,6 +9,12 @@ from backend.models.publications import RepeatInterval as DBRepeatInterval
 MAX_PERIOD_SEARCH = 120
 
 
+def normalize_datetime(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=None) if dt.tzinfo else dt
+
+
 def calculate_next_repeat_time(
     base_time: datetime,
     repeat_interval: DBRepeatInterval,
@@ -45,7 +51,9 @@ def calculate_next_repeat_time(
 
     if next_time is None:
         return None
-    if repeat_end_time and next_time > repeat_end_time:
+    compare_next = normalize_datetime(next_time)
+    compare_end = normalize_datetime(repeat_end_time)
+    if compare_end and compare_next and compare_next > compare_end:
         return None
     return next_time
 
