@@ -2,7 +2,7 @@
 Модели для работы с ботами
 """
 from datetime import datetime, timezone
-from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
+from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index, func
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import enum
 from typing import Optional
@@ -252,6 +252,23 @@ class BotCommand(Base):
 
     # Relationships
     bot = relationship("Bot", back_populates="commands")
+
+
+class BotCommandButtonClick(Base):
+    __tablename__ = "bot_command_button_clicks"
+    __table_args__ = (
+        Index("ix_bot_command_clicks_cmd_btn", "command_id", "button_id"),
+        Index("ix_bot_command_clicks_cmd_btn_user", "command_id", "button_id", "user_id", unique=True),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    command_id: Mapped[int] = mapped_column(Integer, ForeignKey("bot_commands.id", ondelete="CASCADE"), index=True)
+    button_id: Mapped[str] = mapped_column(String(64))
+    user_id: Mapped[int] = mapped_column(BigInteger)
+    clicked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    command = relationship("BotCommand")
 
 
 class AutoReply(Base):

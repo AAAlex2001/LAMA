@@ -1,14 +1,17 @@
+import asyncio
 import logging
 from typing import Optional
 
 from aiogram.types import CallbackQuery
 from aiogram.exceptions import TelegramAPIError
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.dialects.postgresql import insert
 
-from backend.models.bots import Bot as BotModel, BotCommand
+from backend.models.bots import Bot as BotModel, BotCommand, BotCommandButtonClick
 from backend.services.webhook.callbacks.base import BaseCallbackProcessor
 from backend.services.bot_provider import resolve_by_token
 from backend.schemas.publications.common import InlineButton
+from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +24,20 @@ class BotCommandsCallbackProcessor(BaseCallbackProcessor):
         if command_id is None:
             return
 
+        user_id = callback_query.from_user.id if callback_query.from_user else None
+        chat_id = callback_query.message.chat.id if callback_query.message else None
+        if not user_id or not chat_id:
+            return
+
         button = await self.load_button(command_id, button_id)
         if not button:
             return
 
-        text = button.hidden_text_subscribed or button.hidden_text_unsubscribed or "✅"
         bot = resolve_by_token(self.bot_model.token)
+        is_subscriber = await self.check_subscriber(bot, chat_id, user_id)
+        text = button.hidden_text_subscribed if is_subscriber else button.hidden_text_unsubscribed
+        if not text:
+            return
         await self.answer_callback(bot, callback_query.id, text, True)
 
     async def process_callback_action(self, callback_query: CallbackQuery) -> None:
@@ -34,26 +45,31 @@ class BotCommandsCallbackProcessor(BaseCallbackProcessor):
         if command_id is None:
             return
 
+        user_id = callback_query.from_user.id if callback_query.from_user else None
+        if not user_id:
+            return
+
         button = await self.load_button(command_id, button_id)
         if not button:
             return
+
+        await self.record_click(command_id, button_id, user_id)
 
         action = button.callback_action
         response = button.callback_response or "✅"
 
         bot = resolve_by_token(self.bot_model.token)
-        user_id = callback_query.from_user.id if callback_query.from_user else None
 
         try:
-            if action == "send_dm" and user_id:
-                await bot.send_message(chat_id=user_id, text=response)
-                await self.answer_callback(bot, callback_query.id, "✅")
+            if action == "send_dm":
+                await self.handle_send_dm(bot, callback_query, user_id, button.callback_response)
                 return
             if action == "reply_in_chat":
                 await self.answer_callback(bot, callback_query.id, response, bool(button.callback_response))
                 return
             if action == "track_click":
-                await self.answer_callback(bot, callback_query.id, "✅")
+                count = await self.get_click_count(command_id, button_id)
+                await self.answer_callback(bot, callback_query.id, f"✅ Кликов: {count}")
                 return
 
             await self.answer_callback(bot, callback_query.id, "✅")
@@ -104,4 +120,58 @@ class BotCommandsCallbackProcessor(BaseCallbackProcessor):
                     payload = {k: v for k, v in btn.items() if k in InlineButton.model_fields}
                     return InlineButton(**payload)
         return None
+
+    async def record_click(self, command_id: int, button_id: str, user_id: int) -> None:
+        stmt = (
+            insert(BotCommandButtonClick)
+            .values(command_id=command_id, button_id=button_id, user_id=user_id)
+            .on_conflict_do_nothing(index_elements=["command_id", "button_id", "user_id"])
+        )
+        await self.db.execute(stmt)
+        await self.db.flush()
+
+    async def get_click_count(self, command_id: int, button_id: str) -> int:
+        result = await self.db.scalar(
+            select(func.count())
+            .select_from(BotCommandButtonClick)
+            .where(
+                BotCommandButtonClick.command_id == command_id,
+                BotCommandButtonClick.button_id == button_id,
+            )
+        )
+        return result or 0
+
+    async def handle_send_dm(
+        self,
+        bot,
+        callback_query: CallbackQuery,
+        user_id: int,
+        response_text: Optional[str],
+    ) -> None:
+        if not response_text:
+            await self.answer_callback(bot, callback_query.id, "✅")
+            return
+        try:
+            await bot.send_message(chat_id=user_id, text=response_text)
+            await self.answer_callback(bot, callback_query.id, "✅")
+        except TelegramAPIError as e:
+            logger.warning("Failed to send DM to %s: %s", user_id, e)
+            await self.answer_callback(
+                bot,
+                callback_query.id,
+                "❌ Не удалось отправить. Начните диалог с ботом.",
+                True,
+            )
+
+    @staticmethod
+    async def check_subscriber(bot, chat_id: int, user_id: int) -> bool:
+        try:
+            member = await asyncio.wait_for(
+                bot.get_chat_member(chat_id, user_id),
+                timeout=TELEGRAM_API_TIMEOUT,
+            )
+            return member.status in ("member", "administrator", "creator")
+        except (TelegramAPIError, asyncio.TimeoutError):
+            logger.warning("Check subscriber failed", exc_info=True)
+            return False
 

@@ -35,6 +35,7 @@ from backend.services.publications.publish_helpers import make_notification_call
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
 from backend.services.channel.backup_job_service import BackupJobService
 from backend.services.channel.auto_delete_service import AutoDeleteService
+from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
 
@@ -442,6 +443,68 @@ async def send_claim_messages_async(bot_id: int, target_chat_ids: list[int], tex
             return f"rate_limited:{int(e.wait_seconds)}"
         await db.commit()
         return f"sent:{len(target_chat_ids)}"
+
+
+@celery_app.task(bind=True, name="backend.celery.tasks.send_claim_to_admins", max_retries=10)
+def send_claim_to_admins(
+    self,
+    bot_id: int,
+    source_chat_id: int,
+    reporter_user_id: int,
+    reporter_message_id: int,
+    text: str,
+) -> str:
+    result = run(send_claim_to_admins_async(
+        bot_id, source_chat_id, reporter_user_id, reporter_message_id, text,
+    ))
+    if result.startswith("rate_limited:"):
+        wait = int(result.split(":")[1])
+        jitter = random.randint(0, max(wait // 2, 5))
+        raise self.retry(countdown=wait + jitter)
+    return result
+
+
+async def send_claim_to_admins_async(
+    bot_id: int,
+    source_chat_id: int,
+    reporter_user_id: int,
+    reporter_message_id: int,
+    text: str,
+) -> str:
+    async with CelerySessionLocal() as db:
+        bot = await resolve_for_bot_id(db, bot_id)
+        try:
+            admins = await bot.bot.get_chat_administrators(source_chat_id)
+        except TelegramAPIError as e:
+            logger.warning("get_chat_administrators_failed: %s", e)
+            return "admins_failed"
+
+        # Admin actions are handled by AdminCallbackProcessor via admincall_* prefix.
+        buttons = {
+            "buttons": [[
+                {"text": "Забанить", "callback_data": f"admincall_ban_{source_chat_id}_{reporter_user_id}_{reporter_message_id}"},
+                {"text": "Удалить", "callback_data": f"admincall_del_{source_chat_id}_{reporter_user_id}_{reporter_message_id}"},
+                {"text": "Игнорировать", "callback_data": f"admincall_ignore_{source_chat_id}_{reporter_user_id}_{reporter_message_id}"},
+            ]]
+        }
+
+        sent = 0
+        try:
+            for admin in admins:
+                uid = admin.user.id if admin and admin.user else None
+                if not uid or uid == reporter_user_id:
+                    continue
+                try:
+                    await bot.send_message(chat_id=uid, text=text, reply_markup=build_keyboard(buttons))
+                    sent += 1
+                except TelegramAPIError as e:
+                    # Bot cannot message user who didn't start a dialog; ignore.
+                    logger.info("send_admin_dm_failed: user=%s err=%s", uid, e)
+        except RateLimitTimeout as e:
+            return f"rate_limited:{int(e.wait_seconds)}"
+
+        await db.commit()
+        return f"sent_admins:{sent}"
 
 async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: int) -> str:
     """Async-реализация удаления одного сообщения."""
