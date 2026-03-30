@@ -2,7 +2,7 @@
 Модели для работы с ботами
 """
 from datetime import datetime, timezone
-from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index, func
+from sqlalchemy import Integer, BigInteger, String, Boolean, DateTime, Text, JSON, ForeignKey, Enum as SQLEnum, UniqueConstraint, Index
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import enum
 from typing import Optional
@@ -107,7 +107,7 @@ class Bot(Base):
     welcome_media_type: Mapped[Optional[MessageType]] = mapped_column(SQLEnum(MessageType), nullable=True)
     welcome_buttons: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Inline keyboard
     welcome_message_thread_id: Mapped[Optional[int]] = mapped_column(BigInteger, nullable=True)  # ID топика для групповых приветствий
-    welcome_type: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    welcome_type: Mapped[str] = mapped_column(String(32), default="group_message", nullable=False)
     
     # Капча (два режима)
     join_captcha_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)  # Старое поле для обратной совместимости
@@ -255,17 +255,22 @@ class BotCommand(Base):
 
 
 class BotCommandButtonClick(Base):
+    """Клики по inline-кнопкам команд бота."""
     __tablename__ = "bot_command_button_clicks"
     __table_args__ = (
         Index("ix_bot_command_clicks_cmd_btn", "command_id", "button_id"),
         Index("ix_bot_command_clicks_cmd_btn_user", "command_id", "button_id", "user_id", unique=True),
     )
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    command_id: Mapped[int] = mapped_column(Integer, ForeignKey("bot_commands.id", ondelete="CASCADE"), index=True)
-    button_id: Mapped[str] = mapped_column(String(64))
-    user_id: Mapped[int] = mapped_column(BigInteger)
-    clicked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    command_id: Mapped[int] = mapped_column(Integer, ForeignKey("bot_commands.id", ondelete="CASCADE"), nullable=False)
+    button_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    clicked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
 
     # Relationships
     command = relationship("BotCommand")

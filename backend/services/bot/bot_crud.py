@@ -61,12 +61,21 @@ class BotCrudService:
             token=data.token,
             description=description or data.description,
             short_description=short_description,
+            welcome_type="group_message",
             status=BotStatus.ACTIVE,
             last_sync_at=datetime.now(timezone.utc),
         )
         self.db.add(bot)
         await self.db.flush()
         await self.db.refresh(bot)
+
+        raw_bot = resolve_by_token(data.token).bot
+        await self.setup_webhook(raw_bot, data.token)
+        bot.is_webhook_enabled = True
+        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{data.token}"
+        await self.db.flush()
+        await self.db.refresh(bot)
+
         return bot
 
     async def get(self, bot_id: int, owner_id: Optional[int] = None) -> BotModel:
@@ -193,6 +202,8 @@ class BotCrudService:
                 bot.description = final_description or ""
             if short_description is not None:
                 bot.short_description = short_description
+            if not bot.welcome_type:
+                bot.welcome_type = "group_message"
             bot.last_sync_at = datetime.now(timezone.utc)
             bot.updated_at = datetime.now(timezone.utc)
         else:
@@ -210,6 +221,7 @@ class BotCrudService:
                 token=token,
                 description=final_description,
                 short_description=short_description,
+                welcome_type="group_message",
                 status=BotStatus.ACTIVE,
                 last_sync_at=datetime.now(timezone.utc),
             )
@@ -228,15 +240,14 @@ class BotCrudService:
         return bot
 
     async def fetch_bot_info(self, token: str) -> tuple:
-        """Получить информацию о боте из Telegram API и установить вебхук."""
+        """Получить информацию о боте из Telegram API."""
         raw_bot = resolve_by_token(token).bot
         try:
             bot_info = await raw_bot.get_me()
-            webhook_task = self.setup_webhook(raw_bot, token)
             desc_task = self.safe_get_description(raw_bot)
             short_desc_task = self.safe_get_short_description(raw_bot)
-            _, description, short_description = await asyncio.gather(
-                webhook_task, desc_task, short_desc_task,
+            description, short_description = await asyncio.gather(
+                desc_task, short_desc_task,
             )
             return bot_info, description, short_description
         except TelegramAPIError as e:
@@ -245,6 +256,11 @@ class BotCrudService:
     async def setup_webhook(self, bot: RateLimitedBot, token: str) -> None:
         """Установить вебхук для бота."""
         webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
+
+        current_webhook = await bot.get_webhook_info()
+        if current_webhook and current_webhook.url == webhook_url:
+            return
+
         await bot.set_webhook(
             url=webhook_url,
             secret_token=TELEGRAM_WEBHOOK_SECRET or None,
