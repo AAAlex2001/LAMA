@@ -73,28 +73,56 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
   };
 
   useEffect(() => {
-    lastScrollY.current = window.scrollY;
+    const getScrollTop = () => {
+      const se = document.scrollingElement as HTMLElement | null;
+      return window.scrollY || window.pageYOffset || se?.scrollTop || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    };
 
-    const handleScroll = () => {
-      const currentY = window.scrollY;
+    const HIDE_DELTA = 1;
+    const TOP_THRESHOLD = 8;
+    let rafId = 0;
+    let ticking = false;
+    lastScrollY.current = getScrollTop();
 
-      if (currentY < 10) {
+    const syncHeader = () => {
+      const currentY = getScrollTop();
+      const delta = currentY - lastScrollY.current;
+
+      if (currentY <= TOP_THRESHOLD) {
         setIsVisible(true);
-      } else if (currentY > lastScrollY.current) {
-        // Скролл вниз - прячем хедер
+      } else if (delta > HIDE_DELTA) {
         setIsVisible(false);
         setIsToolsOpen(false);
         setIsLangOpen(false);
-      } else if (currentY < lastScrollY.current) {
-        // Скролл вверх - показываем хедер
+      } else if (delta < -HIDE_DELTA) {
         setIsVisible(true);
       }
 
       lastScrollY.current = currentY;
+      ticking = false;
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onAnyScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      rafId = window.requestAnimationFrame(syncHeader);
+    };
+
+    const scrollingEl = document.scrollingElement as HTMLElement | null;
+    window.addEventListener('scroll', onAnyScroll, { passive: true });
+    document.addEventListener('scroll', onAnyScroll, { passive: true, capture: true });
+    if (scrollingEl && scrollingEl !== document.documentElement && scrollingEl !== document.body) {
+      scrollingEl.addEventListener('scroll', onAnyScroll, { passive: true });
+    }
+
+    return () => {
+      window.removeEventListener('scroll', onAnyScroll);
+      document.removeEventListener('scroll', onAnyScroll, true);
+      if (scrollingEl && scrollingEl !== document.documentElement && scrollingEl !== document.body) {
+        scrollingEl.removeEventListener('scroll', onAnyScroll);
+      }
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (

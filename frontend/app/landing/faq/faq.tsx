@@ -30,9 +30,13 @@ type FAQContent = {
   botLink?: string;
 };
 
-type Props = { locale: string; content: FAQContent };
+type Props = {
+  locale: string;
+  content: FAQContent;
+  whiteBackground?: boolean;
+};
 
-export default function FAQ({ content }: Props) {
+export default function FAQ({ content, whiteBackground = false }: Props) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const baseGradientId = useId();
 
@@ -77,7 +81,7 @@ export default function FAQ({ content }: Props) {
   };
 
   return (
-    <section className={styles.faq}>
+    <section className={`${styles.faq} ${whiteBackground ? styles.whiteBackground : ''}`}>
       <div className={styles.container}>
         <motion.div
           initial={{ opacity: 0, y: 50 }}

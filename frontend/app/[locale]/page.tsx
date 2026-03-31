@@ -7,6 +7,7 @@ import Pricing from "../landing/pricing/pricing";
 import FAQ from "../landing/faq/faq";
 import FAQDecoration from "../landing/faq-decoration/faq-decoration";
 import Footer from "../landing/footer/footer";
+import LandingScrollBehavior from "../landing/LandingScrollBehavior";
 import SidebarMenu from "@/components/sidebar-menu/sidebar-menu";
 import { headers } from "next/headers";
 
@@ -175,7 +176,8 @@ export default async function LocalePage({ params }: Props) {
   ]);
 
   return (
-    <main>
+    <main className="landing-page">
+      <LandingScrollBehavior />
       <Header locale={locale} content={header || undefined} toolsItems={tools?.items} />
       <Hero locale={locale} content={hero} />
       <div id="advantages">
