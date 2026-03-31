@@ -3,6 +3,7 @@ import Hero from "../../../landing/hero/hero";
 import Footer from "../../../landing/footer/footer";
 import FAQ from "../../../landing/faq/faq";
 import FAQDecoration from "../../../landing/faq-decoration/faq-decoration";
+import LandingScrollBehavior from "../../../landing/LandingScrollBehavior";
 import TemplateBlocks from "@/components/template-block/template-blocks";
 import TemplateCardsBlock from "@/components/template-card/template-cards-block";
 import TemplateSubscribe from "@/components/template-subscribe/template-subscribe";
@@ -355,7 +356,8 @@ export default async function TemplatePage({ params }: Props) {
   });
 
   return (
-    <main>
+    <main className="landing-page">
+      <LandingScrollBehavior />
       <Header locale={locale} />
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
       
@@ -368,7 +370,7 @@ export default async function TemplatePage({ params }: Props) {
 
       {hasFaq && faqContent ? (
           <>
-            <FAQ locale={locale} content={faqContent} />
+            <FAQ locale={locale} content={faqContent} whiteBackground={true} />
           </>
         ) : null}
 

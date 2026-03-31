@@ -36,7 +36,6 @@ export default function TemplateCardsBlock({ headline, cards }: Props) {
           <Pagination
             onPrev={() => swiperRef.current?.slidePrev()}
             onNext={() => swiperRef.current?.slideNext()}
-            variant="cards"
           />
         </div>
 
@@ -48,6 +47,7 @@ export default function TemplateCardsBlock({ headline, cards }: Props) {
             className={styles.swiper}
             slidesPerView="auto"
             spaceBetween={24}
+            loop={safeCards.length > 1}
           >
             {safeCards.map((c, idx) => (
               <SwiperSlide key={idx} className={styles.slide}>

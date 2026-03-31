@@ -18,6 +18,14 @@
   }
 }
 
+.whiteBackground {
+  background-color: #ffffff;
+
+  &::before {
+    background: linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 100%);
+  }
+}
+
 .decorationSvg {
   display: none;
 }
