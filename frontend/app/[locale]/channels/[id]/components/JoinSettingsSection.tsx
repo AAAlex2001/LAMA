@@ -105,8 +105,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   const [hoveredAction, setHoveredAction] = useState<'preview' | 'delete' | 'edit' | null>(null);
   const botId = channel.bot_id;
   const channelId = channel.id;
-  const isSupergroup = channel.channel_type === 'SUPERGROUP';
-  const isGroup = channel.channel_type === 'GROUP' || isSupergroup;
+  const isGroup = channel.channel_type === 'GROUP' || channel.channel_type === 'SUPERGROUP';
   const isForum = channel.is_forum;
 
   const welcome = useAppSelector((s) => s.welcomeSettings);
@@ -124,10 +123,10 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   }, [dispatch, botId]);
 
   useEffect(() => {
-    if (channelId && isSupergroup) {
+    if (channelId && isGroup) {
       dispatch(fetchCaptchaSettingsThunk(channelId));
     }
-  }, [dispatch, channelId, isSupergroup]);
+  }, [dispatch, channelId, isGroup]);
 
   useEffect(() => {
     if (botId && isGroup) {
@@ -319,7 +318,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
               />
             </div>
 
-            {isSupergroup && !captchaEnabled && (
+            {!captchaEnabled && (
             <div className={styles.subSection}>
               <button
                 className={styles.subRow}
@@ -369,7 +368,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
             )}
           </div>
 
-          {isSupergroup && requiredChannels.length === 0 && (
+          {requiredChannels.length === 0 && (
             <div className={styles.column}>
               <div className={styles.toggleRow}>
                 <span className={styles.toggleLabel}>Капча для новых участников</span>
