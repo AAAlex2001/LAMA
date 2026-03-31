@@ -14,7 +14,6 @@
   :global(.react-calendar) {
     width: 100%;
     border: none;
-    font-family: 'Inter', sans-serif;
     background: transparent;
   }
 
@@ -59,8 +58,7 @@
     pointer-events: none;
 
     span {
-      font-family: 'Inter', sans-serif;
-      font-style: normal;
+      
       font-weight: 500;
       font-size: 14px;
       line-height: 20px;
@@ -100,8 +98,7 @@
 
     abbr {
       text-decoration: none;
-      font-family: 'Inter', sans-serif;
-      font-style: normal;
+      
       font-weight: 400;
       font-size: 12px;
       line-height: 16px;
@@ -154,8 +151,7 @@
     box-sizing: border-box;
 
     abbr {
-      font-family: 'Inter', sans-serif;
-      font-style: normal;
+      
       font-weight: 400;
       font-size: 12px;
       line-height: 16px;

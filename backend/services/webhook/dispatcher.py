@@ -124,6 +124,13 @@ class WebhookDispatcher:
                 if bot_model.status == BotStatus.INACTIVE:
                     return
 
+                incoming_message = (
+                    update.message
+                    or update.channel_post
+                    or update.edited_message
+                    or update.edited_channel_post
+                )
+
                 # Специальная обработка команды /start для авторизации
                 if update.message and update.message.text:
                     command = update.message.text.split()[0].lower()
@@ -148,13 +155,13 @@ class WebhookDispatcher:
                     return
 
                 # Обработка сообщений
-                if update.message and update.message.chat:
+                if incoming_message and incoming_message.chat:
                     message_handler = MessageHandler(db, bot_model)
-                    ws_event = await message_handler.save_message(update.message)
+                    ws_event = await message_handler.save_message(incoming_message)
                     await db.commit()
                     if ws_event:
                         await ws_manager.broadcast_chat_update(**ws_event.model_dump())
-                    await message_handler.process_side_effects(update.message)
+                    await message_handler.process_side_effects(incoming_message)
                     await db.commit()
                     return
 

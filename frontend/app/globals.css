@@ -19,8 +19,8 @@
 @theme inline {
   --color-background: var(--color-light-gray);
   --color-foreground: var(--color-lama-black);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter';
+  --font-mono: 'Inter';
 }
 
 html {
@@ -32,11 +32,24 @@ html {
 body {
   background: var(--color-light-gray);
   color: var(--color-lama-black);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter';
   overflow: hidden;
   max-width: 100vw;
   height: 100%;
   margin: 0;
+}
+
+* {
+  font-family: 'Inter';
+  font-style: normal;
+}
+
+input,
+textarea,
+select,
+button {
+  font-family: 'Inter';
+  font-style: normal;
 }
 
 .landing-page {

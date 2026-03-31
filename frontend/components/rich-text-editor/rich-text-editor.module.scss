@@ -32,8 +32,7 @@
   flex-grow: 1;
   border: none;
   outline: none;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -126,7 +125,6 @@
     position: absolute;
     top: 8px;
     left: 12px;
-    font-family: 'Inter', sans-serif;
     font-weight: 500;
     font-size: 12px;
     line-height: 15px;
@@ -179,7 +177,6 @@
       position: absolute;
       top: 8px;
       left: 12px;
-      font-family: 'Inter', sans-serif;
       font-weight: 500;
       font-size: 12px;
       line-height: 15px;
@@ -259,13 +256,11 @@
   }
 }
 
-
 .placeholder {
   position: absolute;
   top: 0;
   left: 0;
   color: #CED2D6;
-  font-family: 'Inter', sans-serif;
   font-size: 14px;
   line-height: 17px;
   pointer-events: none;
@@ -466,8 +461,7 @@
 }
 
 .charCount {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;

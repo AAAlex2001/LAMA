@@ -1,24 +1,8 @@
 import type { Metadata } from "next";
-import { Inter, Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "../globals.css";
 import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import QueryProvider from "@/components/query-provider";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin", "cyrillic"],
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -72,6 +56,12 @@ export default async function LocaleLayout({ params, children }: Props) {
   return (
     <html lang={locale} style={{ colorScheme: 'light' }}>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+          rel="stylesheet"
+        />
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-YFR1RBS89M"
@@ -106,8 +96,8 @@ export default async function LocaleLayout({ params, children }: Props) {
         </noscript>
       </head>
       <body
-        className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ fontFamily: "var(--font-inter)" }}
+        className="antialiased"
+        style={{ fontFamily: "Inter" }}
       >
         <QueryProvider>
           <NotificationProvider>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { AnimatePresence, motion } from 'framer-motion';
 import styles from './app-layout.module.scss';
 import { CloseIcon } from '@/components/icons';
 import PostIcon from '@/components/icons/post-icon';
@@ -50,11 +51,15 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
   const handleLogout = () => {
     localStorage.removeItem('lamaplanner_access_token');
     router.push(`/${locale}/login`);
-    onClose();
+    handleClose();
   };
 
   const handleNavigate = (href: string) => {
     router.push(href);
+    handleClose();
+  };
+
+  const handleClose = () => {
     onClose();
   };
 
@@ -91,11 +96,25 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.mobileMenuOverlay} onClick={onClose}>
-      <div className={styles.mobileMenu} onClick={(e) => e.stopPropagation()}>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className={styles.mobileMenuOverlay}
+          onClick={handleClose}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.div
+            className={styles.mobileMenu}
+            onClick={(e) => e.stopPropagation()}
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          >
         <div className={styles.mobileMenuHeader}>
           <button className={styles.mobileMenuNotification} type="button" aria-label="Уведомления">
             <BellIcon width={24} height={24} color="#383F45" />
@@ -110,7 +129,7 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
             className={styles.mobileMenuClose}
             type="button"
             aria-label="Закрыть"
-            onClick={onClose}
+            onClick={handleClose}
           >
             <CloseIcon width={24} height={24} color="#383F45" />
           </button>
@@ -145,7 +164,9 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
             </button>
           ))}
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

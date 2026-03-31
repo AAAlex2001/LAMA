@@ -318,7 +318,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
               />
             </div>
 
-            {!captchaEnabled && (
+            {isGroup && !captchaEnabled && (
             <div className={styles.subSection}>
               <button
                 className={styles.subRow}
@@ -368,7 +368,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
             )}
           </div>
 
-          {requiredChannels.length === 0 && (
+          {isGroup && requiredChannels.length === 0 && (
             <div className={styles.column}>
               <div className={styles.toggleRow}>
                 <span className={styles.toggleLabel}>Капча для новых участников</span>

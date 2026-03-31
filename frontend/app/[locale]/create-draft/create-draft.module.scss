@@ -28,7 +28,6 @@
   margin: 0 auto;
 }
 
-
 .contentLoading {
   opacity: 0;
   pointer-events: none;
@@ -94,8 +93,7 @@
 }
 
 .headerTitle {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 16px;
   line-height: 28px;
@@ -121,8 +119,7 @@
 }
 
 .linkPreviewLabel {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -224,8 +221,7 @@
   padding: 0;
   gap: 10px;
   width: 100%;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -271,8 +267,7 @@
 }
 
 .dropzoneText {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
@@ -326,7 +321,6 @@
   flex-shrink: 0;
   transition: opacity 0.15s ease;
 
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;
@@ -349,7 +343,6 @@
   border-radius: 5px;
   flex-shrink: 0;
 
-  font-family: 'Inter', sans-serif;
   font-weight: 500;
   font-size: 12px;
   line-height: 16px;

@@ -58,7 +58,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 16px;
   line-height: 16px;
@@ -257,7 +256,6 @@
   text-align: center;
   width: 100%;
 }
-
 
 .planMeta {
   display: flex;
@@ -526,8 +524,7 @@
   transition: all 0.3s ease;
   flex-shrink: 0;
   white-space: nowrap;
-  font-family: 'Inter';
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -596,8 +593,7 @@
 
 .deleteText {
   display: none;
-  font-family: 'Inter';
-  font-style: normal;
+  
   font-weight: 400;
   font-size: 16px;
   line-height: 19px;
