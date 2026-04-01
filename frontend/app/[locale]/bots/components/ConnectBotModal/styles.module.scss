@@ -1,0 +1,151 @@
+.headerBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.title {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383f45;
+  text-align: center;
+}
+
+.subtitle {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  color: #858585;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+}
+
+.warning {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #b0b4b8;
+}
+
+.dropdown {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  width: 100%;
+}
+
+.dropdownToggle {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 4px 12px;
+  gap: 6px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 25px;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.dropdownText {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  text-align: center;
+  color: #383f45;
+  flex: 1;
+}
+
+.dropdownChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.dropdownChevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdownBody {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+}
+
+.dropdownHeader {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px;
+  gap: 10px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  border-radius: 25px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+}
+
+.step {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.stepDot {
+  width: 10px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  &::after {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #383f45;
+  }
+}
+
+.stepText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 18px;
+  color: #383f45;
+  flex: 1;
+}

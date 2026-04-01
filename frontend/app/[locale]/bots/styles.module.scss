@@ -1,0 +1,85 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 10px;
+  gap: 16px;
+
+  @media (min-width: 1440px) {
+    padding: 20px;
+  }
+}
+
+.topBar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.connectedInfo {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #b0b4b8;
+}
+
+.connectBtn {
+  flex: 1;
+
+  @media (min-width: 1440px) {
+    flex: none;
+    width: fit-content !important;
+    white-space: nowrap;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.loaderContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.emptyTitle {
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 22px;
+  color: #383f45;
+}
+
+.emptySubtitle {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 20px;
+  color: #b0b4b8;
+  max-width: 400px;
+}

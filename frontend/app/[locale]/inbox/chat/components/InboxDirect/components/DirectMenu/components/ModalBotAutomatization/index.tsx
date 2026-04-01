@@ -123,7 +123,7 @@ export default function ModalBotAutomatization({
                     key={bot.id}
                     id={bot.id}
                     name={bot.username}
-                    time={formatDateTime(bot.created_at)}
+                    time={formatDateTime(bot.created_at ?? '')}
                     showCheckbox={true}
                     checked={selectedBotIdsSet.has(bot.id)}
                     onCheckChange={() => handleChatToggle(bot.id)}

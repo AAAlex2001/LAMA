@@ -1,0 +1,185 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.blockTitle {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.fieldRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.fieldLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.fieldValue {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #858585;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.editFieldBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  svg {
+    transition: filter 0.2s;
+  }
+
+  &:hover svg {
+    filter: brightness(0) saturate(100%) invert(42%) sepia(93%) saturate(1352%)
+      hue-rotate(196deg) brightness(99%) contrast(101%);
+  }
+}
+
+.divider {
+  width: 100%;
+  height: 1px;
+  background: #eef0f2;
+}
+
+.channelsToggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.channelsLabel {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.channelsChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.channelsChevronOpen {
+  transform: rotate(180deg);
+}
+
+.channelsList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding-left: 8px;
+}
+
+.channelItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.channelName {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.channelMembers {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #b0b4b8;
+  flex-shrink: 0;
+}
+
+.toggleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.toggleLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+  flex: 1;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.statRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.statLabel {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}
+
+.statValue {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383f45;
+}

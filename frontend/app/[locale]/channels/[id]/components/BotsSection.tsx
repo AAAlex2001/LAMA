@@ -2,12 +2,19 @@
 
 import { FC, useState, useEffect } from 'react';
 import { ChevronDownIcon } from '@/components/icons';
-import DeleteConfirmationModal from '@/components/modal';
+import DeleteConfirmationModal from '@/components/modal/modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchChannelBotThunk, toggleBotActiveThunk, removeBotThunk } from '../../store/thunks/bots';
+import {
+  fetchBotThunk,
+  toggleBotOnChannelThunk,
+  removeBotFromChannelThunk,
+  selectCurrentBot,
+  selectBotsToggling,
+} from '@/store/bots';
+import type { BotCardChannel } from '@/components/bot-card';
+import BotCard from '@/components/bot-card';
 import type { Channel } from '@/types/channel';
-import BotCard from './BotCard';
 import JoinSettingsSection from './JoinSettingsSection';
 import InviteLinksSection from './InviteLinksSection';
 import styles from './BotsSection.module.scss';
@@ -21,8 +28,8 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
 
-  const bot = useAppSelector((s) => s.bots.bot);
-  const toggling = useAppSelector((s) => s.bots.toggling);
+  const bot = useAppSelector(selectCurrentBot);
+  const toggling = useAppSelector(selectBotsToggling);
 
   const [botsOpen, setBotsOpen] = useState(false);
   const [removeBotOpen, setRemoveBotOpen] = useState(false);
@@ -35,15 +42,13 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
 
   useEffect(() => {
     if (channel.bot_id) {
-      dispatch(fetchChannelBotThunk(channel.bot_id))
-        .unwrap()
-        .catch((err) => showError(typeof err === 'string' ? err : 'Не удалось загрузить данные бота'));
+      dispatch(fetchBotThunk(channel.bot_id));
     }
-  }, [channel.bot_id, dispatch, showError]);
+  }, [channel.bot_id, dispatch]);
 
   const handleToggle = async () => {
     try {
-      const newActive = await dispatch(toggleBotActiveThunk(channel)).unwrap();
+      const newActive = await dispatch(toggleBotOnChannelThunk(channel)).unwrap();
       showSuccess(newActive ? 'Бот активирован' : 'Бот деактивирован');
     } catch (err) {
       showError(typeof err === 'string' ? err : 'Ошибка переключения бота');
@@ -52,7 +57,7 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
 
   const handleRemove = async () => {
     try {
-      await dispatch(removeBotThunk(channel)).unwrap();
+      await dispatch(removeBotFromChannelThunk(channel)).unwrap();
       showSuccess('Бот удалён с канала');
     } catch (err) {
       showError(typeof err === 'string' ? err : 'Ошибка удаления бота');
@@ -61,7 +66,11 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
     }
   };
 
-  const isBotActive = channel.is_bot_active !== false;
+  const cardChannels: BotCardChannel[] = botChannels.map((ch) => ({
+    id: ch.id,
+    title: ch.title || 'Без названия',
+    membersCount: ch.members_count ?? 0,
+  }));
 
   return (
     <div className={styles.sections}>
@@ -87,11 +96,11 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
         <div className={styles.list}>
           <BotCard
             bot={bot}
-            isBotActive={isBotActive}
-            toggling={toggling}
-            botChannels={botChannels}
+            channels={cardChannels}
+            hideStats
             onToggleActive={handleToggle}
-            onRemove={() => setRemoveBotOpen(true)}
+            onDelete={() => setRemoveBotOpen(true)}
+            toggling={toggling}
           />
         </div>
       )}

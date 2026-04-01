@@ -17,7 +17,7 @@ from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from backend.models.bots import Bot as BotModel
+from backend.models.bots import Bot as BotModel, BotStatus
 from backend.models.channels import ChannelGroup
 from backend.services.telegram_client import RateLimitedBot
 
@@ -93,9 +93,13 @@ async def resolve_for_channel(
         state = sa_inspect(channel, raiseerr=False)
         if state and "bot" not in state.unloaded:
             bot_rel = channel.bot
+            if bot_rel and bot_rel.status == BotStatus.INACTIVE:
+                raise ValueError(f"Bot {bot_rel.id} is inactive")
             if bot_rel and bot_rel.token:
                 return get_cached_bot(bot_rel.token)
         bot_model = await load_bot_model(db, channel.bot_id)
+        if bot_model and bot_model.status == BotStatus.INACTIVE:
+            raise ValueError(f"Bot {channel.bot_id} is inactive")
         if bot_model and bot_model.token:
             return get_cached_bot(bot_model.token)
 
@@ -129,6 +133,8 @@ async def resolve_for_bot_id(
         bot_model = await load_bot_model(db, bot_id)
         if not bot_model or not bot_model.token:
             raise ValueError(f"Bot {bot_id} not found or has no token")
+        if bot_model.status == BotStatus.INACTIVE:
+            raise ValueError(f"Bot {bot_id} is inactive")
         return get_cached_bot(bot_model.token)
     return resolve_master()
 
@@ -150,6 +156,8 @@ async def resolve_for_chat(
             raise ValueError(
                 f"No bot found for chat_id {chat_id}"
             )
+        if channel.bot.status == BotStatus.INACTIVE:
+            raise ValueError(f"Bot {channel.bot.id} is inactive")
         return get_cached_bot(channel.bot.token)
     return resolve_master()
 

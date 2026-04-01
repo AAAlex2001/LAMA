@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 import { inboxStore } from './index';
 import type { ReactNode } from 'react';
 import { fetchChannelsThunk } from '@/store/channels';
-import { fetchBotsThunk } from './thunks/bots';
+import { fetchBotsThunk } from '@/store/bots';
 
 interface InboxProviderProps {
   children: ReactNode;

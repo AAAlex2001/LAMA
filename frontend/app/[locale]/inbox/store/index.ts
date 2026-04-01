@@ -7,7 +7,7 @@ import triggersReducer from './slices/triggers';
 import createTriggerModalReducer from './slices/createTriggerModal';
 import createCommandModalReducer from './slices/createCommandModal';
 import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
-import botsReducer from './slices/bots';
+import { botsReducer } from '@/store/bots';
 import directChatReducer from './slices/directChat';
 import { channelsReducer } from '@/store/channels';
 
@@ -233,13 +233,13 @@ export {
   clearError as clearBotsError,
   setPagination as setBotsPagination,
   resetBots,
-} from './slices/bots';
-export type { Bot, BotCreate, BotStatus } from './slices/bots';
+} from '@/store/bots';
+export type { Bot, BotCreate, BotStatus } from '@/store/bots';
 export {
   fetchBotsThunk,
   createBotThunk,
-} from './thunks/bots';
-export type { FetchBotsParams, BotListResponse } from './thunks/bots';
+} from '@/store/bots';
+export type { FetchBotsParams, BotListResponse } from '@/store/bots';
 export {
   setModalOpen as setCreateGlobalMessageModalOpen,
   setTextContent,

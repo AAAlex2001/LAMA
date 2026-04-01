@@ -68,7 +68,7 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
     { id: 'calendar', icon: <CalendarIcon width={24} height={24} color="#383F45" />, label: 'Календарь', href: `/${locale}/calendar` },
     { id: 'drafts', icon: <DraftsIcon width={24} height={24} color="#383F45" />, label: 'Черновики', href: `/${locale}/drafts` },
     { id: 'channels', icon: <ChannelsIcon width={24} height={24} color="#383F45" />, label: 'Каналы и группы', href: `/${locale}/channels` },
-    { id: 'bots', icon: <BotsIcon width={24} height={24} color="#383F45" />, label: 'Боты', disabled: true },
+    { id: 'bots', icon: <BotsIcon width={24} height={24} color="#383F45" />, label: 'Боты', href: `/${locale}/bots` },
     { id: 'inbox', icon: <InboxIcon width={24} height={24} color="#383F45" />, label: 'Входящие', href: `/${locale}/inbox` },
     { id: 'parser', icon: <ParserIcon width={24} height={24} color="#383F45" />, label: 'Парсер', disabled: true },
     { id: 'wallet', icon: <WalletIcon width={24} height={24} color="#383F45" />, label: 'Рекламный кабинет', disabled: true },

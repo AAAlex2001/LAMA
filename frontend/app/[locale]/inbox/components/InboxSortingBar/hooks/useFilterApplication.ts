@@ -1,7 +1,7 @@
 import { useAppDispatch } from "../../../store";
 import { setBotIds, setChannelIds, setSystem, setTypeAutoReplies, setTypeTriggers, setTypeCommands, setSearch } from "../../../store";
 import type { ChannelBasic } from "@/types";
-import type { Bot } from "../../../store/slices/bots";
+import type { Bot } from '@/store/bots';
 
 interface UseFilterApplicationProps {
   channels: ChannelBasic[];
