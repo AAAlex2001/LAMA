@@ -1,5 +1,5 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { apiRequest } from '@/store/api';
+import { apiRequest, API_BASE_URL, getAuthToken } from '@/store/api';
 import { updateChannel } from '@/store/channels';
 import type { Channel, ChannelBasic } from '@/types/channel';
 import type { Bot, BotCreate, BotStatus } from './slice';
@@ -179,7 +179,7 @@ export const fetchBotStatsThunk = createAsyncThunk(
 export const updateBotThunk = createAsyncThunk(
   'bots/update',
   async (
-    { botId, data }: { botId: number; data: { name?: string; description?: string } },
+    { botId, data }: { botId: number; data: Record<string, unknown> },
     { dispatch, rejectWithValue },
   ) => {
     try {
@@ -192,6 +192,49 @@ export const updateBotThunk = createAsyncThunk(
       return bot;
     } catch (error) {
       return rejectWithValue(errMsg(error, 'Ошибка обновления бота'));
+    }
+  },
+);
+
+export const uploadBotPhotoThunk = createAsyncThunk(
+  'bots/uploadPhoto',
+  async ({ botId, file }: { botId: number; file: File }, { dispatch, rejectWithValue }) => {
+    try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await fetch(`${API_BASE_URL}/bots/${botId}/telegram-photo`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || 'Ошибка загрузки фото');
+      }
+
+      const bot: Bot = await response.json();
+      dispatch(updateBot(bot));
+      dispatch(setCurrentBot(bot));
+      return bot;
+    } catch (error) {
+      return rejectWithValue(errMsg(error, 'Ошибка загрузки фото'));
+    }
+  },
+);
+
+export const deleteBotPhotoThunk = createAsyncThunk(
+  'bots/deletePhoto',
+  async (botId: number, { dispatch, rejectWithValue }) => {
+    try {
+      const bot = await apiRequest<Bot>(`/bots/${botId}/telegram-photo`, { method: 'DELETE' });
+      dispatch(updateBot(bot));
+      dispatch(setCurrentBot(bot));
+      return bot;
+    } catch (error) {
+      return rejectWithValue(errMsg(error, 'Ошибка удаления фото'));
     }
   },
 );
@@ -231,6 +274,41 @@ export const removeBotFromChannelThunk = createAsyncThunk(
       return rejectWithValue(errMsg(error, 'Ошибка удаления бота'));
     } finally {
       dispatch(setToggling(false));
+    }
+  },
+);
+
+export const bindBotToChannelThunk = createAsyncThunk(
+  'bots/bindToChannel',
+  async (
+    { channelId, botId }: { channelId: number; botId: number },
+    { dispatch, rejectWithValue },
+  ) => {
+    try {
+      const updated = await apiRequest<Channel>(`/channels/${channelId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ bot_id: botId }),
+      });
+      dispatch(updateChannel(toChannelBasic(updated)));
+      return updated;
+    } catch (error) {
+      return rejectWithValue(errMsg(error, 'Ошибка привязки бота'));
+    }
+  },
+);
+
+export const unbindBotFromChannelThunk = createAsyncThunk(
+  'bots/unbindFromChannel',
+  async (channelId: number, { dispatch, rejectWithValue }) => {
+    try {
+      const updated = await apiRequest<Channel>(`/channels/${channelId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ clear_bot: true }),
+      });
+      dispatch(updateChannel(toChannelBasic(updated)));
+      return updated;
+    } catch (error) {
+      return rejectWithValue(errMsg(error, 'Ошибка отвязки бота'));
     }
   },
 );

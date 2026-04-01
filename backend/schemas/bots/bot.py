@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 
-from backend.models.bots import BotStatus, ApprovalMode, MessageType, CommandScope, TriggerType, TriggerActionType, CaptchaMode, TriggerChatType, RecurringMessageInterval
+from backend.models.bots import BotStatus, ApprovalMode, ApprovalDestination, MessageType, CommandScope, TriggerType, TriggerActionType, CaptchaMode, TriggerChatType, RecurringMessageInterval
 
 # Bot Schemas
 
@@ -29,6 +29,8 @@ class BotUpdate(BaseModel):
     status: Optional[BotStatus] = None
     is_webhook_enabled: Optional[bool] = None
     webhook_url: Optional[str] = None
+    auto_approval_mode: Optional[ApprovalMode] = None
+    approval_destination: Optional[ApprovalDestination] = None
 
 class BotResponse(BaseModel):
     """Схема ответа с данными бота"""
@@ -44,6 +46,7 @@ class BotResponse(BaseModel):
     webhook_url: Optional[str]
     welcome_enabled: bool
     auto_approval_mode: ApprovalMode
+    approval_destination: ApprovalDestination
     captcha_mode: CaptchaMode
     captcha_timeout_seconds: int
     last_sync_at: Optional[datetime]

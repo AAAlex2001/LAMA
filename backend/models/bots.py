@@ -47,6 +47,12 @@ class ApprovalMode(str, enum.Enum):
     CRITERIA = "CRITERIA"  # По критериям (подписка на другие каналы и т.д.)
 
 
+class ApprovalDestination(str, enum.Enum):
+    """Куда отправлять заявки на ручное одобрение"""
+    INBOX = "INBOX"  # В Инбокс LamaPlanner
+    TELEGRAM_BOT = "TELEGRAM_BOT"  # В Telegram-бота
+
+
 class CaptchaMode(str, enum.Enum):
     """Режим капчи"""
     DISABLED = "DISABLED"  # Капча отключена
@@ -116,6 +122,7 @@ class Bot(Base):
     
     # Настройки автоодобрения
     auto_approval_mode: Mapped[ApprovalMode] = mapped_column(SQLEnum(ApprovalMode), default=ApprovalMode.MANUAL, nullable=False)
+    approval_destination: Mapped[ApprovalDestination] = mapped_column(SQLEnum(ApprovalDestination), default=ApprovalDestination.INBOX, nullable=False)
     approval_criteria: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)  # Критерии для одобрения
     
     # Метаданные

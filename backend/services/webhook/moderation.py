@@ -64,8 +64,8 @@ class ModerationHandler:
                 )
 
                 if is_flood and flood_action:
-                    await self.db.commit()
                     await self.apply_action(message, flood_action, flood_mute)
+                    await self.db.commit()
                     return
 
             if not text_content:

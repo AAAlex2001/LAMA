@@ -17,6 +17,7 @@ import {
   fetchBotsThunk,
   selectBots,
 } from '@/store/bots';
+import { fetchChannelsThunk } from '@/store/channels';
 import ConnectBotModal from '../components/ConnectBotModal';
 import { useAppDispatch, useAppSelector } from '../store';
 import BotSettingsHeader from './components/BotSettingsHeader';
@@ -48,6 +49,7 @@ const BotSettingsView: FC<BotSettingsViewProps> = ({ botId }) => {
 
   useEffect(() => {
     dispatch(fetchBotThunk(botId));
+    dispatch(fetchChannelsThunk({ force: true }));
   }, [dispatch, botId]);
 
   const botChannels = channels.filter((ch) => ch.bot_id === botId);
@@ -108,7 +110,7 @@ const BotSettingsView: FC<BotSettingsViewProps> = ({ botId }) => {
         </div>
 
         {activeTab === 'settings' && (
-          <BotGeneralSection bot={bot} channels={botChannels} />
+          <BotGeneralSection bot={bot} channels={botChannels} allChannels={channels} />
         )}
 
         {activeTab === 'messages' && (

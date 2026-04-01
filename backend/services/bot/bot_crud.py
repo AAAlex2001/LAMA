@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
 from aiogram import Bot
+from aiogram.types import BufferedInputFile, InputProfilePhotoStatic
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, func, desc
@@ -294,6 +295,49 @@ class BotCrudService:
     async def evict_from_cache(self, token: str) -> None:
         """Удалить бота из кешей и закрыть его aiohttp-сессию."""
         await evict_bot(token)
+
+    async def upload_photo(self, bot_id: int, owner_id: int, data: bytes, filename: str) -> BotModel:
+        """Загрузить фото профиля бота через Telegram API."""
+        bot = await self.get(bot_id, owner_id=owner_id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+
+        telegram_bot = resolve_by_token(bot.token).bot
+        try:
+            photo = BufferedInputFile(data, filename=filename)
+            await telegram_bot.set_my_profile_photo(photo=InputProfilePhotoStatic(photo=photo))
+
+            me = await telegram_bot.get_me()
+            photos = await telegram_bot.get_user_profile_photos(user_id=me.id, limit=1)
+            if photos.photos:
+                best = max(photos.photos[0], key=lambda p: p.width)
+                file = await telegram_bot.get_file(best.file_id)
+                if file.file_path:
+                    bot.photo_url = f"https://api.telegram.org/file/bot{bot.token}/{file.file_path}"
+
+            bot.updated_at = datetime.now(timezone.utc)
+            await self.db.flush()
+            await self.db.refresh(bot)
+            return bot
+        except TelegramAPIError as e:
+            raise HTTPException(status_code=400, detail=f"Failed to upload bot photo: {e}")
+
+    async def delete_photo(self, bot_id: int, owner_id: int) -> BotModel:
+        """Удалить фото профиля бота через Telegram API."""
+        bot = await self.get(bot_id, owner_id=owner_id)
+        if not bot:
+            raise HTTPException(status_code=404, detail="Bot not found")
+
+        telegram_bot = resolve_by_token(bot.token).bot
+        try:
+            await telegram_bot.delete_my_profile_photo()
+            bot.photo_url = None
+            bot.updated_at = datetime.now(timezone.utc)
+            await self.db.flush()
+            await self.db.refresh(bot)
+            return bot
+        except TelegramAPIError as e:
+            raise HTTPException(status_code=400, detail=f"Failed to delete bot photo: {e}")
 
     async def sync_telegram_fields(
         self, telegram_bot: RateLimitedBot, bot: BotModel,

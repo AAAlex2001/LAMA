@@ -1,5 +1,5 @@
 export { default as botsReducer } from './slice';
-export type { Bot, BotCreate, BotStatus, BotsState } from './slice';
+export type { Bot, BotCreate, BotStatus, ApprovalMode, ApprovalDestination, BotsState } from './slice';
 export {
   setBots,
   setCurrentBot,
@@ -26,6 +26,10 @@ export {
   updateBotThunk,
   toggleBotOnChannelThunk,
   removeBotFromChannelThunk,
+  bindBotToChannelThunk,
+  unbindBotFromChannelThunk,
+  uploadBotPhotoThunk,
+  deleteBotPhotoThunk,
 } from './thunks';
 export {
   selectBots,

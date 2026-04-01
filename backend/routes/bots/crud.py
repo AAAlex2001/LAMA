@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File
 from typing import Optional
 
 from backend.routes.auth import get_current_user
@@ -117,6 +117,33 @@ async def sync_existing_bot(
     """Обновить информацию существующего бота через Telegram API."""
     bot = await service.get(bot_id, owner_id=current_user.id)
     return await service.sync_from_telegram(bot.token, owner_id=current_user.id)
+
+
+@router.post("/{bot_id}/telegram-photo", response_model=BotResponse, status_code=200)
+async def upload_bot_photo(
+    bot_id: int,
+    photo: UploadFile = File(...),
+    service: BotCrudService = Depends(get_bot_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Загрузить фото профиля бота."""
+    data = await photo.read()
+    return await service.upload_photo(
+        bot_id=bot_id,
+        owner_id=current_user.id,
+        data=data,
+        filename=photo.filename or "photo.jpg",
+    )
+
+
+@router.delete("/{bot_id}/telegram-photo", response_model=BotResponse)
+async def delete_bot_photo(
+    bot_id: int,
+    service: BotCrudService = Depends(get_bot_service),
+    current_user: User = Depends(get_current_user),
+):
+    """Удалить фото профиля бота."""
+    return await service.delete_photo(bot_id=bot_id, owner_id=current_user.id)
 
 
 @router.get("/{bot_id}/stats", response_model=BotStatsResponse)

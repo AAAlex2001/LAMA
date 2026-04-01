@@ -1,11 +1,12 @@
 'use client';
 
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useRef } from 'react';
+import { PlusIcon } from '@/components/icons';
 import Input from '@/components/input/input';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Bot } from '@/store/bots';
-import { updateBotThunk } from '@/store/bots';
+import { updateBotThunk, uploadBotPhotoThunk, deleteBotPhotoThunk } from '@/store/bots';
 import { useAppDispatch } from '../../store';
 import styles from './EditBotModal.module.scss';
 
@@ -20,21 +21,47 @@ const MAX_DESCRIPTION = 512;
 const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
   const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(bot.first_name || bot.title || '');
   const [description, setDescription] = useState(bot.description || '');
   const [saving, setSaving] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(bot.photo_url || null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoRemoved, setPhotoRemoved] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setName(bot.first_name || bot.title || '');
       setDescription(bot.description || '');
+      setPhotoPreview(bot.photo_url || null);
+      setPhotoFile(null);
+      setPhotoRemoved(false);
     }
   }, [isOpen, bot]);
+
+  const handlePhotoSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+    setPhotoRemoved(false);
+    e.target.value = '';
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      if (photoFile) {
+        await dispatch(uploadBotPhotoThunk({ botId: bot.id, file: photoFile })).unwrap();
+      } else if (photoRemoved && bot.photo_url) {
+        await dispatch(deleteBotPhotoThunk(bot.id)).unwrap();
+      }
+
       const data: { name?: string; description?: string } = {};
       if (name !== (bot.first_name || bot.title || '')) data.name = name;
       if (description !== (bot.description || '')) data.description = description;
@@ -42,6 +69,7 @@ const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
       if (Object.keys(data).length > 0) {
         await dispatch(updateBotThunk({ botId: bot.id, data })).unwrap();
       }
+
       showSuccess('Бот обновлён');
       onClose();
     } catch (err) {
@@ -53,12 +81,37 @@ const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const hasPhoto = !!photoPreview;
+
   return (
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <h3 className={styles.heading}>Редактирование бота</h3>
 
         <div className={styles.form}>
+          <div className={`${styles.field} ${styles.avatarField}`}>
+            <span className={styles.fieldLabel}>Фото бота</span>
+            <div className={styles.avatarWrap} onClick={handlePhotoSelect}>
+              <div className={styles.avatarCircle}>
+                {hasPhoto ? (
+                  <img src={photoPreview!} alt="" className={styles.avatarImg} />
+                ) : (
+                  <PlusIcon width={16} height={16} color="#3B82F6" />
+                )}
+              </div>
+              <span className={styles.avatarText}>
+                {hasPhoto ? 'Изменить фото' : 'Добавить фото'}
+              </span>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className={styles.fileInput}
+            />
+          </div>
+
           <div className={styles.field}>
             <span className={styles.fieldLabel}>Название</span>
             <Input

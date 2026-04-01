@@ -57,6 +57,64 @@
   width: 100%;
 }
 
+.avatarField {
+  align-items: center !important;
+}
+
+.avatarWrap {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 72px;
+  background: #f1f5fb;
+  border-radius: 50px;
+  cursor: pointer;
+  overflow: hidden;
+  transition: padding-right 0.3s ease;
+  padding: 12px;
+}
+
+.avatarCircle {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.avatarImg {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatarText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 24px;
+  color: #3b82f6;
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: max-width 0.3s ease, opacity 0.3s ease, margin-left 0.3s ease;
+  margin-left: 0;
+}
+
+.avatarWrap:hover .avatarText {
+  max-width: 120px;
+  opacity: 1;
+  margin-left: 10px;
+}
+
+.fileInput {
+  display: none;
+}
+
 .textareaWrap {
   display: flex;
   flex-direction: column;

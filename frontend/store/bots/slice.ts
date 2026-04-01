@@ -1,6 +1,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export type BotStatus = 'ACTIVE' | 'INACTIVE' | 'PENDING' | 'ERROR';
+export type ApprovalMode = 'AUTO' | 'MANUAL' | 'CRITERIA';
+export type ApprovalDestination = 'INBOX' | 'TELEGRAM_BOT';
 
 export interface Bot {
   id: number;
@@ -14,6 +16,8 @@ export interface Bot {
   photo_url?: string | null;
   description?: string | null;
   short_description?: string | null;
+  auto_approval_mode?: ApprovalMode;
+  approval_destination?: ApprovalDestination;
   created_at?: string;
   updated_at?: string;
 }
