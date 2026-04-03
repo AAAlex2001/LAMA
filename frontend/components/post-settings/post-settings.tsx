@@ -173,6 +173,7 @@ export default function PostSettings({
               loading={channelsLoading}
               isOpen={openDropdown === 'channels'}
               onToggle={(willOpen) => setOpenDropdown(willOpen ? 'channels' : null)}
+              closeOnOutsideClick={false}
             />
 
             {/* Автоудаление */}
@@ -187,6 +188,7 @@ export default function PostSettings({
               onAutoDeleteCustomHoursChange={onAutoDeleteCustomHoursChange}
               isOpen={openDropdown === 'auto-delete'}
               onToggle={(willOpen) => setOpenDropdown(willOpen ? 'auto-delete' : null)}
+              closeOnOutsideClick={false}
             />
 
             {/* Повтор */}
@@ -224,6 +226,7 @@ export default function PostSettings({
               onRepeatEndDateChange={onRepeatEndDateChange}
               isOpen={openDropdown === 'repeat'}
               onToggle={(willOpen) => setOpenDropdown(willOpen ? 'repeat' : null)}
+              closeOnOutsideClick={false}
             />
 
           </div>

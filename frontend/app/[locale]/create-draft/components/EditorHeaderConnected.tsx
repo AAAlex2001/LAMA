@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import classNames from 'classnames';
 import TagCloseIcon from '@/components/icons/tag-close-icon';
 import PlusIcon from '@/components/icons/plus-icon';
@@ -40,7 +40,6 @@ export default function EditorHeaderConnected({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const [editingTag, setEditingTag] = useState<{ id: number; name: string; color: string } | null>(null);
   const [editName, setEditName] = useState('');
@@ -53,18 +52,6 @@ export default function EditorHeaderConnected({
       dispatch(fetchTagsThunk({}));
     }
   }, [showTagsPanel, dispatch]);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setShowDropdown(false);
-      }
-    };
-    if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showDropdown]);
 
   const handleTogglePanel = () => {
     dispatch(uiSlice.setShowTagsPanel(!showTagsPanel));
@@ -229,12 +216,15 @@ export default function EditorHeaderConnected({
       {showTagsPanel && (
         <div className={classNames(tagStyles.tagsPanel, { [tagStyles.tagsPanelEditing]: !!editingTag })}>
           <div className={tagStyles.tagsPanelTop}>
-            <div className={tagStyles.tagSearchWrapper} ref={dropdownRef}>
+            <div className={tagStyles.tagSearchWrapper}>
               <SearchBar
                 placeholder="Поиск тега"
                 value={searchQuery}
                 onChange={handleSearch}
                 onFocus={handleSearchFocus}
+                onClick={() => {
+                  if (showDropdown) setShowDropdown(false);
+                }}
               />
               {showDropdown && (
                 <div className={tagStyles.tagSearchDropdown}>

@@ -92,6 +92,7 @@ export default function Dropdown({
   onCallbackActionChange,
   isOpen: controlledIsOpen,
   onToggle: controlledOnToggle,
+  closeOnOutsideClick = true,
 }: DropdownProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [repeatViewMode, setRepeatViewMode] = useState<RepeatViewMode>('list');
@@ -106,9 +107,8 @@ export default function Dropdown({
   // Используем контролируемое состояние если передано, иначе внутреннее
   const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
 
-  // Закрытие по клику вне dropdown
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !closeOnOutsideClick) return;
 
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -122,7 +122,7 @@ export default function Dropdown({
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen, controlledOnToggle]);
+  }, [isOpen, controlledOnToggle, closeOnOutsideClick]);
 
   const handleToggle = () => {
     const willOpen = !isOpen;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type MouseEventHandler } from 'react';
 import styles from './search-bar.module.scss';
 import classNames from 'classnames';
 import { SearchIcon } from '@/components/icons';
@@ -10,6 +10,7 @@ interface SearchBarProps {
   value?: string;
   onChange?: (value: string) => void;
   onFocus?: () => void;
+  onClick?: MouseEventHandler<HTMLInputElement>;
   className?: string;
   showSearchIcon?: boolean;
 }
@@ -19,6 +20,7 @@ export default function SearchBar({
   value,
   onChange,
   onFocus,
+  onClick,
   className,
   showSearchIcon = true,
 }: SearchBarProps) {
@@ -41,6 +43,7 @@ export default function SearchBar({
         value={currentValue}
         onChange={(e) => handleChange(e.target.value)}
         onFocus={onFocus}
+        onClick={onClick}
         className={styles.searchInput}
       />
       {showSearchIcon && <SearchIcon width={18} height={18} />}

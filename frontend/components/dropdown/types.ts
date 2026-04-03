@@ -161,4 +161,5 @@ export interface DropdownProps {
   onCallbackActionChange?: (value: CallbackActionOption) => void;
   isOpen?: boolean;
   onToggle?: (isOpen: boolean) => void;
+  closeOnOutsideClick?: boolean;
 }
