@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
-import ListDateRangePicker from './ListDateRangePicker';
-import ListFilterBar, { type FilterConfig } from './ListFilterBar';
+import ListDateRangePicker from '../views/list/ListDateRangePicker';
+import ListFilterBar, { type FilterConfig } from '../views/list/ListFilterBar';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
 

@@ -13,7 +13,7 @@ import {
   buildCreatePostUrl,
   hasRepeat,
   isBeforeToday,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './calendar-sidebar.module.scss';
 
 interface CalendarSidebarProps {

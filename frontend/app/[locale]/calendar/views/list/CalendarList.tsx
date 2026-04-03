@@ -3,9 +3,9 @@
 import React from 'react';
 import Loader from '@/components/loader';
 import Button from '@/components/button/button';
-import CalendarCard from './CalendarCard';
+import CalendarCard from '../../shared/CalendarCard';
 import type { Draft } from '@/types/post';
-import styles from '../calendar.module.scss';
+import styles from '../../calendar.module.scss';
 
 interface CalendarListProps {
   posts: Draft[];

@@ -6,12 +6,12 @@ import {
   CalendarDraftIcon,
   CalendarBotMessageIcon,
 } from '@/components/icons';
-import type { DayStatusCount } from '../store';
+import type { DayStatusCount } from '../../store';
 import {
   formatDateOnly,
   isSameDay,
   isBeforeToday,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './month-grid-view.module.scss';
 
 interface MonthGridViewProps {

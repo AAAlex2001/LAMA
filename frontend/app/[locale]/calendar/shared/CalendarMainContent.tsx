@@ -3,15 +3,15 @@
 import React from 'react';
 import type { Draft } from '@/types/post';
 import type { DayStatusCount } from '../store';
-import CalendarList from './CalendarList';
-import CalendarSidebar from './CalendarSidebar';
-import WeeklyCalendarView from './WeeklyCalendarView';
-import MonthGridView from './MonthGridView';
-import WeeklySidebar from './WeeklySidebar';
-import MonthlySidebar from './MonthlySidebar';
-import ListCalendarView from './ListCalendarView';
-import DayCalendarView from './DayCalendarView';
-import MonthCalendarView from './MonthCalendarView';
+import CalendarList from '../views/list/CalendarList';
+import CalendarSidebar from '../views/day/CalendarSidebar';
+import WeeklyCalendarView from '../views/week/WeeklyCalendarView';
+import MonthGridView from '../views/month/MonthGridView';
+import WeeklySidebar from '../views/week/WeeklySidebar';
+import MonthlySidebar from '../views/month/MonthlySidebar';
+import ListCalendarView from '../views/list/ListCalendarView';
+import DayCalendarView from '../views/day/DayCalendarView';
+import MonthCalendarView from '../views/month/MonthCalendarView';
 import styles from '../calendar.module.scss';
 
 interface CalendarMainContentProps {

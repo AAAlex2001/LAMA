@@ -15,7 +15,7 @@ import {
   getPreviewText,
   hasRepeat,
   getSourceDate,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './weekly-card.module.scss';
 
 interface WeeklyCardProps {

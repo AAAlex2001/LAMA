@@ -4,9 +4,9 @@ import React from 'react';
 import type { Draft } from '@/types/post';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
-import CalendarCard from './CalendarCard';
-import { useInView } from '../store/useInView';
-import { isBeforeToday } from '../utils/calendar-helpers';
+import CalendarCard from '../../shared/CalendarCard';
+import { useInView } from '../../hooks/useInView';
+import { isBeforeToday } from '../../utils/calendar-helpers';
 import styles from './day-calendar-view.module.scss';
 
 interface DayCalendarViewProps {

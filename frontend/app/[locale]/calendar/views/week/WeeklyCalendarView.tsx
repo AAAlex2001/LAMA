@@ -5,14 +5,14 @@ import type { Draft } from '@/types/post';
 import { CalendarAddIcon } from '@/components/icons';
 import WeeklyCard from './WeeklyCard';
 import Loader from '@/components/loader';
-import { useInView } from '../store/useInView';
+import { useInView } from '../../hooks/useInView';
 import {
   DAY_NAMES_SHORT,
   getWeekStart,
   formatDateOnly,
   isSameDay,
   isBeforeToday,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './weekly-view.module.scss';
 
 interface WeeklyCalendarViewProps {

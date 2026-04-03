@@ -5,7 +5,7 @@ import { CalendarProvider } from './store/provider';
 import { AppLayout } from '@/components/app-layout';
 
 const CalendarPageConnected = dynamic(
-  () => import('./components/CalendarPageConnected'),
+  () => import('./shared/CalendarPageConnected'),
   { ssr: false },
 );
 

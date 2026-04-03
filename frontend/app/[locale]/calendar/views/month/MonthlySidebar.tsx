@@ -6,7 +6,7 @@ import Button from '@/components/button/button';
 import type { Draft } from '@/types/post';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import { useInView } from '../store/useInView';
+import { useInView } from '../../hooks/useInView';
 import {
   formatDayTitle,
   formatTime,
@@ -16,7 +16,7 @@ import {
   buildCreatePostUrl,
   hasRepeat,
   isBeforeToday,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './monthly-sidebar.module.scss';
 
 interface MonthlySidebarProps {

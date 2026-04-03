@@ -1,1 +1,1 @@
-export { default as CalendarPageConnected } from './CalendarPageConnected';
+export { default as CalendarPageConnected } from '../shared/CalendarPageConnected';

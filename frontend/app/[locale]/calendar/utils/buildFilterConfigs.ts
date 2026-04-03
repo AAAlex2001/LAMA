@@ -1,5 +1,5 @@
 import type { Draft } from '@/types/post';
-import type { FilterConfig } from '../components/ListFilterBar';
+import type { FilterConfig } from '../views/list/ListFilterBar';
 import { getMediaFilterTypes, getStatusLabel, MEDIA_TYPE_LABELS } from './calendar-helpers';
 
 interface FilterConfigOptions {

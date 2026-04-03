@@ -6,7 +6,7 @@ import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import { useInView } from '../store/useInView';
+import { useInView } from '../../hooks/useInView';
 import {
   formatTime,
   getSourceDate,
@@ -14,7 +14,7 @@ import {
   formatDateOnly,
   hasRepeat,
   isBeforeToday,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './month-calendar-view.module.scss';
 
 interface MonthCalendarViewProps {

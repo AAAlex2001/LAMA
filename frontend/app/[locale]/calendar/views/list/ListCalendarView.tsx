@@ -15,10 +15,10 @@ import {
   CalendarBotMessageIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
-import CalendarCard from './CalendarCard';
+import CalendarCard from '../../shared/CalendarCard';
 import ListFilterBar from './ListFilterBar';
-import { buildFilterConfigs } from '../utils/buildFilterConfigs';
-import { applyPostFilters } from '../utils/filterPosts';
+import { buildFilterConfigs } from '../../utils/buildFilterConfigs';
+import { applyPostFilters } from '../../utils/filterPosts';
 import {
   formatDateDot,
   formatTime,
@@ -28,8 +28,8 @@ import {
   hasRepeat,
   formatCompact,
   getMediaFilterTypes,
-} from '../utils/calendar-helpers';
-import { useInView } from '../store/useInView';
+} from '../../utils/calendar-helpers';
+import { useInView } from '../../hooks/useInView';
 import styles from './list-calendar-view.module.scss';
 
 interface ListCalendarViewProps {

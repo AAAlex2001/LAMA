@@ -14,7 +14,7 @@ import {
   isSameDay,
   formatDateOnly,
   hasRepeat,
-} from '../utils/calendar-helpers';
+} from '../../utils/calendar-helpers';
 import styles from './weekly-sidebar.module.scss';
 
 interface WeeklySidebarProps {
