@@ -36,7 +36,6 @@ import Loader from '@/components/loader';
 import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import DraftsHeaderDisabled from '../../drafts/components/DraftsHeaderDisabled';
 
 export default function EditDraftView() {
   const dispatch = useAppDispatch();
@@ -258,7 +257,12 @@ export default function EditDraftView() {
       )}
 
       <div className={styles.draftsHeaderWrapper}>
-        <DraftsHeaderDisabled />
+        <Button
+          text="Список черновиков"
+          showArrow={false}
+          active
+          onClick={() => { window.location.href = '/drafts'; }}
+        />
       </div>
 
       <div

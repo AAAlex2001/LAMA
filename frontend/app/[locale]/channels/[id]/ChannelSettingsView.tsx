@@ -8,7 +8,6 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useAppDispatch, useAppSelector } from '../store';
 import { deleteChannelThunk } from '@/store/channels';
 import type { Channel } from '@/types/channel';
-import ConnectChannelModal from '../components/ConnectChannelModal';
 import SettingsHeader from './components/SettingsHeader';
 import ChannelInfoCard from './components/ChannelInfoCard';
 import DescriptionEditor from './components/DescriptionEditor';
@@ -36,7 +35,6 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
   const channel = channels.find((ch) => ch.id === channelId);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [connectOpen, setConnectOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState('settings');
 
@@ -66,9 +64,6 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
   return (
     <div className={styles.container}>
       <SettingsHeader
-        connectedCount={channels.length}
-        total={total}
-        onConnect={() => setConnectOpen(true)}
         activeTab={settingsTab}
         onTabChange={setSettingsTab}
       />
@@ -118,8 +113,6 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
         confirmVariant="outlined-red"
         confirmFirst
       />
-
-      <ConnectChannelModal isOpen={connectOpen} onOpenChange={setConnectOpen} />
     </div>
   );
 };

@@ -31,6 +31,8 @@
 }
 
 .draftsHeaderWrapper {
+  display: flex;
+  justify-content: flex-end;
   width: 100%;
   margin: 0 auto;
 }
@@ -88,7 +90,7 @@
   box-sizing: border-box;
 
   @media (min-width: 1440px) {
-    min-height: 628px;
+    min-height: 643px;
   }
 }
 

@@ -35,7 +35,6 @@ import Loader from '@/components/loader';
 import { compressImageForPreview, createVideoThumbnail } from '@/components/media-preview/utils';
 
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import DraftsHeaderDisabled from '../drafts/components/DraftsHeaderDisabled';
 
 function CreateDraftPageContent() {
   const dispatch = useAppDispatch();
@@ -170,7 +169,12 @@ function CreateDraftPageContent() {
       )}
 
       <div className={styles.draftsHeaderWrapper}>
-        <DraftsHeaderDisabled />
+        <Button
+          text="Список черновиков"
+          showArrow={false}
+          active
+          onClick={() => { window.location.href = '/drafts'; }}
+        />
       </div>
 
       <div
