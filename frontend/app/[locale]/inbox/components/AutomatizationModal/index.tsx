@@ -46,7 +46,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
 
         <ModalBase.Body className={styles.modalBody}>
           <div className={styles.buttonsContainer}>
-            <Button 
+            {/* <Button 
               variant="fill" 
               intent="gradient"
               size="md"
@@ -55,7 +55,7 @@ const AutomatizationModal: React.FC<AutomatizationModalProps> = ({
               style={{ width: '100%' }}
             >
               <span className={buttonStyles.label}>Создать автоответ</span>
-            </Button>
+            </Button> */}
             <Button
               variant="fill" 
               intent="gradient"

@@ -133,7 +133,6 @@ export class DirectChatWsService {
       this.clearPingInterval();
       this.onStatus?.(false);
 
-      // Track connections that drop shortly after opening to avoid hammering the server
       const uptime = Date.now() - this.lastOpenTime;
       if (this.lastOpenTime > 0 && uptime < 5000) {
         this.consecutiveQuickDrops++;

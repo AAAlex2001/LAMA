@@ -70,7 +70,6 @@ const createInviteLinkModalSlice = createSlice({
       state.step = action.payload;
     },
     
-    // Form field setters
     setChannelSearch(state, action: PayloadAction<string>) {
       state.channelSearch = action.payload;
     },

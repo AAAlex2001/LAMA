@@ -317,14 +317,12 @@ const directChatSlice = createSlice({
           state.messagesHasMore[chatKey] = true;
           state.messagesHasNewer[chatKey] = true;
         } else if (after_message_id) {
-          // Loading newer messages in detached mode
           if (!state.messages[chatKey]) {
             state.messages[chatKey] = emptyChatMessages();
           }
           const newCount = mergeInto(state.messages[chatKey], response.items);
           const caughtUp = response.items.length < limit || !response.has_more;
           if (caughtUp) {
-            // Reached the latest messages — exit detached mode
             state.messagesDetached[chatKey] = false;
             state.messagesHasNewer[chatKey] = false;
           } else {
