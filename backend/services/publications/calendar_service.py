@@ -12,7 +12,7 @@ from backend.models.publications import (
 )
 from backend.models.bots import Bot, BotMessage
 from backend.schemas.publications.publication_response import DayCount
-from backend.services.publications.repeat_utils import strip_tz, local_range_to_utc, project_repeat_occurrences
+from backend.services.publications.repeat_utils import strip_tz, to_user_tz, local_range_to_utc, project_repeat_occurrences
 
 
 class CalendarService:
@@ -87,7 +87,7 @@ class CalendarService:
             )
 
         if owner_id is not None:
-            for dc in await self.project_repeats(utc_start, utc_end, owner_id):
+            for dc in await self.project_repeats(utc_start, utc_end, owner_id, tz=tz):
                 if dc.date in counts_map:
                     existing = counts_map[dc.date]
                     counts_map[dc.date] = DayCount(
@@ -100,7 +100,7 @@ class CalendarService:
                 else:
                     counts_map[dc.date] = dc
 
-            for bc in await self.count_bot_messages_per_day(utc_start, utc_end, owner_id):
+            for bc in await self.count_bot_messages_per_day(utc_start, utc_end, owner_id, tz=tz):
                 if bc.date in counts_map:
                     existing = counts_map[bc.date]
                     counts_map[bc.date] = DayCount(
@@ -121,15 +121,18 @@ class CalendarService:
         start_date: datetime,
         end_date: datetime,
         owner_id: int,
+        tz: str = "UTC",
     ) -> List[DayCount]:
         """Считает бот-сообщения по дням только из разрешенных источников."""
         naive_start = strip_tz(start_date)
         naive_end = strip_tz(end_date)
         per_day: dict[str, int] = {}
 
+        date_expr = func.date(func.timezone(tz, BotMessage.created_at))
+
         info_query = (
             select(
-                func.date(BotMessage.created_at).label("day"),
+                date_expr.label("day"),
                 func.count().label("cnt"),
             )
             .select_from(BotMessage)
@@ -142,7 +145,7 @@ class CalendarService:
                 BotMessage.created_at <= naive_end,
                 BotMessage.raw_data["calendar_source"].as_string() == "INFO_MESSAGE",
             )
-            .group_by(func.date(BotMessage.created_at))
+            .group_by(date_expr)
         )
         info_result = await self.db.execute(info_query)
         for row in info_result.all():
@@ -150,7 +153,7 @@ class CalendarService:
 
         broadcast_sub = (
             select(
-                func.date(BotMessage.created_at).label("day"),
+                date_expr.label("day"),
                 Bot.id.label("bot_id"),
                 BotMessage.text_content,
                 BotMessage.media_url,
@@ -167,7 +170,7 @@ class CalendarService:
             )
             .group_by(
                 Bot.id,
-                func.date(BotMessage.created_at),
+                date_expr,
                 BotMessage.text_content,
                 BotMessage.media_url,
             )
@@ -195,6 +198,7 @@ class CalendarService:
         start_date: datetime,
         end_date: datetime,
         owner_id: int,
+        tz: str = "UTC",
     ) -> List[DayCount]:
         """Проецирует будущие повторы на даты в диапазоне."""
         query = (
@@ -231,10 +235,11 @@ class CalendarService:
         seen: set = set()
 
         for pub in repeating_pubs:
-            for date_str, _ in project_repeat_occurrences(pub, start_date, end_date):
-                key = (pub.id, date_str)
+            for date_str, projected_time in project_repeat_occurrences(pub, start_date, end_date):
+                local_date = to_user_tz(projected_time, tz).strftime("%Y-%m-%d") if tz != "UTC" else date_str
+                key = (pub.id, local_date)
                 if key not in seen:
-                    per_day[date_str] = per_day.get(date_str, 0) + 1
+                    per_day[local_date] = per_day.get(local_date, 0) + 1
                     seen.add(key)
 
         return [

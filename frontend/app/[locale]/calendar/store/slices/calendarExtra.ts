@@ -44,9 +44,6 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         state.currentPage = 1;
         state.listTotal = action.payload.total;
         state.hasMore = action.payload.hasMore;
-        if (state.currentView === 'day') {
-          state.monthPostCounts[state.selectedDate] = action.payload.items.length;
-        }
       }
     })
     .addCase(fetchCalendarData.rejected, (state) => {
