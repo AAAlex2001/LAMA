@@ -48,7 +48,7 @@ const ListHeader: FC<ListHeaderProps> = ({
   onAutomationSubFilterChange,
   moderationSubFilter,
   onModerationSubFilterChange,
-}: ListHeaderProps) => {
+}) => {
   const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
   const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
   const [editingInvite, setEditingInvite] = useState<InvitationLink | null>(null);
@@ -337,24 +337,30 @@ const ListHeader: FC<ListHeaderProps> = ({
                   selectedFilter={selectedAutomationSubFilter}
                   onFilterChange={handleAutomationFilterChange}
                 />
-              <div className={styles.controls}>
-                <Button
-                  variant="fill"
-                  intent="gradient"
-                  size="md"
-                  onClick={() => setIsTriggerModalOpen(true)}
-                >
-                  <span className={buttonStyles.label}>Создать триггер</span>
-                </Button>
-                <Button
-                  variant="fill"
-                  intent="gradient"
-                  size="md"
-                  onClick={() => setIsCommandModalOpen(true)}
-                >
-                  <span className={buttonStyles.label}>Создать команду</span>
-                </Button>
-              </div>
+              {automationSubFilter !== 'system_autoreply' && (
+                <div className={styles.controls}>
+                  {(automationSubFilter === null || automationSubFilter === 'system_trigger') && (
+                    <Button
+                      variant="fill"
+                      intent="gradient"
+                      size="md"
+                      onClick={() => setIsTriggerModalOpen(true)}
+                    >
+                      <span className={buttonStyles.label}>Создать триггер</span>
+                    </Button>
+                  )}
+                  {(automationSubFilter === null || automationSubFilter === 'bot_command') && (
+                    <Button
+                      variant="fill"
+                      intent="gradient"
+                      size="md"
+                      onClick={() => setIsCommandModalOpen(true)}
+                    >
+                      <span className={buttonStyles.label}>Создать команду</span>
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
           </DesktopWrapper>
           <MobileWrapper>
