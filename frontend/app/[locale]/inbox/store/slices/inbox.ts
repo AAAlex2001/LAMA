@@ -325,6 +325,7 @@ const inboxSlice = createSlice({
       .addCase(specificInboxActionThunk.fulfilled, (state, action) => {
         state.specificActionLoading = false;
         const { eventId, action_type } = action.payload;
+        if (action_type === 'reply') return;
         const item = state.items.find((i) => i.id === eventId);
         if (item) {
           item.status = action_type === 'block' ? 'banned' : 'processed';
