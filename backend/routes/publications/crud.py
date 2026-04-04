@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from typing import Optional, List, Literal
 
+from backend.services.publications.repeat_utils import local_range_to_utc
 from backend.schemas.publications.enums import PublicationStatus, ContentType
 from backend.schemas.publications.publication_base import PublicationCreate
 from backend.schemas.publications.publication_update import PublicationUpdate
@@ -81,12 +82,16 @@ async def get_publications(
     search: Optional[str] = None,
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
     date_mode: Optional[Literal["scheduled", "published"]] = Query("scheduled"),
+    tz: str = Query("UTC"),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
     skip = (page - 1) * page_size
+    q_start, q_end = start_date, end_date
+    if start_date and end_date and tz != "UTC":
+        q_start, q_end = local_range_to_utc(start_date, end_date, tz)
     publications = await query.get_publications_compact(
         owner_id=current_user.id,
         status=status,
@@ -95,8 +100,8 @@ async def get_publications(
         tag_names=tag_names,
         tag_ids=tag_ids,
         series_id=series_id,
-        start_date=start_date,
-        end_date=end_date,
+        start_date=q_start,
+        end_date=q_end,
         search=search,
         sort_order=sort_order,
         date_mode=date_mode,
@@ -104,11 +109,11 @@ async def get_publications(
         limit=page_size,
     )
     bot_messages = []
-    if start_date and end_date:
+    if q_start and q_end:
         bot_messages = await query.get_bot_messages_in_range(
             owner_id=current_user.id,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=q_start,
+            end_date=q_end,
         )
     return PublicationCompactListResponse(
         items=publications, page=page, page_size=page_size, bot_messages=bot_messages,
@@ -120,6 +125,7 @@ async def get_week_batch(
     start_date: datetime,
     end_date: datetime,
     per_day: int = Query(20, ge=1, le=50),
+    tz: str = Query("UTC"),
     query: PublicationQueryService = Depends(get_query_service),
     current_user: User = Depends(get_current_user),
 ):
@@ -128,6 +134,7 @@ async def get_week_batch(
         start_date=start_date,
         end_date=end_date,
         per_day=per_day,
+        tz=tz,
     )
 
 

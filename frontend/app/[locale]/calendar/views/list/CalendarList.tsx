@@ -12,6 +12,7 @@ interface CalendarListProps {
   isLoading: boolean;
   showInlineLoader?: boolean;
   onEdit: (post: Draft) => void;
+  onAddPost?: () => void;
 }
 
 export default function CalendarList({
@@ -19,6 +20,7 @@ export default function CalendarList({
   isLoading,
   showInlineLoader = false,
   onEdit,
+  onAddPost,
 }: CalendarListProps) {
   if (isLoading) {
     return (
@@ -40,7 +42,7 @@ export default function CalendarList({
           showArrow={false}
           active
           className={styles.emptyCreateBtn}
-          onClick={() => { window.location.href = '/create-post'; }}
+          onClick={onAddPost ?? (() => { window.location.href = '/create-post'; })}
         />
       </div>
     );

@@ -186,6 +186,7 @@ export default function CalendarMainContent({
               isLoading={isLoading}
               showInlineLoader={isLoadingMore}
               onEdit={onEdit}
+              onAddPost={() => onAddPost(selectedDate)}
             />
           </div>
 

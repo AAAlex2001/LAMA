@@ -25,7 +25,7 @@ from backend.schemas.publications.publication_response import (
     WeekBatchDay,
     WeekBatchResponse,
 )
-from backend.services.publications.repeat_utils import strip_tz, project_repeat_occurrences
+from backend.services.publications.repeat_utils import strip_tz, to_user_tz, local_range_to_utc, project_repeat_occurrences
 
 PUB_COMPACT_COLUMNS = [
     Publication.id,
@@ -225,15 +225,17 @@ class PublicationQueryService:
         start_date: datetime,
         end_date: datetime,
         per_day: int = 20,
+        tz: str = "UTC",
     ) -> WeekBatchResponse:
         """One query for all days in range, results bucketed by day."""
+        utc_start, utc_end = local_range_to_utc(start_date, end_date, tz)
 
         query = (
             select(Publication)
             .where(
                 Publication.owner_id == owner_id,
-                Publication.scheduled_time >= start_date,
-                Publication.scheduled_time <= end_date,
+                Publication.scheduled_time >= utc_start,
+                Publication.scheduled_time <= utc_end,
                 Publication.status.notin_([DBPublicationStatus.DELETED]),
             )
             .options(
@@ -250,7 +252,7 @@ class PublicationQueryService:
         day_post_ids: dict[str, set[int]] = {}
         for post in all_posts:
             if post.scheduled_time:
-                day_key = strip_tz(post.scheduled_time).strftime("%Y-%m-%d")
+                day_key = to_user_tz(post.scheduled_time, tz).strftime("%Y-%m-%d")
                 buckets.setdefault(day_key, []).append(post)
                 day_post_ids.setdefault(day_key, set()).add(post.id)
 
@@ -283,10 +285,10 @@ class PublicationQueryService:
                     buckets.setdefault(day_key, []).append(item)
                     day_post_ids.setdefault(day_key, set()).add(pub.id)
 
-        bot_messages = await self.get_bot_messages_in_range(owner_id, start_date, end_date)
+        bot_messages = await self.get_bot_messages_in_range(owner_id, utc_start, utc_end)
         bot_buckets: dict[str, list[BotMessageCompact]] = {}
         for msg in bot_messages:
-            day_key = strip_tz(msg.sent_at).strftime("%Y-%m-%d")
+            day_key = to_user_tz(msg.sent_at, tz).strftime("%Y-%m-%d") if msg.sent_at else strip_tz(msg.sent_at).strftime("%Y-%m-%d")
             bot_buckets.setdefault(day_key, []).append(msg)
 
         all_day_keys = set(buckets.keys()) | set(bot_buckets.keys())

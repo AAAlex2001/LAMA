@@ -24,6 +24,7 @@ import { selectPollData } from '../store/slices/quiz';
 import { usePublishHandlers } from '../hooks/usePublishHandlers';
 import { useCreatePostHandlers } from '../hooks/useCreatePostHandlers';
 import { useTokenFromUrl } from '../hooks/useTokenFromUrl';
+import { useDateFromUrl } from '../hooks/useDateFromUrl';
 import { usePostEditorChannelEffects } from '../hooks/usePostEditorChannelEffects';
 
 import type { RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
@@ -32,6 +33,7 @@ export default function CreatePostView() {
   const dispatch = useAppDispatch();
 
   useTokenFromUrl();
+  useDateFromUrl();
   usePostEditorChannelEffects();
 
   const headerRef = useRef<HTMLDivElement>(null);

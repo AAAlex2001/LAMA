@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import and_, case, func, select
+from sqlalchemy import and_, case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only
 
@@ -12,7 +12,7 @@ from backend.models.publications import (
 )
 from backend.models.bots import Bot, BotMessage
 from backend.schemas.publications.publication_response import DayCount
-from backend.services.publications.repeat_utils import strip_tz, project_repeat_occurrences
+from backend.services.publications.repeat_utils import strip_tz, local_range_to_utc, project_repeat_occurrences
 
 
 class CalendarService:
@@ -27,9 +27,11 @@ class CalendarService:
         end_date: datetime,
         owner_id: Optional[int] = None,
         mode: str = "scheduled",
+        tz: str = "UTC",
     ) -> List[DayCount]:
         """Считает публикации, повторы и бот-сообщения по дням."""
         normalized_mode = (mode or "scheduled").lower()
+        utc_start, utc_end = local_range_to_utc(start_date, end_date, tz)
 
         if normalized_mode == "published":
             date_field = Publication.published_time
@@ -40,11 +42,11 @@ class CalendarService:
             date_field = Publication.scheduled_time
             status_filter = Publication.status.notin_([DBPublicationStatus.DELETED])
 
-        date_expr = func.date(date_field)
+        date_expr = func.date(func.timezone(tz, date_field))
         filters = [
             date_field.isnot(None),
-            date_field >= start_date,
-            date_field <= end_date,
+            date_field >= utc_start,
+            date_field <= utc_end,
             status_filter,
         ]
         if owner_id is not None:
@@ -85,7 +87,7 @@ class CalendarService:
             )
 
         if owner_id is not None:
-            for dc in await self.project_repeats(start_date, end_date, owner_id):
+            for dc in await self.project_repeats(utc_start, utc_end, owner_id):
                 if dc.date in counts_map:
                     existing = counts_map[dc.date]
                     counts_map[dc.date] = DayCount(
@@ -98,7 +100,7 @@ class CalendarService:
                 else:
                     counts_map[dc.date] = dc
 
-            for bc in await self.count_bot_messages_per_day(start_date, end_date, owner_id):
+            for bc in await self.count_bot_messages_per_day(utc_start, utc_end, owner_id):
                 if bc.date in counts_map:
                     existing = counts_map[bc.date]
                     counts_map[bc.date] = DayCount(

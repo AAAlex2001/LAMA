@@ -16,6 +16,23 @@ def strip_tz(dt: datetime) -> datetime:
     return dt.replace(tzinfo=None) if dt.tzinfo else dt
 
 
+def to_user_tz(dt: datetime, tz: str = "UTC") -> datetime:
+    """Конвертирует datetime в timezone пользователя."""
+    from zoneinfo import ZoneInfo
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+    return dt.astimezone(ZoneInfo(tz))
+
+
+def local_range_to_utc(start: datetime, end: datetime, tz: str = "UTC") -> tuple[datetime, datetime]:
+    """Конвертирует локальный диапазон дат пользователя в UTC для SQL-фильтрации."""
+    from zoneinfo import ZoneInfo
+    user_zone = ZoneInfo(tz)
+    start_local = start.replace(tzinfo=user_zone)
+    end_local = end.replace(tzinfo=user_zone)
+    return start_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None), end_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None)
+
+
 def fast_forward_to(
     current: datetime,
     target: datetime,
