@@ -214,7 +214,7 @@ const ListElement: FC<ListElementProps> = ({
     const btnClass = `${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`;
     const btnWidth = isMobile ? '100%' : '150px';
     const status = blockStatus?.status;
-    const isBanned = item.status === 'banned' || status === 'banned';
+    const isBanned = item.status === 'banned' || status === 'banned' || status === 'blocked';
     const isBusy = loadingAction !== null;
 
     if (isBanned){

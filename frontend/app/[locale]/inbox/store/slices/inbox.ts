@@ -324,10 +324,10 @@ const inboxSlice = createSlice({
       })
       .addCase(specificInboxActionThunk.fulfilled, (state, action) => {
         state.specificActionLoading = false;
-        const { eventId } = action.payload;
+        const { eventId, action_type } = action.payload;
         const item = state.items.find((i) => i.id === eventId);
         if (item) {
-          item.status = 'processed';
+          item.status = action_type === 'block' ? 'banned' : 'processed';
           item.is_new = false;
         }
       })
