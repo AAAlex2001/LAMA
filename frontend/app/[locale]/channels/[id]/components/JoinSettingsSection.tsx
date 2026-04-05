@@ -528,30 +528,44 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
               {welcome.enabled && (
                 <div className={styles.welcomeSection}>
-                  <div
-                    className={styles.pickerRow}
-                    onClick={() => setOpenPicker(openPicker === 'welcomeType' ? null : 'welcomeType')}
-                  >
-                    <span className={styles.pickerLabel}>Тип приветствия</span>
-                    <div className={styles.pickerRight}>
-                      <span className={styles.pickerValueText}>{welcomeTypeSummary}</span>
-                      <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'welcomeType' ? styles.pickerChevronOpen : ''}`} />
-                    </div>
-                  </div>
-                  {openPicker === 'welcomeType' && (
-                    <div className={styles.pickerOptions}>
-                      {WELCOME_TYPE_OPTIONS.map((opt) => (
-                        <div key={opt.value} className={styles.checkboxRow} onClick={() => handleWelcomeTypeSelect(opt.value)}>
-                          <Checkbox
-                            variant="radio"
-                            checked={opt.value === welcome.welcomeType}
-                            onChange={() => handleWelcomeTypeSelect(opt.value)}
-                            label={opt.label}
-                          />
+                  <div className={styles.welcomeTypeRow}>
+                    <div className={styles.welcomeTypePickerWrap}>
+                      <div
+                        className={styles.pickerRow}
+                        onClick={() => setOpenPicker(openPicker === 'welcomeType' ? null : 'welcomeType')}
+                      >
+                        <span className={styles.pickerLabel}>Тип приветствия</span>
+                        <div className={styles.pickerRight}>
+                          <span className={styles.pickerValueText}>{welcomeTypeSummary}</span>
+                          <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'welcomeType' ? styles.pickerChevronOpen : ''}`} />
                         </div>
-                      ))}
+                      </div>
+                      {openPicker === 'welcomeType' && (
+                        <div className={styles.pickerOptions}>
+                          {WELCOME_TYPE_OPTIONS.map((opt) => (
+                            <div key={opt.value} className={styles.checkboxRow} onClick={() => handleWelcomeTypeSelect(opt.value)}>
+                              <Checkbox
+                                variant="radio"
+                                checked={opt.value === welcome.welcomeType}
+                                onChange={() => handleWelcomeTypeSelect(opt.value)}
+                                label={opt.label}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    <button
+                      type="button"
+                      className={`${styles.addMessageBtn} ${hasWelcomeMessage ? styles.addMessageBtnDisabled : ''}`}
+                      onClick={() => !hasWelcomeMessage && dispatch(setWelcomeModalOpen(true))}
+                      disabled={hasWelcomeMessage}
+                    >
+                      <PlusIcon width={16} height={16} color={hasWelcomeMessage ? '#B0B4B8' : '#3B82F6'} />
+                      Сообщение
+                    </button>
+                  </div>
 
                   {isForum && welcome.welcomeType === 'group_message' && welcome.topics.length > 0 && (
                     <>
@@ -581,16 +595,6 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                       )}
                     </>
                   )}
-
-                  <button
-                    type="button"
-                    className={`${styles.addMessageBtn} ${hasWelcomeMessage ? styles.addMessageBtnDisabled : ''}`}
-                    onClick={() => !hasWelcomeMessage && dispatch(setWelcomeModalOpen(true))}
-                    disabled={hasWelcomeMessage}
-                  >
-                    <PlusIcon width={16} height={16} color={hasWelcomeMessage ? '#B0B4B8' : '#3B82F6'} />
-                    Сообщение
-                  </button>
 
                   {hasWelcomeMessage && (
                     <div className={styles.messageCard}>

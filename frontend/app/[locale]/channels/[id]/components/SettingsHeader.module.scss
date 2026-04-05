@@ -3,6 +3,7 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+  min-width: 0;
 
   @media (min-width: 1440px) {
     flex-direction: row;
@@ -72,9 +73,4 @@
 }
 
 .tabs {
-  @media (min-width: 1440px) {
-    span {
-      flex: none !important;
-    }
-  }
 }
