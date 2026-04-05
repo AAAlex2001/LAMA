@@ -4,15 +4,28 @@ import { useEffect } from 'react';
 import { WheelPicker } from '@/components/wheel-picker';
 import styles from './time-picker.module.scss';
 
+export interface QuickTime {
+  label: string;
+  hours: number;
+  minutes: number;
+}
+
 interface TimePickerProps {
   hours: number;
   minutes: number;
   onHoursChange: (hours: number) => void;
   onMinutesChange: (minutes: number) => void;
   selectedDate?: Date | null;
+  quickTimes?: QuickTime[];
   notShowQuickTimes?: boolean;
   notShowHint?: boolean;
 }
+
+const DEFAULT_QUICK_TIMES: QuickTime[] = [
+  { label: '20:00', hours: 20, minutes: 0 },
+  { label: '15:00', hours: 15, minutes: 0 },
+  { label: '13:30', hours: 13, minutes: 30 },
+];
 
 function isSameDay(a: Date, b: Date): boolean {
   return (
@@ -28,6 +41,7 @@ export default function TimePicker({
   onHoursChange,
   onMinutesChange,
   selectedDate,
+  quickTimes,
   notShowQuickTimes = false,
   notShowHint = false,
 }: TimePickerProps) {
@@ -45,11 +59,7 @@ export default function TimePicker({
     if (minutes < minMinutes) onMinutesChange(minMinutes);
   }, [minutes, minMinutes, onMinutesChange]);
 
-  const quickTimes = [
-    { label: '20:00', hours: 20, minutes: 0 },
-    { label: '15:00', hours: 15, minutes: 0 },
-    { label: '13:30', hours: 13, minutes: 30 },
-  ];
+  const times = quickTimes ?? DEFAULT_QUICK_TIMES;
 
   const handleQuickTime = (h: number, m: number) => {
     onHoursChange(h);
@@ -81,10 +91,10 @@ export default function TimePicker({
           </div>
         </div>
       </div>
-      {!notShowQuickTimes && 
+      {!notShowQuickTimes && times.length > 0 &&
         <div className={styles.quickTimeButtons}>
           <div className={styles.quickTimeButtonsRow}>
-            {quickTimes.map((time) => (
+            {times.map((time) => (
               <button
                 key={time.label}
                 className={styles.quickTimeButton}

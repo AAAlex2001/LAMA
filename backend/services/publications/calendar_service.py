@@ -116,6 +116,22 @@ class CalendarService:
 
         return list(counts_map.values())
 
+    async def get_recent_times(self, owner_id: int, tz: str = "UTC", limit: int = 5) -> List[str]:
+        time_expr = func.to_char(func.timezone(tz, Publication.scheduled_time), "HH24:MI")
+        query = (
+            select(time_expr.label("t"), func.count().label("cnt"))
+            .where(
+                Publication.owner_id == owner_id,
+                Publication.scheduled_time.isnot(None),
+                Publication.status.notin_([DBPublicationStatus.DELETED]),
+            )
+            .group_by(time_expr)
+            .order_by(func.count().desc())
+            .limit(limit)
+        )
+        result = await self.db.execute(query)
+        return [row[0] for row in result.all()]
+
     async def count_bot_messages_per_day(
         self,
         start_date: datetime,

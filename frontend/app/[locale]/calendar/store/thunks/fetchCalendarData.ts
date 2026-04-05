@@ -153,10 +153,10 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       ? `${s.listRangeStart}_${s.listRangeEnd}`
       : getRangeForView(view, date).key;
 
-    const allItems = [
-      ...res.items,
-      ...(res.bot_messages ?? []).map(botMessageToDraft),
-    ];
+    const botItems = (res.bot_messages ?? []).map(botMessageToDraft);
+    const allItems = view === 'list'
+      ? res.items
+      : [...res.items, ...botItems];
 
     const total = getCountsTotal(countsRes);
 

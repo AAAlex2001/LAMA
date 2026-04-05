@@ -4,7 +4,7 @@ import { useState } from 'react';
 import styles from '../repeat.module.scss';
 import Checkbox from '@/components/checkbox/checkbox';
 import { ChevronDownIcon } from '@/components/icons';
-import TimePicker from '@/components/time-picker/time-picker';
+import { TimePicker, useRecentTimes } from '@/components/time-picker';
 
 type PublishTimeType = 'from_publish' | 'exact_time';
 
@@ -27,6 +27,7 @@ export default function PublishTimeSelector({
 }: PublishTimeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  const recentTimes = useRecentTimes();
   const displayText = value === 'from_publish' ? 'С момента публ.' : 'Точное время';
 
   return (
@@ -77,6 +78,7 @@ export default function PublishTimeSelector({
             minutes={minutes}
             onHoursChange={onHoursChange}
             onMinutesChange={onMinutesChange}
+            quickTimes={recentTimes}
           />
         </div>
       )}

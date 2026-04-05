@@ -1,7 +1,7 @@
 'use client';
 
 import DatePicker from './date-picker';
-import { TimePicker } from '../time-picker';
+import { TimePicker, useRecentTimes } from '../time-picker';
 import styles from './date-picker-modal.module.scss';
 import Button from '../button/button';
 import type { DatePickerModalProps } from '@/types/post';
@@ -18,6 +18,8 @@ export default function DatePickerModal({
   onClose,
   isLoading = false,
 }: DatePickerModalProps) {
+  const recentTimes = useRecentTimes();
+
   const handleSchedule = async () => {
     if (!selectedDate) return;
     const scheduledDateTime = new Date(selectedDate);
@@ -44,6 +46,7 @@ export default function DatePickerModal({
             onHoursChange={onHoursChange}
             onMinutesChange={onMinutesChange}
             selectedDate={selectedDate}
+            quickTimes={recentTimes}
           />
         </div>
         <div className={styles.buttonWrapper}>
