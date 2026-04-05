@@ -177,6 +177,10 @@ class MessageHandler:
         if not message.reply_to_message:
             return None
 
+        reply_sender = message.reply_to_message.sender_chat
+        if not reply_sender or reply_sender.type != "channel":
+            return None
+
         try:
             chat_id = message.chat.id
             query = select(ChannelGroup).where(
