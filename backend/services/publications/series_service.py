@@ -259,3 +259,27 @@ class SeriesService:
             total_count=len(results),
             publication_id=publication.id,
         )
+
+    async def delete_series(self, series_id: int) -> int:
+        from backend.celery.tasks import delete_publication_messages
+
+        series = await self.get_series(series_id)
+        if not series:
+            raise HTTPException(status_code=404, detail="Series not found")
+
+        publications = await self.get_series_publications(series_id)
+        deleted_count = 0
+
+        published_statuses = {DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS}
+
+        for pub in publications:
+            if pub.status in published_statuses:
+                delete_publication_messages.apply_async(args=[pub.id], queue="default")
+            else:
+                await self.db.delete(pub)
+            deleted_count += 1
+
+        await self.db.delete(series)
+        await self.db.flush()
+
+        return deleted_count

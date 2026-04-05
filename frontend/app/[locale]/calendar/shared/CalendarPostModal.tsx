@@ -21,7 +21,7 @@ interface CalendarPostModalProps {
   onPreview: () => void;
   onShare: () => void;
   onDelete: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
 }
 
 function isImageUrl(url: string): boolean {

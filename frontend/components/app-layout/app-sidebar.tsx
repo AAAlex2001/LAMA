@@ -54,9 +54,12 @@ export default function AppSidebar() {
   const isActive = (item: SidebarItem) => {
     if (!item.href) return false;
     if (item.id === 'drafts') {
-      return pathname.startsWith(item.href) || 
-             pathname.includes('/create-draft') || 
+      return pathname.startsWith(item.href) ||
+             pathname.includes('/create-draft') ||
              pathname.includes('/edit-draft');
+    }
+    if (item.id === 'create-post') {
+      return pathname.startsWith(item.href) || pathname.includes('/edit-post');
     }
     return pathname.startsWith(item.href);
   };

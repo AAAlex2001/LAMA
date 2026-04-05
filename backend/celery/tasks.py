@@ -107,13 +107,20 @@ async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
         if pub and pub.series_id:
             is_series = True
             owner_id = pub.owner_id
-            next_id = (await db.execute(
-                select(Publication.id).where(
+            row = (await db.execute(
+                select(Publication.id, Publication.scheduled_time).where(
                     Publication.series_id == pub.series_id,
                     Publication.series_order == pub.series_order + 1,
                     Publication.status == DBPublicationStatus.SCHEDULED,
                 )
-            )).scalar_one_or_none()
+            )).one_or_none()
+            if row:
+                next_scheduled = row.scheduled_time
+                now = datetime.now(timezone.utc)
+                if next_scheduled and next_scheduled > now:
+                    next_id = None
+                else:
+                    next_id = row.id
 
         await db.commit()
 

@@ -9,6 +9,7 @@ import DraftsModalConnected from '../DraftsModalConnected';
 import PostPreviewModalConnected from '../PostPreviewModalConnected';
 import ReplyModalConnected from '../ReplyModalConnected';
 import TemplatesModalConnected from '../TemplatesModalConnected';
+import SeriesScheduleModalConnected from '../SeriesScheduleModalConnected';
 
 type Props = {
   editorRef: RefObject<RichTextEditorRef | null>;
@@ -23,6 +24,7 @@ export function PostEditorSharedModals({ editorRef, datePickerRedirectToDrafts }
       <TemplatesModalConnected editorRef={editorRef} />
       <ReplyModalConnected />
       <DatePickerModalConnected redirectToDraftsOnSuccess={datePickerRedirectToDrafts} />
+      <SeriesScheduleModalConnected />
     </>
   );
 }

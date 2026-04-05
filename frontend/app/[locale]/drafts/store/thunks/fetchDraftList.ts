@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState } from '../index';
 import type { DraftListResponse } from '@/types/post';
 import { apiRequest } from '@/store/api';
+import { groupSeriesPosts } from '@/app/[locale]/calendar/utils/groupSeries';
 import {
   setDrafts,
   appendDrafts,
@@ -48,7 +49,7 @@ export const fetchDrafts = createAsyncThunk(
         return response.items;
       }
 
-      dispatch(setDrafts(response.items));
+      dispatch(setDrafts(groupSeriesPosts(response.items)));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(1));
       return response.items;
@@ -81,7 +82,7 @@ export const fetchMoreDrafts = createAsyncThunk(
       const response = await apiRequest<DraftListResponse>(
         `/publications?${queryParams}`,
       );
-      dispatch(appendDrafts(response.items));
+      dispatch(appendDrafts(groupSeriesPosts(response.items)));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
       dispatch(setPage(nextPage));
       return response.items;

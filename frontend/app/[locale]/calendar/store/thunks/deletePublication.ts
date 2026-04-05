@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/store/api';
 import { removeItem } from '../slices/calendar';
 import { fetchCalendarData } from './fetchCalendarData';
+import type { RootState, AppDispatch } from '../index';
 
 export const deletePublication = createAsyncThunk<
   void,
@@ -17,9 +18,22 @@ export const deletePublication = createAsyncThunk<
   },
 );
 
+export const deleteSeries = createAsyncThunk<
+  void,
+  { seriesId: number },
+  { state: RootState; dispatch: AppDispatch }
+>(
+  'calendar/deleteSeries',
+  async ({ seriesId }, { dispatch }) => {
+    await apiRequest(`/publications/series/${seriesId}`, { method: 'DELETE' });
+    dispatch(fetchCalendarData());
+  },
+);
+
 export const deleteRepeatPublication = createAsyncThunk<
   void,
-  { id: number; mode: 'this' | 'this_and_following'; repeatDate?: string }
+  { id: number; mode: 'this' | 'this_and_following'; repeatDate?: string },
+  { state: RootState; dispatch: AppDispatch }
 >(
   'calendar/deleteRepeatPublication',
   async ({ id, mode, repeatDate }, { dispatch }) => {

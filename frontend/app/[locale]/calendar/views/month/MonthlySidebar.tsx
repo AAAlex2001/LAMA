@@ -108,6 +108,8 @@ export default function MonthlySidebar({
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
 
+                const isSeries = (post.series_count ?? 0) > 1;
+
                 return (
                   <div
                     key={post.id}
@@ -128,6 +130,7 @@ export default function MonthlySidebar({
                       {preview || '(без текста)'}
                     </span>
                     {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
+                    {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
                   </div>
                 );
               })

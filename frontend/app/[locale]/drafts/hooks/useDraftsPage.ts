@@ -22,7 +22,7 @@ export function useDraftsPage() {
   const isLoadingMore = useAppSelector((state) => state.drafts.isLoadingMore);
   const hasMore = useAppSelector((state) => state.drafts.hasMore);
   const sortOrder = useAppSelector((state) => state.drafts.sortOrder);
-  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteConfirmDraft, setDeleteConfirmDraft] = useState<Draft | null>(null);
   const [previewDraft, setPreviewDraft] = useState<Draft | null>(null);
   const [openSort, setOpenSort] = useState<SortKey>(null);
   const defaultSortByDate = 'Сначала новые';
@@ -85,11 +85,20 @@ export function useDraftsPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [openSort, mobileFilterOpen]);
 
-  function confirmDelete() {
-    if (deleteConfirmId !== null) {
-      dispatch(deleteDraftThunk(deleteConfirmId)).then(() => showSuccess('Черновик удалён'));
-      setDeleteConfirmId(null);
+  async function confirmDelete() {
+    if (!deleteConfirmDraft) return;
+    if (deleteConfirmDraft.series_id) {
+      try {
+        await apiRequest(`/publications/series/${deleteConfirmDraft.series_id}`, { method: 'DELETE' });
+        dispatch(fetchDrafts({ tagIds: selectedTagIds }));
+        showSuccess('Серия черновиков удалена');
+      } catch {
+        // ignore
+      }
+    } else {
+      dispatch(deleteDraftThunk(deleteConfirmDraft.id)).then(() => showSuccess('Черновик удалён'));
     }
+    setDeleteConfirmDraft(null);
   }
 
   const previewData = previewDraft ? buildDraftPreviewPayload(previewDraft) : null;
@@ -147,8 +156,8 @@ export function useDraftsPage() {
     isLoading,
     isLoadingMore,
     hasMore,
-    deleteConfirmId,
-    setDeleteConfirmId,
+    deleteConfirmDraft,
+    setDeleteConfirmDraft,
     previewDraft,
     setPreviewDraft,
     openSort,

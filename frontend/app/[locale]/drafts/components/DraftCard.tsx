@@ -61,6 +61,7 @@ export default function DraftCard({
   const { time, date } = formatDraftDate(draft.updated_at || draft.created_at);
   const previewHtml = getDraftPreviewHtml(draft);
   const thumbnail = getThumbnail(draft);
+  const isSeries = (draft.series_count ?? 0) > 1;
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -82,6 +83,7 @@ export default function DraftCard({
         <div className={styles.dateRow}>
           <span className={styles.time}>{time}</span>
           <span className={styles.date}>{date}</span>
+          {isSeries && <span className={styles.seriesBadge}>Серия · {draft.series_count}</span>}
         </div>
 
         {draft.tags && draft.tags.length > 0 && (

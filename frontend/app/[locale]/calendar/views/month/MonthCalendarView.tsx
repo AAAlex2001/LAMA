@@ -114,6 +114,7 @@ export default function MonthCalendarView({
               const sourceDate = getSourceDate(post);
               const time = formatTime(sourceDate);
               const preview = getPreviewText(post);
+              const isSeries = (post.series_count ?? 0) > 1;
               return (
                 <div
                   key={post.id}
@@ -130,6 +131,7 @@ export default function MonthCalendarView({
                   <span className={styles.postTime}>{time}</span>
                   <span className={styles.postPreview}>{preview || '(без текста)'}</span>
                   {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
+                  {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
                 </div>
               );
             })

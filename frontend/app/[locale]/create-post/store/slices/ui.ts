@@ -8,8 +8,9 @@ interface UiState {
   showTemplatesModal: boolean;
   showReplyModal: boolean;
   showDatePickerModal: boolean;
+  showSeriesScheduleModal: boolean;
   replyChannelId: number | null;
-  
+
   isPublishing: boolean;
   isSavingDraft: boolean;
   isScheduling: boolean;
@@ -25,8 +26,9 @@ const initialState: UiState = {
   showTemplatesModal: false,
   showReplyModal: false,
   showDatePickerModal: false,
+  showSeriesScheduleModal: false,
   replyChannelId: null,
-  
+
   isPublishing: false,
   isSavingDraft: false,
   isScheduling: false,
@@ -58,6 +60,9 @@ const uiSlice = createSlice({
     },
     setShowDatePickerModal(state, action: PayloadAction<boolean>) {
       state.showDatePickerModal = action.payload;
+    },
+    setShowSeriesScheduleModal(state, action: PayloadAction<boolean>) {
+      state.showSeriesScheduleModal = action.payload;
     },
     setReplyChannelId(state, action: PayloadAction<number | null>) {
       state.replyChannelId = action.payload;
@@ -93,6 +98,7 @@ export const {
   setShowTemplatesModal,
   setShowReplyModal,
   setShowDatePickerModal,
+  setShowSeriesScheduleModal,
   setReplyChannelId,
   setIsPublishing,
   setIsSavingDraft,

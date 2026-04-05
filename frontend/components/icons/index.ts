@@ -47,6 +47,7 @@ export { default as SortClearIcon } from './sort-clear-icon';
 export { default as FilterSortIcon } from './filter-sort-icon';
 export { default as PostIcon } from './post-icon';
 export { default as CalendarIcon } from './calendar-icon';
+export { default as ClockIcon } from './clock-icon';
 export { default as ChannelsIcon } from './channels-icon';
 export { default as BotsIcon } from './bots-icon';
 export { default as InboxIcon } from './inbox-icon';

@@ -41,7 +41,7 @@ import {
   selectSidebarPosts,
   selectMonthStatusCounts,
 } from '../store';
-import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts, deletePublication, deleteRepeatPublication } from '../store/thunks';
+import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts, deletePublication, deleteSeries, deleteRepeatPublication } from '../store/thunks';
 import { navigateStep, sidebarDateChange } from '../store/thunks/navigation';
 import { getPreviewData } from '../utils/previewData';
 import {
@@ -230,7 +230,13 @@ export default function CalendarPageConnected() {
 
   function handleEditFromModal() {
     if (!selectedPost) return;
-    window.location.href = `/edit-draft?draft=${selectedPost.id}`;
+    const isDraft = selectedPost.status === 'draft';
+    const isScheduled = selectedPost.status === 'scheduled';
+    if (isDraft) {
+      window.location.href = `/edit-draft?draft=${selectedPost.id}`;
+    } else if (isScheduled) {
+      window.location.href = `/edit-post?post=${selectedPost.id}`;
+    }
   }
 
   function handleDeleteFromModal() {
@@ -246,9 +252,13 @@ export default function CalendarPageConnected() {
 
   async function confirmDelete() {
     if (!deleteConfirmPost) return;
-    const isPublished = deleteConfirmPost.status === 'published' || deleteConfirmPost.status === 'partial_success';
     try {
-      await dispatch(deletePublication({ id: deleteConfirmPost.id, deleteFromChannel: isPublished })).unwrap();
+      if (deleteConfirmPost.series_id) {
+        await dispatch(deleteSeries({ seriesId: deleteConfirmPost.series_id })).unwrap();
+      } else {
+        const isPublished = deleteConfirmPost.status === 'published' || deleteConfirmPost.status === 'partial_success';
+        await dispatch(deletePublication({ id: deleteConfirmPost.id, deleteFromChannel: isPublished })).unwrap();
+      }
       setDeleteConfirmPost(null);
       showSuccess('Публикация удалена');
     } catch (error) {
@@ -413,19 +423,21 @@ export default function CalendarPageConnected() {
         onPreview={handlePreviewFromModal}
         onShare={handleShareFromModal}
         onDelete={handleDeleteFromModal}
-        onEdit={handleEditFromModal}
+        onEdit={selectedPost?.status === 'draft' || selectedPost?.status === 'scheduled' ? handleEditFromModal : undefined}
       />
 
       <Modal
         isOpen={!!deleteConfirmPost}
         onClose={() => setDeleteConfirmPost(null)}
         onConfirm={confirmDelete}
-        title="Удалить публикацию?"
+        title={deleteConfirmPost?.series_id ? 'Удалить серию?' : 'Удалить публикацию?'}
         confirmText="Удалить"
         cancelText="Отмена"
       >
         <p style={{ margin: 0, fontSize: 14, lineHeight: '20px', color: '#0D0D0D' }}>
-          {deleteConfirmPost?.status === 'published' || deleteConfirmPost?.status === 'partial_success'
+          {deleteConfirmPost?.series_id
+            ? 'Все посты серии будут удалены. Опубликованные посты будут также удалены из каналов в Telegram. Это действие нельзя отменить.'
+            : deleteConfirmPost?.status === 'published' || deleteConfirmPost?.status === 'partial_success'
             ? 'Публикация будет удалена из календаря и из канала в Telegram. Это действие нельзя отменить.'
             : 'Публикация будет удалена. Это действие нельзя отменить.'}
         </p>

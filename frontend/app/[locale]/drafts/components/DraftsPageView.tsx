@@ -38,8 +38,8 @@ export default function DraftsPageView() {
     drafts,
     isLoading,
     isLoadingMore,
-    deleteConfirmId,
-    setDeleteConfirmId,
+    deleteConfirmDraft,
+    setDeleteConfirmDraft,
     previewDraft,
     setPreviewDraft,
     openSort,
@@ -197,15 +197,15 @@ export default function DraftsPageView() {
             hasTagFilter={selectedTagIds.length > 0}
             onPreview={(draft) => setPreviewDraft(draft)}
             onShare={handleShare}
-            onDelete={(draft) => setDeleteConfirmId(draft.id)}
+            onDelete={(draft) => setDeleteConfirmDraft(draft)}
             onEdit={handleEdit}
           />
         )}
       </div>
 
       <DraftsDialogs
-        deleteConfirmId={deleteConfirmId}
-        onCloseDelete={() => setDeleteConfirmId(null)}
+        deleteConfirmId={deleteConfirmDraft?.id ?? null}
+        onCloseDelete={() => setDeleteConfirmDraft(null)}
         onConfirmDelete={confirmDelete}
         previewData={previewData}
         isPreviewOpen={!!previewDraft}

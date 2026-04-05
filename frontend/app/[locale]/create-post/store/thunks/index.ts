@@ -1,5 +1,6 @@
 export { publishNow } from './publish';
 export { publishSeries } from './publishSeries';
+export { scheduleSeries } from './scheduleSeries';
 export { saveDraft } from './draft';
 export { schedulePost } from './schedule';
 export { saveAsTemplate } from './template';
@@ -9,3 +10,4 @@ export { fetchChannelsThunk, addChannelThunk, deleteChannelThunk } from './chann
 export { fetchDrafts, fetchMoreDrafts, deleteDraftThunk, searchDrafts } from './draftsModal';
 export { fetchTemplates, fetchMoreTemplates, updateTemplateThunk, deleteTemplateThunk, searchTemplates } from './templatesModal';
 export { fetchPosts, fetchMorePosts, getPostById, searchPosts } from './replyToPostModal';
+export { updatePost, moveToDraft } from './updatePost';

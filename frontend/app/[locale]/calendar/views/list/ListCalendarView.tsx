@@ -211,6 +211,8 @@ export default function ListCalendarView({
             const views = post.views_count ?? post.views;
             const reactions = post.reactions_count ?? post.likes_count;
 
+            const isSeries = (post.series_count ?? 0) > 1;
+
             return (
               <div
                 key={post.id}
@@ -249,6 +251,7 @@ export default function ListCalendarView({
                   {post.is_bot_message && <CalendarBotMessageIcon width={14} height={14} />}
                   <span className={styles.status}>{getStatusLabel(post.status)}</span>
                   {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} color="#3B82F6" />}
+                  {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
                 </div>
 
                 <div className={styles.stats}>

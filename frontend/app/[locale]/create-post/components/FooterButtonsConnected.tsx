@@ -19,6 +19,7 @@ interface FooterButtonsConnectedProps {
   onPublishNow: () => void;
   onPublishSeries: () => void;
   hasMultiplePosts: boolean;
+  isLastPost: boolean;
   onRemovePost: (index: number) => void;
 }
 
@@ -33,6 +34,7 @@ export default function FooterButtonsConnected({
   onPublishNow,
   onPublishSeries,
   hasMultiplePosts,
+  isLastPost,
   onRemovePost,
 }: FooterButtonsConnectedProps) {
   const dispatch = useAppDispatch();
@@ -46,6 +48,8 @@ export default function FooterButtonsConnected({
   const selectedChannels = useAppSelector(selectSelectedChannels);
 
   const canDeleteFromSeries = snapshots.length > 1;
+
+  const showPublishButtons = !hasMultiplePosts || isLastPost;
 
   return (
     <div className={className}>
@@ -79,27 +83,35 @@ export default function FooterButtonsConnected({
           />
         )}
       </div>
-      <div className={publishRowClassName}>
-        <Button
-          text="Опубликовать сейчас"
-          showArrow={false}
-          className={publishNowBtnClassName}
-          onClick={() => {
-            hasMultiplePosts ? onPublishSeries() : onPublishNow();
-          }}
-          loading={isPublishing}
-          disabled={isPublishing}
-        />
-        <Button
-          text="Запланировать"
-          showArrow={false}
-          active
-          loading={isScheduling}
-          disabled={isScheduling}
-          className={scheduleBtnClassName}
-          onClick={() => dispatch(uiSlice.setShowDatePickerModal(true))}
-        />
-      </div>
+      {showPublishButtons && (
+        <div className={publishRowClassName}>
+          <Button
+            text="Опубликовать сейчас"
+            showArrow={false}
+            className={publishNowBtnClassName}
+            onClick={() => {
+              hasMultiplePosts ? onPublishSeries() : onPublishNow();
+            }}
+            loading={isPublishing}
+            disabled={isPublishing}
+          />
+          <Button
+            text="Запланировать"
+            showArrow={false}
+            active
+            loading={isScheduling}
+            disabled={isScheduling}
+            className={scheduleBtnClassName}
+            onClick={() => {
+              if (hasMultiplePosts) {
+                dispatch(uiSlice.setShowSeriesScheduleModal(true));
+              } else {
+                dispatch(uiSlice.setShowDatePickerModal(true));
+              }
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

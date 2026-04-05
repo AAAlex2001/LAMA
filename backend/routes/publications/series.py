@@ -34,3 +34,12 @@ async def update_series(
     service: SeriesService = Depends(get_series_service),
 ):
     return await service.update_series(series_id, data)
+
+
+@router.delete("/{series_id}")
+async def delete_series(
+    series_id: int,
+    service: SeriesService = Depends(get_series_service),
+):
+    deleted_count = await service.delete_series(series_id)
+    return {"deleted_count": deleted_count}

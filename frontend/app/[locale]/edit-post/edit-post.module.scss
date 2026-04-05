@@ -31,7 +31,7 @@
   }
 }
 
-.draftsHeaderWrapper {
+.editHeaderWrapper {
   display: flex;
   justify-content: flex-end;
   width: 100%;
@@ -44,12 +44,8 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .contentReady {
@@ -87,12 +83,83 @@
   width: 100%;
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 16px;
+  padding: 24px;
   box-sizing: border-box;
 
   @media (min-width: 1440px) {
     min-height: 643px;
   }
+}
+
+.dateTimeRow {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+
+  @media (min-width: 768px) {
+    flex-direction: row;
+    gap: 8px;
+  }
+}
+
+.dateInputWrapper,
+.timeInputWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.dateInput,
+.timeInput {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 16px;
+  background: #F8FAFF;
+  border: 1px solid rgba(59, 130, 246, 0.15);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+  user-select: none;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 2px 12px rgba(1, 42, 249, 0.08);
+  }
+}
+
+.dateInputText,
+.timeInputText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #0D0D0D;
+}
+
+.datePickerDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 12px;
+}
+
+.timePickerDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  padding: 16px;
 }
 
 .header {
@@ -123,7 +190,6 @@
 }
 
 .linkPreviewLabel {
-  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -225,7 +291,6 @@
   padding: 0;
   gap: 10px;
   width: 100%;
-  
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -271,7 +336,6 @@
 }
 
 .dropzoneText {
-  
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
@@ -287,7 +351,7 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   padding: 0;
   gap: 10px;
   width: 100%;
@@ -295,11 +359,34 @@
 
   @media (min-width: 1440px) {
     flex-wrap: nowrap;
-    justify-content: space-between;
-    align-items: flex-end;
-    gap: 0;
-    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+}
+
+.deleteSeriesBtn {
+  display: flex !important;
+  height: 37px;
+  order: 0;
+
+  button, a {
     height: 37px;
+    justify-content: center;
+    padding: 10px 16px;
+    white-space: nowrap;
+  }
+}
+
+.moveToDraftBtn {
+  display: flex !important;
+  height: 37px;
+  order: 1;
+
+  button, a {
+    height: 37px;
+    justify-content: center;
+    padding: 10px 16px;
+    white-space: nowrap;
   }
 }
 
@@ -309,39 +396,8 @@
   align-items: center;
   padding: 0;
   gap: 8px;
-  width: 100%;
-  order: 3;
-
-  @media (min-width: 1440px) {
-    flex: none;
-    width: auto;
-    order: 2;
-  }
-}
-
-.saveBtn {
-  display: flex !important;
-  flex: 1 1 calc(100% - 47px);
-  margin: 0;
-  height: 37px;
-  order: 0;
-
-  button, a {
-    width: 100%;
-    height: 37px;
-    justify-content: center;
-    padding: 10px;
-  }
-
-  @media (min-width: 1440px) {
-    flex: 0 0 172px;
-    order: 0;
-
-    button, a {
-      width: 172px;
-      white-space: nowrap;
-    }
-  }
+  margin-left: auto;
+  order: 2;
 }
 
 .shareBtn {
@@ -361,11 +417,6 @@
   transition: all 0.15s ease;
   position: relative;
   flex-shrink: 0;
-  order: 1;
-
-  @media (min-width: 1440px) {
-    display: none;
-  }
 
   &:hover {
     background: #EBF2FE;
@@ -376,188 +427,15 @@
   }
 }
 
-.shareBtnDesktop {
-  box-sizing: border-box;
-  display: none;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  gap: 10px;
-  width: 37px;
-  height: 37px;
-  border: 1px solid rgba(176, 180, 184, 0.2);
-  border-radius: 8px;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
-  flex-shrink: 0;
-
-  @media (min-width: 1440px) {
-    display: flex;
-  }
-
-  &:hover {
-    background: #EBF2FE;
-
-    svg path {
-      fill: #3B82F6;
-    }
-  }
-}
-
-.publishBtn {
+.saveBtn {
   display: flex !important;
-  flex: 1;
-  margin: 0;
   height: 37px;
 
   button, a {
-    width: 100%;
     height: 37px;
     justify-content: center;
-    padding: 10px;
-  }
-
-  @media (min-width: 1440px) {
-    flex: 0 0 170px;
-
-    button, a {
-      width: 170px;
-      white-space: nowrap;
-    }
-  }
-}
-
-.scheduleBtn {
-  display: flex !important;
-  flex: 1;
-  margin: 0;
-  height: 37px;
-
-  button, a {
-    width: 100%;
-    height: 37px;
-    justify-content: center;
-    padding: 10px;
-  }
-
-  @media (min-width: 1440px) {
-    flex: 0 0 125px;
-
-    button, a {
-      width: 125px;
-      white-space: nowrap;
-    }
-  }
-}
-
-.shareModal {
-  > div > div {
-    width: 397px;
-  }
-
-  h2 {
-    font-weight: 600 !important;
-    font-size: 16px !important;
-    line-height: 19px !important;
-    color: #000000 !important;
-  }
-}
-
-.invalidLinkModal {
-  h2 {
-    font-weight: 600 !important;
-  }
-}
-
-.invalidCreatePostBtn {
-  flex: 1.2;
-
-  button,
-  a {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-
-  span[class*="buttonText"] {
-    text-align: center;
-  }
-}
-
-.shareModalContent {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 0;
-  gap: 16px;
-  width: 100%;
-}
-
-.shareDescription {
-  
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  text-align: center;
-  color: #0D0D0D;
-  margin: 0;
-  width: 100%;
-}
-
-.shareLinkRow {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  padding: 0;
-  gap: 12px;
-  width: 100%;
-}
-
-.shareLinkInput {
-  flex: 1;
-  min-width: 0;
-  position: relative;
-  overflow: hidden;
-
-  input {
-    font-size: 12px !important;
-    line-height: 15px !important;
-    height: 32px !important;
-    padding: 4px 44px 4px 16px !important;
+    padding: 10px 16px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-.shareLinkLoader {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.telegramBtn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity 0.15s ease;
-
-  &:hover {
-    opacity: 0.7;
   }
 }
 
@@ -622,4 +500,118 @@
     height: 100%;
     min-height: 0;
   }
+}
+
+.seriesTitle {
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #0D0D0D;
+  margin: 0;
+}
+
+.seriesPostTab {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 12px 16px;
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.25);
+  }
+}
+
+.seriesPostTabExpanded {
+  cursor: default;
+  gap: 24px;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.seriesPostTabDisabled {
+  cursor: default;
+  opacity: 0.5;
+  pointer-events: none;
+
+  &:hover {
+    border-color: rgba(59, 130, 246, 0.1);
+  }
+}
+
+.seriesPostPublished {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #22C55E;
+  margin-left: auto;
+}
+
+.seriesPostHeader {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.seriesPostName {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #0D0D0D;
+}
+
+.seriesPostMeta {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.seriesPostDate,
+.seriesPostTime {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+}
+
+.seriesChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  margin-left: auto;
+
+  .seriesPostMeta + & {
+    margin-left: 0;
+  }
+}
+
+.seriesChevronExpanded {
+  transform: rotate(180deg);
+}
+
+.seriesPostContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+.switchingLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 40px 0;
 }

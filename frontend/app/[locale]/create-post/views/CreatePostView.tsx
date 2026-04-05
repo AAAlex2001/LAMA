@@ -119,6 +119,7 @@ export default function CreatePostView() {
         onPublishNow={handlePublishNow}
         onPublishSeries={handlePublishSeries}
         hasMultiplePosts={snapshots.length > 1}
+        isLastPost={activeIndex === snapshots.length - 1}
         onRemovePost={(index) => handleRemovePost(index, currentSnapshot)}
       />
     </div>

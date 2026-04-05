@@ -17,6 +17,8 @@ class PublicationUpdate(BaseModel):
     text_content: Optional[str] = None
     formatted_content: Optional[dict[str, Any]] = None
     media_urls: Optional[List[str]] = None
+    media_thumbnail_urls: Optional[List[Optional[str]]] = None
+    media_file_ids: Optional[List[Optional[str]]] = None
     media_blur: Optional[List[bool]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
     poll_data: Optional[PollData] = None

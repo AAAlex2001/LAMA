@@ -113,6 +113,8 @@ export default function WeeklySidebar({
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
 
+                const isSeries = (post.series_count ?? 0) > 1;
+
                 return (
                   <div
                     key={post.id}
@@ -133,6 +135,7 @@ export default function WeeklySidebar({
                       {preview || '(без текста)'}
                     </span>
                     {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
+                    {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
                   </div>
                 );
               })}
