@@ -73,12 +73,15 @@ const calendarSlice = createSlice({
   initialState,
   reducers: {
     setSelectedDate: (state, action: PayloadAction<string>) => {
+      const prevMonthKey = state.selectedDate.slice(0, 7);
       state.selectedDate = action.payload;
       state.sidebarDate = action.payload;
       state.countsMonthAnchor = `${action.payload.slice(0, 7)}-01`;
       const monthKey = action.payload.slice(0, 7);
-      state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
-      state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
+      if (monthKey !== prevMonthKey) {
+        state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
+        state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
+      }
     },
     setSidebarDate: (state, action: PayloadAction<string>) => {
       state.sidebarDate = action.payload;
@@ -101,10 +104,13 @@ const calendarSlice = createSlice({
       state.listStatusFilter = action.payload;
     },
     setCountsMonthAnchor: (state, action: PayloadAction<string>) => {
+      const prevMonthKey = state.countsMonthAnchor.slice(0, 7);
       state.countsMonthAnchor = action.payload;
       const monthKey = action.payload.slice(0, 7);
-      state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
-      state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
+      if (monthKey !== prevMonthKey) {
+        state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
+        state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
+      }
     },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);

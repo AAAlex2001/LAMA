@@ -82,6 +82,7 @@ export default function CalendarPageConnected() {
   const [shareModalOpen, setShareModalOpen] = React.useState(false);
   const [shareLink, setShareLink] = React.useState('');
   const [isGeneratingShareLink, setIsGeneratingShareLink] = React.useState(false);
+  const [deleteConfirmPost, setDeleteConfirmPost] = React.useState<Draft | null>(null);
 
   React.useEffect(() => {
     setMobileActiveFilters({});
@@ -229,25 +230,33 @@ export default function CalendarPageConnected() {
     window.location.href = `/edit-draft?draft=${selectedPost.id}`;
   }
 
-  async function handleDeleteFromModal() {
+  function handleDeleteFromModal() {
     if (!selectedPost) return;
+    setDeleteConfirmPost(selectedPost);
+    setSelectedPost(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteConfirmPost) return;
     const token = localStorage.getItem('lamaplanner_access_token');
+    const isPublished = deleteConfirmPost.status === 'published' || deleteConfirmPost.status === 'partial_success';
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${selectedPost.id}`,
-        {
-          method: 'DELETE',
-          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-        },
-      );
+      const url = new URL(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${deleteConfirmPost.id}`);
+      if (isPublished) {
+        url.searchParams.set('delete_from_channel', 'true');
+      }
+      const response = await fetch(url.toString(), {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
 
       if (!response.ok) {
         throw new Error('Не удалось удалить публикацию');
       }
 
-      dispatch(removeItem(selectedPost.id));
-      setSelectedPost(null);
+      dispatch(removeItem(deleteConfirmPost.id));
+      setDeleteConfirmPost(null);
       showSuccess('Публикация удалена');
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Ошибка удаления публикации');
@@ -398,6 +407,21 @@ export default function CalendarPageConnected() {
         onDelete={handleDeleteFromModal}
         onEdit={handleEditFromModal}
       />
+
+      <Modal
+        isOpen={!!deleteConfirmPost}
+        onClose={() => setDeleteConfirmPost(null)}
+        onConfirm={confirmDelete}
+        title="Удалить публикацию?"
+        confirmText="Удалить"
+        cancelText="Отмена"
+      >
+        <p style={{ margin: 0, fontSize: 14, lineHeight: '20px', color: '#0D0D0D' }}>
+          {deleteConfirmPost?.status === 'published' || deleteConfirmPost?.status === 'partial_success'
+            ? 'Публикация будет удалена из календаря и из канала в Telegram. Это действие нельзя отменить.'
+            : 'Публикация будет удалена. Это действие нельзя отменить.'}
+        </p>
+      </Modal>
 
       <div className={styles.shareModal}>
         <Modal

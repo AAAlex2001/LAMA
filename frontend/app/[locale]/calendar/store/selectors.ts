@@ -7,8 +7,17 @@ import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 const selectCalendar = (s: RootState) => s.calendar;
 
 export const selectSortedPosts = createSelector(
-  [(s: RootState) => s.calendar.items, (s: RootState) => s.calendar.currentView],
-  (items, view) => view === 'list' ? items : sortPostsByTime(items, 'desc'),
+  [
+    (s: RootState) => s.calendar.items,
+    (s: RootState) => s.calendar.currentView,
+    (s: RootState) => s.calendar.listSortOrder,
+  ],
+  (items, view, listSortOrder) => {
+    if (view === 'list') {
+      return sortPostsByTime(items, listSortOrder === 'asc' ? 'asc' : 'desc');
+    }
+    return sortPostsByTime(items, 'desc');
+  },
 );
 
 export const selectSidebarPosts = createSelector(
@@ -37,21 +46,7 @@ export const selectMobilePosts = createSelector(
       : sortedPosts,
 );
 
-export const selectGridPostCounts = createSelector(
-  [
-    (s: RootState) => s.calendar.monthPostCounts,
-    (s: RootState) => s.calendar.currentView,
-    (s: RootState) => s.calendar.selectedDate,
-    (s: RootState) => s.calendar.items,
-  ],
-  (monthCounts, currentView, selectedDate, items) => {
-    const merged: Record<string, number> = { ...monthCounts };
-    if (currentView === 'day') {
-      merged[selectedDate] = items.length;
-    }
-    return merged;
-  },
-);
+export const selectGridPostCounts = (s: RootState) => s.calendar.monthPostCounts;
 
 export const selectDayLoadingMap = createSelector(
   [(s: RootState) => s.calendar.dayPageState],

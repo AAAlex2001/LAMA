@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from typing import Optional, List, Literal
 
+from backend.celery.tasks import delete_publication_messages
 from backend.services.publications.repeat_utils import local_range_to_utc
 from backend.schemas.publications.enums import PublicationStatus, ContentType
 from backend.schemas.publications.publication_base import PublicationCreate
@@ -174,9 +175,13 @@ async def patch_publication(
 @router.delete("/{publication_id}", status_code=204)
 async def delete_publication(
     publication_id: int,
+    delete_from_channel: bool = Query(False),
     query: PublicationQueryService = Depends(get_query_service),
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
     publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
-    await updater.delete_publication(publication)
+    if delete_from_channel and publication.status in ("published", "partial_success"):
+        delete_publication_messages.delay(publication_id)
+    else:
+        await updater.delete_publication(publication)

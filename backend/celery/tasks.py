@@ -210,7 +210,7 @@ def delete_publication_messages(publication_id: int) -> str:
 
 
 async def delete_publication_messages_async(publication_id: int) -> str:
-    """Async-реализация удаления Telegram-сообщений публикации."""
+    """Async-реализация удаления Telegram-сообщений публикации и самой публикации."""
 
     async with CelerySessionLocal() as db:
         query_svc = PublicationQueryService(db)
@@ -220,6 +220,7 @@ async def delete_publication_messages_async(publication_id: int) -> str:
         await message_editor.delete_telegram_messages(
             publication, db, lambda ch: resolve_for_channel(db, ch),
         )
+        await db.delete(publication)
         await db.commit()
         return f"deleted_messages:{publication_id}"
 

@@ -36,7 +36,7 @@ export const fetchMoreListPosts = createAsyncThunk<
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const merged = mergeUniqueById(s.items, res.items);
     const total = s.listTotal;
-    return { items: merged, page: nextPage, total, hasMore: merged.length < total };
+    return { items: merged, page: nextPage, total, hasMore: res.items.length === pageSize };
   },
   {
     condition: (_, { getState }) => {

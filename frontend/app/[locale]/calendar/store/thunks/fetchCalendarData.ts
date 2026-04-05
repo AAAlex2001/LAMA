@@ -160,6 +160,6 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
 
     const total = getCountsTotal(countsRes);
 
-    return { type: 'list', items: allItems, hasMore: allItems.length < total, total, rangeKey, request };
+    return { type: 'list', items: allItems, hasMore: res.items.length === pageSize, total, rangeKey, request };
   },
 );

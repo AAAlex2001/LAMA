@@ -1,7 +1,7 @@
 'use client';
 
 import { useEditor, useEditorState } from '@tiptap/react';
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Extension, Mark, mergeAttributes } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Code from '@tiptap/extension-code';
@@ -187,6 +187,8 @@ function getOverflowDecorations(doc: ProseMirrorNode, limit: number) {
 export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
   const { maxLength = 4096, onUpdate } = options;
   const isAutoCodeApplying = useRef(false);
+  const maxLengthRef = useRef(maxLength);
+  maxLengthRef.current = maxLength;
 
   const OverLimitHighlight = Extension.create({
     name: 'overLimitHighlight',
@@ -195,7 +197,7 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
         new Plugin({
           props: {
             decorations(state) {
-              return getOverflowDecorations(state.doc, maxLength);
+              return getOverflowDecorations(state.doc, maxLengthRef.current);
             },
           },
         }),
@@ -334,6 +336,12 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
       onUpdate?.(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      editor.view.dispatch(editor.state.tr);
+    }
+  }, [maxLength, editor]);
 
   const editorState = useEditorState({
     editor,
