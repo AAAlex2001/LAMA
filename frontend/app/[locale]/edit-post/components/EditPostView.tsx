@@ -105,7 +105,7 @@ export default function EditPostView() {
           setExpandedPostId(id);
           try {
             const res = await apiRequest<{ items: SeriesPostInfo[] }>(
-              `/publications?series_id=${post.series_id}&limit=50&sort_order=asc`,
+              `/publications?series_id=${post.series_id}&page_size=50&sort_order=asc`,
             );
             const posts = [...res.items].sort(
               (a, b) => (a.series_order ?? 0) - (b.series_order ?? 0),
@@ -243,7 +243,7 @@ export default function EditPostView() {
 
   async function handleMoveToDraft() {
     if (!activePostId) return;
-    if (isSeries) {
+    if (seriesId && seriesPosts.length > 0) {
       try {
         for (const sp of seriesPosts) {
           await dispatch(moveToDraft(sp.id)).unwrap();

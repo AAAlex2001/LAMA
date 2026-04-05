@@ -274,6 +274,7 @@ class SeriesService:
 
         for pub in publications:
             if pub.status in published_statuses:
+                pub.status = DBPublicationStatus.DELETED
                 delete_publication_messages.apply_async(args=[pub.id], queue="default")
             else:
                 await self.db.delete(pub)

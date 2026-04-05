@@ -6,7 +6,8 @@ import type { RootState, AppDispatch } from '../index';
 
 export const deletePublication = createAsyncThunk<
   void,
-  { id: number; deleteFromChannel?: boolean }
+  { id: number; deleteFromChannel?: boolean },
+  { state: RootState; dispatch: AppDispatch }
 >(
   'calendar/deletePublication',
   async ({ id, deleteFromChannel }, { dispatch }) => {
@@ -15,6 +16,7 @@ export const deletePublication = createAsyncThunk<
     const qs = params.toString();
     await apiRequest(`/publications/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' });
     dispatch(removeItem(id));
+    dispatch(fetchCalendarData());
   },
 );
 

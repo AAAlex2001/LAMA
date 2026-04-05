@@ -80,15 +80,6 @@ export default function ListCalendarView({
 }: ListCalendarViewProps) {
   const [activeFilters, setActiveFilters] = React.useState<Record<string, string[]>>({});
   const [scrollRootEl, setScrollRootEl] = React.useState<HTMLDivElement | null>(null);
-  const [isMobile, setIsMobile] = React.useState(false);
-
-  React.useEffect(() => {
-    const mq = window.matchMedia('(max-width: 1439px)');
-    setIsMobile(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   const loadingRef = React.useRef(isLoadingMore);
   loadingRef.current = isLoadingMore;
@@ -98,10 +89,10 @@ export default function ListCalendarView({
   onLoadMoreRef.current = onLoadMore;
 
   const { ref: sentinelRef, inView } = useInView({
-    root: isMobile ? null : scrollRootEl,
+    root: scrollRootEl,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasMore || isLoadingMore || (!isMobile && !scrollRootEl),
+    skip: !hasMore || isLoadingMore || !scrollRootEl,
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadMoreRef.current?.();

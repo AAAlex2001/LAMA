@@ -317,7 +317,7 @@ export default function CalendarPageConnected() {
   }
 
   return (
-    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'month' ? styles.pageMonth : ''}`}>
+    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'month' ? styles.pageMonth : ''} ${calendar.currentView === 'list' ? styles.pageList : ''}`}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}

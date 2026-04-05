@@ -14,7 +14,6 @@ const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('ru');
 
-  // Загружаем сохранённую локаль из localStorage при монтировании
   useEffect(() => {
     const saved = localStorage.getItem('locale') as Locale;
     if (saved && ['ru', 'sr', 'en'].includes(saved)) {

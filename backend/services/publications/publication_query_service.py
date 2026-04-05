@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from types import SimpleNamespace
-from typing import List, Optional
+from typing import List, Optional, Set, Tuple
 
 from fastapi import HTTPException
 from sqlalchemy import and_, exists, func, select
@@ -210,15 +210,14 @@ class PublicationQueryService:
         result = await self.db.execute(query)
         repeating_pubs = list(result.scalars().all())
 
-        today = date.today()
-
+        seen_keys: Set[Tuple[int, str]] = set()
         for pub in repeating_pubs:
-            for _, projected_time in project_repeat_occurrences(pub, start_date, end_date):
-                if projected_time.date() > today:
-                    posts.append(make_scheduled_projection(pub, projected_time))
-                else:
-                    posts.append(pub)
-                break
+            for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
+                key = (pub.id, day_key)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                posts.append(make_scheduled_projection(pub, projected_time))
 
         return posts
 

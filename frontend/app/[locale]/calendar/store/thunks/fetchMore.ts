@@ -38,7 +38,7 @@ export const fetchMoreListPosts = createAsyncThunk<
     const grouped = groupSeriesPosts(res.items);
     const merged = mergeUniqueById(s.items, grouped);
     const total = s.listTotal;
-    return { items: merged, page: nextPage, total, hasMore: res.items.length === pageSize };
+    return { items: merged, page: nextPage, total, hasMore: res.items.length >= pageSize };
   },
   {
     condition: (_, { getState }) => {
@@ -71,7 +71,7 @@ export const fetchMoreDayPosts = createAsyncThunk<
     const grouped = groupSeriesPosts(res.items);
     const current = s.weekItems[dateKey] || [];
     const merged = mergeUniqueById(current, grouped);
-    return { dateKey, items: merged, page: nextPage, hasMore: res.items.length === pageSize };
+    return { dateKey, items: merged, page: nextPage, hasMore: res.items.length >= pageSize };
   },
   {
     condition: (dateKey, { getState }) => {

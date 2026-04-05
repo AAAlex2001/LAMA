@@ -63,7 +63,8 @@ export default function FooterButtonsConnected({
           onClick={async () => {
             const result = await dispatch(saveDraft({ channelIds: selectedChannels.map((c) => c.id) }));
             if (saveDraft.fulfilled.match(result)) {
-              showSuccess('Черновик сохранён!');
+              const msg = (result.payload as { message?: string })?.message || 'Черновик сохранён!';
+              showSuccess(msg);
               setTimeout(() => {
                 window.location.href = '/drafts';
               }, 3000);

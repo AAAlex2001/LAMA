@@ -86,7 +86,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       const params = new URLSearchParams({
         start_date: `${dayKey}T00:00:00`,
         end_date: `${dayKey}T23:59:59`,
-        per_day: '20',
+        per_day: '50',
         tz: userTz,
       });
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
@@ -107,15 +107,31 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       const params = new URLSearchParams({
         start_date: `${range.startDate}T00:00:00`,
         end_date: `${range.endDate}T23:59:59`,
-        per_day: '20',
+        per_day: '50',
         tz: userTz,
       });
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
+
+      const seriesCounts = new Map<number, number>();
+      for (const dateKey of keys) {
+        const day = res.days[dateKey];
+        for (const item of day?.items ?? []) {
+          if (item.series_id) {
+            seriesCounts.set(item.series_id, (seriesCounts.get(item.series_id) ?? 0) + 1);
+          }
+        }
+      }
+
       const results: GridDayResult[] = keys.map((dateKey) => {
         const day = res.days[dateKey];
         const pubItems = day?.items ?? [];
         const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
         const grouped = groupSeriesPosts(pubItems);
+        for (const item of grouped) {
+          if (item.series_id && seriesCounts.has(item.series_id)) {
+            item.series_count = seriesCounts.get(item.series_id);
+          }
+        }
         const total = day?.total ?? (grouped.length + botItems.length);
         return {
           dateKey,
@@ -164,6 +180,6 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
 
     const total = getCountsTotal(countsRes);
 
-    return { type: 'list', items: allItems, hasMore: res.items.length === pageSize, total, rangeKey, request };
+    return { type: 'list', items: allItems, hasMore: res.items.length >= pageSize, total, rangeKey, request };
   },
 );

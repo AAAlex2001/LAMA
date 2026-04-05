@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import classNames from 'classnames';
 import TagCloseIcon from '@/components/icons/tag-close-icon';
 import PlusIcon from '@/components/icons/plus-icon';
@@ -40,6 +40,23 @@ export default function EditorHeaderConnected({
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const tagSearchRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showDropdown) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (tagSearchRef.current && !tagSearchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    const frameId = requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    });
+    return () => {
+      cancelAnimationFrame(frameId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   const [editingTag, setEditingTag] = useState<{ id: number; name: string; color: string } | null>(null);
   const [editName, setEditName] = useState('');
@@ -216,15 +233,12 @@ export default function EditorHeaderConnected({
       {showTagsPanel && (
         <div className={classNames(tagStyles.tagsPanel, { [tagStyles.tagsPanelEditing]: !!editingTag })}>
           <div className={tagStyles.tagsPanelTop}>
-            <div className={tagStyles.tagSearchWrapper}>
+            <div className={tagStyles.tagSearchWrapper} ref={tagSearchRef}>
               <SearchBar
                 placeholder="Поиск тега"
                 value={searchQuery}
                 onChange={handleSearch}
                 onFocus={handleSearchFocus}
-                onClick={() => {
-                  if (showDropdown) setShowDropdown(false);
-                }}
               />
               {showDropdown && (
                 <div className={tagStyles.tagSearchDropdown}>
