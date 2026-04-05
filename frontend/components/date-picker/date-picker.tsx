@@ -143,7 +143,7 @@ export default function DatePicker({
   today.setHours(0, 0, 0, 0);
 
   return (
-    <div className={`${styles.datePicker} ${highlightWeek ? styles.weekMode : ''} ${className || ''}`}>
+    <div className={`${styles.datePicker} ${rangeSelection ? styles.rangeMode : ''} ${highlightWeek ? styles.weekMode : ''} ${className || ''}`}>
       <Calendar
         onChange={handleDateChange}
         value={selectedDate}

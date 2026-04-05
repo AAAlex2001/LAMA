@@ -110,13 +110,7 @@
 
   :global(.react-calendar__tile--range.react-calendar__tile--active),
   :global(.react-calendar__tile--range.react-calendar__tile--selected) {
-    background: #3B82F6 !important;
-    border-radius: 50px !important;
     z-index: 2;
-
-    &::before {
-      opacity: 0;
-    }
 
     abbr {
       color: #FFFFFF !important;
