@@ -38,8 +38,19 @@
 .icons {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   gap: 4px;
+}
+
+.seriesBadge {
+  font-weight: 500;
+  font-size: 10px;
+  line-height: 13px;
+  color: #3B82F6;
+  background: #EFF6FF;
+  padding: 1px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
 }
 
 .tagsRow {

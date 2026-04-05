@@ -3,6 +3,7 @@ import type { DraftListResponse, Draft } from '@/types/post';
 import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, mergeUniqueById } from '../../utils/calendar-helpers';
+import { groupSeriesPosts } from '../../utils/groupSeries';
 
 export const fetchMoreListPosts = createAsyncThunk<
   { items: Draft[]; page: number; total: number; hasMore: boolean }, void, { state: RootState }
@@ -34,7 +35,8 @@ export const fetchMoreListPosts = createAsyncThunk<
     }
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
-    const merged = mergeUniqueById(s.items, res.items);
+    const grouped = groupSeriesPosts(res.items);
+    const merged = mergeUniqueById(s.items, grouped);
     const total = s.listTotal;
     return { items: merged, page: nextPage, total, hasMore: res.items.length === pageSize };
   },
@@ -66,8 +68,9 @@ export const fetchMoreDayPosts = createAsyncThunk<
     });
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
+    const grouped = groupSeriesPosts(res.items);
     const current = s.weekItems[dateKey] || [];
-    const merged = mergeUniqueById(current, res.items);
+    const merged = mergeUniqueById(current, grouped);
     return { dateKey, items: merged, page: nextPage, hasMore: res.items.length === pageSize };
   },
   {

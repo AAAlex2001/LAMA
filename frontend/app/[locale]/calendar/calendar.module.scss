@@ -422,6 +422,13 @@
   opacity: 0.8;
 }
 
+.repeatDeleteButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
 .shareModal {
   > div > div {
     width: 397px;

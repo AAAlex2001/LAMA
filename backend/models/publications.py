@@ -93,6 +93,7 @@ class Publication(Base):
     repeat_month_days: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     repeat_year_month: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     repeat_year_days: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    repeat_excluded_dates: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     next_repeat_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     repeat_end_time: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     

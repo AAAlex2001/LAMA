@@ -102,6 +102,9 @@ export interface Draft {
   scheduled_time?: string;
   published_at?: string;
   repeat_interval?: string;
+  series_id?: number;
+  series_order?: number;
+  series_count?: number;
   views_count?: number;
   views?: number;
   reactions_count?: number;

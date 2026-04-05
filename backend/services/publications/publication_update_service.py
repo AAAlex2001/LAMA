@@ -10,6 +10,7 @@ from backend.models.publications import (
     ContentType as DBContentType,
     Publication,
     PublicationStatus as DBPublicationStatus,
+    RepeatInterval as DBRepeatInterval,
     TelegramMessage,
 )
 from backend.schemas.publications.publication_update import PublicationUpdate
@@ -83,6 +84,32 @@ class PublicationUpdateService:
 
     async def delete_publication(self, publication: Publication) -> None:
         await self.db.delete(publication)
+        await self.db.flush()
+
+    async def stop_repeat_from(self, publication: Publication, from_date: datetime) -> None:
+        publication.repeat_end_time = from_date
+        publication.next_repeat_time = None
+        await self.db.flush()
+
+    async def cancel_repeat(self, publication: Publication) -> None:
+        publication.repeat_interval = DBRepeatInterval.NEVER
+        publication.repeat_end_time = None
+        publication.next_repeat_time = None
+        publication.repeat_custom_days = None
+        publication.repeat_custom_hours = None
+        publication.repeat_custom_unit = None
+        publication.repeat_custom_value = None
+        publication.repeat_weekdays = None
+        publication.repeat_month_days = None
+        publication.repeat_year_month = None
+        publication.repeat_year_days = None
+        await self.db.flush()
+
+    async def add_repeat_exclusion(self, publication: Publication, date_str: str) -> None:
+        excluded = list(publication.repeat_excluded_dates or [])
+        if date_str not in excluded:
+            excluded.append(date_str)
+        publication.repeat_excluded_dates = excluded
         await self.db.flush()
 
     async def reschedule_publication(self, publication: Publication, new_time: datetime) -> Publication:

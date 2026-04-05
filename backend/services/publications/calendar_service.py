@@ -242,6 +242,7 @@ class CalendarService:
                 Publication.repeat_month_days,
                 Publication.repeat_year_month,
                 Publication.repeat_year_days,
+                Publication.repeat_excluded_dates,
             ))
         )
         result = await self.db.execute(query)

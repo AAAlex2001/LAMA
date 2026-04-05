@@ -82,6 +82,8 @@ def project_repeat_occurrences(
     naive_start = strip_tz(start)
     naive_end = strip_tz(end)
 
+    excluded = set(getattr(pub, "repeat_excluded_dates", None) or [])
+
     base_time = strip_tz(
         getattr(pub, "scheduled_time", None) or pub.next_repeat_time
     )
@@ -95,7 +97,9 @@ def project_repeat_occurrences(
     iterations = 0
     while current and current <= naive_end and iterations < max_iter:
         if current >= naive_start:
-            yield (current.strftime("%Y-%m-%d"), current)
+            date_str = current.strftime("%Y-%m-%d")
+            if date_str not in excluded:
+                yield (date_str, current)
         current = calculate_next_repeat_time(
             current,
             pub.repeat_interval,

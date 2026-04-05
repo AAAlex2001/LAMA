@@ -30,6 +30,7 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
   const isPublished = post.status === 'published';
   const isDraft = post.status === 'draft';
   const isBotMessage = post.is_bot_message === true;
+  const isSeries = (post.series_count ?? 0) > 1;
   const channel = post.channels?.[0];
   const extraChannelsCount = post.channels && post.channels.length > 1
     ? post.channels.length - 1
@@ -53,6 +54,7 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
           {isRepeating && (
             <CalendarRepeatIcon />
           )}
+          {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
         </div>
       </div>
 

@@ -79,6 +79,7 @@ export const publishSeries = createAsyncThunk(
       });
       
       const seriesId = seriesResponse.id;
+      const createdIds: number[] = [];
 
       for (let i = 0; i < snapshots.length; i++) {
         const snapshot = snapshots[i];
@@ -87,11 +88,11 @@ export const publishSeries = createAsyncThunk(
           options: snapshot.quizAnswers.map(a => a.text).filter(t => t.trim()),
           is_quiz: snapshot.quizMode === 'quiz',
           allows_multiple_answers: snapshot.quizMode === 'poll_multi',
-          correct_option_id: snapshot.quizMode === 'quiz' 
+          correct_option_id: snapshot.quizMode === 'quiz'
             ? snapshot.quizAnswers.findIndex(a => a.id === snapshot.quizCorrectAnswerId)
             : null,
         } : null;
-        
+
         const mediaPayload = await prepareMediaPayload(snapshot.mediaFiles || []);
         const request: CreatePostRequest = {
           ...buildCreatePostRequest(
@@ -101,12 +102,15 @@ export const publishSeries = createAsyncThunk(
           series_id: seriesId,
           series_order: i,
         };
-        
+
         const pub = await apiRequest<PublicationResponse>('/publications', {
           method: 'POST', body: JSON.stringify(request),
         });
-        
-        await apiRequest(`/publications/${pub.id}/publish`, { method: 'POST' });
+        createdIds.push(pub.id);
+      }
+
+      for (const pubId of createdIds) {
+        await apiRequest(`/publications/${pubId}/publish`, { method: 'POST' });
       }
       
       // Если были теги, перезагружаем список тегов

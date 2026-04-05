@@ -3,6 +3,7 @@ import type { DraftListResponse, Draft, BotMessageCompact } from '@/types/post';
 import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calendar-helpers';
+import { groupSeriesPosts } from '../../utils/groupSeries';
 
 interface WeekBatchDay {
   items: Draft[];
@@ -92,9 +93,10 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       const day = res.days[dayKey];
       const pubItems = day?.items ?? [];
       const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
-      const total = day?.total ?? (pubItems.length + botItems.length);
+      const grouped = groupSeriesPosts(pubItems);
+      const total = day?.total ?? (grouped.length + botItems.length);
       const results: GridDayResult[] = [
-        { dateKey: dayKey, items: [...pubItems, ...botItems], hasMore: day?.has_more ?? false, total },
+        { dateKey: dayKey, items: [...grouped, ...botItems], hasMore: day?.has_more ?? false, total },
       ];
       return { type: 'grid', merge: true, keys: [dayKey], results, request };
     }
@@ -113,10 +115,11 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
         const day = res.days[dateKey];
         const pubItems = day?.items ?? [];
         const botItems = (day?.bot_messages ?? []).map(botMessageToDraft);
-        const total = day?.total ?? (pubItems.length + botItems.length);
+        const grouped = groupSeriesPosts(pubItems);
+        const total = day?.total ?? (grouped.length + botItems.length);
         return {
           dateKey,
-          items: [...pubItems, ...botItems],
+          items: [...grouped, ...botItems],
           hasMore: day?.has_more ?? false,
           total,
         };
@@ -154,9 +157,10 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       : getRangeForView(view, date).key;
 
     const botItems = (res.bot_messages ?? []).map(botMessageToDraft);
+    const grouped = groupSeriesPosts(res.items);
     const allItems = view === 'list'
-      ? res.items
-      : [...res.items, ...botItems];
+      ? grouped
+      : [...grouped, ...botItems];
 
     const total = getCountsTotal(countsRes);
 

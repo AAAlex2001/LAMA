@@ -1,10 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timezone as dt_tz
 
 from fastapi import APIRouter, Depends, Query
 from typing import Optional, List, Literal
 
 from backend.celery.tasks import delete_publication_messages
-from backend.models.publications import PublicationStatus as DBPublicationStatus
+from backend.models.publications import PublicationStatus as DBPublicationStatus, RepeatInterval as DBRepeatInterval
 from backend.services.publications.repeat_utils import local_range_to_utc
 from backend.schemas.publications.enums import PublicationStatus, ContentType
 from backend.schemas.publications.publication_base import PublicationCreate
@@ -177,11 +177,23 @@ async def patch_publication(
 async def delete_publication(
     publication_id: int,
     delete_from_channel: bool = Query(False),
+    repeat_mode: Optional[Literal["this", "this_and_following"]] = Query(None),
+    repeat_date: Optional[str] = Query(None),
     query: PublicationQueryService = Depends(get_query_service),
     updater: PublicationUpdateService = Depends(get_update_service),
     current_user: User = Depends(get_current_user),
 ):
     publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
+
+    is_repeat = publication.repeat_interval and publication.repeat_interval != DBRepeatInterval.NEVER
+    if is_repeat and repeat_mode:
+        if repeat_mode == "this" and repeat_date:
+            await updater.add_repeat_exclusion(publication, repeat_date[:10])
+        elif repeat_mode == "this_and_following" and repeat_date:
+            cut_off = datetime.fromisoformat(repeat_date).replace(tzinfo=dt_tz.utc)
+            await updater.stop_repeat_from(publication, cut_off)
+        return
+
     if delete_from_channel and publication.status in (DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS):
         delete_publication_messages.delay(publication_id)
     else:

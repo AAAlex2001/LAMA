@@ -32,6 +32,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
   const thumbnail = getThumbnail(post);
   const isRepeating = hasRepeat(post);
   const isBotMessage = post.is_bot_message === true;
+  const isSeries = (post.series_count ?? 0) > 1;
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const [thumbnailError, setThumbnailError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -78,6 +79,7 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
               </>
             )}
             {!listMode && <span className={styles.statusText}>{getStatusLabel(post.status)}</span>}
+            {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
           </div>
         </div>
 

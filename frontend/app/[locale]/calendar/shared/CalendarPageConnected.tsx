@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import PostPreviewModal from '@/components/post-preview-modal';
 import Modal from '@/components/modal';
+import Button from '@/components/button/button';
 import Input from '@/components/input/input';
 import Loader from '@/components/loader';
 import { CopyIcon, TelegramCircleIcon } from '@/components/icons';
@@ -39,9 +40,8 @@ import {
   selectIsGridView,
   selectSidebarPosts,
   selectMonthStatusCounts,
-  removeItem,
 } from '../store';
-import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts } from '../store/thunks';
+import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts, deletePublication, deleteRepeatPublication } from '../store/thunks';
 import { navigateStep, sidebarDateChange } from '../store/thunks/navigation';
 import { getPreviewData } from '../utils/previewData';
 import {
@@ -83,6 +83,9 @@ export default function CalendarPageConnected() {
   const [shareLink, setShareLink] = React.useState('');
   const [isGeneratingShareLink, setIsGeneratingShareLink] = React.useState(false);
   const [deleteConfirmPost, setDeleteConfirmPost] = React.useState<Draft | null>(null);
+  const [repeatDeletePost, setRepeatDeletePost] = React.useState<Draft | null>(null);
+  const [hoveredRepeatThis, setHoveredRepeatThis] = React.useState(false);
+  const [hoveredRepeatFollowing, setHoveredRepeatFollowing] = React.useState(false);
 
   React.useEffect(() => {
     setMobileActiveFilters({});
@@ -232,34 +235,39 @@ export default function CalendarPageConnected() {
 
   function handleDeleteFromModal() {
     if (!selectedPost) return;
-    setDeleteConfirmPost(selectedPost);
+    const hasRepeat = selectedPost.repeat_interval && selectedPost.repeat_interval !== 'never';
+    if (hasRepeat) {
+      setRepeatDeletePost(selectedPost);
+    } else {
+      setDeleteConfirmPost(selectedPost);
+    }
     setSelectedPost(null);
   }
 
   async function confirmDelete() {
     if (!deleteConfirmPost) return;
-    const token = localStorage.getItem('lamaplanner_access_token');
     const isPublished = deleteConfirmPost.status === 'published' || deleteConfirmPost.status === 'partial_success';
-
     try {
-      const url = new URL(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${deleteConfirmPost.id}`);
-      if (isPublished) {
-        url.searchParams.set('delete_from_channel', 'true');
-      }
-      const response = await fetch(url.toString(), {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-
-      if (!response.ok) {
-        throw new Error('Не удалось удалить публикацию');
-      }
-
-      dispatch(removeItem(deleteConfirmPost.id));
+      await dispatch(deletePublication({ id: deleteConfirmPost.id, deleteFromChannel: isPublished })).unwrap();
       setDeleteConfirmPost(null);
       showSuccess('Публикация удалена');
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Ошибка удаления публикации');
+    }
+  }
+
+  async function confirmRepeatDelete(mode: 'this' | 'this_and_following') {
+    if (!repeatDeletePost) return;
+    try {
+      await dispatch(deleteRepeatPublication({
+        id: repeatDeletePost.id,
+        mode,
+        repeatDate: repeatDeletePost.scheduled_time,
+      })).unwrap();
+      setRepeatDeletePost(null);
+      showSuccess(mode === 'this' ? 'Повтор удалён' : 'Повторы удалены');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Ошибка удаления');
     }
   }
 
@@ -421,6 +429,44 @@ export default function CalendarPageConnected() {
             ? 'Публикация будет удалена из календаря и из канала в Telegram. Это действие нельзя отменить.'
             : 'Публикация будет удалена. Это действие нельзя отменить.'}
         </p>
+      </Modal>
+
+      <Modal
+        isOpen={!!repeatDeletePost}
+        onClose={() => setRepeatDeletePost(null)}
+        onConfirm={() => {}}
+        title="Удаление повтора"
+        hideButtons
+      >
+        <div className={styles.repeatDeleteButtons}>
+          <Button
+            text="Удалить этот пост"
+            variant="outlined-red"
+            onClick={() => confirmRepeatDelete('this')}
+            showArrow={false}
+            fullWidth
+            hovered={hoveredRepeatThis}
+            onMouseEnter={() => setHoveredRepeatThis(true)}
+            onMouseLeave={() => setHoveredRepeatThis(false)}
+          />
+          <Button
+            text="Удалить этот и следующие"
+            variant="outlined-red"
+            onClick={() => confirmRepeatDelete('this_and_following')}
+            showArrow={false}
+            fullWidth
+            hovered={hoveredRepeatFollowing}
+            onMouseEnter={() => setHoveredRepeatFollowing(true)}
+            onMouseLeave={() => setHoveredRepeatFollowing(false)}
+          />
+          <Button
+            text="Отмена"
+            onClick={() => setRepeatDeletePost(null)}
+            showArrow={false}
+            fullWidth
+            active
+          />
+        </div>
       </Modal>
 
       <div className={styles.shareModal}>

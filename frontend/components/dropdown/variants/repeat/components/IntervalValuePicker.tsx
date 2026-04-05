@@ -88,8 +88,25 @@ export default function IntervalValuePicker({
 
   function handleInputKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') handleInputBlur();
-    if (e.key === 'Escape') setIsEditing(false);
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+      setOriginalValue(null);
+    }
   }
+
+  const inputRef = useRef(inputValue);
+  const editingRef = useRef(isEditing);
+  inputRef.current = inputValue;
+  editingRef.current = isEditing;
+
+  useEffect(() => {
+    return () => {
+      if (editingRef.current && inputRef.current.trim() !== '') {
+        const parsed = parseInt(inputRef.current, 10);
+        if (!isNaN(parsed)) onChange(clamp(parsed));
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const el = containerRef.current;

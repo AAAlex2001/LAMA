@@ -45,6 +45,8 @@ PUB_COMPACT_COLUMNS = [
     Publication.created_at,
     Publication.updated_at,
     Publication.owner_id,
+    Publication.series_id,
+    Publication.series_order,
 ]
 
 REPEAT_EXTRA_COLUMNS = [
@@ -58,6 +60,7 @@ REPEAT_EXTRA_COLUMNS = [
     Publication.repeat_month_days,
     Publication.repeat_year_month,
     Publication.repeat_year_days,
+    Publication.repeat_excluded_dates,
 ]
 
 CHANNEL_COMPACT_COLUMNS = [

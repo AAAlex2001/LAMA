@@ -55,6 +55,8 @@ class PublicationCompact(BaseModel):
     updated_at: datetime
     channels: List[ChannelCompact] = []
     tags: List[TagCompact] = []
+    series_id: Optional[int] = None
+    series_order: Optional[int] = None
 
 
 class BotMessageCompact(BaseModel):
