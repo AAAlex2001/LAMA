@@ -78,12 +78,15 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       listStatusFilter: s.listStatusFilter,
     };
 
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     if (view === 'month') {
       const dayKey = s.sidebarDate;
       const params = new URLSearchParams({
         start_date: `${dayKey}T00:00:00`,
         end_date: `${dayKey}T23:59:59`,
         per_day: '20',
+        tz: userTz,
       });
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
       const day = res.days[dayKey];
@@ -103,6 +106,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
         start_date: `${range.startDate}T00:00:00`,
         end_date: `${range.endDate}T23:59:59`,
         per_day: '20',
+        tz: userTz,
       });
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${params}`);
       const results: GridDayResult[] = keys.map((dateKey) => {
@@ -135,6 +139,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
       page: '1', page_size: String(pageSize),
       start_date: `${startDate}T00:00:00`, end_date: `${endDate}T23:59:59`,
       sort_order: s.listSortOrder ?? 'desc',
+      tz: userTz,
     });
     if (view === 'list') {
       if (s.listStatusFilter) params.set('status', s.listStatusFilter);
@@ -142,7 +147,7 @@ export const fetchCalendarData = createAsyncThunk<FetchDataResult, void, { state
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
     const countsRes = await apiRequest<{ counts: Record<string, number> | DayCountItem[] }>(
-      `/publications/day-counts?start_date=${startDate}T00:00:00&end_date=${endDate}T23:59:59`,
+      `/publications/day-counts?start_date=${startDate}T00:00:00&end_date=${endDate}T23:59:59&tz=${encodeURIComponent(userTz)}`,
     );
     const rangeKey = view === 'list' && s.listRangeStart && s.listRangeEnd
       ? `${s.listRangeStart}_${s.listRangeEnd}`

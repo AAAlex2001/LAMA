@@ -4,6 +4,10 @@ import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import PostPreviewModal from '@/components/post-preview-modal';
+import Modal from '@/components/modal';
+import Input from '@/components/input/input';
+import Loader from '@/components/loader';
+import { CopyIcon, TelegramCircleIcon } from '@/components/icons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Draft } from '@/types/post';
 import type { TagsResponse, ChannelsResponse } from '@/types';
@@ -75,6 +79,9 @@ export default function CalendarPageConnected() {
   const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
   const [selectedPost, setSelectedPost] = React.useState<Draft | null>(null);
   const [mobileActiveFilters, setMobileActiveFilters] = React.useState<Record<string, string[]>>({});
+  const [shareModalOpen, setShareModalOpen] = React.useState(false);
+  const [shareLink, setShareLink] = React.useState('');
+  const [isGeneratingShareLink, setIsGeneratingShareLink] = React.useState(false);
 
   React.useEffect(() => {
     setMobileActiveFilters({});
@@ -251,6 +258,11 @@ export default function CalendarPageConnected() {
     if (!selectedPost) return;
     const token = localStorage.getItem('lamaplanner_access_token');
 
+    setShareModalOpen(true);
+    setShareLink('');
+    setIsGeneratingShareLink(true);
+    setSelectedPost(null);
+
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${selectedPost.id}/share`,
@@ -268,11 +280,12 @@ export default function CalendarPageConnected() {
       }
 
       const data = await response.json();
-      const link = `${window.location.origin}/drafts?token=${data.share_token}`;
-      await navigator.clipboard.writeText(link);
-      showSuccess('Ссылка скопирована');
+      setShareLink(`${window.location.origin}/drafts?token=${data.share_token}`);
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Ошибка шаринга');
+      setShareModalOpen(false);
+    } finally {
+      setIsGeneratingShareLink(false);
     }
   }
 
@@ -385,6 +398,57 @@ export default function CalendarPageConnected() {
         onDelete={handleDeleteFromModal}
         onEdit={handleEditFromModal}
       />
+
+      <div className={styles.shareModal}>
+        <Modal
+          isOpen={shareModalOpen}
+          onClose={() => setShareModalOpen(false)}
+          onConfirm={() => setShareModalOpen(false)}
+          title="Поделиться постом"
+          hideButtons
+        >
+          <div className={styles.shareModalContent}>
+            <p className={styles.shareDescription}>
+              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую.<br /><br />
+              <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
+            </p>
+            <div className={styles.shareLinkRow}>
+              <div className={styles.shareLinkInput}>
+                <Input
+                  value={shareLink}
+                  onChange={() => {}}
+                  variant="white"
+                  icon={<CopyIcon width={24} height={24} color="#383F45" />}
+                  iconDisabled={isGeneratingShareLink || !shareLink}
+                  onIconClick={() => {
+                    if (!isGeneratingShareLink && shareLink) {
+                      navigator.clipboard.writeText(shareLink);
+                      showSuccess('Ссылка скопирована!');
+                    }
+                  }}
+                />
+                {isGeneratingShareLink && (
+                  <div className={styles.shareLinkLoader}>
+                    <Loader size={16} color="blue" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className={styles.telegramBtn}
+                onClick={() => {
+                  if (!isGeneratingShareLink && shareLink) {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                  }
+                }}
+                disabled={isGeneratingShareLink || !shareLink}
+              >
+                <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 }

@@ -30,9 +30,11 @@ export const fetchDayCounts = createAsyncThunk<DayCountsResult, void, { state: R
     const monthKey = calendar.countsMonthAnchor.slice(0, 7);
     const anchorKey = calendar.countsMonthAnchor;
 
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const params = new URLSearchParams({
       start_date: `${formatDateOnly(new Date(year, month, 1))}T00:00:00`,
       end_date: `${formatDateOnly(new Date(year, month + 1, 0))}T23:59:59`,
+      tz: userTz,
     });
 
     const res = await apiRequest<{ counts: Record<string, number> | DayCountItem[] }>(

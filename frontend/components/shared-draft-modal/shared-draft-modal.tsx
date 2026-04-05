@@ -23,8 +23,8 @@ export default function SharedDraftModal({
   onPreview,
 }: SharedDraftModalProps) {
   const title = username
-    ? `@${username} поделился (-лась) с Вами черновиком`
-    : 'С Вами поделились черновиком';
+    ? `@${username} поделился (-лась) с Вами постом`
+    : 'С Вами поделились постом';
 
   return (
     <div className={styles.wrapper}>
@@ -37,7 +37,7 @@ export default function SharedDraftModal({
       >
         <div className={styles.content}>
           <p className={styles.description}>
-            Посмотрите, что внутри. Вы можете сразу перейти к публикации или сохранить его в свои черновики
+            С вами поделились постом. Вы можете сразу перейти к публикации или сохранить его в свои черновики.
           </p>
           <div className={styles.buttons}>
             <Button

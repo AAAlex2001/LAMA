@@ -22,9 +22,11 @@ export const fetchMoreListPosts = createAsyncThunk<
 
     const nextPage = s.currentPage + 1;
     const pageSize = 30;
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const params = new URLSearchParams({
       page: String(nextPage), page_size: String(pageSize),
       start_date: `${startDate}T00:00:00`, end_date: `${endDate}T23:59:59`,
+      tz: userTz,
     });
     if (s.currentView === 'list') {
       if (s.listSortOrder) params.set('sort_order', s.listSortOrder);
@@ -56,9 +58,11 @@ export const fetchMoreDayPosts = createAsyncThunk<
 
     const nextPage = dayState.page + 1;
     const pageSize = 20;
+    const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const params = new URLSearchParams({
       page: String(nextPage), page_size: String(pageSize),
       start_date: `${dateKey}T00:00:00`, end_date: `${dateKey}T23:59:59`,
+      tz: userTz,
     });
 
     const res = await apiRequest<DraftListResponse>(`/publications/?${params}`);
