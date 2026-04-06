@@ -35,7 +35,25 @@ const draftListSlice = createSlice({
     appendDrafts: (state, action: PayloadAction<Draft[]>) => {
       const existingIds = new Set(state.items.map((d) => d.id));
       const newItems = action.payload.filter((d) => !existingIds.has(d.id));
-      state.items = [...state.items, ...newItems];
+
+      for (const item of newItems) {
+        if (!item.series_id) {
+          state.items.push(item);
+          continue;
+        }
+        const idx = state.items.findIndex((d) => d.series_id === item.series_id);
+        if (idx === -1) {
+          state.items.push(item);
+        } else {
+          const existing = state.items[idx];
+          const add = item.series_count ?? 1;
+          const base = existing.series_count ?? 1;
+          state.items[idx] = {
+            ...existing,
+            series_count: base + add,
+          };
+        }
+      }
     },
     removeDraft: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);

@@ -20,7 +20,7 @@ export const fetchDrafts = createAsyncThunk(
     dispatch(setIsLoading(true));
     try {
       const response = await apiRequest<DraftListResponse>(
-        `/publications?status=draft&page=1&page_size=${PAGE_SIZE}`
+        `/publications?status=draft&page=1&page_size=${PAGE_SIZE}&sort_order=desc&date_mode=updated`
       );
       dispatch(setDrafts(response.items));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
@@ -46,7 +46,7 @@ export const fetchMoreDrafts = createAsyncThunk(
     try {
       const nextPage = page + 1;
       const response = await apiRequest<DraftListResponse>(
-        `/publications?status=draft&page=${nextPage}&page_size=${PAGE_SIZE}`
+        `/publications?status=draft&page=${nextPage}&page_size=${PAGE_SIZE}&sort_order=desc&date_mode=updated`
       );
       dispatch(appendDrafts(response.items));
       dispatch(setHasMore(response.items.length >= PAGE_SIZE));
@@ -78,7 +78,7 @@ export const searchDrafts = createAsyncThunk(
   async (query: string, { dispatch, rejectWithValue }) => {
     dispatch(setIsLoading(true));
     try {
-      const url = `/publications?status=draft&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}`;
+      const url = `/publications?status=draft&search=${encodeURIComponent(query)}&page=1&page_size=${PAGE_SIZE}&sort_order=desc&date_mode=updated`;
       const response = await apiRequest<DraftListResponse>(url);
       dispatch(setDrafts(response.items));
       dispatch(setHasMore(false));

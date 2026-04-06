@@ -154,7 +154,12 @@ class PublicationQueryService:
         )
 
         normalized_mode = (date_mode or "scheduled").lower()
-        primary_date = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
+        if normalized_mode == "published":
+            primary_date = Publication.published_time
+        elif normalized_mode == "updated":
+            primary_date = func.coalesce(Publication.updated_at, Publication.created_at)
+        else:
+            primary_date = Publication.scheduled_time
         order_asc = (sort_order or "").lower() == "asc"
         order_expr = primary_date.asc() if order_asc else primary_date.desc()
         id_tie = Publication.id.asc() if order_asc else Publication.id.desc()
@@ -401,7 +406,12 @@ class PublicationQueryService:
                        search, owner_id, date_mode: Optional[str] = "scheduled"):
         filters = []
         normalized_mode = (date_mode or "scheduled").lower()
-        date_field = Publication.published_time if normalized_mode == "published" else Publication.scheduled_time
+        if normalized_mode == "published":
+            date_field = Publication.published_time
+        elif normalized_mode == "updated":
+            date_field = func.coalesce(Publication.updated_at, Publication.created_at)
+        else:
+            date_field = Publication.scheduled_time
 
         if status:
             filters.append(Publication.status == DBPublicationStatus[status.value.upper()])

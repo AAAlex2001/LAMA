@@ -528,7 +528,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
 
               {welcome.enabled && (
                 <div className={styles.welcomeSection}>
-                  <div className={styles.welcomeTypeRow}>
+                  <div className={styles.welcomeControlsFrame}>
                     <div className={styles.welcomeTypePickerWrap}>
                       <div
                         className={styles.pickerRow}
@@ -565,36 +565,36 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                       <PlusIcon width={16} height={16} color={hasWelcomeMessage ? '#B0B4B8' : '#3B82F6'} />
                       Сообщение
                     </button>
-                  </div>
 
-                  {isForum && welcome.welcomeType === 'group_message' && welcome.topics.length > 0 && (
-                    <>
-                      <div
-                        className={styles.pickerRow}
-                        onClick={() => setOpenPicker(openPicker === 'welcomeTopic' ? null : 'welcomeTopic')}
-                      >
-                        <span className={styles.pickerLabel}>Отправлять в топик</span>
-                        <div className={styles.pickerRight}>
-                          <span className={styles.pickerValueText}>{topicSummary}</span>
-                          <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'welcomeTopic' ? styles.pickerChevronOpen : ''}`} />
+                    {isForum && welcome.welcomeType === 'group_message' && welcome.topics.length > 0 && (
+                      <div className={styles.welcomeTopicPickerWrap}>
+                        <div
+                          className={styles.pickerRow}
+                          onClick={() => setOpenPicker(openPicker === 'welcomeTopic' ? null : 'welcomeTopic')}
+                        >
+                          <span className={styles.pickerLabel}>Отправлять в топик</span>
+                          <div className={styles.pickerRight}>
+                            <span className={styles.pickerValueText}>{topicSummary}</span>
+                            <ChevronPickerIcon className={`${styles.pickerChevron} ${openPicker === 'welcomeTopic' ? styles.pickerChevronOpen : ''}`} />
+                          </div>
                         </div>
+                        {openPicker === 'welcomeTopic' && (
+                          <div className={styles.pickerOptions}>
+                            {welcome.topics.filter((t) => !t.is_closed).map((topic) => (
+                              <div key={topic.thread_id} className={styles.checkboxRow} onClick={() => handleTopicSelect(topic.thread_id)}>
+                                <Checkbox
+                                  variant="radio"
+                                  checked={topic.thread_id === (welcome.messageThreadId ?? 1)}
+                                  onChange={() => handleTopicSelect(topic.thread_id)}
+                                  label={topic.name}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      {openPicker === 'welcomeTopic' && (
-                        <div className={styles.pickerOptions}>
-                          {welcome.topics.filter((t) => !t.is_closed).map((topic) => (
-                            <div key={topic.thread_id} className={styles.checkboxRow} onClick={() => handleTopicSelect(topic.thread_id)}>
-                              <Checkbox
-                                variant="radio"
-                                checked={topic.thread_id === (welcome.messageThreadId ?? 1)}
-                                onChange={() => handleTopicSelect(topic.thread_id)}
-                                label={topic.name}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </>
-                  )}
+                    )}
+                  </div>
 
                   {hasWelcomeMessage && (
                     <div className={styles.messageCard}>

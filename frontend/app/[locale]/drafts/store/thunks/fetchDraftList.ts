@@ -34,6 +34,8 @@ export const fetchDrafts = createAsyncThunk(
         page: '1',
         page_size: String(PAGE_SIZE),
         sort_order: requestedSortOrder,
+        // Сортировка как на карточке (updated_at), а не по scheduled_time
+        date_mode: 'updated',
       });
       requestedTagIds.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(
@@ -77,6 +79,7 @@ export const fetchMoreDrafts = createAsyncThunk(
         page: String(nextPage),
         page_size: String(PAGE_SIZE),
         sort_order: sortOrder,
+        date_mode: 'updated',
       });
       tagIdsFilter.forEach((id) => queryParams.append('tag_ids', String(id)));
       const response = await apiRequest<DraftListResponse>(

@@ -6,7 +6,7 @@ from typing import Optional, List, Literal
 from backend.celery.tasks import delete_publication_messages
 from backend.models.publications import PublicationStatus as DBPublicationStatus, RepeatInterval as DBRepeatInterval
 from backend.services.publications.repeat_utils import local_range_to_utc
-from backend.schemas.publications.enums import PublicationStatus, ContentType
+from backend.schemas.publications.enums import PublicationStatus, ContentType, PublicationDateMode
 from backend.schemas.publications.publication_base import PublicationCreate
 from backend.schemas.publications.publication_update import PublicationUpdate
 from backend.schemas.publications.publication_response import (
@@ -83,7 +83,7 @@ async def get_publications(
     end_date: Optional[datetime] = None,
     search: Optional[str] = None,
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
-    date_mode: Optional[Literal["scheduled", "published"]] = Query("scheduled"),
+    date_mode: PublicationDateMode = Query(default=PublicationDateMode.scheduled),
     tz: str = Query("UTC"),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
@@ -106,7 +106,7 @@ async def get_publications(
         end_date=q_end,
         search=search,
         sort_order=sort_order,
-        date_mode=date_mode,
+        date_mode=date_mode.value,
         skip=skip,
         limit=page_size,
     )

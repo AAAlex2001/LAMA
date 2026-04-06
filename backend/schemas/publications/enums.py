@@ -1,6 +1,14 @@
 from enum import Enum
 
 
+class PublicationDateMode(str, Enum):
+    """По какому полю даты сортировать/фильтровать в списке публикаций."""
+
+    scheduled = "scheduled"
+    published = "published"
+    updated = "updated"
+
+
 class PublicationStatus(str, Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
