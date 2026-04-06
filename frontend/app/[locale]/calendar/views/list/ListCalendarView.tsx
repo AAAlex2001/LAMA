@@ -193,7 +193,7 @@ export default function ListCalendarView({
 
       <div className={styles.scrollContainer} ref={setScrollRootEl}>
         <div className={styles.desktopList}>
-          {filteredPosts.map((post) => {
+          {filteredPosts.map((post, index) => {
             const sourceDate = getSourceDate(post);
             const channel = post.channels?.[0];
             const extraChannelsCount = post.channels?.length > 1 ? post.channels.length - 1 : 0;
@@ -204,9 +204,10 @@ export default function ListCalendarView({
 
             const isSeries = (post.series_count ?? 0) > 1;
 
+            const rowKey = `${post.id}-${post.series_id ?? 'single'}-${getSourceDate(post)}-${index}`;
             return (
               <div
-                key={post.id}
+                key={rowKey}
                 className={styles.row}
                 onClick={() => onEdit(post)}
               >
@@ -262,9 +263,9 @@ export default function ListCalendarView({
 
         <div className={styles.mobileList}>
           <div className={styles.mobileListInner}>
-            {filteredPosts.map((post) => (
+            {filteredPosts.map((post, index) => (
               <CalendarCard
-                key={post.id}
+                key={`${post.id}-${post.series_id ?? 'single'}-${getSourceDate(post)}-${index}`}
                 post={post}
                 onEdit={() => onEdit(post)}
                 listMode

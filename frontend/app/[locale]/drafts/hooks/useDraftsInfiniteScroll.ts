@@ -11,16 +11,35 @@ export function useDraftsInfiniteScroll(
 ) {
   useEffect(() => {
     const scrollContainer = document.querySelector('main');
-    if (!scrollContainer) return;
+
+    function shouldLoadMore(): boolean {
+      if (!hasMore || isLoadingMore) return false;
+
+      if (scrollContainer) {
+        const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
+        return scrollHeight - scrollTop <= clientHeight + 120;
+      }
+
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const viewport = window.innerHeight;
+      const fullHeight = document.documentElement.scrollHeight;
+      return fullHeight - (scrollTop + viewport) <= 120;
+    }
 
     function handleScroll() {
-      if (!scrollContainer) return;
-      const { scrollHeight, scrollTop, clientHeight } = scrollContainer;
-      if (scrollHeight - scrollTop <= clientHeight + 100 && hasMore && !isLoadingMore) {
+      if (shouldLoadMore()) {
         dispatch(fetchMoreDrafts());
       }
     }
-    scrollContainer.addEventListener('scroll', handleScroll);
-    return () => scrollContainer.removeEventListener('scroll', handleScroll);
+
+    scrollContainer?.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Trigger once in case content does not fill viewport yet.
+    handleScroll();
+
+    return () => {
+      scrollContainer?.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [dispatch, hasMore, isLoadingMore]);
 }

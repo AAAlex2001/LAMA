@@ -42,6 +42,10 @@ export function usePublishHandlers({
   showLinkPreview,
 }: UsePublishHandlersParams) {
   const { showError, showSuccess } = useNotifications();
+  const toSerializableSnapshot = (snapshot: PostSnapshot): PostSnapshot => ({
+    ...snapshot,
+    mediaFiles: snapshot.mediaFiles.map(({ file: _file, ...rest }) => rest),
+  });
 
   const validateSinglePost = useCallback((postText: string, files: MediaFile[], poll: PollData | null) => {
     const channelIds = selectedChannels.map(c => c.id);
@@ -81,7 +85,7 @@ export function usePublishHandlers({
       quizCorrectAnswerId,
       showLinkPreview,
     };
-    dispatch(saveCurrentSnapshot(currentSnap));
+    dispatch(saveCurrentSnapshot(toSerializableSnapshot(currentSnap)));
 
     const snapshotsWithCurrent = [...snapshots];
     snapshotsWithCurrent[activeIndex] = currentSnap;

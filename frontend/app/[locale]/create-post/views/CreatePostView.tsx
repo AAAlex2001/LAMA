@@ -48,6 +48,7 @@ export default function CreatePostView() {
   const activeIndex = useAppSelector((state) => state.series.activeIndex);
   const pollData = selectPollData(quizState);
   const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedTags = useAppSelector((state) => state.settings.selectedTags);
 
   const hasContentForPreview =
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
@@ -93,6 +94,7 @@ export default function CreatePostView() {
     quizAnswers: quizState.answers,
     quizCorrectAnswerId: quizState.correctAnswerId,
     showLinkPreview,
+    selectedTags: selectedTags.map((t) => ({ name: t.name, color: t.color })),
   };
 
   const editorBlock = (

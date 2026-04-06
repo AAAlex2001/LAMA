@@ -4,19 +4,38 @@ import * as mediaSlice from '../store/slices/media';
 import * as inlineButtonsSlice from '../store/slices/inlineButtons';
 import * as quizSlice from '../store/slices/quiz';
 import * as seriesSlice from '../store/slices/series';
+import * as settingsSlice from '../store/slices/settings';
 import type { PostSnapshot } from '../store/types';
+import type { TagColor } from '@/types';
 
 interface UseCreatePostHandlersParams {
   dispatch: AppDispatch;
   snapshots: PostSnapshot[];
+  activeIndex?: number;
 }
 
 export function useCreatePostHandlers({
   dispatch,
   snapshots,
+  activeIndex = 0,
 }: UseCreatePostHandlersParams) {
+  const toSerializableSnapshot = (snapshot: PostSnapshot): PostSnapshot => ({
+    ...snapshot,
+    // File objects are not serializable and trigger RTK middleware warnings.
+    mediaFiles: snapshot.mediaFiles.map(({ file: _file, ...rest }) => rest),
+  });
+  const buildSnapshotForSave = (snapshot: PostSnapshot): PostSnapshot => {
+    const base = snapshots[activeIndex];
+    return toSerializableSnapshot({
+      ...snapshot,
+      sourcePublicationId: snapshot.sourcePublicationId ?? base?.sourcePublicationId,
+      seriesId: snapshot.seriesId ?? base?.seriesId,
+      seriesOrder: snapshot.seriesOrder ?? base?.seriesOrder,
+    });
+  };
+
   const handleSelectPostSnapshot = (index: number, currentSnapshot: any) => {
-    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+    dispatch(seriesSlice.saveCurrentSnapshot(buildSnapshotForSave(currentSnapshot)));
     dispatch(seriesSlice.setActiveIndex(index));
     const snapshot = snapshots[index];
     if (snapshot) {
@@ -32,11 +51,17 @@ export function useCreatePostHandlers({
       dispatch(quizSlice.setQuestion(snapshot.quizQuestion));
       dispatch(quizSlice.setAnswers(snapshot.quizAnswers));
       dispatch(editorSlice.setShowLinkPreview(snapshot.showLinkPreview));
+      if (snapshot.selectedTags !== undefined) {
+        dispatch(settingsSlice.clearTags());
+        for (const tag of snapshot.selectedTags) {
+          dispatch(settingsSlice.addTag({ name: tag.name, color: tag.color as TagColor }));
+        }
+      }
     }
   };
 
   const handleAddSeries = (currentSnapshot: any) => {
-    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+    dispatch(seriesSlice.saveCurrentSnapshot(buildSnapshotForSave(currentSnapshot)));
     dispatch(seriesSlice.addPost());
 
     dispatch(editorSlice.setText(''));
@@ -50,7 +75,7 @@ export function useCreatePostHandlers({
     if (snapshots.length <= 1) return;
 
     // Save current editor state into the active snapshot first
-    dispatch(seriesSlice.saveCurrentSnapshot(currentSnapshot));
+    dispatch(seriesSlice.saveCurrentSnapshot(buildSnapshotForSave(currentSnapshot)));
 
     // Remove the post
     dispatch(seriesSlice.removePost(indexToRemove));

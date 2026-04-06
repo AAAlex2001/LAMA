@@ -68,7 +68,8 @@ export async function prepareMediaPayload(files: MediaFile[]) {
 export function buildCreatePostRequest(
   text: string, showLinkPreview: boolean, settings: SettingsState, buttonRows: ButtonRow[],
   mediaPayload: Awaited<ReturnType<typeof prepareMediaPayload>>,
-  pollData: PollData | null, channelIds: number[], scheduledTime?: string
+  pollData: PollData | null, channelIds: number[], scheduledTime?: string,
+  tagOverride?: Array<{ name: string; color: string }> | null,
 ): CreatePostRequest {
   const plainText = extractPlainText(text);
   const hasText = plainText.length > 0;
@@ -129,7 +130,7 @@ export function buildCreatePostRequest(
       : undefined,
     repeat_end_time: repeatEndTime,
   };
-  const selectedTags = settings.selectedTags || [];
+  const selectedTags = (tagOverride ?? settings.selectedTags) || [];
 
   return {
     content_type: contentType,

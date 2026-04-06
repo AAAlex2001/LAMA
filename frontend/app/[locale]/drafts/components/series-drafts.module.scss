@@ -1,0 +1,41 @@
+.pageInner {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 960px;
+  margin: 0 auto;
+  gap: 20px;
+}
+
+.topBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 22px;
+  color: #6b7280;
+}
+
+.accordionCard {
+  padding: 0 16px 16px;
+  box-sizing: border-box;
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.error {
+  padding: 16px;
+  color: #b91c1c;
+  font-size: 14px;
+}

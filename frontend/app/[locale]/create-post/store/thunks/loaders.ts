@@ -1,17 +1,20 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppDispatch, RootState } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
-import type { MediaFile, ButtonRow, QuizAnswer, Draft, InlineButton } from '../types';
-import { setText } from '../slices/editor';
+import type { Draft, PostSnapshot } from '../types';
+import type { DraftListResponse } from '@/types/post';
+import { setText, setShowLinkPreview } from '../slices/editor';
 import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
 import { setChannels as setChannelSelections } from '../slices/channels';
 import { addTag, clearTags } from '../slices/settings';
+import { setSnapshots, setActiveIndex, resetSeries } from '../slices/series';
 import { fetchChannelsThunk } from './channels';
 import { fetchTagsThunk } from './tags';
 import type { TagColor } from '@/types';
 import { TAG_COLORS } from '@/types';
+import { draftToPostSnapshot } from '../../utils/draftToPostSnapshot';
 
 export const loadChannels = createAsyncThunk(
   'createPost/loadChannels',
@@ -32,7 +35,42 @@ export const loadDraftById = createAsyncThunk(
   async (draftId: number, { dispatch, getState, rejectWithValue }) => {
     try {
       const draft = await apiRequest<Draft>(`/publications/${draftId}`);
-      loadDraftIntoStore(draft, dispatch as AppDispatch);
+
+      if (draft.series_id) {
+        const qs = new URLSearchParams({
+          status: 'draft',
+          series_id: String(draft.series_id),
+          page_size: '200',
+          sort_order: 'asc',
+          date_mode: 'updated',
+        });
+        const list = await apiRequest<DraftListResponse>(`/publications?${qs}`);
+        const members = [...list.items].sort((a, b) => {
+          const ao = a.series_order ?? a.id;
+          const bo = b.series_order ?? b.id;
+          return ao - bo;
+        });
+
+        if (members.length >= 2) {
+          const snapshots = members.map(draftToPostSnapshot);
+          const activeIndex = Math.max(0, members.findIndex((d) => d.id === draftId));
+          dispatch(setSnapshots(snapshots));
+          dispatch(setActiveIndex(activeIndex));
+          applyPostSnapshotToStore(snapshots[activeIndex], dispatch as AppDispatch);
+        } else {
+          dispatch(resetSeries());
+          const snap = draftToPostSnapshot(draft);
+          dispatch(setSnapshots([snap]));
+          dispatch(setActiveIndex(0));
+          applyPostSnapshotToStore(snap, dispatch as AppDispatch);
+        }
+      } else {
+        dispatch(resetSeries());
+        const snap = draftToPostSnapshot(draft);
+        dispatch(setSnapshots([snap]));
+        dispatch(setActiveIndex(0));
+        applyPostSnapshotToStore(snap, dispatch as AppDispatch);
+      }
 
       const state = getState() as RootState;
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
@@ -63,8 +101,12 @@ export const loadDraftByToken = createAsyncThunk(
         return rejectWithValue('Не удалось загрузить черновик по ссылке');
       }
       const draft = await response.json() as Draft;
-      
-      loadDraftIntoStore(draft, dispatch as AppDispatch);
+
+      dispatch(resetSeries());
+      const snap = draftToPostSnapshot(draft);
+      dispatch(setSnapshots([snap]));
+      dispatch(setActiveIndex(0));
+      applyPostSnapshotToStore(snap, dispatch as AppDispatch);
 
       const state = getState() as RootState;
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
@@ -83,44 +125,14 @@ export const loadDraftByToken = createAsyncThunk(
   }
 );
 
-export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
-  const baseUrl = API_BASE_URL.replace('/api', '');
-  
-  const textContent = draft.formatted_content?.html || draft.formatted_content?.text || draft.text_content || '';
-  dispatch(setText(textContent));
-  
-  if (draft.media_urls && draft.media_urls.length > 0) {
-    const mediaFiles: MediaFile[] = draft.media_urls.map((url: string, index: number) => {
-      const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
-      const thumbUrl = draft.media_thumbnail_urls?.[index];
-      const fullThumb = thumbUrl ? (thumbUrl.startsWith('http') ? thumbUrl : `${baseUrl}${thumbUrl}`) : null;
-      const lowerUrl = url.toLowerCase();
-      const isVideo = lowerUrl.includes('/videos/') || lowerUrl.endsWith('.mp4') || lowerUrl.endsWith('.mov') || lowerUrl.endsWith('.mkv');
-      const isDocument =
-        lowerUrl.endsWith('.pdf') ||
-        lowerUrl.endsWith('.doc') ||
-        lowerUrl.endsWith('.docx') ||
-        lowerUrl.endsWith('.txt') ||
-        lowerUrl.endsWith('.xls') ||
-        lowerUrl.endsWith('.xlsx') ||
-        lowerUrl.endsWith('.ppt') ||
-        lowerUrl.endsWith('.pptx') ||
-        lowerUrl.endsWith('.rtf') ||
-        lowerUrl.endsWith('.csv');
+export function applyPostSnapshotToStore(snapshot: PostSnapshot, dispatch: AppDispatch) {
+  dispatch(setText(snapshot.text));
+  dispatch(setShowLinkPreview(snapshot.showLinkPreview));
 
-      return {
-        id: `media-${Date.now()}-${index}`,
-        url: fullUrl,
-        preview_url: isVideo ? (fullThumb || '') : isDocument ? undefined : fullUrl,
-        thumbnail_url: fullThumb,
-        type: isDocument ? 'document' : isVideo ? 'video' : 'image',
-        blur: draft.media_blur?.[index] || false,
-        telegram_file_id: draft.media_file_ids?.[index] || null,
-      } as MediaFile;
-    });
-    dispatch(setFiles(mediaFiles));
+  if (snapshot.mediaFiles.length > 0) {
+    dispatch(setFiles(snapshot.mediaFiles));
 
-    const docsToMeasure = mediaFiles.filter(m => m.type === 'document' && !m.size && m.url);
+    const docsToMeasure = snapshot.mediaFiles.filter((m) => m.type === 'document' && !m.size && m.url);
     if (docsToMeasure.length > 0) {
       const fetchContentLength = async (url: string): Promise<number | null> => {
         try {
@@ -157,54 +169,41 @@ export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
   } else {
     dispatch(clearFiles());
   }
-  
-  if (draft.inline_keyboard?.buttons && draft.inline_keyboard.buttons.length > 0) {
-    const rows: ButtonRow[] = draft.inline_keyboard.buttons.map((row: InlineButton[], ri: number) => ({
-      id: `row-${Date.now()}-${ri}`,
-      buttons: row.map((btn: InlineButton, bi: number) => ({
-        id: `btn-${Date.now()}-${ri}-${bi}`,
-        text: btn.text || '',
-        type: btn.type || 'url',
-        url: btn.url || '',
-        callback_action: btn.callback_action || undefined,
-        callback_response: btn.callback_response || '',
-        hidden_text_subscribed: btn.hidden_text_subscribed || '',
-        hidden_text_unsubscribed: btn.hidden_text_unsubscribed || '',
-      })),
-    }));
-    dispatch(setRows(rows));
+
+  if (snapshot.inlineButtonsOpen && snapshot.buttonRows.length > 0) {
+    dispatch(setRows(snapshot.buttonRows));
     dispatch(openInlineButtons());
   } else {
     dispatch(resetInlineButtons());
   }
-  
-  if (draft.poll_data) {
-    const pd = draft.poll_data;
-    dispatch(setQuestion(pd.question || ''));
-    const answers: QuizAnswer[] = (pd.options || []).map((opt: string, i: number) => ({
-      id: `ans-${Date.now()}-${i}`, text: opt,
-    }));
-    dispatch(setAnswers(answers));
-    dispatch(setMode(pd.is_quiz ? 'quiz' : pd.allows_multiple_answers ? 'poll_multi' : 'poll_single'));
-    if (pd.is_quiz && pd.correct_option_id != null && answers[pd.correct_option_id]) {
-      dispatch(setCorrectAnswer(answers[pd.correct_option_id].id));
+
+  if (snapshot.quizOpen) {
+    dispatch(setQuestion(snapshot.quizQuestion));
+    dispatch(setAnswers(snapshot.quizAnswers));
+    dispatch(setMode(snapshot.quizMode));
+    if (snapshot.quizCorrectAnswerId) {
+      dispatch(setCorrectAnswer(snapshot.quizCorrectAnswerId));
     }
     dispatch(openQuiz());
   } else {
     dispatch(resetQuiz());
   }
 
-  // Restore tags
-  dispatch(clearTags());
-  if (draft.tags && draft.tags.length > 0) {
-    for (const tag of draft.tags) {
+  if (snapshot.selectedTags !== undefined) {
+    dispatch(clearTags());
+    for (const tag of snapshot.selectedTags) {
       const validColor = (tag.color && TAG_COLORS.includes(tag.color as TagColor))
         ? (tag.color as TagColor)
         : '#FAC7C7';
-      dispatch(addTag({
-        name: tag.name,
-        color: validColor,
-      }));
+      dispatch(addTag({ name: tag.name, color: validColor }));
     }
   }
+}
+
+export function loadDraftIntoStore(draft: Draft, dispatch: AppDispatch) {
+  dispatch(resetSeries());
+  const snap = draftToPostSnapshot(draft);
+  dispatch(setSnapshots([snap]));
+  dispatch(setActiveIndex(0));
+  applyPostSnapshotToStore(snap, dispatch);
 }

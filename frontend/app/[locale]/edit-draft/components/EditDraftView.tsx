@@ -15,6 +15,9 @@ import {
   PostEditorSharedModals,
   type PostEditorMainFieldsClassNames,
 } from '../../create-post/components/post-editor';
+import PostAccordion from '@/components/post-accordion/post-accordion';
+import createPostStyles from '../../create-post/create-post.module.scss';
+import { useCreatePostHandlers } from '../../create-post/hooks/useCreatePostHandlers';
 import Modal from '@/components/modal/modal';
 import Input from '@/components/input/input';
 import Tooltip from '@/components/tooltip/tooltip';
@@ -148,12 +151,43 @@ export default function EditDraftView() {
   const isSavingDraft = useAppSelector((state) => state.ui.isSavingDraft);
   const isPublishing = useAppSelector((state) => state.ui.isPublishing);
   const selectedChannels = useAppSelector(selectSelectedChannels);
+  const snapshots = useAppSelector((state) => state.series.snapshots);
+  const activeIndex = useAppSelector((state) => state.series.activeIndex);
+  const selectedTags = useAppSelector((state) => state.settings.selectedTags);
+
+  const {
+    handleSelectPostSnapshot,
+  } = useCreatePostHandlers({
+    dispatch,
+    snapshots,
+    activeIndex,
+  });
+
+  const showLinkPreview = useAppSelector((state) => state.editor.showLinkPreview);
 
   const hasContentForPreview =
     text.replace(/<[^>]*>/g, '').trim().length > 0 ||
     mediaFiles.length > 0 ||
     (quizState.isOpen && quizState.question.trim().length > 0) ||
     (inlineButtonsOpen && buttonRows.length > 0);
+
+  const currentSnapshot = {
+    text,
+    mediaFiles,
+    inlineButtonsOpen,
+    buttonRows,
+    quizOpen: quizState.isOpen,
+    quizMode: quizState.mode,
+    quizQuestion: quizState.question,
+    quizAnswers: quizState.answers,
+    quizCorrectAnswerId: quizState.correctAnswerId,
+    showLinkPreview,
+    selectedTags: selectedTags.map((t) => ({ name: t.name, color: t.color })),
+    sourcePublicationId: snapshots[activeIndex]?.sourcePublicationId,
+    seriesId: snapshots[activeIndex]?.seriesId,
+    seriesOrder: snapshots[activeIndex]?.seriesOrder,
+  };
+  const isLastSeriesPost = snapshots.length <= 1 || activeIndex === snapshots.length - 1;
 
   const handleSaveDraft = async (): Promise<boolean> => {
     const result = await dispatch(saveDraft({ channelIds: selectedChannels.map((c) => c.id), draftId }));
@@ -197,14 +231,16 @@ export default function EditDraftView() {
       />
 
       <div className={styles.footerButtons}>
-        <Button
-          text="Сохранить изменения"
-          showArrow={false}
-          className={styles.saveBtn}
-          onClick={handleSaveDraft}
-          loading={isSavingDraft}
-          disabled={isSavingDraft}
-        />
+        {isLastSeriesPost ? (
+          <Button
+            text="Сохранить изменения"
+            showArrow={false}
+            className={styles.saveBtn}
+            onClick={handleSaveDraft}
+            loading={isSavingDraft}
+            disabled={isSavingDraft}
+          />
+        ) : null}
         <button
           type="button"
           className={styles.shareBtn}
@@ -228,14 +264,16 @@ export default function EditDraftView() {
             <ShareIcon width={24} height={24} color="#B0B4B8" />
             {hoveredShareBtn && <Tooltip text="Поделиться" />}
           </button>
-          <Button
-            text="Опубликовать сейчас"
-            showArrow={false}
-            className={styles.publishBtn}
-            onClick={handlePublishNow}
-            loading={isPublishing}
-            disabled={isPublishing}
-          />
+          {isLastSeriesPost ? (
+            <Button
+              text="Опубликовать сейчас"
+              showArrow={false}
+              className={styles.publishBtn}
+              onClick={handlePublishNow}
+              loading={isPublishing}
+              disabled={isPublishing}
+            />
+          ) : null}
           <Button
             text="Запланировать"
             showArrow={false}
@@ -271,7 +309,22 @@ export default function EditDraftView() {
         }`}
       >
         <div className={styles.editorColumn}>
-          {editorBlock}
+          {snapshots.length > 1 ? (
+            <div className={createPostStyles.seriesList}>
+              {snapshots.map((_, index) => (
+                <PostAccordion
+                  key={`edit-series-${index + 1}`}
+                  title={`Пост ${index + 1}`}
+                  isOpen={index === activeIndex}
+                  onToggle={() => handleSelectPostSnapshot(index, currentSnapshot)}
+                >
+                  {index === activeIndex ? editorBlock : null}
+                </PostAccordion>
+              ))}
+            </div>
+          ) : (
+            editorBlock
+          )}
         </div>
         <div className={styles.settingsPanelDesktop}>
           <PostSettingsConnected

@@ -53,6 +53,10 @@ export interface PostSnapshot {
   quizAnswers: QuizAnswer[];
   quizCorrectAnswerId: string | null;
   showLinkPreview: boolean;
+  selectedTags?: Array<{ name: string; color: string }>;
+  sourcePublicationId?: number;
+  seriesId?: number;
+  seriesOrder?: number;
 }
 
 export interface CreatePostRequest {
