@@ -1,4 +1,5 @@
 .page {
+  position: relative;
   background: #FFFFFF;
   width: 100%;
   padding-top: 164px;
@@ -38,7 +39,11 @@
 }
 
 .registerCta {
-  width: 100%;
+  width: 296px;
+  align-self: center;
+  border-radius: 8px !important;
+  font-size: 18px !important;
+  font-weight: 500 !important;
 }
 
 @media (min-width: 768px) {

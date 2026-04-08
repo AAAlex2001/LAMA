@@ -17,7 +17,10 @@ function NestedDropdown({ item }: { item: NestedDropdownConfig }) {
       {isOpen ? (
         <div className={styles.subList}>
           {item.items.map((subItem) => (
-            <div key={subItem.id} className={styles.subItem}>{subItem.title}</div>
+            <div key={subItem.id} className={styles.subItem}>
+              <span className={styles.subItemDot} />
+              {subItem.title}
+            </div>
           ))}
         </div>
       ) : null}

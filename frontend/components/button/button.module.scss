@@ -99,10 +99,11 @@
   justify-content: center;
 
   .buttonText {
-    background: none;
-    -webkit-background-clip: unset;
-    background-clip: unset;
-    color: #000000;
+    background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
     font-size: 14px;
     line-height: 28px;
   }
@@ -116,7 +117,10 @@
     background: #B3C7F5;
 
     .buttonText {
-      color: #000000;
+      background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
   }
 

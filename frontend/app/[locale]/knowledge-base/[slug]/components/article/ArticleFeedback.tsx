@@ -1,42 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/new-button';
 import { HeartIcon, HeartSlashIcon } from '../icons';
 import styles from './ArticleFeedback.module.scss';
 
 export default function ArticleFeedback() {
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+  const [hovered, setHovered] = useState<'up' | 'down' | null>(null);
 
   return (
     <section className={styles.block}>
-      <div className={styles.header}>
+      <div className={styles.btns}>
         <span className={styles.title}>Была ли статья полезной?</span>
-      </div>
-      <div className={styles.row}>
         <div className={styles.icons}>
           <button
             type="button"
             className={styles.iconButton}
             aria-label="Полезно"
-            onClick={() => setFeedback('up')}
-            data-active={feedback === 'up'}
+            onClick={() => setFeedback((v) => (v === 'up' ? null : 'up'))}
+            onMouseEnter={() => setHovered('up')}
+            onMouseLeave={() => setHovered(null)}
           >
-            <HeartIcon />
+            <HeartIcon filled={feedback === 'up'} hovered={hovered === 'up' && feedback !== 'up'} />
           </button>
           <button
             type="button"
             className={styles.iconButton}
             aria-label="Не полезно"
-            onClick={() => setFeedback('down')}
-            data-active={feedback === 'down'}
+            onClick={() => setFeedback((v) => (v === 'down' ? null : 'down'))}
+            onMouseEnter={() => setHovered('down')}
+            onMouseLeave={() => setHovered(null)}
           >
-            <HeartSlashIcon />
+            <HeartSlashIcon filled={feedback === 'down'} hovered={hovered === 'down' && feedback !== 'down'} />
+          </button>
+          <button type="button" className={styles.shareBtn}>
+            <span className={styles.shareBtnText}>Поделиться</span>
           </button>
         </div>
-        <Button variant="outline" intent="gradient" size="md">
-          Поделиться
-        </Button>
       </div>
     </section>
   );

@@ -8,7 +8,9 @@ import KnowledgeNavDropdown from '../knowledge-nav-dropdown/KnowledgeNavDropdown
 import ArticleToc from './ArticleToc';
 import styles from './SubNav.module.scss';
 
-export default function SubNav() {
+type Heading = { id: string; title: string };
+
+export default function SubNav({ headings = [] }: { headings?: Heading[] }) {
   const [open, setOpen] = useState<'nav' | 'toc' | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -90,7 +92,7 @@ export default function SubNav() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            {open === 'nav' ? <KnowledgeNavDropdown /> : <ArticleToc />}
+            {open === 'nav' ? <KnowledgeNavDropdown headings={headings} /> : <ArticleToc />}
           </motion.div>
         )}
       </AnimatePresence>

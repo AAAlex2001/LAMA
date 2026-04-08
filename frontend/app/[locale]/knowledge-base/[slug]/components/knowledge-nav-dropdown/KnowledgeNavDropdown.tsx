@@ -1,19 +1,44 @@
 import SearchBar from '@/components/search-bar/search-bar';
-import { Button } from '@/components/new-button';
+import { Button as NewButton } from '@/components/new-button';
+import OldButton from '@/components/button/button';
 import styles from './KnowledgeNavDropdown.module.scss';
 import KnowledgeNavDropdownSection from './KnowledgeNavDropdownSection';
 import { FLAT_ITEMS, SECTIONS } from './KnowledgeNavDropdown.data';
 import type { Variant } from './KnowledgeNavDropdown.types';
+import type { SectionConfig } from './KnowledgeNavDropdown.types';
 
-type Props = { variant?: Variant };
+type Heading = { id: string; title: string };
 
-export default function KnowledgeNavDropdown({ variant = 'dropdown' }: Props) {
+type Props = { variant?: Variant; headings?: Heading[] };
+
+function buildSections(headings: Heading[]): SectionConfig[] {
+  if (!headings.length) return SECTIONS;
+  return SECTIONS.map((s) => ({
+    ...s,
+    entries: s.entries?.map((e) => {
+      if (e.isActive && e.nested) {
+        return {
+          ...e,
+          nested: {
+            ...e.nested,
+            items: headings.map((h) => ({ id: h.id, title: h.title })),
+          },
+        };
+      }
+      return e;
+    }),
+  }));
+}
+
+export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [] }: Props) {
+  const sections = buildSections(headings);
+
   return (
     <div className={variant === 'sidebar' ? styles.sidebar : styles.dropdown}>
       <SearchBar placeholder="Поиск по базе знаний" className={styles.search} />
 
       <div className={styles.sectionsGroup}>
-        {SECTIONS.map((section) => (
+        {sections.map((section) => (
           <KnowledgeNavDropdownSection key={section.id} section={section} />
         ))}
       </div>
@@ -24,13 +49,16 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown' }: Props) {
             <div key={`${title}-${index}`} className={styles.flatItem}>{title}</div>
           ))}
         </div>
-        <button type="button" className={styles.tocBtn}>
-          <span>Написать в LamaPlannerBot</span>
-        </button>
-        <Button variant="fill" intent="gradient" size="md" className={styles.fullBtn}>
+        <OldButton
+          text="Написать в LamaPlannerBot"
+          variant="templateCard"
+          fullWidth
+        />
+        <NewButton variant="fill" intent="gradient" size="md" className={styles.fullBtn}>
           Войти
-        </Button>
+        </NewButton>
       </div>
     </div>
   );
 }
+

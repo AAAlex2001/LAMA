@@ -1,4 +1,5 @@
 import type { ArticleSection } from '../../mock';
+import { slugify } from '../slugify';
 import styles from './ArticleContent.module.scss';
 
 type Props = { sections: ArticleSection[] };
@@ -11,7 +12,7 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <section key={idx} className={styles.textBlock}>
               {section.title && (
-                <h3 className={styles.sectionTitle}>
+                <h3 id={slugify(section.title)} className={styles.sectionTitle}>
                   <span className={styles.gradientText}>{section.title}</span>
                 </h3>
               )}
@@ -40,7 +41,7 @@ export default function ArticleContent({ sections }: Props) {
         if (section.type === 'errors') {
           return (
             <section key={idx} className={styles.errorsBlock}>
-              <h3 className={styles.sectionTitle}>
+              <h3 id={slugify(section.title)} className={styles.sectionTitle}>
                 <span className={styles.gradientText}>{section.title}</span>
               </h3>
               {section.items.map((item, i) => (

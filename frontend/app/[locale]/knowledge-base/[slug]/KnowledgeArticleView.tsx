@@ -6,7 +6,9 @@ import {
   ArticleHeader,
   ArticleContent,
   ArticleFeedback,
+  ArticleSectionsNav,
 } from './components';
+import { slugify } from './components/slugify';
 import styles from './KnowledgeArticleView.module.scss';
 import type { KnowledgeArticle } from './mock';
 
@@ -17,12 +19,17 @@ type Props = {
 };
 
 export default function KnowledgeArticleView({ article, isLoggedIn, locale }: Props) {
+  const headings = article.sections
+    .filter((s) => 'title' in s && typeof s.title === 'string' && s.title.length > 0)
+    .map((s) => ({ id: slugify((s as { title: string }).title), title: (s as { title: string }).title }));
+
   return (
     <div className={styles.page}>
-      <SubNav />
+      <SubNav headings={headings} />
+      {!isLoggedIn && <ArticleSectionsNav article={article} />}
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <KnowledgeNavDropdown variant="sidebar" />
+          <KnowledgeNavDropdown variant="sidebar" headings={headings} />
         </aside>
         <div className={styles.main}>
           <ArticleHeader

@@ -6,6 +6,7 @@ export {
 export {
   SubNav,
   ArticleToc,
+  ArticleSectionsNav,
 } from './navigation';
 export {
   KnowledgeNavDropdown,
