@@ -4,7 +4,7 @@ interface MonospaceIconProps {
   color?: string;
 }
 
-export default function MonospaceIcon({ width = 16, height = 16, color = '#383F45' }: MonospaceIconProps) {
+export default function MonospaceIcon({ width = 16, height = 16, color = '#000000' }: MonospaceIconProps) {
   return (
     <svg
       width={width}

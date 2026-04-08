@@ -50,7 +50,7 @@ const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
         <ChevronDownIcon
           width={16}
           height={16}
-          color="#383F45"
+          color="#000000"
           className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
         />
       </button>

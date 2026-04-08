@@ -24,7 +24,7 @@
   font-weight: 500;
   font-size: 16px;
   line-height: 19px;
-  color: #383F45;
+  color: #000000;
   text-align: center;
 }
 
@@ -71,7 +71,7 @@
 .bullet {
   width: 4px;
   height: 4px;
-  background: #383F45;
+  background: #000000;
   border-radius: 50%;
 }
 
@@ -80,7 +80,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 18px;
-  color: #383F45;
+  color: #000000;
   flex: 1;
 }
 
@@ -119,7 +119,7 @@
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
-  color: #383F45;
+  color: #000000;
   outline: none;
 
   &::placeholder {
@@ -197,7 +197,7 @@
   font-size: 13px;
   font-weight: 500;
   line-height: 16px;
-  color: #383F45;
+  color: #000000;
 }
 
 .botBadge {

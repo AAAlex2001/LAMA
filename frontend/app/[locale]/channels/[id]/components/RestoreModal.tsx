@@ -148,7 +148,7 @@ const RestoreModal: FC<RestoreModalProps> = ({ isOpen, onClose, onConfirm, chann
 
         <button type="button" className={styles.selectorRow} onClick={() => setCalendarOpen(!calendarOpen)}>
           <span className={styles.selectorLabel}>Дата: {dateRangeLabel}</span>
-          <ChevronDownIcon width={16} height={16} color="#383F45" />
+          <ChevronDownIcon width={16} height={16} color="#000000" />
         </button>
 
         {calendarOpen && (

@@ -404,7 +404,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
                           {
                             icon: aiLoading
                               ? <Loader size={18} color="blue" />
-                              : <AiEditIcon width={21} height={21} color={newKeyword.trim() ? '#3B82F6' : '#383F45'} />,
+                              : <AiEditIcon width={21} height={21} color={newKeyword.trim() ? '#3B82F6' : '#000000'} />,
                             onClick: handleAiSynonyms,
                             onMouseEnter: () => setAiTooltipVisible(true),
                             onMouseLeave: () => setAiTooltipVisible(false),
@@ -582,7 +582,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
                     className={`${styles.inlineButtonsRow} ${inlineButtonsOpen ? styles.inlineButtonsRowActive : ''}`}
                     onClick={handleToggleInlineButtons}
                   >
-                    <InlineButtonIcon width={24} height={24} color="#383F45" />
+                    <InlineButtonIcon width={24} height={24} color="#000000" />
                     <span className={styles.inlineButtonsLabel}>Кнопки</span>
                   </button>
                   {inlineButtonsOpen && (

@@ -200,7 +200,7 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                 <ChevronDownIcon
                   width={16}
                   height={16}
-                  color="#383F45"
+                  color="#000000"
                   className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
                 />
               </button>
@@ -336,7 +336,7 @@ const BackupSection: FC<BackupSectionProps> = ({ channel }) => {
                 <ChevronDownIcon
                   width={16}
                   height={16}
-                  color="#383F45"
+                  color="#000000"
                   className={`${styles.subChevron} ${restoreOpen ? styles.subChevronOpen : ''}`}
                 />
               </button>

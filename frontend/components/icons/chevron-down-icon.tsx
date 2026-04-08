@@ -5,7 +5,7 @@ interface IconProps {
   color?: string;
 }
 
-export default function ChevronDownIcon({ className, width = 16, height = 16, color = '#383F45' }: IconProps) {
+export default function ChevronDownIcon({ className, width = 16, height = 16, color = '#000000' }: IconProps) {
   return (
     <svg
       width={width}

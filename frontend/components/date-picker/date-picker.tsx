@@ -185,12 +185,12 @@ export default function DatePicker({
         }}
         prevLabel={disableNavigation ? null : (
           <div className={styles.chevron}>
-            <ChevronDownIcon width={20} height={20} color="#383F45" />
+            <ChevronDownIcon width={20} height={20} color="#000000" />
           </div>
         )}
         nextLabel={disableNavigation ? null : (
           <div className={styles.chevron}>
-            <ChevronDownIcon width={20} height={20} color="#383F45" />
+            <ChevronDownIcon width={20} height={20} color="#000000" />
           </div>
         )}
         prev2Label={null}

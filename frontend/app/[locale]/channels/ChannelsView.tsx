@@ -124,7 +124,7 @@ const ChannelsView: FC = () => {
                 onClick={handleRefresh}
                 disabled={syncing}
               >
-                <CalendarRepeatIcon width={26} height={26} color="#383F45" />
+                <CalendarRepeatIcon width={26} height={26} color="#000000" />
               </button>
               <Tooltip text="Обновить информацию о каналах" visible={refreshHover} />
             </div>

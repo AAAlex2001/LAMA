@@ -87,7 +87,7 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
         <ChevronDownIcon
           width={16}
           height={16}
-          color="#383F45"
+          color="#000000"
           className={`${styles.chevron} ${botsOpen ? styles.chevronOpen : ''}`}
         />
       </button>

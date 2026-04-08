@@ -21,7 +21,7 @@ export function getToolButtonColor(params: {
 }): string {
   const { id, hoveredButton, isActive } = params;
   if (isActive || hoveredButton === id) return '#3B82F6';
-  return '#383F45';
+  return '#000000';
 }
 
 export function openAiInputFromSelection(params: {

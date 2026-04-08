@@ -32,7 +32,7 @@
   }
 
   .messageText {
-    color: #383F45;
+    color: #000000;
   }
 }
 
@@ -199,7 +199,7 @@
 .postCardText {
   font-size: 14px;
   line-height: 20px;
-  color: #383F45;
+  color: #000000;
   margin: 0;
   padding: 10px 16px;
   white-space: pre-wrap;
@@ -282,7 +282,7 @@
   max-width: 200px;
 
   .replyPreview & {
-    color: #383F45;
+    color: #000000;
   }
 
   .replyPreviewOutgoing & {

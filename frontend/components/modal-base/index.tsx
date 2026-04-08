@@ -240,7 +240,7 @@ const ModalClose = ({ children, className, asChild }: ModalCloseProps) => {
       className={classNames(styles.close, className)}
       aria-label="Close modal"
     >
-      {children || <CloseIcon width={28} height={28} color="#383F45" />}
+      {children || <CloseIcon width={28} height={28} color="#000000" />}
     </button>
   );
 };

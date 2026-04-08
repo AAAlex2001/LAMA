@@ -74,7 +74,7 @@ const ConnectBotModal: FC<ConnectBotModalProps> = ({ isOpen, onOpenChange, onSub
             <ChevronDownIcon
               width={16}
               height={16}
-              color="#383F45"
+              color="#000000"
               className={s.dropdownChevron}
             />
           </button>
@@ -89,7 +89,7 @@ const ConnectBotModal: FC<ConnectBotModalProps> = ({ isOpen, onOpenChange, onSub
               <ChevronDownIcon
                 width={16}
                 height={16}
-                color="#383F45"
+                color="#000000"
                 className={`${s.dropdownChevron} ${s.dropdownChevronOpen}`}
               />
             </button>

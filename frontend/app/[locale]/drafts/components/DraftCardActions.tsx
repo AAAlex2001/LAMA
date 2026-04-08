@@ -58,7 +58,7 @@ export default function DraftCardActions({
           onMouseEnter={() => setHoveredButton('edit')}
           onMouseLeave={() => setHoveredButton(null)}
         >
-          <EditNameIcon width={24} height={24} color="#383F45" />
+          <EditNameIcon width={24} height={24} color="#000000" />
           {hoveredButton === 'edit' && <Tooltip text="Редактировать" placement={tooltipPlacement} />}
         </button>
       )}

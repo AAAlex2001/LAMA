@@ -354,7 +354,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
           <ModalBase.Header className={styles.header}>
             <div className={styles.headerStart}>
               <button type="button" className={styles.backBtn} onClick={handleClose} aria-label="Назад">
-                <ChevronDownIcon width={14} height={14} color="#383F45" className={styles.backChevron} />
+                <ChevronDownIcon width={14} height={14} color="#000000" className={styles.backChevron} />
               </button>
               <span className={styles.titleText}>
                 {isEditing ? 'Редактирование команды' : 'Создание команды'}
@@ -476,7 +476,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
                         className={`${styles.inlineButtonsRow} ${inlineButtonsOpen ? styles.inlineButtonsRowActive : ''}`}
                         onClick={handleToggleInlineButtons}
                       >
-                        <InlineButtonIcon width={24} height={24} color="#383F45" />
+                        <InlineButtonIcon width={24} height={24} color="#000000" />
                         <span className={styles.inlineButtonsLabel}>Кнопки</span>
                       </button>
                       {inlineButtonsOpen && (

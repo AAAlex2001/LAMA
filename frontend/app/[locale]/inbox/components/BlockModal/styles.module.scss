@@ -53,7 +53,7 @@
   margin: 0;
 
   &:hover {
-    color: #383F45;
+    color: #000000;
   }
 
   svg {
@@ -118,11 +118,11 @@
 }
 
 .reasonLabel {
-  color: #383F45;
+  color: #000000;
 }
 
 .reasonValue {
-  color: #383F45;
+  color: #000000;
   font-weight: 400;
 }
 
@@ -219,7 +219,7 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  color: #383F45;
+  color: #000000;
   cursor: pointer;
   transition: all 0.2s ease;
 

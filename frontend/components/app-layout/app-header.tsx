@@ -27,7 +27,7 @@ export default function AppHeader({ pageTitle }: AppHeaderProps) {
 
         <div className={styles.headerRight}>
           <button className={styles.headerIconButton} type="button" aria-label="Уведомления">
-            <BellIcon width={24} height={24} color="#383F45" />
+            <BellIcon width={24} height={24} color="#000000" />
           </button>
 
           <button 
@@ -48,7 +48,7 @@ export default function AppHeader({ pageTitle }: AppHeaderProps) {
             aria-label="Меню"
             onClick={() => setIsMobileMenuOpen(true)}
           >
-            <BurgerIcon width={44} height={44} color="#383F45" />
+            <BurgerIcon width={44} height={44} color="#000000" />
           </button>
         </div>
       </header>

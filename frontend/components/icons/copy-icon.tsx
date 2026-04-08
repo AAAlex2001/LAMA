@@ -5,7 +5,7 @@ interface IconProps {
   className?: string;
 }
 
-export default function CopyIcon({ width = 24, height = 24, color = '#383F45', className }: IconProps) {
+export default function CopyIcon({ width = 24, height = 24, color = '#000000', className }: IconProps) {
   return (
     <svg
       width={width}

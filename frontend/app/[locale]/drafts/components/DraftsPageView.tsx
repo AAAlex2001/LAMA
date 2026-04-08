@@ -240,7 +240,7 @@ export default function DraftsPageView() {
                   value={shareLink}
                   onChange={() => {}}
                   variant="white"
-                  icon={<CopyIcon width={24} height={24} color="#383F45" />}
+                  icon={<CopyIcon width={24} height={24} color="#000000" />}
                   iconDisabled={isGeneratingShareLink || !shareLink}
                   onIconClick={() => {
                     if (!isGeneratingShareLink && shareLink) {

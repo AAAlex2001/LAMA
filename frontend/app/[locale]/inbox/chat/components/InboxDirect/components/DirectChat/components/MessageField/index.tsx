@@ -364,7 +364,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             <InlineButtonIcon
               width={24}
               height={24}
-              color={inlineButtonsOpen ? '#FFFFFF' : '#383F45'}
+              color={inlineButtonsOpen ? '#FFFFFF' : '#000000'}
             />
             Кнопки
           </Button>
@@ -374,7 +374,7 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             onClick={handleOpenTemplatesModal}
             style={{ flex: 1, display: "flex" }}
           >
-            <TemplatesIcon width={24} height={24} color="#383F45" />
+            <TemplatesIcon width={24} height={24} color="#000000" />
             Шаблоны
           </Button>
         </div>

@@ -87,7 +87,7 @@ export default function TagsContent({
                       onDeleteTag(tag.id);
                     }}
                   >
-                    <TagCloseIcon width={12} height={12} color="#383F45" />
+                    <TagCloseIcon width={12} height={12} color="#000000" />
                   </span>
                 )}
               </button>

@@ -208,7 +208,7 @@ export default function EditorHeaderConnected({
             onClick={handleTogglePanel}
           >
             <span>Добавить тег</span>
-            <PlusIcon width={12} height={12} color="#383F45" />
+            <PlusIcon width={12} height={12} color="#000000" />
           </button>
 
           {selectedTags.map((tag) => (
@@ -225,7 +225,7 @@ export default function EditorHeaderConnected({
                 onClick={(e) => { e.stopPropagation(); handleRemoveTag(tag.name); }}
                 aria-label={`Удалить тег ${tag.name}`}
               >
-                <TagCloseIcon width={12} height={12} color="#383F45" />
+                <TagCloseIcon width={12} height={12} color="#000000" />
               </button>
             </div>
           ))}
@@ -344,7 +344,7 @@ export default function EditorHeaderConnected({
                     className={tagStyles.tagEditChipClose}
                     onClick={handleCancelEdit}
                   >
-                    <TagCloseIcon width={12} height={12} color="#383F45" />
+                    <TagCloseIcon width={12} height={12} color="#000000" />
                   </button>
                 </div>
               </div>

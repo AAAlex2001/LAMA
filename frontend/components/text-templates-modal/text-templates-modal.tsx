@@ -148,7 +148,7 @@ export default function TextTemplatesModal({
                     <EditNameIcon
                       width={20}
                       height={20}
-                      color="#383F45"
+                      color="#000000"
                     />
                   </button>
                   <button

@@ -5,9 +5,18 @@
   right: 0;
   width: 100%;
   z-index: 100;
-  display: flex;
-  justify-content: center;
   background: transparent;
+}
+
+.dropdownWrap {
+  position: absolute;
+  top: 60px;
+  left: 16px;
+  right: 16px;
+}
+
+.inner {
+  margin: 0 auto;
 }
 
 .inner {
@@ -48,8 +57,17 @@
   font-weight: 600;
   font-size: 16px;
   line-height: 24px;
-  color: #1E1E1E;
+  color: #000000;
   text-align: center;
+}
+
+.pillActive .label {
+  color: #3B82F6;
+}
+
+.menuBtnActive {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border: 1px solid #3B82F6 !important;
 }
 
 .menuBtn {

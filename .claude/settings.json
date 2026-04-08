@@ -11,7 +11,10 @@
       "Bash(find /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels -type d -name store)",
       "Bash(find /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels/store -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\))",
       "Bash(find /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels -name \"*.module.scss\" -o -name \"*.module.css\")",
-      "Bash(grep -r \"overflow\" /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels --include=\"*.scss\" --include=\"*.module.scss\")"
+      "Bash(grep -r \"overflow\" /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels --include=\"*.scss\" --include=\"*.module.scss\")",
+      "Bash(find app:*)",
+      "Bash(xargs sed:*)",
+      "Bash(ls frontend/public/lama*.png frontend/public/lama*.svg)"
     ]
   }
 }

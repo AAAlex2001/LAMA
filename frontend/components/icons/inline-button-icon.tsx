@@ -5,7 +5,7 @@ interface IconProps {
   color?: string;
 }
 
-export default function InlineButtonIcon({ className, width = 24, height = 24, color = '#383F45' }: IconProps) {
+export default function InlineButtonIcon({ className, width = 24, height = 24, color = '#000000' }: IconProps) {
   return (
     <svg
       width={width}

@@ -72,7 +72,7 @@ export default function FloatingToolbar({
               onToggleFormat(format);
             }}
           >
-            <Icon width={18} height={18} color={isActive ? '#3B82F6' : '#383F45'} />
+            <Icon width={18} height={18} color={isActive ? '#3B82F6' : '#000000'} />
           </button>
         );
       })}
@@ -85,7 +85,7 @@ export default function FloatingToolbar({
           onLinkClick();
         }}
       >
-        <LinkIcon width={18} height={18} color={isLink ? '#3B82F6' : '#383F45'} />
+        <LinkIcon width={18} height={18} color={isLink ? '#3B82F6' : '#000000'} />
       </button>
 
       <button
@@ -94,7 +94,7 @@ export default function FloatingToolbar({
         aria-label="Цитата"
         onMouseDown={onQuoteMouseDown}
       >
-        <QuoteIcon width={18} height={18} color={isQuote ? '#3B82F6' : '#383F45'} />
+        <QuoteIcon width={18} height={18} color={isQuote ? '#3B82F6' : '#000000'} />
       </button>
     </div>
   );

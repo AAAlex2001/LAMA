@@ -102,7 +102,7 @@ const SortDropdown: FC<SortDropdownProps> = ({
             })}
             width={8}
             height={8}
-            color={isActive ? '#1A1A1A' : '#383F45'}
+            color={isActive ? '#1A1A1A' : '#000000'}
             />
             {isActive && onClear && (
               <span

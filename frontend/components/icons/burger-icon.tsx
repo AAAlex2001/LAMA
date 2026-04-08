@@ -5,7 +5,7 @@ interface IconProps {
   color?: string;
 }
 
-export default function BurgerIcon({ className, width = 44, height = 44, color = '#383F45' }: IconProps) {
+export default function BurgerIcon({ className, width = 44, height = 44, color = '#000000' }: IconProps) {
   return (
     <svg
       width={width}

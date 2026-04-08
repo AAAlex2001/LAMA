@@ -17,7 +17,7 @@ export default function MediaControls({ blur, onToggleBlur, onRemove }: MediaCon
         aria-label="Размыть медиа"
         type="button"
       >
-        <BlurIcon width={16} height={16} color="#383F45" />
+        <BlurIcon width={16} height={16} color="#000000" />
       </button>
 
       <button
@@ -26,7 +26,7 @@ export default function MediaControls({ blur, onToggleBlur, onRemove }: MediaCon
         aria-label="Удалить медиа"
         type="button"
       >
-        <CloseIcon width={16} height={16} color="#383F45" />
+        <CloseIcon width={16} height={16} color="#000000" />
       </button>
     </div>
   );

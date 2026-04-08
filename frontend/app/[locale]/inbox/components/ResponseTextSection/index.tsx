@@ -212,7 +212,7 @@ const ResponseTextSection = forwardRef<ResponseTextSectionRef, ResponseTextSecti
             <InlineButtonIcon
               width={24}
               height={24}
-              color={inlineButtonsOpen ? '#FFFFFF' : '#383F45'}
+              color={inlineButtonsOpen ? '#FFFFFF' : '#000000'}
             />
             <span className={buttonStyles.label}>Кнопки</span>
           </Button>

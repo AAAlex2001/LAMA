@@ -41,7 +41,7 @@ export default function KnowledgeNavDropdownSection({ section }: { section: Sect
     <section className={isOpen ? `${styles.section} ${styles.sectionActive}` : styles.sectionCollapsed}>
       <button type="button" className={styles.sectionHeader} onClick={() => setIsOpen((prev) => !prev)}>
         <span className={styles.sectionTitle}>{section.title}</span>
-        <ChevronIcon direction={isOpen ? 'up' : 'right'} color={isOpen ? '#383F45' : '#B0B4B8'} />
+        <ChevronIcon direction={isOpen ? 'up' : 'right'} color={isOpen ? '#000000' : '#B0B4B8'} />
       </button>
       {isOpen ? (
         <div className={styles.sectionBody}>

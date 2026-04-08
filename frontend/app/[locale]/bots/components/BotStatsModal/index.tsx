@@ -50,7 +50,7 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
       <span style={{ color: '#B0B4B8' }}>{label}</span>
-      <span style={{ fontWeight: 500, color: '#383F45' }}>{value}</span>
+      <span style={{ fontWeight: 500, color: '#000000' }}>{value}</span>
     </div>
   );
 }

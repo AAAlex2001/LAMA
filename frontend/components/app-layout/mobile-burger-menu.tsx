@@ -64,20 +64,20 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
   };
 
   const mainItems: MenuItem[] = [
-    { id: 'create-post', icon: <PostIcon width={24} height={24} color="#383F45" />, label: 'Новая публикация', href: `/${locale}/create-post` },
-    { id: 'calendar', icon: <CalendarIcon width={24} height={24} color="#383F45" />, label: 'Календарь', href: `/${locale}/calendar` },
-    { id: 'drafts', icon: <DraftsIcon width={24} height={24} color="#383F45" />, label: 'Черновики', href: `/${locale}/drafts` },
-    { id: 'channels', icon: <ChannelsIcon width={24} height={24} color="#383F45" />, label: 'Каналы и группы', href: `/${locale}/channels` },
-    { id: 'bots', icon: <BotsIcon width={24} height={24} color="#383F45" />, label: 'Боты', href: `/${locale}/bots` },
-    { id: 'inbox', icon: <InboxIcon width={24} height={24} color="#383F45" />, label: 'Входящие', href: `/${locale}/inbox` },
-    { id: 'parser', icon: <ParserIcon width={24} height={24} color="#383F45" />, label: 'Парсер', disabled: true },
-    { id: 'wallet', icon: <WalletIcon width={24} height={24} color="#383F45" />, label: 'Рекламный кабинет', disabled: true },
+    { id: 'create-post', icon: <PostIcon width={24} height={24} color="#000000" />, label: 'Новая публикация', href: `/${locale}/create-post` },
+    { id: 'calendar', icon: <CalendarIcon width={24} height={24} color="#000000" />, label: 'Календарь', href: `/${locale}/calendar` },
+    { id: 'drafts', icon: <DraftsIcon width={24} height={24} color="#000000" />, label: 'Черновики', href: `/${locale}/drafts` },
+    { id: 'channels', icon: <ChannelsIcon width={24} height={24} color="#000000" />, label: 'Каналы и группы', href: `/${locale}/channels` },
+    { id: 'bots', icon: <BotsIcon width={24} height={24} color="#000000" />, label: 'Боты', href: `/${locale}/bots` },
+    { id: 'inbox', icon: <InboxIcon width={24} height={24} color="#000000" />, label: 'Входящие', href: `/${locale}/inbox` },
+    { id: 'parser', icon: <ParserIcon width={24} height={24} color="#000000" />, label: 'Парсер', disabled: true },
+    { id: 'wallet', icon: <WalletIcon width={24} height={24} color="#000000" />, label: 'Рекламный кабинет', disabled: true },
   ];
 
   const footerItems: MenuItem[] = [
-    { id: 'profile', icon: <UserIcon width={20} height={20} color="#383F45" />, label: 'Профиль', href: `/${locale}/profile` },
-    { id: 'knowledge', icon: <BrainIcon width={20} height={20} color="#383F45" />, label: 'База знаний', disabled: true },
-    { id: 'logout', icon: <ExitIcon width={18} height={18} color="#383F45" />, label: 'Выйти', onClick: handleLogout },
+    { id: 'profile', icon: <UserIcon width={20} height={20} color="#000000" />, label: 'Профиль', href: `/${locale}/profile` },
+    { id: 'knowledge', icon: <BrainIcon width={20} height={20} color="#000000" />, label: 'База знаний', disabled: true },
+    { id: 'logout', icon: <ExitIcon width={18} height={18} color="#000000" />, label: 'Выйти', onClick: handleLogout },
   ];
 
   const isActive = (item: MenuItem) => {
@@ -117,7 +117,7 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
           >
         <div className={styles.mobileMenuHeader}>
           <button className={styles.mobileMenuNotification} type="button" aria-label="Уведомления">
-            <BellIcon width={24} height={24} color="#383F45" />
+            <BellIcon width={24} height={24} color="#000000" />
           </button>
 
           <a href="/" className={styles.headerLogo}>
@@ -131,7 +131,7 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
             aria-label="Закрыть"
             onClick={handleClose}
           >
-            <CloseIcon width={24} height={24} color="#383F45" />
+            <CloseIcon width={24} height={24} color="#000000" />
           </button>
         </div>
 

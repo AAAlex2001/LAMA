@@ -61,7 +61,7 @@
       font-weight: 500;
       font-size: 14px;
       line-height: 20px;
-      color: #383F45;
+      color: #000000;
     }
   }
 
@@ -101,7 +101,7 @@
       font-size: 12px;
       line-height: 16px;
       text-align: center;
-      color: #383F45;
+      color: #000000;
     }
   }
 
@@ -153,7 +153,7 @@
       font-size: 12px;
       line-height: 16px;
       text-align: center;
-      color: #383F45;
+      color: #000000;
       text-decoration: none;
     }
 
@@ -169,7 +169,7 @@
 
   :global(.react-calendar__month-view__days__day--weekend) {
     abbr {
-      color: #383F45;
+      color: #000000;
     }
   }
 
@@ -248,7 +248,7 @@
     border-radius: 0 !important;
 
     abbr {
-      color: #383F45;
+      color: #000000;
       font-weight: 400;
     }
   }

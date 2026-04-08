@@ -300,7 +300,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
         <ChevronDownIcon
           width={16}
           height={16}
-          color="#383F45"
+          color="#000000"
           className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
         />
       </button>
@@ -329,7 +329,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                 <ChevronDownIcon
                   width={16}
                   height={16}
-                  color="#383F45"
+                  color="#000000"
                   className={`${styles.subChevron} ${channelsOpen ? styles.subChevronOpen : ''}`}
                 />
               </button>
@@ -628,7 +628,7 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
                             onMouseEnter={() => setHoveredAction('edit')}
                             onMouseLeave={() => setHoveredAction(null)}
                           >
-                            <EditNameIcon width={24} height={24} color="#383F45" />
+                            <EditNameIcon width={24} height={24} color="#000000" />
                             {hoveredAction === 'edit' && <Tooltip text="Редактировать" />}
                           </button>
                         </div>
