@@ -5,17 +5,16 @@
 @media (min-width: 1440px) {
   .col {
     display: block;
-    position: absolute;
-    left: calc(50% + 600px);
-    bottom: 60px;
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    left: calc(50vw + 596px);
     width: 46px;
     z-index: 50;
   }
 }
 
 .nav {
-  position: sticky;
-  top: 110px;
   display: flex;
   flex-direction: column;
   justify-content: center;

@@ -17,6 +17,9 @@ export default function ArticleContent({ sections }: Props) {
                 </h3>
               )}
               {section.body && <p className={styles.paragraph}>{section.body}</p>}
+              {section.items?.map((item, i) => (
+                <p key={i} className={styles.paragraph}>{item}</p>
+              ))}
             </section>
           );
         }

@@ -1,5 +1,5 @@
 export type ArticleSection =
-  | { type: 'text'; title?: string; body: string }
+  | { type: 'text'; title?: string; body?: string; items?: string[] }
   | { type: 'image'; src: string; alt?: string }
   | { type: 'image-pair'; src1: string; src2: string }
   | { type: 'errors'; title: string; items: string[] };
@@ -42,7 +42,7 @@ export function getMockArticle(slug: string): KnowledgeArticle {
       {
         type: 'text',
         title: 'Кнопки',
-      } as ArticleSection,
+      },
       {
         type: 'image-pair',
         src1: '/lama.png',

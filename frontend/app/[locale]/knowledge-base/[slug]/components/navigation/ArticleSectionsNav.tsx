@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Tooltip from '@/components/tooltip/tooltip';
 import type { ArticleSection, KnowledgeArticle } from '../../mock';
 import { slugify } from '../slugify';
@@ -33,19 +33,6 @@ export default function ArticleSectionsNav({ article }: { article: KnowledgeArti
 
   const [activeId, setActiveId] = useState<string | null>(headings[0]?.id ?? null);
   const [hoverId, setHoverId] = useState<string | null>(null);
-  const [topOffset, setTopOffset] = useState<number | null>(null);
-  const colRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const first = headings[0] ? document.getElementById(headings[0].id) : null;
-    const col = colRef.current;
-    if (first && col) {
-      const parent = (col.offsetParent as HTMLElement) || document.body;
-      const firstRect = first.getBoundingClientRect();
-      const parentRect = parent.getBoundingClientRect();
-      setTopOffset(firstRect.top - parentRect.top);
-    }
-  }, [headings]);
 
   useEffect(() => {
     const elements = headings
@@ -68,18 +55,15 @@ export default function ArticleSectionsNav({ article }: { article: KnowledgeArti
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 110;
-    window.scrollTo({ top, behavior: 'smooth' });
+    const sc = document.scrollingElement || document.documentElement;
+    const y = el.getBoundingClientRect().top + sc.scrollTop - 80;
+    sc.scrollTo({ top: y, behavior: 'smooth' });
   };
 
   if (!headings.length) return null;
 
   return (
-    <div
-      ref={colRef}
-      className={styles.col}
-      style={topOffset !== null ? { top: `${topOffset}px` } : undefined}
-    >
+    <div className={styles.col}>
       <nav className={styles.nav} aria-label="Разделы статьи">
         <div className={styles.frame}>
           <div className={styles.list}>
@@ -105,3 +89,4 @@ export default function ArticleSectionsNav({ article }: { article: KnowledgeArti
     </div>
   );
 }
+
