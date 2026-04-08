@@ -25,8 +25,18 @@
   gap: 16px;
   pointer-events: auto;
   box-sizing: border-box;
-  max-height: calc(100vh - 140px);
+  height: calc(100vh - 140px);
   overflow-y: auto;
+}
+
+@media (min-width: 768px) {
+  .dropdown {
+    left: 50%;
+    right: auto;
+    width: 100%;
+    max-width: 768px;
+    transform: translateX(-50%);
+  }
 }
 
 

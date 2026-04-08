@@ -1,9 +1,9 @@
 .toc {
   position: absolute;
   top: 60px;
-  left: 16px;
-  right: 16px;
-  width: auto;
+  left: 0;
+  right: 0;
+  width: 100%;
   transform: none;
   background: #F7FAFF;
   box-shadow: 0 14px 16px rgba(0, 0, 0, 0.1);
@@ -12,7 +12,19 @@
   flex-direction: column;
   pointer-events: auto;
   box-sizing: border-box;
-  overflow: hidden;
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+@media (min-width: 768px) {
+  .toc {
+    left: 50%;
+    right: auto;
+    width: 100%;
+    max-width: 768px;
+    transform: translateX(-50%);
+  }
 }
 
 
