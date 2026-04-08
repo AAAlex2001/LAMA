@@ -1,4 +1,4 @@
-import { ClockIcon } from './icons';
+import { ClockIcon } from '../icons';
 import styles from './ArticleHeader.module.scss';
 
 type Props = {

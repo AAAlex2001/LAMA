@@ -1,10 +1,12 @@
 import TemplateCardsBlock from '@/components/template-card/template-cards-block';
-import SubNav from './components/SubNav';
-import KnowledgeNavDropdown from './components/KnowledgeNavDropdown';
-import ArticleHeader from './components/ArticleHeader';
-import ArticleContent from './components/ArticleContent';
-import ArticleFeedback from './components/ArticleFeedback';
-import RegisterCta from './components/RegisterCta';
+import { Button } from '@/components/new-button';
+import {
+  SubNav,
+  KnowledgeNavDropdown,
+  ArticleHeader,
+  ArticleContent,
+  ArticleFeedback,
+} from './components';
 import styles from './KnowledgeArticleView.module.scss';
 import type { KnowledgeArticle } from './mock';
 
@@ -41,7 +43,11 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale }: Pr
               }))}
             />
           </div>
-          {!isLoggedIn && <RegisterCta href={`/${locale}/register`} />}
+          {!isLoggedIn && (
+            <Button href={`/${locale}/register`} variant="fill" intent="gradient" size="lg" className={styles.registerCta}>
+              Зарегистрироваться бесплатно
+            </Button>
+          )}
         </div>
       </div>
     </div>

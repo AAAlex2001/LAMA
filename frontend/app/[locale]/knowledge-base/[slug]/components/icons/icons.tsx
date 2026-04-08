@@ -51,11 +51,3 @@ export function ChevronIcon({ direction, color = '#383F45' }: { direction: 'up' 
     </svg>
   );
 }
-
-export function ArrowIcon({ color = '#3B82F6' }: { color?: string }) {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <path d="M9 6l6 6-6 6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}

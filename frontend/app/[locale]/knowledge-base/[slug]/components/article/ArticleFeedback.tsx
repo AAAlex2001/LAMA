@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/new-button';
-import { HeartIcon, HeartSlashIcon } from './icons';
+import { HeartIcon, HeartSlashIcon } from '../icons';
 import styles from './ArticleFeedback.module.scss';
 
 export default function ArticleFeedback() {

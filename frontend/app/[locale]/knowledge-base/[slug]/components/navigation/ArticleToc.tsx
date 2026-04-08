@@ -29,7 +29,7 @@ export default function ArticleToc() {
       </div>
       <div className={styles.illustration}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/lama.png" alt="" />
+        <img src="/lama2.png" alt="" />
       </div>
     </div>
   );

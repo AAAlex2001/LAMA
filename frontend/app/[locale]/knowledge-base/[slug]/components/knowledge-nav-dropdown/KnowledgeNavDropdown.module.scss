@@ -12,10 +12,10 @@
 .dropdown {
   position: absolute;
   top: 60px;
-  left: 16px;
-  right: 16px;
-  max-width: 328px;
-  margin: 0 auto;
+  left: 0;
+  right: 0;
+  width: 100%;
+  transform: none;
   background: #FFFFFF;
   box-shadow: 0 14px 16px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
@@ -28,6 +28,7 @@
   max-height: calc(100vh - 140px);
   overflow-y: auto;
 }
+
 
 .search {
   width: 100%;
@@ -58,7 +59,13 @@
 .sectionHeader {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .sectionTitle {
@@ -81,8 +88,13 @@
 .itemActive {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: 5px 0;
   width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
 .itemTitle {

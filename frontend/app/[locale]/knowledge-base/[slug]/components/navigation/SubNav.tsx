@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import BrainIcon from '@/components/icons/brain-icon';
-import { MenuIcon } from './icons';
-import KnowledgeNavDropdown from './KnowledgeNavDropdown';
+import { MenuIcon } from '../icons';
+import KnowledgeNavDropdown from '../knowledge-nav-dropdown/KnowledgeNavDropdown';
 import ArticleToc from './ArticleToc';
 import styles from './SubNav.module.scss';
 

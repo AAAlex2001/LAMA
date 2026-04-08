@@ -1,4 +1,4 @@
-import type { ArticleSection } from '../mock';
+import type { ArticleSection } from '../../mock';
 import styles from './ArticleContent.module.scss';
 
 type Props = { sections: ArticleSection[] };
