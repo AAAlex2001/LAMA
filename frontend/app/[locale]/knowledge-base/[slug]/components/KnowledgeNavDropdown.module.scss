@@ -1,0 +1,150 @@
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  padding: 15px 16px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.dropdown {
+  position: absolute;
+  top: 60px;
+  left: 16px;
+  right: 16px;
+  max-width: 328px;
+  margin: 0 auto;
+  background: #FFFFFF;
+  box-shadow: 0 14px 16px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  pointer-events: auto;
+  box-sizing: border-box;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+.search {
+  width: 100%;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.sectionActive {
+  border: 1px solid #3B82F6;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.sectionTitle {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.sectionBody {
+  display: flex;
+  flex-direction: column;
+  padding-left: 5px;
+  width: 100%;
+}
+
+.item,
+.itemActive {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  width: 100%;
+}
+
+.itemTitle {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.itemTitleActive {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #3B82F6;
+}
+
+.subList {
+  display: flex;
+  flex-direction: column;
+  padding-left: 10px;
+  width: 100%;
+}
+
+.subItem {
+  padding: 5px 0;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #9CA0A4;
+}
+
+.sectionCollapsed {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.flatItem {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: rgba(56, 63, 69, 0.8);
+  box-sizing: border-box;
+}
+
+.fullBtn {
+  width: 100%;
+}

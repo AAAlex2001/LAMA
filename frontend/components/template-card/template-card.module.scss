@@ -1,13 +1,13 @@
 .card {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   padding: 24px;
-  gap: 10px;
+  gap: 17px;
 
   width: 320px;
-  height: 257px;
+  height: auto;
 
   background: #f1f5fb;
   border-radius: 20px;
