@@ -10,15 +10,16 @@ import {
 } from './components';
 import { slugify } from './components/slugify';
 import styles from './KnowledgeArticleView.module.scss';
-import type { KnowledgeArticle } from './mock';
+import type { KnowledgeArticle, NavigationCategory } from './types';
 
 type Props = {
   article: KnowledgeArticle;
   isLoggedIn: boolean;
   locale: string;
+  navigation?: NavigationCategory[];
 };
 
-export default function KnowledgeArticleView({ article, isLoggedIn, locale }: Props) {
+export default function KnowledgeArticleView({ article, isLoggedIn, locale, navigation }: Props) {
   const headings = article.sections
     .filter((s) => 'title' in s && typeof s.title === 'string' && s.title.length > 0)
     .map((s) => ({ id: slugify((s as { title: string }).title), title: (s as { title: string }).title }));
@@ -29,7 +30,7 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale }: Pr
       {!isLoggedIn && <ArticleSectionsNav article={article} />}
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <KnowledgeNavDropdown variant="sidebar" headings={headings} />
+          <KnowledgeNavDropdown variant="sidebar" headings={headings} navigation={navigation} />
         </aside>
         <div className={styles.main}>
           <ArticleHeader
@@ -38,14 +39,19 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale }: Pr
             readingMinutes={article.readingMinutes}
           />
           <ArticleContent sections={article.sections} />
-          <ArticleFeedback />
+          <ArticleFeedback
+            articleSlug={article.slug}
+            locale={locale}
+            initialLikes={article.likesCount}
+            initialDislikes={article.dislikesCount}
+          />
           <div className={styles.relatedWrap}>
             <TemplateCardsBlock
               headline="Что почитать дальше"
               cards={article.related.map((c) => ({
                 title: c.title,
-                text: c.text,
-                buttonText: c.buttonText,
+                text: c.description || '',
+                buttonText: 'Читать',
                 buttonLink: `/${locale}/knowledge-base/${c.slug}`,
               }))}
             />

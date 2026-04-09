@@ -21,6 +21,7 @@ def load_models() -> None:
         "backend.models.landing",
         "backend.models.inbox",
         "backend.models.direct",
+        "backend.models.knowledge_base",
     )
 
     for module_name in modules:

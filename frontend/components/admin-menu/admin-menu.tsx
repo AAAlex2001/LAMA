@@ -21,6 +21,7 @@ export default function AdminMenu() {
     { href: '/admin/users', label: 'Users' },
     { href: '/admin/lama', label: 'Lama' },
     { href: '/admin/footer', label: 'Footer' },
+    { href: '/admin/knowledge-base', label: 'Knowledge Base' },
   ];
 
   return (

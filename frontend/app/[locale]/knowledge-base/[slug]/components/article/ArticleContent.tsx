@@ -1,4 +1,4 @@
-import type { ArticleSection } from '../../mock';
+import type { ArticleSection } from '../../types';
 import { slugify } from '../slugify';
 import styles from './ArticleContent.module.scss';
 

@@ -4,12 +4,36 @@ import OldButton from '@/components/button/button';
 import styles from './KnowledgeNavDropdown.module.scss';
 import KnowledgeNavDropdownSection from './KnowledgeNavDropdownSection';
 import { FLAT_ITEMS, SECTIONS } from './KnowledgeNavDropdown.data';
-import type { Variant } from './KnowledgeNavDropdown.types';
-import type { SectionConfig } from './KnowledgeNavDropdown.types';
+import type { Variant, SectionConfig } from './KnowledgeNavDropdown.types';
+import type { NavigationCategory } from '../../types';
 
 type Heading = { id: string; title: string };
 
-type Props = { variant?: Variant; headings?: Heading[] };
+type Props = {
+  variant?: Variant;
+  headings?: Heading[];
+  navigation?: NavigationCategory[];
+};
+
+function buildSectionsFromApi(navigation: NavigationCategory[], headings: Heading[]): SectionConfig[] {
+  return navigation.map((cat) => ({
+    id: cat.slug,
+    title: cat.title,
+    isOpenByDefault: false,
+    entries: cat.entries.map((entry) => ({
+      id: entry.slug,
+      title: entry.title,
+      isActive: false,
+      nested: {
+        id: `${entry.slug}-nested`,
+        title: entry.title,
+        isActive: false,
+        isOpenByDefault: false,
+        items: headings.map((h) => ({ id: h.id, title: h.title })),
+      },
+    })),
+  }));
+}
 
 function buildSections(headings: Heading[]): SectionConfig[] {
   if (!headings.length) return SECTIONS;
@@ -30,8 +54,10 @@ function buildSections(headings: Heading[]): SectionConfig[] {
   }));
 }
 
-export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [] }: Props) {
-  const sections = buildSections(headings);
+export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation }: Props) {
+  const sections = navigation && navigation.length > 0
+    ? buildSectionsFromApi(navigation, headings)
+    : buildSections(headings);
 
   return (
     <div className={variant === 'sidebar' ? styles.sidebar : styles.dropdown}>
@@ -61,4 +87,3 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
     </div>
   );
 }
-

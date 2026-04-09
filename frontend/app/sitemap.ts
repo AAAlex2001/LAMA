@@ -8,6 +8,11 @@ type TemplatesIndex = {
   templates: Array<{ id: number; slug?: string | null }>;
 };
 
+type ArticlesIndex = {
+  count: number;
+  articles: Array<{ slug: string }>;
+};
+
 async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url, { cache: 'no-store' });
@@ -39,9 +44,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const templatesFallback: TemplatesIndex = { count: 0, templates: [] };
-  const templateIndexes = await Promise.all(
-    locales.map((locale) => fetchJson<TemplatesIndex>(`${apiBaseUrl}/templates?locale=${locale}`, templatesFallback))
-  );
+  const articlesFallback: ArticlesIndex = { count: 0, articles: [] };
+
+  const [templateIndexes, articleIndexes] = await Promise.all([
+    Promise.all(
+      locales.map((locale) => fetchJson<TemplatesIndex>(`${apiBaseUrl}/templates?locale=${locale}`, templatesFallback))
+    ),
+    Promise.all(
+      locales.map((locale) => fetchJson<ArticlesIndex>(`${apiBaseUrl}/kb/articles?locale=${locale}`, articlesFallback))
+    ),
+  ]);
 
   const templatesByLocale: Record<(typeof locales)[number], Array<{ id: number; slug: string }>> = {
     ru: (templateIndexes[0]?.templates || [])
@@ -53,6 +65,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     en: (templateIndexes[2]?.templates || [])
       .map((t) => ({ id: Number(t.id), slug: String(t.slug || '') }))
       .filter((t) => Number.isFinite(t.id) && t.id >= 1 && t.slug),
+  };
+
+  const articlesByLocale: Record<(typeof locales)[number], string[]> = {
+    ru: (articleIndexes[0]?.articles || []).map((a) => a.slug).filter(Boolean),
+    sr: (articleIndexes[1]?.articles || []).map((a) => a.slug).filter(Boolean),
+    en: (articleIndexes[2]?.articles || []).map((a) => a.slug).filter(Boolean),
   };
 
   const routes: MetadataRoute.Sitemap = [];
@@ -84,6 +102,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
       routes.push({
         url: `${baseUrl}/${locale}/template/${t.slug}`,
+        lastModified: now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+        alternates: Object.keys(languages).length ? { languages } : undefined,
+      });
+    }
+
+    for (const slug of articlesByLocale[locale]) {
+      const languages: Record<string, string> = {};
+      for (const altLocale of locales) {
+        if (articlesByLocale[altLocale].includes(slug)) {
+          languages[altLocale] = `${baseUrl}/${altLocale}/knowledge-base/${slug}`;
+        }
+      }
+
+      routes.push({
+        url: `${baseUrl}/${locale}/knowledge-base/${slug}`,
         lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.6,

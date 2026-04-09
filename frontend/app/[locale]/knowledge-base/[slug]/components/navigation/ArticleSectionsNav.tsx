@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Tooltip from '@/components/tooltip/tooltip';
-import type { ArticleSection, KnowledgeArticle } from '../../mock';
+import type { ArticleSection, KnowledgeArticle } from '../../types';
 import { slugify } from '../slugify';
 import styles from './ArticleSectionsNav.module.scss';
 

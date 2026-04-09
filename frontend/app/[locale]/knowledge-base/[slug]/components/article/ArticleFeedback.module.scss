@@ -40,10 +40,10 @@
 
 .iconButton {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  gap: 2px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -53,6 +53,14 @@
   &:active {
     opacity: 0.85;
   }
+}
+
+.count {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #9CA0A4;
 }
 
 .shareBtn {

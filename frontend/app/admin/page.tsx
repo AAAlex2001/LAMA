@@ -52,6 +52,11 @@ export default function AdminPage() {
             <h2>Footer секция</h2>
             <p>Управление футером сайта</p>
           </Link>
+
+          <Link href="/admin/knowledge-base" className={styles.sectionCard}>
+            <h2>База знаний</h2>
+            <p>Управление категориями и статьями базы знаний</p>
+          </Link>
         </div>
       </div>
     </div>
