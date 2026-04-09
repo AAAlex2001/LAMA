@@ -56,7 +56,7 @@ class UpdateKBArticleRequest(BaseModel):
 
 
 class FeedbackRequest(BaseModel):
-    action: Literal["like", "dislike"]
+    action: Literal["like", "dislike", "switch_to_like", "switch_to_dislike"]
 
 
 # --------------- Response ---------------

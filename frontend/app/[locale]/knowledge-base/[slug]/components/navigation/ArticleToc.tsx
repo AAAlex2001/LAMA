@@ -1,31 +1,32 @@
 import styles from './ArticleToc.module.scss';
 
-const CREATE_SUB = ['Что это такое', 'Как создать публикацию', 'Кнопки', 'Частые ошибки'];
-const LIMITS_SUB = ['Если текст просто', 'Если текст с медиафайлами'];
+type Heading = { id: string; title: string };
 
-export default function ArticleToc() {
+type Props = {
+  headings?: Heading[];
+};
+
+export default function ArticleToc({ headings = [] }: Props) {
+  if (!headings.length) {
+    return (
+      <div className={styles.toc}>
+        <div className={styles.header}>На этой странице</div>
+        <div className={styles.body}>
+          <div className={styles.subItem}>Нет разделов</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.toc}>
       <div className={styles.header}>На этой странице</div>
       <div className={styles.body}>
-        <div className={styles.group}>
-          <div className={styles.groupTitleBlue}>Создание публикации</div>
-          <div className={styles.subList}>
-            {CREATE_SUB.map((t) => (
-              <div key={t} className={styles.subItem}>{t}</div>
-            ))}
-          </div>
-        </div>
-        <div className={styles.groupTitle}>Шаблоны и черновики</div>
-        <div className={styles.group}>
-          <div className={styles.groupTitle}>Лимиты</div>
-          <div className={styles.subList}>
-            {LIMITS_SUB.map((t) => (
-              <div key={t} className={styles.subItem}>{t}</div>
-            ))}
-          </div>
-        </div>
-        <div className={styles.groupTitle}>Факты</div>
+        {headings.map((h) => (
+          <a key={h.id} href={`#${h.id}`} className={styles.tocLink}>
+            {h.title}
+          </a>
+        ))}
       </div>
       <div className={styles.illustration}>
         {/* eslint-disable-next-line @next/next/no-img-element */}

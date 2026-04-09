@@ -1,7 +1,7 @@
 export type ArticleSection =
   | { type: 'text'; title?: string; body?: string; items?: string[] }
-  | { type: 'image'; src: string; alt?: string }
-  | { type: 'image-pair'; src1: string; src2: string }
+  | { type: 'image'; title?: string; src: string; alt?: string }
+  | { type: 'image-pair'; title?: string; src1: string; src2: string }
   | { type: 'errors'; title: string; items: string[] };
 
 export type KnowledgeArticle = {

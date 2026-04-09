@@ -26,11 +26,11 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale, navi
 
   return (
     <div className={styles.page}>
-      <SubNav headings={headings} />
+      <SubNav headings={headings} navigation={navigation} currentSlug={article.slug} />
       {!isLoggedIn && <ArticleSectionsNav article={article} />}
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <KnowledgeNavDropdown variant="sidebar" headings={headings} navigation={navigation} />
+          <KnowledgeNavDropdown variant="sidebar" headings={headings} navigation={navigation} currentSlug={article.slug} />
         </aside>
         <div className={styles.main}>
           <ArticleHeader
@@ -50,7 +50,7 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale, navi
               headline="Что почитать дальше"
               cards={article.related.map((c) => ({
                 title: c.title,
-                text: c.description || '',
+                text: c.description || 'Нажмите чтобы узнать больше',
                 buttonText: 'Читать',
                 buttonLink: `/${locale}/knowledge-base/${c.slug}`,
               }))}
@@ -58,7 +58,10 @@ export default function KnowledgeArticleView({ article, isLoggedIn, locale, navi
           </div>
           {!isLoggedIn && (
             <Button href={`/${locale}/register`} variant="fill" intent="gradient" size="lg" className={styles.registerCta}>
-              Зарегистрироваться бесплатно
+              Попробовать бесплатно
+              <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </Button>
           )}
         </div>

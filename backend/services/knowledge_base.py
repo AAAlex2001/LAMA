@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 from sqlalchemy.orm import selectinload
 
 from backend.models.landing import Locale
@@ -118,7 +119,11 @@ async def get_article_by_slug(
     category = cat_result.scalar_one_or_none()
 
     related: list[RelatedArticle] = []
-    slugs = article.related_slugs or []
+    raw = article.related_slugs or []
+    slugs = [x if isinstance(x, str) else x.get("slug", "") for x in raw]
+    slugs = [s for s in slugs if s]
+    descs = {x["slug"]: x["description"] for x in raw if isinstance(x, dict) and x.get("description")}
+
     if slugs:
         rel_result = await db.execute(
             select(KBArticle)
@@ -130,7 +135,7 @@ async def get_article_by_slug(
             related.append(RelatedArticle(
                 slug=r.slug,
                 title=r.title,
-                description=r.description,
+                description=descs.get(r.slug) or r.description,
                 readingMinutes=r.reading_minutes,
             ))
 
@@ -203,12 +208,38 @@ async def submit_feedback(
             .where(KBArticle.id == article.id)
             .values(likes_count=KBArticle.likes_count + 1)
         )
-    else:
+    elif action == "dislike":
         stmt = (
             update(KBArticle)
             .where(KBArticle.id == article.id)
             .values(dislikes_count=KBArticle.dislikes_count + 1)
         )
+    elif action == "switch_to_like":
+        stmt = (
+            update(KBArticle)
+            .where(KBArticle.id == article.id)
+            .values(
+                likes_count=KBArticle.likes_count + 1,
+                dislikes_count=case(
+                    (KBArticle.dislikes_count > 0, KBArticle.dislikes_count - 1),
+                    else_=0,
+                ),
+            )
+        )
+    elif action == "switch_to_dislike":
+        stmt = (
+            update(KBArticle)
+            .where(KBArticle.id == article.id)
+            .values(
+                dislikes_count=KBArticle.dislikes_count + 1,
+                likes_count=case(
+                    (KBArticle.likes_count > 0, KBArticle.likes_count - 1),
+                    else_=0,
+                ),
+            )
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid action")
 
     await db.execute(stmt)
     await db.flush()
@@ -383,12 +414,14 @@ async def update_article(
         article.description = description
     if sections is not None:
         article.sections = sections
+        flag_modified(article, "sections")
         if reading_minutes is None:
             reading_minutes = compute_reading_minutes(sections)
     if reading_minutes is not None:
         article.reading_minutes = reading_minutes
     if related_slugs is not None:
         article.related_slugs = related_slugs
+        flag_modified(article, "related_slugs")
     if meta_title is not None:
         article.meta_title = meta_title
     if meta_description is not None:

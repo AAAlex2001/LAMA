@@ -66,6 +66,20 @@
   color: #858585;
 }
 
+.tocLink {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #000000;
+  text-decoration: none;
+  padding: 4px 0;
+
+  &:hover {
+    color: #3B82F6;
+  }
+}
+
 .illustration {
   position: relative;
   width: 100%;

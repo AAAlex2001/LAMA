@@ -1,15 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Tooltip from '@/components/tooltip/tooltip';
-import type { ArticleSection, KnowledgeArticle } from '../../types';
+import type { KnowledgeArticle } from '../../types';
 import { slugify } from '../slugify';
 import styles from './ArticleSectionsNav.module.scss';
-
-type Heading = { id: string; title: string };
-
-const hasTitle = (s: ArticleSection): s is Extract<ArticleSection, { title?: string }> & { title: string } =>
-  'title' in s && typeof s.title === 'string' && s.title.length > 0;
 
 function GrayDot() {
   return <span className={styles.grayDot} />;
@@ -27,66 +22,71 @@ function InfoDot() {
 }
 
 export default function ArticleSectionsNav({ article }: { article: KnowledgeArticle }) {
-  const headings: Heading[] = article.sections
-    .filter(hasTitle)
-    .map((s) => ({ id: slugify(s.title), title: s.title }));
+  const ids = article.sections
+    .filter((s) => 'title' in s && typeof s.title === 'string' && s.title.length > 0)
+    .map((s) => ({ id: slugify((s as { title: string }).title), title: (s as { title: string }).title }));
 
-  const [activeId, setActiveId] = useState<string | null>(headings[0]?.id ?? null);
+  const idsRef = useRef(ids);
+  idsRef.current = ids;
+
+  const [activeId, setActiveId] = useState(ids[0]?.id ?? '');
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const skipRef = useRef(false);
 
   useEffect(() => {
-    const elements = headings
-      .map((h) => document.getElementById(h.id))
-      .filter((el): el is HTMLElement => !!el);
-    if (!elements.length) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActiveId(visible[0].target.id);
-      },
-      { rootMargin: '-100px 0px -70% 0px', threshold: 0 },
-    );
-    elements.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
-  }, [headings]);
+    const onScroll = () => {
+      if (skipRef.current) return;
+      let found = '';
+      for (const h of idsRef.current) {
+        const el = document.getElementById(h.id);
+        if (!el) continue;
+        if (el.getBoundingClientRect().top <= 150) found = h.id;
+      }
+      if (found) setActiveId(found);
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    document.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('scroll', onScroll);
+    };
+  }, []);
 
   const handleClick = (id: string) => {
     const el = document.getElementById(id);
     if (!el) return;
-    const sc = document.scrollingElement || document.documentElement;
-    const y = el.getBoundingClientRect().top + sc.scrollTop - 80;
-    sc.scrollTo({ top: y, behavior: 'smooth' });
+    skipRef.current = true;
+    setActiveId(id);
+    const scrollEl = document.scrollingElement || document.documentElement;
+    const y = el.getBoundingClientRect().top + scrollEl.scrollTop - 110;
+    scrollEl.scrollTo({ top: y, behavior: 'smooth' });
+    setTimeout(() => { skipRef.current = false; }, 1000);
   };
 
-  if (!headings.length) return null;
+  if (!ids.length) return null;
 
   return (
     <div className={styles.col}>
       <nav className={styles.nav} aria-label="Разделы статьи">
         <div className={styles.frame}>
           <div className={styles.list}>
-            {headings.map((h) => {
-              const isActive = h.id === activeId;
-              return (
-                <button
-                  key={h.id}
-                  type="button"
-                  className={styles.item}
-                  onClick={() => handleClick(h.id)}
-                  onMouseEnter={() => setHoverId(h.id)}
-                  onMouseLeave={() => setHoverId((v) => (v === h.id ? null : v))}
-                >
-                  {isActive ? <InfoDot /> : <GrayDot />}
-                  <Tooltip text={h.title} placement="left" visible={hoverId === h.id} />
-                </button>
-              );
-            })}
+            {ids.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className={styles.item}
+                onClick={() => handleClick(h.id)}
+                onMouseEnter={() => setHoverId(h.id)}
+                onMouseLeave={() => setHoverId((v) => (v === h.id ? null : v))}
+              >
+                {h.id === activeId ? <InfoDot /> : <GrayDot />}
+                <Tooltip text={h.title} placement="left" visible={hoverId === h.id} />
+              </button>
+            ))}
           </div>
         </div>
       </nav>
     </div>
   );
 }
-

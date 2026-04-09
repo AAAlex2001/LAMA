@@ -4,8 +4,7 @@
 import os
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File
-from backend.services.upload_service import validate_media_files
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
 
 router = APIRouter()
@@ -23,23 +22,24 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 async def upload_image(file: UploadFile = File(...)):
     """Загрузить картинку для лендинга"""
 
-    # Проверяем расширение")
-    
-    # Генерируем уникальное имя файла
+    file_ext = os.path.splitext(file.filename or "")[1].lower()
+    if file_ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Неподдерживаемый формат: {file_ext}")
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Файл слишком большой (макс 5MB)")
+
     file_id = str(uuid.uuid4())
     filename = f"{file_id}{file_ext}"
     file_path = UPLOAD_DIR / filename
-    
-    # Сохраняем файл
+
     with open(file_path, "wb") as f:
         f.write(contents)
-    
-    # Возвращаем URL для использования в админке
-    # В продакшене это должен быть полный URL, например: https://lamaplanner.com/uploads/landing/...
+
     file_url = f"/uploads/landing/{filename}"
-    
+
     return JSONResponse({
         "url": file_url,
         "filename": filename
     })
-

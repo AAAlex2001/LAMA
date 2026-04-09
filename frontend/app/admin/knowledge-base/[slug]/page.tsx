@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import AdminMenu from '@/components/admin-menu/admin-menu';
@@ -10,8 +10,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 type ArticleSection =
   | { type: 'text'; title?: string; body?: string; items?: string[] }
-  | { type: 'image'; src: string; alt?: string }
-  | { type: 'image-pair'; src1: string; src2: string }
+  | { type: 'image'; title?: string; src: string; alt?: string }
+  | { type: 'image-pair'; title?: string; src1: string; src2: string }
   | { type: 'errors'; title: string; items: string[] };
 
 interface ArticleData {
@@ -20,7 +20,7 @@ interface ArticleData {
   description: string;
   readingMinutes: number;
   sections: ArticleSection[];
-  relatedSlugs: string[];
+  relatedArticles: { slug: string; description: string }[];
   metaTitle: string;
   metaDescription: string;
   categorySlug: string;
@@ -33,11 +33,148 @@ function emptyArticle(): ArticleData {
     description: '',
     readingMinutes: 5,
     sections: [],
-    relatedSlugs: [],
+    relatedArticles: [],
     metaTitle: '',
     metaDescription: '',
     categorySlug: '',
   };
+}
+
+function ImageUploadField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleUpload = async (file: File) => {
+    setUploading(true);
+    const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+    const form = new FormData();
+    form.append('file', file);
+    try {
+      const res = await fetch(`${apiBase}/upload-image`, { method: 'POST', body: form });
+      if (res.ok) {
+        const data = await res.json();
+        onChange(data.url);
+      }
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className={styles.field}>
+      <span>{label}</span>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="URL или загрузите файл"
+          style={{ flex: 1 }}
+        />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) handleUpload(file);
+            e.target.value = '';
+          }}
+        />
+        <button
+          type="button"
+          className={styles.addButton}
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          style={{ flexShrink: 0 }}
+        >
+          {uploading ? '...' : 'Загрузить'}
+        </button>
+      </div>
+      {value && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={value} alt="" style={{ maxWidth: 200, maxHeight: 120, borderRadius: 8, marginTop: 8, objectFit: 'cover' }} />
+      )}
+    </div>
+  );
+}
+
+function parseRelated(data: Record<string, unknown>): { slug: string; description: string }[] {
+  if (Array.isArray(data.related) && data.related.length > 0) {
+    return data.related.map((r: { slug?: string; description?: string }) => ({
+      slug: r.slug || '',
+      description: r.description || '',
+    }));
+  }
+  if (Array.isArray(data.relatedSlugs)) {
+    return data.relatedSlugs.map((s: string | { slug?: string; description?: string }) => {
+      if (typeof s === 'string') return { slug: s, description: '' };
+      return { slug: s.slug || '', description: s.description || '' };
+    });
+  }
+  return [];
+}
+
+function GradientTextarea({
+  value,
+  onChange,
+  rows = 4,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  rows?: number;
+  placeholder?: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  const wrapGradient = () => {
+    const ta = ref.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    if (start === end) return;
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end);
+    const after = value.slice(end);
+    onChange(before + '==' + selected + '==' + after);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = start;
+      ta.selectionEnd = end + 4;
+    }, 0);
+  };
+
+  return (
+    <div style={{ width: '100%' }}>
+      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+        <button
+          type="button"
+          onClick={wrapGradient}
+          style={{
+            padding: '2px 10px',
+            fontSize: 12,
+            borderRadius: 4,
+            border: '1px solid #3B82F6',
+            background: 'linear-gradient(90deg, #3B82F6, #295AAA)',
+            color: '#fff',
+            cursor: 'pointer',
+          }}
+        >
+          Градиент
+        </button>
+      </div>
+      <textarea
+        ref={ref}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        style={{ width: '100%' }}
+      />
+    </div>
+  );
 }
 
 export default function ArticleEditorPage() {
@@ -62,7 +199,7 @@ export default function ArticleEditorPage() {
           description: data.description || '',
           readingMinutes: data.readingMinutes || 5,
           sections: data.sections || [],
-          relatedSlugs: data.relatedSlugs || [],
+          relatedArticles: parseRelated(data),
           metaTitle: data.metaTitle || '',
           metaDescription: data.metaDescription || '',
           categorySlug: data.categorySlug || '',
@@ -85,7 +222,10 @@ export default function ArticleEditorPage() {
         title: article.title,
         description: article.description || null,
         sections: article.sections,
-        relatedSlugs: article.relatedSlugs,
+        relatedSlugs: article.relatedArticles.map((r) => ({
+          slug: r.slug,
+          description: r.description || undefined,
+        })),
         metaTitle: article.metaTitle || null,
         metaDescription: article.metaDescription || null,
         readingMinutes: article.readingMinutes,
@@ -120,10 +260,10 @@ export default function ArticleEditorPage() {
     let section: ArticleSection;
     switch (type) {
       case 'image':
-        section = { type: 'image', src: '', alt: '' };
+        section = { type: 'image', title: '', src: '', alt: '' };
         break;
       case 'image-pair':
-        section = { type: 'image-pair', src1: '', src2: '' };
+        section = { type: 'image-pair', title: '', src1: '', src2: '' };
         break;
       case 'errors':
         section = { type: 'errors', title: '', items: [''] };
@@ -134,18 +274,18 @@ export default function ArticleEditorPage() {
     setArticle({ ...article, sections: [...article.sections, section] });
   };
 
-  const addRelatedSlug = () => {
-    setArticle({ ...article, relatedSlugs: [...article.relatedSlugs, ''] });
+  const addRelatedArticle = () => {
+    setArticle({ ...article, relatedArticles: [...article.relatedArticles, { slug: '', description: '' }] });
   };
 
-  const updateRelatedSlug = (index: number, value: string) => {
-    const next = [...article.relatedSlugs];
-    next[index] = value;
-    setArticle({ ...article, relatedSlugs: next });
+  const updateRelatedArticle = (index: number, field: 'slug' | 'description', value: string) => {
+    const next = [...article.relatedArticles];
+    next[index] = { ...next[index], [field]: value };
+    setArticle({ ...article, relatedArticles: next });
   };
 
-  const removeRelatedSlug = (index: number) => {
-    setArticle({ ...article, relatedSlugs: article.relatedSlugs.filter((_, i) => i !== index) });
+  const removeRelatedArticle = (index: number) => {
+    setArticle({ ...article, relatedArticles: article.relatedArticles.filter((_, i) => i !== index) });
   };
 
   if (loading) return <div className={styles.loading}>Загрузка...</div>;
@@ -241,19 +381,26 @@ export default function ArticleEditorPage() {
           </div>
 
           <div className={styles.section}>
-            <h2>Связанные статьи (slugs)</h2>
-            {article.relatedSlugs.map((rs, i) => (
+            <h2>Связанные статьи</h2>
+            {article.relatedArticles.map((ra, i) => (
               <div key={i} className={styles.relatedRow}>
                 <input
                   type="text"
-                  value={rs}
-                  onChange={(e) => updateRelatedSlug(i, e.target.value)}
-                  placeholder="slug связанной статьи"
+                  value={ra.slug}
+                  onChange={(e) => updateRelatedArticle(i, 'slug', e.target.value)}
+                  placeholder="slug статьи"
                 />
-                <button className={styles.smallRemoveButton} onClick={() => removeRelatedSlug(i)}>×</button>
+                <textarea
+                  value={ra.description}
+                  onChange={(e) => updateRelatedArticle(i, 'description', e.target.value)}
+                  placeholder="Описание для карточки"
+                  rows={2}
+                  style={{ width: '100%' }}
+                />
+                <button className={styles.smallRemoveButton} onClick={() => removeRelatedArticle(i)}>×</button>
               </div>
             ))}
-            <button className={styles.smallAddButton} onClick={addRelatedSlug}>+ Добавить</button>
+            <button className={styles.smallAddButton} onClick={addRelatedArticle}>+ Добавить</button>
           </div>
         </div>
 
@@ -291,14 +438,13 @@ function renderSectionEditor(
               onChange={(e) => update(index, { ...section, title: e.target.value })}
             />
           </label>
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>Текст</span>
-            <textarea
+            <GradientTextarea
               value={section.body || ''}
-              onChange={(e) => update(index, { ...section, body: e.target.value })}
-              rows={4}
+              onChange={(v) => update(index, { ...section, body: v })}
             />
-          </label>
+          </div>
           <div>
             <span style={{ fontSize: 14, color: '#666', fontWeight: 500 }}>Пункты списка</span>
             {(section.items || []).map((item, j) => (
@@ -337,14 +483,18 @@ function renderSectionEditor(
       return (
         <>
           <label className={styles.field}>
-            <span>URL картинки</span>
+            <span>Заголовок (H3)</span>
             <input
               type="text"
-              value={section.src}
-              onChange={(e) => update(index, { ...section, src: e.target.value })}
-              placeholder="https://..."
+              value={section.title || ''}
+              onChange={(e) => update(index, { ...section, title: e.target.value })}
             />
           </label>
+          <ImageUploadField
+            label="Картинка"
+            value={section.src}
+            onChange={(url) => update(index, { ...section, src: url })}
+          />
           <label className={styles.field}>
             <span>Alt текст</span>
             <input
@@ -360,23 +510,23 @@ function renderSectionEditor(
       return (
         <>
           <label className={styles.field}>
-            <span>URL картинки 1</span>
+            <span>Заголовок (H3)</span>
             <input
               type="text"
-              value={section.src1}
-              onChange={(e) => update(index, { ...section, src1: e.target.value })}
-              placeholder="https://..."
+              value={section.title || ''}
+              onChange={(e) => update(index, { ...section, title: e.target.value })}
             />
           </label>
-          <label className={styles.field}>
-            <span>URL картинки 2</span>
-            <input
-              type="text"
-              value={section.src2}
-              onChange={(e) => update(index, { ...section, src2: e.target.value })}
-              placeholder="https://..."
-            />
-          </label>
+          <ImageUploadField
+            label="Картинка 1"
+            value={section.src1}
+            onChange={(url) => update(index, { ...section, src1: url })}
+          />
+          <ImageUploadField
+            label="Картинка 2"
+            value={section.src2}
+            onChange={(url) => update(index, { ...section, src2: url })}
+          />
         </>
       );
 

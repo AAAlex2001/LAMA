@@ -35,7 +35,7 @@
 .sectionsGroup {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 8px;
   width: 100%;
 }
 
@@ -115,6 +115,7 @@
   border: 0;
   background: transparent;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
 }
 

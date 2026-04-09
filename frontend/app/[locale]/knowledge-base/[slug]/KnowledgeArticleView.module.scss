@@ -44,6 +44,9 @@
   border-radius: 8px !important;
   font-size: 18px !important;
   font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
 }
 
 @media (min-width: 768px) {
@@ -73,18 +76,19 @@
     width: 320px;
     background: #FFFFFF;
     border-radius: 12px;
-    position: fixed;
+    position: sticky;
     top: 95px;
-    left: calc(50vw - 576px);
     max-height: calc(100vh - 110px);
     overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    align-self: flex-start;
   }
 
   .main {
-    flex: none;
-    width: 812px;
+    flex: 1;
     min-width: 0;
-    margin-left: 340px;
     background: #FFFFFF;
     border-radius: 12px;
     padding: 15px 16px;

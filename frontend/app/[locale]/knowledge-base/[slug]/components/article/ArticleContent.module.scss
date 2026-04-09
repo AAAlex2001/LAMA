@@ -42,6 +42,13 @@
   }
 }
 
+.pairImagesWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
 .pairImages {
   display: flex;
   gap: 5px;

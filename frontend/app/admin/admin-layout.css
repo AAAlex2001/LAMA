@@ -1,0 +1,4 @@
+html.admin-page,
+html.admin-page body {
+  overflow: auto;
+}

@@ -6,20 +6,10 @@
   background: #ffffff;
   border-radius: 12px;
 
-  &.open {
-    padding: 12px 0;
-    gap: 12px;
-  }
-
   &.compact {
     width: auto;
     position: relative;
     overflow: visible;
-
-    &.open {
-      padding: 0;
-      gap: 0;
-    }
 
     .header {
       padding: 12px 16px;
@@ -36,6 +26,7 @@
       box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08);
       z-index: 100;
       box-sizing: border-box;
+      margin-top: 0;
     }
   }
 }
@@ -53,14 +44,9 @@
   cursor: pointer;
   box-sizing: border-box;
   user-select: none;
-
-  .open & {
-    padding: 0;
-  }
 }
 
 .label {
-  
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
@@ -78,7 +64,6 @@
 
 .chevron {
   flex-shrink: 0;
-  transition: transform 0.2s ease;
 
   &.rotated {
     transform: rotate(180deg);

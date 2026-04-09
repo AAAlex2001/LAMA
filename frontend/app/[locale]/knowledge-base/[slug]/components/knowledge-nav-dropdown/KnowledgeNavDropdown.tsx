@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
 import OldButton from '@/components/button/button';
@@ -24,44 +27,50 @@ function buildSectionsFromApi(navigation: NavigationCategory[], headings: Headin
       id: entry.slug,
       title: entry.title,
       isActive: false,
-      nested: {
-        id: `${entry.slug}-nested`,
-        title: entry.title,
-        isActive: false,
-        isOpenByDefault: false,
-        items: headings.map((h) => ({ id: h.id, title: h.title })),
-      },
     })),
   }));
 }
 
-function buildSections(headings: Heading[]): SectionConfig[] {
-  if (!headings.length) return SECTIONS;
-  return SECTIONS.map((s) => ({
-    ...s,
-    entries: s.entries?.map((e) => {
-      if (e.isActive && e.nested) {
-        return {
-          ...e,
-          nested: {
-            ...e.nested,
-            items: headings.map((h) => ({ id: h.id, title: h.title })),
-          },
-        };
+function buildSections(): SectionConfig[] {
+  return SECTIONS;
+}
+
+function filterSections(sections: SectionConfig[], query: string): SectionConfig[] {
+  const q = query.toLowerCase().trim();
+  if (!q) return sections;
+
+  return sections
+    .map((section) => {
+      const sectionTitleMatch = section.title.toLowerCase().includes(q);
+      const filteredEntries = section.entries?.filter((entry) =>
+        entry.title.toLowerCase().includes(q),
+      );
+
+      if (sectionTitleMatch) return section;
+      if (filteredEntries && filteredEntries.length > 0) {
+        return { ...section, entries: filteredEntries, isOpenByDefault: true };
       }
-      return e;
-    }),
-  }));
+      return null;
+    })
+    .filter((s): s is SectionConfig => s !== null);
 }
 
 export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation }: Props) {
-  const sections = navigation && navigation.length > 0
+  const [search, setSearch] = useState('');
+
+  const base = navigation && navigation.length > 0
     ? buildSectionsFromApi(navigation, headings)
-    : buildSections(headings);
+    : buildSections();
+  const sections = filterSections(base, search);
 
   return (
     <div className={variant === 'sidebar' ? styles.sidebar : styles.dropdown}>
-      <SearchBar placeholder="Поиск по базе знаний" className={styles.search} />
+      <SearchBar
+        placeholder="Поиск по базе знаний"
+        className={styles.search}
+        value={search}
+        onChange={setSearch}
+      />
 
       <div className={styles.sectionsGroup}>
         {sections.map((section) => (
@@ -79,6 +88,7 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           text="Написать в LamaPlannerBot"
           variant="templateCard"
           fullWidth
+          showArrow={false}
         />
         <NewButton variant="fill" intent="gradient" size="md" className={styles.fullBtn}>
           Войти
