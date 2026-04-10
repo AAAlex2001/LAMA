@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
 import Button from "@/components/button/button";
 import ToolsPopup from "@/components/tools-popup/tools-popup";
+import { normalizeLocalizedHref } from '../normalize-localized-href';
 
 type Locale = 'ru' | 'sr' | 'en';
 
@@ -29,7 +30,6 @@ type Props = {
 
 export default function Header({ locale: localeProp, content, toolsItems }: Props) {
   const router = useRouter();
-  const pathname = usePathname();
   const locale = (localeProp as Locale) || 'ru';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isToolsOpen, setIsToolsOpen] = useState(false);
@@ -141,7 +141,7 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
             {navItems.map((item, index) => {
               if (item.type === 'link') {
                 return (
-                  <a key={`link-${index}`} href={item.link.href} className={styles.navLink}>
+                  <a key={`link-${index}`} href={normalizeLocalizedHref(item.link.href, locale)} className={styles.navLink}>
                     {item.link.text}
                   </a>
                 );
@@ -196,7 +196,7 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
             <div className={styles.loginButtonSmall}>
               <Button 
                 text={loginText} 
-                href={loginHref} 
+                href={normalizeLocalizedHref(loginHref, locale)} 
                 showArrow={false}
                 size="small"
               />
@@ -204,7 +204,7 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
             <div className={styles.loginButtonMedium}>
               <Button 
                 text={loginText} 
-                href={loginHref} 
+                href={normalizeLocalizedHref(loginHref, locale)} 
                 showArrow={false}
                 size="medium"
               />
@@ -226,7 +226,10 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
         onClose={() => setIsMenuOpen(false)}
         locale={locale}
         headerContent={content}
-        toolsItems={toolsItems?.map((item) => ({ title: item.title, href: item.href }))}
+        toolsItems={toolsItems?.map((item) => ({
+          title: item.title,
+          href: normalizeLocalizedHref(item.href, locale),
+        }))}
       />
     </>
   );

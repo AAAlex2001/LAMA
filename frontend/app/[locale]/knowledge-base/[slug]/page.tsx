@@ -17,8 +17,8 @@ export default async function KnowledgeBaseArticlePage({ params }: Props) {
   const { locale, slug } = await params;
   if (!slug) notFound();
 
-  const { article, articles, navigation, footer } = await fetchPageData(slug, locale);
+  const { article, articles, navigation, footer, header, tools } = await fetchPageData(slug, locale);
   if (!article.slug) notFound();
 
-  return <KnowledgeArticlePageShell article={article} articles={articles} navigation={navigation} footer={footer} locale={locale} />;
+  return <KnowledgeArticlePageShell article={article} articles={articles} navigation={navigation} footer={footer} header={header} tools={tools} locale={locale} />;
 }

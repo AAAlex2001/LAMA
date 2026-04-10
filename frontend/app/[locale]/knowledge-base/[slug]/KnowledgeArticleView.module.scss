@@ -103,7 +103,7 @@
 
   .layout {
     gap: 40px;
-    max-width: 1244px;
+    max-width: 1200px;
     padding: 0;
   }
 
@@ -201,6 +201,8 @@
   .extras {
     width: calc(100% - 424px);
     margin-left: 336px;
+    padding: 0 16px;
+    box-sizing: border-box;
   }
 
 }

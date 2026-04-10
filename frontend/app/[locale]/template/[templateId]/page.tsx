@@ -100,6 +100,24 @@ type FooterContent = {
   columns: Array<{ title: string; links: Array<{ text: string; href: string }> }>;
 };
 
+type HeaderContent = {
+  brandPrefix: string;
+  brandSuffix: string;
+  toolsLabel: string;
+  toolsOrder?: number;
+  loginText: string;
+  loginHref: string;
+  registerText: string;
+  registerHref: string;
+  telegramText: string;
+  telegramHref: string;
+  navLinks: Array<{ text: string; href: string; order?: number }>;
+};
+
+type ToolsContent = {
+  items: Array<{ title: string; description?: string | null; href: string; order?: number }>;
+};
+
 type TemplateItem = {
   id: number;
   slug: string;
@@ -125,6 +143,16 @@ async function fetchJson<T>(url: string, fallback: T): Promise<T> {
     return (await res.json()) as T;
   } catch {
     return fallback;
+  }
+}
+
+async function fetchJsonOptional<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
   }
 }
 
@@ -229,9 +257,11 @@ export default async function TemplatePage({ params }: Props) {
     columns: [],
   };
 
-  const [hero, footer] = await Promise.all([
+  const [hero, footer, header, tools] = await Promise.all([
     fetchJson<HeroContent>(`${apiBaseUrl}/hero?locale=${locale}`, heroFallback),
     fetchJson<FooterContent>(`${apiBaseUrl}/footer?locale=${locale}`, footerFallback),
+    fetchJsonOptional<HeaderContent>(`${apiBaseUrl}/header?locale=${locale}`),
+    fetchJsonOptional<ToolsContent>(`${apiBaseUrl}/tools?locale=${locale}`),
   ]);
 
   const baseHeroForTemplate: HeroContent = {
@@ -358,7 +388,7 @@ export default async function TemplatePage({ params }: Props) {
   return (
     <main className="landing-page">
       <LandingScrollBehavior />
-      <Header locale={locale} />
+      <Header locale={locale} content={header || undefined} toolsItems={tools?.items} />
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
       
       {templateContent.blocks && templateContent.blocks.length > 0 && (

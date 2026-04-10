@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import styles from './mobile-menu.module.scss';
 import Button from '@/components/button/button';
+import { normalizeLocalizedHref } from '../normalize-localized-href';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -94,7 +95,7 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
           {navItems.map((item, index) => {
             if (item.type === 'link') {
               return (
-                <a key={`link-${index}`} href={item.link.href} className={styles.navLink} onClick={handleClose}>
+                <a key={`link-${index}`} href={normalizeLocalizedHref(item.link.href, locale)} className={styles.navLink} onClick={handleClose}>
                   {item.link.text}
                 </a>
               );
@@ -123,7 +124,7 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
                   {sortedToolsList.map((tool, toolIndex) => (
                     <a 
                       key={toolIndex} 
-                      href={tool.href} 
+                      href={normalizeLocalizedHref(tool.href, locale)} 
                       className={styles.toolsItem}
                       onClick={handleClose}
                     >
@@ -139,7 +140,7 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
         <div className={styles.actions}>
           <Button 
             text={registerText} 
-            href={registerHref}
+            href={normalizeLocalizedHref(registerHref, locale)}
             showArrow={false}
             className={styles.loginButton}
             fullWidth={true}
@@ -147,7 +148,7 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
           />
           <Button 
             text={telegramText} 
-            href={telegramHref} 
+            href={normalizeLocalizedHref(telegramHref, locale)} 
             showArrow={false}
             className={styles.telegramButton}
             fullWidth={true}

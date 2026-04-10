@@ -9,11 +9,31 @@ type FooterContent = {
   columns: Array<{ title: string; links: Array<{ text: string; href: string }> }>;
 };
 
+type HeaderContent = {
+  brandPrefix: string;
+  brandSuffix: string;
+  toolsLabel: string;
+  toolsOrder?: number;
+  loginText: string;
+  loginHref: string;
+  registerText: string;
+  registerHref: string;
+  telegramText: string;
+  telegramHref: string;
+  navLinks: Array<{ text: string; href: string; order?: number }>;
+};
+
+type ToolsContent = {
+  items: Array<{ title: string; description?: string | null; href: string; order?: number }>;
+};
+
 type KBPageData = {
   article: KnowledgeArticle;
   articles: KnowledgeArticleListItem[];
   navigation: NavigationCategory[];
   footer: FooterContent;
+  header: HeaderContent | null;
+  tools: ToolsContent | null;
 };
 
 type ArticleListResponse = {
@@ -28,6 +48,18 @@ async function fetchJson<T>(url: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+async function fetchJsonOptional<T>(url: string): Promise<T | null> {
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) {
+      return null;
+    }
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchArticle(slug: string, locale: string): Promise<KnowledgeArticle> {
   return fetchJson<KnowledgeArticle>(
     `${API_BASE}/kb/articles/slug/${encodeURIComponent(slug)}?locale=${locale}`,
@@ -37,14 +69,15 @@ export async function fetchArticle(slug: string, locale: string): Promise<Knowle
 export async function fetchPageData(slug: string, locale: string): Promise<KBPageData> {
   const encoded = encodeURIComponent(slug);
 
-  const [article, articleList, navigation, footer] = await Promise.all([
+  const [article, articleList, navigation, footer, header, tools] = await Promise.all([
     fetchJson<KnowledgeArticle>(`${API_BASE}/kb/articles/slug/${encoded}?locale=${locale}`),
     fetchJson<ArticleListResponse>(`${API_BASE}/kb/articles?locale=${locale}`),
     fetchJson<NavigationCategory[]>(`${API_BASE}/kb/navigation?locale=${locale}`),
     fetchJson<FooterContent>(`${API_BASE}/footer?locale=${locale}`),
+    fetchJsonOptional<HeaderContent>(`${API_BASE}/header?locale=${locale}`),
   ]);
 
-  return { article, articles: articleList.articles || [], navigation, footer };
+  return { article, articles: articleList.articles || [], navigation, footer, header, tools };
 }
 
 export async function buildArticleMetadata(slug: string, locale: string): Promise<Metadata> {

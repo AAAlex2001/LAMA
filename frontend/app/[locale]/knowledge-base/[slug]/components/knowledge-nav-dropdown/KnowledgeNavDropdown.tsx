@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import BrainIcon from '@/components/icons/brain-icon';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
@@ -81,8 +80,8 @@ function filterSections(sections: SectionConfig[], query: string): SectionConfig
 }
 
 export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation, locale = 'ru', currentSlug, isLoggedIn = false }: Props) {
-  const router = useRouter();
   const [search, setSearch] = useState('');
+  const botHref = 'https://t.me/LamaPlannerBot';
   const containerClassName = variant === 'sidebar'
     ? isLoggedIn
       ? `${styles.sidebar} ${styles.sidebarFillHeight}`
@@ -127,6 +126,9 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
         </div>
         <OldButton
           text="Написать в LamaPlannerBot"
+          href={botHref}
+          target="_blank"
+          rel="noopener noreferrer"
           variant="templateCard"
           fullWidth
           showArrow={false}
@@ -134,13 +136,15 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
         />
         {!isLoggedIn && (
           <NewButton
+            href={botHref}
+            target="_blank"
+            rel="noopener noreferrer"
             variant="fill"
             intent="gradient"
             size="md"
             className={styles.fullBtn}
-            onClick={() => router.push(`/${locale}/login`)}
           >
-            Войти
+            Предложить идею
           </NewButton>
         )}
       </div>

@@ -4,9 +4,11 @@
   left: 0;
   right: 0;
   width: 100%;
+  height: 56px;
   z-index: 1000;
   background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  padding: 6px 20px;
+  padding: 0 20px;
+  box-sizing: border-box;
   transition: transform 0.3s ease;
   will-change: transform;
 }
@@ -18,6 +20,7 @@
 .container {
   margin: 0 auto;
   max-width: 1200px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -163,7 +166,7 @@
 
 @media (min-width: 768px) {
   .header {
-    padding: 10px 20px;
+    height: 64px;
   }
 
   .loginButtonSmall {
@@ -181,6 +184,9 @@
 }
 
 @media (min-width: 1440px) {
+  .header {
+    height: 64px;
+  }
 
   .brandName {
     font-size: 24px;

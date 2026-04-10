@@ -19,15 +19,35 @@ type FooterContent = {
   columns: Array<{ title: string; links: Array<{ text: string; href: string }> }>;
 };
 
+type HeaderContent = {
+  brandPrefix: string;
+  brandSuffix: string;
+  toolsLabel: string;
+  toolsOrder?: number;
+  loginText: string;
+  loginHref: string;
+  registerText: string;
+  registerHref: string;
+  telegramText: string;
+  telegramHref: string;
+  navLinks: Array<{ text: string; href: string; order?: number }>;
+};
+
+type ToolsContent = {
+  items: Array<{ title: string; description?: string | null; href: string; order?: number }>;
+};
+
 type Props = {
   article: KnowledgeArticle;
   articles: KnowledgeArticleListItem[];
   navigation: NavigationCategory[];
   footer: FooterContent;
+  header: HeaderContent | null;
+  tools: ToolsContent | null;
   locale: string;
 };
 
-export default function KnowledgeArticlePageShell({ article, articles, navigation, footer, locale }: Props) {
+export default function KnowledgeArticlePageShell({ article, articles, navigation, footer, header, tools, locale }: Props) {
   const [authState, setAuthState] = useState<'checking' | 'authenticated' | 'guest'>('checking');
 
   useEffect(() => {
@@ -102,7 +122,7 @@ export default function KnowledgeArticlePageShell({ article, articles, navigatio
   return (
     <main className="landing-page">
       <LandingScrollBehavior />
-      <Header locale={locale} />
+      <Header locale={locale} content={header || undefined} toolsItems={tools?.items} />
       <KnowledgeArticleView article={article} articles={articles} locale={locale} navigation={navigation} />
       <Footer locale={locale} content={footer} />
     </main>
