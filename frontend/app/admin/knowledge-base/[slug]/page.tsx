@@ -222,10 +222,9 @@ export default function ArticleEditorPage() {
         title: article.title,
         description: article.description || null,
         sections: article.sections,
-        relatedSlugs: article.relatedArticles.map((r) => ({
-          slug: r.slug,
-          description: r.description || undefined,
-        })),
+        relatedSlugs: article.relatedArticles
+          .map((relatedArticle) => relatedArticle.slug.trim())
+          .filter(Boolean),
         metaTitle: article.metaTitle || null,
         metaDescription: article.metaDescription || null,
         readingMinutes: article.readingMinutes,

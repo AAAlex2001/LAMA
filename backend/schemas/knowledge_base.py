@@ -1,5 +1,29 @@
 from typing import List, Literal, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+def normalize_related_slugs(value):
+    if value is None:
+        return value
+    if not isinstance(value, list):
+        return value
+
+    normalized: List[str] = []
+    for item in value:
+        if isinstance(item, str):
+            slug = item.strip()
+        elif isinstance(item, dict):
+            raw_slug = item.get("slug")
+            if not isinstance(raw_slug, str):
+                raise ValueError("relatedSlugs items must contain a string slug")
+            slug = raw_slug.strip()
+        else:
+            raise ValueError("relatedSlugs items must be strings or objects with slug")
+
+        if slug:
+            normalized.append(slug)
+
+    return normalized
 
 
 # --------------- Request ---------------
@@ -41,6 +65,11 @@ class CreateKBArticleRequest(BaseModel):
     metaDescription: Optional[str] = None
     order: int = 0
 
+    @field_validator("relatedSlugs", mode="before")
+    @classmethod
+    def validate_related_slugs(cls, value):
+        return normalize_related_slugs(value)
+
 
 class UpdateKBArticleRequest(BaseModel):
     categorySlug: Optional[str] = None
@@ -53,6 +82,11 @@ class UpdateKBArticleRequest(BaseModel):
     metaDescription: Optional[str] = None
     order: Optional[int] = None
     is_active: Optional[bool] = None
+
+    @field_validator("relatedSlugs", mode="before")
+    @classmethod
+    def validate_related_slugs(cls, value):
+        return normalize_related_slugs(value)
 
 
 class FeedbackRequest(BaseModel):
