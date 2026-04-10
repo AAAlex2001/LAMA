@@ -75,6 +75,7 @@ export async function fetchPageData(slug: string, locale: string): Promise<KBPag
     fetchJson<NavigationCategory[]>(`${API_BASE}/kb/navigation?locale=${locale}`),
     fetchJson<FooterContent>(`${API_BASE}/footer?locale=${locale}`),
     fetchJsonOptional<HeaderContent>(`${API_BASE}/header?locale=${locale}`),
+    fetchJsonOptional<ToolsContent>(`${API_BASE}/tools?locale=${locale}`),
   ]);
 
   return { article, articles: articleList.articles || [], navigation, footer, header, tools };
