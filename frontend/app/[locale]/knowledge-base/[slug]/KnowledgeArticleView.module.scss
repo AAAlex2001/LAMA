@@ -7,15 +7,36 @@
   font-family: 'Inter';
 }
 
+.pageEmbedded {
+  padding-top: 76px;
+  padding-bottom: 32px;
+}
+
 .layout {
   display: flex;
   flex-direction: column;
   gap: 60px;
   width: 100%;
-  max-width: none;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 16px;
   box-sizing: border-box;
+}
+
+.layoutEmbedded {
+  max-width: none;
+  padding: 0 20px;
+}
+
+@media (min-width: 768px) {
+  .layout {
+    max-width: 768px;
+  }
+
+  .layoutEmbedded {
+    max-width: none;
+    padding: 0 20px;
+  }
 }
 
 .articleShell {
@@ -26,6 +47,16 @@
 
 .sidebar {
   display: none;
+}
+
+.sidebarStatic {
+  width: 100%;
+  height: 100%;
+}
+
+.sidebarSticky,
+.sectionsRailSticky {
+  width: 100%;
 }
 
 .sectionsRail {
@@ -58,16 +89,15 @@
   gap: 8px;
 }
 
-@media (min-width: 768px) {
-  .layout {
-    max-width: 768px;
-  }
-}
-
 @media (min-width: 1440px) {
   .page {
     background: #FFFFFF;
     padding-top: 95px;
+  }
+
+  .pageEmbedded {
+    padding-top: 24px;
+    padding-bottom: 40px;
   }
 
   .layout {
@@ -76,12 +106,22 @@
     padding: 0;
   }
 
+  .layoutEmbedded {
+    max-width: none;
+    padding: 0 20px;
+  }
+
   .articleShell {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr) 72px;
     gap: 20px;
     align-items: start;
     width: 100%;
+  }
+
+  .articleShellLoggedIn {
+    grid-template-columns: 320px minmax(0, 1fr) 280px;
+    align-items: start;
   }
 
   .sidebar {
@@ -95,6 +135,21 @@
     width: 72px;
     align-self: start;
     overflow: visible;
+  }
+
+  .sectionsRailWide {
+    width: 280px;
+    display: flex;
+    align-self: start;
+  }
+
+  .sidebarSticky,
+  .sectionsRailSticky {
+    position: sticky;
+    top: 24px;
+    height: calc(100dvh - 88px);
+    max-height: calc(100dvh - 88px);
+    min-height: 0;
   }
 
   .main {

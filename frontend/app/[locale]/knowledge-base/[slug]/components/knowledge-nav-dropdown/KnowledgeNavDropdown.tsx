@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import BrainIcon from '@/components/icons/brain-icon';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
@@ -20,6 +21,7 @@ type Props = {
   navigation?: NavigationCategory[];
   locale?: string;
   currentSlug?: string;
+  isLoggedIn?: boolean;
 };
 
 function buildSectionsFromApi(
@@ -78,7 +80,8 @@ function filterSections(sections: SectionConfig[], query: string): SectionConfig
     .filter((s): s is SectionConfig => s !== null);
 }
 
-export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation, locale = 'ru', currentSlug }: Props) {
+export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation, locale = 'ru', currentSlug, isLoggedIn = false }: Props) {
+  const router = useRouter();
   const [search, setSearch] = useState('');
   const footerLinks = [
     { href: `/${locale}/privacy`, label: 'Политика конфиденциальности' },
@@ -101,7 +104,6 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
 
       <SearchBar
         placeholder="Поиск по базе знаний"
-        className={styles.search}
         value={search}
         onChange={setSearch}
       />
@@ -125,9 +127,17 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           showArrow={false}
           className={styles.botBtn}
         />
-        <NewButton variant="fill" intent="gradient" size="md" className={styles.fullBtn}>
-          Войти
-        </NewButton>
+        {!isLoggedIn && (
+          <NewButton
+            variant="fill"
+            intent="gradient"
+            size="md"
+            className={styles.fullBtn}
+            onClick={() => router.push(`/${locale}/login`)}
+          >
+            Войти
+          </NewButton>
+        )}
       </div>
     </div>
   );

@@ -1,3 +1,5 @@
+'use client';
+
 import TemplateCardsBlock from '@/components/template-card/template-cards-block';
 import { Button } from '@/components/new-button';
 import {
@@ -6,6 +8,7 @@ import {
   ArticleHeader,
   ArticleContent,
   ArticleFeedback,
+  ArticleToc,
   ArticleSectionsNav,
   DesktopConstrainedSticky,
 } from './components';
@@ -16,7 +19,8 @@ import type { KnowledgeArticle, KnowledgeArticleListItem, NavigationCategory } f
 type Props = {
   article: KnowledgeArticle;
   articles: KnowledgeArticleListItem[];
-  isLoggedIn: boolean;
+  isLoggedIn?: boolean;
+  isEmbeddedInApp?: boolean;
   locale: string;
   navigation?: NavigationCategory[];
 };
@@ -28,7 +32,9 @@ function stripHtml(value?: string | null) {
     .trim();
 }
 
-export default function KnowledgeArticleView({ article, articles, isLoggedIn, locale, navigation }: Props) {
+export default function KnowledgeArticleView({ article, articles, isLoggedIn, isEmbeddedInApp = false, locale, navigation }: Props) {
+  const viewerLoggedIn = Boolean(isLoggedIn);
+
   const headings = article.sections
     .filter((s) => 'title' in s && typeof s.title === 'string' && s.title.length > 0)
     .map((s) => ({ id: slugify((s as { title: string }).title), title: (s as { title: string }).title }));
@@ -42,21 +48,53 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, lo
       buttonLink: `/${locale}/knowledge-base/${entry.slug}`,
     }));
 
+  const railClassName = viewerLoggedIn
+    ? `${styles.sectionsRail} ${styles.sectionsRailWide}`
+    : styles.sectionsRail;
+  const articleShellClassName = viewerLoggedIn
+    ? `${styles.articleShell} ${styles.articleShellLoggedIn}`
+    : styles.articleShell;
+  const pageClassName = isEmbeddedInApp
+    ? `${styles.page} ${styles.pageEmbedded}`
+    : styles.page;
+  const layoutClassName = isEmbeddedInApp
+    ? `${styles.layout} ${styles.layoutEmbedded}`
+    : styles.layout;
+
   return (
-    <div className={styles.page}>
-      <SubNav headings={headings} navigation={navigation} locale={locale} currentSlug={article.slug} />
-      <div className={styles.layout}>
-        <div className={styles.articleShell} data-sticky-boundary="article">
+    <div className={pageClassName}>
+      <SubNav
+        headings={headings}
+        navigation={navigation}
+        locale={locale}
+        currentSlug={article.slug}
+        isEmbeddedInApp={isEmbeddedInApp}
+      />
+      <div className={layoutClassName}>
+        <div className={articleShellClassName} data-sticky-boundary="article">
           <aside className={styles.sidebar}>
-            <DesktopConstrainedSticky top={95}>
-              <KnowledgeNavDropdown
-                variant="sidebar"
-                headings={headings}
-                navigation={navigation}
-                locale={locale}
-                currentSlug={article.slug}
-              />
-            </DesktopConstrainedSticky>
+            {viewerLoggedIn ? (
+              <div className={`${styles.sidebarStatic} ${styles.sidebarSticky}`}>
+                <KnowledgeNavDropdown
+                  variant="sidebar"
+                  headings={headings}
+                  navigation={navigation}
+                  locale={locale}
+                  currentSlug={article.slug}
+                  isLoggedIn
+                />
+              </div>
+            ) : (
+              <DesktopConstrainedSticky top={95}>
+                <KnowledgeNavDropdown
+                  variant="sidebar"
+                  headings={headings}
+                  navigation={navigation}
+                  locale={locale}
+                  currentSlug={article.slug}
+                />
+              </DesktopConstrainedSticky>
+            )}
           </aside>
           <div className={styles.main}>
             <ArticleHeader
@@ -65,33 +103,45 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, lo
               readingMinutes={article.readingMinutes}
             />
             <ArticleContent sections={article.sections} />
-            <ArticleFeedback
-              articleSlug={article.slug}
-              locale={locale}
-              initialLikes={article.likesCount}
-              initialDislikes={article.dislikesCount}
-            />
+            {!viewerLoggedIn && (
+              <ArticleFeedback
+                articleSlug={article.slug}
+                locale={locale}
+                initialLikes={article.likesCount}
+                initialDislikes={article.dislikesCount}
+              />
+            )}
           </div>
-          {!isLoggedIn && (
-            <aside className={styles.sectionsRail}>
+          <aside className={railClassName}>
+            {viewerLoggedIn ? (
+              <div className={styles.sectionsRailSticky}>
+                <ArticleToc
+                  headings={headings}
+                  fillPageHeight
+                  navigation={navigation}
+                  locale={locale}
+                  currentSlug={article.slug}
+                />
+              </div>
+            ) : (
               <DesktopConstrainedSticky top={110}>
                 <ArticleSectionsNav article={article} />
               </DesktopConstrainedSticky>
-            </aside>
-          )}
+            )}
+          </aside>
         </div>
 
-        <div className={styles.extras}>
-          <TemplateCardsBlock headline="Что почитать дальше" cards={cards} flush />
-          {!isLoggedIn && (
+        {!viewerLoggedIn && (
+          <div className={styles.extras}>
+            <TemplateCardsBlock headline="Что почитать дальше" cards={cards} flush />
             <Button href={`/${locale}/register`} variant="fill" intent="gradient" size="lg" className={styles.registerCta}>
               Попробовать бесплатно
               <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M15 7L9 13M15 7L9 1M15 7H1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

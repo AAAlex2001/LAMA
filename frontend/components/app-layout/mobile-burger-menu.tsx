@@ -76,12 +76,15 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
 
   const footerItems: MenuItem[] = [
     { id: 'profile', icon: <UserIcon width={20} height={20} color="#000000" />, label: 'Профиль', href: `/${locale}/profile` },
-    { id: 'knowledge', icon: <BrainIcon width={20} height={20} color="#000000" />, label: 'База знаний', disabled: true },
+    { id: 'knowledge', icon: <BrainIcon width={20} height={20} color="#000000" />, label: 'База знаний', href: `/${locale}/knowledge-base` },
     { id: 'logout', icon: <ExitIcon width={18} height={18} color="#000000" />, label: 'Выйти', onClick: handleLogout },
   ];
 
   const isActive = (item: MenuItem) => {
     if (!item.href) return false;
+    if (item.id === 'knowledge') {
+      return pathname.startsWith(item.href);
+    }
     return pathname.startsWith(item.href);
   };
 

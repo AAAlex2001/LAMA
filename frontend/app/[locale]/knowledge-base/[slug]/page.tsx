@@ -1,7 +1,4 @@
-import Header from '../../../landing/header/header';
-import Footer from '../../../landing/footer/footer';
-import LandingScrollBehavior from '../../../landing/LandingScrollBehavior';
-import KnowledgeArticleView from './KnowledgeArticleView';
+import KnowledgeArticlePageShell from './KnowledgeArticlePageShell';
 import { buildArticleMetadata, fetchPageData } from './api';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -23,12 +20,5 @@ export default async function KnowledgeBaseArticlePage({ params }: Props) {
   const { article, articles, navigation, footer } = await fetchPageData(slug, locale);
   if (!article.slug) notFound();
 
-  return (
-    <main className="landing-page">
-      <LandingScrollBehavior />
-      <Header locale={locale} />
-      <KnowledgeArticleView article={article} articles={articles} isLoggedIn={false} locale={locale} navigation={navigation} />
-      <Footer locale={locale} content={footer} />
-    </main>
-  );
+  return <KnowledgeArticlePageShell article={article} articles={articles} navigation={navigation} footer={footer} locale={locale} />;
 }

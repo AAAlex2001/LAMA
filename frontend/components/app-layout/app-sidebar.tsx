@@ -47,7 +47,7 @@ export default function AppSidebar() {
   ];
 
   const footerItems: SidebarItem[] = [
-    { id: 'knowledge', icon: <BrainIcon width={20} height={20} />, label: 'База знаний', disabled: true },
+    { id: 'knowledge', icon: <BrainIcon width={20} height={20} />, label: 'База знаний', href: `/${locale}/knowledge-base` },
     { id: 'logout', icon: <ExitIcon width={18} height={18} />, label: 'Выйти', onClick: handleLogout },
   ];
 

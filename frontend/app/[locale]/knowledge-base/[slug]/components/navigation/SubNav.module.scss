@@ -11,8 +11,8 @@
 .dropdownWrap {
   position: absolute;
   top: 60px;
-  left: 16px;
-  right: 16px;
+  left: 0;
+  right: 0;
 }
 
 .inner {
@@ -21,16 +21,27 @@
 
 .inner {
   display: flex;
+  position: relative;
   flex-direction: row;
   align-items: center;
   gap: 10px;
   width: 100%;
   max-width: none;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 10px 20px;
   box-sizing: border-box;
   min-width: 0;
   height: 60px;
+}
+
+.innerConstrained {
+  padding: 10px 16px;
+}
+
+@media (min-width: 768px) {
+  .innerConstrained {
+    max-width: 768px;
+  }
 }
 
 .pill {
@@ -84,18 +95,8 @@
   padding: 0;
 }
 
-@media (min-width: 768px) {
-  .inner {
-    max-width: 768px;
-  }
-}
-
 @media (min-width: 1440px) {
   .subnav {
     display: none;
-  }
-
-  .inner {
-    max-width: 1152px;
   }
 }
