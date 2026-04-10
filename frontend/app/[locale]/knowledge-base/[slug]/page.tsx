@@ -20,14 +20,14 @@ export default async function KnowledgeBaseArticlePage({ params }: Props) {
   const { locale, slug } = await params;
   if (!slug) notFound();
 
-  const { article, navigation, footer } = await fetchPageData(slug, locale);
+  const { article, articles, navigation, footer } = await fetchPageData(slug, locale);
   if (!article.slug) notFound();
 
   return (
     <main className="landing-page">
       <LandingScrollBehavior />
       <Header locale={locale} />
-      <KnowledgeArticleView article={article} isLoggedIn={false} locale={locale} navigation={navigation} />
+      <KnowledgeArticleView article={article} articles={articles} isLoggedIn={false} locale={locale} navigation={navigation} />
       <Footer locale={locale} content={footer} />
     </main>
   );

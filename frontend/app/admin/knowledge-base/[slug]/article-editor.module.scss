@@ -208,7 +208,7 @@
 .itemRow {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
 
   input {
@@ -259,11 +259,11 @@
 .relatedRow {
   display: flex;
   gap: 8px;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 8px;
 
   input {
-    flex: 1;
+    flex: 0 0 220px;
     padding: 8px 12px;
     border: 1px solid #d0d0d0;
     border-radius: 6px;
@@ -275,6 +275,10 @@
       outline: none;
       border-color: #3b82f6;
     }
+  }
+
+  > :nth-child(2) {
+    flex: 1;
   }
 }
 

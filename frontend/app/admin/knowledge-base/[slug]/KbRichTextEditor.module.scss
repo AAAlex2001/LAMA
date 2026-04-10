@@ -1,0 +1,127 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.wrapperCompact {
+  gap: 8px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toolButton {
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  background: #f8fbff;
+  color: #314156;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.toolButtonActive {
+  background: #3b82f6;
+  border-color: #3b82f6;
+  color: #ffffff;
+}
+
+.surface {
+  border: 1px solid #d0d0d0;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 14px 16px;
+}
+
+.surfaceCompact {
+  padding: 12px 14px;
+}
+
+.editor {
+  min-height: 180px;
+  font-family: 'Inter';
+  font-size: 16px;
+  line-height: 1.6;
+  color: #111827;
+
+  :global(.ProseMirror) {
+    min-height: 180px;
+    outline: none;
+  }
+
+  :global(.ProseMirror p.is-editor-empty:first-child::before) {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  :global(p) {
+    margin: 0;
+  }
+
+  :global(p + p) {
+    margin-top: 12px;
+  }
+
+  :global(ul),
+  :global(ol) {
+    margin: 12px 0;
+    list-style-position: outside;
+  }
+
+  :global(ul) {
+    list-style-type: disc;
+    margin-left: 10px;
+    padding-left: 10px;
+  }
+
+  :global(ol) {
+    list-style-type: decimal;
+    padding-left: 24px;
+  }
+
+  :global(li) {
+    display: list-item;
+  }
+
+  :global(li > p) {
+    display: inline;
+    margin: 0;
+  }
+
+  :global(li > p + p) {
+    display: block;
+    margin-top: 6px;
+  }
+
+  :global(li > ul),
+  :global(li > ol) {
+    margin-top: 6px;
+  }
+
+  :global(li + li) {
+    margin-top: 6px;
+  }
+
+  :global(.kb-accent) {
+    color: #3b82f6;
+    font-weight: 600;
+  }
+}
+
+.editorCompact {
+  min-height: 88px;
+
+  :global(.ProseMirror) {
+    min-height: 88px;
+  }
+}

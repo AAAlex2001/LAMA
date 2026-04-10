@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { KnowledgeArticle, NavigationCategory } from './types';
+import type { KnowledgeArticle, KnowledgeArticleListItem, NavigationCategory } from './types';
 
 type FooterContent = {
   brandName: string;
@@ -11,8 +11,14 @@ type FooterContent = {
 
 type KBPageData = {
   article: KnowledgeArticle;
+  articles: KnowledgeArticleListItem[];
   navigation: NavigationCategory[];
   footer: FooterContent;
+};
+
+type ArticleListResponse = {
+  count: number;
+  articles: KnowledgeArticleListItem[];
 };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
@@ -31,13 +37,14 @@ export async function fetchArticle(slug: string, locale: string): Promise<Knowle
 export async function fetchPageData(slug: string, locale: string): Promise<KBPageData> {
   const encoded = encodeURIComponent(slug);
 
-  const [article, navigation, footer] = await Promise.all([
+  const [article, articleList, navigation, footer] = await Promise.all([
     fetchJson<KnowledgeArticle>(`${API_BASE}/kb/articles/slug/${encoded}?locale=${locale}`),
+    fetchJson<ArticleListResponse>(`${API_BASE}/kb/articles?locale=${locale}`),
     fetchJson<NavigationCategory[]>(`${API_BASE}/kb/navigation?locale=${locale}`),
     fetchJson<FooterContent>(`${API_BASE}/footer?locale=${locale}`),
   ]);
 
-  return { article, navigation, footer };
+  return { article, articles: articleList.articles || [], navigation, footer };
 }
 
 export async function buildArticleMetadata(slug: string, locale: string): Promise<Metadata> {

@@ -1,12 +1,14 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
+import BrainIcon from '@/components/icons/brain-icon';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
 import OldButton from '@/components/button/button';
 import styles from './KnowledgeNavDropdown.module.scss';
 import KnowledgeNavDropdownSection from './KnowledgeNavDropdownSection';
-import { FLAT_ITEMS, SECTIONS } from './KnowledgeNavDropdown.data';
+import { SECTIONS } from './KnowledgeNavDropdown.data';
 import type { Variant, SectionConfig } from './KnowledgeNavDropdown.types';
 import type { NavigationCategory } from '../../types';
 
@@ -16,17 +18,38 @@ type Props = {
   variant?: Variant;
   headings?: Heading[];
   navigation?: NavigationCategory[];
+  locale?: string;
+  currentSlug?: string;
 };
 
-function buildSectionsFromApi(navigation: NavigationCategory[], headings: Heading[]): SectionConfig[] {
+function buildSectionsFromApi(
+  navigation: NavigationCategory[],
+  headings: Heading[],
+  locale: string,
+  currentSlug?: string,
+): SectionConfig[] {
   return navigation.map((cat) => ({
     id: cat.slug,
     title: cat.title,
-    isOpenByDefault: false,
+    isOpenByDefault: cat.entries.some((entry) => entry.slug === currentSlug),
     entries: cat.entries.map((entry) => ({
       id: entry.slug,
       title: entry.title,
-      isActive: false,
+      href: `/${locale}/knowledge-base/${entry.slug}`,
+      isActive: entry.slug === currentSlug,
+      nested:
+        entry.slug === currentSlug && headings.length > 0
+          ? {
+              id: `${entry.slug}-headings`,
+              title: entry.title,
+              isOpenByDefault: true,
+              items: headings.map((heading) => ({
+                id: heading.id,
+                title: heading.title,
+                href: `#${heading.id}`,
+              })),
+            }
+          : undefined,
     })),
   }));
 }
@@ -55,16 +78,27 @@ function filterSections(sections: SectionConfig[], query: string): SectionConfig
     .filter((s): s is SectionConfig => s !== null);
 }
 
-export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation }: Props) {
+export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation, locale = 'ru', currentSlug }: Props) {
   const [search, setSearch] = useState('');
+  const footerLinks = [
+    { href: `/${locale}/privacy`, label: 'Политика конфиденциальности' },
+    { href: `/${locale}/terms`, label: 'Условия предоставления услуг' },
+  ];
 
   const base = navigation && navigation.length > 0
-    ? buildSectionsFromApi(navigation, headings)
+    ? buildSectionsFromApi(navigation, headings, locale, currentSlug)
     : buildSections();
   const sections = filterSections(base, search);
 
   return (
     <div className={variant === 'sidebar' ? styles.sidebar : styles.dropdown}>
+      {variant === 'sidebar' && (
+        <div className={styles.sidebarHeader}>
+          <span className={styles.sidebarHeaderTitle}>Блоки знаний</span>
+          <BrainIcon width={20} height={20} color="#3B82F6" />
+        </div>
+      )}
+
       <SearchBar
         placeholder="Поиск по базе знаний"
         className={styles.search}
@@ -80,8 +114,8 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
 
       <div className={styles.bottomGroup}>
         <div className={styles.flatItems}>
-          {FLAT_ITEMS.map((title, index) => (
-            <div key={`${title}-${index}`} className={styles.flatItem}>{title}</div>
+          {footerLinks.map((item) => (
+            <Link key={item.href} href={item.href} className={styles.footerLink}>{item.label}</Link>
           ))}
         </div>
         <OldButton
@@ -89,6 +123,7 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           variant="templateCard"
           fullWidth
           showArrow={false}
+          className={styles.botBtn}
         />
         <NewButton variant="fill" intent="gradient" size="md" className={styles.fullBtn}>
           Войти

@@ -4,23 +4,24 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useSearchParams } from 'next/navigation';
 import AdminMenu from '@/components/admin-menu/admin-menu';
+import KbRichTextEditor from './KbRichTextEditor';
 import styles from './article-editor.module.scss';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 type ArticleSection =
-  | { type: 'text'; title?: string; body?: string; items?: string[] }
+  | { type: 'text'; title?: string; body?: string }
   | { type: 'image'; title?: string; src: string; alt?: string }
-  | { type: 'image-pair'; title?: string; src1: string; src2: string }
-  | { type: 'errors'; title: string; items: string[] };
+  | { type: 'image-pair'; title?: string; src1: string; src2: string };
 
 interface ArticleData {
   slug: string;
   title: string;
   description: string;
+  cardTitle: string;
+  cardDescription: string;
   readingMinutes: number;
   sections: ArticleSection[];
-  relatedArticles: { slug: string; description: string }[];
   metaTitle: string;
   metaDescription: string;
   categorySlug: string;
@@ -31,9 +32,10 @@ function emptyArticle(): ArticleData {
     slug: '',
     title: '',
     description: '',
+    cardTitle: '',
+    cardDescription: '',
     readingMinutes: 5,
     sections: [],
-    relatedArticles: [],
     metaTitle: '',
     metaDescription: '',
     categorySlug: '',
@@ -100,83 +102,6 @@ function ImageUploadField({ label, value, onChange }: { label: string; value: st
   );
 }
 
-function parseRelated(data: Record<string, unknown>): { slug: string; description: string }[] {
-  if (Array.isArray(data.related) && data.related.length > 0) {
-    return data.related.map((r: { slug?: string; description?: string }) => ({
-      slug: r.slug || '',
-      description: r.description || '',
-    }));
-  }
-  if (Array.isArray(data.relatedSlugs)) {
-    return data.relatedSlugs.map((s: string | { slug?: string; description?: string }) => {
-      if (typeof s === 'string') return { slug: s, description: '' };
-      return { slug: s.slug || '', description: s.description || '' };
-    });
-  }
-  return [];
-}
-
-function GradientTextarea({
-  value,
-  onChange,
-  rows = 4,
-  placeholder,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  rows?: number;
-  placeholder?: string;
-}) {
-  const ref = useRef<HTMLTextAreaElement>(null);
-
-  const wrapGradient = () => {
-    const ta = ref.current;
-    if (!ta) return;
-    const start = ta.selectionStart;
-    const end = ta.selectionEnd;
-    if (start === end) return;
-    const before = value.slice(0, start);
-    const selected = value.slice(start, end);
-    const after = value.slice(end);
-    onChange(before + '==' + selected + '==' + after);
-    setTimeout(() => {
-      ta.focus();
-      ta.selectionStart = start;
-      ta.selectionEnd = end + 4;
-    }, 0);
-  };
-
-  return (
-    <div style={{ width: '100%' }}>
-      <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
-        <button
-          type="button"
-          onClick={wrapGradient}
-          style={{
-            padding: '2px 10px',
-            fontSize: 12,
-            borderRadius: 4,
-            border: '1px solid #3B82F6',
-            background: 'linear-gradient(90deg, #3B82F6, #295AAA)',
-            color: '#fff',
-            cursor: 'pointer',
-          }}
-        >
-          Градиент
-        </button>
-      </div>
-      <textarea
-        ref={ref}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        rows={rows}
-        placeholder={placeholder}
-        style={{ width: '100%' }}
-      />
-    </div>
-  );
-}
-
 export default function ArticleEditorPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -197,9 +122,10 @@ export default function ArticleEditorPage() {
           slug: data.slug || slug,
           title: data.title || '',
           description: data.description || '',
+          cardTitle: data.cardTitle || '',
+          cardDescription: data.cardDescription || '',
           readingMinutes: data.readingMinutes || 5,
           sections: data.sections || [],
-          relatedArticles: parseRelated(data),
           metaTitle: data.metaTitle || '',
           metaDescription: data.metaDescription || '',
           categorySlug: data.categorySlug || '',
@@ -221,10 +147,9 @@ export default function ArticleEditorPage() {
       body: JSON.stringify({
         title: article.title,
         description: article.description || null,
+        cardTitle: article.cardTitle || null,
+        cardDescription: article.cardDescription || null,
         sections: article.sections,
-        relatedSlugs: article.relatedArticles
-          .map((relatedArticle) => relatedArticle.slug.trim())
-          .filter(Boolean),
         metaTitle: article.metaTitle || null,
         metaDescription: article.metaDescription || null,
         readingMinutes: article.readingMinutes,
@@ -264,27 +189,10 @@ export default function ArticleEditorPage() {
       case 'image-pair':
         section = { type: 'image-pair', title: '', src1: '', src2: '' };
         break;
-      case 'errors':
-        section = { type: 'errors', title: '', items: [''] };
-        break;
       default:
-        section = { type: 'text', title: '', body: '', items: [] };
+        section = { type: 'text', title: '', body: '' };
     }
     setArticle({ ...article, sections: [...article.sections, section] });
-  };
-
-  const addRelatedArticle = () => {
-    setArticle({ ...article, relatedArticles: [...article.relatedArticles, { slug: '', description: '' }] });
-  };
-
-  const updateRelatedArticle = (index: number, field: 'slug' | 'description', value: string) => {
-    const next = [...article.relatedArticles];
-    next[index] = { ...next[index], [field]: value };
-    setArticle({ ...article, relatedArticles: next });
-  };
-
-  const removeRelatedArticle = (index: number) => {
-    setArticle({ ...article, relatedArticles: article.relatedArticles.filter((_, i) => i !== index) });
   };
 
   if (loading) return <div className={styles.loading}>Загрузка...</div>;
@@ -321,7 +229,8 @@ export default function ArticleEditorPage() {
               <textarea
                 value={article.description}
                 onChange={(e) => setArticle({ ...article, description: e.target.value })}
-                rows={3}
+                placeholder="Краткое описание статьи"
+                rows={4}
               />
             </label>
             <label className={styles.field}>
@@ -351,7 +260,29 @@ export default function ArticleEditorPage() {
                 value={article.metaDescription}
                 onChange={(e) => setArticle({ ...article, metaDescription: e.target.value })}
                 placeholder="Описание для поисковиков"
-                rows={2}
+                rows={4}
+              />
+            </label>
+          </div>
+
+          <div className={styles.section}>
+            <h2>Карточка статьи</h2>
+            <label className={styles.field}>
+              <span>Заголовок карточки</span>
+              <input
+                type="text"
+                value={article.cardTitle}
+                onChange={(e) => setArticle({ ...article, cardTitle: e.target.value })}
+                placeholder="Заголовок для карточки в блоке Что почитать дальше"
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Описание карточки</span>
+              <textarea
+                value={article.cardDescription}
+                onChange={(e) => setArticle({ ...article, cardDescription: e.target.value })}
+                placeholder="Описание карточки"
+                rows={4}
               />
             </label>
           </div>
@@ -375,32 +306,9 @@ export default function ArticleEditorPage() {
               <button className={styles.addButton} onClick={() => addSection('text')}>+ Текст</button>
               <button className={styles.addButton} onClick={() => addSection('image')}>+ Картинка</button>
               <button className={styles.addButton} onClick={() => addSection('image-pair')}>+ Пара картинок</button>
-              <button className={styles.addButton} onClick={() => addSection('errors')}>+ Ошибки</button>
             </div>
           </div>
 
-          <div className={styles.section}>
-            <h2>Связанные статьи</h2>
-            {article.relatedArticles.map((ra, i) => (
-              <div key={i} className={styles.relatedRow}>
-                <input
-                  type="text"
-                  value={ra.slug}
-                  onChange={(e) => updateRelatedArticle(i, 'slug', e.target.value)}
-                  placeholder="slug статьи"
-                />
-                <textarea
-                  value={ra.description}
-                  onChange={(e) => updateRelatedArticle(i, 'description', e.target.value)}
-                  placeholder="Описание для карточки"
-                  rows={2}
-                  style={{ width: '100%' }}
-                />
-                <button className={styles.smallRemoveButton} onClick={() => removeRelatedArticle(i)}>×</button>
-              </div>
-            ))}
-            <button className={styles.smallAddButton} onClick={addRelatedArticle}>+ Добавить</button>
-          </div>
         </div>
 
         <div className={styles.actions}>
@@ -439,41 +347,11 @@ function renderSectionEditor(
           </label>
           <div className={styles.field}>
             <span>Текст</span>
-            <GradientTextarea
+            <KbRichTextEditor
               value={section.body || ''}
               onChange={(v) => update(index, { ...section, body: v })}
+              placeholder="Текст секции"
             />
-          </div>
-          <div>
-            <span style={{ fontSize: 14, color: '#666', fontWeight: 500 }}>Пункты списка</span>
-            {(section.items || []).map((item, j) => (
-              <div key={j} className={styles.itemRow}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => {
-                    const items = [...(section.items || [])];
-                    items[j] = e.target.value;
-                    update(index, { ...section, items });
-                  }}
-                />
-                <button
-                  className={styles.smallRemoveButton}
-                  onClick={() => {
-                    const items = (section.items || []).filter((_, k) => k !== j);
-                    update(index, { ...section, items });
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              className={styles.smallAddButton}
-              onClick={() => update(index, { ...section, items: [...(section.items || []), ''] })}
-            >
-              + Пункт
-            </button>
           </div>
         </>
       );
@@ -529,46 +407,7 @@ function renderSectionEditor(
         </>
       );
 
-    case 'errors':
-      return (
-        <>
-          <label className={styles.field}>
-            <span>Заголовок</span>
-            <input
-              type="text"
-              value={section.title}
-              onChange={(e) => update(index, { ...section, title: e.target.value })}
-            />
-          </label>
-          <div>
-            <span style={{ fontSize: 14, color: '#666', fontWeight: 500 }}>Пункты ошибок</span>
-            {section.items.map((item, j) => (
-              <div key={j} className={styles.itemRow}>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => {
-                    const items = [...section.items];
-                    items[j] = e.target.value;
-                    update(index, { ...section, items });
-                  }}
-                />
-                <button
-                  className={styles.smallRemoveButton}
-                  onClick={() => update(index, { ...section, items: section.items.filter((_, k) => k !== j) })}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-            <button
-              className={styles.smallAddButton}
-              onClick={() => update(index, { ...section, items: [...section.items, ''] })}
-            >
-              + Пункт
-            </button>
-          </div>
-        </>
-      );
+    default:
+      return null;
   }
 }

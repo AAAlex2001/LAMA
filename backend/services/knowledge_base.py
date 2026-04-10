@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import HTTPException
 from sqlalchemy import case, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +20,6 @@ from backend.schemas.knowledge_base import (
     FeedbackResponse,
     NavigationCategory,
     NavigationEntry,
-    RelatedArticle,
     ArticleSectionSchema,
 )
 
@@ -34,6 +35,26 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
     return Locale.RU
 
 
+TAG_RE = re.compile(r"<[^>]+>")
+
+
+def strip_html(value: str) -> str:
+    return TAG_RE.sub(" ", value).replace("&nbsp;", " ")
+
+
+def normalize_article_card(raw_value: object) -> dict[str, str]:
+    if not isinstance(raw_value, dict):
+        return {"cardTitle": "", "cardDescription": ""}
+
+    raw_title = raw_value.get("cardTitle") or raw_value.get("title") or ""
+    raw_description = raw_value.get("cardDescription") or raw_value.get("description") or ""
+
+    return {
+        "cardTitle": raw_title.strip() if isinstance(raw_title, str) else "",
+        "cardDescription": raw_description.strip() if isinstance(raw_description, str) else "",
+    }
+
+
 def compute_reading_minutes(sections: list | None) -> int:
     if not sections:
         return 1
@@ -44,12 +65,7 @@ def compute_reading_minutes(sections: list | None) -> int:
         for key in ("title", "body"):
             val = section.get(key)
             if isinstance(val, str):
-                word_count += len(val.split())
-        items = section.get("items")
-        if isinstance(items, list):
-            for item in items:
-                if isinstance(item, str):
-                    word_count += len(item.split())
+                word_count += len(strip_html(val).split())
     return max(1, round(word_count / 200))
 
 
@@ -90,6 +106,8 @@ async def list_articles(
             slug=a.slug,
             title=a.title,
             description=a.description,
+            cardTitle=normalize_article_card(a.related_slugs).get("cardTitle") or None,
+            cardDescription=normalize_article_card(a.related_slugs).get("cardDescription") or None,
             readingMinutes=a.reading_minutes,
             categorySlug=cats_map.get(a.category_id),
         )
@@ -118,37 +136,18 @@ async def get_article_by_slug(
     cat_result = await db.execute(select(KBCategory).where(KBCategory.id == article.category_id))
     category = cat_result.scalar_one_or_none()
 
-    related: list[RelatedArticle] = []
-    raw = article.related_slugs or []
-    slugs = [x if isinstance(x, str) else x.get("slug", "") for x in raw]
-    slugs = [s for s in slugs if s]
-    descs = {x["slug"]: x["description"] for x in raw if isinstance(x, dict) and x.get("description")}
-
-    if slugs:
-        rel_result = await db.execute(
-            select(KBArticle)
-            .where(KBArticle.slug.in_(slugs))
-            .where(KBArticle.locale == locale_enum)
-            .where(KBArticle.is_active == True)
-        )
-        for r in rel_result.scalars().all():
-            related.append(RelatedArticle(
-                slug=r.slug,
-                title=r.title,
-                description=descs.get(r.slug) or r.description,
-                readingMinutes=r.reading_minutes,
-            ))
-
     raw_sections = article.sections or []
     sections = [ArticleSectionSchema(**section) for section in raw_sections if isinstance(section, dict)]
+    card = normalize_article_card(article.related_slugs)
 
     return ArticleResponse(
         slug=article.slug,
         title=article.title,
         description=article.description,
+        cardTitle=card.get("cardTitle") or None,
+        cardDescription=card.get("cardDescription") or None,
         readingMinutes=article.reading_minutes,
         sections=sections,
-        related=related,
         likesCount=article.likes_count,
         dislikesCount=article.dislikes_count,
         metaTitle=article.meta_title,
@@ -331,7 +330,8 @@ async def create_article(
     locale: str | Locale | None = None,
     reading_minutes: int | None = None,
     sections: list | None = None,
-    related_slugs: list | None = None,
+    card_title: str | None = None,
+    card_description: str | None = None,
     meta_title: str | None = None,
     meta_description: str | None = None,
     order: int = 0,
@@ -356,7 +356,10 @@ async def create_article(
         locale=locale_enum,
         reading_minutes=reading_minutes,
         sections=sections or [],
-        related_slugs=related_slugs or [],
+        related_slugs={
+            "cardTitle": (card_title or "").strip(),
+            "cardDescription": (card_description or "").strip(),
+        },
         meta_title=meta_title,
         meta_description=meta_description,
         order=order,
@@ -382,7 +385,8 @@ async def update_article(
     description: str | None = None,
     reading_minutes: int | None = None,
     sections: list | None = None,
-    related_slugs: list | None = None,
+    card_title: str | None = None,
+    card_description: str | None = None,
     meta_title: str | None = None,
     meta_description: str | None = None,
     order: int | None = None,
@@ -419,8 +423,12 @@ async def update_article(
             reading_minutes = compute_reading_minutes(sections)
     if reading_minutes is not None:
         article.reading_minutes = reading_minutes
-    if related_slugs is not None:
-        article.related_slugs = related_slugs
+    if card_title is not None or card_description is not None:
+        current_card = normalize_article_card(article.related_slugs)
+        article.related_slugs = {
+            "cardTitle": (card_title if card_title is not None else current_card["cardTitle"]).strip(),
+            "cardDescription": (card_description if card_description is not None else current_card["cardDescription"]).strip(),
+        }
         flag_modified(article, "related_slugs")
     if meta_title is not None:
         article.meta_title = meta_title

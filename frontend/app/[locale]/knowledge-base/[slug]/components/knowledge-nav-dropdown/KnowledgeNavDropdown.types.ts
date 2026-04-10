@@ -3,6 +3,7 @@ export type Variant = 'dropdown' | 'sidebar';
 export type LeafItem = {
   id: string;
   title: string;
+  href?: string;
 };
 
 export type NestedDropdownConfig = {
@@ -17,6 +18,7 @@ export type SectionEntry = {
   id: string;
   title: string;
   isActive?: boolean;
+  href?: string;
   nested?: NestedDropdownConfig;
 };
 

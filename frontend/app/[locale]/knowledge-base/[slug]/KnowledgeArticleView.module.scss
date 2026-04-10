@@ -4,11 +4,13 @@
   width: 100%;
   padding-top: 164px;
   padding-bottom: 60px;
+  font-family: 'Inter';
 }
 
 .layout {
   display: flex;
   flex-direction: column;
+  gap: 60px;
   width: 100%;
   max-width: none;
   margin: 0 auto;
@@ -16,7 +18,17 @@
   box-sizing: border-box;
 }
 
+.articleShell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
 .sidebar {
+  display: none;
+}
+
+.sectionsRail {
   display: none;
 }
 
@@ -27,21 +39,18 @@
   width: 100%;
 }
 
-.relatedWrap {
+.extras {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
   width: 100%;
-
-  > *,
-  > * > *,
-  > * > * > * {
-    padding: 0 !important;
-  }
-
 }
 
 .registerCta {
   width: 296px;
   align-self: center;
   border-radius: 8px !important;
+  font-family: 'Inter' !important;
   font-size: 18px !important;
   font-weight: 500 !important;
   display: inline-flex !important;
@@ -62,32 +71,33 @@
   }
 
   .layout {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: center;
-    gap: 20px;
-    max-width: 1152px;
+    gap: 40px;
+    max-width: 1244px;
     padding: 0;
+  }
+
+  .articleShell {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr) 72px;
+    gap: 20px;
+    align-items: start;
+    width: 100%;
   }
 
   .sidebar {
     display: block;
-    flex: none;
     width: 320px;
-    background: #FFFFFF;
-    border-radius: 12px;
-    position: sticky;
-    top: 95px;
-    max-height: calc(100vh - 110px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    align-self: flex-start;
+    align-self: start;
+  }
+
+  .sectionsRail {
+    display: block;
+    width: 72px;
+    align-self: start;
+    overflow: visible;
   }
 
   .main {
-    flex: 1;
     min-width: 0;
     background: #FFFFFF;
     border-radius: 12px;
@@ -95,5 +105,10 @@
     gap: 40px;
     box-sizing: border-box;
     overflow: hidden;
+  }
+
+  .extras {
+    width: calc(100% - 412px);
+    margin-left: 340px;
   }
 }

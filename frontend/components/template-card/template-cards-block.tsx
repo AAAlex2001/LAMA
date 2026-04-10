@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
+import classNames from 'classnames';
 import Pagination from '@/components/pagination/pagination';
 import TemplateCard from './template-card';
 import styles from './template-cards-block.module.scss';
@@ -18,9 +19,10 @@ type CardItem = {
 type Props = {
   headline: string;
   cards: CardItem[];
+  flush?: boolean;
 };
 
-export default function TemplateCardsBlock({ headline, cards }: Props) {
+export default function TemplateCardsBlock({ headline, cards, flush = false }: Props) {
   const swiperRef = useRef<SwiperType | null>(null);
 
   const safeHeadline = String(headline ?? '').trim();
@@ -30,8 +32,8 @@ export default function TemplateCardsBlock({ headline, cards }: Props) {
 
   return (
     <section className={styles.section}>
-      <div className={styles.container}>
-        <div className={styles.topRow}>
+      <div className={classNames(styles.container, flush && styles.containerFlush)}>
+        <div className={classNames(styles.topRow, flush && styles.topRowFlush)}>
           <div className={styles.headline}>{safeHeadline}</div>
           <Pagination
             onPrev={() => swiperRef.current?.slidePrev()}

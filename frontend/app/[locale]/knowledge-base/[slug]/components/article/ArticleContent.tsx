@@ -4,21 +4,10 @@ import styles from './ArticleContent.module.scss';
 
 type Props = { sections: ArticleSection[] };
 
-function Gradient({ text }: { text: string }) {
-  if (!text.includes('==')) return <>{text}</>;
-  const result: React.ReactNode[] = [];
-  let rest = text;
-  let i = 0;
-  while (rest.length > 0) {
-    const start = rest.indexOf('==');
-    if (start === -1) { result.push(rest); break; }
-    const end = rest.indexOf('==', start + 2);
-    if (end === -1) { result.push(rest); break; }
-    if (start > 0) result.push(rest.slice(0, start));
-    result.push(<span key={i++} className={styles.gradientText}>{rest.slice(start + 2, end)}</span>);
-    rest = rest.slice(end + 2);
-  }
-  return <>{result}</>;
+function toRichHtml(value: string) {
+  const withAccent = value.replace(/==([\s\S]+?)==/g, '<span class="kb-accent">$1</span>');
+  const hasHtmlTags = /<\/?[a-z][\s\S]*>/i.test(withAccent);
+  return hasHtmlTags ? withAccent : withAccent.replace(/\n/g, '<br />');
 }
 
 export default function ArticleContent({ sections }: Props) {
@@ -29,14 +18,9 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <section key={idx} className={styles.textBlock}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>
-                  <span className={styles.gradientText}>{section.title}</span>
-                </h3>
+                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
-              {section.body && <p className={styles.paragraph}><Gradient text={section.body} /></p>}
-              {section.items?.map((item, i) => (
-                <p key={i} className={styles.paragraph}><Gradient text={item} /></p>
-              ))}
+              {section.body && <div className={styles.richText} dangerouslySetInnerHTML={{ __html: toRichHtml(section.body) }} />}
             </section>
           );
         }
@@ -44,9 +28,7 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <div key={idx} className={styles.singleImage}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>
-                  <span className={styles.gradientText}>{section.title}</span>
-                </h3>
+                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={section.src} alt={section.alt || ''} />
@@ -57,9 +39,7 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <div key={idx} className={styles.pairImagesWrap}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>
-                  <span className={styles.gradientText}>{section.title}</span>
-                </h3>
+                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
               <div className={styles.pairImages}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -68,18 +48,6 @@ export default function ArticleContent({ sections }: Props) {
                 <img src={section.src2} alt="" />
               </div>
             </div>
-          );
-        }
-        if (section.type === 'errors') {
-          return (
-            <section key={idx} className={styles.errorsBlock}>
-              <h3 id={slugify(section.title)} className={styles.sectionTitle}>
-                <span className={styles.gradientText}>{section.title}</span>
-              </h3>
-              {section.items.map((item, i) => (
-                <p key={i} className={styles.paragraph}><Gradient text={item} /></p>
-              ))}
-            </section>
           );
         }
         return null;

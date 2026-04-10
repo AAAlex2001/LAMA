@@ -15,10 +15,11 @@ type Heading = { id: string; title: string };
 type Props = {
   headings?: Heading[];
   navigation?: NavigationCategory[];
+  locale?: string;
   currentSlug?: string;
 };
 
-export default function SubNav({ headings = [], navigation, currentSlug }: Props) {
+export default function SubNav({ headings = [], navigation, locale = 'ru', currentSlug }: Props) {
   const [open, setOpen] = useState<'nav' | 'toc' | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
@@ -100,7 +101,14 @@ export default function SubNav({ headings = [], navigation, currentSlug }: Props
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
           >
-            {open === 'nav' ? <KnowledgeNavDropdown headings={headings} navigation={navigation} /> : <ArticleToc headings={headings} />}
+            {open === 'nav' ? (
+              <KnowledgeNavDropdown
+                headings={headings}
+                navigation={navigation}
+                locale={locale}
+                currentSlug={currentSlug}
+              />
+            ) : <ArticleToc headings={headings} />}
           </motion.div>
         )}
       </AnimatePresence>

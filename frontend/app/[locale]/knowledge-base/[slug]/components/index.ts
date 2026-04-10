@@ -11,3 +11,4 @@ export {
 export {
   KnowledgeNavDropdown,
 } from './knowledge-nav-dropdown';
+export { default as DesktopConstrainedSticky } from './DesktopConstrainedSticky';
