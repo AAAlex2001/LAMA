@@ -3,6 +3,7 @@
   max-width: 736px;
   margin: 0 auto;
   background: #F7FAFF;
+  box-shadow: 0 14px 16px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   display: flex;
   flex-direction: column;
@@ -19,6 +20,10 @@
   height: 100%;
   max-height: none;
   overflow: hidden;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  background: #F0F4FA;
 }
 
 
@@ -43,6 +48,13 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.groupEntries {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 10px;
 }
 
 .groupTitleBlue,
@@ -177,13 +189,13 @@
   .tocFillPageHeight {
     height: 100%;
     max-height: none;
+    overflow: hidden;
   }
 
   .tocFillPageHeight .body {
     flex: 1 1 auto;
     min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 4px;
+    overflow: visible;
+    padding-right: 0;
   }
 }

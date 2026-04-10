@@ -12,7 +12,7 @@
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-    z-index: 1000;
+    z-index: 5000;
   }
 }
 
@@ -34,7 +34,7 @@
   right: calc(100% + 8px);
   transform: translateY(-50%);
   pointer-events: none;
-  z-index: 1000;
+  z-index: 5000;
 }
 
 .tooltipRight {
@@ -48,7 +48,7 @@
   right: auto;
   transform: translateY(-50%);
   pointer-events: none;
-  z-index: 1000;
+  z-index: 5000;
 }
 
 .tooltipHidden {

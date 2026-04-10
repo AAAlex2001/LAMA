@@ -96,28 +96,30 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
       <div className={styles.btns}>
         <span className={styles.title}>Была ли статья полезной?</span>
         <div className={styles.icons}>
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Полезно"
-            onClick={handleLike}
-            onMouseEnter={() => setHovered('up')}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <HeartIcon filled={feedback === 'up'} hovered={hovered === 'up' && feedback !== 'up'} />
-            <span className={styles.count}>{likes}</span>
-          </button>
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Не полезно"
-            onClick={handleDislike}
-            onMouseEnter={() => setHovered('down')}
-            onMouseLeave={() => setHovered(null)}
-          >
-            <HeartSlashIcon filled={feedback === 'down'} hovered={hovered === 'down' && feedback !== 'down'} />
-            <span className={styles.count}>{dislikes}</span>
-          </button>
+          <div className={styles.reactions}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Полезно"
+              onClick={handleLike}
+              onMouseEnter={() => setHovered('up')}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <HeartIcon filled={feedback === 'up'} hovered={hovered === 'up' && feedback !== 'up'} />
+              <span className={styles.count}>{likes}</span>
+            </button>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Не полезно"
+              onClick={handleDislike}
+              onMouseEnter={() => setHovered('down')}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <HeartSlashIcon filled={feedback === 'down'} hovered={hovered === 'down' && feedback !== 'down'} />
+              <span className={styles.count}>{dislikes}</span>
+            </button>
+          </div>
           <button type="button" className={styles.shareBtn} onClick={handleShare}>
             <span className={styles.shareBtnText}>{copied ? 'Скопировано!' : 'Поделиться'}</span>
           </button>

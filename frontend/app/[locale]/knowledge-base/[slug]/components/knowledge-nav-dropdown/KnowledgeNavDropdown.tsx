@@ -83,6 +83,11 @@ function filterSections(sections: SectionConfig[], query: string): SectionConfig
 export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = [], navigation, locale = 'ru', currentSlug, isLoggedIn = false }: Props) {
   const router = useRouter();
   const [search, setSearch] = useState('');
+  const containerClassName = variant === 'sidebar'
+    ? isLoggedIn
+      ? `${styles.sidebar} ${styles.sidebarFillHeight}`
+      : `${styles.sidebar} ${styles.sidebarMaxHeight}`
+    : styles.dropdown;
   const footerLinks = [
     { href: `/${locale}/privacy`, label: 'Политика конфиденциальности' },
     { href: `/${locale}/terms`, label: 'Условия предоставления услуг' },
@@ -94,7 +99,7 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
   const sections = filterSections(base, search);
 
   return (
-    <div className={variant === 'sidebar' ? styles.sidebar : styles.dropdown}>
+    <div className={containerClassName}>
       {variant === 'sidebar' && (
         <div className={styles.sidebarHeader}>
           <span className={styles.sidebarHeaderTitle}>Блоки знаний</span>

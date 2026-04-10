@@ -1,10 +1,16 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ChevronIcon } from '../icons';
 import styles from './KnowledgeNavDropdown.module.scss';
 import type { SectionConfig, SectionEntry } from './KnowledgeNavDropdown.types';
+
+const expandTransition = {
+  duration: 0.22,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 function EntryRow({ entry }: { entry: SectionEntry }) {
   const hasNested = Boolean(entry.nested?.items?.length);
@@ -52,16 +58,26 @@ function EntryRow({ entry }: { entry: SectionEntry }) {
         <span className={isActive ? styles.itemTitleActive : styles.itemTitle}>{entry.title}</span>
         <ChevronIcon direction={open ? 'up' : 'right'} color={isActive || hovered ? '#3B82F6' : '#B0B4B8'} />
       </button>
-      {open && (
-        <div className={styles.subList}>
-          {entry.nested!.items.map((leaf) => (
-            <a key={leaf.id} href={leaf.href || `#${leaf.id}`} className={styles.subItemLink}>
-              <span className={styles.subItemDot} />
-              <span className={styles.subItem}>{leaf.title}</span>
-            </a>
-          ))}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={expandTransition}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className={styles.subList}>
+              {entry.nested!.items.map((leaf) => (
+                <a key={leaf.id} href={leaf.href || `#${leaf.id}`} className={styles.subItemLink}>
+                  <span className={styles.subItemDot} />
+                  <span className={styles.subItem}>{leaf.title}</span>
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -85,7 +101,7 @@ export default function KnowledgeNavDropdownSection({ section }: { section: Sect
   }
 
   return (
-    <section className={isOpen ? `${styles.section} ${styles.sectionActive}` : styles.sectionCollapsed}>
+    <section className={isOpen ? `${styles.section} ${styles.sectionActive}` : styles.section}>
       <button
         type="button"
         className={styles.sectionHeader}
@@ -96,13 +112,23 @@ export default function KnowledgeNavDropdownSection({ section }: { section: Sect
         <span className={isOpen ? styles.sectionTitleActive : styles.sectionTitle}>{section.title}</span>
         <ChevronIcon direction={isOpen ? 'up' : 'right'} color={isOpen || hovered ? '#3B82F6' : '#B0B4B8'} />
       </button>
-      {isOpen && (
-        <div className={styles.sectionBody}>
-          {section.entries?.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} />
-          ))}
-        </div>
-      )}
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={expandTransition}
+            style={{ overflow: 'hidden' }}
+          >
+            <div className={styles.sectionBody}>
+              {section.entries?.map((entry) => (
+                <EntryRow key={entry.id} entry={entry} />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }

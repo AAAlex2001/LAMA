@@ -49,7 +49,7 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, is
     }));
 
   const railClassName = viewerLoggedIn
-    ? `${styles.sectionsRail} ${styles.sectionsRailWide}`
+    ? `${styles.sectionsRail} ${styles.sectionsRailWide} ${styles.sectionsRailLoggedIn}`
     : styles.sectionsRail;
   const articleShellClassName = viewerLoggedIn
     ? `${styles.articleShell} ${styles.articleShellLoggedIn}`
@@ -69,12 +69,13 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, is
         locale={locale}
         currentSlug={article.slug}
         isEmbeddedInApp={isEmbeddedInApp}
+        isLoggedIn={viewerLoggedIn}
       />
       <div className={layoutClassName}>
         <div className={articleShellClassName} data-sticky-boundary="article">
-          <aside className={styles.sidebar}>
+          <aside className={viewerLoggedIn ? `${styles.sidebar} ${styles.sidebarLoggedIn}` : styles.sidebar}>
             {viewerLoggedIn ? (
-              <div className={`${styles.sidebarStatic} ${styles.sidebarSticky}`}>
+              <DesktopConstrainedSticky top={20}>
                 <KnowledgeNavDropdown
                   variant="sidebar"
                   headings={headings}
@@ -83,7 +84,7 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, is
                   currentSlug={article.slug}
                   isLoggedIn
                 />
-              </div>
+              </DesktopConstrainedSticky>
             ) : (
               <DesktopConstrainedSticky top={95}>
                 <KnowledgeNavDropdown

@@ -8,8 +8,9 @@
 }
 
 .pageEmbedded {
-  padding-top: 76px;
-  padding-bottom: 32px;
+  padding: 76px 20px 20px;
+  background: #F0F4FA;
+  box-sizing: border-box;
 }
 
 .layout {
@@ -25,7 +26,7 @@
 
 .layoutEmbedded {
   max-width: none;
-  padding: 0 20px;
+  padding: 0;
 }
 
 @media (min-width: 768px) {
@@ -35,7 +36,7 @@
 
   .layoutEmbedded {
     max-width: none;
-    padding: 0 20px;
+    padding: 0;
   }
 }
 
@@ -51,7 +52,7 @@
 
 .sidebarStatic {
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 
 .sidebarSticky,
@@ -96,8 +97,8 @@
   }
 
   .pageEmbedded {
-    padding-top: 24px;
-    padding-bottom: 40px;
+    padding: 20px;
+    background: #F0F4FA;
   }
 
   .layout {
@@ -108,25 +109,29 @@
 
   .layoutEmbedded {
     max-width: none;
-    padding: 0 20px;
+    padding: 0;
   }
 
   .articleShell {
     display: grid;
     grid-template-columns: 320px minmax(0, 1fr) 72px;
-    gap: 20px;
+    gap: 16px;
     align-items: start;
     width: 100%;
   }
 
   .articleShellLoggedIn {
-    grid-template-columns: 320px minmax(0, 1fr) 280px;
+    grid-template-columns: 320px minmax(0, 1fr) 230px;
     align-items: start;
   }
 
   .sidebar {
     display: block;
     width: 320px;
+    align-self: start;
+  }
+
+  .sidebarLoggedIn {
     align-self: start;
   }
 
@@ -138,18 +143,49 @@
   }
 
   .sectionsRailWide {
-    width: 280px;
+    width: 230px;
     display: flex;
-    align-self: start;
+    align-self: stretch;
   }
 
-  .sidebarSticky,
-  .sectionsRailSticky {
+  .sectionsRailLoggedIn {
+    align-self: stretch;
+  }
+
+  .sidebarSticky {
     position: sticky;
-    top: 24px;
+    top: 20px;
     height: calc(100dvh - 88px);
     max-height: calc(100dvh - 88px);
     min-height: 0;
+    overflow: hidden;
+  }
+
+  .sectionsRailSticky {
+    position: sticky;
+    top: 20px;
+    height: calc(100dvh - 88px);
+    max-height: calc(100dvh - 88px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sidebarLoggedIn .sidebarSticky {
+    position: sticky;
+    top: 20px;
+    height: auto;
+    max-height: calc(100dvh - 40px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .sectionsRailLoggedIn .sectionsRailSticky {
+    position: static;
+    top: auto;
+    height: 100%;
+    max-height: none;
+    min-height: 100%;
+    overflow: hidden;
   }
 
   .main {
@@ -163,7 +199,8 @@
   }
 
   .extras {
-    width: calc(100% - 412px);
-    margin-left: 340px;
+    width: calc(100% - 424px);
+    margin-left: 336px;
   }
+
 }

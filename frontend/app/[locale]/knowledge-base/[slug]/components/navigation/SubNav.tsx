@@ -19,6 +19,7 @@ type Props = {
   locale?: string;
   currentSlug?: string;
   isEmbeddedInApp?: boolean;
+  isLoggedIn?: boolean;
 };
 
 export default function SubNav({
@@ -27,12 +28,13 @@ export default function SubNav({
   locale = 'ru',
   currentSlug,
   isEmbeddedInApp = false,
+  isLoggedIn = false,
 }: Props) {
   const scrollContainer = useScrollContainer();
   const [open, setOpen] = useState<'nav' | 'toc' | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
-  const innerClassName = isEmbeddedInApp ? styles.inner : `${styles.inner} ${styles.innerConstrained}`;
+  const innerClassName = `${styles.inner} ${styles.innerConstrained}`;
 
   useEffect(() => {
     const getScrollTop = () => {
@@ -136,8 +138,16 @@ export default function SubNav({
                   navigation={navigation}
                   locale={locale}
                   currentSlug={currentSlug}
+                  isLoggedIn={isLoggedIn}
                 />
-              ) : <ArticleToc headings={headings} />}
+              ) : (
+                <ArticleToc
+                  headings={headings}
+                  navigation={navigation}
+                  locale={locale}
+                  currentSlug={currentSlug}
+                />
+              )}
             </motion.div>
           )}
         </AnimatePresence>

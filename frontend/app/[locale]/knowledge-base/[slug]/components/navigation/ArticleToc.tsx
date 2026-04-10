@@ -21,7 +21,7 @@ export default function ArticleToc({
 }: Props) {
   const tocClassName = fillPageHeight ? `${styles.toc} ${styles.tocFillPageHeight}` : styles.toc;
   const hasNavigation = navigation.length > 0;
-  const headerTitle = hasNavigation ? 'Блоки знаний' : 'На этой странице';
+  const headerTitle = 'На этой странице';
 
   if (!headings.length && !hasNavigation) {
     return (
@@ -51,30 +51,32 @@ export default function ArticleToc({
                   <div className={containsCurrentArticle ? styles.groupTitleBlue : styles.groupTitle}>
                     {category.title}
                   </div>
-                  {category.entries.map((entry) => {
-                    const isCurrentArticle = entry.slug === currentSlug;
+                  <div className={styles.groupEntries}>
+                    {category.entries.map((entry) => {
+                      const isCurrentArticle = entry.slug === currentSlug;
 
-                    return (
-                      <div key={entry.slug} className={styles.pageBlock}>
-                        <Link
-                          href={`/${locale}/knowledge-base/${entry.slug}`}
-                          className={isCurrentArticle ? styles.pageLinkActive : styles.pageLink}
-                        >
-                          {entry.title}
-                        </Link>
-                        {isCurrentArticle && headings.length > 0 && (
-                          <div className={styles.pageSubList}>
-                            {headings.map((heading) => (
-                              <a key={heading.id} href={`#${heading.id}`} className={styles.pageSubItemLink}>
-                                <span className={styles.pageSubItemDot} />
-                                <span className={styles.pageSubItem}>{heading.title}</span>
-                              </a>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      return (
+                        <div key={entry.slug} className={styles.pageBlock}>
+                          <Link
+                            href={`/${locale}/knowledge-base/${entry.slug}`}
+                            className={isCurrentArticle ? styles.pageLinkActive : styles.pageLink}
+                          >
+                            {entry.title}
+                          </Link>
+                          {isCurrentArticle && headings.length > 0 && (
+                            <div className={styles.pageSubList}>
+                              {headings.map((heading) => (
+                                <a key={heading.id} href={`#${heading.id}`} className={styles.pageSubItemLink}>
+                                  <span className={styles.pageSubItemDot} />
+                                  <span className={styles.pageSubItem}>{heading.title}</span>
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })
