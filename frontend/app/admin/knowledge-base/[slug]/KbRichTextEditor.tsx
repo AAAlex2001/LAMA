@@ -8,6 +8,14 @@ import Underline from '@tiptap/extension-underline';
 import { Mark, mergeAttributes } from '@tiptap/core';
 import styles from './KbRichTextEditor.module.scss';
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    kbAccent: {
+      toggleKbAccent: () => ReturnType;
+    };
+  }
+}
+
 const AccentMark = Mark.create({
   name: 'kbAccent',
 
