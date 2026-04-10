@@ -18,7 +18,7 @@ interface ButtonProps {
   fullWidth?: boolean;
   active?: boolean;
   size?: 'default' | 'small' | 'medium';
-  variant?: 'default' | 'template' | 'outline' | 'invertOutline' | 'templateCard' | 'inlineButton' | 'outlined-red' | 'delete';
+  variant?: 'default' | 'template' | 'outline' | 'invertOutline' | 'templateCard' | 'templateCardInternal' | 'inlineButton' | 'outlined-red' | 'delete';
   icon?: ReactNode;
   loading?: boolean;
   counter?: string;
@@ -91,6 +91,7 @@ export default function Button({
         [styles.smallWrapper]: size === 'small',
         [styles.mediumWrapper]: size === 'medium',
         [styles.templateCardWrapper]: variant === 'templateCard',
+        [styles.templateCardInternalWrapper]: variant === 'templateCardInternal',
         [styles.inlineButtonWrapper]: variant === 'inlineButton',
         [styles.outlinedRedButtonWrapper]: variant === 'outlined-red',
         [styles.deleteButtonWrapper]: variant === 'delete',
@@ -105,6 +106,7 @@ export default function Button({
         [styles.smallButton]: size === 'small',
         [styles.mediumButton]: size === 'medium',
         [styles.templateCardButton]: variant === 'templateCard',
+        [styles.templateCardInternalButton]: variant === 'templateCardInternal',
         [styles.inlineButton]: variant === 'inlineButton',
         [styles.inlineButtonHovered]: variant === 'inlineButton' && hovered,
         [styles.outlinedRedButton]: variant === 'outlined-red',

@@ -50,7 +50,7 @@ export default function ActionsMenuConnected({
       <div className={actionsRowClassName}>
         <Button
           text="Черновики"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<DraftsIcon width={24} height={24} />}
           className={actionButtonClassName}
@@ -61,7 +61,7 @@ export default function ActionsMenuConnected({
         />
         <Button
           text="Кнопки"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<InlineButtonIcon width={24} height={24} />}
           className={actionButtonClassName}
@@ -73,7 +73,7 @@ export default function ActionsMenuConnected({
       <div className={actionsRowClassName}>
         <Button
           text="Шаблоны"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<TemplatesIcon width={24} height={24} />}
           className={actionButtonClassName}
@@ -84,7 +84,7 @@ export default function ActionsMenuConnected({
         />
         <Button
           text="Опрос"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<QuizIcon width={24} height={24} />}
           className={actionButtonClassName}
@@ -95,7 +95,7 @@ export default function ActionsMenuConnected({
       <div className={actionsRowCenterClassName}>
         <Button
           text="Ответ на свой пост"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<ReplyIcon width={24} height={24} />}
           className={actionButtonCenterClassName}

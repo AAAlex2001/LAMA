@@ -511,7 +511,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
                             </span>
                             <OldButton
                               text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
-                              variant="templateCard"
+                              variant="templateCardInternal"
                               showArrow={false}
                               icon={<PaperclipIcon width={24} height={24} />}
                               disabled={!canAddMedia || isUploadingMedia}
@@ -528,7 +528,7 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({
                             />
                             <OldButton
                               text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
-                              variant="templateCard"
+                              variant="templateCardInternal"
                               showArrow={false}
                               icon={<PaperclipIcon width={24} height={24} />}
                               disabled={!canAddMedia || isUploadingMedia}

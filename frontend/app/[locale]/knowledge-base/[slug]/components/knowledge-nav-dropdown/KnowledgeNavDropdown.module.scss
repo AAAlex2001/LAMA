@@ -286,7 +286,11 @@
 }
 
 .fullBtn {
-  width: 100%;
+  display: flex !important;
+  width: 100% !important;
   height: 37px;
   font-family: 'Inter' !important;
+  align-self: stretch;
+  justify-content: center;
+  box-sizing: border-box;
 }

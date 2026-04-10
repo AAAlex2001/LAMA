@@ -222,7 +222,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
               )}
               <OldButton
                 text="Прикрепить файл"
-                variant="templateCard"
+                variant="templateCardInternal"
                 showArrow={false}
                 icon={<PaperclipIcon width={24} height={24} />}
                 fullWidth
@@ -247,7 +247,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
 
             <OldButton
               text="Кнопки"
-              variant="templateCard"
+              variant="templateCardInternal"
               showArrow={false}
               icon={<InlineButtonIcon width={24} height={24} />}
               active={buttonsOpen}

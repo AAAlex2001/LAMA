@@ -619,7 +619,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
                         </span>
                         <OldButton
                           text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
-                          variant="templateCard"
+                          variant="templateCardInternal"
                           showArrow={false}
                           icon={<PaperclipIcon width={24} height={24} />}
                           disabled={!canAddMedia || isUploadingMedia}
@@ -636,7 +636,7 @@ const CreateAutoReplyModal: FC<CreateAutoReplyModalProps> = ({ botId, channelId,
                         />
                         <OldButton
                           text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
-                          variant="templateCard"
+                          variant="templateCardInternal"
                           showArrow={false}
                           icon={<PaperclipIcon width={24} height={24} />}
                           disabled={!canAddMedia || isUploadingMedia}

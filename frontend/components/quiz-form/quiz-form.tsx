@@ -97,7 +97,7 @@ export default function QuizForm({
 
           <Button
             text="Добавить ответ"
-            variant="templateCard"
+            variant="templateCardInternal"
             showArrow={false}
             fullWidth
             onClick={onAddAnswer}

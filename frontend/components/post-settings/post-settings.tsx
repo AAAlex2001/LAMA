@@ -256,7 +256,7 @@ export default function PostSettings({
               text="Сбросить настройки"
               showArrow={false}
               fullWidth
-              variant="templateCard"
+              variant="templateCardInternal"
               onClick={onReset}
             />
           </div>

@@ -45,6 +45,9 @@
 .title {
   width: 309px;
   height: 28px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   font-weight: 600;
   font-size: 20px;
@@ -66,11 +69,17 @@
 
   width: 309px;
   height: 96px;
+  overflow: hidden;
 }
 
 .text {
   width: 309px;
   height: 96px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
 
   font-weight: 400;
   font-size: 16px;

@@ -56,7 +56,7 @@ export default function MediaSectionConnected({
         />
         <Button
           text="Прикрепить файл"
-          variant="templateCard"
+          variant="templateCardInternal"
           showArrow={false}
           icon={<PaperclipIcon width={24} height={24} />}
           fullWidth
@@ -72,7 +72,7 @@ export default function MediaSectionConnected({
             </span>
             <Button
               text="Прикрепить файл"
-              variant="templateCard"
+              variant="templateCardInternal"
               showArrow={false}
               icon={<PaperclipIcon width={24} height={24} />}
               disabled={!canAddMedia}
@@ -89,7 +89,7 @@ export default function MediaSectionConnected({
             />
             <Button
               text="Прикрепить файл"
-              variant="templateCard"
+              variant="templateCardInternal"
               showArrow={false}
               icon={<PaperclipIcon width={24} height={24} />}
               disabled={!canAddMedia}

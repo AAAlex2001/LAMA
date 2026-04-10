@@ -15,6 +15,17 @@
   }
 }
 
+.templateCardInternalWrapper {
+  background: transparent;
+  padding: 0;
+  display: flex;
+
+  &.fullWidthWrapper {
+    width: 100%;
+    flex: 1;
+  }
+}
+
 .button {
   position: relative;
   display: inline-flex;
@@ -36,7 +47,7 @@
   min-height: 38px;
   min-width: 110px;
 
-  &:not(.templateCardButton):not(.inlineButton):not(.outlinedRedButton):not(.deleteButton):hover {
+  &:not(.templateCardButton):not(.templateCardInternalButton):not(.inlineButton):not(.outlinedRedButton):not(.deleteButton):hover {
     background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
     border: none;
 
@@ -156,6 +167,79 @@
     &:hover {
       .buttonText {
         color: white;
+      }
+    }
+  }
+}
+
+.templateCardInternalButton {
+  background: #F0F4FA;
+  background-image: none;
+  border: none;
+  width: 100%;
+  justify-content: center;
+  box-shadow: none;
+
+  .buttonText {
+    background: none;
+    -webkit-background-clip: unset;
+    background-clip: unset;
+    -webkit-text-fill-color: unset;
+    color: #000000;
+    font-size: 14px;
+    line-height: 28px;
+  }
+
+  &:hover {
+    background: #E3E8EF;
+
+    .buttonText {
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      -webkit-text-fill-color: unset;
+      color: #000000;
+    }
+  }
+
+  &.active {
+    background: #E3E8EF;
+    background-image: none;
+    border: none;
+
+    &::before {
+      content: none;
+    }
+
+    .buttonText {
+      color: #000000;
+      position: static;
+      z-index: auto;
+    }
+
+    .buttonIcon svg path[fill] {
+      fill: #000000 !important;
+      stroke: none !important;
+    }
+
+    .buttonIcon svg path[stroke] {
+      stroke: #000000 !important;
+    }
+
+    &:hover {
+      background: #E3E8EF;
+
+      .buttonText {
+        color: #000000;
+      }
+
+      .buttonIcon svg path[fill] {
+        fill: #000000 !important;
+        stroke: none !important;
+      }
+
+      .buttonIcon svg path[stroke] {
+        stroke: #000000 !important;
       }
     }
   }
