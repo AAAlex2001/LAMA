@@ -283,7 +283,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Процесс вступления</div>
             <div className={styles.sectionDescription}>
-              Заявки будут отображаться во вкладке «Модерация»
+              Заявки будут отображаться во вкладке «inbox - Модерация»
             </div>
           </div>
 

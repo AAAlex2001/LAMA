@@ -161,13 +161,18 @@ const CreateInviteLinkModal: React.FC<{
         entry_method: entryMethod,
       };
 
-      await dispatch(patchInviteLinkThunk({
+      const updatedInviteLink = await dispatch(patchInviteLinkThunk({
         channelId,
         inviteLinkId: linkId,
         patchData,
       })).unwrap();
 
-      showSuccess('Ссылка-приглашение успешно обновлена');
+      try {
+        await navigator.clipboard.writeText(updatedInviteLink.invite_link);
+        showSuccess('Ссылка-приглашение успешно обновлена. Ссылка скопирована в буфер обмена.');
+      } catch {
+        showSuccess('Ссылка-приглашение успешно обновлена');
+      }
       onCreateLink?.(previewData);
       onOpenChange?.(false);
     } catch (error) {
@@ -202,8 +207,13 @@ const CreateInviteLinkModal: React.FC<{
     if (!modalState.previewData) return;
     
     try {
-      await createInviteLink(modalState.previewData);
-      showSuccess('Ссылка-приглашение успешно создана');
+      const inviteLink = await createInviteLink(modalState.previewData);
+      try {
+        await navigator.clipboard.writeText(inviteLink.invite_link);
+        showSuccess('Ссылка-приглашение успешно создана. Ссылка скопирована в буфер обмена.');
+      } catch {
+        showSuccess('Ссылка-приглашение успешно создана');
+      }
       onCreateLink?.(modalState.previewData!);
       onOpenChange?.(false);
     } catch (error) {
