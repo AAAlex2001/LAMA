@@ -65,6 +65,65 @@ export const updatePost = createAsyncThunk(
   },
 );
 
+export const createSingleOccurrence = createAsyncThunk(
+  'createPost/createSingleOccurrence',
+  async (
+    { channelIds, scheduledDate }: { channelIds: number[]; scheduledDate: Date },
+    { getState, rejectWithValue },
+  ) => {
+    const state = getState() as RootState;
+    const { editor, media, settings, inlineButtons, quiz } = state;
+    const pollData = selectPollData(quiz);
+
+    const error = validatePost(editor.text, media.files.length, pollData, channelIds);
+    if (error) return rejectWithValue(error);
+    const mediaError = validateTelegramMediaRules(editor.text, media.files, pollData);
+    if (mediaError) return rejectWithValue(mediaError);
+    const buttonsError = validateInlineButtons(inlineButtons.rows, inlineButtons.isOpen);
+    if (buttonsError) return rejectWithValue(buttonsError);
+    const quizError = validateQuizState(
+      quiz.isOpen, quiz.mode, quiz.question, quiz.answers, quiz.correctAnswerId,
+    );
+    if (quizError) return rejectWithValue(quizError);
+
+    try {
+      const mediaPayload = await prepareMediaPayload(media.files);
+      const request = buildCreatePostRequest(
+        editor.text,
+        editor.showLinkPreview,
+        settings,
+        inlineButtons.rows,
+        mediaPayload,
+        pollData,
+        channelIds,
+        scheduledDate.toISOString(),
+      );
+
+      request.repeat_interval = 'never';
+      delete request.repeat_custom_days;
+      delete request.repeat_custom_hours;
+      delete request.repeat_custom_unit;
+      delete request.repeat_custom_value;
+      delete request.repeat_weekdays;
+      delete request.repeat_month_days;
+      delete request.repeat_year_month;
+      delete request.repeat_year_days;
+      delete request.repeat_end_time;
+
+      await apiRequest('/publications', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
+
+      return { success: true };
+    } catch (err) {
+      return rejectWithValue(
+        err instanceof Error ? err.message : 'Ошибка создания поста',
+      );
+    }
+  },
+);
+
 export const moveToDraft = createAsyncThunk(
   'createPost/moveToDraft',
   async (postId: number, { rejectWithValue }) => {

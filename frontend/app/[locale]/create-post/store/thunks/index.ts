@@ -10,4 +10,4 @@ export { fetchChannelsThunk, addChannelThunk, deleteChannelThunk } from './chann
 export { fetchDrafts, fetchMoreDrafts, deleteDraftThunk, searchDrafts } from './draftsModal';
 export { fetchTemplates, fetchMoreTemplates, updateTemplateThunk, deleteTemplateThunk, searchTemplates } from './templatesModal';
 export { fetchPosts, fetchMorePosts, getPostById, searchPosts } from './replyToPostModal';
-export { updatePost, moveToDraft } from './updatePost';
+export { updatePost, createSingleOccurrence, moveToDraft } from './updatePost';
