@@ -225,11 +225,12 @@ class CalendarService:
                 Publication.status.in_([
                     DBPublicationStatus.PUBLISHED,
                     DBPublicationStatus.PARTIAL_SUCCESS,
+                    DBPublicationStatus.SCHEDULED,
                 ]),
-                Publication.next_repeat_time.isnot(None),
             )
             .options(load_only(
                 Publication.id,
+                Publication.status,
                 Publication.scheduled_time,
                 Publication.next_repeat_time,
                 Publication.repeat_interval,
@@ -252,8 +253,13 @@ class CalendarService:
         seen: set = set()
 
         for pub in repeating_pubs:
+            base_local_date = None
+            if pub.status == DBPublicationStatus.SCHEDULED and pub.scheduled_time:
+                base_local_date = to_user_tz(pub.scheduled_time, tz).strftime("%Y-%m-%d")
             for date_str, projected_time in project_repeat_occurrences(pub, start_date, end_date):
                 local_date = to_user_tz(projected_time, tz).strftime("%Y-%m-%d") if tz != "UTC" else date_str
+                if base_local_date is not None and local_date == base_local_date:
+                    continue
                 key = (pub.id, local_date)
                 if key not in seen:
                     per_day[local_date] = per_day.get(local_date, 0) + 1

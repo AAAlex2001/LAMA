@@ -14,7 +14,9 @@
       "Bash(grep -r \"overflow\" /c/Users/HomePC/Documents/GitHub/LAMA/frontend/app/[locale]/channels --include=\"*.scss\" --include=\"*.module.scss\")",
       "Bash(find app:*)",
       "Bash(xargs sed:*)",
-      "Bash(ls frontend/public/lama*.png frontend/public/lama*.svg)"
+      "Bash(ls frontend/public/lama*.png frontend/public/lama*.svg)",
+      "Bash(find \"c:\\\\\\\\Users\\\\\\\\HomePC\\\\\\\\Documents\\\\\\\\GitHub\\\\\\\\LAMA\\\\\\\\frontend\\\\\\\\app\\\\\\\\[locale]\\\\\\\\create-post\\\\\\\\components\" -type f -name \"*.tsx\" -o -name \"*.ts\")",
+      "Bash(find \"c:\\\\\\\\Users\\\\\\\\HomePC\\\\\\\\Documents\\\\\\\\GitHub\\\\\\\\LAMA\\\\\\\\frontend\\\\\\\\components\\\\\\\\icons\" -type f -name \"*hevron*\" -o -name \"*Icon*\")"
     ]
   }
 }

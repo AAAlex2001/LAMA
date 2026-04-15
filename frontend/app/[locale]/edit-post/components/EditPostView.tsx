@@ -3,9 +3,13 @@
 import { useRef, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from '../edit-post.module.scss';
+import draftsStyles from '../../drafts/drafts.module.scss';
 
 import Button from '@/components/button/button';
-import { ShareIcon, CalendarIcon, TrashIcon } from '@/components/icons';
+import Modal from '@/components/modal';
+import Input from '@/components/input/input';
+import { ShareIcon, CalendarIcon, TrashIcon, CopyIcon, TelegramCircleIcon } from '@/components/icons';
+import { useShareDraftLink } from '../../drafts/hooks/useShareDraftLink';
 import {
   PostSettingsConnected,
   EditorHeaderConnected,
@@ -71,6 +75,11 @@ export default function EditPostView() {
   const [expandedPostId, setExpandedPostId] = useState<number | null>(null);
   const [seriesSchedules, setSeriesSchedules] = useState<Record<number, SeriesPostSchedule>>({});
   const [seriesLoaded, setSeriesLoaded] = useState(false);
+
+  const [sharePost, setSharePost] = useState<{ id: number } | null>(null);
+  const { shareLink, isGeneratingShareLink } = useShareDraftLink(
+    sharePost as unknown as Parameters<typeof useShareDraftLink>[0],
+  );
 
   const datePickerRef = useRef<HTMLDivElement>(null);
   const timePickerRef = useRef<HTMLDivElement>(null);
@@ -387,6 +396,10 @@ export default function EditPostView() {
           aria-label="Поделиться"
           onMouseEnter={() => setHoveredShareBtn(true)}
           onMouseLeave={() => setHoveredShareBtn(false)}
+          onClick={() => {
+            if (activePostId) setSharePost({ id: activePostId });
+          }}
+          disabled={!activePostId}
         >
           <ShareIcon width={24} height={24} color="#B0B4B8" />
           {hoveredShareBtn && <Tooltip text="Поделиться" />}
@@ -494,6 +507,57 @@ export default function EditPostView() {
       />
 
       <PostEditorSharedModals editorRef={editorRef} />
+
+      <div className={draftsStyles.shareModal}>
+        <Modal
+          isOpen={!!sharePost}
+          onClose={() => setSharePost(null)}
+          onConfirm={() => setSharePost(null)}
+          title="Поделиться постом"
+          hideButtons
+        >
+          <div className={draftsStyles.shareModalContent}>
+            <p className={draftsStyles.shareDescription}>
+              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую.<br /><br />
+              <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
+            </p>
+            <div className={draftsStyles.shareLinkRow}>
+              <div className={draftsStyles.shareLinkInput}>
+                <Input
+                  value={shareLink}
+                  onChange={() => {}}
+                  variant="white"
+                  icon={<CopyIcon width={24} height={24} color="#000000" />}
+                  iconDisabled={isGeneratingShareLink || !shareLink}
+                  onIconClick={() => {
+                    if (!isGeneratingShareLink && shareLink) {
+                      navigator.clipboard.writeText(shareLink);
+                      showSuccess('Ссылка скопирована!');
+                    }
+                  }}
+                />
+                {isGeneratingShareLink && (
+                  <div className={draftsStyles.shareLinkLoader}>
+                    <Loader size={16} color="blue" />
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                className={draftsStyles.telegramBtn}
+                onClick={() => {
+                  if (!isGeneratingShareLink && shareLink) {
+                    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
+                  }
+                }}
+                disabled={isGeneratingShareLink || !shareLink}
+              >
+                <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
+              </button>
+            </div>
+          </div>
+        </Modal>
+      </div>
     </div>
   );
 }

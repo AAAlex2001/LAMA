@@ -37,7 +37,12 @@ export default function RepeatEndSelector({
         <span className={styles.repeatDailyRowLabel}>Конец повтора</span>
         <div className={styles.repeatDailyRowValue}>
           <span className={styles.repeatDailyRowValueText}>{displayText}</span>
-          <ChevronDownIcon width={14} height={14} color="#858585" />
+          <ChevronDownIcon
+            width={14}
+            height={14}
+            color="#858585"
+            className={`${styles.frequencyChevron} ${isOpen ? styles.frequencyChevronRotated : ''}`}
+          />
         </div>
       </button>
 

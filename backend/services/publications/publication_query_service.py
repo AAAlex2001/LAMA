@@ -192,7 +192,10 @@ class PublicationQueryService:
         owner_id: int,
     ) -> List[Publication]:
         """Подтягивает повторяющиеся посты, проецирующиеся на диапазон."""
-        existing_ids = {p.id for p in posts}
+        existing_keys: Set[Tuple[int, str]] = set()
+        for p in posts:
+            if p.scheduled_time:
+                existing_keys.add((p.id, strip_tz(p.scheduled_time).strftime("%Y-%m-%d")))
 
         query = (
             select(Publication)
@@ -202,9 +205,8 @@ class PublicationQueryService:
                 Publication.status.in_([
                     DBPublicationStatus.PUBLISHED,
                     DBPublicationStatus.PARTIAL_SUCCESS,
+                    DBPublicationStatus.SCHEDULED,
                 ]),
-                Publication.next_repeat_time.isnot(None),
-                Publication.id.notin_(existing_ids) if existing_ids else True,
             )
             .options(
                 load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
@@ -219,7 +221,7 @@ class PublicationQueryService:
         for pub in repeating_pubs:
             for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
                 key = (pub.id, day_key)
-                if key in seen_keys:
+                if key in seen_keys or key in existing_keys:
                     continue
                 seen_keys.add(key)
                 posts.append(make_scheduled_projection(pub, projected_time))
@@ -271,8 +273,8 @@ class PublicationQueryService:
                 Publication.status.in_([
                     DBPublicationStatus.PUBLISHED,
                     DBPublicationStatus.PARTIAL_SUCCESS,
+                    DBPublicationStatus.SCHEDULED,
                 ]),
-                Publication.next_repeat_time.isnot(None),
             )
             .options(
                 load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
@@ -286,9 +288,13 @@ class PublicationQueryService:
 
         today = date.today()
         for pub in repeating_pubs:
+            is_scheduled = pub.status == DBPublicationStatus.SCHEDULED
             for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
                 if pub.id not in day_post_ids.get(day_key, set()):
-                    item = make_scheduled_projection(pub, projected_time) if projected_time.date() > today else pub
+                    if is_scheduled or projected_time.date() > today:
+                        item = make_scheduled_projection(pub, projected_time)
+                    else:
+                        item = pub
                     buckets.setdefault(day_key, []).append(item)
                     day_post_ids.setdefault(day_key, set()).add(pub.id)
 

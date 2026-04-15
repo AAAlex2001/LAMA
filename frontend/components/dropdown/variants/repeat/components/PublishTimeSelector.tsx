@@ -40,7 +40,12 @@ export default function PublishTimeSelector({
         <span className={styles.repeatDailyRowLabel}>Опубликовать в</span>
         <div className={styles.repeatDailyRowValue}>
           <span className={styles.repeatDailyRowValueText}>{displayText}</span>
-          <ChevronDownIcon width={14} height={14} color="#858585" />
+          <ChevronDownIcon
+            width={14}
+            height={14}
+            color="#858585"
+            className={`${styles.frequencyChevron} ${isOpen ? styles.frequencyChevronRotated : ''}`}
+          />
         </div>
       </button>
 

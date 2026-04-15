@@ -2,6 +2,7 @@ import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppDispatch, RootState } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
 import type { Draft, PostSnapshot } from '../types';
+import type { ChannelBasic } from '@/types';
 import type { DraftListResponse } from '@/types/post';
 import { setText, setShowLinkPreview } from '../slices/editor';
 import { setFiles, clearFiles, updateFile } from '../slices/media';
@@ -29,6 +30,22 @@ export const loadRecentTags = createAsyncThunk(
     return dispatch(fetchTagsThunk({}));
   }
 );
+
+async function ensureChannelsLoaded(
+  getState: () => RootState,
+  dispatch: AppDispatch,
+): Promise<ChannelBasic[]> {
+  while (getState().channels.loading) {
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
+  if (getState().channels.channels.length === 0) {
+    await dispatch(fetchChannelsThunk({ force: true }));
+    while (getState().channels.loading) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    }
+  }
+  return getState().channels.channels;
+}
 
 export const loadDraftById = createAsyncThunk(
   'createPost/loadDraftById',
@@ -72,10 +89,10 @@ export const loadDraftById = createAsyncThunk(
         applyPostSnapshotToStore(snap, dispatch as AppDispatch);
       }
 
-      const state = getState() as RootState;
+      const channels = await ensureChannelsLoaded(getState as () => RootState, dispatch as AppDispatch);
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
-      if (state.channels.channels.length > 0) {
-        const next = state.channels.channels.map((ch) => ({
+      if (channels.length > 0) {
+        const next = channels.map((ch) => ({
           ...ch,
           selected: channelIds.size > 0 ? channelIds.has(ch.id) : false,
         }));
@@ -108,10 +125,10 @@ export const loadDraftByToken = createAsyncThunk(
       dispatch(setActiveIndex(0));
       applyPostSnapshotToStore(snap, dispatch as AppDispatch);
 
-      const state = getState() as RootState;
+      const channels = await ensureChannelsLoaded(getState as () => RootState, dispatch as AppDispatch);
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
-      if (state.channels.channels.length > 0) {
-        const next = state.channels.channels.map((ch) => ({
+      if (channels.length > 0) {
+        const next = channels.map((ch) => ({
           ...ch,
           selected: channelIds.size > 0 ? channelIds.has(ch.id) : false,
         }));
