@@ -102,6 +102,18 @@ export interface Draft {
   scheduled_time?: string;
   published_at?: string;
   repeat_interval?: string;
+  repeat_custom_days?: number;
+  repeat_custom_hours?: number;
+  repeat_custom_unit?: string;
+  repeat_custom_value?: number;
+  repeat_weekdays?: number[];
+  repeat_month_days?: number[];
+  repeat_year_month?: number;
+  repeat_year_days?: number[];
+  repeat_end_time?: string;
+  next_repeat_time?: string;
+  pin_message?: boolean;
+  disable_notification?: boolean;
   series_id?: number;
   series_order?: number;
   series_count?: number;

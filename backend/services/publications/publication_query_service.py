@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import List, Optional, Set, Tuple
 
@@ -82,12 +82,15 @@ def escape_like(s: str) -> str:
 
 
 def make_scheduled_projection(pub: Publication, projected_time: datetime) -> SimpleNamespace:
-    """Создаёт копию публикации со статусом SCHEDULED и проецированным scheduled_time для будущих повторов."""
+    """Создаёт копию публикации с проецированным scheduled_time для будущих повторов."""
     proxy = SimpleNamespace()
     for col in PUB_COMPACT_COLUMNS:
         setattr(proxy, col.key, getattr(pub, col.key))
-    proxy.status = DBPublicationStatus.SCHEDULED
-    proxy.scheduled_time = projected_time
+    aware_time = projected_time.replace(tzinfo=timezone.utc) if projected_time.tzinfo is None else projected_time
+    proxy.scheduled_time = aware_time
+    now = datetime.now(timezone.utc)
+    if aware_time > now:
+        proxy.status = DBPublicationStatus.SCHEDULED
     proxy.channels = pub.channels
     proxy.tags = pub.tags
     return proxy
@@ -286,15 +289,10 @@ class PublicationQueryService:
         repeat_result = await self.db.execute(repeat_query)
         repeating_pubs = list(repeat_result.scalars().all())
 
-        today = date.today()
         for pub in repeating_pubs:
-            is_scheduled = pub.status == DBPublicationStatus.SCHEDULED
             for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
                 if pub.id not in day_post_ids.get(day_key, set()):
-                    if is_scheduled or projected_time.date() > today:
-                        item = make_scheduled_projection(pub, projected_time)
-                    else:
-                        item = pub
+                    item = make_scheduled_projection(pub, projected_time)
                     buckets.setdefault(day_key, []).append(item)
                     day_post_ids.setdefault(day_key, set()).add(pub.id)
 

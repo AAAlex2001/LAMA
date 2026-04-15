@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { AppDispatch, RootState } from '../index';
 import { apiRequest, API_BASE_URL } from './api';
-import type { Draft, PostSnapshot } from '../types';
+import type { Draft, PostSnapshot, RepeatOption, RepeatCustomUnit } from '../types';
 import type { ChannelBasic } from '@/types';
 import type { DraftListResponse } from '@/types/post';
 import { setText, setShowLinkPreview } from '../slices/editor';
@@ -9,7 +9,21 @@ import { setFiles, clearFiles, updateFile } from '../slices/media';
 import { setRows, openInlineButtons, resetInlineButtons } from '../slices/inlineButtons';
 import { setMode, setQuestion, setAnswers, setCorrectAnswer, openQuiz, resetQuiz } from '../slices/quiz';
 import { setChannels as setChannelSelections } from '../slices/channels';
-import { addTag, clearTags } from '../slices/settings';
+import { addTag, clearTags,
+  setRepeatInterval,
+  setRepeatCustomDays,
+  setRepeatCustomHours,
+  setRepeatCustomUnit,
+  setRepeatCustomValue,
+  setRepeatWeekdays,
+  setRepeatMonthDays,
+  setRepeatYearMonth,
+  setRepeatYearDays,
+  setRepeatEndType,
+  setRepeatEndDate,
+  setNotifySubscribers,
+  setPinPost,
+} from '../slices/settings';
 import { setSnapshots, setActiveIndex, resetSeries } from '../slices/series';
 import { fetchChannelsThunk } from './channels';
 import { fetchTagsThunk } from './tags';
@@ -88,6 +102,8 @@ export const loadDraftById = createAsyncThunk(
         dispatch(setActiveIndex(0));
         applyPostSnapshotToStore(snap, dispatch as AppDispatch);
       }
+
+      applyDraftSettingsToStore(draft, dispatch as AppDispatch);
 
       const channels = await ensureChannelsLoaded(getState as () => RootState, dispatch as AppDispatch);
       const channelIds = new Set((draft.channels || []).map((ch) => ch.id));
@@ -214,6 +230,31 @@ export function applyPostSnapshotToStore(snapshot: PostSnapshot, dispatch: AppDi
         : '#FAC7C7';
       dispatch(addTag({ name: tag.name, color: validColor }));
     }
+  }
+}
+
+export function applyDraftSettingsToStore(draft: Draft, dispatch: AppDispatch) {
+  const ri = draft.repeat_interval as RepeatOption | undefined;
+  if (ri) dispatch(setRepeatInterval(ri));
+  if (draft.repeat_custom_days != null) dispatch(setRepeatCustomDays(draft.repeat_custom_days));
+  if (draft.repeat_custom_hours != null) dispatch(setRepeatCustomHours(draft.repeat_custom_hours));
+  if (draft.repeat_custom_unit) dispatch(setRepeatCustomUnit(draft.repeat_custom_unit as RepeatCustomUnit));
+  if (draft.repeat_custom_value != null) dispatch(setRepeatCustomValue(draft.repeat_custom_value));
+  if (draft.repeat_weekdays) dispatch(setRepeatWeekdays(draft.repeat_weekdays));
+  if (draft.repeat_month_days) dispatch(setRepeatMonthDays(draft.repeat_month_days));
+  if (draft.repeat_year_month != null) dispatch(setRepeatYearMonth(draft.repeat_year_month));
+  if (draft.repeat_year_days) dispatch(setRepeatYearDays(draft.repeat_year_days));
+  if (draft.repeat_end_time) {
+    dispatch(setRepeatEndType('date'));
+    dispatch(setRepeatEndDate(draft.repeat_end_time));
+  } else {
+    dispatch(setRepeatEndType('never'));
+  }
+  if (draft.disable_notification != null) {
+    dispatch(setNotifySubscribers(!draft.disable_notification));
+  }
+  if (draft.pin_message != null) {
+    dispatch(setPinPost(draft.pin_message));
   }
 }
 

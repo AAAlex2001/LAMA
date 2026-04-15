@@ -57,6 +57,7 @@ export default function EditPostView() {
 
   const searchParams = useSearchParams();
   const postId = searchParams?.get('post');
+  const dateOverride = searchParams?.get('date');
 
   const [isPostLoading, setIsPostLoading] = useState(!!postId);
   const [postLoadError, setPostLoadError] = useState<string | null>(null);
@@ -102,8 +103,9 @@ export default function EditPostView() {
       .unwrap()
       .then(async (post) => {
         const schedules: Record<number, SeriesPostSchedule> = {};
-        if (post.scheduled_time) {
-          const d = new Date(post.scheduled_time);
+        const effectiveTime = dateOverride || post.scheduled_time;
+        if (effectiveTime) {
+          const d = new Date(effectiveTime);
           setScheduledDate(d);
           setHours(d.getHours());
           setMinutes(d.getMinutes());
@@ -252,6 +254,22 @@ export default function EditPostView() {
 
   async function handleMoveToDraft() {
     if (!activePostId) return;
+
+    if (dateOverride) {
+      try {
+        const dateStr = new Date(dateOverride).toISOString().slice(0, 10);
+        await apiRequest(
+          `/publications/${activePostId}?repeat_mode=this&repeat_date=${dateStr}`,
+          { method: 'DELETE' },
+        );
+        showSuccess('Повтор на эту дату исключён');
+        setTimeout(() => { window.location.href = '/calendar'; }, 1500);
+      } catch {
+        showError('Ошибка исключения повтора');
+      }
+      return;
+    }
+
     if (seriesId && seriesPosts.length > 0) {
       try {
         for (const sp of seriesPosts) {

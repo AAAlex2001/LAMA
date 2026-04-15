@@ -235,7 +235,11 @@ export default function CalendarPageConnected() {
     if (isDraft) {
       window.location.href = `/edit-draft?draft=${selectedPost.id}`;
     } else if (isScheduled) {
-      window.location.href = `/edit-post?post=${selectedPost.id}`;
+      const params = new URLSearchParams({ post: String(selectedPost.id) });
+      if (selectedPost.scheduled_time) {
+        params.set('date', selectedPost.scheduled_time);
+      }
+      window.location.href = `/edit-post?${params}`;
     }
   }
 
