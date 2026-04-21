@@ -20,6 +20,7 @@ class UpdateKBCategoryRequest(BaseModel):
 class ArticleSectionSchema(BaseModel):
     type: str
     title: Optional[str] = None
+    titleLevel: Optional[Literal["h1", "h3"]] = None
     body: Optional[str] = None
     src: Optional[str] = None
     src1: Optional[str] = None
