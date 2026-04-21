@@ -33,6 +33,8 @@ export interface InboxEventResponse {
   tg_first_name: string | null;
   status: EventStatus;
   description: string | null;
+  reason?: string | null;
+  reason_source?: string | null;
   payload: Record<string, unknown>;
   created_at: string;
   updated_at: string;

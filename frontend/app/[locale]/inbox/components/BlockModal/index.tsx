@@ -15,6 +15,7 @@ interface BlockModalProps {
   isOpen: boolean;
   onOpenChange?: (isOpen: boolean) => void;
   stopWord?: string;
+  reason?: string;
   message?: string;
   eventId?: number;
   onSave?: (data: BlockModalData) => void;
@@ -34,6 +35,7 @@ export default function BlockModal({
   isOpen,
   onOpenChange,
   stopWord = 'spam',
+  reason,
   message = 'Купи сейчас...',
   eventId,
   onSave,
@@ -127,10 +129,20 @@ export default function BlockModal({
             <div className={styles.reasonItem}>
               <div className={styles.bulletWrapper}>
                 <div className={styles.bullet} />
-                <span className={styles.reasonLabel}>Стоп-слово:</span>
+                <span className={styles.reasonLabel}>Причина:</span>
               </div>
               <span className={styles.reasonValue}>"{stopWord}"</span>
             </div>
+            {reason?.trim() ? (
+              <div className={styles.reasonItem}>
+                <div className={styles.bulletWrapper}>
+                  <div className={styles.bullet} />
+                  <span className={styles.reasonLabel}>Описание причины:</span>
+                </div>
+                <span className={styles.reasonValue}>"{reason.trim()}"</span>
+              </div>
+            ) : null}
+
             <div className={styles.reasonItem}>
               <div className={styles.bulletWrapper}>
                 <div className={styles.bullet} />

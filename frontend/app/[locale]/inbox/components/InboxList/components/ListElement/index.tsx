@@ -44,6 +44,24 @@ function formatDate(iso: string): string {
   return `${day}.${month} ${hours}:${minutes}`;
 }
 
+function getBlockModalContext(item: InboxEventResponse): {
+  reason?: string;
+  reasonSource: string;
+} {
+  const reason =
+    (typeof item.reason === 'string' && item.reason.trim() ? item.reason : null) ??
+    (typeof item.payload?.reason === 'string' && item.payload.reason.trim() ? item.payload.reason : null) ??
+    undefined;
+  const reasonSource =
+    (typeof item.reason_source === 'string' && item.reason_source ? item.reason_source : null) ??
+    (typeof item.payload?.reason_source === 'string' && item.payload.reason_source ? item.payload.reason_source : null) ??
+    'spam';
+  return {
+    reason,
+    reasonSource,
+  };
+}
+
 interface ListElementProps {
   item: InboxEventResponse;
   isChecked?: boolean;
@@ -398,12 +416,15 @@ const ListElement: FC<ListElementProps> = ({
       ? `/${locale}/inbox/chat?chat_id=${item.tg_user_id}&bot_id=${item.bot_id}`
       : null;
 
+  const blockModalContext = getBlockModalContext(item);
+
   return (
     <>
       <BlockModal
         isOpen={isBlockModalOpen}
         onOpenChange={setIsBlockModalOpen}
-        stopWord={(item.payload?.block_reason as string) || 'spam'}
+        reason={blockModalContext.reason}
+        stopWord={blockModalContext.reasonSource}
         message={item.description || ''}
         eventId={item.id}
         onSave={handleBlockSave}
