@@ -96,30 +96,22 @@ export default function CalendarPageConnected() {
     if (main) main.scrollTop = 0;
   }, [calendar.currentView, calendar.selectedDate]);
 
-  useQuery({
-    queryKey: [
-      'calendar-data',
-      calendar.currentView,
-      calendar.selectedDate,
-      calendar.currentView === 'month' ? calendar.sidebarDate : null,
-      calendar.listRangeStart,
-      calendar.listRangeEnd,
-      calendar.listSortOrder,
-      calendar.listStatusFilter,
-    ],
-    queryFn: async () => dispatch(fetchCalendarData()).unwrap(),
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-  });
+  React.useEffect(() => {
+    dispatch(fetchCalendarData());
+  }, [
+    dispatch,
+    calendar.currentView,
+    calendar.selectedDate,
+    calendar.currentView === 'month' ? calendar.sidebarDate : null,
+    calendar.listRangeStart,
+    calendar.listRangeEnd,
+    calendar.listSortOrder,
+    calendar.listStatusFilter,
+  ]);
 
-  useQuery({
-    queryKey: ['calendar-day-counts', calendar.countsMonthAnchor],
-    queryFn: async () => dispatch(fetchDayCounts()).unwrap(),
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: 'always',
-  });
+  React.useEffect(() => {
+    dispatch(fetchDayCounts());
+  }, [dispatch, calendar.countsMonthAnchor]);
 
   const { data: allTags } = useQuery({
     queryKey: ['calendar-all-tags'],

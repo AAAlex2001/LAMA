@@ -272,7 +272,6 @@ export function useTiptapEditor(options: UseTiptapEditorOptions = {}) {
         link: false,
         underline: false,
         heading: false,
-        blockquote: false,
         bulletList: false,
         orderedList: false,
         listItem: false,

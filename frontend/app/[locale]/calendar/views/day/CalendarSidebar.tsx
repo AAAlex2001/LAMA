@@ -71,14 +71,14 @@ export default function CalendarSidebar({
         {posts.length > 0 && (
           <div className={styles.postsSection}>
             <div className={styles.postsInner}>
-              {posts.map((post) => {
+              {posts.map((post, index) => {
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
 
                 return (
                   <div
-                    key={post.id}
+                    key={`${post.id}-${getSourceDate(post)}-${index}`}
                     className={styles.postRow}
                     onClick={() => onEdit(post)}
                   >

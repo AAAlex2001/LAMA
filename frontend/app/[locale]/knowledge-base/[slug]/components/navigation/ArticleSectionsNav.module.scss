@@ -5,7 +5,7 @@
 @media (min-width: 1440px) {
   .col {
     display: block;
-    width: 72px;
+    width: 46px;
     z-index: 200;
     overflow: visible;
   }
@@ -14,10 +14,8 @@
 .nav {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 0;
-  width: 72px;
+  width: 46px;
   background: transparent;
   overflow: visible;
 }
@@ -26,42 +24,26 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 14px 20px;
-  gap: 12px;
-  width: 72px;
+  padding: 15px;
+  gap: 10px;
+  width: 46px;
   background: #F7FAFF;
-  border-radius: 20px;
+  border-radius: 12px;
   box-sizing: border-box;
 }
 
 .list {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0;
-  gap: 12px;
-  width: 32px;
-}
-
-.list::before {
-  content: '';
-  position: absolute;
-  top: 10px;
-  bottom: 10px;
-  left: 50%;
-  width: 2px;
-  background: linear-gradient(180deg, rgba(59, 130, 246, 0.18) 0%, rgba(176, 180, 184, 0.5) 100%);
-  transform: translateX(-50%);
-  border-radius: 999px;
-  box-sizing: border-box;
+  gap: 8px;
+  width: 16px;
 }
 
 .item {
   position: relative;
-  z-index: 10;
-  width: 32px;
-  height: 32px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -69,16 +51,39 @@
   border: 0;
   padding: 0;
   cursor: pointer;
-  border-radius: 999px;
-
-  &:hover {
-    background: rgba(59, 130, 246, 0.08);
-  }
+  border-radius: 50%;
 }
 
-.grayDot {
+.mainDot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: #9CA0A4;
+  transition: background 0.15s ease;
+}
+
+.subDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid #9CA0A4;
+  box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.item:hover .mainDot {
+  background: #3B82F6;
+}
+
+.item:hover .subDot {
+  background: #3B82F6;
+  border-color: #3B82F6;
+}
+
+.activeIcon {
+  display: block;
+  width: 10px;
+  height: 10px;
+  color: #3B82F6;
 }

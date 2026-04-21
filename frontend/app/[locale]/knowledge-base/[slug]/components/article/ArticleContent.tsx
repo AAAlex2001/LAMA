@@ -18,7 +18,9 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <section key={idx} className={styles.textBlock}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
+                section.titleLevel === 'h1'
+                  ? <h1 id={slugify(section.title)} className={styles.sectionTitleMain}>{section.title}</h1>
+                  : <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
               {section.body && <div className={styles.richText} dangerouslySetInnerHTML={{ __html: toRichHtml(section.body) }} />}
             </section>
@@ -28,7 +30,9 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <div key={idx} className={styles.singleImage}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
+                section.titleLevel === 'h1'
+                  ? <h1 id={slugify(section.title)} className={styles.sectionTitleMain}>{section.title}</h1>
+                  : <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={section.src} alt={section.alt || ''} />
@@ -39,7 +43,9 @@ export default function ArticleContent({ sections }: Props) {
           return (
             <div key={idx} className={styles.pairImagesWrap}>
               {section.title && (
-                <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
+                section.titleLevel === 'h1'
+                  ? <h1 id={slugify(section.title)} className={styles.sectionTitleMain}>{section.title}</h1>
+                  : <h3 id={slugify(section.title)} className={styles.sectionTitle}>{section.title}</h3>
               )}
               <div className={styles.pairImages}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}

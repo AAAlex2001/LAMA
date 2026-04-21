@@ -56,9 +56,13 @@ export function useEditPostLoader(
     setIsPostLoading(true);
     setPostLoadError(null);
 
-    dispatch(loadDraftById(id))
-      .unwrap()
-      .then(async (post) => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const post = await dispatch(loadDraftById(id)).unwrap();
+        if (cancelled) return;
+
         const schedules: Record<number, SeriesPostSchedule> = {};
         const effectiveTime = dateOverride || post.scheduled_time;
         if (effectiveTime) {
@@ -72,6 +76,7 @@ export function useEditPostLoader(
             const res = await apiRequest<{ items: SeriesPostInfo[] }>(
               `/publications?series_id=${post.series_id}&page_size=50&sort_order=asc`,
             );
+            if (cancelled) return;
             const posts = [...res.items].sort(
               (a, b) => (a.series_order ?? 0) - (b.series_order ?? 0),
             );
@@ -89,13 +94,16 @@ export function useEditPostLoader(
 
             const otherPosts = posts.filter((sp) => sp.id !== id);
             for (const sp of otherPosts) {
+              if (cancelled) return;
               try {
                 await dispatch(loadDraftById(sp.id)).unwrap();
               } catch {
                 // ignore individual load errors
               }
             }
+            if (cancelled) return;
             await dispatch(loadDraftById(id)).unwrap();
+            if (cancelled) return;
             setSeriesLoaded(true);
           } catch {
             // ignore
@@ -103,14 +111,19 @@ export function useEditPostLoader(
         } else {
           setExpandedPostId(null);
         }
+        if (cancelled) return;
         setInitialSchedules(schedules);
-      })
-      .catch((err) => {
+      } catch (err) {
+        if (cancelled) return;
         setPostLoadError(typeof err === 'string' ? err : 'Ошибка загрузки поста');
-      })
-      .finally(() => {
-        setIsPostLoading(false);
-      });
+      } finally {
+        if (!cancelled) setIsPostLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dispatch, postId]);
 
   return {

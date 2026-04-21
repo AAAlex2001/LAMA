@@ -108,8 +108,6 @@ export default function KnowledgeArticleView({ article, articles, isLoggedIn, is
               <ArticleFeedback
                 articleSlug={article.slug}
                 locale={locale}
-                initialLikes={article.likesCount}
-                initialDislikes={article.dislikesCount}
               />
             )}
           </div>

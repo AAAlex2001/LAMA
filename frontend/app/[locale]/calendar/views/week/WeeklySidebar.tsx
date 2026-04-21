@@ -108,7 +108,7 @@ export default function WeeklySidebar({
           <div className={styles.dayTitle}>{dayTitle}</div>
           <div className={styles.postsList}>
             <div className={styles.postsInner}>
-              {sortedPosts.map((post) => {
+              {sortedPosts.map((post, index) => {
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
                 const isPublished = post.status === 'published';
@@ -117,7 +117,7 @@ export default function WeeklySidebar({
 
                 return (
                   <div
-                    key={post.id}
+                    key={`${post.id}-${getSourceDate(post)}-${index}`}
                     className={styles.postRow}
                     onClick={() => onEdit(post)}
                   >

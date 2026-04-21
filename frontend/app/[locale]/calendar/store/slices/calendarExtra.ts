@@ -38,9 +38,23 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
         state.hasMore = false;
         state.listTotal = 0;
       } else {
+        const req = action.payload.request;
+        const sig = [
+          req.view,
+          req.selectedDate,
+          req.listRangeStart ?? '',
+          req.listRangeEnd ?? '',
+          req.listSortOrder ?? '',
+          req.listStatusFilter ?? '',
+        ].join('|');
+        if (sig === state.lastLoadedListSignature && state.currentPage > 1) {
+          state.listTotal = action.payload.total;
+          return;
+        }
         state.items = action.payload.items;
         state.weekItems = {};
         state.currentRangeKey = action.payload.rangeKey;
+        state.lastLoadedListSignature = sig;
         state.currentPage = 1;
         state.listTotal = action.payload.total;
         state.hasMore = action.payload.hasMore;

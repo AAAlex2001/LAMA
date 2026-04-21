@@ -6,6 +6,11 @@ export function setMediaFileStoreRef(ref: MutableRefObject<Map<string, File>>): 
   mediaFileStoreRef = ref;
 }
 
+export function clearMediaFileStoreRef(): void {
+  mediaFileStoreRef?.current.clear();
+  mediaFileStoreRef = null;
+}
+
 export function getMediaFileStore(): Map<string, File> | null {
   return mediaFileStoreRef?.current ?? null;
 }

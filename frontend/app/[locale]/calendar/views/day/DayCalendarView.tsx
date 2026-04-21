@@ -91,9 +91,9 @@ export default function DayCalendarView({
       ) : (
         <div className={styles.scrollContainer} ref={setScrollRootEl}>
           <div className={styles.list}>
-            {posts.map((post) => (
+            {posts.map((post, index) => (
               <CalendarCard
-                key={post.id}
+                key={`${post.id}-${index}`}
                 post={post}
                 onEdit={() => onEdit(post)}
               />

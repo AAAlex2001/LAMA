@@ -104,7 +104,7 @@ export default function MonthlySidebar({
             ) : posts.length === 0 ? (
               <div className={styles.emptyDay}>Нет публикаций</div>
             ) : (
-              posts.map((post) => {
+              posts.map((post, index) => {
                 const time = formatTime(getSourceDate(post));
                 const preview = getPreviewText(post);
 
@@ -112,7 +112,7 @@ export default function MonthlySidebar({
 
                 return (
                   <div
-                    key={post.id}
+                    key={`${post.id}-${getSourceDate(post)}-${index}`}
                     className={styles.postRow}
                     onClick={() => onEdit(post)}
                   >

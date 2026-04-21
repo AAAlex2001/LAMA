@@ -138,16 +138,11 @@ export default function ListCalendarView({
     setActiveFilters((prev) => ({ ...prev, [key]: values }));
   }
 
-  if (isLoading) {
-    return (
-      <div className={styles.loaderWrap}>
-        <Loader size={32} color="blue" />
-      </div>
-    );
-  }
-
   const hasAnyFilter = Object.values(activeFilters).some((v) => v.length > 0)
     || Object.values(mobileActiveFilters || {}).some((v) => v.length > 0);
+
+  const showInitialLoader = isLoading && filteredPosts.length === 0;
+  const showEmpty = !isLoading && filteredPosts.length === 0;
 
   return (
     <>
@@ -185,13 +180,19 @@ export default function ListCalendarView({
         </div>
       )}
 
-      {filteredPosts.length === 0 ? (
-        <div className={styles.empty}>
-          {hasAnyFilter ? 'Нет публикаций по выбранным фильтрам' : 'Нет публикаций в этом периоде'}
-        </div>
-      ) : (
-
       <div className={styles.scrollContainer} ref={setScrollRootEl}>
+        {showInitialLoader && (
+          <div className={styles.loaderWrap}>
+            <Loader size={32} color="blue" />
+          </div>
+        )}
+
+        {showEmpty && (
+          <div className={styles.empty}>
+            {hasAnyFilter ? 'Нет публикаций по выбранным фильтрам' : 'Нет публикаций в этом периоде'}
+          </div>
+        )}
+
         <div className={styles.desktopList}>
           {filteredPosts.map((post, index) => {
             const sourceDate = getSourceDate(post);
@@ -279,9 +280,8 @@ export default function ListCalendarView({
             <Loader size={18} color="blue" />
           </div>
         )}
-        {hasMore && <div ref={sentinelRef} style={{ height: 1 }} />}
+        {hasMore && filteredPosts.length > 0 && <div ref={sentinelRef} style={{ height: 1 }} />}
       </div>
-      )}
     </>
   );
 }

@@ -134,19 +134,17 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           showArrow={false}
           className={styles.botBtn}
         />
-        {!isLoggedIn && (
-          <NewButton
-            href={botHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            variant="fill"
-            intent="gradient"
-            size="md"
-            className={styles.fullBtn}
-          >
-            Предложить идею
-          </NewButton>
-        )}
+        <NewButton
+          href={botHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          variant="fill"
+          intent="gradient"
+          size="md"
+          className={styles.fullBtn}
+        >
+          Предложить идею
+        </NewButton>
       </div>
     </div>
   );

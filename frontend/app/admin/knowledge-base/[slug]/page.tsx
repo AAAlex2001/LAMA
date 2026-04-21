@@ -9,10 +9,12 @@ import styles from './article-editor.module.scss';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
+type HeadingLevel = 'h1' | 'h3';
+
 type ArticleSection =
-  | { type: 'text'; title?: string; body?: string }
-  | { type: 'image'; title?: string; src: string; alt?: string }
-  | { type: 'image-pair'; title?: string; src1: string; src2: string };
+  | { type: 'text'; title?: string; titleLevel?: HeadingLevel; body?: string }
+  | { type: 'image'; title?: string; titleLevel?: HeadingLevel; src: string; alt?: string }
+  | { type: 'image-pair'; title?: string; titleLevel?: HeadingLevel; src1: string; src2: string };
 
 interface ArticleData {
   slug: string;
@@ -333,18 +335,36 @@ function renderSectionEditor(
   index: number,
   update: (i: number, s: ArticleSection) => void,
 ) {
+  const level: HeadingLevel = section.titleLevel === 'h1' ? 'h1' : 'h3';
+
+  const titleFields = (
+    <>
+      <label className={styles.field}>
+        <span>Уровень заголовка</span>
+        <select
+          value={level}
+          onChange={(e) => update(index, { ...section, titleLevel: e.target.value as HeadingLevel })}
+        >
+          <option value="h3">H3 — подзаголовок</option>
+          <option value="h1">H1 — главный заголовок</option>
+        </select>
+      </label>
+      <label className={styles.field}>
+        <span>Заголовок секции</span>
+        <input
+          type="text"
+          value={section.title || ''}
+          onChange={(e) => update(index, { ...section, title: e.target.value })}
+        />
+      </label>
+    </>
+  );
+
   switch (section.type) {
     case 'text':
       return (
         <>
-          <label className={styles.field}>
-            <span>Заголовок секции</span>
-            <input
-              type="text"
-              value={section.title || ''}
-              onChange={(e) => update(index, { ...section, title: e.target.value })}
-            />
-          </label>
+          {titleFields}
           <div className={styles.field}>
             <span>Текст</span>
             <KbRichTextEditor
@@ -359,14 +379,7 @@ function renderSectionEditor(
     case 'image':
       return (
         <>
-          <label className={styles.field}>
-            <span>Заголовок (H3)</span>
-            <input
-              type="text"
-              value={section.title || ''}
-              onChange={(e) => update(index, { ...section, title: e.target.value })}
-            />
-          </label>
+          {titleFields}
           <ImageUploadField
             label="Картинка"
             value={section.src}
@@ -386,14 +399,7 @@ function renderSectionEditor(
     case 'image-pair':
       return (
         <>
-          <label className={styles.field}>
-            <span>Заголовок (H3)</span>
-            <input
-              type="text"
-              value={section.title || ''}
-              onChange={(e) => update(index, { ...section, title: e.target.value })}
-            />
-          </label>
+          {titleFields}
           <ImageUploadField
             label="Картинка 1"
             value={section.src1}

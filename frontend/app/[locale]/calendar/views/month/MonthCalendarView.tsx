@@ -110,14 +110,14 @@ export default function MonthCalendarView({
           ) : dayPosts.length === 0 ? (
             <div className={styles.empty}>Нет публикаций</div>
           ) : (
-            dayPosts.map((post) => {
+            dayPosts.map((post, index) => {
               const sourceDate = getSourceDate(post);
               const time = formatTime(sourceDate);
               const preview = getPreviewText(post);
               const isSeries = (post.series_count ?? 0) > 1;
               return (
                 <div
-                  key={post.id}
+                  key={`${post.id}-${sourceDate}-${index}`}
                   className={styles.postRow}
                   onClick={() => onEdit(post)}
                 >

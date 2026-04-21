@@ -144,9 +144,9 @@ function DayColumn({
           <div className={styles.emptyDay}>—</div>
         ) : (
           <>
-            {dayPosts.map((post) => (
+            {dayPosts.map((post, index) => (
               <WeeklyCard
-                key={post.id}
+                key={`${post.id}-${index}`}
                 post={post}
                 onEdit={() => onEdit(post)}
               />

@@ -71,6 +71,8 @@
 .outgoingWrapper {
   display: flex;
   justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .outgoingBubble {
@@ -106,6 +108,10 @@
   font-size: 14px;
   line-height: 20px;
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  min-width: 0;
 }
 
 .outgoingMeta {

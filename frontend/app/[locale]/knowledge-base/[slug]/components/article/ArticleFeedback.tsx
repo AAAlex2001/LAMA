@@ -7,25 +7,15 @@ import styles from './ArticleFeedback.module.scss';
 type Props = {
   articleSlug: string;
   locale: string;
-  initialLikes: number;
-  initialDislikes: number;
 };
 
 const STORAGE_KEY_PREFIX = 'kb_feedback_';
 
-type FeedbackResponse = {
-  likes: number;
-  dislikes: number;
-};
-
-export default function ArticleFeedback({ articleSlug, locale, initialLikes, initialDislikes }: Props) {
+export default function ArticleFeedback({ articleSlug, locale }: Props) {
   const storageKey = `${STORAGE_KEY_PREFIX}${articleSlug}_${locale}`;
 
-  const [likes, setLikes] = useState(initialLikes);
-  const [dislikes, setDislikes] = useState(initialDislikes);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   const [hovered, setHovered] = useState<'up' | 'down' | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     try {
@@ -41,7 +31,7 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
   const sendFeedback = async (action: string) => {
     try {
       const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
-      const res = await fetch(
+      await fetch(
         `${apiBase}/kb/articles/slug/${encodeURIComponent(articleSlug)}/feedback?locale=${locale}`,
         {
           method: 'POST',
@@ -49,11 +39,6 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
           body: JSON.stringify({ action }),
         },
       );
-      if (res.ok) {
-        const data: FeedbackResponse = await res.json();
-        setLikes(data.likes);
-        setDislikes(data.dislikes);
-      }
     } catch {
       // ignore
     }
@@ -64,11 +49,7 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
     const prev = feedback;
     setFeedback('up');
     try { localStorage.setItem(storageKey, 'up'); } catch {}
-    if (prev === 'down') {
-      sendFeedback('switch_to_like');
-    } else {
-      sendFeedback('like');
-    }
+    sendFeedback(prev === 'down' ? 'switch_to_like' : 'like');
   };
 
   const handleDislike = () => {
@@ -76,19 +57,7 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
     const prev = feedback;
     setFeedback('down');
     try { localStorage.setItem(storageKey, 'down'); } catch {}
-    if (prev === 'up') {
-      sendFeedback('switch_to_dislike');
-    } else {
-      sendFeedback('dislike');
-    }
-  };
-
-  const handleShare = () => {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    sendFeedback(prev === 'up' ? 'switch_to_dislike' : 'dislike');
   };
 
   return (
@@ -106,7 +75,6 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
               onMouseLeave={() => setHovered(null)}
             >
               <HeartIcon filled={feedback === 'up'} hovered={hovered === 'up' && feedback !== 'up'} />
-              <span className={styles.count}>{likes}</span>
             </button>
             <button
               type="button"
@@ -117,11 +85,10 @@ export default function ArticleFeedback({ articleSlug, locale, initialLikes, ini
               onMouseLeave={() => setHovered(null)}
             >
               <HeartSlashIcon filled={feedback === 'down'} hovered={hovered === 'down' && feedback !== 'down'} />
-              <span className={styles.count}>{dislikes}</span>
             </button>
           </div>
-          <button type="button" className={styles.shareBtn} onClick={handleShare}>
-            <span className={styles.shareBtnText}>{copied ? 'Скопировано!' : 'Поделиться'}</span>
+          <button type="button" className={styles.shareBtn}>
+            <span className={styles.shareBtnText}>Оставить отзыв</span>
           </button>
         </div>
       </div>

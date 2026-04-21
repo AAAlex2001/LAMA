@@ -155,8 +155,8 @@
 }
 
 .messageList {
-  height: 100%;
-  max-height: calc(80vh - 170px);
+  position: absolute;
+  inset: 0;
   overflow-y: auto;
   overflow-anchor: none;
   display: flex;

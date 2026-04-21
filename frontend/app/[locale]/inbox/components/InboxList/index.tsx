@@ -106,19 +106,20 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
 
   useEffect(() => {
     if (!isReady) return;
+    checkedItemsDispatch({ type: "clear" });
     dispatch(fetchInboxEventsThunk({ ...fetchParams, offset: 0 }));
   }, [
-    dispatch, 
+    dispatch,
     isReady,
-    selectedFilter, 
-    statusFilter, 
-    sortDir, 
-    botIds, 
-    channelIds, 
-    system, 
-    typeAutoReplies, 
-    typeTriggers, 
-    typeCommands, 
+    selectedFilter,
+    statusFilter,
+    sortDir,
+    botIds,
+    channelIds,
+    system,
+    typeAutoReplies,
+    typeTriggers,
+    typeCommands,
     search,
   ]);
 

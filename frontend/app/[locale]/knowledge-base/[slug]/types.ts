@@ -1,7 +1,9 @@
+export type HeadingLevel = 'h1' | 'h3';
+
 export type ArticleSection =
-  | { type: 'text'; title?: string; body?: string }
-  | { type: 'image'; title?: string; src: string; alt?: string }
-  | { type: 'image-pair'; title?: string; src1: string; src2: string };
+  | { type: 'text'; title?: string; titleLevel?: HeadingLevel; body?: string }
+  | { type: 'image'; title?: string; titleLevel?: HeadingLevel; src: string; alt?: string }
+  | { type: 'image-pair'; title?: string; titleLevel?: HeadingLevel; src1: string; src2: string };
 
 export type KnowledgeArticle = {
   slug: string;

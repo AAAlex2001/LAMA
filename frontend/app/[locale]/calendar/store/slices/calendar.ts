@@ -39,6 +39,7 @@ export interface CalendarState {
   dayPageState: Record<string, DayPageState>;
   listSortOrder: 'asc' | 'desc' | null;
   listStatusFilter: string | null;
+  lastLoadedListSignature: string;
 }
 
 const todayStr = new Date().toISOString().split('T')[0];
@@ -66,6 +67,7 @@ export const initialState: CalendarState = {
   dayPageState: {},
   listSortOrder: null,
   listStatusFilter: null,
+  lastLoadedListSignature: '',
 };
 
 const calendarSlice = createSlice({

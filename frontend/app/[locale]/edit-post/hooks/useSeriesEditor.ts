@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAppDispatch } from '../../create-post/store';
 import { loadDraftById } from '../../create-post/store/thunks';
 import type { SeriesPostInfo, SeriesPostSchedule } from './useEditPostLoader';
@@ -44,8 +44,19 @@ export function useSeriesEditor({
   const [expandedPostId, setExpandedPostId] = useState<number | null>(initialExpandedPostId);
   const [seriesSchedules, setSeriesSchedules] = useState<Record<number, SeriesPostSchedule>>(initialSchedules);
 
+  const latestRequestIdRef = useRef(0);
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const handleExpandSeriesPost = useCallback(async (spId: number) => {
     if (expandedPostId === spId) return;
+    const requestId = ++latestRequestIdRef.current;
+
     setSeriesSchedules((prev) => ({
       ...prev,
       [expandedPostId!]: { date: scheduledDate, hours, minutes },
@@ -54,6 +65,8 @@ export function useSeriesEditor({
     setShowTimePicker(false);
     try {
       await dispatch(loadDraftById(spId)).unwrap();
+      if (!isMountedRef.current || requestId !== latestRequestIdRef.current) return;
+
       setExpandedPostId(spId);
       const saved = seriesSchedules[spId];
       if (saved) {
@@ -66,6 +79,7 @@ export function useSeriesEditor({
         setMinutes(0);
       }
     } catch {
+      if (!isMountedRef.current || requestId !== latestRequestIdRef.current) return;
       showError('Ошибка загрузки поста');
     }
   }, [dispatch, expandedPostId, scheduledDate, hours, minutes, seriesSchedules, setScheduledDate, setHours, setMinutes, setShowDatePicker, setShowTimePicker, showError]);
