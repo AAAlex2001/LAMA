@@ -237,13 +237,33 @@ const ListElement: FC<ListElementProps> = ({
     const btnClass = `${styles.actionButton} ${isMobile ? styles.actionButtonMobile : ''}`;
     const btnWidth = isMobile ? '100%' : '150px';
     const status = blockStatus?.status;
-    const isBanned = item.status === 'banned' || status === 'banned' || status === 'blocked';
+    const isUnbanned = status === 'unbanned' || item.payload?.is_unbanned === true;
+    const isBanned = !isUnbanned && (item.status === 'banned' || status === 'banned' || status === 'blocked');
     const isBusy = loadingAction !== null;
 
-    if (isBanned){
-      return <div className={`${styles.statusText} ${styles.declined}`}>Заблокирован</div>;
+    if (isUnbanned) {
+      return <div className={styles.statusText}>Разблокирован</div>;
+    }
+
+    if (isBanned && item.event_type !== 'channel_ban') {
+      return (
+        <div className={styles.actionButtons}>
+          <Button
+            variant="outline"
+            intent="primary"
+            size="md"
+            onClick={() => handleAction('unban')}
+            loading={loadingAction === 'unban'}
+            disabled={isBusy}
+            className={btnClass}
+            style={{ width: btnWidth }}
+          >
+            <span className={buttonStyles.label}>Разблокировать</span>
+          </Button>
+        </div>
+      );
     };
-    
+
     if (item.status === 'ignored' || status === 'ignored') {
       return <div className={`${styles.statusText} ${styles.ignored}`}>Проигнорировано</div>;
     }

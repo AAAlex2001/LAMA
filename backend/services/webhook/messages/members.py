@@ -120,6 +120,7 @@ class MemberProcessor:
                 status=EventStatus.NEW,
                 description=f"{member_display} {description_verb} {chat_title}",
                 payload={
+                    "message_id": message.message_id,
                     "chat_id": message.chat.id,
                     "chat_title": message.chat.title,
                     "chat_type": message.chat.type,

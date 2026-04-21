@@ -3,6 +3,7 @@ from typing import Optional, List
 from datetime import datetime
 
 from backend.schemas.channels.enums import ChannelType, BackupMode
+from backend.models.channels import LinkFilterMode
 
 
 class ChannelGroupBase(BaseModel):
@@ -173,6 +174,19 @@ class ChannelGroupResponse(BaseModel):
 
     # Informational messages
     info_messages_enabled: bool = False
+
+    # Auto replies
+    auto_reply_enabled: bool = True
+
+    # Antispam / link filter
+    link_filter_mode: LinkFilterMode = LinkFilterMode.DISABLED
+
+    # Antiflood
+    flood_message_limit: Optional[int] = None
+    flood_interval_seconds: Optional[int] = None
+
+    # Welcome (derived from bot)
+    welcome_enabled: bool = False
 
     # Metadata
     is_active: bool

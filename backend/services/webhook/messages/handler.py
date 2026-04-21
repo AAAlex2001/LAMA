@@ -413,11 +413,17 @@ class MessageHandler:
 
         events_to_create: list[tuple[EventType, str, dict]] = []
 
+        service_message_id = message.message_id
+
         if new_title:
             events_to_create.append((
                 EventType.CHANNEL_TITLE_CHANGED,
                 f"{initiator_display or 'Участник'} сменил(а) название на «{new_title}»".strip(),
-                {"new_title": new_title, "chat_id": message.chat.id},
+                {
+                    "message_id": service_message_id,
+                    "chat_id": message.chat.id,
+                    "new_title": new_title,
+                },
             ))
 
         if new_photo:
@@ -425,6 +431,7 @@ class MessageHandler:
                 EventType.CHANNEL_PHOTO_CHANGED,
                 f"{initiator_display or 'Участник'} обновил(а) аватар {chat_title}".strip(),
                 {
+                    "message_id": service_message_id,
                     "chat_id": message.chat.id,
                     "photo_deleted": False,
                     "file_ids": [p.file_id for p in new_photo if getattr(p, "file_id", None)],
@@ -435,7 +442,11 @@ class MessageHandler:
             events_to_create.append((
                 EventType.CHANNEL_PHOTO_CHANGED,
                 f"{initiator_display or 'Участник'} удалил(а) аватар {chat_title}".strip(),
-                {"chat_id": message.chat.id, "photo_deleted": True},
+                {
+                    "message_id": service_message_id,
+                    "chat_id": message.chat.id,
+                    "photo_deleted": True,
+                },
             ))
 
         if pinned:
@@ -446,6 +457,7 @@ class MessageHandler:
                 EventType.CHANNEL_PINNED_MESSAGE,
                 f"{initiator_display or 'Участник'} закрепил(а) сообщение в {chat_title}".strip(),
                 {
+                    "message_id": service_message_id,
                     "chat_id": message.chat.id,
                     "pinned_message_id": pinned.message_id,
                     "pinned_preview": pinned_preview or None,

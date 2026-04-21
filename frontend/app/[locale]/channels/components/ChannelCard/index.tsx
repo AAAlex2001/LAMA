@@ -6,6 +6,11 @@ import SettingsIcon from '@/components/icons/settings-icon';
 import TrashIcon from '@/components/icons/trash-icon';
 import MathOperationsIcon from '@/components/icons/math-operations-icon';
 import BackupOutlineIcon from '@/components/icons/backup-outline-icon';
+import WelcomeIcon from '@/components/icons/welcome-icon';
+import QuickCommandsIcon from '@/components/icons/quick-commands-icon';
+import AutoRepliesIcon from '@/components/icons/auto-replies-icon';
+import AntifloodIcon from '@/components/icons/antiflood-icon';
+import AntispamIcon from '@/components/icons/antispam-icon';
 import styles from './styles.module.scss';
 
 interface ChannelCardProps {
@@ -56,22 +61,68 @@ const ChannelCard: FC<ChannelCardProps> = ({ channel, onSettings, onDelete }) =>
         )}
       </div>
 
-      {(channel.captcha_enabled || channel.backup_mode !== 'DISABLED') && (
-        <div className={styles.features}>
-          {channel.captcha_enabled && (
-            <div className={styles.featureItem}>
-              <span className={styles.featureText}>Капча</span>
-              <MathOperationsIcon width={20} height={20} color="#B0B4B8" />
-            </div>
-          )}
-          {channel.backup_mode !== 'DISABLED' && (
-            <div className={styles.featureItem}>
-              <span className={styles.featureText}>Резервное копирование</span>
-              <BackupOutlineIcon width={20} height={20} color="#B0B4B8" />
-            </div>
-          )}
-        </div>
-      )}
+      {(() => {
+        const antiflood =
+          !!(channel.flood_message_limit && channel.flood_interval_seconds);
+        const antispam = channel.link_filter_mode && channel.link_filter_mode !== 'DISABLED';
+        const hasAny =
+          channel.captcha_enabled ||
+          channel.backup_mode !== 'DISABLED' ||
+          channel.welcome_enabled ||
+          channel.commands_enabled ||
+          channel.auto_reply_enabled ||
+          antiflood ||
+          antispam;
+
+        if (!hasAny) return null;
+
+        return (
+          <div className={styles.features}>
+            {channel.captcha_enabled && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Капча</span>
+                <MathOperationsIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {channel.backup_mode !== 'DISABLED' && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Резервное копирование</span>
+                <BackupOutlineIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {channel.welcome_enabled && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Приветствие</span>
+                <WelcomeIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {channel.commands_enabled && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Быстрые команды</span>
+                <QuickCommandsIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {channel.auto_reply_enabled && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Автоответы</span>
+                <AutoRepliesIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {antiflood && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Антифлуд</span>
+                <AntifloodIcon width={20} height={20} color="#B0B4B8" />
+              </div>
+            )}
+            {antispam && (
+              <div className={styles.featureItem}>
+                <span className={styles.featureText}>Антиспам</span>
+                <AntispamIcon width={19} height={18} color="#B0B4B8" />
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div className={styles.actions}>
         <button className={`${styles.actionBtn} ${styles.actionBtnBlue}`} onClick={() => onSettings(channel)}>
