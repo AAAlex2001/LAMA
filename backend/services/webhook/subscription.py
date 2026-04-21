@@ -25,9 +25,10 @@ from backend.schemas.inbox.enums import (
     EventType,
     EventStatus,
 )
+from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.bot import TriggerService
 from backend.services.bot.bot_settings import BotSettingsService
-from backend.services.inbox.action_service import InboxActionService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
@@ -230,22 +231,22 @@ class SubscriptionHandler:
                     link_id = db_link.id
                     link_name = db_link.name
 
-            inbox_service = InboxActionService(self.db)
-            await inbox_service.create_event({
-                "owner_id": self.bot_model.owner_id,
-                "category": InboxCategory.MODERATION,
-                "entity_type": EntityType.CHANNEL,
-                "event_type": EventType.CHANNEL_JOIN_REQUEST,
-                "bot_id": self.bot_model.id,
-                "channel_id": channel_id,
-                "tg_user_id": chat_member.from_user.id,
-                "tg_username": chat_member.from_user.username,
-                "status": EventStatus.PROCESSED,
-                "description": (
+            event_service = InboxEventService(self.db)
+            await event_service.create_event(InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=InboxCategory.MODERATION,
+                entity_type=EntityType.CHANNEL,
+                event_type=EventType.CHANNEL_JOIN_REQUEST,
+                bot_id=self.bot_model.id,
+                channel_id=channel_id,
+                tg_user_id=chat_member.from_user.id,
+                tg_username=chat_member.from_user.username,
+                status=EventStatus.PROCESSED,
+                description=(
                     f"@{chat_member.from_user.username or chat_member.from_user.id} "
                     f"вступил в {chat_member.chat.title}"
                 ),
-                "payload": {
+                payload={
                     "join_state": "accepted",
                     "requires_approval": False,
                     "link_id": link_id,
@@ -254,7 +255,7 @@ class SubscriptionHandler:
                     "chat_title": chat_member.chat.title,
                     "first_name": chat_member.from_user.first_name,
                 },
-            })
+            ))
         except Exception as e:
             logger.error(f"Failed to create link_join inbox event: {e}", exc_info=True)
 

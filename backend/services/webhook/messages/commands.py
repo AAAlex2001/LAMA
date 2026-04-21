@@ -9,8 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.bot import BotCommandService, ModerationTriggerService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.utils import build_keyboard
-from backend.services.inbox.action_service import InboxActionService
+from backend.services.direct.message_service import DirectMessageService
+from backend.services.inbox.event_service import InboxEventService
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
+from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id, get_channel
 from backend.celery.tasks import send_claim_messages, send_claim_to_admins
 from backend.utils.media import is_video_url, is_document_url
@@ -69,6 +71,29 @@ class CommandProcessor:
         self.db.add(msg)
         await self.db.flush()
 
+    async def save_outgoing_if_dm(
+        self,
+        chat_id: int,
+        tg_message: Optional[Message],
+        fallback_type: MessageType,
+        fallback_media_url: Optional[str],
+    ) -> None:
+        """Сохранить исходящее сообщение бота в BotMessage (только DM)."""
+        if not tg_message or chat_id <= 0:
+            return
+        try:
+            direct_service = DirectMessageService(self.db)
+            await direct_service.save_outgoing_message(
+                bot_id=self.bot_model.id,
+                tg_chat_id=chat_id,
+                tg_message=tg_message,
+                fallback_type=fallback_type,
+                fallback_media_url=fallback_media_url,
+            )
+            await self.db.flush()
+        except Exception as e:
+            logger.error(f"Failed to save outgoing command response: {e}", exc_info=True)
+
     def get_chat_display_name(self, message: Message) -> str:
         """Получить читаемое имя чата для описания события."""
         if message.chat.type == "private":
@@ -102,23 +127,23 @@ class CommandProcessor:
         handled: bool,
     ) -> None:
         """Записать использование команды в inbox."""
-        inbox_service = InboxActionService(self.db)
+        event_service = InboxEventService(self.db)
         channel_obj = await self.resolve_channel(message.chat.id)
         channel_id = channel_obj.id if channel_obj else None
         chat_name = self.get_chat_display_name(message)
 
-        await inbox_service.create_event(event_data={
-            "owner_id": self.bot_model.owner_id,
-            "category": InboxCategory.AUTOMATION,
-            "entity_type": EntityType.BOT,
-            "event_type": EventType.BOT_COMMAND,
-            "bot_id": self.bot_model.id,
-            "channel_id": channel_id,
-            "tg_user_id": message.from_user.id if message.from_user else None,
-            "tg_username": message.from_user.username if message.from_user else None,
-            "status": EventStatus.NEW,
-            "description": f"Команда {command_text} вызвана в {chat_name}",
-            "payload": {
+        await event_service.create_event(InboxEventCreate(
+            owner_id=self.bot_model.owner_id,
+            category=InboxCategory.AUTOMATION,
+            entity_type=EntityType.BOT,
+            event_type=EventType.BOT_COMMAND,
+            bot_id=self.bot_model.id,
+            channel_id=channel_id,
+            tg_user_id=message.from_user.id if message.from_user else None,
+            tg_username=message.from_user.username if message.from_user else None,
+            status=EventStatus.NEW,
+            description=f"Команда {command_text} вызвана в {chat_name}",
+            payload={
                 "command": command_text,
                 "full_text": text_content,
                 "message_id": message.message_id,
@@ -126,8 +151,8 @@ class CommandProcessor:
                 "chat_title": message.chat.title,
                 "chat_username": message.chat.username,
                 "handled": handled,
-            }
-        })
+            },
+        ))
 
     async def send_response(
         self,
@@ -218,13 +243,20 @@ class CommandProcessor:
                     prepared_rows.append(out_row)
             buttons = {"buttons": prepared_rows} if prepared_rows else None
 
-        await self.send_response(
+        sent_message = await self.send_response(
             chat_id=message.chat.id,
             text=text,
             media_url=command.response_media_url,
             media_urls=getattr(command, "response_media_urls", None),
             media_type=command.response_media_type,
             buttons=buttons,
+        )
+
+        await self.save_outgoing_if_dm(
+            chat_id=message.chat.id,
+            tg_message=sent_message,
+            fallback_type=command.response_media_type or MessageType.TEXT,
+            fallback_media_url=command.response_media_url,
         )
 
     async def send_claim_admin(
@@ -267,21 +299,21 @@ class CommandProcessor:
                         queue="default",
                     )
             else:
-                inbox_service = InboxActionService(self.db)
+                event_service = InboxEventService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
-                await inbox_service.create_event(event_data={
-                    "owner_id": self.bot_model.owner_id,
-                    "category": InboxCategory.AUTOMATION,
-                    "entity_type": EntityType.BOT,
-                    "event_type": EventType.BOT_COMMAND,
-                    "bot_id": self.bot_model.id,
-                    "channel_id": channel_id,
-                    "tg_user_id": message.from_user.id if message.from_user else None,
-                    "tg_username": message.from_user.username if message.from_user else None,
-                    "status": EventStatus.NEW,
-                    "description": f"Жалоба по команде {command.command}",
-                    "payload": {
+                await event_service.create_event(InboxEventCreate(
+                    owner_id=self.bot_model.owner_id,
+                    category=InboxCategory.AUTOMATION,
+                    entity_type=EntityType.BOT,
+                    event_type=EventType.BOT_COMMAND,
+                    bot_id=self.bot_model.id,
+                    channel_id=channel_id,
+                    tg_user_id=message.from_user.id if message.from_user else None,
+                    tg_username=message.from_user.username if message.from_user else None,
+                    status=EventStatus.NEW,
+                    description=f"Жалоба по команде {command.command}",
+                    payload={
                         "chat_id": message.chat.id,
                         "message_id": message.message_id,
                         "claim_target": claim_target,
@@ -289,11 +321,17 @@ class CommandProcessor:
                         "command": command.command,
                         "full_text": text_content,
                     },
-                })
+                ))
 
-            await self.telegram_bot.send_message(
+            sent_message = await self.telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text="Жалоба отправлена администраторам.",
+            )
+            await self.save_outgoing_if_dm(
+                chat_id=message.chat.id,
+                tg_message=sent_message,
+                fallback_type=MessageType.TEXT,
+                fallback_media_url=None,
             )
         except Exception as e:
             logger.error(f"Failed to send claim: {e}", exc_info=True)
@@ -336,12 +374,19 @@ class CommandProcessor:
                 f"Для того, чтобы войти в аккаунт, нажмите на кнопку ниже:"
             )
 
-            await self.telegram_bot.send_message(
+            sent_message = await self.telegram_bot.send_message(
                 chat_id=message.chat.id,
                 text=response_text,
                 parse_mode="HTML",
                 reply_markup=keyboard,
                 reply_to_message_id=message.message_id
+            )
+
+            await self.save_outgoing_if_dm(
+                chat_id=message.chat.id,
+                tg_message=sent_message,
+                fallback_type=MessageType.TEXT,
+                fallback_media_url=None,
             )
 
             return
@@ -364,7 +409,7 @@ class CommandProcessor:
             )
 
             try:
-                inbox_service = InboxActionService(self.db)
+                event_service = InboxEventService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
                 cmd = command_text.lower()
@@ -378,23 +423,23 @@ class CommandProcessor:
                     is_unbanned = cmd in ("/unban", "/unmute")
                     ban_type = "mute" if cmd in ("/mute", "/unmute") else "ban"
 
-                    await inbox_service.create_event(event_data={
-                        "owner_id": self.bot_model.owner_id,
-                          "category": InboxCategory.SYSTEM,
-                        "entity_type": EntityType.CHANNEL,
-                        "event_type": EventType.CHANNEL_BAN,
-                        "bot_id": self.bot_model.id,
-                        "channel_id": channel_id,
-                        "tg_user_id": target_user_id,
-                        "tg_username": target_name,
-                        "status": EventStatus.NEW,
-                        "description": (
+                    await event_service.create_event(InboxEventCreate(
+                        owner_id=self.bot_model.owner_id,
+                        category=InboxCategory.SYSTEM,
+                        entity_type=EntityType.CHANNEL,
+                        event_type=EventType.CHANNEL_BAN,
+                        bot_id=self.bot_model.id,
+                        channel_id=channel_id,
+                        tg_user_id=target_user_id,
+                        tg_username=target_name,
+                        status=EventStatus.NEW,
+                        description=(
                             f"{'Разбан' if is_unbanned else 'Бан'} "
                             f"{'(mute)' if ban_type == 'mute' else ''} "
                             f"{target_name or target_user_id} "
                             f"командой {command_text}"
                         ).strip(),
-                        "payload": {
+                        payload={
                             "ban_type": ban_type,
                             "is_unbanned": is_unbanned,
                             "duration_minutes": duration_minutes,
@@ -406,8 +451,8 @@ class CommandProcessor:
                             "message_id": message.message_id,
                             "issuer_user_id": message.from_user.id if message.from_user else None,
                             "issuer_username": message.from_user.username if message.from_user else None,
-                        }
-                    })
+                        },
+                    ))
                 else:
                     await self.create_command_inbox_event(
                         message=message,
@@ -450,22 +495,22 @@ class CommandProcessor:
             if triggered_count > 0:
                 trigger_reason = trigger_summary.build_reason()
                 try:
-                    inbox_service = InboxActionService(self.db)
+                    event_service = InboxEventService(self.db)
                     channel_obj = await self.resolve_channel(message.chat.id)
                     channel_id = channel_obj.id if channel_obj else None
 
-                    await inbox_service.create_event(event_data={
-                        "owner_id": self.bot_model.owner_id,
-                        "category": InboxCategory.AUTOMATION,
-                        "entity_type": EntityType.BOT,
-                        "event_type": EventType.SYSTEM_TRIGGER,
-                        "bot_id": self.bot_model.id,
-                        "channel_id": channel_id,
-                        "tg_user_id": message.from_user.id if message.from_user else None,
-                        "tg_username": message.from_user.username if message.from_user else None,
-                        "status": EventStatus.NEW,
-                        "description": trigger_reason or f"Сработал триггер ({triggered_count}) для команды {command_text} в чате {message.chat.id}",
-                        "payload": {
+                    await event_service.create_event(InboxEventCreate(
+                        owner_id=self.bot_model.owner_id,
+                        category=InboxCategory.AUTOMATION,
+                        entity_type=EntityType.BOT,
+                        event_type=EventType.SYSTEM_TRIGGER,
+                        bot_id=self.bot_model.id,
+                        channel_id=channel_id,
+                        tg_user_id=message.from_user.id if message.from_user else None,
+                        tg_username=message.from_user.username if message.from_user else None,
+                        status=EventStatus.NEW,
+                        description=trigger_reason or f"Сработал триггер ({triggered_count}) для команды {command_text} в чате {message.chat.id}",
+                        payload={
                             "chat_id": message.chat.id,
                             "message_id": message.message_id,
                             "command": command_text,
@@ -475,7 +520,7 @@ class CommandProcessor:
                             "reason": trigger_reason,
                             "reason_source": "trigger",
                         },
-                    })
+                    ))
                 except Exception as e:
                     logger.error(f"Failed to create inbox event for trigger execution on command: {e}", exc_info=True)
 

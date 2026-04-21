@@ -10,6 +10,7 @@ from aiogram.exceptions import TelegramAPIError
 
 from backend.models.bots import Bot as BotModel, MessageType
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.direct.message_service import DirectMessageService
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,18 @@ class BotWelcomeService:
                 message_thread_id=message_thread_id,
             )
             logger.info(f"Welcome message sent to user {user_id} in chat {chat_id}")
+
+            if message and chat_id > 0:
+                direct_service = DirectMessageService(self.db)
+                await direct_service.save_outgoing_message(
+                    bot_id=bot_model.id,
+                    tg_chat_id=chat_id,
+                    tg_message=message,
+                    fallback_type=bot_model.welcome_media_type or MessageType.TEXT,
+                    fallback_media_url=bot_model.welcome_media_url,
+                )
+                await self.db.flush()
+
             return message
         except TelegramAPIError as e:
             logger.warning(f"Failed to send welcome to user {user_id}: {e}")

@@ -11,6 +11,7 @@ from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.bot_provider import get_bot_info
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -18,6 +19,8 @@ from backend.models.bots import (
     TriggerType,
     CaptchaMode,
 )
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
+from backend.schemas.inbox.events import InboxEventCreate
 from backend.utils import build_keyboard
 from backend.celery.tasks import captcha_timeout_check
 
@@ -80,6 +83,55 @@ class MemberProcessor:
                     "last_name": new_member.last_name,
                 }
             )
+
+            await self.create_member_event(
+                event_type=EventType.CHANNEL_MEMBER_JOINED,
+                message=message,
+                channel=channel,
+                member=new_member,
+                description_verb="вступил(а) в",
+            )
+
+    async def create_member_event(
+        self,
+        event_type: EventType,
+        message: Message,
+        channel,
+        member,
+        description_verb: str,
+    ) -> None:
+        """Записать InboxEvent о вступлении/выходе участника."""
+        try:
+            event_service = InboxEventService(self.db)
+            chat_title = message.chat.title or f"чат {message.chat.id}"
+            member_display = (
+                f"@{member.username}" if member.username
+                else (member.first_name or str(member.id))
+            )
+            await event_service.create_event(InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=InboxCategory.SYSTEM,
+                entity_type=EntityType.CHANNEL,
+                event_type=event_type,
+                bot_id=self.bot_model.id,
+                channel_id=channel.id if channel else None,
+                tg_user_id=member.id,
+                tg_username=member.username,
+                status=EventStatus.NEW,
+                description=f"{member_display} {description_verb} {chat_title}",
+                payload={
+                    "message_id": message.message_id,
+                    "chat_id": message.chat.id,
+                    "chat_title": message.chat.title,
+                    "chat_type": message.chat.type,
+                    "user_id": member.id,
+                    "username": member.username,
+                    "first_name": member.first_name,
+                    "last_name": member.last_name,
+                },
+            ))
+        except Exception as e:
+            logger.error(f"Failed to create member event: {e}", exc_info=True)
 
     async def send_group_captcha(self, message: Message, new_member, channel=None) -> None:
         """Отправить капчу в группе после вступления (только supergroups)."""
@@ -256,4 +308,15 @@ class MemberProcessor:
                 "first_name": left_member.first_name,
                 "last_name": left_member.last_name,
             }
+        )
+
+        channel = await get_channel_by_telegram_id(
+            self.db, message.chat.id, bot_id=self.bot_model.id
+        )
+        await self.create_member_event(
+            event_type=EventType.CHANNEL_MEMBER_LEFT,
+            message=message,
+            channel=channel,
+            member=left_member,
+            description_verb="покинул(а)",
         )

@@ -223,6 +223,14 @@ class ChannelGroup(Base):
         back_populates="channel",
         cascade="all, delete-orphan"
     )
+
+    @property
+    def welcome_enabled(self) -> bool:
+        from sqlalchemy import inspect
+        state = inspect(self)
+        if "bot" in state.unloaded:
+            return False
+        return bool(self.bot and self.bot.welcome_enabled)
     info_messages = relationship(
         "InformationalMessage",
         back_populates="channel",

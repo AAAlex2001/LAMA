@@ -107,6 +107,7 @@ async def execute_specific_action(
 
     action_type values:
       mark_resolved   - mark as processed
+      ignore          - mark as ignored
       reply           - return bot_id/tg_user_id/chat_id for Direct
       accept          - accept join request
       reject          - reject join request

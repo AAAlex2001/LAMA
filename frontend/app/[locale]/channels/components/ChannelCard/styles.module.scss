@@ -7,6 +7,9 @@
   gap: 16px;
   background: #ffffff;
   border-radius: 8px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .info {
@@ -86,6 +89,10 @@
   font-size: 16px;
   line-height: 19px;
   color: #B0B4B8;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .description {
@@ -93,18 +100,21 @@
   font-size: 14px;
   line-height: 17px;
   color: #CED2D6;
+  width: 100%;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .features {
   display: flex;
   flex-direction: row;
-  justify-content: space-between;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 16px;
   width: 100%;
 }
 
@@ -113,6 +123,7 @@
   flex-direction: row;
   align-items: center;
   gap: 5px;
+  min-width: 0;
 }
 
 .featureText {
@@ -120,6 +131,7 @@
   font-size: 16px;
   line-height: 19px;
   color: #B0B4B8;
+  white-space: nowrap;
 }
 
 .actions {

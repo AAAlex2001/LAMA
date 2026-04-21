@@ -17,7 +17,8 @@ from backend.services.channel import (
 )
 from backend.models.channels import ActionType
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
-from backend.services.inbox.action_service import InboxActionService
+from backend.schemas.inbox.events import InboxEventCreate
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import (
@@ -214,7 +215,7 @@ class ModerationHandler:
             return
 
         try:
-            inbox_service = InboxActionService(self.db)
+            event_service = InboxEventService(self.db)
             message_text = (message.text or message.caption or "").strip()
             if len(message_text) > 500:
                 message_text = f"{message_text[:497]}..."
@@ -235,19 +236,19 @@ class ModerationHandler:
             if reason_context:
                 payload["reason_context"] = reason_context
 
-            await inbox_service.create_event({
-                "owner_id": self.bot_model.owner_id,
-                "category": InboxCategory.SYSTEM,
-                "entity_type": EntityType.CHANNEL,
-                "event_type": EventType.CHANNEL_BAN,
-                "bot_id": self.bot_model.id,
-                "channel_id": channel.id,
-                "tg_user_id": message.from_user.id,
-                "tg_username": message.from_user.username,
-                "status": EventStatus.NEW,
-                "description": message_text or f"Автомодерация пользователя {message.from_user.id}",
-                "payload": payload,
-            })
+            await event_service.create_event(InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=InboxCategory.SYSTEM,
+                entity_type=EntityType.CHANNEL,
+                event_type=EventType.CHANNEL_BAN,
+                bot_id=self.bot_model.id,
+                channel_id=channel.id,
+                tg_user_id=message.from_user.id,
+                tg_username=message.from_user.username,
+                status=EventStatus.NEW,
+                description=message_text or f"Автомодерация пользователя {message.from_user.id}",
+                payload=payload,
+            ))
         except Exception as e:
             logger.error("Failed to create moderation inbox event: %s", e, exc_info=True)
 

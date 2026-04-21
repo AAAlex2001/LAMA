@@ -14,8 +14,9 @@ from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
+from backend.services.bot.bot_triggers import BotTriggerService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.bot_provider import resolve_by_token
-from backend.services.bot import TriggerService
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 class InboxActionService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.event_service = InboxEventService(db)
 
     async def execute_bulk_action(
         self,
@@ -163,14 +165,6 @@ class InboxActionService:
         self.db.add(notification)
         return notification
 
-    async def create_event(self, event_data: dict) -> InboxEvent:
-        """Создать событие инбокса. Вызывается из webhook-обработчиков."""
-        event = InboxEvent(**event_data)
-        self.db.add(event)
-        await self.db.flush()
-        await self.db.refresh(event)
-        return event
-
     async def get_event(self, event_id: int, owner_id: int) -> InboxEvent:
         """Получить событие по ID с проверкой владельца."""
         result = await self.db.execute(
@@ -229,7 +223,7 @@ class InboxActionService:
     ) -> None:
         """Запустить триггер при принятии/отклонении заявки из инбокса."""
         try:
-            trigger_service = TriggerService(self.db)
+            trigger_service = BotTriggerService(self.db)
             telegram_bot = resolve_by_token(bot.token)
             await trigger_service.fire_event(
                 bot_id=bot.id,
@@ -257,6 +251,7 @@ class InboxActionService:
 
         Поддерживаемые action_type:
           mark_resolved   — пометить как обработанное (без вызова Telegram)
+          ignore          — пометить как проигнорированное (без вызова Telegram)
           reply           — вернуть данные для перехода в Direct чат (без вызова Telegram)
           accept          — принять заявку на вступление в канал
           reject          — отклонить заявку на вступление в канал
@@ -273,6 +268,12 @@ class InboxActionService:
             self.mark_payload_handled(event)
             await self.db.flush()
             return SpecificActionResult(status="resolved")
+
+        if action_type == "ignore":
+            event.status = EventStatus.IGNORED
+            self.mark_payload_handled(event)
+            await self.db.flush()
+            return SpecificActionResult(status="ignored")
 
         if action_type == "reply":
             event.status = EventStatus.PROCESSED
@@ -332,12 +333,31 @@ class InboxActionService:
                 return SpecificActionResult(status=join_state)
 
             if action_type == "unban":
-                channel = (
-                    await self.db.get(ChannelGroup, event.channel_id)
-                    if event.channel_id else None
-                )
+                if not event.channel_id:
+                    dm_chat_id = (event.payload or {}).get("chat_id")
+                    if dm_chat_id and event.bot_id:
+                        await self.db.execute(
+                            update(DirectChat)
+                            .where(
+                                DirectChat.bot_id == event.bot_id,
+                                DirectChat.tg_chat_id == dm_chat_id,
+                            )
+                            .values(is_blocked=False)
+                        )
+                    new_payload = dict(event.payload or {})
+                    new_payload["is_unbanned"] = True
+                    event.payload = new_payload
+                    event.status = EventStatus.PROCESSED
+                    self.mark_payload_handled(event)
+                    await self.db.flush()
+                    return SpecificActionResult(status="unbanned")
+
+                channel = await self.db.get(ChannelGroup, event.channel_id)
                 if not (channel and channel.telegram_id and event.tg_user_id):
-                    raise HTTPException(status_code=404, detail="Event not found")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Недостаточно данных для разблокировки",
+                    )
 
                 if str(channel.telegram_id).startswith("-"):
                     try:
@@ -457,12 +477,25 @@ class InboxActionService:
                         "delete_message: в payload события %s отсутствует chat_id или message_id",
                         event.id,
                     )
-                    raise HTTPException(status_code=404, detail="Event not found")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Для этого события не сохранён message_id — удалить нельзя",
+                    )
 
-                await client.delete_message(
-                    chat_id=msg_chat_id,
-                    message_id=msg_id,
-                )
+                try:
+                    await client.delete_message(
+                        chat_id=msg_chat_id,
+                        message_id=msg_id,
+                    )
+                except TelegramAPIError as e:
+                    err_text = str(e).lower()
+                    if "message to delete not found" in err_text or "message can't be deleted" in err_text:
+                        logger.info(
+                            "delete_message: сообщение %s/%s уже недоступно: %s",
+                            msg_chat_id, msg_id, e,
+                        )
+                    else:
+                        raise
                 event.status = EventStatus.PROCESSED
                 self.mark_payload_handled(event)
                 await self.db.flush()
@@ -539,13 +572,18 @@ class InboxActionService:
                 await self.db.flush()
                 return SpecificActionResult(status="ban_updated", affected_channels=affected)
 
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error(
                 "Ошибка при выполнении %s для события %s: %s",
                 action_type, event.id, e,
                 exc_info=True,
             )
-            raise HTTPException(status_code=404, detail="Event not found")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Ошибка Telegram при выполнении {action_type}: {e}",
+            )
 
         logger.warning("Неизвестный action_type '%s' для события %s.", action_type, event.id)
-        raise HTTPException(status_code=404, detail="Event not found")
+        raise HTTPException(status_code=400, detail=f"Unknown action_type: {action_type}")

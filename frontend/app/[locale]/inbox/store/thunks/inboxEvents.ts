@@ -11,6 +11,11 @@ export type EventType =
   | 'channel_join_request'
   | 'channel_link_join'
   | 'channel_ban'
+  | 'channel_member_joined'
+  | 'channel_member_left'
+  | 'channel_title_changed'
+  | 'channel_photo_changed'
+  | 'channel_pinned_message'
   | 'system_notification'
   | 'system_trigger'
   | 'system_autoreply'
@@ -76,6 +81,7 @@ export interface SpecificActionParams {
 
 export type InboxActionType =
   | 'mark_resolved'
+  | 'ignore'
   | 'reply'
   | 'accept'
   | 'reject'

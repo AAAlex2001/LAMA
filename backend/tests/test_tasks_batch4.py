@@ -304,8 +304,8 @@ class TestTriggerModerationEvents:
         inbox_service = AsyncMock()
 
         with patch.object(service, "action_remove_from_group", AsyncMock(return_value=True)) as action_remove:
-            with patch("backend.services.channel.utils.query_utils.get_channel_by_telegram_id", AsyncMock(return_value=channel)):
-                with patch("backend.services.inbox.action_service.InboxActionService", return_value=inbox_service):
+            with patch("backend.services.bot.bot_triggers.get_channel_by_telegram_id", AsyncMock(return_value=channel)):
+                with patch("backend.services.bot.bot_triggers.InboxEventService", return_value=inbox_service):
                     executed = await service.execute(
                         trigger=trigger,
                         user_id=42,
@@ -324,13 +324,13 @@ class TestTriggerModerationEvents:
         inbox_service.create_event.assert_awaited_once()
 
         event_data = inbox_service.create_event.await_args.args[0]
-        assert event_data["event_type"] == EventType.CHANNEL_BAN
-        assert event_data["channel_id"] == 5
-        assert event_data["tg_user_id"] == 42
-        assert event_data["payload"]["action"] == TriggerActionType.REMOVE_FROM_GROUP.value
-        assert event_data["payload"]["ban_type"] == "kick"
-        assert event_data["payload"]["command"] == "/kickme"
-        assert event_data["payload"]["reason_source"] == "trigger"
+        assert event_data.event_type == EventType.CHANNEL_BAN
+        assert event_data.channel_id == 5
+        assert event_data.tg_user_id == 42
+        assert event_data.payload["action"] == TriggerActionType.REMOVE_FROM_GROUP.value
+        assert event_data.payload["ban_type"] == "kick"
+        assert event_data.payload["command"] == "/kickme"
+        assert event_data.payload["reason_source"] == "trigger"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

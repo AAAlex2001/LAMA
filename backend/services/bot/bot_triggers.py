@@ -16,8 +16,14 @@ from sqlalchemy.orm import joinedload
 from backend.models.bots import (
     Bot as BotModel, Trigger, ScheduledTriggerTask,
     TriggerType, TriggerActionType, TriggerChatType,
+    MessageType,
 )
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
+from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+from backend.services.direct.message_service import DirectMessageService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.bot_provider import get_bot_info
 from backend.utils.media import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
@@ -223,6 +229,7 @@ class BotTriggerService:
 
         action_data = dict(trigger.action_data or {})
         action_data["context"] = context or {}
+        action_data["_bot_id"] = trigger.bot_id
 
         action_map = {
             TriggerActionType.SEND_MESSAGE: self.action_send_message,
@@ -303,7 +310,8 @@ class BotTriggerService:
         bot_info = await get_bot_info(bot.bot.token)
         text = ShortcodeProcessor.process(text, self.build_shortcode_ctx(user_id, data, bot_info))
         try:
-            await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")), _group_weight=0)
+            tg_message = await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")), _group_weight=0)
+            await self.save_trigger_message(data, chat_id, tg_message, MessageType.TEXT, None)
             return True
         except TelegramRetryAfter as e:
             logger.warning("Trigger rate limited for chat %s: %ss", chat_id, e.retry_after)
@@ -336,7 +344,13 @@ class BotTriggerService:
                         media_group.append(InputMediaDocument(media=url, caption=cap))
                     else:
                         media_group.append(InputMediaPhoto(media=url, caption=cap))
-                await bot.send_media_group(chat_id=chat_id, media=media_group, _group_weight=0)
+                tg_responses = await bot.send_media_group(chat_id=chat_id, media=media_group, _group_weight=0)
+                for idx, tg_response in enumerate(tg_responses or []):
+                    url = media_urls[idx] if idx < len(media_urls) else None
+                    fallback_type = MessageType.VIDEO if url and is_video_url(url) else (
+                        MessageType.DOCUMENT if url and is_document_url(url) else MessageType.PHOTO
+                    )
+                    await self.save_trigger_message(data, chat_id, tg_response, fallback_type, url)
                 return True
 
             media_type = data.get("media_type", "PHOTO")
@@ -344,12 +358,15 @@ class BotTriggerService:
             if not method_name:
                 return False
             method = getattr(bot, method_name)
-            await method(
+            tg_message = await method(
                 chat_id=chat_id,
                 **{media_type.lower(): media_urls[0]},
                 caption=caption,
                 reply_markup=build_keyboard(data.get("buttons")),
                 _group_weight=0,
+            )
+            await self.save_trigger_message(
+                data, chat_id, tg_message, MessageType[media_type], media_urls[0]
             )
             return True
         except TelegramRetryAfter as e:
@@ -357,6 +374,33 @@ class BotTriggerService:
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
         return False
+
+    async def save_trigger_message(
+        self,
+        data: dict,
+        chat_id: int,
+        tg_message,
+        fallback_type: MessageType,
+        fallback_media_url: Optional[str],
+    ) -> None:
+        """Сохранить исходящее сообщение триггера в BotMessage (только DM)."""
+        if not tg_message or chat_id <= 0:
+            return
+        bot_id = data.get("_bot_id")
+        if not bot_id:
+            return
+        try:
+            direct_service = DirectMessageService(self.db)
+            await direct_service.save_outgoing_message(
+                bot_id=bot_id,
+                tg_chat_id=chat_id,
+                tg_message=tg_message,
+                fallback_type=fallback_type,
+                fallback_media_url=fallback_media_url,
+            )
+            await self.db.flush()
+        except Exception as e:
+            logger.error(f"Failed to save trigger message in BotMessage: {e}", exc_info=True)
 
     async def action_mute(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: заглушить пользователя."""
@@ -418,10 +462,6 @@ class BotTriggerService:
         chat_id: int,
         context: Optional[Dict[str, Any]],
     ) -> None:
-        from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
-        from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-        from backend.services.inbox.action_service import InboxActionService
-
         channel = await get_channel_by_telegram_id(self.db, chat_id, bot_id=trigger.bot_id)
         if not channel:
             return
@@ -487,20 +527,20 @@ class BotTriggerService:
         if isinstance(context_data.get("command"), str) and context_data["command"].strip():
             payload["command"] = context_data["command"].strip()
 
-        inbox_service = InboxActionService(self.db)
-        await inbox_service.create_event({
-            "owner_id": channel.owner_id,
-            "category": InboxCategory.SYSTEM,
-            "entity_type": EntityType.CHANNEL,
-            "event_type": EventType.CHANNEL_BAN,
-            "bot_id": trigger.bot_id,
-            "channel_id": channel.id,
-            "tg_user_id": user_id,
-            "tg_username": username,
-            "status": EventStatus.NEW,
-            "description": description,
-            "payload": payload,
-        })
+        event_service = InboxEventService(self.db)
+        await event_service.create_event(InboxEventCreate(
+            owner_id=channel.owner_id,
+            category=InboxCategory.SYSTEM,
+            entity_type=EntityType.CHANNEL,
+            event_type=EventType.CHANNEL_BAN,
+            bot_id=trigger.bot_id,
+            channel_id=channel.id,
+            tg_user_id=user_id,
+            tg_username=username,
+            status=EventStatus.NEW,
+            description=description,
+            payload=payload,
+        ))
 
     def matches_chat_type(self, trigger: Trigger, chat_type: Optional[str]) -> bool:
         """Проверить совместимость типа чата с триггером."""

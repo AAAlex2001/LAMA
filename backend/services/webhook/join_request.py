@@ -23,13 +23,16 @@ from backend.models.bots import (
     TriggerType,
     ApprovalMode,
     CaptchaMode,
+    MessageType,
 )
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
-from backend.services.inbox.action_service import InboxActionService
+from backend.services.direct.message_service import DirectMessageService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
+from backend.schemas.inbox.events import InboxEventCreate
 
 logger = logging.getLogger(__name__)
 
@@ -147,13 +150,23 @@ class JoinRequestHandler:
 
     async def notify_pending(self, telegram_bot, user_id: int, chat_title: str) -> None:
         try:
-            await telegram_bot.send_message(
+            tg_message = await telegram_bot.send_message(
                 chat_id=user_id,
                 text=(
                     f"📩 Ваша заявка на вступление в «{chat_title}» отправлена.\n"
                     f"Ожидайте одобрения администратором."
                 ),
             )
+            if tg_message:
+                direct_service = DirectMessageService(self.db)
+                await direct_service.save_outgoing_message(
+                    bot_id=self.bot_model.id,
+                    tg_chat_id=user_id,
+                    tg_message=tg_message,
+                    fallback_type=MessageType.TEXT,
+                    fallback_media_url=None,
+                )
+                await self.db.flush()
         except TelegramAPIError as e:
             logger.warning(f"Failed to send pending message: {e}")
 
@@ -284,22 +297,22 @@ class JoinRequestHandler:
             else:
                 category = InboxCategory.MODERATION
 
-            inbox_service = InboxActionService(self.db)
-            await inbox_service.create_event({
-                "owner_id": self.bot_model.owner_id,
-                "category": category,
-                "entity_type": EntityType.CHANNEL,
-                "event_type": EventType.CHANNEL_JOIN_REQUEST,
-                "bot_id": self.bot_model.id,
-                "channel_id": channel_id,
-                "tg_user_id": join_request.from_user.id,
-                "tg_username": join_request.from_user.username,
-                "status": status,
-                "description": (
+            event_service = InboxEventService(self.db)
+            await event_service.create_event(InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=category,
+                entity_type=EntityType.CHANNEL,
+                event_type=EventType.CHANNEL_JOIN_REQUEST,
+                bot_id=self.bot_model.id,
+                channel_id=channel_id,
+                tg_user_id=join_request.from_user.id,
+                tg_username=join_request.from_user.username,
+                status=status,
+                description=(
                     f"Заявка от @{join_request.from_user.username or join_request.from_user.id} "
                     f"на вступление в {join_request.chat.title}"
                 ),
-                "payload": {
+                payload={
                     "join_state": join_state,
                     "requires_approval": requires_approval,
                     "link_id": link_id,
@@ -310,7 +323,7 @@ class JoinRequestHandler:
                     "chat_title": join_request.chat.title,
                     "first_name": join_request.from_user.first_name,
                 },
-            })
+            ))
         except Exception as e:
             logger.error(f"Failed to create join_request inbox event: {e}", exc_info=True)
 

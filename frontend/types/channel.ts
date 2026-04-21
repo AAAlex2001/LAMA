@@ -1,5 +1,6 @@
 export type ChannelType = 'CHANNEL' | 'GROUP' | 'SUPERGROUP';
 export type BackupMode = 'DISABLED' | 'ENABLED' | 'INSTANT' | 'POST_FACTUM';
+export type LinkFilterMode = 'DISABLED' | 'BLOCK_ALL' | 'ALLOW_TME_ONLY' | 'WHITELIST' | 'BLACKLIST';
 
 export interface Channel {
   id: number;
@@ -31,6 +32,11 @@ export interface Channel {
   night_mode_block_text: boolean;
   commands_enabled: boolean;
   enabled_commands: string[] | null;
+  auto_reply_enabled: boolean;
+  link_filter_mode: LinkFilterMode;
+  flood_message_limit: number | null;
+  flood_interval_seconds: number | null;
+  welcome_enabled: boolean;
   block_media_types: string[] | null;
   captcha_enabled: boolean;
   has_private_forwards: boolean;

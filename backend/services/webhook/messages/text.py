@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
-from backend.services.inbox.action_service import InboxActionService
+from backend.schemas.inbox.events import InboxEventCreate
+from backend.services.direct.message_service import DirectMessageService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
@@ -132,7 +134,7 @@ class TextProcessor:
         context = self.build_shortcode_context(message)
         text = ShortcodeProcessor.process(auto_reply.response_text, context)
 
-        await self.send_response(
+        sent_message = await self.send_response(
             chat_id=message.chat.id,
             text=text,
             media_url=auto_reply.response_media_url,
@@ -140,6 +142,36 @@ class TextProcessor:
             media_type=auto_reply.response_media_type,
             buttons=auto_reply.response_buttons,
         )
+
+        await self.save_outgoing_if_dm(
+            chat_id=message.chat.id,
+            tg_message=sent_message,
+            fallback_type=auto_reply.response_media_type or MessageType.TEXT,
+            fallback_media_url=auto_reply.response_media_url,
+        )
+
+    async def save_outgoing_if_dm(
+        self,
+        chat_id: int,
+        tg_message: Optional[Message],
+        fallback_type: MessageType,
+        fallback_media_url: Optional[str],
+    ) -> None:
+        """Сохранить исходящее сообщение бота в BotMessage (только DM)."""
+        if not tg_message or chat_id <= 0:
+            return
+        try:
+            direct_service = DirectMessageService(self.db)
+            await direct_service.save_outgoing_message(
+                bot_id=self.bot_model.id,
+                tg_chat_id=chat_id,
+                tg_message=tg_message,
+                fallback_type=fallback_type,
+                fallback_media_url=fallback_media_url,
+            )
+            await self.db.flush()
+        except Exception as e:
+            logger.error(f"Failed to save outgoing bot message: {e}", exc_info=True)
 
     async def process_text(
         self,
@@ -183,22 +215,22 @@ class TextProcessor:
                     logger.error(f"Failed to save system message for trigger: {e}", exc_info=True)
 
             try:
-                inbox_service = InboxActionService(self.db)
+                event_service = InboxEventService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
-                await inbox_service.create_event({
-                    "owner_id": self.bot_model.owner_id,
-                    "category": InboxCategory.AUTOMATION,
-                    "entity_type": EntityType.BOT,
-                    "event_type": EventType.SYSTEM_TRIGGER,
-                    "bot_id": self.bot_model.id,
-                    "channel_id": channel_id,
-                    "tg_user_id": message.from_user.id if message.from_user else None,
-                    "tg_username": message.from_user.username if message.from_user else None,
-                    "status": EventStatus.NEW,
-                    "description": trigger_reason or f"Сработал триггер для сообщения в чате {message.chat.id}",
-                    "payload": {
+                await event_service.create_event(InboxEventCreate(
+                    owner_id=self.bot_model.owner_id,
+                    category=InboxCategory.AUTOMATION,
+                    entity_type=EntityType.BOT,
+                    event_type=EventType.SYSTEM_TRIGGER,
+                    bot_id=self.bot_model.id,
+                    channel_id=channel_id,
+                    tg_user_id=message.from_user.id if message.from_user else None,
+                    tg_username=message.from_user.username if message.from_user else None,
+                    status=EventStatus.NEW,
+                    description=trigger_reason or f"Сработал триггер для сообщения в чате {message.chat.id}",
+                    payload={
                         "chat_id": message.chat.id,
                         "message_id": message.message_id,
                         "text": text_content,
@@ -208,7 +240,7 @@ class TextProcessor:
                         "reason": trigger_reason,
                         "reason_source": "trigger",
                     },
-                })
+                ))
             except Exception as e:
                 logger.error(f"Failed to create inbox event for trigger execution: {e}", exc_info=True)
 
@@ -243,28 +275,28 @@ class TextProcessor:
                     logger.error(f"Failed to save system message for auto-reply: {e}", exc_info=True)
 
             try:
-                inbox_service = InboxActionService(self.db)
+                event_service = InboxEventService(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
-                await inbox_service.create_event({
-                    "owner_id": self.bot_model.owner_id,
-                    "category": InboxCategory.AUTOMATION,
-                    "entity_type": EntityType.BOT,
-                    "event_type": EventType.SYSTEM_AUTOREPLY,
-                    "bot_id": self.bot_model.id,
-                    "channel_id": channel_id,
-                    "tg_user_id": message.from_user.id if message.from_user else None,
-                    "tg_username": message.from_user.username if message.from_user else None,
-                    "status": EventStatus.NEW,
-                    "description": f"Сработал автоответ для сообщения в чате {message.chat.id}",
-                    "payload": {
+                await event_service.create_event(InboxEventCreate(
+                    owner_id=self.bot_model.owner_id,
+                    category=InboxCategory.AUTOMATION,
+                    entity_type=EntityType.BOT,
+                    event_type=EventType.SYSTEM_AUTOREPLY,
+                    bot_id=self.bot_model.id,
+                    channel_id=channel_id,
+                    tg_user_id=message.from_user.id if message.from_user else None,
+                    tg_username=message.from_user.username if message.from_user else None,
+                    status=EventStatus.NEW,
+                    description=f"Сработал автоответ для сообщения в чате {message.chat.id}",
+                    payload={
                         "chat_id": message.chat.id,
                         "message_id": message.message_id,
                         "text": text_content,
                         "auto_reply_id": auto_reply.id,
                         "keywords": auto_reply.keywords,
                     },
-                })
+                ))
             except Exception as e:
                 logger.error(f"Failed to create inbox event for auto reply execution: {e}", exc_info=True)
