@@ -118,6 +118,17 @@ export interface UpdateDirectChatParams {
   unread_count?: number;
 }
 
+export interface CreateDirectChatParams {
+  bot_id: number;
+  tg_chat_id: number;
+  tg_user_id: number;
+  tg_username?: string | null;
+  tg_first_name?: string | null;
+  tg_last_name?: string | null;
+  is_pinned?: boolean;
+  is_blocked?: boolean;
+}
+
 export const fetchDirectChatsThunk = createAsyncThunk(
   'directChat/fetchChats',
   async (params: FetchDirectChatsParams, { rejectWithValue }) => {
@@ -225,6 +236,37 @@ export const sendDirectMessageThunk = createAsyncThunk(
       return response;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Ошибка отправки сообщения';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
+export const createDirectChatThunk = createAsyncThunk(
+  'directChat/createChat',
+  async (params: CreateDirectChatParams, { rejectWithValue }) => {
+    try {
+      const body = {
+        is_pinned: params.is_pinned ?? false,
+        is_blocked: params.is_blocked ?? false,
+        bot_id: params.bot_id,
+        tg_chat_id: params.tg_chat_id,
+        tg_user_id: params.tg_user_id,
+        tg_username: params.tg_username ?? '',
+        tg_first_name: params.tg_first_name ?? '',
+        tg_last_name: params.tg_last_name ?? '',
+      };
+
+      const response = await apiRequest<DirectChatResponse>(
+        `/direct/chats`,
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+        }
+      );
+
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Ошибка создания чата';
       return rejectWithValue(errorMessage);
     }
   }
