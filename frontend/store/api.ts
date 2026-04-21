@@ -10,6 +10,11 @@ interface ApiRequestOptions extends RequestInit {
   skipApiPrefix?: boolean;
 }
 
+function parseApiErrorMessage(errorData: Record<string, unknown>): string {
+  const description = errorData.detail;
+  return typeof description === 'string' ? description : 'Ошибка запроса';
+}
+
 export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
   const { skipApiPrefix, ...fetchOptions } = options;
   const url = skipApiPrefix ? endpoint : `${API_BASE_URL}${endpoint}`;
@@ -24,8 +29,8 @@ export async function apiRequest<T>(endpoint: string, options: ApiRequestOptions
   const response = await fetch(url, { ...fetchOptions, headers });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || errorData.message || 'Ошибка запроса');
+    const errorData = (await response.json().catch(() => ({}))) as Record<string, unknown>;
+    throw new Error(parseApiErrorMessage(errorData));
   }
 
   if (response.status === 204) return undefined as T;
