@@ -130,90 +130,20 @@ const ListHeader: FC<ListHeaderProps> = ({
     }
   };
 
-  switch (type) {
-    case 'all':
-      return (
-        <>
-          <DesktopWrapper>
-            <div className={`${styles.headerWrapper}`}>
-              {
-                isChecking ? (
-                  <div className={styles.selectedItems}>
-                    <span>Выбрано {checkedItems} уведомление</span>
-                  </div>
-                ) : <div />
-              }
-              {
-                isChecking && (
-                  <div className={styles.actions}>
-                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
-                      <span className={buttonStyles.label}>Прочитать</span>
-                    </Button>
-                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
-                      <span className={buttonStyles.label}>Игнорировать</span>
-                    </Button>
-                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
-                      Удалить
-                    </Button>
-                    <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
-                      Заблокировать
-                    </Button>
-                    <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
-                      <span className={buttonStyles.label}>Разблокировать</span>
-                    </Button>
-                  </div>
-                )
-              }
-              <div className={styles.controls}>
-                <Button
-                  variant="outline"
-                  intent={isSelectedAll ? "primary" : "neutral"}
-                  size="sm"
-                  onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
-                  className={styles.controlButton}
-                >
-                  <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  intent={isChecking ? "primary" : "neutral"}
-                  size="sm"
-                  onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
-                  className={styles.controlButton}
-                >
-                  <span>{!isChecking ? 'Выбрать' : 'Отменить'}</span>
-                </Button>
+  const checkingRow = (
+    <>
+      <DesktopWrapper>
+        <div className={styles.headerWrapper}>
+          {
+            isChecking ? (
+              <div className={styles.selectedItems}>
+                <span>Выбрано {checkedItems} уведомление</span>
               </div>
-            </div>
-          </DesktopWrapper>
-          {isChecking && (
-            <MobileWrapper>
-              <div className={styles.selectedItemsMobile}>
-                <div className={styles.controls}>
-                  <Button
-                    variant="outline"
-                    intent={isSelectedAll ? "primary" : "neutral"}
-                    size="sm"
-                    onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
-                    className={styles.controlButton}
-                  >
-                    <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    intent={isChecking ? "primary" : "neutral"}
-                    size="sm"
-                    onClick={() => selectionDispatch({ type: "setMode", checking: false })}
-                    className={styles.controlButton}
-                  >
-                    <span>Отменить</span>
-                  </Button>
-                </div>
-                <div className={styles.selectedItems}>
-                  <span>Выбрано {checkedItems} уведомление</span>
-                </div>
-              </div>
-              <div className={styles.mobileActions}>
+            ) : <div />
+          }
+          {
+            isChecking && (
+              <div className={styles.actions}>
                 <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
                   <span className={buttonStyles.label}>Прочитать</span>
                 </Button>
@@ -230,14 +160,85 @@ const ListHeader: FC<ListHeaderProps> = ({
                   <span className={buttonStyles.label}>Разблокировать</span>
                 </Button>
               </div>
-            </MobileWrapper>
-          )}
-        </>
-      )
+            )
+          }
+          <div className={styles.controls}>
+            <Button
+              variant="outline"
+              intent={isSelectedAll ? "primary" : "neutral"}
+              size="sm"
+              onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
+              className={styles.controlButton}
+            >
+              <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
+            </Button>
+            <Button
+              variant="outline"
+              intent={isChecking ? "primary" : "neutral"}
+              size="sm"
+              onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
+              className={styles.controlButton}
+            >
+              <span>{!isChecking ? 'Выбрать' : 'Отменить'}</span>
+            </Button>
+          </div>
+        </div>
+      </DesktopWrapper>
+      {isChecking && (
+        <MobileWrapper>
+          <div className={styles.selectedItemsMobile}>
+            <div className={styles.controls}>
+              <Button
+                variant="outline"
+                intent={isSelectedAll ? "primary" : "neutral"}
+                size="sm"
+                onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
+                className={styles.controlButton}
+              >
+                <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
+              </Button>
+              <Button
+                variant="outline"
+                intent={isChecking ? "primary" : "neutral"}
+                size="sm"
+                onClick={() => selectionDispatch({ type: "setMode", checking: false })}
+                className={styles.controlButton}
+              >
+                <span>Отменить</span>
+              </Button>
+            </div>
+            <div className={styles.selectedItems}>
+              <span>Выбрано {checkedItems} уведомление</span>
+            </div>
+          </div>
+          <div className={styles.mobileActions}>
+            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
+              <span className={buttonStyles.label}>Прочитать</span>
+            </Button>
+            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
+              <span className={buttonStyles.label}>Игнорировать</span>
+            </Button>
+            <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
+              Удалить
+            </Button>
+            <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
+              Заблокировать
+            </Button>
+            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
+              <span className={buttonStyles.label}>Разблокировать</span>
+            </Button>
+          </div>
+        </MobileWrapper>
+      )}
+    </>
+  );
+
+  switch (type) {
+    case 'all':
+      return checkingRow;
     case 'moderation':
       return (
         <>
-          <div className={`${styles.headerWrapper} ${!isChecking ? styles.mobileHide : styles.mobileFlex}`}></div>
           <DesktopWrapper>
             <LinkInvitesModal
               isOpen={isLinksModalOpen}
@@ -321,12 +322,11 @@ const ListHeader: FC<ListHeaderProps> = ({
             linkId={parseInt(editingInvite?.id ?? '0', 10)}
             channelId={parseInt(editingInvite?.channelId ?? '0', 10)}
           />
+          {checkingRow}
         </>
       )
     case 'system':
-      return (
-        null
-      )
+      return checkingRow
     case 'automation':
       return (
         <>
@@ -401,6 +401,7 @@ const ListHeader: FC<ListHeaderProps> = ({
             isOpen={isCommandModalOpen}
             onOpenChange={setIsCommandModalOpen}
           />
+          {checkingRow}
         </>
       )
     default:
