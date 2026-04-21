@@ -438,7 +438,12 @@ class CommandProcessor:
                 chat_id=message.chat.id,
                 telegram_bot=self.telegram_bot,
                 chat_type=message.chat.type if message.chat else None,
-                context={"command": command_text}
+                context={
+                    "command": command_text,
+                    "message_id": message.message_id,
+                    "message_text": text_content[:500] if text_content else None,
+                    "username": message.from_user.username if message.from_user else None,
+                }
             )
             triggered_count = trigger_summary.executed_count
 

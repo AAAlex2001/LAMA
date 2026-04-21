@@ -162,7 +162,12 @@ class TextProcessor:
             chat_id=message.chat.id,
             telegram_bot=self.telegram_bot,
             chat_type=message.chat.type if message.chat else None,
-            context={"text": text_content[:100]}
+            context={
+                "text": text_content[:100],
+                "message_text": text_content[:500],
+                "message_id": message.message_id,
+                "username": message.from_user.username if message.from_user else None,
+            }
         )
         triggered_count = trigger_summary.executed_count
 

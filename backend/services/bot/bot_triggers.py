@@ -38,6 +38,13 @@ MEDIA_SEND_METHODS = {
     "DOCUMENT": "send_document",
 }
 
+TRIGGER_MODERATION_ACTIONS = (
+    TriggerActionType.MUTE_USER,
+    TriggerActionType.BAN_USER,
+    TriggerActionType.UNBAN_USER,
+    TriggerActionType.REMOVE_FROM_GROUP,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class TriggerExecutionSummary:
@@ -191,7 +198,9 @@ class BotTriggerService:
                 continue
 
             try:
-                await self.execute(trigger, user_id, chat_id, telegram_bot, context)
+                executed = await self.execute(trigger, user_id, chat_id, telegram_bot, context)
+                if not executed:
+                    continue
                 executed_ids.append(trigger.id)
                 executed_names.append(trigger.name)
             except Exception as e:
@@ -206,11 +215,11 @@ class BotTriggerService:
     async def execute(
         self, trigger: Trigger, user_id: int, chat_id: int,
         telegram_bot: RateLimitedBot, context: Optional[dict] = None,
-    ) -> None:
+    ) -> bool:
         """Выполнить действие триггера."""
         if not self.is_in_delivery_window(trigger):
             await self.schedule_for_next_window(trigger, user_id, chat_id, context)
-            return
+            return True
 
         action_data = dict(trigger.action_data or {})
         action_data["context"] = context or {}
@@ -221,24 +230,35 @@ class BotTriggerService:
             TriggerActionType.MUTE_USER: self.action_mute,
             TriggerActionType.BAN_USER: self.action_ban,
             TriggerActionType.UNBAN_USER: self.action_unban,
+            TriggerActionType.REMOVE_FROM_GROUP: self.action_remove_from_group,
         }
 
         handler = action_map.get(trigger.action_type)
         if not handler:
-            return
+            return False
 
         if trigger.trigger_type in JOIN_REQUEST_TYPES:
             if trigger.chat_type == TriggerChatType.GROUP:
-                await handler(telegram_bot, chat_id, user_id, action_data)
+                handled = await handler(telegram_bot, chat_id, user_id, action_data)
             elif trigger.chat_type == TriggerChatType.BOTH:
-                await handler(telegram_bot, user_id, user_id, action_data)
+                handled = await handler(telegram_bot, user_id, user_id, action_data)
                 if chat_id and chat_id != user_id:
-                    await handler(telegram_bot, chat_id, user_id, action_data)
+                    handled = await handler(telegram_bot, chat_id, user_id, action_data) or handled
             else:
-                await handler(telegram_bot, user_id, user_id, action_data)
+                handled = await handler(telegram_bot, user_id, user_id, action_data)
         else:
             target = chat_id
-            await handler(telegram_bot, target, user_id, action_data)
+            handled = await handler(telegram_bot, target, user_id, action_data)
+
+        if handled and trigger.action_type in TRIGGER_MODERATION_ACTIONS:
+            await self.create_trigger_moderation_event(
+                trigger=trigger,
+                user_id=user_id,
+                chat_id=chat_id,
+                context=context,
+            )
+
+        return bool(handled)
 
     async def get_pending_tasks(self, limit: int = 100) -> List[ScheduledTriggerTask]:
         """Получить задачи готовые к выполнению."""
@@ -275,28 +295,30 @@ class BotTriggerService:
             logger.error(f"Scheduled task {task.id} failed: {e}")
             return False
 
-    async def action_send_message(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_send_message(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: отправить текст."""
         text = data.get("text", "")
         if not text:
-            return
+            return False
         bot_info = await get_bot_info(bot.bot.token)
         text = ShortcodeProcessor.process(text, self.build_shortcode_ctx(user_id, data, bot_info))
         try:
             await bot.send_message(chat_id=chat_id, text=text, reply_markup=build_keyboard(data.get("buttons")), _group_weight=0)
+            return True
         except TelegramRetryAfter as e:
             logger.warning("Trigger rate limited for chat %s: %ss", chat_id, e.retry_after)
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger message to {chat_id}: {e}")
+        return False
 
-    async def action_send_media(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_send_media(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: отправить медиа (одиночное или альбом)."""
         media_urls = [u for u in (data.get("media_urls") or []) if u]
         media_url = data.get("media_url")
         if not media_urls and media_url:
             media_urls = [media_url]
         if not media_urls:
-            return
+            return False
 
         caption = data.get("text", "")
         if caption:
@@ -315,12 +337,12 @@ class BotTriggerService:
                     else:
                         media_group.append(InputMediaPhoto(media=url, caption=cap))
                 await bot.send_media_group(chat_id=chat_id, media=media_group, _group_weight=0)
-                return
+                return True
 
             media_type = data.get("media_type", "PHOTO")
             method_name = MEDIA_SEND_METHODS.get(media_type)
             if not method_name:
-                return
+                return False
             method = getattr(bot, method_name)
             await method(
                 chat_id=chat_id,
@@ -329,12 +351,14 @@ class BotTriggerService:
                 reply_markup=build_keyboard(data.get("buttons")),
                 _group_weight=0,
             )
+            return True
         except TelegramRetryAfter as e:
             logger.warning("Trigger media rate limited for chat %s: %ss", chat_id, e.retry_after)
         except TelegramAPIError as e:
             logger.warning(f"Failed to send trigger media to {chat_id}: {e}")
+        return False
 
-    async def action_mute(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_mute(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: заглушить пользователя."""
         minutes = data.get("duration_minutes", 60)
         try:
@@ -343,10 +367,12 @@ class BotTriggerService:
                 permissions=ChatPermissions(can_send_messages=False),
                 until_date=datetime.now(timezone.utc) + timedelta(minutes=minutes),
             )
+            return True
         except TelegramAPIError as e:
             logger.warning(f"Failed to mute user {user_id}: {e}")
+        return False
 
-    async def action_ban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_ban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: забанить пользователя."""
         minutes = data.get("duration_minutes", 0)
         try:
@@ -354,10 +380,12 @@ class BotTriggerService:
             if minutes > 0:
                 kwargs["until_date"] = datetime.now(timezone.utc) + timedelta(minutes=minutes)
             await bot.ban_chat_member(**kwargs)
+            return True
         except TelegramAPIError as e:
             logger.warning(f"Failed to ban user {user_id}: {e}")
+        return False
 
-    async def action_unban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+    async def action_unban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
         """Действие: разбанить пользователя."""
         try:
             await bot.unban_chat_member(
@@ -365,8 +393,114 @@ class BotTriggerService:
                 user_id=user_id,
                 only_if_banned=True,
             )
+            return True
         except TelegramAPIError as e:
             logger.warning(f"Failed to unban user {user_id}: {e}")
+        return False
+
+    async def action_remove_from_group(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> bool:
+        """Действие: удалить пользователя из группы без перманентного бана."""
+        try:
+            await bot.unban_chat_member(
+                chat_id=chat_id,
+                user_id=user_id,
+                only_if_banned=False,
+            )
+            return True
+        except TelegramAPIError as e:
+            logger.warning(f"Failed to remove user {user_id} from chat {chat_id}: {e}")
+        return False
+
+    async def create_trigger_moderation_event(
+        self,
+        trigger: Trigger,
+        user_id: int,
+        chat_id: int,
+        context: Optional[Dict[str, Any]],
+    ) -> None:
+        from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
+        from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
+        from backend.services.inbox.action_service import InboxActionService
+
+        channel = await get_channel_by_telegram_id(self.db, chat_id, bot_id=trigger.bot_id)
+        if not channel:
+            return
+
+        context_data = context if isinstance(context, dict) else {}
+        trigger_name = trigger.name.strip()
+        username = context_data.get("username")
+        if username is not None:
+            username = str(username).strip() or None
+
+        message_text = None
+        for key in ("message_text", "text", "command"):
+            value = context_data.get(key)
+            if isinstance(value, str) and value.strip():
+                message_text = value.strip()
+                break
+        if message_text and len(message_text) > 500:
+            message_text = f"{message_text[:497]}..."
+
+        message_id = context_data.get("message_id")
+        if not isinstance(message_id, int):
+            message_id = None
+
+        action_data = trigger.action_data if isinstance(trigger.action_data, dict) else {}
+        duration_minutes = action_data.get("duration_minutes")
+        if not isinstance(duration_minutes, int):
+            duration_minutes = None
+
+        action_descriptions = {
+            TriggerActionType.MUTE_USER: "мут",
+            TriggerActionType.BAN_USER: "бан",
+            TriggerActionType.UNBAN_USER: "разбан",
+            TriggerActionType.REMOVE_FROM_GROUP: "удаление из группы",
+        }
+        action_description = action_descriptions.get(trigger.action_type, trigger.action_type.value)
+        target_name = f"@{username}" if username else str(user_id)
+        reason = f'Триггер "{trigger_name}" выполнил {action_description}'
+        description = f"{reason} для {target_name}"
+        if message_text:
+            description = f"{description}: {message_text}"
+
+        payload = {
+            "ban_type": (
+                "mute"
+                if trigger.action_type == TriggerActionType.MUTE_USER
+                else "kick"
+                if trigger.action_type == TriggerActionType.REMOVE_FROM_GROUP
+                else "ban"
+            ),
+            "is_unbanned": trigger.action_type == TriggerActionType.UNBAN_USER,
+            "duration_minutes": duration_minutes,
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "message_text": message_text,
+            "block_reason": reason,
+            "reason": reason,
+            "reason_source": "trigger",
+            "action": trigger.action_type.value,
+            "automatic": True,
+            "trigger_id": trigger.id,
+            "trigger_names": [trigger_name],
+        }
+        if isinstance(context_data.get("command"), str) and context_data["command"].strip():
+            payload["command"] = context_data["command"].strip()
+
+        inbox_service = InboxActionService(self.db)
+        await inbox_service.create_event({
+            "owner_id": channel.owner_id,
+            "category": InboxCategory.SYSTEM,
+            "entity_type": EntityType.CHANNEL,
+            "event_type": EventType.CHANNEL_BAN,
+            "bot_id": trigger.bot_id,
+            "channel_id": channel.id,
+            "tg_user_id": user_id,
+            "tg_username": username,
+            "status": EventStatus.NEW,
+            "description": description,
+            "payload": payload,
+        })
 
     def matches_chat_type(self, trigger: Trigger, chat_type: Optional[str]) -> bool:
         """Проверить совместимость типа чата с триггером."""

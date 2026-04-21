@@ -330,6 +330,9 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'channel_ban') {
+      const triggerAction = typeof item.payload?.action === 'string' ? item.payload.action : null;
+      if (triggerAction === 'UNBAN_USER') return <div className={styles.statusText}>Разблокирован триггером</div>;
+      if (triggerAction === 'REMOVE_FROM_GROUP') return <div className={styles.statusText}>Удалён из группы</div>;
       if (status === 'unbanned') return <div className={styles.statusText}>Разблокирован</div>;
       if (status === 'ban_updated') return <div className={styles.statusText}>Блокировка обновлена</div>;
       if (status === 'blocked') return <div className={styles.statusText}>Заблокирован</div>;

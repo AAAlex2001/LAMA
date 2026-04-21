@@ -258,6 +258,80 @@ class TestTriggerUnbanAction:
             only_if_banned=True,
         )
 
+    @pytest.mark.asyncio
+    async def test_action_remove_from_group_calls_unban_chat_member_without_only_if_banned(self):
+        from backend.services.bot.bot_triggers import BotTriggerService
+
+        db = AsyncMock()
+        service = BotTriggerService(db)
+
+        bot = AsyncMock()
+
+        await service.action_remove_from_group(bot, chat_id=100, user_id=42, data={})
+
+        bot.unban_chat_member.assert_called_once_with(
+            chat_id=100,
+            user_id=42,
+            only_if_banned=False,
+        )
+
+
+class TestTriggerModerationEvents:
+    """Trigger moderation actions должны писать inbox event уровня канала."""
+
+    @pytest.mark.asyncio
+    async def test_execute_creates_channel_ban_event_for_remove_from_group_trigger(self):
+        from backend.services.bot.bot_triggers import BotTriggerService
+
+        db = AsyncMock()
+        service = BotTriggerService(db)
+
+        trigger = MagicMock()
+        trigger.id = 7
+        trigger.name = "Kick by command"
+        trigger.bot_id = 1
+        trigger.action_type = TriggerActionType.REMOVE_FROM_GROUP
+        trigger.action_data = {}
+        trigger.delivery_window = None
+        trigger.trigger_type = TriggerType.COMMAND_CALLED
+        trigger.chat_type = TriggerChatType.GROUP
+
+        channel = MagicMock()
+        channel.id = 5
+        channel.owner_id = 9
+
+        telegram_bot = AsyncMock()
+        inbox_service = AsyncMock()
+
+        with patch.object(service, "action_remove_from_group", AsyncMock(return_value=True)) as action_remove:
+            with patch("backend.services.channel.utils.query_utils.get_channel_by_telegram_id", AsyncMock(return_value=channel)):
+                with patch("backend.services.inbox.action_service.InboxActionService", return_value=inbox_service):
+                    executed = await service.execute(
+                        trigger=trigger,
+                        user_id=42,
+                        chat_id=-1001234567890,
+                        telegram_bot=telegram_bot,
+                        context={
+                            "command": "/kickme",
+                            "message_id": 555,
+                            "message_text": "/kickme",
+                            "username": "target_user",
+                        },
+                    )
+
+        assert executed is True
+        action_remove.assert_awaited_once()
+        inbox_service.create_event.assert_awaited_once()
+
+        event_data = inbox_service.create_event.await_args.args[0]
+        assert event_data["event_type"] == EventType.CHANNEL_BAN
+        assert event_data["channel_id"] == 5
+        assert event_data["tg_user_id"] == 42
+        assert event_data["payload"]["action"] == TriggerActionType.REMOVE_FROM_GROUP.value
+        assert event_data["payload"]["ban_type"] == "kick"
+        assert event_data["payload"]["command"] == "/kickme"
+        assert event_data["payload"]["reason_source"] == "trigger"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 3. Inbox block action — уведомление + статус BANNED
