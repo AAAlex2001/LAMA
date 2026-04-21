@@ -42,7 +42,14 @@
   z-index: 2;
   pointer-events: auto;
   animation: slideUp 0.3s ease-out;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+
+  &::-webkit-scrollbar-track {
+    margin-top: 8px;
+    margin-bottom: 8px;
+  }
 }
 
 @keyframes slideUp {
