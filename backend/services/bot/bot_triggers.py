@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from fastapi import HTTPException
 import logging
 from datetime import datetime, timezone, timedelta
@@ -36,6 +37,26 @@ MEDIA_SEND_METHODS = {
     "VIDEO": "send_video",
     "DOCUMENT": "send_document",
 }
+
+
+@dataclass(frozen=True, slots=True)
+class TriggerExecutionSummary:
+    executed_count: int
+    trigger_ids: List[int]
+    trigger_names: List[str]
+
+    def build_reason(self, max_names: int = 3) -> Optional[str]:
+        if self.executed_count <= 0:
+            return None
+
+        if not self.trigger_names:
+            return f"Сработало триггеров: {self.executed_count}"
+
+        names = self.trigger_names[:max_names]
+        remainder = len(self.trigger_names) - len(names)
+        suffix = f" и еще {remainder}" if remainder > 0 else ""
+        prefix = "Сработал триггер" if len(self.trigger_names) == 1 else "Сработали триггеры"
+        return f"{prefix}: {', '.join(names)}{suffix}"
 
 
 class BotTriggerService:
@@ -135,8 +156,27 @@ class BotTriggerService:
         chat_type: Optional[str] = None,
     ) -> int:
         """Запустить обработку события. Возвращает кол-во сработавших триггеров."""
+        summary = await self.fire_event_with_summary(
+            bot_id=bot_id,
+            trigger_type=trigger_type,
+            user_id=user_id,
+            chat_id=chat_id,
+            telegram_bot=telegram_bot,
+            context=context,
+            chat_type=chat_type,
+        )
+        return summary.executed_count
+
+    async def fire_event_with_summary(
+        self, bot_id: int, trigger_type: TriggerType,
+        user_id: int, chat_id: int, telegram_bot: RateLimitedBot,
+        context: Optional[Dict[str, Any]] = None,
+        chat_type: Optional[str] = None,
+    ) -> TriggerExecutionSummary:
+        """Запустить обработку события и вернуть summary сработавших триггеров."""
         triggers = await self.get_active_for_event(bot_id, trigger_type)
-        executed = 0
+        executed_ids: List[int] = []
+        executed_names: List[str] = []
 
         for trigger in triggers:
             if not self.matches_chat_type(trigger, chat_type):
@@ -146,16 +186,22 @@ class BotTriggerService:
 
             if trigger.delay_minutes > 0:
                 await self.schedule(trigger, user_id, chat_id, context)
-                executed += 1
+                executed_ids.append(trigger.id)
+                executed_names.append(trigger.name)
                 continue
 
             try:
                 await self.execute(trigger, user_id, chat_id, telegram_bot, context)
-                executed += 1
+                executed_ids.append(trigger.id)
+                executed_names.append(trigger.name)
             except Exception as e:
                 logger.error(f"Trigger {trigger.id} execution failed: {e}")
 
-        return executed
+        return TriggerExecutionSummary(
+            executed_count=len(executed_ids),
+            trigger_ids=executed_ids,
+            trigger_names=executed_names,
+        )
 
     async def execute(
         self, trigger: Trigger, user_id: int, chat_id: int,
@@ -174,6 +220,7 @@ class BotTriggerService:
             TriggerActionType.SEND_MEDIA: self.action_send_media,
             TriggerActionType.MUTE_USER: self.action_mute,
             TriggerActionType.BAN_USER: self.action_ban,
+            TriggerActionType.UNBAN_USER: self.action_unban,
         }
 
         handler = action_map.get(trigger.action_type)
@@ -309,6 +356,17 @@ class BotTriggerService:
             await bot.ban_chat_member(**kwargs)
         except TelegramAPIError as e:
             logger.warning(f"Failed to ban user {user_id}: {e}")
+
+    async def action_unban(self, bot: RateLimitedBot, chat_id: int, user_id: int, data: dict) -> None:
+        """Действие: разбанить пользователя."""
+        try:
+            await bot.unban_chat_member(
+                chat_id=chat_id,
+                user_id=user_id,
+                only_if_banned=True,
+            )
+        except TelegramAPIError as e:
+            logger.warning(f"Failed to unban user {user_id}: {e}")
 
     def matches_chat_type(self, trigger: Trigger, chat_type: Optional[str]) -> bool:
         """Проверить совместимость типа чата с триггером."""

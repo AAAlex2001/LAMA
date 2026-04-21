@@ -1,5 +1,5 @@
 from typing import Optional, Any, Dict, List
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from datetime import datetime
 
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus, BulkActionType
@@ -22,9 +22,47 @@ class InboxEventCreate(InboxEventBase):
 class InboxEventResponse(InboxEventBase):
     id: int
     created_at: datetime
+    updated_at: Optional[datetime] = None
     is_new: bool
     tg_bot_username: Optional[str] = None
     tg_bot_name: Optional[str] = None
+    reason: Optional[str] = None
+    reason_source: Optional[str] = None
+    trigger_names: Optional[List[str]] = None
+
+    @model_validator(mode="after")
+    def populate_derived_fields(self):
+        payload = self.payload if isinstance(self.payload, dict) else {}
+
+        if self.trigger_names is None:
+            raw_trigger_names = payload.get("trigger_names")
+            if isinstance(raw_trigger_names, list):
+                trigger_names = [
+                    str(item).strip()
+                    for item in raw_trigger_names
+                    if str(item).strip()
+                ]
+                self.trigger_names = trigger_names or None
+
+        if self.reason is None:
+            for key in ("reason", "block_reason", "trigger_reason"):
+                value = payload.get(key)
+                if isinstance(value, str) and value.strip():
+                    self.reason = value.strip()
+                    break
+
+            if self.reason is None and self.trigger_names:
+                prefix = "Сработал триггер" if len(self.trigger_names) == 1 else "Сработали триггеры"
+                self.reason = f"{prefix}: {', '.join(self.trigger_names)}"
+
+            if self.reason is None and self.event_type in (EventType.CHANNEL_BAN, EventType.SYSTEM_TRIGGER) and self.description:
+                self.reason = self.description
+
+        if self.reason_source is None:
+            raw_source = payload.get("reason_source")
+            if isinstance(raw_source, str) and raw_source.strip():
+                self.reason_source = raw_source.strip()
+        return self
 
     class Config:
         from_attributes = True

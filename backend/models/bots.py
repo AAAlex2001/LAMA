@@ -38,6 +38,7 @@ class TriggerActionType(str, enum.Enum):
     REMOVE_FROM_GROUP = "REMOVE_FROM_GROUP"  # Удалить из группы
     MUTE_USER = "MUTE_USER"  # Заглушить пользователя
     BAN_USER = "BAN_USER"  # Забанить пользователя
+    UNBAN_USER = "UNBAN_USER"  # Разбанить пользователя
 
 
 class ApprovalMode(str, enum.Enum):

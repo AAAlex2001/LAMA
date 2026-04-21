@@ -155,7 +155,7 @@ class TextProcessor:
             return
 
         user_id = message.from_user.id if message.from_user else 0
-        triggered_count = await self.trigger_service.fire_event(
+        trigger_summary = await self.trigger_service.fire_event_with_summary(
             bot_id=self.bot_model.id,
             trigger_type=TriggerType.USER_MESSAGE,
             user_id=user_id,
@@ -164,8 +164,10 @@ class TextProcessor:
             chat_type=message.chat.type if message.chat else None,
             context={"text": text_content[:100]}
         )
+        triggered_count = trigger_summary.executed_count
 
         if triggered_count > 0:
+            trigger_reason = trigger_summary.build_reason()
             if message.chat.type == "private":
                 try:
                     await self.save_system_message(
@@ -190,12 +192,16 @@ class TextProcessor:
                     "tg_user_id": message.from_user.id if message.from_user else None,
                     "tg_username": message.from_user.username if message.from_user else None,
                     "status": EventStatus.NEW,
-                    "description": f"Сработал триггер для сообщения в чате {message.chat.id}",
+                    "description": trigger_reason or f"Сработал триггер для сообщения в чате {message.chat.id}",
                     "payload": {
                         "chat_id": message.chat.id,
                         "message_id": message.message_id,
                         "text": text_content,
                         "triggered_count": triggered_count,
+                        "trigger_ids": trigger_summary.trigger_ids,
+                        "trigger_names": trigger_summary.trigger_names,
+                        "reason": trigger_reason,
+                        "reason_source": "trigger",
                     },
                 })
             except Exception as e:

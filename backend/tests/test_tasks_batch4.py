@@ -16,6 +16,7 @@ from backend.models.bots import (
     Trigger, TriggerType, TriggerActionType, TriggerChatType, CommandScope,
 )
 from backend.models.inbox import InboxEvent
+from backend.schemas.inbox.events import InboxEventResponse
 from backend.schemas.inbox.enums import (
     EventStatus, BulkActionType, InboxCategory, EntityType, EventType,
 )
@@ -65,6 +66,38 @@ class TestSystemMessagesPlainText:
         )
         assert "/help" in msg.text_content
         assert not msg.text_content.startswith("{")
+
+
+class TestInboxEventResponseReason:
+    """Inbox response должен проецировать reason из payload."""
+
+    def test_reason_and_trigger_names_are_derived_from_payload(self):
+        now = datetime.now(timezone.utc)
+
+        response = InboxEventResponse(
+            id=1,
+            category=InboxCategory.AUTOMATION,
+            entity_type=EntityType.BOT,
+            event_type=EventType.SYSTEM_TRIGGER,
+            bot_id=1,
+            channel_id=2,
+            tg_user_id=3,
+            tg_username="user",
+            status=EventStatus.NEW,
+            description="fallback description",
+            payload={
+                "reason": "Сработали триггеры: Stop Spam, Ban Links",
+                "reason_source": "trigger",
+                "trigger_names": ["Stop Spam", "Ban Links"],
+            },
+            created_at=now,
+            updated_at=now,
+            is_new=True,
+        )
+
+        assert response.reason == "Сработали триггеры: Stop Spam, Ban Links"
+        assert response.reason_source == "trigger"
+        assert response.trigger_names == ["Stop Spam", "Ban Links"]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -203,6 +236,27 @@ class TestMultiMediaTriggerWebhook:
                 await service.action_send_media(bot, chat_id=100, user_id=1, data=action_data)
 
         bot.send_photo.assert_called_once()
+
+
+class TestTriggerUnbanAction:
+    """UNBAN_USER trigger должен вызывать unbanChatMember."""
+
+    @pytest.mark.asyncio
+    async def test_action_unban_calls_unban_chat_member(self):
+        from backend.services.bot.bot_triggers import BotTriggerService
+
+        db = AsyncMock()
+        service = BotTriggerService(db)
+
+        bot = AsyncMock()
+
+        await service.action_unban(bot, chat_id=100, user_id=42, data={})
+
+        bot.unban_chat_member.assert_called_once_with(
+            chat_id=100,
+            user_id=42,
+            only_if_banned=True,
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────

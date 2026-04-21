@@ -398,6 +398,9 @@ class CommandProcessor:
                             "ban_type": ban_type,
                             "is_unbanned": is_unbanned,
                             "duration_minutes": duration_minutes,
+                            "block_reason": f"Команда {command_text}",
+                            "reason": f"Команда {command_text}",
+                            "reason_source": "manual_command",
                             "command": command_text,
                             "chat_id": message.chat.id,
                             "message_id": message.message_id,
@@ -428,7 +431,7 @@ class CommandProcessor:
         )
 
         if command:
-            triggered_count = await self.trigger_service.fire_event(
+            trigger_summary = await self.trigger_service.fire_event_with_summary(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.COMMAND_CALLED,
                 user_id=user_id,
@@ -437,8 +440,10 @@ class CommandProcessor:
                 chat_type=message.chat.type if message.chat else None,
                 context={"command": command_text}
             )
+            triggered_count = trigger_summary.executed_count
 
             if triggered_count > 0:
+                trigger_reason = trigger_summary.build_reason()
                 try:
                     inbox_service = InboxActionService(self.db)
                     channel_obj = await self.resolve_channel(message.chat.id)
@@ -454,12 +459,16 @@ class CommandProcessor:
                         "tg_user_id": message.from_user.id if message.from_user else None,
                         "tg_username": message.from_user.username if message.from_user else None,
                         "status": EventStatus.NEW,
-                        "description": f"Сработал триггер ({triggered_count}) для команды {command_text} в чате {message.chat.id}",
+                        "description": trigger_reason or f"Сработал триггер ({triggered_count}) для команды {command_text} в чате {message.chat.id}",
                         "payload": {
                             "chat_id": message.chat.id,
                             "message_id": message.message_id,
                             "command": command_text,
                             "triggered_count": triggered_count,
+                            "trigger_ids": trigger_summary.trigger_ids,
+                            "trigger_names": trigger_summary.trigger_names,
+                            "reason": trigger_reason,
+                            "reason_source": "trigger",
                         },
                     })
                 except Exception as e:

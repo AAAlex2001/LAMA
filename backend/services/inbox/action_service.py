@@ -140,6 +140,12 @@ class InboxActionService:
         """Создать системное уведомление о блокировке пользователя."""
         username = source_event.tg_username or str(source_event.tg_user_id or "unknown")
         description = f"Пользователь @{username} заблокирован"
+        source_payload = source_event.payload if isinstance(source_event.payload, dict) else {}
+
+        notification_payload = {"source_event_id": source_event.id, "action": "block"}
+        for key in ("block_reason", "reason", "reason_source", "message_text", "trigger_names"):
+            if key in source_payload:
+                notification_payload[key] = source_payload[key]
 
         notification = InboxEvent(
             owner_id=source_event.owner_id,
@@ -152,7 +158,7 @@ class InboxActionService:
             tg_username=source_event.tg_username,
             status=EventStatus.NEW,
             description=description,
-            payload={"source_event_id": source_event.id, "action": "block"},
+            payload=notification_payload,
         )
         self.db.add(notification)
         return notification

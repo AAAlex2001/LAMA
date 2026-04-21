@@ -16,6 +16,8 @@ from backend.services.channel import (
     FloodService,
 )
 from backend.models.channels import ActionType
+from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
+from backend.services.inbox.action_service import InboxActionService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import (
@@ -64,7 +66,17 @@ class ModerationHandler:
                 )
 
                 if is_flood and flood_action:
-                    await self.apply_action(message, flood_action, flood_mute)
+                    await self.apply_action(
+                        message,
+                        flood_action,
+                        flood_mute,
+                        channel=channel,
+                        reason=(
+                            f"Flood control triggered: more than {channel.flood_message_limit} "
+                            f"messages in {channel.flood_interval_seconds}s"
+                        ),
+                        reason_source="channel_flood_settings",
+                    )
                     await self.db.commit()
                     return
 
@@ -76,7 +88,14 @@ class ModerationHandler:
                 antispam_service.check_channel_links(channel, text_content)
 
             if should_block:
-                await self.apply_action(message, action, mute_duration)
+                await self.apply_action(
+                    message,
+                    action,
+                    mute_duration,
+                    channel=channel,
+                    reason=reason,
+                    reason_source="channel_link_filter",
+                )
                 return
 
             if channel.banned_words_enabled:
@@ -90,7 +109,13 @@ class ModerationHandler:
 
                 if rule:
                     await self.apply_action(
-                        message, rule.action, rule.mute_duration_minutes
+                        message,
+                        rule.action,
+                        rule.mute_duration_minutes,
+                        channel=channel,
+                        reason=f"Moderation rule triggered: {rule.phrase}",
+                        reason_source="channel_moderation_rule",
+                        reason_context={"rule_id": rule.id, "phrase": rule.phrase},
                     )
 
         except asyncio.TimeoutError:
@@ -103,7 +128,11 @@ class ModerationHandler:
         self,
         message: Message,
         action: Optional[ActionType],
-        mute_duration: Optional[int]
+        mute_duration: Optional[int],
+        channel=None,
+        reason: Optional[str] = None,
+        reason_source: Optional[str] = None,
+        reason_context: Optional[dict] = None,
     ) -> None:
         if not action:
             return
@@ -151,6 +180,16 @@ class ModerationHandler:
             except (TelegramAPIError, asyncio.TimeoutError) as e:
                 logger.debug(f"Failed to delete message: {e}")
 
+            await self.create_block_event(
+                message=message,
+                channel=channel,
+                action=action,
+                mute_duration=mute_duration,
+                reason=reason,
+                reason_source=reason_source,
+                reason_context=reason_context,
+            )
+
         except asyncio.TimeoutError:
             uid = message.from_user.id if message.from_user else 'unknown'
             logger.warning(
@@ -158,6 +197,59 @@ class ModerationHandler:
         except Exception as e:
             logger.error(
                 f"Failed to apply moderation action: {e}", exc_info=True)
+
+    async def create_block_event(
+        self,
+        message: Message,
+        channel,
+        action: ActionType,
+        mute_duration: Optional[int],
+        reason: Optional[str],
+        reason_source: Optional[str],
+        reason_context: Optional[dict],
+    ) -> None:
+        if action not in (ActionType.MUTE, ActionType.KICK, ActionType.BAN):
+            return
+        if not (message.from_user and channel):
+            return
+
+        try:
+            inbox_service = InboxActionService(self.db)
+            message_text = (message.text or message.caption or "").strip()
+            if len(message_text) > 500:
+                message_text = f"{message_text[:497]}..."
+
+            payload = {
+                "ban_type": "mute" if action == ActionType.MUTE else "ban",
+                "is_unbanned": False,
+                "duration_minutes": mute_duration,
+                "chat_id": message.chat.id,
+                "message_id": message.message_id,
+                "message_text": message_text or None,
+                "block_reason": reason,
+                "reason": reason,
+                "reason_source": reason_source,
+                "action": action.value,
+                "automatic": True,
+            }
+            if reason_context:
+                payload["reason_context"] = reason_context
+
+            await inbox_service.create_event({
+                "owner_id": self.bot_model.owner_id,
+                "category": InboxCategory.SYSTEM,
+                "entity_type": EntityType.CHANNEL,
+                "event_type": EventType.CHANNEL_BAN,
+                "bot_id": self.bot_model.id,
+                "channel_id": channel.id,
+                "tg_user_id": message.from_user.id,
+                "tg_username": message.from_user.username,
+                "status": EventStatus.NEW,
+                "description": message_text or f"Автомодерация пользователя {message.from_user.id}",
+                "payload": payload,
+            })
+        except Exception as e:
+            logger.error("Failed to create moderation inbox event: %s", e, exc_info=True)
 
     async def mute_user(
         self, bot, message: Message, mute_duration: Optional[int]
