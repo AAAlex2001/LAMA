@@ -29,6 +29,11 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
   channel_join_request: 'Заявка',
   channel_link_join: 'Ссылка',
   channel_ban: 'Блокировка',
+  channel_member_joined: 'Вступил',
+  channel_member_left: 'Покинул',
+  channel_title_changed: 'Название',
+  channel_photo_changed: 'Аватар',
+  channel_pinned_message: 'Закреп',
   system_notification: 'Уведомление',
   system_trigger: 'Триггер',
   system_autoreply: 'Автоответ',
@@ -376,8 +381,19 @@ const ListElement: FC<ListElementProps> = ({
       );
     }
 
-    if (item.event_type === 'system_notification' || item.event_type === 'system_update') {
+    if (item.event_type === 'system_update') {
       return null;
+    }
+
+    if (item.event_type === 'system_notification') {
+      if (isProcessed) return null;
+      return (
+        <div className={styles.actionButtons}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('ignore')} loading={loadingAction === 'ignore'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Игнорировать</span>
+          </Button>
+        </div>
+      );
     }
 
     if (item.event_type === 'system_trigger') {
@@ -394,7 +410,50 @@ const ListElement: FC<ListElementProps> = ({
     }
 
     if (item.event_type === 'system_autoreply') {
-      return null;
+      if (status === 'deleted' || status === 'ignored' || isProcessed) return null;
+      return (
+        <div className={styles.actionButtons}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('ignore')} loading={loadingAction === 'ignore'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Игнорировать</span>
+          </Button>
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('delete_message')} loading={loadingAction === 'delete_message'} disabled={isBusy} className={btnClass}>
+            <span className={buttonStyles.label}>Удалить сообщение</span>
+          </Button>
+        </div>
+      );
+    }
+
+    if (item.event_type === 'channel_member_joined') {
+      if (status === 'deleted' || status === 'blocked' || isProcessed) return null;
+      return (
+        <div className={styles.actionButtons}>
+          <Button variant="fill" intent="primary" size="md" onClick={() => handleAction('block')} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Заблокировать</span>
+          </Button>
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('delete_message')} loading={loadingAction === 'delete_message'} disabled={isBusy} className={btnClass}>
+            <span className={buttonStyles.label}>Удалить сообщение</span>
+          </Button>
+        </div>
+      );
+    }
+
+    if (
+      item.event_type === 'channel_member_left' ||
+      item.event_type === 'channel_title_changed' ||
+      item.event_type === 'channel_photo_changed' ||
+      item.event_type === 'channel_pinned_message'
+    ) {
+      if (status === 'deleted' || status === 'ignored' || isProcessed) return null;
+      return (
+        <div className={styles.actionButtons}>
+          <Button variant="outline" intent="primary" size="md" onClick={() => handleAction('ignore')} loading={loadingAction === 'ignore'} disabled={isBusy} className={btnClass} style={{ width: btnWidth }}>
+            <span className={buttonStyles.label}>Игнорировать</span>
+          </Button>
+          <Button variant="outline" intent="destructive" size="md" onClick={() => handleAction('delete_message')} loading={loadingAction === 'delete_message'} disabled={isBusy} className={btnClass}>
+            <span className={buttonStyles.label}>Удалить сообщение</span>
+          </Button>
+        </div>
+      );
     }
 
     if (item.event_type === 'bot_error') {

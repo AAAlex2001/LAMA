@@ -25,9 +25,10 @@ from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.action_service import InboxActionService
+from backend.services.inbox.event_service import InboxEventService
 from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
+from backend.schemas.inbox.events import InboxEventCreate
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class MessageHandler:
             is_command = bool(text_content and text_content.startswith("/"))
             if not is_command:
                 try:
-                    inbox_service = InboxActionService(self.db)
+                    event_service = InboxEventService(self.db)
                     preview = text_content[:100] if text_content else "(медиа)"
                     sender = message.from_user.username or str(message.from_user.id)
                     reply_ctx = self.build_reply_context(message)
@@ -107,17 +108,17 @@ class MessageHandler:
                     elif message.document:
                         media_file_id = message.document.file_id
 
-                    await inbox_service.create_event({
-                        "owner_id": self.bot_model.owner_id,
-                        "category": InboxCategory.MODERATION,
-                        "entity_type": EntityType.BOT,
-                        "event_type": EventType.BOT_MESSAGE,
-                        "bot_id": self.bot_model.id,
-                        "tg_user_id": message.from_user.id,
-                        "tg_username": message.from_user.username,
-                        "status": EventStatus.NEW,
-                        "description": f"Сообщение от @{sender}: {preview}{reply_ctx.suffix}",
-                        "payload": {
+                    await event_service.create_event(InboxEventCreate(
+                        owner_id=self.bot_model.owner_id,
+                        category=InboxCategory.MODERATION,
+                        entity_type=EntityType.BOT,
+                        event_type=EventType.BOT_MESSAGE,
+                        bot_id=self.bot_model.id,
+                        tg_user_id=message.from_user.id,
+                        tg_username=message.from_user.username,
+                        status=EventStatus.NEW,
+                        description=f"Сообщение от @{sender}: {preview}{reply_ctx.suffix}",
+                        payload={
                             "message_id": message.message_id,
                             "chat_id": message.chat.id,
                             "text": text_content[:500] if text_content else None,
@@ -125,7 +126,7 @@ class MessageHandler:
                             "media_file_id": media_file_id,
                             **reply_ctx.payload,
                         },
-                    })
+                    ))
                 except Exception as e:
                     logger.error(f"Не удалось создать BOT_MESSAGE inbox-событие: {e}", exc_info=True)
 
@@ -260,22 +261,22 @@ class MessageHandler:
             )
 
             # Inbox notification
-            inbox_service = InboxActionService(self.db)
+            event_service = InboxEventService(self.db)
             preview = text_content[:100] if text_content else "(медиа)"
             sender = message.from_user.username or str(message.from_user.id)
 
-            await inbox_service.create_event({
-                "owner_id": self.bot_model.owner_id,
-                "category": InboxCategory.MODERATION,
-                "entity_type": EntityType.CHANNEL,
-                "event_type": EventType.CHANNEL_COMMENT,
-                "bot_id": self.bot_model.id,
-                "channel_id": channel.id,
-                "tg_user_id": message.from_user.id,
-                "tg_username": message.from_user.username,
-                "status": EventStatus.NEW,
-                "description": f"Комментарий от @{sender}: {preview}",
-                "payload": {
+            await event_service.create_event(InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=InboxCategory.MODERATION,
+                entity_type=EntityType.CHANNEL,
+                event_type=EventType.CHANNEL_COMMENT,
+                bot_id=self.bot_model.id,
+                channel_id=channel.id,
+                tg_user_id=message.from_user.id,
+                tg_username=message.from_user.username,
+                status=EventStatus.NEW,
+                description=f"Комментарий от @{sender}: {preview}",
+                payload={
                     "message_id": message.message_id,
                     "chat_id": chat_id,
                     "text": text_content[:500] if text_content else None,
@@ -283,7 +284,7 @@ class MessageHandler:
                     "chat_title": message.chat.title,
                     "reply_to_message_id": reply_msg.message_id,
                 },
-            })
+            ))
 
             if self.saved_msg:
                 await self.db.flush()
@@ -354,6 +355,7 @@ class MessageHandler:
             if message.left_chat_member:
                 await member_processor.handle_member_left(message)
 
+            await self.process_chat_metadata_events(message)
             await self.process_forum_topic_events(message)
 
             if text_content:
@@ -381,6 +383,99 @@ class MessageHandler:
         except Exception as e:
             logger.debug(f"Could not resolve user photo for {user_id}: {e}")
         return None
+
+    async def process_chat_metadata_events(self, message: Message) -> None:
+        """Записать InboxEvent при смене названия/аватара/пина чата."""
+        chat_type = message.chat.type if message.chat else None
+        if chat_type not in ("group", "supergroup", "channel"):
+            return
+
+        new_title = message.new_chat_title
+        new_photo = message.new_chat_photo
+        photo_deleted = message.delete_chat_photo
+        pinned = message.pinned_message
+
+        if not (new_title or new_photo or photo_deleted or pinned):
+            return
+
+        channel = await get_channel_by_telegram_id(
+            self.db, message.chat.id, bot_id=self.bot_model.id
+        )
+
+        initiator = message.from_user
+        initiator_id = initiator.id if initiator else None
+        initiator_username = initiator.username if initiator else None
+        initiator_display = (
+            f"@{initiator.username}" if initiator and initiator.username
+            else (initiator.first_name if initiator else "")
+        )
+        chat_title = message.chat.title or f"чат {message.chat.id}"
+
+        events_to_create: list[tuple[EventType, str, dict]] = []
+
+        if new_title:
+            events_to_create.append((
+                EventType.CHANNEL_TITLE_CHANGED,
+                f"{initiator_display or 'Участник'} сменил(а) название на «{new_title}»".strip(),
+                {"new_title": new_title, "chat_id": message.chat.id},
+            ))
+
+        if new_photo:
+            events_to_create.append((
+                EventType.CHANNEL_PHOTO_CHANGED,
+                f"{initiator_display or 'Участник'} обновил(а) аватар {chat_title}".strip(),
+                {
+                    "chat_id": message.chat.id,
+                    "photo_deleted": False,
+                    "file_ids": [p.file_id for p in new_photo if getattr(p, "file_id", None)],
+                },
+            ))
+
+        if photo_deleted:
+            events_to_create.append((
+                EventType.CHANNEL_PHOTO_CHANGED,
+                f"{initiator_display or 'Участник'} удалил(а) аватар {chat_title}".strip(),
+                {"chat_id": message.chat.id, "photo_deleted": True},
+            ))
+
+        if pinned:
+            pinned_preview = (pinned.text or pinned.caption or "").strip()
+            if len(pinned_preview) > 200:
+                pinned_preview = f"{pinned_preview[:197]}..."
+            events_to_create.append((
+                EventType.CHANNEL_PINNED_MESSAGE,
+                f"{initiator_display or 'Участник'} закрепил(а) сообщение в {chat_title}".strip(),
+                {
+                    "chat_id": message.chat.id,
+                    "pinned_message_id": pinned.message_id,
+                    "pinned_preview": pinned_preview or None,
+                },
+            ))
+
+        try:
+            event_service = InboxEventService(self.db)
+            for event_type, description, extra_payload in events_to_create:
+                await event_service.create_event(InboxEventCreate(
+                    owner_id=self.bot_model.owner_id,
+                    category=InboxCategory.SYSTEM,
+                    entity_type=EntityType.CHANNEL,
+                    event_type=event_type,
+                    bot_id=self.bot_model.id,
+                    channel_id=channel.id if channel else None,
+                    tg_user_id=initiator_id,
+                    tg_username=initiator_username,
+                    status=EventStatus.NEW,
+                    description=description,
+                    payload={
+                        "chat_title": message.chat.title,
+                        "chat_type": chat_type,
+                        "initiator_id": initiator_id,
+                        "initiator_username": initiator_username,
+                        **extra_payload,
+                    },
+                ))
+        except Exception as e:
+            logger.error(f"Failed to create chat metadata event: {e}", exc_info=True)
 
     async def process_forum_topic_events(self, message: Message) -> None:
         chat_type = message.chat.type if message.chat else None

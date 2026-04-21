@@ -17,7 +17,7 @@ class InboxEventBase(BaseModel):
     payload: Dict[str, Any] = {}
 
 class InboxEventCreate(InboxEventBase):
-    pass
+    owner_id: int
 
 class InboxEventResponse(InboxEventBase):
     id: int

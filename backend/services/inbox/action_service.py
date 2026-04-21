@@ -14,8 +14,9 @@ from backend.models.channels import ChannelGroup, ChatInviteLink
 from backend.models.direct import DirectChat
 from backend.schemas.inbox.enums import EventStatus, BulkActionType, InboxCategory, EntityType, EventType
 from backend.schemas.inbox.events import SpecificActionResult
+from backend.services.bot.bot_triggers import BotTriggerService
+from backend.services.inbox.event_service import InboxEventService
 from backend.services.bot_provider import resolve_by_token
-from backend.services.bot import TriggerService
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 class InboxActionService:
     def __init__(self, db: AsyncSession):
         self.db = db
+        self.event_service = InboxEventService(db)
 
     async def execute_bulk_action(
         self,
@@ -163,14 +165,6 @@ class InboxActionService:
         self.db.add(notification)
         return notification
 
-    async def create_event(self, event_data: dict) -> InboxEvent:
-        """Создать событие инбокса. Вызывается из webhook-обработчиков."""
-        event = InboxEvent(**event_data)
-        self.db.add(event)
-        await self.db.flush()
-        await self.db.refresh(event)
-        return event
-
     async def get_event(self, event_id: int, owner_id: int) -> InboxEvent:
         """Получить событие по ID с проверкой владельца."""
         result = await self.db.execute(
@@ -229,7 +223,7 @@ class InboxActionService:
     ) -> None:
         """Запустить триггер при принятии/отклонении заявки из инбокса."""
         try:
-            trigger_service = TriggerService(self.db)
+            trigger_service = BotTriggerService(self.db)
             telegram_bot = resolve_by_token(bot.token)
             await trigger_service.fire_event(
                 bot_id=bot.id,
@@ -257,6 +251,7 @@ class InboxActionService:
 
         Поддерживаемые action_type:
           mark_resolved   — пометить как обработанное (без вызова Telegram)
+          ignore          — пометить как проигнорированное (без вызова Telegram)
           reply           — вернуть данные для перехода в Direct чат (без вызова Telegram)
           accept          — принять заявку на вступление в канал
           reject          — отклонить заявку на вступление в канал
@@ -273,6 +268,12 @@ class InboxActionService:
             self.mark_payload_handled(event)
             await self.db.flush()
             return SpecificActionResult(status="resolved")
+
+        if action_type == "ignore":
+            event.status = EventStatus.IGNORED
+            self.mark_payload_handled(event)
+            await self.db.flush()
+            return SpecificActionResult(status="ignored")
 
         if action_type == "reply":
             event.status = EventStatus.PROCESSED
