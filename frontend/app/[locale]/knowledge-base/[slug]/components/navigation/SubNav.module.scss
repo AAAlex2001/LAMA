@@ -8,6 +8,7 @@
   z-index: 100;
   background: transparent;
   transition: padding-top 0.3s ease;
+  pointer-events: none;
 }
 
 .dropdownWrap {
@@ -15,6 +16,7 @@
   top: 60px;
   left: 0;
   right: 0;
+  pointer-events: auto;
 }
 
 .inner {
@@ -34,6 +36,7 @@
   box-sizing: border-box;
   min-width: 0;
   height: 60px;
+  pointer-events: auto;
 }
 
 .innerConstrained {
