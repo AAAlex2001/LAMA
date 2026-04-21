@@ -1,21 +1,87 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styles from './app-layout.module.scss';
 import BellIcon from '@/components/icons/bell-icon';
 import BurgerIcon from '@/components/icons/burger-icon';
 import MobileBurgerMenu from './mobile-burger-menu';
 
+const MOBILE_BREAKPOINT_PX = 1440;
+
 interface AppHeaderProps {
   pageTitle?: string;
+  shouldHideOnScroll?: boolean;
+  scrollContainer?: HTMLElement | null;
+  onVisibilityChange?: (isVisible: boolean) => void;
 }
 
-export default function AppHeader({ pageTitle }: AppHeaderProps) {
+export default function AppHeader({ pageTitle, shouldHideOnScroll: shouldHideOnScrollRaw = false, scrollContainer, onVisibilityChange }: AppHeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const syncIsMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT_PX);
+    syncIsMobile();
+    window.addEventListener('resize', syncIsMobile);
+    return () => window.removeEventListener('resize', syncIsMobile);
+  }, []);
+
+  const shouldHideOnScroll = shouldHideOnScrollRaw && isMobile;
+
+  useEffect(() => {
+    onVisibilityChange?.(isVisible);
+  }, [isVisible, onVisibilityChange]);
+
+  useEffect(() => {
+    if (!shouldHideOnScroll) {
+      setIsVisible(true);
+      return;
+    }
+
+    const target: HTMLElement | Window = scrollContainer ?? window;
+
+    const getScrollTop = () => {
+      if (scrollContainer) return scrollContainer.scrollTop;
+      const se = document.scrollingElement as HTMLElement | null;
+      return (
+        window.scrollY ||
+        window.pageYOffset ||
+        se?.scrollTop ||
+        document.documentElement.scrollTop ||
+        document.body.scrollTop ||
+        0
+      );
+    };
+
+    const TOP_THRESHOLD = 0;
+    let rafId = 0;
+    let ticking = false;
+
+    const syncHeader = () => {
+      setIsVisible(getScrollTop() <= TOP_THRESHOLD);
+      ticking = false;
+    };
+
+    syncHeader();
+
+    const onAnyScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      rafId = window.requestAnimationFrame(syncHeader);
+    };
+
+    target.addEventListener('scroll', onAnyScroll, { passive: true });
+
+    return () => {
+      target.removeEventListener('scroll', onAnyScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [shouldHideOnScroll, scrollContainer]);
 
   return (
     <>
-      <header className={styles.header}>
+      <header className={`${styles.header} ${shouldHideOnScroll && !isVisible ? styles.headerHidden : ''}`}>
         <a href="/" className={styles.headerLogo}>
           <span className={styles.headerLogoPrefix}>LAMA</span>
           <span className={styles.headerLogoSuffix}>planner</span>

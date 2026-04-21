@@ -64,7 +64,12 @@ const InvitationLinkItem: React.FC<InvitationLinkItemProps> = ({ link, onEdit })
           </div>
         </div>
         <div className={styles.linkDetails}>
-          <span className={styles.channelName}>{link.channelName}</span>
+          <div className={styles.linkMeta}>
+            <span className={styles.channelName}>{link.channelName}</span>
+            <span className={styles.usageCount}>
+              {link.creationDate}
+            </span>
+          </div>
           <div className={styles.linkMeta}>
             {link.expirationDate && (
               <span className={styles.expirationDate}>До {link.expirationDate}</span>

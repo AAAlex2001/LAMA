@@ -106,7 +106,7 @@ export default function KnowledgeArticlePageShell({ article, articles, navigatio
 
   if (authState === 'authenticated') {
     return (
-      <AppLayout pageTitle="База знаний">
+      <AppLayout pageTitle="База знаний" shouldHideOnScroll={true}>
         <KnowledgeArticleView
           article={article}
           articles={articles}

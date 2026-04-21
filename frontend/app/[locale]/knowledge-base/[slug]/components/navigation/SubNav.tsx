@@ -47,7 +47,7 @@ export default function SubNav({
     };
 
     const HIDE_DELTA = 6;
-    const TOP_THRESHOLD = 8;
+    const TOP_THRESHOLD = 0;
     let ticking = false;
 
     lastScrollY.current = getScrollTop();
@@ -57,7 +57,7 @@ export default function SubNav({
       const delta = currentY - lastScrollY.current;
 
       if (currentY <= TOP_THRESHOLD) {
-        setIsVisible((p) => (p ? p : true));
+        setIsVisible(true);
         lastScrollY.current = currentY;
       } else if (delta > HIDE_DELTA) {
         setIsVisible((p) => (p ? false : p));
@@ -101,7 +101,7 @@ export default function SubNav({
   return (
     <motion.nav
       className={styles.subnav}
-      initial={false}
+      initial={{ y: 0, opacity: 1 }}
       animate={{ y: isVisible ? 0 : -160, opacity: isVisible ? 1 : 0 }}
       transition={{ duration: 0.3, ease: 'easeInOut' }}
     >

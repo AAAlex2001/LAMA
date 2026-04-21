@@ -10,20 +10,23 @@
 }
 
 @media (min-width: 1440px) {
-  .sidebarMaxHeight {
-    max-height: calc(100dvh - 110px);
-    overflow: hidden;
-    justify-content: flex-end;
-  }
-
+  .sidebarMaxHeight,
   .sidebarFillHeight {
     width: 100%;
     height: auto;
-    max-height: calc(100dvh - 40px);
     min-height: 0;
     overflow: hidden;
   }
 
+  .sidebarMaxHeight {
+    max-height: calc(100dvh - 110px);
+  }
+
+  .sidebarFillHeight {
+    max-height: calc(100dvh - 104px);
+  }
+
+  .sidebarMaxHeight .sectionsGroup,
   .sidebarFillHeight .sectionsGroup {
     flex: 1 1 auto;
     min-height: 0;
@@ -34,6 +37,7 @@
     padding-bottom: 12px;
   }
 
+  .sidebarMaxHeight .bottomGroup,
   .sidebarFillHeight .bottomGroup {
     margin-top: auto;
     flex-shrink: 0;

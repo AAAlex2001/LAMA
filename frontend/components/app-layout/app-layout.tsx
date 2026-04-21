@@ -14,14 +14,23 @@ export function useScrollContainer() {
 interface AppLayoutProps {
   children: ReactNode;
   pageTitle?: string;
+  shouldHideOnScroll?: boolean;
 }
 
-export default function AppLayout({ children, pageTitle }: AppLayoutProps) {
+export default function AppLayout({ children, pageTitle, shouldHideOnScroll = false }: AppLayoutProps) {
   const [scrollContainer, setScrollContainer] = useState<HTMLElement | null>(null);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+
+  const isHeaderHidden = shouldHideOnScroll && !isHeaderVisible;
 
   return (
-    <div className={styles.appLayout}>
-      <AppHeader pageTitle={pageTitle} />
+    <div className={`${styles.appLayout} ${isHeaderHidden ? styles.appLayoutHeaderHidden : ''}`}>
+      <AppHeader
+        pageTitle={pageTitle}
+        shouldHideOnScroll={shouldHideOnScroll}
+        scrollContainer={scrollContainer}
+        onVisibilityChange={setIsHeaderVisible}
+      />
       <div className={styles.appBody}>
         <AppSidebar />
         <main ref={setScrollContainer} className={styles.appContent}>

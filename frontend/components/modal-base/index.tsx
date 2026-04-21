@@ -146,16 +146,13 @@ const ModalContent = ({ children, className, size = 'md', padding = 'md' }: Moda
 
   if (!isOpen) return null;
 
-  const handleContentClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
   return (
-    <div className={styles.overlay} onClick={(e) => {
-      if (e.target === e.currentTarget) {
-        close();
-      }
-    }}>
+    <div className={styles.portal}>
+      <div
+        className={styles.overlay}
+        onClick={close}
+        aria-hidden="true"
+      />
       <div
         ref={contentRef}
         className={classNames(
@@ -164,7 +161,8 @@ const ModalContent = ({ children, className, size = 'md', padding = 'md' }: Moda
           styles[`modal-padding-${padding}`],
           className
         )}
-        onClick={handleContentClick}
+        role="dialog"
+        aria-modal="true"
       >
         {children}
       </div>
