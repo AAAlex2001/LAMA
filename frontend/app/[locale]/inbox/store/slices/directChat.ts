@@ -3,6 +3,7 @@ import {
   fetchDirectChatsThunk,
   fetchMoreDirectChatsThunk,
   fetchDirectMessagesThunk,
+  createDirectChatThunk,
   updateDirectChatThunk,
   editDirectMessageThunk,
   deleteDirectMessageThunk,
@@ -356,6 +357,17 @@ const directChatSlice = createSlice({
         const key = makeChatKey(action.meta.arg.botId, action.meta.arg.tgChatId);
         state.messagesLoading[key] = false;
         state.messagesError[key] = action.payload as string;
+      });
+
+    builder
+      .addCase(createDirectChatThunk.fulfilled, (state, action) => {
+        const chat = action.payload;
+        const key = makeChatKey(chat.bot_id, chat.tg_chat_id);
+        if (!state.chatsById[key]) {
+          state.chatOrder.unshift(key);
+          state.chatsTotal += 1;
+        }
+        state.chatsById[key] = chat;
       });
 
     builder

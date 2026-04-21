@@ -59,7 +59,8 @@ export const createInviteLinkThunk = createAsyncThunk(
       dispatch(addInviteLink({ channelId, inviteLink }));
       return inviteLink;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to create invite link';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to create invite link';
       return rejectWithValue(errorMessage);
     } finally {
       dispatch(setInviteLinksLoading({ channelId, loading: false }));

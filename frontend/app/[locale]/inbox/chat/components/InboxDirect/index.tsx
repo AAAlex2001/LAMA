@@ -6,20 +6,24 @@ import DirectMenu from "./components/DirectMenu";
 import { DesktopWrapper, MobileWrapper } from '@/components/responsive-wrappers';
 import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
 import { makeChatKey } from '@/app/[locale]/inbox/store/slices/directChat';
+import { createDirectChatThunk } from '@/app/[locale]/inbox/store/thunks/directChat';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 const InboxDirect = ( { onClose, isReady = true }: { onClose: () => void; isReady?: boolean } ) => {
-  const { 
-    activeChatId, 
+  const {
+    activeChatId,
     chatsById,
     chatOrder,
-    chatsLoading, 
-    setActiveChat, 
+    chatsLoading,
+    setActiveChat,
     fetchChats,
+    createChat,
     chatsError,
   } = useDirectChat();
+
+  const creatingChatRef = useRef(false);
 
   const router = useRouter();
   const { locale } = useParams();
@@ -51,11 +55,28 @@ const InboxDirect = ( { onClose, isReady = true }: { onClose: () => void; isRead
     }
 
     if (chatOrder.length > 0 && !chatsLoading) {
-      initialParamsProcessedRef.current = true;
       const chatKey = makeChatKey(botIdNumber, tgChatId);
       if (chatsById[chatKey]) {
+        initialParamsProcessedRef.current = true;
         setActiveChat(chatKey);
+        return;
       }
+
+      if (creatingChatRef.current) return;
+      creatingChatRef.current = true;
+
+      createChat({
+        bot_id: botIdNumber,
+        tg_chat_id: tgChatId,
+        tg_user_id: tgChatId,
+      }).then((result) => {
+        creatingChatRef.current = false;
+        if (createDirectChatThunk.fulfilled.match(result)) {
+          initialParamsProcessedRef.current = true;
+          const created = result.payload;
+          setActiveChat(makeChatKey(created.bot_id, created.tg_chat_id));
+        }
+      });
     }
   }, [isReady, chatOrder, chatsById, chatsLoading, botIdNumber, tgChatId]);
 

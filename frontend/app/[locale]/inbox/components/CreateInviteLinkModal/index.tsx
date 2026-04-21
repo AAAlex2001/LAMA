@@ -176,8 +176,12 @@ const CreateInviteLinkModal: React.FC<{
       onCreateLink?.(previewData);
       onOpenChange?.(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось обновить ссылку-приглашение';
-      showError(errorMessage);
+      const message = (() => {
+        if (typeof error === 'string') return error;
+        if (error instanceof Error) return error.message;
+        return 'Не удалось обновить ссылку-приглашение';
+      })();
+      showError(message);
     } finally {
       setIsUpdatingLink(false);
     }
@@ -217,8 +221,12 @@ const CreateInviteLinkModal: React.FC<{
       onCreateLink?.(modalState.previewData!);
       onOpenChange?.(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось создать ссылку-приглашение';
-      showError(errorMessage);
+      const message = (() => {
+        if (typeof error === 'string') return error;
+        if (error instanceof Error) return error.message;
+        return 'Не удалось создать ссылку-приглашение';
+      })();
+      showError(message);
     }
   };
 

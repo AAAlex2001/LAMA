@@ -44,6 +44,7 @@ import {
   fetchMoreDirectChatsThunk,
   fetchDirectMessagesThunk,
   sendDirectMessageThunk,
+  createDirectChatThunk,
   updateDirectChatThunk,
   editDirectMessageThunk,
   deleteDirectMessageThunk,
@@ -52,6 +53,7 @@ import type {
   FetchDirectChatsParams,
   FetchDirectMessagesParams,
   SendDirectMessageParams,
+  CreateDirectChatParams,
   EditDirectMessageParams,
   DeleteDirectMessageParams,
   UpdateDirectChatParams,
@@ -184,6 +186,8 @@ export function useDirectChat() {
     }
   };
 
+  const createChat = (params: CreateDirectChatParams) => dispatch(createDirectChatThunk(params));
+
   const updateChat = (params: UpdateDirectChatParams) => dispatch(updateDirectChatThunk(params));
 
   const pinChat = (chatId: number) => dispatch(updateDirectChatThunk({ chatId, is_pinned: true }));
@@ -246,6 +250,7 @@ export function useDirectChat() {
     fetchMoreChats,
     fetchMessages,
     sendMessage,
+    createChat,
     updateChat,
     pinChat,
     unpinChat,
