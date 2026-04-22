@@ -165,27 +165,21 @@ const moderationSlice = createSlice({
     },
     setAutoDeleteSystemMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteSystemMessages = action.payload;
-      state.autoDeleteEnabled = action.payload || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
     },
     setAutoDeleteCommandMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteCommandMessages = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || action.payload || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
     },
     setAutoDeleteJoinMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteJoinMessages = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || action.payload || state.autoDeleteAllMessages || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
     },
     setAutoDeleteAllMessages(state, action: PayloadAction<boolean>) {
       state.autoDeleteAllMessages = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || action.payload || state.autoDeleteTextOnly || state.autoDeleteMediaOnly;
     },
     setAutoDeleteTextOnly(state, action: PayloadAction<boolean>) {
       state.autoDeleteTextOnly = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || action.payload || state.autoDeleteMediaOnly;
     },
     setAutoDeleteMediaOnly(state, action: PayloadAction<boolean>) {
       state.autoDeleteMediaOnly = action.payload;
-      state.autoDeleteEnabled = state.autoDeleteSystemMessages || state.autoDeleteCommandMessages || state.autoDeleteJoinMessages || state.autoDeleteAllMessages || state.autoDeleteTextOnly || action.payload;
     },
     setAutoDeleteDelaySeconds(state, action: PayloadAction<number>) {
       state.autoDeleteDelaySeconds = action.payload;

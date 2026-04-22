@@ -172,15 +172,6 @@ export const updateAutoDeleteThunk = createAsyncThunk(
           delete_delay_seconds: autoDeleteDelaySeconds,
         }),
       });
-      dispatch(initAutoDeleteSettings({
-        delete_system_messages: data.delete_system_messages,
-        delete_command_messages: data.delete_command_messages,
-        delete_join_messages: data.delete_join_messages,
-        delete_all_messages: data.delete_all_messages,
-        delete_text_only: data.delete_text_only,
-        delete_media_only: data.delete_media_only,
-        delete_delay_seconds: data.delete_delay_seconds,
-      }));
       return data;
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Ошибка сохранения';

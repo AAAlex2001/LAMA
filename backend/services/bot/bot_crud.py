@@ -7,11 +7,12 @@ from typing import Optional, List, Tuple
 from aiogram import Bot
 from aiogram.types import BufferedInputFile, InputProfilePhotoStatic
 from backend.services.telegram_client import RateLimitedBot
-from aiogram.exceptions import TelegramAPIError
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
+from aiogram.utils.token import TokenValidationError
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.config import PUBLIC_DOMAIN, TELEGRAM_WEBHOOK_SECRET
+from backend.config import PUBLIC_DOMAIN, WEBHOOK_DOMAIN, TELEGRAM_WEBHOOK_SECRET
 from backend.models.bots import Bot as BotModel, BotStatus
 from backend.schemas.bots import BotCreate, BotUpdate
 from backend.services.bot_provider import resolve_by_token, evict_bot
@@ -73,7 +74,7 @@ class BotCrudService:
         raw_bot = resolve_by_token(data.token).bot
         await self.setup_webhook(raw_bot, data.token)
         bot.is_webhook_enabled = True
-        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{data.token}"
+        bot.webhook_url = f"{WEBHOOK_DOMAIN.rstrip('/')}/api/telegram/webhook/{data.token}"
         await self.db.flush()
         await self.db.refresh(bot)
 
@@ -183,7 +184,7 @@ class BotCrudService:
         await self.setup_webhook(raw_bot, bot.token)
         bot.status = BotStatus.ACTIVE
         bot.is_webhook_enabled = True
-        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{bot.token}"
+        bot.webhook_url = f"{WEBHOOK_DOMAIN.rstrip('/')}/api/telegram/webhook/{bot.token}"
         bot.updated_at = datetime.now(timezone.utc)
         await self.db.flush()
         await self.db.refresh(bot)
@@ -234,7 +235,7 @@ class BotCrudService:
         raw_bot = resolve_by_token(token).bot
         await self.setup_webhook(raw_bot, token)
         bot.is_webhook_enabled = True
-        bot.webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
+        bot.webhook_url = f"{WEBHOOK_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
         await self.db.flush()
         await self.db.refresh(bot)
 
@@ -242,7 +243,10 @@ class BotCrudService:
 
     async def fetch_bot_info(self, token: str) -> tuple:
         """Получить информацию о боте из Telegram API."""
-        raw_bot = resolve_by_token(token).bot
+        try:
+            raw_bot = resolve_by_token(token).bot
+        except TokenValidationError:
+            raise HTTPException(status_code=400, detail="Неверный формат токена бота")
         try:
             bot_info = await raw_bot.get_me()
             desc_task = self.safe_get_description(raw_bot)
@@ -255,17 +259,47 @@ class BotCrudService:
             raise HTTPException(status_code=400, detail=f"Invalid bot token: {e}")
 
     async def setup_webhook(self, bot: RateLimitedBot, token: str) -> None:
-        """Установить вебхук для бота."""
-        webhook_url = f"{PUBLIC_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
+        """Установить вебхук для бота. При DNS-сбое Telegram ретраим раз."""
+        webhook_url = f"{WEBHOOK_DOMAIN.rstrip('/')}/api/telegram/webhook/{token}"
 
-        current_webhook = await bot.get_webhook_info()
-        if current_webhook and current_webhook.url == webhook_url:
-            return
+        try:
+            current_webhook = await bot.get_webhook_info()
+            if current_webhook and current_webhook.url == webhook_url:
+                return
+        except TelegramAPIError as e:
+            logger.warning("get_webhook_info failed, proceed to set: %s", e)
 
-        await bot.set_webhook(
-            url=webhook_url,
-            secret_token=TELEGRAM_WEBHOOK_SECRET or None,
-            allowed_updates=WEBHOOK_ALLOWED_UPDATES,
+        last_error: Optional[Exception] = None
+        for attempt in range(2):
+            try:
+                await bot.set_webhook(
+                    url=webhook_url,
+                    secret_token=TELEGRAM_WEBHOOK_SECRET or None,
+                    allowed_updates=WEBHOOK_ALLOWED_UPDATES,
+                )
+                return
+            except TelegramBadRequest as e:
+                last_error = e
+                msg = str(e).lower()
+                if "failed to resolve host" in msg or "temporary failure" in msg:
+                    logger.warning(
+                        "setWebhook DNS issue (attempt %s), retrying: %s",
+                        attempt + 1, e,
+                    )
+                    await asyncio.sleep(2)
+                    continue
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Telegram отклонил вебхук: {e}",
+                )
+
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "Telegram сейчас не может зарезолвить домен вебхука "
+                f"({WEBHOOK_DOMAIN}). Попробуйте ещё раз через минуту. "
+                f"Последняя ошибка: {last_error}"
+            ),
         )
 
     async def safe_get_description(self, bot: RateLimitedBot) -> Optional[str]:

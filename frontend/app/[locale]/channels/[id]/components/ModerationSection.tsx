@@ -23,6 +23,7 @@ import {
   setBannedWordsEnabled,
   toggleMediaType,
   setMediaBlockEnabled,
+  setAutoDeleteEnabled,
   setAutoDeleteSystemMessages,
   setAutoDeleteCommandMessages,
   setAutoDeleteJoinMessages,
@@ -587,9 +588,13 @@ const ModerationSection: FC<ModerationSectionProps> = ({ channel }) => {
           <div className={styles.settingRow}>
             <span className={styles.settingLabel}>Автоудаление сообщений</span>
             <Toggle checked={autoDeleteEnabled} onChange={(v) => {
-              dispatch(setAutoDeleteSystemMessages(v));
-              dispatch(setAutoDeleteCommandMessages(v));
-              if (!v) {
+              dispatch(setAutoDeleteEnabled(v));
+              if (v) {
+                dispatch(setAutoDeleteSystemMessages(true));
+                dispatch(setAutoDeleteCommandMessages(true));
+              } else {
+                dispatch(setAutoDeleteSystemMessages(false));
+                dispatch(setAutoDeleteCommandMessages(false));
                 dispatch(setAutoDeleteJoinMessages(false));
                 dispatch(setAutoDeleteAllMessages(false));
                 dispatch(setAutoDeleteTextOnly(false));

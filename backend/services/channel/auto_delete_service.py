@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.channels import ChannelAutoDeleteSettings, ChannelGroup
 from backend.schemas.channels import ChannelAutoDeleteSettingsUpdate
 from backend.services.channel.utils.message_utils import (
+    SYSTEM_MESSAGE_ATTRS,
     is_command_message, is_system_message, is_join_message,
     is_text_only_message, is_media_message,
 )
@@ -67,16 +68,22 @@ class AutoDeleteService:
         if not message or not message.chat:
             return False
 
-        if message.from_user and message.from_user.is_bot:
-            return False
-
         system = is_system_message(message)
-
-        if message.sender_chat and not system:
-            return False
+        system_attrs = [a for a in SYSTEM_MESSAGE_ATTRS if getattr(message, a, None)] if system else []
 
         settings = await self.resolve_settings(message.chat.id)
         if not settings:
+            if system:
+                logger.info(
+                    "auto_delete: no settings for chat=%s (system msg %s) — skip",
+                    message.chat.id, system_attrs,
+                )
+            return False
+
+        if message.from_user and message.from_user.is_bot and not settings.delete_all_messages:
+            return False
+
+        if message.sender_chat and not system:
             return False
 
         should_delete = False
@@ -95,6 +102,17 @@ class AutoDeleteService:
             should_delete = True
         elif settings.delete_media_only and is_media_message(message):
             should_delete = True
+
+        if system:
+            logger.info(
+                "auto_delete: chat=%s msg=%s system_attrs=%s "
+                "flags=[all=%s system=%s join=%s] -> should_delete=%s",
+                message.chat.id, message.message_id, system_attrs,
+                settings.delete_all_messages,
+                settings.delete_system_messages,
+                settings.delete_join_messages,
+                should_delete,
+            )
 
         if not should_delete:
             return False
