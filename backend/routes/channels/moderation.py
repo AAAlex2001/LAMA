@@ -1,15 +1,21 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.routes.channels.dependencies import get_moderation_service
 from backend.schemas.channels import (
     ChannelModerationRuleCreate,
     ChannelModerationRuleListResponse,
     ChannelModerationRuleResponse,
     ChannelModerationRuleUpdate,
 )
-from backend.services.channel.moderation_service import ModerationService
+from backend.services.channel.features.moderation_rules import (
+    CreateModerationRule,
+    DeleteModerationRule,
+    ListModerationRules,
+    UpdateModerationRule,
+)
 
 router = APIRouter()
 
@@ -18,19 +24,19 @@ router = APIRouter()
 async def create_moderation_rule(
     channel_id: int,
     data: ChannelModerationRuleCreate,
-    service: ModerationService = Depends(get_moderation_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create_rule(channel_id=channel_id, data=data, owner_id=current_user.id)
+    return await CreateModerationRule(db).execute(channel_id, current_user.id, data)
 
 
 @router.get("/{channel_id}/moderation/rules", response_model=ChannelModerationRuleListResponse)
 async def list_moderation_rules(
     channel_id: int,
-    service: ModerationService = Depends(get_moderation_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    rules = await service.list_rules(channel_id=channel_id, owner_id=current_user.id)
+    rules = await ListModerationRules(db).execute(channel_id, current_user.id)
     return ChannelModerationRuleListResponse(items=rules, total=len(rules))
 
 
@@ -39,17 +45,17 @@ async def update_moderation_rule(
     channel_id: int,
     rule_id: int,
     data: ChannelModerationRuleUpdate,
-    service: ModerationService = Depends(get_moderation_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.update_rule(channel_id=channel_id, rule_id=rule_id, data=data, owner_id=current_user.id)
+    return await UpdateModerationRule(db).execute(channel_id, rule_id, current_user.id, data)
 
 
 @router.delete("/{channel_id}/moderation/rules/{rule_id}", status_code=204)
 async def delete_moderation_rule(
     channel_id: int,
     rule_id: int,
-    service: ModerationService = Depends(get_moderation_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await service.delete_rule(channel_id=channel_id, rule_id=rule_id, owner_id=current_user.id)
+    await DeleteModerationRule(db).execute(channel_id, rule_id, current_user.id)

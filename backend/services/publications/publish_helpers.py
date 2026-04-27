@@ -14,8 +14,8 @@ from backend.models.publications import (
 )
 from backend.models.channels import ChannelGroup as Channel, BackupMode
 from backend.schemas.publications import ChannelPublishResult
-from backend.services.channel.backup_service import BackupService
-from backend.services.channel.retransmit_service import RetransmitService
+from backend.services.channel.features.backup import SavePostToBackup
+from backend.services.channel.features.retransmit.retransmit_post import RetransmitPost
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +92,7 @@ async def save_telegram_messages(results: List[ChannelPublishResult], db: AsyncS
 async def handle_backups(
     results: List[ChannelPublishResult],
     publication: Publication,
-    backup_service: BackupService,
-    retransmit_service: RetransmitService,
+    db: AsyncSession,
     create_notification_callback,
 ) -> None:
     for result in results:
@@ -101,8 +100,7 @@ async def handle_backups(
             try:
                 await handle_instant_backup(
                     result.channel_obj, result.sent_messages,
-                    publication, backup_service, retransmit_service,
-                    create_notification_callback,
+                    publication, db, create_notification_callback,
                 )
             except Exception as e:
                 logger.error("Failed to handle instant backup for %s: %s", result.channel, e)
@@ -112,8 +110,7 @@ async def handle_instant_backup(
     channel: Channel,
     messages: List[Any],
     publication: Publication,
-    backup_service: BackupService,
-    retransmit_service: RetransmitService,
+    db: AsyncSession,
     create_notification_callback,
 ) -> None:
     if channel.backup_mode == BackupMode.DISABLED:
@@ -126,13 +123,13 @@ async def handle_instant_backup(
     try:
         saved_post = None
         for message in messages:
-            saved_post = await backup_service.save_post(channel.id, message)
+            saved_post = await SavePostToBackup(db).execute(channel.id, message)
 
         if saved_post and channel.backup_mode == BackupMode.INSTANT and target_ids:
             if should_retransmit(publication, channel):
                 for target_id in target_ids:
                     if target_id != channel.id:
-                        await retransmit_service.retransmit_post(saved_post, target_id)
+                        await RetransmitPost(db).execute(saved_post, target_id)
             else:
                 logger.info(
                     "retransmit_skipped: channel=%s, pub=%s, content_type=%s, post_types=%s",

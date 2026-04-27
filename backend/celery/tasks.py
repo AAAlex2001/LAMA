@@ -26,15 +26,14 @@ from backend.models.publications import (
 from backend.schemas.publications.publishing import PublishResult
 from backend.services.bot import RecurringMessageService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
-from backend.services.channel import ChannelService
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.publications.publication_query_service import PublicationQueryService
 from backend.services.publications.series_service import SeriesService
 from backend.services.publications import publisher, message_editor
 from backend.services.publications.publish_helpers import make_notification_callback
 from backend.services.publications.repeat_calculator import calculate_next_repeat_time
-from backend.services.channel.backup_job_service import BackupJobService
-from backend.services.channel.auto_delete_service import AutoDeleteService
+from backend.services.channel.features.auto_delete import SafeDeleteMessage
+from backend.services.channel.features.backup_jobs.process_job import ProcessBackupJob
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -91,9 +90,8 @@ async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
                 publication, lambda ch: resolve_for_channel(db, ch),
             )
         else:
-            channel_service = ChannelService(db=db)
             result = await publisher.publish_to_channels(
-                publication, db, channel_service,
+                publication, db,
                 lambda ch: resolve_for_channel(db, ch),
                 make_notification_callback(db),
                 calculate_next_repeat_time,
@@ -519,8 +517,7 @@ async def delayed_delete_message_async(bot_id: int, chat_id: int, message_id: in
 
     async with CelerySessionLocal() as db:
         telegram_bot = await resolve_for_bot_id(db, bot_id)
-        service = AutoDeleteService(db)
-        result = await service.safe_delete(telegram_bot, chat_id, message_id)
+        result = await SafeDeleteMessage(telegram_bot).execute(chat_id, message_id)
         await db.commit()
         return result
 
@@ -532,8 +529,7 @@ def process_backup_job(job_id: int) -> str:
 
 async def process_backup_job_async(job_id: int) -> str:
     async with CelerySessionLocal() as db:
-        service = BackupJobService(db)
-        has_more = await service.process(job_id)
+        has_more = await ProcessBackupJob(db).execute(job_id)
         await db.commit()
 
     if has_more:

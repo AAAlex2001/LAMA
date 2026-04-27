@@ -18,8 +18,6 @@ from backend.models.publications import (
 from backend.models.channels import ChannelGroup
 from backend.schemas.publications.series import PublicationSeriesUpdate
 from backend.schemas.publications import PublishResult, ChannelPublishResult
-from backend.services.channel.backup_service import BackupService
-from backend.services.channel.retransmit_service import RetransmitService
 from backend.services.publications.publish_helpers import handle_backups
 from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot
@@ -244,11 +242,8 @@ class SeriesService:
 
         await self.db.flush()
 
-        backup_service = BackupService(self.db)
-        retransmit_service = RetransmitService(self.db)
         await handle_backups(
-            results, publication,
-            backup_service, retransmit_service,
+            results, publication, self.db,
             lambda pub_id, level, msg, extra=None: None,
         )
 

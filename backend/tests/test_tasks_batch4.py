@@ -570,11 +570,11 @@ class TestInviteLinkMemberCount:
 
     @pytest.mark.asyncio
     async def test_sync_single_updates_member_count(self):
-        """sync_single обновляет member_count из Telegram API."""
-        from backend.services.channel.invite_link_service import InviteLinkService
+        """RefreshInviteLink обновляет member_count из Telegram API."""
+        from backend.services.channel.features.invite_links import RefreshInviteLink
 
         db = AsyncMock()
-        service = InviteLinkService(db)
+        feature = RefreshInviteLink(db)
 
         channel = MagicMock()
         channel.id = 1
@@ -596,8 +596,11 @@ class TestInviteLinkMemberCount:
         tg_link.pending_join_request_count = 3
         fake_bot.edit_chat_invite_link.return_value = tg_link
 
-        with patch.object(service, "resolve_bot", return_value=fake_bot):
-            result = await service.sync_single(channel, link)
+        with patch(
+            "backend.services.channel.features.invite_links.refresh_link.resolve_for_channel",
+            return_value=fake_bot,
+        ):
+            await feature.execute(channel, link)
 
         assert link.member_count == 42
         assert link.pending_join_request_count == 3

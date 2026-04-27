@@ -14,11 +14,15 @@ from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, MessageType
-from backend.models.channels import ChannelGroup
-from backend.services.channel import ChannelAutoDeleteService
+from backend.models.channels import ChannelGroup, ForumTopic
+from backend.services.channel.features.auto_delete import ProcessAutoDelete
 from backend.services.channel.utils.message_utils import is_system_message
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.channel.forum_topic_service import ForumTopicService
+from backend.services.channel.features.forum_topics import (
+    CloseForumTopic,
+    ReopenForumTopic,
+    UpsertForumTopic,
+)
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.messages.members import MemberProcessor
@@ -368,8 +372,7 @@ class MessageHandler:
             logger.error(f"Side effects processing error: {e}", exc_info=True)
 
         try:
-            auto_delete_service = ChannelAutoDeleteService(self.db)
-            await auto_delete_service.process_auto_delete(message, bot_id=self.bot_model.id)
+            await ProcessAutoDelete(self.db).execute(message, bot_id=self.bot_model.id)
         except Exception as e:
             logger.error(f"Auto-delete processing error: {e}", exc_info=True)
 
@@ -514,12 +517,10 @@ class MessageHandler:
         if not channel or not channel.is_forum:
             return
 
-        service = ForumTopicService(self.db)
-
         try:
             if topic_created:
                 thread_id = message.message_thread_id or 0
-                await service.upsert_topic(
+                await UpsertForumTopic(self.db).execute(
                     channel_id=channel.id,
                     thread_id=thread_id,
                     name=topic_created.name,
@@ -529,7 +530,7 @@ class MessageHandler:
             elif topic_edited:
                 thread_id = message.message_thread_id or 0
                 if topic_edited.name:
-                    await service.upsert_topic(
+                    await UpsertForumTopic(self.db).execute(
                         channel_id=channel.id,
                         thread_id=thread_id,
                         name=topic_edited.name,
@@ -537,19 +538,21 @@ class MessageHandler:
                     )
             elif topic_closed:
                 thread_id = message.message_thread_id or 0
-                await service.close_topic(channel.id, thread_id)
+                await CloseForumTopic(self.db).execute(channel.id, thread_id)
             elif topic_reopened:
                 thread_id = message.message_thread_id or 0
-                await service.reopen_topic(channel.id, thread_id)
+                await ReopenForumTopic(self.db).execute(channel.id, thread_id)
             elif has_thread and message.message_thread_id != 1:
-                existing = await service.get_topics(channel.id)
-                known_ids = {t.thread_id for t in existing}
+                existing = (await self.db.execute(
+                    select(ForumTopic).where(ForumTopic.channel_id == channel.id)
+                )).scalars().all()
+                known_ids = {topic.thread_id for topic in existing}
                 if message.message_thread_id not in known_ids:
                     topic_name = f"Топик #{message.message_thread_id}"
                     if (message.reply_to_message
                             and message.reply_to_message.forum_topic_created):
                         topic_name = message.reply_to_message.forum_topic_created.name
-                    await service.upsert_topic(
+                    await UpsertForumTopic(self.db).execute(
                         channel_id=channel.id,
                         thread_id=message.message_thread_id,
                         name=topic_name,

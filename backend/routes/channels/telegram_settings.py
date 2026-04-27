@@ -1,24 +1,40 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Query, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.routes.channels.dependencies import get_telegram_settings_service
 from backend.schemas.channels import ChannelGroupResponse, ChannelPermissionsUpdate, ChannelTelegramUpdate
-from backend.services.channel.telegram_settings_service import TelegramSettingsService
+from backend.services.channel.features.telegram_settings import (
+    DeleteChannelPhoto,
+    PinChannelMessage,
+    SetChannelPermissions,
+    UnpinChannelMessage,
+    UpdateTelegramSettings,
+    UploadChannelPhotoBytes,
+)
 
 router = APIRouter()
+
+NIGHT_MODE_KEYS = (
+    "night_mode_enabled",
+    "night_mode_start",
+    "night_mode_end",
+    "night_mode_block_media",
+    "night_mode_block_text",
+)
 
 
 @router.put("/{channel_id}/telegram-settings", response_model=ChannelGroupResponse)
 async def update_channel_telegram_settings(
     channel_id: int,
     data: ChannelTelegramUpdate,
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.update_settings(
+    return await UpdateTelegramSettings(db).execute(
         channel_id=channel_id,
         owner_id=current_user.id,
         title=data.title,
@@ -30,21 +46,21 @@ async def update_channel_telegram_settings(
 @router.delete("/{channel_id}/telegram-photo", response_model=ChannelGroupResponse)
 async def delete_channel_telegram_photo(
     channel_id: int,
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.delete_photo(channel_id=channel_id, owner_id=current_user.id)
+    return await DeleteChannelPhoto(db).execute(channel_id, owner_id=current_user.id)
 
 
 @router.post("/{channel_id}/telegram-photo", response_model=ChannelGroupResponse, status_code=200)
 async def upload_channel_telegram_photo(
     channel_id: int,
     photo: UploadFile = File(...),
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     data = await photo.read()
-    return await service.upload_photo_bytes(
+    return await UploadChannelPhotoBytes(db).execute(
         channel_id=channel_id,
         owner_id=current_user.id,
         data=data,
@@ -56,29 +72,16 @@ async def upload_channel_telegram_photo(
 async def set_channel_telegram_permissions(
     channel_id: int,
     data: ChannelPermissionsUpdate,
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     payload = data.model_dump(exclude_none=True)
-    night_mode_keys = [
-        "night_mode_enabled",
-        "night_mode_start",
-        "night_mode_end",
-        "night_mode_block_media",
-        "night_mode_block_text",
-    ]
-    night_mode_settings = {}
-    for key in night_mode_keys:
-        if key in payload:
-            night_mode_settings[key] = payload.pop(key)
+    night_mode_settings = {key: payload.pop(key) for key in NIGHT_MODE_KEYS if key in payload}
 
-    permissions = payload
-
-
-    return await service.set_permissions(
+    return await SetChannelPermissions(db).execute(
         channel_id=channel_id,
         owner_id=current_user.id,
-        permissions=permissions,
+        permissions=payload,
         night_mode_settings=night_mode_settings or None,
     )
 
@@ -88,10 +91,10 @@ async def pin_message_in_channel(
     channel_id: int,
     message_id: int = Query(..., description="ID сообщения для закрепления"),
     disable_notification: bool = Query(False),
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.pin_message(
+    return await PinChannelMessage(db).execute(
         channel_id=channel_id,
         owner_id=current_user.id,
         message_id=message_id,
@@ -103,10 +106,10 @@ async def pin_message_in_channel(
 async def unpin_message_in_channel(
     channel_id: int,
     message_id: Optional[int] = Query(None),
-    service: TelegramSettingsService = Depends(get_telegram_settings_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.unpin_message(
+    return await UnpinChannelMessage(db).execute(
         channel_id=channel_id,
         owner_id=current_user.id,
         message_id=message_id,
