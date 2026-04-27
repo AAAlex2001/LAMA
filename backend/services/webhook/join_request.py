@@ -29,7 +29,7 @@ from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
 from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.schemas.inbox.events import InboxEventCreate
@@ -297,8 +297,8 @@ class JoinRequestHandler:
             else:
                 category = InboxCategory.MODERATION
 
-            event_service = InboxEventService(self.db)
-            await event_service.create_event(InboxEventCreate(
+            event_service = CreateInboxEvent(self.db)
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=category,
                 entity_type=EntityType.CHANNEL,

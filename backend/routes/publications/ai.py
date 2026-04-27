@@ -1,25 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.schemas.publications.enums import PublicationStatus
-from backend.schemas.publications.publication_base import PublicationCreate
-from backend.schemas.publications.publication_response import PublicationResponse
+from backend.config import OPENAI_API_KEY
+from backend.database import get_db
+from backend.models.auth import User
+from backend.routes.auth import get_current_user
 from backend.schemas.publications.ai import (
-    AIGenerateRequest,
     AIEditRequest,
     AIEditTextRequest,
     AIEditTextResponse,
+    AIGenerateRequest,
 )
-from backend.services.publications.ai_service import AIService
-from backend.services.publications.publication_create_service import PublicationCreateService
-from backend.services.publications.publication_query_service import PublicationQueryService
-from backend.routes.publications.dependencies import (
-    get_ai_service,
-    get_create_service,
-    get_query_service,
-)
-from backend.routes.auth import get_current_user
-from backend.models.auth import User
+from backend.schemas.publications.enums import PublicationStatus
+from backend.schemas.publications.publication_base import PublicationCreate
+from backend.schemas.publications.publication_response import PublicationResponse
+from backend.services.publications.features.ai.edit_content import EditContent
+from backend.services.publications.features.ai.edit_content_stream import EditContentStream
+from backend.services.publications.features.ai.generate_content import GenerateContent
+from backend.services.publications.features.publications.create_publication import CreatePublication
+from backend.services.publications.features.publications.lookup import find_publication_or_404
 
 router = APIRouter()
 
@@ -27,11 +27,10 @@ router = APIRouter()
 @router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
 async def generate_content_with_ai(
     request: AIGenerateRequest,
-    ai: AIService = Depends(get_ai_service),
-    creator: PublicationCreateService = Depends(get_create_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    content = await ai.generate_content(request)
+    content = await GenerateContent(OPENAI_API_KEY).execute(request)
     publication_data = PublicationCreate(
         content_type=request.content_type,
         text_content=content,
@@ -41,31 +40,31 @@ async def generate_content_with_ai(
         channel_ids=[],
         tag_names=[],
     )
-    return await creator.create_publication(publication_data, owner_id=current_user.id)
+    return await CreatePublication(db).execute(publication_data, owner_id=current_user.id)
 
 
 @router.post("/ai/edit-text", response_model=AIEditTextResponse)
 async def edit_text_with_ai(
     request: AIEditTextRequest,
-    ai: AIService = Depends(get_ai_service),
     current_user: User = Depends(get_current_user),
 ):
-    result = await ai.edit_content(request.text, request.instruction)
+    result = await EditContent(OPENAI_API_KEY).execute(request.text, request.instruction)
     return AIEditTextResponse(result=result)
 
 
 @router.post("/ai/edit-text-stream")
 async def edit_text_with_ai_stream(
     request: AIEditTextRequest,
-    ai: AIService = Depends(get_ai_service),
     current_user: User = Depends(get_current_user),
 ):
     async def generate():
         try:
-            async for chunk in ai.edit_content_stream(request.text, request.instruction):
+            async for chunk in EditContentStream(OPENAI_API_KEY).execute(
+                request.text, request.instruction,
+            ):
                 yield f"data: {chunk}\n\n"
-        except Exception as e:
-            yield f"data: [ERROR] {str(e)}\n\n"
+        except Exception as exc:
+            yield f"data: [ERROR] {exc}\n\n"
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(
@@ -79,17 +78,16 @@ async def edit_text_with_ai_stream(
 async def edit_content_with_ai(
     publication_id: int,
     data: AIEditRequest,
-    ai: AIService = Depends(get_ai_service),
-    query: PublicationQueryService = Depends(get_query_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    publication = await query.get_publication_or_404(publication_id, owner_id=current_user.id)
+    publication = await find_publication_or_404(db, publication_id, owner_id=current_user.id)
     if not publication.text_content:
         raise HTTPException(status_code=400, detail="Publication has no text content to edit")
 
-    edited = await ai.edit_content(publication.text_content, data.instruction)
+    edited = await EditContent(OPENAI_API_KEY).execute(publication.text_content, data.instruction)
     publication.text_content = edited
     publication.ai_generated = True
-    await query.db.flush()
-    await query.db.refresh(publication)
+    await db.flush()
+    await db.refresh(publication)
     return publication

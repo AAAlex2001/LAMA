@@ -1,16 +1,15 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.schemas.publications.series import (
     PublicationSeriesCreate,
-    PublicationSeriesUpdate,
     PublicationSeriesResponse,
+    PublicationSeriesUpdate,
 )
-from backend.models.publications import PublicationSeries
-from backend.database import get_db
-from backend.services.publications.series_service import SeriesService
-from backend.routes.publications.dependencies import get_series_service
+from backend.services.publications.features.series.create_series import CreateSeries
+from backend.services.publications.features.series.delete_series import DeleteSeries
+from backend.services.publications.features.series.update_series import UpdateSeries
 
 router = APIRouter(prefix="/series")
 
@@ -18,9 +17,9 @@ router = APIRouter(prefix="/series")
 @router.post("", response_model=PublicationSeriesResponse, status_code=201)
 async def create_series(
     data: PublicationSeriesCreate,
-    service: SeriesService = Depends(get_series_service),
+    db: AsyncSession = Depends(get_db),
 ):
-    return await service.create_series(
+    return await CreateSeries(db).execute(
         name=data.name,
         description=data.description,
         reply_to_previous=data.reply_to_previous,
@@ -31,15 +30,15 @@ async def create_series(
 async def update_series(
     series_id: int,
     data: PublicationSeriesUpdate,
-    service: SeriesService = Depends(get_series_service),
+    db: AsyncSession = Depends(get_db),
 ):
-    return await service.update_series(series_id, data)
+    return await UpdateSeries(db).execute(series_id, data)
 
 
 @router.delete("/{series_id}")
 async def delete_series(
     series_id: int,
-    service: SeriesService = Depends(get_series_service),
+    db: AsyncSession = Depends(get_db),
 ):
-    deleted_count = await service.delete_series(series_id)
+    deleted_count = await DeleteSeries(db).execute(series_id)
     return {"deleted_count": deleted_count}

@@ -28,7 +28,7 @@ from backend.schemas.inbox.enums import (
 from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.bot import TriggerService
 from backend.services.bot.bot_settings import BotSettingsService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
@@ -231,8 +231,8 @@ class SubscriptionHandler:
                     link_id = db_link.id
                     link_name = db_link.name
 
-            event_service = InboxEventService(self.db)
-            await event_service.create_event(InboxEventCreate(
+            event_service = CreateInboxEvent(self.db)
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.MODERATION,
                 entity_type=EntityType.CHANNEL,

@@ -23,7 +23,7 @@ from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.bot_provider import get_bot_info
 from backend.utils.media import is_video_url, is_document_url
 from backend.utils.keyboard import build_keyboard
@@ -527,8 +527,8 @@ class BotTriggerService:
         if isinstance(context_data.get("command"), str) and context_data["command"].strip():
             payload["command"] = context_data["command"].strip()
 
-        event_service = InboxEventService(self.db)
-        await event_service.create_event(InboxEventCreate(
+        event_service = CreateInboxEvent(self.db)
+        await event_service.execute(InboxEventCreate(
             owner_id=channel.owner_id,
             category=InboxCategory.SYSTEM,
             entity_type=EntityType.CHANNEL,

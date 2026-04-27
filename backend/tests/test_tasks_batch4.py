@@ -305,7 +305,7 @@ class TestTriggerModerationEvents:
 
         with patch.object(service, "action_remove_from_group", AsyncMock(return_value=True)) as action_remove:
             with patch("backend.services.bot.bot_triggers.get_channel_by_telegram_id", AsyncMock(return_value=channel)):
-                with patch("backend.services.bot.bot_triggers.InboxEventService", return_value=inbox_service):
+                with patch("backend.services.bot.bot_triggers.CreateInboxEvent", return_value=inbox_service):
                     executed = await service.execute(
                         trigger=trigger,
                         user_id=42,
@@ -321,7 +321,7 @@ class TestTriggerModerationEvents:
 
         assert executed is True
         action_remove.assert_awaited_once()
-        inbox_service.create_event.assert_awaited_once()
+        inbox_service.execute.assert_awaited_once()
 
         event_data = inbox_service.create_event.await_args.args[0]
         assert event_data.event_type == EventType.CHANNEL_BAN
@@ -348,10 +348,11 @@ class TestInboxBlockNotification:
     @pytest.mark.asyncio
     async def test_block_action_creates_notification(self):
         """block action создаёт отдельное inbox event-уведомление о блокировке."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 10
@@ -368,9 +369,9 @@ class TestInboxBlockNotification:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event, action_type="block",
             )
 
@@ -382,10 +383,11 @@ class TestInboxBlockNotification:
     @pytest.mark.asyncio
     async def test_block_channel_action_creates_notification(self):
         """block в канале создаёт уведомление и ставит BANNED."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 11
@@ -417,9 +419,9 @@ class TestInboxBlockNotification:
         db.get = mock_get
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event, action_type="block",
             )
 
@@ -438,10 +440,11 @@ class TestBulkBlockNotification:
     @pytest.mark.asyncio
     async def test_bulk_block_sets_banned_status(self):
         """Bulk BLOCK ставит status=BANNED на заблокированные события."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.tg_user_id = 12345
@@ -464,9 +467,9 @@ class TestBulkBlockNotification:
         db.commit = AsyncMock()
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.execute_bulk_action.resolve_by_token", return_value=mock_client):
 
-            affected = await service.execute_bulk_action(
+            affected = await bulk_action.execute(
                 owner_id=1,
                 event_ids=[1],
                 action=BulkActionType.BLOCK,

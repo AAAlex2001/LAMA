@@ -27,11 +27,13 @@ from backend.schemas.publications.publishing import PublishResult
 from backend.services.bot import RecurringMessageService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.publications.publication_query_service import PublicationQueryService
-from backend.services.publications.series_service import SeriesService
-from backend.services.publications import publisher, message_editor
-from backend.services.publications.publish_helpers import make_notification_callback
-from backend.services.publications.repeat_calculator import calculate_next_repeat_time
+from backend.services.publications.features.publications.lookup import get_publication
+from backend.services.publications.features.publishing.create_notifications import make_notification_callback
+from backend.services.publications.features.publishing.delete_telegram_messages import DeleteTelegramMessages
+from backend.services.publications.features.publishing.publish_to_channels import PublishToChannels
+from backend.services.publications.features.publishing.republish import Republish
+from backend.services.publications.features.series.publish_series_post import PublishSeriesPost
+from backend.services.publications.utils.repeat_calculator import calculate_next_repeat_time
 from backend.services.channel.features.auto_delete import SafeDeleteMessage
 from backend.services.channel.features.backup_jobs.process_job import ProcessBackupJob
 from backend.utils.keyboard import build_keyboard
@@ -73,8 +75,7 @@ async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
     owner_id = None
     is_series = False
     async with CelerySessionLocal() as db:
-        query_svc = PublicationQueryService(db)
-        publication = await query_svc.get_publication(publication_id)
+        publication = await get_publication(db, publication_id)
         if not publication or not publication.channels:
             await db.commit()
             return f"skip:{publication_id}", False
@@ -85,13 +86,12 @@ async def publish_publication_async(publication_id: int) -> tuple[str, bool]:
                 publication_id=publication_id, error="Already published",
             )
         elif publication.series_id and publication.series and publication.series.reply_to_previous:
-            series_service = SeriesService(db)
-            result = await series_service.publish_series_post(
+            result = await PublishSeriesPost(db).execute(
                 publication, lambda ch: resolve_for_channel(db, ch),
             )
         else:
-            result = await publisher.publish_to_channels(
-                publication, db,
+            result = await PublishToChannels(db).execute(
+                publication,
                 lambda ch: resolve_for_channel(db, ch),
                 make_notification_callback(db),
                 calculate_next_repeat_time,
@@ -218,12 +218,11 @@ async def delete_publication_messages_async(publication_id: int) -> str:
     """Async-реализация удаления Telegram-сообщений публикации и самой публикации."""
 
     async with CelerySessionLocal() as db:
-        query_svc = PublicationQueryService(db)
-        publication = await query_svc.get_publication(publication_id)
+        publication = await get_publication(db, publication_id)
         if not publication:
             return f"not_found:{publication_id}"
-        await message_editor.delete_telegram_messages(
-            publication, db, lambda ch: resolve_for_channel(db, ch),
+        await DeleteTelegramMessages(db).execute(
+            publication, lambda ch: resolve_for_channel(db, ch),
         )
         await db.delete(publication)
         await db.commit()
@@ -241,12 +240,11 @@ async def republish_publication_async(publication_id: int) -> str:
     """Async-реализация переопубликации."""
 
     async with CelerySessionLocal() as db:
-        query_svc = PublicationQueryService(db)
-        publication = await query_svc.get_publication(publication_id)
+        publication = await get_publication(db, publication_id)
         if not publication or not publication.channels:
             return f"skip:{publication_id}"
-        await publisher.republish(
-            publication, db, lambda ch: resolve_for_channel(db, ch), calculate_next_repeat_time,
+        await Republish(db).execute(
+            publication, lambda ch: resolve_for_channel(db, ch), calculate_next_repeat_time,
         )
         await db.commit()
         return f"republished:{publication_id}"

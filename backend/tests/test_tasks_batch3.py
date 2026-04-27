@@ -199,10 +199,11 @@ class TestInboxDeleteAndBlock:
     @pytest.mark.asyncio
     async def test_delete_and_block_dm_event(self):
         """delete_and_block для DM: удаляет сообщение + блокирует DirectChat."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         # Событие из DM — без channel_id
         event = MagicMock()
@@ -219,9 +220,9 @@ class TestInboxDeleteAndBlock:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event,
                 action_type="delete_and_block",
             )
@@ -232,10 +233,11 @@ class TestInboxDeleteAndBlock:
     @pytest.mark.asyncio
     async def test_block_dm_event(self):
         """block для DM: блокирует DirectChat без channel_id."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 11
@@ -251,9 +253,9 @@ class TestInboxDeleteAndBlock:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event,
                 action_type="block",
             )
@@ -272,7 +274,8 @@ class TestBulkRead:
     @pytest.mark.asyncio
     async def test_bulk_read_sets_processed(self):
         """bulk READ обновляет status на PROCESSED."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
         mock_result = MagicMock()
@@ -280,8 +283,8 @@ class TestBulkRead:
         db.execute = AsyncMock(return_value=mock_result)
         db.commit = AsyncMock()
 
-        service = InboxActionService(db)
-        affected = await service.execute_bulk_action(
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
+        affected = await bulk_action.execute(
             owner_id=1,
             event_ids=[1, 2, 3, 4, 5],
             action=BulkActionType.READ,

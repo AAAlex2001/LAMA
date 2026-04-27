@@ -29,7 +29,7 @@ from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
 from backend.services.direct.chat_service import DirectChatService
 from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.schemas.inbox.events import InboxEventCreate
@@ -99,7 +99,7 @@ class MessageHandler:
             is_command = bool(text_content and text_content.startswith("/"))
             if not is_command:
                 try:
-                    event_service = InboxEventService(self.db)
+                    event_service = CreateInboxEvent(self.db)
                     preview = text_content[:100] if text_content else "(медиа)"
                     sender = message.from_user.username or str(message.from_user.id)
                     reply_ctx = self.build_reply_context(message)
@@ -112,7 +112,7 @@ class MessageHandler:
                     elif message.document:
                         media_file_id = message.document.file_id
 
-                    await event_service.create_event(InboxEventCreate(
+                    await event_service.execute(InboxEventCreate(
                         owner_id=self.bot_model.owner_id,
                         category=InboxCategory.MODERATION,
                         entity_type=EntityType.BOT,
@@ -265,11 +265,11 @@ class MessageHandler:
             )
 
             # Inbox notification
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             preview = text_content[:100] if text_content else "(медиа)"
             sender = message.from_user.username or str(message.from_user.id)
 
-            await event_service.create_event(InboxEventCreate(
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.MODERATION,
                 entity_type=EntityType.CHANNEL,
@@ -471,9 +471,9 @@ class MessageHandler:
             ))
 
         try:
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             for event_type, description, extra_payload in events_to_create:
-                await event_service.create_event(InboxEventCreate(
+                await event_service.execute(InboxEventCreate(
                     owner_id=self.bot_model.owner_id,
                     category=InboxCategory.SYSTEM,
                     entity_type=EntityType.CHANNEL,

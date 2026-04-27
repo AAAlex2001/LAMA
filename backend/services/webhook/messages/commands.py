@@ -10,7 +10,7 @@ from backend.services.bot import BotCommandService, ModerationTriggerService, Tr
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.utils import build_keyboard
 from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id, get_channel
@@ -127,12 +127,12 @@ class CommandProcessor:
         handled: bool,
     ) -> None:
         """Записать использование команды в inbox."""
-        event_service = InboxEventService(self.db)
+        event_service = CreateInboxEvent(self.db)
         channel_obj = await self.resolve_channel(message.chat.id)
         channel_id = channel_obj.id if channel_obj else None
         chat_name = self.get_chat_display_name(message)
 
-        await event_service.create_event(InboxEventCreate(
+        await event_service.execute(InboxEventCreate(
             owner_id=self.bot_model.owner_id,
             category=InboxCategory.AUTOMATION,
             entity_type=EntityType.BOT,
@@ -299,10 +299,10 @@ class CommandProcessor:
                         queue="default",
                     )
             else:
-                event_service = InboxEventService(self.db)
+                event_service = CreateInboxEvent(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
-                await event_service.create_event(InboxEventCreate(
+                await event_service.execute(InboxEventCreate(
                     owner_id=self.bot_model.owner_id,
                     category=InboxCategory.AUTOMATION,
                     entity_type=EntityType.BOT,
@@ -409,7 +409,7 @@ class CommandProcessor:
             )
 
             try:
-                event_service = InboxEventService(self.db)
+                event_service = CreateInboxEvent(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
                 cmd = command_text.lower()
@@ -423,7 +423,7 @@ class CommandProcessor:
                     is_unbanned = cmd in ("/unban", "/unmute")
                     ban_type = "mute" if cmd in ("/mute", "/unmute") else "ban"
 
-                    await event_service.create_event(InboxEventCreate(
+                    await event_service.execute(InboxEventCreate(
                         owner_id=self.bot_model.owner_id,
                         category=InboxCategory.SYSTEM,
                         entity_type=EntityType.CHANNEL,
@@ -495,11 +495,11 @@ class CommandProcessor:
             if triggered_count > 0:
                 trigger_reason = trigger_summary.build_reason()
                 try:
-                    event_service = InboxEventService(self.db)
+                    event_service = CreateInboxEvent(self.db)
                     channel_obj = await self.resolve_channel(message.chat.id)
                     channel_id = channel_obj.id if channel_obj else None
 
-                    await event_service.create_event(InboxEventCreate(
+                    await event_service.execute(InboxEventCreate(
                         owner_id=self.bot_model.owner_id,
                         category=InboxCategory.AUTOMATION,
                         entity_type=EntityType.BOT,

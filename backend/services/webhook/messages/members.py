@@ -11,7 +11,7 @@ from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.bot_provider import get_bot_info
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -102,13 +102,13 @@ class MemberProcessor:
     ) -> None:
         """Записать InboxEvent о вступлении/выходе участника."""
         try:
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             chat_title = message.chat.title or f"чат {message.chat.id}"
             member_display = (
                 f"@{member.username}" if member.username
                 else (member.first_name or str(member.id))
             )
-            await event_service.create_event(InboxEventCreate(
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.SYSTEM,
                 entity_type=EntityType.CHANNEL,
