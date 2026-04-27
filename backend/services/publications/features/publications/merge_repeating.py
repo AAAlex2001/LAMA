@@ -7,12 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import load_only, selectinload
 
-from backend.models.channels import ChannelGroup as Channel
 from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
-    Tag,
 )
 from backend.services.publications.features.publications.column_loaders import (
     CHANNEL_COMPACT_COLUMNS,

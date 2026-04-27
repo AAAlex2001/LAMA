@@ -22,7 +22,7 @@ from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, 
 from backend.schemas.inbox.events import InboxEventCreate
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.direct.message_service import DirectMessageService
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
 from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.bot_provider import get_bot_info
 from backend.utils.media import is_video_url, is_document_url
@@ -390,8 +390,7 @@ class BotTriggerService:
         if not bot_id:
             return
         try:
-            direct_service = DirectMessageService(self.db)
-            await direct_service.save_outgoing_message(
+            await SaveOutgoingMessage(self.db).execute(
                 bot_id=bot_id,
                 tg_chat_id=chat_id,
                 tg_message=tg_message,

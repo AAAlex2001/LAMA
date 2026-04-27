@@ -153,18 +153,18 @@ class TestDirectChatSorting:
 
     @pytest.mark.asyncio
     async def test_get_chats_accepts_sort_param(self):
-        """get_chats_for_user принимает sort='old' без ошибки."""
-        from backend.services.direct.chat_service import DirectChatService
+        """ListChats принимает sort='old' без ошибки."""
+        from backend.services.direct.features.chats.list_chats import ListChats
 
         db = AsyncMock()
-        service = DirectChatService(db)
+        service = ListChats(db)
 
         mock_result = MagicMock()
         mock_result.scalar.return_value = 0
         mock_result.all.return_value = []
         db.execute = AsyncMock(return_value=mock_result)
 
-        chats, total = await service.get_chats_for_user(
+        chats, total = await service.execute(
             owner_id=1, sort="old", unread_filter="unread",
         )
         assert total == 0
@@ -172,18 +172,18 @@ class TestDirectChatSorting:
 
     @pytest.mark.asyncio
     async def test_get_chats_accepts_read_filter(self):
-        """get_chats_for_user фильтрует по unread_filter='read'."""
-        from backend.services.direct.chat_service import DirectChatService
+        """ListChats фильтрует по unread_filter='read'."""
+        from backend.services.direct.features.chats.list_chats import ListChats
 
         db = AsyncMock()
-        service = DirectChatService(db)
+        service = ListChats(db)
 
         mock_result = MagicMock()
         mock_result.scalar.return_value = 0
         mock_result.all.return_value = []
         db.execute = AsyncMock(return_value=mock_result)
 
-        chats, total = await service.get_chats_for_user(
+        chats, total = await service.execute(
             owner_id=1, sort="new", unread_filter="read",
         )
         assert total == 0

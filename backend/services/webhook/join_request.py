@@ -28,7 +28,7 @@ from backend.models.bots import (
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
-from backend.services.direct.message_service import DirectMessageService
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
 from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
@@ -158,8 +158,7 @@ class JoinRequestHandler:
                 ),
             )
             if tg_message:
-                direct_service = DirectMessageService(self.db)
-                await direct_service.save_outgoing_message(
+                await SaveOutgoingMessage(self.db).execute(
                     bot_id=self.bot_model.id,
                     tg_chat_id=user_id,
                     tg_message=tg_message,

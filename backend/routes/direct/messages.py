@@ -1,21 +1,25 @@
 from typing import Optional
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.bots.messages import SendMessageRequest, BotMessageResponse, BotMessageBatchResponse
-from backend.schemas.direct.message import EditMessageRequest, ChatHistoryResponse
-from backend.services.direct.chat_service import DirectChatService
-from backend.services.direct.message_service import DirectMessageService
+from backend.schemas.bots.messages import (
+    BotMessageBatchResponse,
+    BotMessageResponse,
+    SendMessageRequest,
+)
+from backend.schemas.direct.message import ChatHistoryResponse, EditMessageRequest
+from backend.services.direct.features.chats.get_chat_messages import GetChatMessages
+from backend.services.direct.features.chats.reset_unread import ResetUnread
+from backend.services.direct.features.messages.delete_message import DeleteMessage
+from backend.services.direct.features.messages.edit_message import EditMessage
+from backend.services.direct.features.messages.send_message import SendMessage
 
 router = APIRouter(prefix="", tags=["Direct / Messages"])
 
-def get_chat_service(db: AsyncSession = Depends(get_db)) -> DirectChatService:
-    return DirectChatService(db)
-
-def get_message_service(db: AsyncSession = Depends(get_db)) -> DirectMessageService:
-    return DirectMessageService(db)
 
 @router.get("/chats/{bot_id}/{tg_chat_id}/messages", response_model=ChatHistoryResponse)
 async def get_chat_messages(
@@ -25,20 +29,18 @@ async def get_chat_messages(
     limit: int = Query(50, ge=1, le=100),
     around_message_id: Optional[int] = Query(None, description="Load messages around this ID"),
     after_message_id: Optional[int] = Query(None, description="Load messages newer than this telegram_message_id"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    chat_service: DirectChatService = Depends(get_chat_service),
 ):
-    """История сообщений в чате. around_message_id загружает окно вокруг указанного сообщения. after_message_id — только новые."""
-    messages, total = await chat_service.get_chat_messages(
+    """История сообщений в чате."""
+    messages, total = await GetChatMessages(db).execute(
         bot_id, tg_chat_id,
         owner_id=current_user.id,
         skip=skip, limit=limit,
         around_message_id=around_message_id,
         after_message_id=after_message_id,
     )
-
-    await chat_service.reset_unread(bot_id, tg_chat_id, owner_id=current_user.id)
-
+    await ResetUnread(db).execute(bot_id, tg_chat_id, owner_id=current_user.id)
     return {
         "items": messages,
         "total": total,
@@ -47,17 +49,19 @@ async def get_chat_messages(
         "has_more": (skip + limit) < total,
     }
 
+
 @router.post("/chats/{bot_id}/{tg_chat_id}/messages", response_model=BotMessageBatchResponse)
 async def send_message(
     bot_id: int,
     tg_chat_id: int,
     request: SendMessageRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Отправка нового сообщения пользователю."""
-    messages = await msg_service.send_message(bot_id, tg_chat_id, current_user.id, request)
+    messages = await SendMessage(db).execute(bot_id, tg_chat_id, current_user.id, request)
     return {"items": messages}
+
 
 @router.patch("/messages/{message_id}", response_model=BotMessageResponse)
 async def edit_message(
@@ -65,21 +69,25 @@ async def edit_message(
     request: EditMessageRequest,
     bot_id: int = Query(..., description="Bot ID"),
     tg_chat_id: int = Query(..., description="Telegram chat ID"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Редактирование исходящего сообщения."""
-    msg = await msg_service.edit_message(message_id, current_user.id, request, bot_id=bot_id, tg_chat_id=tg_chat_id)
-    return msg
+    return await EditMessage(db).execute(
+        message_id, current_user.id, request, bot_id=bot_id, tg_chat_id=tg_chat_id,
+    )
+
 
 @router.delete("/messages/{message_id}")
 async def delete_message(
     message_id: int,
     bot_id: int = Query(..., description="Bot ID"),
     tg_chat_id: int = Query(..., description="Telegram chat ID"),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    msg_service: DirectMessageService = Depends(get_message_service)
 ):
     """Удаление исходящего сообщения."""
-    await msg_service.delete_message(message_id, current_user.id, bot_id=bot_id, tg_chat_id=tg_chat_id)
+    await DeleteMessage(db).execute(
+        message_id, current_user.id, bot_id=bot_id, tg_chat_id=tg_chat_id,
+    )
     return {"status": "ok"}

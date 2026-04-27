@@ -27,8 +27,12 @@ from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
-from backend.services.direct.chat_service import DirectChatService
-from backend.services.direct.message_service import DirectMessageService
+from backend.services.direct.features.chats.get_or_create_chat import GetOrCreateChat
+from backend.services.direct.features.chats.increment_unread import IncrementUnread
+from backend.services.direct.features.chats.update_photo import UpdatePhoto
+from backend.services.direct.features.messages.resolve_media_url import resolve_media_url
+from backend.services.direct.features.messages.save_incoming_message import SaveIncomingMessage
+from backend.services.direct.features.utils.media_detectors import extract_incoming_media
 from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
@@ -72,10 +76,7 @@ class MessageHandler:
         if not message.from_user:
             return None
         try:
-            chat_svc = DirectChatService(self.db)
-            msg_svc = DirectMessageService(self.db)
-
-            await chat_svc.get_or_create_chat(
+            await GetOrCreateChat(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=message.chat.id,
                 tg_user_id=message.from_user.id,
@@ -84,16 +85,15 @@ class MessageHandler:
                 tg_last_name=message.from_user.last_name,
             )
             msg_type = self.detect_message_type(message)
-            await chat_svc.increment_unread(
+            await IncrementUnread(self.db).execute(
                 self.bot_model.id,
                 message.chat.id,
                 last_message_text=text_content,
                 last_message_type=msg_type,
             )
-            self.saved_msg = await msg_svc.save_incoming_message(
+            self.saved_msg = await SaveIncomingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
-                owner_id=self.bot_model.owner_id,
-                message=message
+                message=message,
             )
 
             is_command = bool(text_content and text_content.startswith("/"))
@@ -200,10 +200,7 @@ class MessageHandler:
             if not channel:
                 return None
 
-            chat_svc = DirectChatService(self.db)
-            msg_svc = DirectMessageService(self.db)
-
-            await chat_svc.get_or_create_chat(
+            await GetOrCreateChat(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=chat_id,
                 tg_user_id=None,
@@ -223,14 +220,12 @@ class MessageHandler:
 
             if not existing_post:
                 post_text = reply_msg.text or reply_msg.caption
-                msg_type, media_file_id = msg_svc.extract_incoming_media(reply_msg)
+                msg_type, media_file_id = extract_incoming_media(reply_msg)
 
                 media_url = None
                 if media_file_id:
                     try:
-                        media_url = await msg_svc.resolve_media_url(
-                            self.bot_model.token, media_file_id,
-                        )
+                        media_url = await resolve_media_url(self.bot_model.token, media_file_id)
                     except Exception:
                         pass
 
@@ -251,16 +246,15 @@ class MessageHandler:
                 await self.db.flush()
 
             msg_type = self.detect_message_type(message)
-            await chat_svc.increment_unread(
+            await IncrementUnread(self.db).execute(
                 self.bot_model.id,
                 chat_id,
                 last_message_text=text_content,
                 last_message_type=msg_type,
             )
 
-            self.saved_msg = await msg_svc.save_incoming_message(
+            self.saved_msg = await SaveIncomingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
-                owner_id=self.bot_model.owner_id,
                 message=message,
             )
 
@@ -346,8 +340,7 @@ class MessageHandler:
             if message.chat.type == "private" and message.from_user:
                 photo_url = await self.resolve_user_photo(message.from_user.id)
                 if photo_url:
-                    chat_svc = DirectChatService(self.db)
-                    await chat_svc.update_photo(
+                    await UpdatePhoto(self.db).execute(
                         self.bot_model.id, message.chat.id, photo_url,
                     )
 

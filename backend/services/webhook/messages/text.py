@@ -9,7 +9,7 @@ from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProc
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
 from backend.schemas.inbox.events import InboxEventCreate
-from backend.services.direct.message_service import DirectMessageService
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
 from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
@@ -161,8 +161,7 @@ class TextProcessor:
         if not tg_message or chat_id <= 0:
             return
         try:
-            direct_service = DirectMessageService(self.db)
-            await direct_service.save_outgoing_message(
+            await SaveOutgoingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=chat_id,
                 tg_message=tg_message,
