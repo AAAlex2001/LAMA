@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.bots import Bot, TriggerType
 from backend.models.channels import ChannelGroup
 from backend.models.inbox import InboxEvent
-from backend.services.bot.bot_triggers import BotTriggerService
+from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEvent
 from backend.services.bot_provider import resolve_by_token
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ async def fire_join_trigger(
     """Триггер с контекстом из event.payload; ошибки глушит (не блокирует основное действие)."""
     try:
         telegram_bot = resolve_by_token(bot.token)
-        await BotTriggerService(db).fire_event(
+        await FireTriggerEvent(db).execute(
             bot_id=bot.id,
             trigger_type=trigger_type,
             user_id=event.tg_user_id,

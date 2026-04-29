@@ -1,12 +1,13 @@
-"""Поиск активного автоответа по тексту с учётом frequency-лимита и логированием."""
+"""Find active auto-reply by message text."""
 
-from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.bots import AutoReply, AutoReplyLog
+from backend.models.bots import AutoReply
+from backend.services.bot.features.auto_replies.frequency_check import is_allowed_by_frequency
+from backend.services.bot.features.auto_replies.log_trigger import log_trigger
 from backend.services.bot.features.auto_replies.lookup import apply_scope_filter
 
 
@@ -61,26 +62,3 @@ def matches_keywords(reply: AutoReply, text_lower: str) -> bool:
     return any(keyword.lower() in text_lower for keyword in reply.keywords)
 
 
-async def is_allowed_by_frequency(
-    db: AsyncSession, reply: AutoReply, chat_id: int, user_id: Optional[int],
-) -> bool:
-    """True если в окне frequency_limit_minutes ещё не было срабатываний для этого target'а."""
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=reply.frequency_limit_minutes)
-    query = select(func.count()).select_from(AutoReplyLog).where(
-        AutoReplyLog.auto_reply_id == reply.id,
-        AutoReplyLog.triggered_at >= cutoff,
-    )
-    if reply.frequency_limit_type == "per_user" and user_id is not None:
-        query = query.where(AutoReplyLog.user_id == user_id)
-    else:
-        query = query.where(AutoReplyLog.chat_id == chat_id)
-
-    return ((await db.execute(query)).scalar() or 0) == 0
-
-
-async def log_trigger(
-    db: AsyncSession, auto_reply_id: int, chat_id: int, user_id: Optional[int],
-) -> None:
-    """Запись AutoReplyLog для отслеживания частоты срабатываний."""
-    db.add(AutoReplyLog(auto_reply_id=auto_reply_id, chat_id=chat_id, user_id=user_id))
-    await db.flush()

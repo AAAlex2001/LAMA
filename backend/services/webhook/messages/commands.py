@@ -6,7 +6,12 @@ from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaD
 from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import BotCommandService, ModerationTriggerService, TriggerService, ShortcodeProcessor
+from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot.features.commands.find_by_text import FindCommandByText
+from backend.services.bot.features.moderation.handle_command import handle_moderation_command
+from backend.services.bot.features.moderation.target_extractor import extract_target
+from backend.services.bot.features.moderation.time_parser import parse_time
+from backend.services.bot.features.triggers.fire.fire_event_with_summary import FireTriggerEventWithSummary
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.utils import build_keyboard
 from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
@@ -32,7 +37,7 @@ class CommandProcessor:
         self.db = db
         self.bot_model = bot_model
         self.telegram_bot = telegram_bot
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event_with_summary = FireTriggerEventWithSummary(db)
 
     def build_shortcode_context(self, message: Message) -> Dict[str, Any]:
         """Построить контекст для шорткодов"""
@@ -400,8 +405,7 @@ class CommandProcessor:
                 if allowed is not None and cmd_name not in allowed:
                     return
 
-            moderation_trigger_service = ModerationTriggerService()
-            handled = await moderation_trigger_service.handle_command(
+            handled = await handle_moderation_command(
                 command=command_text,
                 message=message,
                 telegram_bot=self.telegram_bot,
@@ -414,9 +418,9 @@ class CommandProcessor:
                 cmd = command_text.lower()
 
                 if cmd in ("/ban", "/mute", "/unban", "/unmute"):
-                    target_user_id, target_name = moderation_trigger_service.extract_target(message)
+                    target_user_id, target_name = extract_target(message)
                     parts = message.text.split() if message.text else []
-                    duration_minutes = moderation_trigger_service.parse_time(
+                    duration_minutes = parse_time(
                         parts[-1] if len(parts) > 1 else "0"
                     )
                     is_unbanned = cmd in ("/unban", "/unmute")
@@ -464,10 +468,10 @@ class CommandProcessor:
 
             return
 
-        command_service = BotCommandService(self.db)
+        command_service = FindCommandByText(self.db)
         channel_obj = await self.resolve_channel(message.chat.id)
         channel_db_id = channel_obj.id if channel_obj else None
-        command = await command_service.find_by_text(
+        command = await command_service.execute(
             self.bot_model.id,
             command_text,
             chat_type=chat_type,
@@ -475,7 +479,7 @@ class CommandProcessor:
         )
 
         if command:
-            trigger_summary = await self.trigger_service.fire_event_with_summary(
+            trigger_summary = await self.fire_trigger_event_with_summary.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.COMMAND_CALLED,
                 user_id=user_id,

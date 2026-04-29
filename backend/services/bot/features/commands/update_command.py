@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import BotCommand
-from backend.services.bot.features.commands.action_helpers import (
+from backend.services.bot.features.commands.helpers import (
     require_response_text,
     resolve_claim_fields,
 )

@@ -5,7 +5,7 @@ from typing import Optional
 
 from aiogram.exceptions import TelegramAPIError
 
-from backend.services.bot.features.moderation.reply_helper import reply_to_chat
+from backend.services.bot.features.moderation.admin_helpers import reply_to_chat
 from backend.services.bot.features.moderation.time_parser import parse_time
 from backend.services.telegram_client import RateLimitedBot
 
@@ -36,19 +36,3 @@ async def ban_user(
     return True
 
 
-async def unban_user(
-    bot: RateLimitedBot,
-    chat_id: int,
-    user_id: Optional[int],
-    username: Optional[str],
-) -> bool:
-    """/unban — снять бан."""
-    if not user_id:
-        await reply_to_chat(bot, chat_id, "Ответьте на сообщение пользователя или укажите @username")
-        return True
-    try:
-        await bot.unban_chat_member(chat_id=chat_id, user_id=user_id)
-        await reply_to_chat(bot, chat_id, f"Пользователь {username} разбанен")
-    except TelegramAPIError as exc:
-        await reply_to_chat(bot, chat_id, f"Не удалось разбанить: {exc}")
-    return True

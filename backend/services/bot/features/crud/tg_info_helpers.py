@@ -1,4 +1,4 @@
-"""TG-API запросы для получения метаданных бота."""
+"""TG-API helpers for fetching bot metadata."""
 
 import asyncio
 from typing import Optional
@@ -12,7 +12,7 @@ from backend.services.telegram_client import RateLimitedBot
 
 
 async def fetch_bot_info(token: str) -> tuple:
-    """get_me + параллельно описание/короткое описание (None если ошибка). Бросает 400 при невалидном токене."""
+    """Fetch get_me plus bot descriptions; raise 400 for invalid token/API errors."""
     try:
         raw_bot = resolve_by_token(token).bot
     except TokenValidationError:
@@ -30,7 +30,7 @@ async def fetch_bot_info(token: str) -> tuple:
 
 
 async def safe_get_description(bot: RateLimitedBot) -> Optional[str]:
-    """get_my_description; None при любой ошибке."""
+    """Return bot description or None when Telegram refuses the call."""
     try:
         info = await bot.get_my_description()
         return info.description if info and info.description else None
@@ -39,7 +39,7 @@ async def safe_get_description(bot: RateLimitedBot) -> Optional[str]:
 
 
 async def safe_get_short_description(bot: RateLimitedBot) -> Optional[str]:
-    """get_my_short_description; None при любой ошибке."""
+    """Return bot short description or None when Telegram refuses the call."""
     try:
         info = await bot.get_my_short_description()
         return info.short_description if info and info.short_description else None

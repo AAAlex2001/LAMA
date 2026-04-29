@@ -7,8 +7,10 @@ from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot.features.captcha.create_pending import CreatePendingApproval
+from backend.services.bot.features.captcha.generate_captcha import generate_captcha
+from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEvent
 from backend.services.bot_provider import get_bot_info
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.inbox.features.create_event import CreateInboxEvent
@@ -34,7 +36,7 @@ class MemberProcessor:
         self.db = db
         self.bot_model = bot_model
         self.telegram_bot = telegram_bot
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event = FireTriggerEvent(db)
         self.welcome_handler = WelcomeHandler(db, bot_model)
 
     async def handle_new_members(self, message: Message) -> None:
@@ -70,7 +72,7 @@ class MemberProcessor:
                         message, new_member
                     )
 
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.MEMBER_JOINED,
                 user_id=new_member.id,
@@ -143,8 +145,6 @@ class MemberProcessor:
             return
 
         try:
-            captcha_service = CaptchaService(self.db)
-
             await self.db.execute(
                 update(PendingApproval)
                 .where(
@@ -157,8 +157,8 @@ class MemberProcessor:
             )
             await self.db.flush()
 
-            question, answer = captcha_service.generate()
-            pending = await captcha_service.create_pending(
+            question, answer = generate_captcha()
+            pending = await CreatePendingApproval(self.db).execute(
                 bot_id=self.bot_model.id,
                 user_id=new_member.id,
                 chat_id=message.chat.id,
@@ -296,7 +296,7 @@ class MemberProcessor:
         if not left_member:
             return
 
-        await self.trigger_service.fire_event(
+        await self.fire_trigger_event.execute(
             bot_id=self.bot_model.id,
             trigger_type=TriggerType.MEMBER_LEFT,
             user_id=left_member.id,

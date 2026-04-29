@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import BotCommand
-from backend.services.bot.features.commands.lookup import apply_scope_filter
+from backend.services.bot.features.commands.helpers import apply_scope_filter
 
 
 class FindCommandByText:

@@ -2,7 +2,7 @@
 
 from aiogram.exceptions import TelegramAPIError
 
-from backend.services.bot.features.moderation.reply_helper import reply_to_chat
+from backend.services.bot.features.moderation.admin_helpers import reply_to_chat
 from backend.services.telegram_client import RateLimitedBot
 
 MAX_AUTO_DELETE_SECONDS = 31_536_000  # 1 год

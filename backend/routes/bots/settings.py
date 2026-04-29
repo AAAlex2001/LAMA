@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.models.bots import CaptchaMode
@@ -7,9 +9,10 @@ from backend.schemas.bots import (
     WelcomeSettingsUpdate, WelcomeSettingsResponse,
     AutoApprovalUpdate, AutoApprovalResponse,
 )
-from backend.services.bot.bot_crud import BotCrudService
-from backend.services.bot.bot_settings import BotSettingsService
-from backend.routes.bots.dependencies import get_bot_service, get_bot_settings_service
+from backend.routes.bots.dependencies import get_update_auto_approval, get_update_welcome_settings
+from backend.services.bot.features.crud.lookup import find_bot_or_404
+from backend.services.bot.features.settings.update_auto_approval import UpdateAutoApproval
+from backend.services.bot.features.settings.update_welcome_settings import UpdateWelcomeSettings
 
 router = APIRouter()
 
@@ -17,11 +20,11 @@ router = APIRouter()
 @router.get("/{bot_id}/welcome", response_model=WelcomeSettingsResponse)
 async def get_welcome_settings(
     bot_id: int,
-    service: BotCrudService = Depends(get_bot_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Получить настройки приветствия."""
-    bot = await service.get(bot_id, owner_id=current_user.id)
+    bot = await find_bot_or_404(db, bot_id, owner_id=current_user.id)
 
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
@@ -41,11 +44,11 @@ async def get_welcome_settings(
 async def update_welcome_settings(
     bot_id: int,
     data: WelcomeSettingsUpdate,
-    settings: BotSettingsService = Depends(get_bot_settings_service),
+    update_settings: UpdateWelcomeSettings = Depends(get_update_welcome_settings),
     current_user: User = Depends(get_current_user),
 ):
     """Обновить настройки приветствия."""
-    bot = await settings.update_welcome_settings(bot_id, data, owner_id=current_user.id)
+    bot = await update_settings.execute(bot_id, data, owner_id=current_user.id)
 
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
@@ -64,11 +67,11 @@ async def update_welcome_settings(
 @router.get("/{bot_id}/auto-approval", response_model=AutoApprovalResponse)
 async def get_auto_approval_settings(
     bot_id: int,
-    service: BotCrudService = Depends(get_bot_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Получить настройки автоодобрения."""
-    bot = await service.get(bot_id, owner_id=current_user.id)
+    bot = await find_bot_or_404(db, bot_id, owner_id=current_user.id)
 
     return AutoApprovalResponse(
         auto_approval_mode=bot.auto_approval_mode,
@@ -80,11 +83,11 @@ async def get_auto_approval_settings(
 async def update_auto_approval_settings(
     bot_id: int,
     data: AutoApprovalUpdate,
-    settings: BotSettingsService = Depends(get_bot_settings_service),
+    update_auto_approval: UpdateAutoApproval = Depends(get_update_auto_approval),
     current_user: User = Depends(get_current_user),
 ):
     """Обновить настройки автоодобрения."""
-    bot = await settings.update_auto_approval(bot_id, data, owner_id=current_user.id)
+    bot = await update_auto_approval.execute(bot_id, data, owner_id=current_user.id)
     return AutoApprovalResponse(
         auto_approval_mode=bot.auto_approval_mode,
         approval_criteria=bot.approval_criteria,

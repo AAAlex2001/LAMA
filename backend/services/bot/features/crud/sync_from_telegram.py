@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, BotStatus
 from backend.services.bot.features.crud.lookup import get_bot_by_telegram_id
-from backend.services.bot.features.crud.tg_info import fetch_bot_info
+from backend.services.bot.features.crud.tg_info_helpers import fetch_bot_info
 from backend.services.bot.features.crud.webhook_helpers import (
     build_webhook_url,
     setup_webhook,

@@ -5,11 +5,11 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import BotCommand
-from backend.services.bot.features.commands.action_helpers import (
+from backend.services.bot.features.commands.helpers import (
+    ensure_command_unique,
     require_response_text,
     resolve_claim_fields,
 )
-from backend.services.bot.features.commands.lookup import ensure_command_unique
 from backend.services.bot.features.crud.lookup import find_bot_or_404
 
 

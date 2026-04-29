@@ -1,4 +1,4 @@
-"""Сохранение BotMessage в БД."""
+"""Save outgoing BotMessage rows."""
 
 from typing import Any, Dict, Optional
 
@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.bots import BotMessage, MessageType
 
 
-class SaveBotMessage:
-    """Простой INSERT BotMessage с переданными полями."""
+class SaveOutgoingMessage:
+    """Insert an outgoing BotMessage with supplied Telegram metadata."""
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
@@ -27,7 +27,7 @@ class SaveBotMessage:
         raw_data: Optional[Dict[str, Any]],
         reply_to_message_id: Optional[int] = None,
     ) -> BotMessage:
-        msg = BotMessage(
+        message = BotMessage(
             bot_id=bot_id,
             telegram_message_id=telegram_message_id,
             chat_id=chat_id,
@@ -40,7 +40,7 @@ class SaveBotMessage:
             raw_data=raw_data,
             reply_to_message_id=reply_to_message_id,
         )
-        self.db.add(msg)
+        self.db.add(message)
         await self.db.flush()
-        await self.db.refresh(msg)
-        return msg
+        await self.db.refresh(message)
+        return message

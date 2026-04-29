@@ -1,4 +1,4 @@
-"""Поиск команды + scope-фильтр + проверка уникальности."""
+"""Command lookup helpers."""
 
 from typing import Optional
 
@@ -22,46 +22,3 @@ async def find_command_or_404(
     if not command:
         raise HTTPException(status_code=404, detail="Command not found")
     return command
-
-
-def apply_scope_filter(query, chat_type: Optional[str]):
-    """Фильтр по BotCommand.scope в зависимости от типа чата."""
-    if not chat_type:
-        return query
-    if chat_type == "private":
-        return query.where(
-            (BotCommand.scope == "PRIVATE")
-            | (BotCommand.scope == "ALL")
-            | (BotCommand.scope.is_(None))
-        )
-    if chat_type in ("group", "supergroup"):
-        return query.where(
-            (BotCommand.scope == "GROUPS")
-            | (BotCommand.scope == "ALL")
-            | (BotCommand.scope.is_(None))
-        )
-    return query
-
-
-async def ensure_command_unique(
-    db: AsyncSession, bot_id: int, command_text: str, channel_id: Optional[int],
-) -> None:
-    """400 если такая же команда уже существует для этого (bot, channel)."""
-    if channel_id is None:
-        scope_filter = BotCommand.channel_id.is_(None)
-    else:
-        scope_filter = BotCommand.channel_id == channel_id
-
-    existing = (await db.execute(
-        select(BotCommand).where(
-            BotCommand.bot_id == bot_id,
-            BotCommand.command == command_text,
-            scope_filter,
-        )
-    )).scalar_one_or_none()
-
-    if existing is not None:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Command {command_text} already exists for this bot",
-        )

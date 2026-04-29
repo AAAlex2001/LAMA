@@ -8,14 +8,20 @@ from aiogram.types import Message
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.bots import Bot as BotModel
+from backend.models.bots import Bot as BotModel, MessageType
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
-from backend.services.bot.features.welcome.persist_outgoing import persist_outgoing_in_dm
-from backend.services.bot.features.welcome.send_to_telegram import send_to_telegram
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
 from backend.services.telegram_client import RateLimitedBot
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
+
+MEDIA_SEND_METHODS = {
+    MessageType.PHOTO: "send_photo",
+    MessageType.VIDEO: "send_video",
+    MessageType.DOCUMENT: "send_document",
+    MessageType.ANIMATION: "send_animation",
+}
 
 
 class SendWelcome:
@@ -55,3 +61,49 @@ class SendWelcome:
         logger.info("Welcome message sent to user %s in chat %s", user_id, chat_id)
         await persist_outgoing_in_dm(self.db, bot_model, chat_id, message)
         return message
+
+
+async def send_to_telegram(
+    telegram_bot: RateLimitedBot,
+    chat_id: int,
+    text: str,
+    media_url: Optional[str],
+    media_type: Optional[MessageType],
+    reply_markup,
+    message_thread_id: Optional[int],
+) -> Message:
+    """Send welcome text or media message to Telegram."""
+    if media_url and media_type and media_type in MEDIA_SEND_METHODS:
+        method = getattr(telegram_bot, MEDIA_SEND_METHODS[media_type])
+        return await method(
+            chat_id=chat_id,
+            **{media_type.value.lower(): media_url},
+            caption=text,
+            reply_markup=reply_markup,
+            message_thread_id=message_thread_id,
+        )
+    return await telegram_bot.send_message(
+        chat_id=chat_id,
+        text=text,
+        reply_markup=reply_markup,
+        message_thread_id=message_thread_id,
+    )
+
+
+async def persist_outgoing_in_dm(
+    db: AsyncSession,
+    bot_model: BotModel,
+    chat_id: int,
+    message: Optional[Message],
+) -> None:
+    """Persist welcome outgoing message only for direct chats."""
+    if not message or chat_id <= 0:
+        return
+    await SaveOutgoingMessage(db).execute(
+        bot_id=bot_model.id,
+        tg_chat_id=chat_id,
+        tg_message=message,
+        fallback_type=bot_model.welcome_media_type or MessageType.TEXT,
+        fallback_media_url=bot_model.welcome_media_url,
+    )
+    await db.flush()

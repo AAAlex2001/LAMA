@@ -24,8 +24,11 @@ from backend.models.publications import (
     RepeatInterval as DBRepeatInterval,
 )
 from backend.schemas.publications.publishing import PublishResult
-from backend.services.bot import RecurringMessageService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot.features.recurring.get_pending import get_pending_recurring
+from backend.services.bot.features.recurring.send_recurring import SendRecurring
+from backend.services.bot.features.triggers.schedule.execute_scheduled_task import ExecuteScheduledTriggerTask
+from backend.services.bot.features.triggers.schedule.get_pending_tasks import get_pending_trigger_tasks
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.publications.features.publications.lookup import get_publication
 from backend.services.publications.features.publishing.create_notifications import make_notification_callback
@@ -336,8 +339,8 @@ async def process_scheduled_triggers_async() -> str:
     """Async-реализация выполнения задач триггеров."""
 
     async with CelerySessionLocal() as db:
-        service = TriggerService(db)
-        tasks = await service.get_pending_tasks(limit=50)
+        tasks = await get_pending_trigger_tasks(db, limit=50)
+        executor = ExecuteScheduledTriggerTask(db)
         for task in tasks:
             try:
                 bot_id = task.trigger.bot_id if task.trigger else None
@@ -347,7 +350,7 @@ async def process_scheduled_triggers_async() -> str:
                     raise ValueError(f"Trigger task {task.id} has no bot_id")
                 else:
                     telegram_bot = resolve_master()
-                await service.execute_scheduled_task(task, telegram_bot)
+                await executor.execute(task, telegram_bot)
             except Exception as exc:
                 logger.error("trigger_task_failed: %s", exc)
         await db.commit()
@@ -365,8 +368,8 @@ async def process_recurring_messages_async() -> str:
     """Async-реализация отправки повторяющихся сообщений."""
 
     async with CelerySessionLocal() as db:
-        service = RecurringMessageService(db)
-        pending = await service.get_pending(limit=50)
+        pending = await get_pending_recurring(db, limit=50)
+        sender = SendRecurring(db)
         for msg in pending:
             try:
                 if msg.bot_id:
@@ -375,7 +378,7 @@ async def process_recurring_messages_async() -> str:
                     raise ValueError(f"Recurring message {msg.id} has no bot_id")
                 else:
                     telegram_bot = resolve_master()
-                await service.send(msg, telegram_bot)
+                await sender.execute(msg, telegram_bot)
             except Exception as exc:
                 logger.error("recurring_message_failed: %s", exc)
         await db.commit()

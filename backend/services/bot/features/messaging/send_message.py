@@ -11,7 +11,7 @@ from backend.models.bots import BotStatus, MessageType
 from backend.schemas.bots.messages import SendMessageRequest
 from backend.services.bot.features.crud.lookup import find_bot_or_404
 from backend.services.bot.features.messaging.dispatch_telegram import dispatch_telegram
-from backend.services.bot.features.messaging.save_message import SaveBotMessage
+from backend.services.bot.features.messaging.save_outgoing import SaveOutgoingMessage
 from backend.services.bot_provider import resolve_for_bot_id
 from backend.utils.keyboard import build_keyboard
 
@@ -49,7 +49,7 @@ async def persist_responses(
 ) -> None:
     """Сохраняет каждое полученное от TG сообщение в BotMessage."""
     messages = result if isinstance(result, list) else [result]
-    saver = SaveBotMessage(db)
+    saver = SaveOutgoingMessage(db)
 
     for msg in messages:
         file_id = msg.photo[-1].file_id if msg.photo else None
