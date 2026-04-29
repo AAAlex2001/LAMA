@@ -8,7 +8,7 @@ from aiogram.types import ChatJoinRequest, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
-from backend.services.bot import WelcomeService
+from backend.services.bot.features.welcome.send_welcome import SendWelcome
 from backend.services.bot_provider import resolve_by_token
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class WelcomeHandler:
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
-        self.welcome_service = WelcomeService(db)
+        self.send_welcome = SendWelcome(db)
 
     async def handle_join_request(self, join_request: ChatJoinRequest) -> None:
         """
@@ -29,12 +29,22 @@ class WelcomeHandler:
         """
         try:
             telegram_bot = resolve_by_token(self.bot_model.token)
-            message = (
-                await self.welcome_service.handle_join_request(
-                    telegram_bot=telegram_bot,
-                    bot_model=self.bot_model,
-                    join_request=join_request,
-                )
+            user = join_request.from_user
+            message = await self.send_welcome.execute(
+                telegram_bot=telegram_bot,
+                bot_model=self.bot_model,
+                user_id=user.id,
+                chat_id=user.id,
+                context={
+                    "user": {
+                        "id": user.id,
+                        "first_name": user.first_name or "",
+                        "username": user.username,
+                        "last_name": getattr(user, "last_name", None) or "",
+                    },
+                    "bot": {"first_name": self.bot_model.first_name or ""},
+                    "chat": {"title": (join_request.chat.title if join_request.chat else "") or ""},
+                },
             )
 
             if message:
@@ -64,30 +74,24 @@ class WelcomeHandler:
             welcome_type = getattr(self.bot_model, "welcome_type", "group_message")
 
             if welcome_type == "private_message":
-                sent_message = await self.welcome_service.handle_member_joined(
+                sent_message = await self.send_welcome.execute(
                     telegram_bot=telegram_bot,
                     bot_model=self.bot_model,
                     user_id=new_member_user.id,
                     chat_id=new_member_user.id,
-                    user_first_name=new_member_user.first_name,
-                    user_username=getattr(new_member_user, "username", None),
-                    user_last_name=getattr(new_member_user, "last_name", None),
-                    chat_title=(message.chat.title if message.chat else None),
+                    context=build_member_context(self.bot_model, message, new_member_user),
                 )
             else:
                 message_thread_id = self.bot_model.welcome_message_thread_id
                 if message_thread_id is None:
                     message_thread_id = getattr(message, "message_thread_id", None)
 
-                sent_message = await self.welcome_service.handle_member_joined(
+                sent_message = await self.send_welcome.execute(
                     telegram_bot=telegram_bot,
                     bot_model=self.bot_model,
                     user_id=new_member_user.id,
                     chat_id=message.chat.id,
-                    user_first_name=new_member_user.first_name,
-                    user_username=getattr(new_member_user, "username", None),
-                    user_last_name=getattr(new_member_user, "last_name", None),
-                    chat_title=(message.chat.title if message.chat else None),
+                    context=build_member_context(self.bot_model, message, new_member_user),
                     message_thread_id=message_thread_id,
                 )
 
@@ -102,3 +106,17 @@ class WelcomeHandler:
             logger.error(
                 f"Failed to send new member welcome: {e}", exc_info=True
             )
+
+
+def build_member_context(bot_model: BotModel, message: Message, user) -> dict:
+    """Build shortcode context for welcome member messages."""
+    return {
+        "user": {
+            "id": user.id,
+            "first_name": user.first_name or "",
+            "username": getattr(user, "username", None),
+            "last_name": getattr(user, "last_name", None) or "",
+        },
+        "bot": {"first_name": bot_model.first_name or ""},
+        "chat": {"title": (message.chat.title if message.chat else None) or ""},
+    }

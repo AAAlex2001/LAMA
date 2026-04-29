@@ -5,7 +5,7 @@ from typing import List
 import logging
 
 from backend.services.storage import get_storage_service
-from backend.services.publications.media_warmup import warmup_media_files
+from backend.services.publications.features.publishing.warmup_media import warmup_media_files
 from backend.services.bot_provider import resolve_master
 
 logger = logging.getLogger(__name__)

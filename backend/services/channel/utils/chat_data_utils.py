@@ -1,6 +1,4 @@
 import asyncio
-
-from aiogram import Bot
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import Chat
 
@@ -47,7 +45,7 @@ def resolve_channel_type(chat: Chat) -> ChannelType:
     return ChannelType.CHANNEL
 
 
-async def _safe_member_count(bot: RateLimitedBot, chat_id: int) -> int:
+async def safe_member_count(bot: RateLimitedBot, chat_id: int) -> int:
     """Получить количество участников (0 при ошибке)."""
     try:
         return await bot.get_chat_member_count(chat_id)
@@ -57,7 +55,7 @@ async def _safe_member_count(bot: RateLimitedBot, chat_id: int) -> int:
 
 async def build_chat_data(bot: RateLimitedBot, chat: Chat, bot_token: str) -> dict:
     """Собрать данные чата для сохранения."""
-    members_task = _safe_member_count(bot, chat.id)
+    members_task = safe_member_count(bot, chat.id)
     photo_task = fetch_photo_data(bot, chat, bot_token)
     members_count, photo_data = await asyncio.gather(members_task, photo_task)
 

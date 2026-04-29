@@ -1,10 +1,6 @@
 from typing import List, Optional
 
 from backend.models.publications import ContentType as DBContentType, Publication
-from backend.utils.media import (
-    VIDEO_EXTENSIONS, AUDIO_EXTENSIONS, DOCUMENT_EXTENSIONS,
-    is_video_url, is_document_url, is_audio_url,
-)
 
 
 def validate_media_urls(publication: Publication) -> None:

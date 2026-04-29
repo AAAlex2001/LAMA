@@ -14,18 +14,26 @@ from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, BotMessage as BotMessageModel, MessageType
-from backend.models.channels import ChannelGroup
-from backend.services.channel import ChannelAutoDeleteService
+from backend.models.channels import ChannelGroup, ForumTopic
+from backend.services.channel.features.auto_delete import ProcessAutoDelete
 from backend.services.channel.utils.message_utils import is_system_message
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
-from backend.services.channel.forum_topic_service import ForumTopicService
+from backend.services.channel.features.forum_topics import (
+    CloseForumTopic,
+    ReopenForumTopic,
+    UpsertForumTopic,
+)
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
 from backend.services.webhook.messages.members import MemberProcessor
 from backend.services.webhook.messages.text import TextProcessor
-from backend.services.direct.chat_service import DirectChatService
-from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.direct.features.chats.get_or_create_chat import GetOrCreateChat
+from backend.services.direct.features.chats.increment_unread import IncrementUnread
+from backend.services.direct.features.chats.update_photo import UpdatePhoto
+from backend.services.direct.features.messages.resolve_media_url import resolve_media_url
+from backend.services.direct.features.messages.save_incoming_message import SaveIncomingMessage
+from backend.services.direct.features.utils.media_detectors import extract_incoming_media
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.schemas.direct.chat import DirectChatWsEvent
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.schemas.inbox.events import InboxEventCreate
@@ -68,10 +76,7 @@ class MessageHandler:
         if not message.from_user:
             return None
         try:
-            chat_svc = DirectChatService(self.db)
-            msg_svc = DirectMessageService(self.db)
-
-            await chat_svc.get_or_create_chat(
+            await GetOrCreateChat(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=message.chat.id,
                 tg_user_id=message.from_user.id,
@@ -80,22 +85,21 @@ class MessageHandler:
                 tg_last_name=message.from_user.last_name,
             )
             msg_type = self.detect_message_type(message)
-            await chat_svc.increment_unread(
+            await IncrementUnread(self.db).execute(
                 self.bot_model.id,
                 message.chat.id,
                 last_message_text=text_content,
                 last_message_type=msg_type,
             )
-            self.saved_msg = await msg_svc.save_incoming_message(
+            self.saved_msg = await SaveIncomingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
-                owner_id=self.bot_model.owner_id,
-                message=message
+                message=message,
             )
 
             is_command = bool(text_content and text_content.startswith("/"))
             if not is_command:
                 try:
-                    event_service = InboxEventService(self.db)
+                    event_service = CreateInboxEvent(self.db)
                     preview = text_content[:100] if text_content else "(медиа)"
                     sender = message.from_user.username or str(message.from_user.id)
                     reply_ctx = self.build_reply_context(message)
@@ -108,7 +112,7 @@ class MessageHandler:
                     elif message.document:
                         media_file_id = message.document.file_id
 
-                    await event_service.create_event(InboxEventCreate(
+                    await event_service.execute(InboxEventCreate(
                         owner_id=self.bot_model.owner_id,
                         category=InboxCategory.MODERATION,
                         entity_type=EntityType.BOT,
@@ -196,10 +200,7 @@ class MessageHandler:
             if not channel:
                 return None
 
-            chat_svc = DirectChatService(self.db)
-            msg_svc = DirectMessageService(self.db)
-
-            await chat_svc.get_or_create_chat(
+            await GetOrCreateChat(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=chat_id,
                 tg_user_id=None,
@@ -219,14 +220,12 @@ class MessageHandler:
 
             if not existing_post:
                 post_text = reply_msg.text or reply_msg.caption
-                msg_type, media_file_id = msg_svc.extract_incoming_media(reply_msg)
+                msg_type, media_file_id = extract_incoming_media(reply_msg)
 
                 media_url = None
                 if media_file_id:
                     try:
-                        media_url = await msg_svc.resolve_media_url(
-                            self.bot_model.token, media_file_id,
-                        )
+                        media_url = await resolve_media_url(self.bot_model.token, media_file_id)
                     except Exception:
                         pass
 
@@ -247,25 +246,24 @@ class MessageHandler:
                 await self.db.flush()
 
             msg_type = self.detect_message_type(message)
-            await chat_svc.increment_unread(
+            await IncrementUnread(self.db).execute(
                 self.bot_model.id,
                 chat_id,
                 last_message_text=text_content,
                 last_message_type=msg_type,
             )
 
-            self.saved_msg = await msg_svc.save_incoming_message(
+            self.saved_msg = await SaveIncomingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
-                owner_id=self.bot_model.owner_id,
                 message=message,
             )
 
             # Inbox notification
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             preview = text_content[:100] if text_content else "(медиа)"
             sender = message.from_user.username or str(message.from_user.id)
 
-            await event_service.create_event(InboxEventCreate(
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.MODERATION,
                 entity_type=EntityType.CHANNEL,
@@ -342,8 +340,7 @@ class MessageHandler:
             if message.chat.type == "private" and message.from_user:
                 photo_url = await self.resolve_user_photo(message.from_user.id)
                 if photo_url:
-                    chat_svc = DirectChatService(self.db)
-                    await chat_svc.update_photo(
+                    await UpdatePhoto(self.db).execute(
                         self.bot_model.id, message.chat.id, photo_url,
                     )
 
@@ -368,8 +365,7 @@ class MessageHandler:
             logger.error(f"Side effects processing error: {e}", exc_info=True)
 
         try:
-            auto_delete_service = ChannelAutoDeleteService(self.db)
-            await auto_delete_service.process_auto_delete(message, bot_id=self.bot_model.id)
+            await ProcessAutoDelete(self.db).execute(message, bot_id=self.bot_model.id)
         except Exception as e:
             logger.error(f"Auto-delete processing error: {e}", exc_info=True)
 
@@ -468,9 +464,9 @@ class MessageHandler:
             ))
 
         try:
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             for event_type, description, extra_payload in events_to_create:
-                await event_service.create_event(InboxEventCreate(
+                await event_service.execute(InboxEventCreate(
                     owner_id=self.bot_model.owner_id,
                     category=InboxCategory.SYSTEM,
                     entity_type=EntityType.CHANNEL,
@@ -514,12 +510,10 @@ class MessageHandler:
         if not channel or not channel.is_forum:
             return
 
-        service = ForumTopicService(self.db)
-
         try:
             if topic_created:
                 thread_id = message.message_thread_id or 0
-                await service.upsert_topic(
+                await UpsertForumTopic(self.db).execute(
                     channel_id=channel.id,
                     thread_id=thread_id,
                     name=topic_created.name,
@@ -529,7 +523,7 @@ class MessageHandler:
             elif topic_edited:
                 thread_id = message.message_thread_id or 0
                 if topic_edited.name:
-                    await service.upsert_topic(
+                    await UpsertForumTopic(self.db).execute(
                         channel_id=channel.id,
                         thread_id=thread_id,
                         name=topic_edited.name,
@@ -537,19 +531,21 @@ class MessageHandler:
                     )
             elif topic_closed:
                 thread_id = message.message_thread_id or 0
-                await service.close_topic(channel.id, thread_id)
+                await CloseForumTopic(self.db).execute(channel.id, thread_id)
             elif topic_reopened:
                 thread_id = message.message_thread_id or 0
-                await service.reopen_topic(channel.id, thread_id)
+                await ReopenForumTopic(self.db).execute(channel.id, thread_id)
             elif has_thread and message.message_thread_id != 1:
-                existing = await service.get_topics(channel.id)
-                known_ids = {t.thread_id for t in existing}
+                existing = (await self.db.execute(
+                    select(ForumTopic).where(ForumTopic.channel_id == channel.id)
+                )).scalars().all()
+                known_ids = {topic.thread_id for topic in existing}
                 if message.message_thread_id not in known_ids:
                     topic_name = f"Топик #{message.message_thread_id}"
                     if (message.reply_to_message
                             and message.reply_to_message.forum_topic_created):
                         topic_name = message.reply_to_message.forum_topic_created.name
-                    await service.upsert_topic(
+                    await UpsertForumTopic(self.db).execute(
                         channel_id=channel.id,
                         thread_id=message.message_thread_id,
                         name=topic_name,

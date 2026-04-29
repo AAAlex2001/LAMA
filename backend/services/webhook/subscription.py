@@ -26,9 +26,9 @@ from backend.schemas.inbox.enums import (
     EventStatus,
 )
 from backend.schemas.inbox.events import InboxEventCreate
-from backend.services.bot import TriggerService
-from backend.services.bot.bot_settings import BotSettingsService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.bot.features.settings.check_approval_criteria import check_approval_criteria
+from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEvent
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import TELEGRAM_API_TIMEOUT
@@ -43,7 +43,7 @@ class SubscriptionHandler:
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event = FireTriggerEvent(db)
 
     async def process(self, chat_member: ChatMemberUpdated) -> None:
         """
@@ -89,8 +89,7 @@ class SubscriptionHandler:
             if channel and channel.captcha_enabled:
                 return
             elif self.bot_model.auto_approval_mode == ApprovalMode.CRITERIA:
-                settings_service = BotSettingsService(self.db)
-                should_approve, missing = await settings_service.check_approval_criteria(
+                should_approve, missing = await check_approval_criteria(
                     self.bot_model, user_id,
                 )
                 missing = [ch for ch in missing if ch != chat_id]
@@ -113,7 +112,7 @@ class SubscriptionHandler:
             link_val = chat_member.invite_link.invite_link if chat_member.invite_link else None
             await self.create_link_join_event(chat_member, link_val)
             telegram_bot = resolve_by_token(self.bot_model.token)
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.JOIN_REQUEST_CREATED,
                 user_id=user_id,
@@ -127,7 +126,7 @@ class SubscriptionHandler:
                     "link_url": link_val,
                 },
             )
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
                 user_id=user_id,
@@ -231,8 +230,8 @@ class SubscriptionHandler:
                     link_id = db_link.id
                     link_name = db_link.name
 
-            event_service = InboxEventService(self.db)
-            await event_service.create_event(InboxEventCreate(
+            event_service = CreateInboxEvent(self.db)
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.MODERATION,
                 entity_type=EntityType.CHANNEL,
@@ -375,7 +374,7 @@ class SubscriptionHandler:
                             pending.user_id, pending.chat_id, e,
                         )
 
-                    await self.trigger_service.fire_event(
+                    await self.fire_trigger_event.execute(
                         bot_id=self.bot_model.id,
                         trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
                         user_id=pending.user_id,
@@ -441,7 +440,7 @@ class SubscriptionHandler:
             await processor.send_group_captcha(
                 fake_message, chat_member.from_user, channel
             )
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.MEMBER_JOINED,
                 user_id=chat_member.from_user.id,

@@ -1,6 +1,7 @@
 from typing import Optional
 
-from sqlalchemy import select, or_
+from fastapi import HTTPException
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -24,6 +25,19 @@ async def get_channel(
         query = query.options(selectinload(ChannelGroup.auto_delete_settings))
     result = await db.execute(query)
     return result.scalar_one_or_none()
+
+
+async def find_channel_or_404(
+    db: AsyncSession,
+    channel_id: int,
+    owner_id: Optional[int] = None,
+    load_bot: bool = False,
+) -> ChannelGroup:
+    """Получить канал или бросить 404."""
+    channel = await get_channel(db, channel_id, owner_id=owner_id, load_bot=load_bot)
+    if channel is None:
+        raise HTTPException(status_code=404, detail="Channel not found")
+    return channel
 
 
 async def get_channel_by_telegram_id(

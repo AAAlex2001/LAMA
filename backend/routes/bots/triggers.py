@@ -1,13 +1,18 @@
 from typing import Optional
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.routes.auth import get_current_user
 from backend.models.auth import User
 from backend.models.bots import TriggerType
 from backend.schemas.bots import TriggerCreate, TriggerUpdate, TriggerResponse, TriggerListResponse
-from backend.services.bot.bot_crud import BotCrudService
-from backend.services.bot.bot_triggers import BotTriggerService
-from backend.routes.bots.dependencies import get_bot_service, get_trigger_service
+from backend.routes.bots.dependencies import get_create_trigger, get_delete_trigger, get_list_triggers, get_update_trigger
+from backend.services.bot.features.triggers.crud.create_trigger import CreateTrigger
+from backend.services.bot.features.triggers.crud.delete_trigger import DeleteTrigger
+from backend.services.bot.features.triggers.crud.list_triggers import ListTriggers
+from backend.services.bot.features.triggers.crud.update_trigger import UpdateTrigger
+from backend.services.bot.features.triggers.lookup import find_trigger_or_404
 
 router = APIRouter()
 
@@ -17,13 +22,11 @@ router = APIRouter()
 async def create_trigger(
     bot_id: int,
     data: TriggerCreate,
-    bot_service: BotCrudService = Depends(get_bot_service),
-    trigger_service: BotTriggerService = Depends(get_trigger_service),
+    create_trigger_use_case: CreateTrigger = Depends(get_create_trigger),
     current_user: User = Depends(get_current_user),
 ):
     """Создать триггер для бота."""
-    bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    return await trigger_service.create(
+    return await create_trigger_use_case.execute(
         bot_id=bot_id, name=data.name,
         trigger_type=data.trigger_type, action_type=data.action_type,
         action_data=data.action_data, delay_minutes=data.delay_minutes,
@@ -37,13 +40,11 @@ async def get_triggers(
     bot_id: int,
     trigger_type: Optional[TriggerType] = None,
     is_active: Optional[bool] = None,
-    bot_service: BotCrudService = Depends(get_bot_service),
-    trigger_service: BotTriggerService = Depends(get_trigger_service),
+    list_triggers: ListTriggers = Depends(get_list_triggers),
     current_user: User = Depends(get_current_user),
 ):
     """Получить список триггеров бота."""
-    bot = await bot_service.get(bot_id, owner_id=current_user.id)
-    triggers, total = await trigger_service.get_list(
+    triggers, total = await list_triggers.execute(
         bot_id=bot_id, trigger_type=trigger_type, is_active=is_active, owner_id=current_user.id,
     )
     return TriggerListResponse(items=triggers, total=total)
@@ -53,11 +54,11 @@ async def get_triggers(
 async def get_trigger(
     bot_id: int,
     trigger_id: int,
-    trigger_service: BotTriggerService = Depends(get_trigger_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Получить триггер по ID."""
-    return await trigger_service.get(trigger_id, owner_id=current_user.id)
+    return await find_trigger_or_404(db, trigger_id, owner_id=current_user.id)
 
 
 @router.put("/{bot_id}/triggers/{trigger_id}", response_model=TriggerResponse)
@@ -65,11 +66,11 @@ async def update_trigger(
     bot_id: int,
     trigger_id: int,
     data: TriggerUpdate,
-    trigger_service: BotTriggerService = Depends(get_trigger_service),
+    update_trigger_use_case: UpdateTrigger = Depends(get_update_trigger),
     current_user: User = Depends(get_current_user),
 ):
     """Обновить триггер."""
-    return await trigger_service.update(
+    return await update_trigger_use_case.execute(
         trigger_id=trigger_id, owner_id=current_user.id,
         name=data.name, trigger_type=data.trigger_type,
         action_type=data.action_type, action_data=data.action_data,
@@ -82,8 +83,8 @@ async def update_trigger(
 async def delete_trigger(
     bot_id: int,
     trigger_id: int,
-    trigger_service: BotTriggerService = Depends(get_trigger_service),
+    delete_trigger_use_case: DeleteTrigger = Depends(get_delete_trigger),
     current_user: User = Depends(get_current_user),
 ):
     """Удалить триггер."""
-    await trigger_service.delete(trigger_id, owner_id=current_user.id)
+    await delete_trigger_use_case.execute(trigger_id, owner_id=current_user.id)

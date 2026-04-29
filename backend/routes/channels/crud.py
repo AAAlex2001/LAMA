@@ -1,11 +1,12 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.database import get_db
 from backend.models.auth import User
 from backend.models.channels import BackupMode
 from backend.routes.auth import get_current_user
-from backend.routes.channels.dependencies import get_channel_service
 from backend.schemas.channels import (
     ChannelGroupCreate,
     ChannelGroupListResponse,
@@ -13,7 +14,11 @@ from backend.schemas.channels import (
     ChannelGroupUpdate,
     ChannelType,
 )
-from backend.services.channel.channel_service import ChannelService
+from backend.services.channel.features.crud.create_channel import CreateChannel
+from backend.services.channel.features.crud.delete_channel import DeleteChannel
+from backend.services.channel.features.crud.list_channels import ListChannels
+from backend.services.channel.features.crud.update_channel import UpdateChannel
+from backend.services.channel.utils.query_utils import find_channel_or_404
 
 router = APIRouter()
 
@@ -21,10 +26,10 @@ router = APIRouter()
 @router.post("/", response_model=ChannelGroupResponse, status_code=201)
 async def create_channel(
     data: ChannelGroupCreate,
-    service: ChannelService = Depends(get_channel_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.create(data, owner_id=current_user.id)
+    return await CreateChannel(db).execute(data, owner_id=current_user.id)
 
 
 @router.get("/", response_model=ChannelGroupListResponse)
@@ -35,10 +40,10 @@ async def list_channels(
     is_active: Optional[bool] = None,
     backup_mode: Optional[BackupMode] = None,
     force_refresh: bool = False,
-    service: ChannelService = Depends(get_channel_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    channels, total = await service.list(
+    channels, total = await ListChannels(db).execute(
         owner_id=current_user.id,
         page=page,
         page_size=page_size,
@@ -53,27 +58,27 @@ async def list_channels(
 @router.get("/{channel_id}", response_model=ChannelGroupResponse)
 async def get_channel(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get(channel_id, owner_id=current_user.id)
+    return await find_channel_or_404(db, channel_id, owner_id=current_user.id, load_bot=True)
 
 
 @router.put("/{channel_id}", response_model=ChannelGroupResponse)
 async def update_channel(
     channel_id: int,
     data: ChannelGroupUpdate,
-    service: ChannelService = Depends(get_channel_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.update(channel_id, data, owner_id=current_user.id)
+    return await UpdateChannel(db).execute(channel_id, data, owner_id=current_user.id)
 
 
 @router.delete("/{channel_id}")
 async def delete_channel(
     channel_id: int,
-    service: ChannelService = Depends(get_channel_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await service.delete(channel_id, owner_id=current_user.id)
+    await DeleteChannel(db).execute(channel_id, owner_id=current_user.id)
     return {"success": True, "message": "Channel deleted successfully"}

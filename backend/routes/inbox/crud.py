@@ -1,18 +1,28 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
 
-from backend.routes.auth import get_current_user
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.database import get_db
 from backend.models.auth import User
-from backend.schemas.inbox.events import InboxListResponse, BulkActionRequest, SpecificActionRequest, SpecificActionResult
-from backend.schemas.inbox.enums import InboxCategory, EventStatus, SortDir, EventType
-from backend.services.inbox.query_service import InboxQueryService
-from backend.services.inbox.action_service import InboxActionService
-from backend.routes.inbox.dependencies import get_inbox_query_service, get_inbox_action_service
+from backend.routes.auth import get_current_user
+from backend.schemas.inbox.enums import EventStatus, EventType, InboxCategory, SortDir
+from backend.schemas.inbox.events import (
+    BulkActionRequest,
+    InboxListResponse,
+    SpecificActionRequest,
+    SpecificActionResult,
+)
+from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
+from backend.services.inbox.features.list_events import ListInboxEvents
+from backend.services.inbox.features.lookup import find_event_or_404
 
 router = APIRouter()
 
 
 def parse_int_list(raw: Optional[str]) -> Optional[List[int]]:
+    """'1,2,3' → [1,2,3]; пустую/невалидную строку → None."""
     if not raw:
         return None
     try:
@@ -21,57 +31,47 @@ def parse_int_list(raw: Optional[str]) -> Optional[List[int]]:
         return None
 
 
+def parse_event_types(raw: Optional[str]) -> Optional[List[EventType]]:
+    """'BOT_COMMAND,SYSTEM_TRIGGER' → [EventType.BOT_COMMAND, ...]."""
+    if not raw:
+        return None
+    return [EventType(e.strip()) for e in raw.split(",") if e.strip()]
+
+
 @router.get("/", response_model=InboxListResponse)
 async def list_inbox_events(
-    category: Optional[InboxCategory] = Query(None, description="moderation | system | automation"),
-    status: Optional[EventStatus] = Query(None, description="new, processed, ignored, banned"),
-    bot_ids: Optional[str] = Query(None, description="Comma separated bot IDs"),
-    channel_ids: Optional[str] = Query(None, description="Comma separated channel IDs"),
-    system: Optional[bool] = Query(None, description="Include system events (errors, joins, etc.)"),
-    type_auto_replies: Optional[bool] = Query(None, description="Include auto-reply events"),
-    type_triggers: Optional[bool] = Query(None, description="Include trigger events"),
-    type_commands: Optional[bool] = Query(None, description="Include command events"),
-    event_types: Optional[str] = Query(None, description="Comma separated EventType enums"),
+    category: Optional[InboxCategory] = Query(None),
+    status: Optional[EventStatus] = Query(None),
+    bot_ids: Optional[str] = Query(None),
+    channel_ids: Optional[str] = Query(None),
+    system: Optional[bool] = Query(None),
+    type_auto_replies: Optional[bool] = Query(None),
+    type_triggers: Optional[bool] = Query(None),
+    type_commands: Optional[bool] = Query(None),
+    event_types: Optional[str] = Query(None),
     sort: SortDir = Query(SortDir.NEW_FIRST),
     limit: int = 50,
     offset: int = 0,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    query_service: InboxQueryService = Depends(get_inbox_query_service),
 ):
-    parsed_bot_ids = parse_int_list(bot_ids)
-    parsed_channel_ids = parse_int_list(channel_ids)
-
-    event_types_list = None
-    if event_types:
-        event_types_list = [EventType(e.strip()) for e in event_types.split(",") if e.strip()]
-
-    items, total, bot_map = await query_service.get_events(
+    items, total, bot_map = await ListInboxEvents(db).execute(
         owner_id=current_user.id,
         category=category,
         status=status,
-        bot_ids=parsed_bot_ids,
-        channel_ids=parsed_channel_ids,
+        bot_ids=parse_int_list(bot_ids),
+        channel_ids=parse_int_list(channel_ids),
         include_system=system,
         type_auto_replies=type_auto_replies,
         type_triggers=type_triggers,
         type_commands=type_commands,
-        event_types=event_types_list,
+        event_types=parse_event_types(event_types),
         sort_dir=sort,
         limit=limit,
         offset=offset,
     )
 
-    results = []
-    for item in items:
-        data = {c.name: getattr(item, c.name) for c in item.__table__.columns}
-        data['is_new'] = (item.status == EventStatus.NEW)
-        if item.bot_id is not None:
-            meta = bot_map.get(int(item.bot_id))
-            if meta:
-                data["tg_bot_username"] = meta.tg_bot_username
-                data["tg_bot_name"] = meta.tg_bot_name
-        results.append(data)
-
+    results = [serialize_event(item, bot_map) for item in items]
     return InboxListResponse(
         items=results,
         total=total,
@@ -79,14 +79,25 @@ async def list_inbox_events(
     )
 
 
+def serialize_event(item, bot_map) -> dict:
+    """Превращает ORM-событие в dict для InboxListResponse."""
+    data = {c.name: getattr(item, c.name) for c in item.__table__.columns}
+    data["is_new"] = (item.status == EventStatus.NEW)
+    if item.bot_id is not None:
+        meta = bot_map.get(int(item.bot_id))
+        if meta:
+            data["tg_bot_username"] = meta.tg_bot_username
+            data["tg_bot_name"] = meta.tg_bot_name
+    return data
+
+
 @router.post("/bulk-action")
 async def bulk_inbox_action(
     request: BulkActionRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    action_service: InboxActionService = Depends(get_inbox_action_service),
 ):
-    """Execute bulk actions (read, delete, ignore, block) over selection or all notifications."""
-    affected = await action_service.execute_bulk_action(
+    affected = await ExecuteBulkAction(db).execute(
         owner_id=current_user.id,
         event_ids=request.event_ids,
         action=request.action,
@@ -99,31 +110,12 @@ async def bulk_inbox_action(
 async def execute_specific_action(
     event_id: int,
     request: SpecificActionRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    action_service: InboxActionService = Depends(get_inbox_action_service),
 ):
-    """
-    Execute specific action on an inbox event.
-
-    action_type values:
-      mark_resolved   - mark as processed
-      ignore          - mark as ignored
-      reply           - return bot_id/tg_user_id/chat_id for Direct
-      accept          - accept join request
-      reject          - reject join request
-      unban           - unban user in channel
-      block           - block (channel or DirectChat) + notification event
-      delete_message  - delete triggering message
-      delete_and_block - delete message + block user
-      change_ban      - change ban (payload: ban_type, duration_seconds, everywhere)
-    """
-    event = await action_service.get_event(event_id, current_user.id)
-
-    result = await action_service.execute_specific_action(
+    event = await find_event_or_404(db, event_id, current_user.id)
+    return await ExecuteSpecificAction(db).execute(
         event=event,
         action_type=request.action_type,
         payload=request.payload,
     )
-
-
-    return result

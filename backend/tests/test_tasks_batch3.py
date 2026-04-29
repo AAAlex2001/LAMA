@@ -40,24 +40,18 @@ class TestBroadcast:
 
     @pytest.mark.asyncio
     async def test_broadcast_sends_to_all_chats(self):
-        """BotMessagingService.broadcast отправляет всем незаблокированным чатам."""
-        from backend.services.bot.bot_messaging import BotMessagingService
+        """BroadcastToChats отправляет всем незаблокированным чатам."""
+        from backend.services.bot.features.messaging.broadcast import BroadcastToChats
 
         db = AsyncMock()
-        service = BotMessagingService(db)
+        db.add_all = MagicMock()
+        service = BroadcastToChats(db)
 
         # Бот активен
         bot = MagicMock()
         bot.id = 1
         bot.status = BotStatus.ACTIVE
         service.get_bot_or_raise = AsyncMock(return_value=bot)
-
-        # 2 чата: один обычный, один заблокированный
-        chat_rows = [(100,), (200,)]
-        db.execute = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.all.return_value = chat_rows
-        db.execute.return_value = mock_result
 
         fake_tg_bot = AsyncMock()
         fake_msg = MagicMock()
@@ -68,27 +62,31 @@ class TestBroadcast:
 
         data = SendMessageRequest(text_content="Broadcast test")
 
-        with patch("backend.services.bot.bot_messaging.resolve_for_bot_id", return_value=fake_tg_bot):
-            result = await service.broadcast(1, data, owner_id=1)
+        with patch("backend.services.bot.features.messaging.broadcast.find_bot_or_404", AsyncMock(return_value=bot)):
+            with patch("backend.services.bot.features.messaging.broadcast.fetch_target_chat_ids", AsyncMock(return_value=[100, 200])):
+                with patch("backend.services.bot.features.messaging.broadcast.resolve_for_bot_id", AsyncMock(return_value=fake_tg_bot)):
+                    with patch("backend.services.bot.features.messaging.broadcast.dispatch_telegram", AsyncMock(return_value=fake_msg)):
+                        result = await service.execute(1, data, owner_id=1)
 
         assert result.total == 2
         assert result.sent + result.failed == 2
 
     @pytest.mark.asyncio
     async def test_broadcast_skips_inactive_bot(self):
-        """broadcast поднимает ValueError если бот неактивен."""
-        from backend.services.bot.bot_messaging import BotMessagingService
+        """broadcast поднимает HTTPException если бот неактивен."""
+        from fastapi import HTTPException
+        from backend.services.bot.features.messaging.broadcast import BroadcastToChats
 
         db = AsyncMock()
-        service = BotMessagingService(db)
+        service = BroadcastToChats(db)
 
         bot = MagicMock()
         bot.status = BotStatus.INACTIVE
-        service.get_bot_or_raise = AsyncMock(return_value=bot)
 
         data = SendMessageRequest(text_content="test")
-        with pytest.raises(ValueError, match="not active"):
-            await service.broadcast(1, data, owner_id=1)
+        with patch("backend.services.bot.features.messaging.broadcast.find_bot_or_404", AsyncMock(return_value=bot)):
+            with pytest.raises(HTTPException, match="Bot is not active"):
+                await service.execute(1, data, owner_id=1)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -153,18 +151,18 @@ class TestDirectChatSorting:
 
     @pytest.mark.asyncio
     async def test_get_chats_accepts_sort_param(self):
-        """get_chats_for_user принимает sort='old' без ошибки."""
-        from backend.services.direct.chat_service import DirectChatService
+        """ListChats принимает sort='old' без ошибки."""
+        from backend.services.direct.features.chats.list_chats import ListChats
 
         db = AsyncMock()
-        service = DirectChatService(db)
+        service = ListChats(db)
 
         mock_result = MagicMock()
         mock_result.scalar.return_value = 0
         mock_result.all.return_value = []
         db.execute = AsyncMock(return_value=mock_result)
 
-        chats, total = await service.get_chats_for_user(
+        chats, total = await service.execute(
             owner_id=1, sort="old", unread_filter="unread",
         )
         assert total == 0
@@ -172,18 +170,18 @@ class TestDirectChatSorting:
 
     @pytest.mark.asyncio
     async def test_get_chats_accepts_read_filter(self):
-        """get_chats_for_user фильтрует по unread_filter='read'."""
-        from backend.services.direct.chat_service import DirectChatService
+        """ListChats фильтрует по unread_filter='read'."""
+        from backend.services.direct.features.chats.list_chats import ListChats
 
         db = AsyncMock()
-        service = DirectChatService(db)
+        service = ListChats(db)
 
         mock_result = MagicMock()
         mock_result.scalar.return_value = 0
         mock_result.all.return_value = []
         db.execute = AsyncMock(return_value=mock_result)
 
-        chats, total = await service.get_chats_for_user(
+        chats, total = await service.execute(
             owner_id=1, sort="new", unread_filter="read",
         )
         assert total == 0
@@ -199,10 +197,11 @@ class TestInboxDeleteAndBlock:
     @pytest.mark.asyncio
     async def test_delete_and_block_dm_event(self):
         """delete_and_block для DM: удаляет сообщение + блокирует DirectChat."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         # Событие из DM — без channel_id
         event = MagicMock()
@@ -219,9 +218,9 @@ class TestInboxDeleteAndBlock:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event,
                 action_type="delete_and_block",
             )
@@ -232,10 +231,11 @@ class TestInboxDeleteAndBlock:
     @pytest.mark.asyncio
     async def test_block_dm_event(self):
         """block для DM: блокирует DirectChat без channel_id."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 11
@@ -251,9 +251,9 @@ class TestInboxDeleteAndBlock:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event,
                 action_type="block",
             )
@@ -272,7 +272,8 @@ class TestBulkRead:
     @pytest.mark.asyncio
     async def test_bulk_read_sets_processed(self):
         """bulk READ обновляет status на PROCESSED."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
         mock_result = MagicMock()
@@ -280,8 +281,8 @@ class TestBulkRead:
         db.execute = AsyncMock(return_value=mock_result)
         db.commit = AsyncMock()
 
-        service = InboxActionService(db)
-        affected = await service.execute_bulk_action(
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
+        affected = await bulk_action.execute(
             owner_id=1,
             event_ids=[1, 2, 3, 4, 5],
             action=BulkActionType.READ,

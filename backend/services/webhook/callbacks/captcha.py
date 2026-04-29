@@ -3,8 +3,9 @@ from typing import Optional
 from sqlalchemy import select, update
 from aiogram.types import CallbackQuery, ChatPermissions, Message
 from aiogram.exceptions import TelegramAPIError
-from backend.services.bot import CaptchaService, TriggerService
 from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot.features.captcha.check_answer import CheckCaptchaAnswer
+from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEvent
 from backend.models.bots import PendingApproval, TriggerType
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.models.inbox import InboxEvent
@@ -23,7 +24,7 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
 
     def __init__(self, db, bot_model):
         super().__init__(db, bot_model)
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event = FireTriggerEvent(db)
 
     async def process_captcha(self, callback_query: CallbackQuery) -> None:
         """Обработка ответа на капчу в ЛС."""
@@ -39,8 +40,8 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
         except ValueError:
             return
 
-        captcha_service = CaptchaService(self.db)
-        is_correct, reason = await captcha_service.check_answer(
+        captcha_answer_checker = CheckCaptchaAnswer(self.db)
+        is_correct, reason = await captcha_answer_checker.execute(
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 
@@ -106,8 +107,8 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
         except ValueError:
             return
 
-        captcha_service = CaptchaService(self.db)
-        is_correct, reason = await captcha_service.check_answer(
+        captcha_answer_checker = CheckCaptchaAnswer(self.db)
+        is_correct, reason = await captcha_answer_checker.execute(
             pending_id, user_answer, solver_user_id=callback_query.from_user.id
         )
 
@@ -368,7 +369,7 @@ class CaptchaCallbackProcessor(BaseCallbackProcessor):
         if answer:
             context["answer"] = answer
         try:
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=trigger_type,
                 user_id=user_id,

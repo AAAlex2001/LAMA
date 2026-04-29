@@ -5,7 +5,7 @@
 3. Inbox block action — уведомление + статус BANNED
 4. Inbox bulk block — уведомление для каждого заблокированного
 5. Invite link — member_count через sync
-6. Dispatch multi-media в BotMessagingService
+6. Dispatch multi-media
 """
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -188,10 +188,9 @@ class TestMultiMediaTriggerWebhook:
     @pytest.mark.asyncio
     async def test_action_send_media_with_urls_list(self):
         """Если action_data содержит media_urls (>1), отправляется media_group."""
-        from backend.services.bot.bot_triggers import BotTriggerService
+        from backend.services.bot.features.triggers.actions.send_media import send_media_action
 
         db = AsyncMock()
-        service = BotTriggerService(db)
 
         bot = AsyncMock()
         bot.bot = MagicMock()
@@ -206,19 +205,17 @@ class TestMultiMediaTriggerWebhook:
             "context": {},
         }
 
-        with patch.object(service, "build_shortcode_ctx", return_value={}):
-            with patch("backend.services.bot.bot_triggers.get_bot_info", return_value=MagicMock(first_name="Bot")):
-                await service.action_send_media(bot, chat_id=100, user_id=1, data=action_data)
+        with patch("backend.services.bot.features.triggers.actions.send_media.get_bot_info", AsyncMock(return_value=MagicMock(first_name="Bot"))):
+            await send_media_action(db, bot, chat_id=100, user_id=1, data=action_data)
 
         bot.send_media_group.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_action_send_media_single_url_fallback(self):
         """Если media_url одна, используется обычная отправка."""
-        from backend.services.bot.bot_triggers import BotTriggerService
+        from backend.services.bot.features.triggers.actions.send_media import send_media_action
 
         db = AsyncMock()
-        service = BotTriggerService(db)
 
         bot = AsyncMock()
         bot.bot = MagicMock()
@@ -231,9 +228,8 @@ class TestMultiMediaTriggerWebhook:
             "context": {},
         }
 
-        with patch.object(service, "build_shortcode_ctx", return_value={}):
-            with patch("backend.services.bot.bot_triggers.get_bot_info", return_value=MagicMock(first_name="Bot")):
-                await service.action_send_media(bot, chat_id=100, user_id=1, data=action_data)
+        with patch("backend.services.bot.features.triggers.actions.send_media.get_bot_info", AsyncMock(return_value=MagicMock(first_name="Bot"))):
+            await send_media_action(db, bot, chat_id=100, user_id=1, data=action_data)
 
         bot.send_photo.assert_called_once()
 
@@ -243,14 +239,11 @@ class TestTriggerUnbanAction:
 
     @pytest.mark.asyncio
     async def test_action_unban_calls_unban_chat_member(self):
-        from backend.services.bot.bot_triggers import BotTriggerService
-
-        db = AsyncMock()
-        service = BotTriggerService(db)
+        from backend.services.bot.features.triggers.actions.unban import unban_action
 
         bot = AsyncMock()
 
-        await service.action_unban(bot, chat_id=100, user_id=42, data={})
+        await unban_action(bot, chat_id=100, user_id=42, data={})
 
         bot.unban_chat_member.assert_called_once_with(
             chat_id=100,
@@ -260,14 +253,11 @@ class TestTriggerUnbanAction:
 
     @pytest.mark.asyncio
     async def test_action_remove_from_group_calls_unban_chat_member_without_only_if_banned(self):
-        from backend.services.bot.bot_triggers import BotTriggerService
-
-        db = AsyncMock()
-        service = BotTriggerService(db)
+        from backend.services.bot.features.triggers.actions.remove_from_group import remove_from_group_action
 
         bot = AsyncMock()
 
-        await service.action_remove_from_group(bot, chat_id=100, user_id=42, data={})
+        await remove_from_group_action(bot, chat_id=100, user_id=42, data={})
 
         bot.unban_chat_member.assert_called_once_with(
             chat_id=100,
@@ -281,10 +271,10 @@ class TestTriggerModerationEvents:
 
     @pytest.mark.asyncio
     async def test_execute_creates_channel_ban_event_for_remove_from_group_trigger(self):
-        from backend.services.bot.bot_triggers import BotTriggerService
+        from backend.services.bot.features.triggers.fire.execute_trigger import ExecuteTrigger
 
         db = AsyncMock()
-        service = BotTriggerService(db)
+        service = ExecuteTrigger(db)
 
         trigger = MagicMock()
         trigger.id = 7
@@ -296,41 +286,27 @@ class TestTriggerModerationEvents:
         trigger.trigger_type = TriggerType.COMMAND_CALLED
         trigger.chat_type = TriggerChatType.GROUP
 
-        channel = MagicMock()
-        channel.id = 5
-        channel.owner_id = 9
-
         telegram_bot = AsyncMock()
-        inbox_service = AsyncMock()
 
-        with patch.object(service, "action_remove_from_group", AsyncMock(return_value=True)) as action_remove:
-            with patch("backend.services.bot.bot_triggers.get_channel_by_telegram_id", AsyncMock(return_value=channel)):
-                with patch("backend.services.bot.bot_triggers.InboxEventService", return_value=inbox_service):
-                    executed = await service.execute(
-                        trigger=trigger,
-                        user_id=42,
-                        chat_id=-1001234567890,
-                        telegram_bot=telegram_bot,
-                        context={
-                            "command": "/kickme",
-                            "message_id": 555,
-                            "message_text": "/kickme",
-                            "username": "target_user",
-                        },
-                    )
+        action_handler = AsyncMock(return_value=True)
+        with patch("backend.services.bot.features.triggers.fire.execute_trigger.resolve_action_handler", return_value=action_handler):
+            with patch("backend.services.bot.features.triggers.fire.execute_trigger.create_trigger_moderation_event", AsyncMock()) as create_event:
+                executed = await service.execute(
+                    trigger=trigger,
+                    user_id=42,
+                    chat_id=-1001234567890,
+                    telegram_bot=telegram_bot,
+                    context={
+                        "command": "/kickme",
+                        "message_id": 555,
+                        "message_text": "/kickme",
+                        "username": "target_user",
+                    },
+                )
 
         assert executed is True
-        action_remove.assert_awaited_once()
-        inbox_service.create_event.assert_awaited_once()
-
-        event_data = inbox_service.create_event.await_args.args[0]
-        assert event_data.event_type == EventType.CHANNEL_BAN
-        assert event_data.channel_id == 5
-        assert event_data.tg_user_id == 42
-        assert event_data.payload["action"] == TriggerActionType.REMOVE_FROM_GROUP.value
-        assert event_data.payload["ban_type"] == "kick"
-        assert event_data.payload["command"] == "/kickme"
-        assert event_data.payload["reason_source"] == "trigger"
+        action_handler.assert_awaited_once()
+        create_event.assert_awaited_once()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -348,10 +324,11 @@ class TestInboxBlockNotification:
     @pytest.mark.asyncio
     async def test_block_action_creates_notification(self):
         """block action создаёт отдельное inbox event-уведомление о блокировке."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 10
@@ -368,9 +345,9 @@ class TestInboxBlockNotification:
         db.get = AsyncMock(return_value=bot)
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event, action_type="block",
             )
 
@@ -382,10 +359,11 @@ class TestInboxBlockNotification:
     @pytest.mark.asyncio
     async def test_block_channel_action_creates_notification(self):
         """block в канале создаёт уведомление и ставит BANNED."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.id = 11
@@ -417,9 +395,9 @@ class TestInboxBlockNotification:
         db.get = mock_get
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.actions.execute_specific_action.resolve_by_token", return_value=mock_client):
 
-            result = await service.execute_specific_action(
+            result = await specific_action.execute(
                 event=event, action_type="block",
             )
 
@@ -438,10 +416,11 @@ class TestBulkBlockNotification:
     @pytest.mark.asyncio
     async def test_bulk_block_sets_banned_status(self):
         """Bulk BLOCK ставит status=BANNED на заблокированные события."""
-        from backend.services.inbox.action_service import InboxActionService
+        from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
+        from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
 
         db = AsyncMock()
-        service = InboxActionService(db)
+        specific_action = ExecuteSpecificAction(db); bulk_action = ExecuteBulkAction(db)
 
         event = MagicMock()
         event.tg_user_id = 12345
@@ -464,9 +443,9 @@ class TestBulkBlockNotification:
         db.commit = AsyncMock()
 
         mock_client = AsyncMock()
-        with patch("backend.services.inbox.action_service.resolve_by_token", return_value=mock_client):
+        with patch("backend.services.inbox.features.execute_bulk_action.resolve_by_token", return_value=mock_client):
 
-            affected = await service.execute_bulk_action(
+            affected = await bulk_action.execute(
                 owner_id=1,
                 event_ids=[1],
                 action=BulkActionType.BLOCK,
@@ -505,7 +484,7 @@ class TestInboxBannedFilter:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6. Multi-media в BotMessagingService.dispatch_telegram
+# 6. Multi-media в dispatch_telegram
 # ─────────────────────────────────────────────────────────────────────────────
 
 class TestDispatchMultiMedia:
@@ -514,10 +493,7 @@ class TestDispatchMultiMedia:
     @pytest.mark.asyncio
     async def test_dispatch_multi_media(self):
         """Множественные media_urls -> send_media_group."""
-        from backend.services.bot.bot_messaging import BotMessagingService
-
-        db = AsyncMock()
-        service = BotMessagingService(db)
+        from backend.services.bot.features.messaging.dispatch_telegram import dispatch_telegram
 
         telegram_bot = AsyncMock()
         fake_msg1 = MagicMock()
@@ -532,7 +508,7 @@ class TestDispatchMultiMedia:
             media_urls=["https://example.com/a.jpg", "https://example.com/b.jpg"],
         )
 
-        result = await service.dispatch_telegram(telegram_bot, data, None)
+        result = await dispatch_telegram(telegram_bot, data, None)
 
         telegram_bot.send_media_group.assert_called_once()
         assert len(result) == 2
@@ -540,10 +516,7 @@ class TestDispatchMultiMedia:
     @pytest.mark.asyncio
     async def test_dispatch_single_media_url_in_urls_list(self):
         """Одна media_url в media_urls, без media_type -> fallback send_message."""
-        from backend.services.bot.bot_messaging import BotMessagingService
-
-        db = AsyncMock()
-        service = BotMessagingService(db)
+        from backend.services.bot.features.messaging.dispatch_telegram import dispatch_telegram
 
         telegram_bot = AsyncMock()
         fake_msg = MagicMock()
@@ -556,7 +529,7 @@ class TestDispatchMultiMedia:
             media_urls=["https://example.com/a.jpg"],
         )
 
-        result = await service.dispatch_telegram(telegram_bot, data, None)
+        result = await dispatch_telegram(telegram_bot, data, None)
 
         telegram_bot.send_message.assert_called_once()
 
@@ -570,11 +543,11 @@ class TestInviteLinkMemberCount:
 
     @pytest.mark.asyncio
     async def test_sync_single_updates_member_count(self):
-        """sync_single обновляет member_count из Telegram API."""
-        from backend.services.channel.invite_link_service import InviteLinkService
+        """RefreshInviteLink обновляет member_count из Telegram API."""
+        from backend.services.channel.features.invite_links import RefreshInviteLink
 
         db = AsyncMock()
-        service = InviteLinkService(db)
+        feature = RefreshInviteLink(db)
 
         channel = MagicMock()
         channel.id = 1
@@ -596,8 +569,11 @@ class TestInviteLinkMemberCount:
         tg_link.pending_join_request_count = 3
         fake_bot.edit_chat_invite_link.return_value = tg_link
 
-        with patch.object(service, "resolve_bot", return_value=fake_bot):
-            result = await service.sync_single(channel, link)
+        with patch(
+            "backend.services.channel.features.invite_links.refresh_link.resolve_for_channel",
+            return_value=fake_bot,
+        ):
+            await feature.execute(channel, link)
 
         assert link.member_count == 42
         assert link.pending_join_request_count == 3

@@ -10,15 +10,13 @@ from aiogram.types import Message, ChatPermissions
 from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.channel import (
-    ChannelModerationService,
-    AntispamService,
-    FloodService,
-)
+from backend.services.channel.features.antispam import CheckChannelLinks
+from backend.services.channel.features.flood import CheckUserFlood
+from backend.services.channel.features.moderation_rules import CheckMessageAgainstRules
 from backend.models.channels import ActionType
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
 from backend.schemas.inbox.events import InboxEventCreate
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.bot_provider import resolve_by_token
 from backend.services.webhook.base import (
@@ -57,9 +55,8 @@ class ModerationHandler:
                     and message.from_user
                     and channel.flood_message_limit
                     and channel.flood_interval_seconds):
-                flood_service = FloodService(self.db)
                 is_flood, flood_action, flood_mute = await asyncio.wait_for(
-                    flood_service.check_flood(
+                    CheckUserFlood(self.db).execute(
                         channel=channel,
                         user_id=message.from_user.id,
                     ),
@@ -84,9 +81,8 @@ class ModerationHandler:
             if not text_content:
                 return
 
-            antispam_service = AntispamService(self.db)
             should_block, action, mute_duration, reason = \
-                antispam_service.check_channel_links(channel, text_content)
+                await CheckChannelLinks().execute(channel, text_content)
 
             if should_block:
                 await self.apply_action(
@@ -100,11 +96,8 @@ class ModerationHandler:
                 return
 
             if channel.banned_words_enabled:
-                moderation_service = ChannelModerationService(self.db)
                 rule = await asyncio.wait_for(
-                    moderation_service.check_message(
-                        channel.id, text_content
-                    ),
+                    CheckMessageAgainstRules(self.db).execute(channel.id, text_content),
                     timeout=DB_QUERY_TIMEOUT
                 )
 
@@ -215,7 +208,7 @@ class ModerationHandler:
             return
 
         try:
-            event_service = InboxEventService(self.db)
+            event_service = CreateInboxEvent(self.db)
             message_text = (message.text or message.caption or "").strip()
             if len(message_text) > 500:
                 message_text = f"{message_text[:497]}..."
@@ -236,7 +229,7 @@ class ModerationHandler:
             if reason_context:
                 payload["reason_context"] = reason_context
 
-            await event_service.create_event(InboxEventCreate(
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=InboxCategory.SYSTEM,
                 entity_type=EntityType.CHANNEL,

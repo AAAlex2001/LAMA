@@ -1,13 +1,15 @@
-from typing import Optional
 from datetime import datetime, timezone
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from backend.celery.tasks import process_backup_job
+from backend.database import get_db
 from backend.models.auth import User
 from backend.models.channels import BackupStatus
 from backend.routes.auth import get_current_user
-from backend.routes.channels.dependencies import get_backup_job_service, get_backup_service, get_channel_service
 from backend.schemas.channels import (
     BackedUpPostListResponse,
     BackupJobCreate,
@@ -19,10 +21,16 @@ from backend.schemas.channels import (
     RestoreBackupRequest,
     RestoreBackupResponse,
 )
-from backend.services.channel.backup_job_service import BackupJobService
-from backend.services.channel.backup_service import BackupService
-from backend.services.channel.channel_service import ChannelService
-from backend.celery.tasks import process_backup_job
+from backend.services.channel.features.backup import (
+    GetBackupDayCounts,
+    GetBackupStats,
+    ListBackedUpPosts,
+    UpdateBackupMode,
+)
+from backend.services.channel.features.backup_jobs.create_job import CreateBackupJob
+from backend.services.channel.features.backup_jobs.list_jobs import ListBackupJobs
+from backend.services.channel.features.backup_jobs.lookup import find_backup_job_or_404
+from backend.services.channel.utils.query_utils import find_channel_or_404
 
 router = APIRouter()
 
@@ -31,19 +39,18 @@ router = APIRouter()
 async def update_backup_mode(
     channel_id: int,
     data: BackupModeUpdateRequest,
-    service: BackupService = Depends(get_backup_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await service.update_mode(
+    return await UpdateBackupMode(db).execute(
         channel_id=channel_id,
+        owner_id=current_user.id,
         backup_mode=data.backup_mode,
         backup_target_ids=data.backup_target_ids,
         backup_post_types=data.backup_post_types,
         backup_content_types=data.backup_content_types,
         backup_ai_prompt=data.backup_ai_prompt,
-        owner_id=current_user.id,
     )
-    return channel
 
 
 @router.get("/{channel_id}/backed-posts", response_model=BackedUpPostListResponse)
@@ -51,45 +58,41 @@ async def get_backed_up_posts(
     channel_id: int,
     page: int = 1,
     page_size: int = 50,
-    channel_service: ChannelService = Depends(get_channel_service),
-    backup_service: BackupService = Depends(get_backup_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await channel_service.get(channel_id, owner_id=current_user.id)
-    posts, total = await backup_service.get_posts(channel_id=channel_id, page=page, page_size=page_size)
+    await find_channel_or_404(db, channel_id, owner_id=current_user.id)
+    posts, total = await ListBackedUpPosts(db).execute(channel_id=channel_id, page=page, page_size=page_size)
     return BackedUpPostListResponse(items=posts, total=total, page=page, page_size=page_size)
 
 
 @router.get("/{channel_id}/stats", response_model=ChannelStatsResponse)
 async def get_channel_stats(
     channel_id: int,
-    channel_service: ChannelService = Depends(get_channel_service),
-    backup_service: BackupService = Depends(get_backup_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await channel_service.get(channel_id, owner_id=current_user.id)
-    stats = await backup_service.get_stats(channel_id)
-    return ChannelStatsResponse(**stats)
+    await find_channel_or_404(db, channel_id, owner_id=current_user.id)
+    return await GetBackupStats(db).execute(channel_id)
 
 
 @router.get("/{channel_id}/backup-day-counts")
 async def get_backup_day_counts(
     channel_id: int,
-    channel_service: ChannelService = Depends(get_channel_service),
-    backup_service: BackupService = Depends(get_backup_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    await channel_service.get(channel_id, owner_id=current_user.id)
-    return await backup_service.get_day_counts(channel_id)
+    await find_channel_or_404(db, channel_id, owner_id=current_user.id)
+    return await GetBackupDayCounts(db).execute(channel_id)
 
 
 @router.post("/backup-jobs", response_model=BackupJobResponse, status_code=201)
 async def create_backup_job(
     data: BackupJobCreate,
-    service: BackupJobService = Depends(get_backup_job_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    job = await service.create(data, owner_id=current_user.id)
+    job = await CreateBackupJob(db).execute(data, owner_id=current_user.id)
     process_backup_job.apply_async(args=[job.id], countdown=2)
     return job
 
@@ -99,10 +102,10 @@ async def list_backup_jobs(
     page: int = 1,
     page_size: int = 50,
     status: Optional[BackupStatus] = None,
-    service: BackupJobService = Depends(get_backup_job_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    jobs, total = await service.get_jobs(
+    jobs, total = await ListBackupJobs(db).execute(
         owner_id=current_user.id,
         page=page,
         page_size=page_size,
@@ -114,16 +117,16 @@ async def list_backup_jobs(
 @router.get("/backup-jobs/{job_id}", response_model=BackupJobResponse)
 async def get_backup_job(
     job_id: int,
-    service: BackupJobService = Depends(get_backup_job_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return await service.get_backup_job(job_id=job_id, owner_id=current_user.id)
+    return await find_backup_job_or_404(db, job_id=job_id, owner_id=current_user.id)
 
 
 @router.post("/restore", response_model=RestoreBackupResponse)
 async def restore_backup(
     data: RestoreBackupRequest,
-    service: BackupJobService = Depends(get_backup_job_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     job_data = BackupJobCreate(
@@ -133,7 +136,7 @@ async def restore_backup(
         start_date=data.start_date,
         end_date=data.end_date,
     )
-    job = await service.create(job_data, owner_id=current_user.id)
+    job = await CreateBackupJob(db).execute(job_data, owner_id=current_user.id)
     process_backup_job.apply_async(args=[job.id], countdown=2)
     return RestoreBackupResponse(success=True, job_id=job.id, message="Восстановление запущено")
 
@@ -141,12 +144,11 @@ async def restore_backup(
 @router.get("/{channel_id}/export")
 async def export_backed_up_posts(
     channel_id: int,
-    channel_service: ChannelService = Depends(get_channel_service),
-    backup_service: BackupService = Depends(get_backup_service),
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    channel = await channel_service.get(channel_id, owner_id=current_user.id)
-    posts, total = await backup_service.get_posts(channel_id=channel_id, page=1, page_size=5000)
+    channel = await find_channel_or_404(db, channel_id, owner_id=current_user.id)
+    posts, total = await ListBackedUpPosts(db).execute(channel_id=channel_id, page=1, page_size=5000)
     export_data = {
         "channel_id": channel_id,
         "channel_title": channel.title,

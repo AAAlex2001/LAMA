@@ -5,12 +5,14 @@ from aiogram.types import Message, InputMediaPhoto, InputMediaVideo, InputMediaD
 from backend.services.telegram_client import RateLimitedBot
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import AutoReplyService, TriggerService, ShortcodeProcessor
+from backend.services.bot.bot_shortcodes import ShortcodeProcessor
+from backend.services.bot.features.auto_replies.find_by_text import FindAutoReplyByText
+from backend.services.bot.features.triggers.fire.fire_event_with_summary import FireTriggerEventWithSummary
 from backend.models.bots import Bot as BotModel, TriggerType, MessageType, BotMessage
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventStatus, EventType
 from backend.schemas.inbox.events import InboxEventCreate
-from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.utils import build_keyboard
 from backend.services.webhook.messages.commands import CommandProcessor
@@ -26,7 +28,7 @@ class TextProcessor:
         self.db = db
         self.bot_model = bot_model
         self.telegram_bot = telegram_bot
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event_with_summary = FireTriggerEventWithSummary(db)
         self.command_processor = CommandProcessor(db, bot_model, telegram_bot)
 
     async def resolve_channel(self, chat_id: int):
@@ -161,8 +163,7 @@ class TextProcessor:
         if not tg_message or chat_id <= 0:
             return
         try:
-            direct_service = DirectMessageService(self.db)
-            await direct_service.save_outgoing_message(
+            await SaveOutgoingMessage(self.db).execute(
                 bot_id=self.bot_model.id,
                 tg_chat_id=chat_id,
                 tg_message=tg_message,
@@ -187,7 +188,7 @@ class TextProcessor:
             return
 
         user_id = message.from_user.id if message.from_user else 0
-        trigger_summary = await self.trigger_service.fire_event_with_summary(
+        trigger_summary = await self.fire_trigger_event_with_summary.execute(
             bot_id=self.bot_model.id,
             trigger_type=TriggerType.USER_MESSAGE,
             user_id=user_id,
@@ -215,11 +216,11 @@ class TextProcessor:
                     logger.error(f"Failed to save system message for trigger: {e}", exc_info=True)
 
             try:
-                event_service = InboxEventService(self.db)
+                event_service = CreateInboxEvent(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
-                await event_service.create_event(InboxEventCreate(
+                await event_service.execute(InboxEventCreate(
                     owner_id=self.bot_model.owner_id,
                     category=InboxCategory.AUTOMATION,
                     entity_type=EntityType.BOT,
@@ -244,9 +245,9 @@ class TextProcessor:
             except Exception as e:
                 logger.error(f"Failed to create inbox event for trigger execution: {e}", exc_info=True)
 
-        auto_reply_service = AutoReplyService(self.db)
+        auto_reply_service = FindAutoReplyByText(self.db)
         channel_obj = await self.resolve_channel(message.chat.id)
-        auto_reply = await auto_reply_service.find_by_text(
+        auto_reply = await auto_reply_service.execute(
             self.bot_model.id,
             text_content,
             chat_type=chat_type,
@@ -275,11 +276,11 @@ class TextProcessor:
                     logger.error(f"Failed to save system message for auto-reply: {e}", exc_info=True)
 
             try:
-                event_service = InboxEventService(self.db)
+                event_service = CreateInboxEvent(self.db)
                 channel_obj = await self.resolve_channel(message.chat.id)
                 channel_id = channel_obj.id if channel_obj else None
 
-                await event_service.create_event(InboxEventCreate(
+                await event_service.execute(InboxEventCreate(
                     owner_id=self.bot_model.owner_id,
                     category=InboxCategory.AUTOMATION,
                     entity_type=EntityType.BOT,

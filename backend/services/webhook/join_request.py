@@ -14,8 +14,10 @@ from aiogram.exceptions import TelegramAPIError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.services.bot import CaptchaService, TriggerService
-from backend.services.bot.bot_settings import BotSettingsService
+from backend.services.bot.features.captcha.create_pending import CreatePendingApproval
+from backend.services.bot.features.captcha.generate_captcha import generate_captcha
+from backend.services.bot.features.settings.check_approval_criteria import check_approval_criteria
+from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEvent
 from backend.services.webhook.welcome import WelcomeHandler
 from backend.models.bots import (
     Bot as BotModel,
@@ -28,8 +30,8 @@ from backend.models.bots import (
 from backend.models.channels import ChatInviteLink, ChannelGroup
 from backend.services.bot_provider import resolve_by_token
 from backend.utils.keyboard import build_keyboard
-from backend.services.direct.message_service import DirectMessageService
-from backend.services.inbox.event_service import InboxEventService
+from backend.services.direct.features.messages.save_outgoing_message import SaveOutgoingMessage
+from backend.services.inbox.features.create_event import CreateInboxEvent
 from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 from backend.schemas.inbox.events import InboxEventCreate
@@ -43,8 +45,7 @@ class JoinRequestHandler:
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
-        self.settings_service = BotSettingsService(db)
-        self.trigger_service = TriggerService(db)
+        self.fire_trigger_event = FireTriggerEvent(db)
         self.welcome_handler = WelcomeHandler(db, bot_model)
 
     async def process(self, join_request: ChatJoinRequest) -> None:
@@ -57,7 +58,7 @@ class JoinRequestHandler:
             if hasattr(join_request, "invite_link") and join_request.invite_link:
                 await self.update_invite_link_metrics(join_request.invite_link.invite_link)
 
-            await self.trigger_service.fire_event(
+            await self.fire_trigger_event.execute(
                 bot_id=self.bot_model.id,
                 trigger_type=TriggerType.JOIN_REQUEST_CREATED,
                 user_id=user_id,
@@ -81,7 +82,7 @@ class JoinRequestHandler:
                     return
 
             should_approve, missing = (
-                await self.settings_service.check_approval_criteria(
+                await check_approval_criteria(
                     self.bot_model, user_id
                 )
             )
@@ -119,7 +120,7 @@ class JoinRequestHandler:
                 if approved:
                     if hasattr(join_request, "invite_link") and join_request.invite_link:
                         await self.increment_member_count(join_request.invite_link.invite_link)
-                    await self.trigger_service.fire_event(
+                    await self.fire_trigger_event.execute(
                         bot_id=self.bot_model.id,
                         trigger_type=TriggerType.JOIN_REQUEST_APPROVED,
                         user_id=user_id,
@@ -158,8 +159,7 @@ class JoinRequestHandler:
                 ),
             )
             if tg_message:
-                direct_service = DirectMessageService(self.db)
-                await direct_service.save_outgoing_message(
+                await SaveOutgoingMessage(self.db).execute(
                     bot_id=self.bot_model.id,
                     tg_chat_id=user_id,
                     tg_message=tg_message,
@@ -189,10 +189,9 @@ class JoinRequestHandler:
         logger.info("Sending captcha to user...")
 
         try:
-            captcha_service = CaptchaService(self.db)
-            question, answer = captcha_service.generate()
+            question, answer = generate_captcha()
 
-            pending = await captcha_service.create_pending(
+            pending = await CreatePendingApproval(self.db).execute(
                 bot_id=self.bot_model.id,
                 user_id=join_request.from_user.id,
                 chat_id=join_request.chat.id,
@@ -297,8 +296,8 @@ class JoinRequestHandler:
             else:
                 category = InboxCategory.MODERATION
 
-            event_service = InboxEventService(self.db)
-            await event_service.create_event(InboxEventCreate(
+            event_service = CreateInboxEvent(self.db)
+            await event_service.execute(InboxEventCreate(
                 owner_id=self.bot_model.owner_id,
                 category=category,
                 entity_type=EntityType.CHANNEL,
