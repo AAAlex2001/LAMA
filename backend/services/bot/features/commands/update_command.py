@@ -20,9 +20,15 @@ class UpdateCommand:
         self.db = db
 
     async def execute(
-        self, command_id: int, data, owner_id: Optional[int] = None,
+        self,
+        command_id: int,
+        data,
+        owner_id: Optional[int] = None,
+        bot_id: Optional[int] = None,
     ) -> BotCommand:
-        command = await find_command_or_404(self.db, command_id, owner_id=owner_id)
+        command = await find_command_or_404(
+            self.db, command_id, owner_id=owner_id, bot_id=bot_id
+        )
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(command, field, value)

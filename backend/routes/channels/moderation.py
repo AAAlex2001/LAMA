@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.channels import (
+from backend.schemas.channels.moderation import (
     ChannelModerationRuleCreate,
     ChannelModerationRuleListResponse,
     ChannelModerationRuleResponse,

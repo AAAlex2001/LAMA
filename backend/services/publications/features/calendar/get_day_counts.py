@@ -10,7 +10,7 @@ from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
 )
-from backend.schemas.publications.publication_response import DayCount
+from backend.schemas.publications.publications import DayCount
 from backend.services.publications.features.calendar.count_bot_messages_per_day import (
     CountBotMessagesPerDay,
 )

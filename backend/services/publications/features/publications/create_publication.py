@@ -9,7 +9,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
-from backend.schemas.publications.publication_base import PublicationCreate
+from backend.schemas.publications.publications import PublicationCreate
 from backend.services.publications.features.publications.lookup import find_owned_channels
 
 

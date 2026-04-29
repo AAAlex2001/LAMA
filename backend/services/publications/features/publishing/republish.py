@@ -10,7 +10,7 @@ from backend.models.publications import (
     RepeatInterval as DBRepeatInterval,
     TelegramMessage,
 )
-from backend.schemas.publications import ChannelPublishResult, PublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult, PublishResult
 from backend.services.publications.features.publishing.finalize_publication import compute_next_repeat
 from backend.services.publications.features.publishing.process_batch import channel_display_name
 from backend.services.publications.features.publishing.send_to_channel_with_retry import (

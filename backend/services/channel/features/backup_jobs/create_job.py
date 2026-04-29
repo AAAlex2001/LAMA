@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import BackupJob, BackupStatus
-from backend.schemas.channels import BackupJobCreate
+from backend.schemas.channels.backup import BackupJobCreate
 from backend.services.channel.features.backup_jobs.post_filter import count_posts
 from backend.services.channel.utils.query_utils import get_channel
 

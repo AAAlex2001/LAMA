@@ -597,7 +597,7 @@ class TestMultiMediaSchemas:
         assert len(data.response_media_urls) == 2
 
     def test_auto_reply_create_with_media_urls(self):
-        from backend.schemas.bots.auto_reply import AutoReplyCreate
+        from backend.schemas.bots.auto_replies import AutoReplyCreate
 
         data = AutoReplyCreate(
             keywords=["price"],
@@ -637,7 +637,7 @@ class TestMultiMediaSchemas:
         assert resp.response_media_urls == ["https://example.com/a.jpg"]
 
     def test_auto_reply_response_includes_media_urls(self):
-        from backend.schemas.bots.auto_reply import AutoReplyResponse
+        from backend.schemas.bots.auto_replies import AutoReplyResponse
 
         resp = AutoReplyResponse(
             id=1, bot_id=1,

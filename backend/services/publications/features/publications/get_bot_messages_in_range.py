@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot, BotMessage
-from backend.schemas.publications.publication_response import BotMessageCompact
+from backend.schemas.publications.publications import BotMessageCompact
 
 
 class GetBotMessagesInRange:

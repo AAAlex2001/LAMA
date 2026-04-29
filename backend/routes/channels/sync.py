@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.channels import ChannelGroupResponse, SyncChannelRequest, SyncChannelResponse
+from backend.schemas.channels.channel import ChannelGroupResponse
+from backend.schemas.channels.sync import SyncChannelRequest, SyncChannelResponse
 from backend.services.channel.features.sync.sync_channel import SyncChannelFromTelegram
 from backend.services.channel.utils.query_utils import find_channel_or_404
 

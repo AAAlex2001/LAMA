@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import BackupMode, ChannelGroup as Channel
 from backend.models.publications import ContentType as DBContentType, Publication
-from backend.schemas.publications import ChannelPublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult
 from backend.services.channel.features.backup import SavePostToBackup
 from backend.services.channel.features.retransmit.retransmit_post import RetransmitPost
 

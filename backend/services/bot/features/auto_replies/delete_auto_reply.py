@@ -13,7 +13,14 @@ class DeleteAutoReply:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def execute(self, auto_reply_id: int, owner_id: Optional[int] = None) -> None:
-        auto_reply = await find_auto_reply_or_404(self.db, auto_reply_id, owner_id=owner_id)
+    async def execute(
+        self,
+        auto_reply_id: int,
+        owner_id: Optional[int] = None,
+        bot_id: Optional[int] = None,
+    ) -> None:
+        auto_reply = await find_auto_reply_or_404(
+            self.db, auto_reply_id, owner_id=owner_id, bot_id=bot_id
+        )
         await self.db.delete(auto_reply)
         await self.db.flush()

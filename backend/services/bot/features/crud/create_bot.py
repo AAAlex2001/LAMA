@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel, BotStatus
-from backend.schemas.bots import BotCreate
+from backend.schemas.bots.bot import BotCreate
 from backend.services.bot.features.crud.lookup import get_bot_by_telegram_id
 from backend.services.bot.features.crud.tg_info_helpers import fetch_bot_info
 from backend.services.bot.features.crud.webhook_helpers import (

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelModerationRule
-from backend.schemas.channels import ChannelModerationRuleUpdate
+from backend.schemas.channels.moderation import ChannelModerationRuleUpdate
 from backend.services.channel.features.moderation_rules.get_rule import find_rule_or_404
 
 

@@ -6,7 +6,7 @@ from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
-from backend.schemas.bots import AutoApprovalUpdate
+from backend.schemas.bots.auto_approval import AutoApprovalUpdate
 from backend.services.bot.features.crud.lookup import find_bot_or_404
 
 

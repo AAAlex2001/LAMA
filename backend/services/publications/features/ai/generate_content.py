@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from backend.schemas.publications import AIGenerateRequest
+from backend.schemas.publications.ai import AIGenerateRequest
 from backend.services.publications.features.ai._http import (
     DEEPSEEK_MODEL,
     DEEPSEEK_URL,

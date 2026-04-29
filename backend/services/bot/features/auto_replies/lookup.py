@@ -10,10 +10,15 @@ from backend.models.bots import AutoReply, Bot as BotModel
 
 
 async def find_auto_reply_or_404(
-    db: AsyncSession, auto_reply_id: int, owner_id: Optional[int] = None,
+    db: AsyncSession,
+    auto_reply_id: int,
+    owner_id: Optional[int] = None,
+    bot_id: Optional[int] = None,
 ) -> AutoReply:
     """Автоответ по ID; с проверкой владельца если передан. 404 иначе."""
     query = select(AutoReply).where(AutoReply.id == auto_reply_id)
+    if bot_id is not None:
+        query = query.where(AutoReply.bot_id == bot_id)
     if owner_id is not None:
         query = query.join(BotModel, AutoReply.bot_id == BotModel.id).where(
             BotModel.owner_id == owner_id,

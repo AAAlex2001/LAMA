@@ -17,7 +17,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     TelegramMessage,
 )
-from backend.schemas.publications import ChannelPublishResult, PublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult, PublishResult
 from backend.services.publications.features.publishing.handle_backups import handle_backups
 from backend.services.publications.features.publishing.send_to_telegram import send_to_telegram
 from backend.services.publications.features.series.lookup import find_series_or_404

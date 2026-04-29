@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 
 from backend.models.channels import ChannelGroup as Channel
 from backend.models.publications import Publication
-from backend.schemas.publications import ChannelPublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult
 from backend.services.publications.features.publishing.send_to_channel_with_retry import (
     send_to_channel_with_retry,
 )

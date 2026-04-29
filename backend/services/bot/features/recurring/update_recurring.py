@@ -1,9 +1,10 @@
 """Обновление RecurringMessage с пересчётом next_send_at."""
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from backend.models.bots import RecurringMessage
-from backend.schemas.bots import RecurringMessageUpdate
+from backend.schemas.bots.recurring import RecurringMessageUpdate
 from backend.services.bot.features.recurring.lookup import find_recurring_or_404
 from backend.services.bot.features.recurring.schedule_calculator import calculate_next_send
 
@@ -15,9 +16,13 @@ class UpdateRecurring:
         self.db = db
 
     async def execute(
-        self, message_id: int, data: RecurringMessageUpdate, owner_id: int,
+        self,
+        message_id: int,
+        data: RecurringMessageUpdate,
+        owner_id: int,
+        bot_id: Optional[int] = None,
     ) -> RecurringMessage:
-        msg = await find_recurring_or_404(self.db, message_id, owner_id)
+        msg = await find_recurring_or_404(self.db, message_id, owner_id, bot_id=bot_id)
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(msg, field, value)

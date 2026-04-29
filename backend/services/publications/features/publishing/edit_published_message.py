@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import ContentType as DBContentType, Publication
-from backend.schemas.publications import (
+from backend.schemas.publications.publishing import (
     ChannelPublishResult,
     EditMessageResult,
     EditPublishedRequest,

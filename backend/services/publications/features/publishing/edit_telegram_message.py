@@ -12,7 +12,7 @@ from aiogram.types import (
 )
 
 from backend.models.publications import ContentType as DBContentType, Publication
-from backend.schemas.publications import ChannelPublishResult, EditPublishedRequest
+from backend.schemas.publications.publishing import ChannelPublishResult, EditPublishedRequest
 from backend.services.publications.utils import clean_html_for_telegram
 from backend.services.telegram_client import RateLimitedBot
 

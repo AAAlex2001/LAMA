@@ -7,13 +7,13 @@ from backend.database import get_db
 from backend.models.auth import User
 from backend.models.channels import BackupMode
 from backend.routes.auth import get_current_user
-from backend.schemas.channels import (
+from backend.schemas.channels.channel import (
     ChannelGroupCreate,
     ChannelGroupListResponse,
     ChannelGroupResponse,
     ChannelGroupUpdate,
-    ChannelType,
 )
+from backend.schemas.channels.enums import ChannelType
 from backend.services.channel.features.crud.create_channel import CreateChannel
 from backend.services.channel.features.crud.delete_channel import DeleteChannel
 from backend.services.channel.features.crud.list_channels import ListChannels

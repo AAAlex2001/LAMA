@@ -11,7 +11,7 @@ from backend.models.publications import (
     Publication,
     PublicationStatus as DBPublicationStatus,
 )
-from backend.schemas.publications.publication_update import PublicationUpdate
+from backend.schemas.publications.publications import PublicationUpdate
 from backend.services.publications.features.publications.lookup import find_owned_channels
 
 

@@ -13,7 +13,14 @@ class DeleteTrigger:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def execute(self, trigger_id: int, owner_id: Optional[int] = None) -> None:
-        trigger = await find_trigger_or_404(self.db, trigger_id, owner_id)
+    async def execute(
+        self,
+        trigger_id: int,
+        owner_id: Optional[int] = None,
+        bot_id: Optional[int] = None,
+    ) -> None:
+        trigger = await find_trigger_or_404(
+            self.db, trigger_id, owner_id=owner_id, bot_id=bot_id
+        )
         await self.db.delete(trigger)
         await self.db.flush()

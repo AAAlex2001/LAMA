@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
-from backend.schemas.channels import ChannelGroupUpdate
+from backend.schemas.channels.channel import ChannelGroupUpdate
 from backend.services.channel.features.crud.cleanup_bot_channel_link import CleanupBotChannelLink
 from backend.services.channel.utils.query_utils import find_channel_or_404
 

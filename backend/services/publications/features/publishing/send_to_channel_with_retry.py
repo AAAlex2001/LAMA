@@ -13,7 +13,7 @@ from aiogram.exceptions import (
 
 from backend.models.channels import ChannelGroup as Channel
 from backend.models.publications import Publication
-from backend.schemas.publications import ChannelPublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult
 from backend.services.publications.features.publishing.send_to_telegram import send_to_telegram
 from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.telegram_client import RateLimitedBot

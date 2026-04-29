@@ -12,7 +12,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
-from backend.schemas.publications.publication_response import (
+from backend.schemas.publications.publications import (
     BotMessageCompact,
     WeekBatchDay,
     WeekBatchResponse,

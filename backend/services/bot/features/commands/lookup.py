@@ -10,10 +10,15 @@ from backend.models.bots import Bot as BotModel, BotCommand
 
 
 async def find_command_or_404(
-    db: AsyncSession, command_id: int, owner_id: Optional[int] = None,
+    db: AsyncSession,
+    command_id: int,
+    owner_id: Optional[int] = None,
+    bot_id: Optional[int] = None,
 ) -> BotCommand:
     """Команда по ID; с проверкой владельца если передан. 404 иначе."""
     query = select(BotCommand).where(BotCommand.id == command_id)
+    if bot_id is not None:
+        query = query.where(BotCommand.bot_id == bot_id)
     if owner_id is not None:
         query = query.join(BotModel, BotCommand.bot_id == BotModel.id).where(
             BotModel.owner_id == owner_id,

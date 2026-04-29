@@ -12,14 +12,14 @@ from backend.models.publications import (
     RepeatInterval as DBRepeatInterval,
 )
 from backend.routes.auth import get_current_user
-from backend.schemas.publications.enums import ContentType, PublicationDateMode, PublicationStatus
-from backend.schemas.publications.publication_base import PublicationCreate
-from backend.schemas.publications.publication_response import (
+from backend.schemas.publications.publications import (
     PublicationCompactListResponse,
+    PublicationCreate,
     PublicationResponse,
+    PublicationUpdate,
     WeekBatchResponse,
 )
-from backend.schemas.publications.publication_update import PublicationUpdate
+from backend.schemas.publications.enums import ContentType, PublicationDateMode, PublicationStatus
 from backend.services.publications.features.publications.add_repeat_exclusion import AddRepeatExclusion
 from backend.services.publications.features.publications.create_publication import CreatePublication
 from backend.services.publications.features.publications.delete_publication import DeletePublication

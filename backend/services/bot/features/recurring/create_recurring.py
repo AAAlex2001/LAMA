@@ -3,7 +3,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import RecurringMessage
-from backend.schemas.bots import RecurringMessageCreate
+from backend.schemas.bots.recurring import RecurringMessageCreate
 from backend.services.bot.features.crud.lookup import find_bot_or_404
 from backend.services.bot.features.recurring.schedule_calculator import calculate_next_send
 

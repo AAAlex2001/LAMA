@@ -15,8 +15,16 @@ class UpdateTrigger:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
-    async def execute(self, trigger_id: int, owner_id: Optional[int] = None, **fields) -> Trigger:
-        trigger = await find_trigger_or_404(self.db, trigger_id, owner_id)
+    async def execute(
+        self,
+        trigger_id: int,
+        owner_id: Optional[int] = None,
+        bot_id: Optional[int] = None,
+        **fields,
+    ) -> Trigger:
+        trigger = await find_trigger_or_404(
+            self.db, trigger_id, owner_id=owner_id, bot_id=bot_id
+        )
         for key, value in fields.items():
             if hasattr(trigger, key) and value is not None:
                 setattr(trigger, key, value)

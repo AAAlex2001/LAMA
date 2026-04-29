@@ -10,17 +10,17 @@ from backend.database import get_db
 from backend.models.auth import User
 from backend.models.channels import BackupStatus
 from backend.routes.auth import get_current_user
-from backend.schemas.channels import (
+from backend.schemas.channels.backup import (
     BackedUpPostListResponse,
     BackupJobCreate,
     BackupJobListResponse,
     BackupJobResponse,
     BackupModeUpdateRequest,
-    ChannelGroupResponse,
     ChannelStatsResponse,
     RestoreBackupRequest,
     RestoreBackupResponse,
 )
+from backend.schemas.channels.channel import ChannelGroupResponse
 from backend.services.channel.features.backup import (
     GetBackupDayCounts,
     GetBackupStats,

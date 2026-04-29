@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import Publication, TelegramMessage
-from backend.schemas.publications import ChannelPublishResult, PublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult, PublishResult
 from backend.services.publications.features.publishing.create_notifications import create_notifications
 from backend.services.publications.features.publishing.finalize_publication import update_publication_status
 from backend.services.publications.features.publishing.handle_backups import handle_backups

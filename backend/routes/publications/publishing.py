@@ -10,7 +10,7 @@ from backend.models.auth import User
 from backend.models.publications import PublicationStatus as DBPublicationStatus
 from backend.routes.auth import get_current_user
 from backend.schemas.publications.common import RescheduleRequest
-from backend.schemas.publications.publication_response import PublicationResponse
+from backend.schemas.publications.publications import PublicationResponse
 from backend.schemas.publications.publishing import EditPublishedRequest
 from backend.services.bot_provider import resolve_for_channel
 from backend.services.publications.features.publications.lookup import find_publication_or_404

@@ -16,9 +16,15 @@ class UpdateAutoReply:
         self.db = db
 
     async def execute(
-        self, auto_reply_id: int, data, owner_id: Optional[int] = None,
+        self,
+        auto_reply_id: int,
+        data,
+        owner_id: Optional[int] = None,
+        bot_id: Optional[int] = None,
     ) -> AutoReply:
-        auto_reply = await find_auto_reply_or_404(self.db, auto_reply_id, owner_id=owner_id)
+        auto_reply = await find_auto_reply_or_404(
+            self.db, auto_reply_id, owner_id=owner_id, bot_id=bot_id
+        )
 
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(auto_reply, field, value)

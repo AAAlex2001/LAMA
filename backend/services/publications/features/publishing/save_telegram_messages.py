@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import TelegramMessage
-from backend.schemas.publications import ChannelPublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult
 
 
 async def save_telegram_messages(

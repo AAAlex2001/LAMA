@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import Publication, PublicationStatus as DBPublicationStatus
-from backend.schemas.publications import ChannelPublishResult, DeleteMessageResult
+from backend.schemas.publications.publishing import ChannelPublishResult, DeleteMessageResult
 from backend.services.publications.features.publishing.edit_telegram_message import (
     channel_display_name,
 )

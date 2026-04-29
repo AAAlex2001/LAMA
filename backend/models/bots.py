@@ -287,9 +287,12 @@ class BotCommandButtonClick(Base):
 class AutoReply(Base):
     """Модель автоответа на ключевые слова"""
     __tablename__ = "bot_auto_replies"
+    __table_args__ = (
+        Index("ix_bot_auto_replies_bot_active_channel", "bot_id", "is_active", "channel_id"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False)
+    bot_id: Mapped[int] = mapped_column(Integer, ForeignKey("bots.id", ondelete="CASCADE"), nullable=False, index=True)
     channel_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=True, index=True)
 
     # Триггеры
@@ -321,6 +324,10 @@ class AutoReply(Base):
 class AutoReplyLog(Base):
     """Лог срабатываний автоответа — для частотного ограничения"""
     __tablename__ = "auto_reply_logs"
+    __table_args__ = (
+        Index("ix_auto_reply_logs_reply_chat_time", "auto_reply_id", "chat_id", "triggered_at"),
+        Index("ix_auto_reply_logs_reply_user_time", "auto_reply_id", "user_id", "triggered_at"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     auto_reply_id: Mapped[int] = mapped_column(Integer, ForeignKey("bot_auto_replies.id", ondelete="CASCADE"), nullable=False, index=True)

@@ -10,10 +10,15 @@ from backend.models.bots import Bot as BotModel, Trigger
 
 
 async def find_trigger_or_404(
-    db: AsyncSession, trigger_id: int, owner_id: Optional[int] = None,
+    db: AsyncSession,
+    trigger_id: int,
+    owner_id: Optional[int] = None,
+    bot_id: Optional[int] = None,
 ) -> Trigger:
     """Return trigger by ID and optional owner, or raise 404."""
     query = select(Trigger).where(Trigger.id == trigger_id)
+    if bot_id is not None:
+        query = query.where(Trigger.bot_id == bot_id)
     if owner_id is not None:
         query = query.join(BotModel).where(BotModel.owner_id == owner_id)
     trigger = (await db.execute(query)).scalar_one_or_none()

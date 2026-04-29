@@ -2,7 +2,7 @@ from sqlalchemy import String, cast, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import BackedUpPost, PostRetransmission
-from backend.schemas.channels import ChannelStatsResponse
+from backend.schemas.channels.backup import ChannelStatsResponse
 
 
 class GetBackupStats:

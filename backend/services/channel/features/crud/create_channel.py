@@ -2,7 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup
-from backend.schemas.channels import ChannelGroupCreate
+from backend.schemas.channels.channel import ChannelGroupCreate
 
 
 class CreateChannel:

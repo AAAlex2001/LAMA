@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelModerationRule
-from backend.schemas.channels import ChannelModerationRuleCreate
+from backend.schemas.channels.moderation import ChannelModerationRuleCreate
 from backend.services.channel.utils.query_utils import get_channel
 
 

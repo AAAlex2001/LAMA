@@ -12,7 +12,7 @@ from backend.models.publications import (
     PublicationStatus as DBPublicationStatus,
     RepeatInterval as DBRepeatInterval,
 )
-from backend.schemas.publications.publication_response import DayCount
+from backend.schemas.publications.publications import DayCount
 from backend.services.publications.utils.repeat_utils import (
     project_repeat_occurrences,
     to_user_tz,

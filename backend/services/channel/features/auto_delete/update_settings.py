@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelAutoDeleteSettings
-from backend.schemas.channels import ChannelAutoDeleteSettingsUpdate
+from backend.schemas.channels.auto_delete import ChannelAutoDeleteSettingsUpdate
 from backend.services.channel.features.auto_delete.get_settings import ensure_auto_delete_settings
 from backend.services.channel.utils.query_utils import get_channel
 

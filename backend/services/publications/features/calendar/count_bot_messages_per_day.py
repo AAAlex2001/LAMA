@@ -7,7 +7,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot, BotMessage
-from backend.schemas.publications.publication_response import DayCount
+from backend.schemas.publications.publications import DayCount
 from backend.services.publications.utils.repeat_utils import strip_tz
 
 

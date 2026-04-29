@@ -12,9 +12,8 @@ from backend.schemas.publications.ai import (
     AIEditTextResponse,
     AIGenerateRequest,
 )
+from backend.schemas.publications.publications import PublicationCreate, PublicationResponse
 from backend.schemas.publications.enums import PublicationStatus
-from backend.schemas.publications.publication_base import PublicationCreate
-from backend.schemas.publications.publication_response import PublicationResponse
 from backend.services.publications.features.ai.edit_content import EditContent
 from backend.services.publications.features.ai.edit_content_stream import EditContentStream
 from backend.services.publications.features.ai.generate_content import GenerateContent

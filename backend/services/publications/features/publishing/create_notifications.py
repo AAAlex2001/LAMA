@@ -5,7 +5,7 @@ from typing import List
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.publications import PublicationNotification
-from backend.schemas.publications import ChannelPublishResult
+from backend.schemas.publications.publishing import ChannelPublishResult
 
 
 def make_notification_callback(db: AsyncSession):

@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.channels import ChannelGroup, ChatInviteLink
-from backend.schemas.channels import InviteLinkCreate
+from backend.schemas.channels.invite_links import InviteLinkCreate
 from backend.services.bot_provider import resolve_for_channel
 from backend.services.channel.features.invite_links.lookup import to_expire_timestamp
 

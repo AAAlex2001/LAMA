@@ -7,22 +7,13 @@ from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
 from backend.schemas.inbox.enums import EventStatus, EventType, InboxCategory, SortDir
-from backend.schemas.inbox.events import (
-    BulkActionRequest,
-    InboxListResponse,
-    SpecificActionRequest,
-    SpecificActionResult,
-)
-from backend.services.inbox.features.actions.execute_specific_action import ExecuteSpecificAction
-from backend.services.inbox.features.execute_bulk_action import ExecuteBulkAction
+from backend.schemas.inbox.events import InboxListResponse
 from backend.services.inbox.features.list_events import ListInboxEvents
-from backend.services.inbox.features.lookup import find_event_or_404
 
 router = APIRouter()
 
 
 def parse_int_list(raw: Optional[str]) -> Optional[List[int]]:
-    """'1,2,3' → [1,2,3]; пустую/невалидную строку → None."""
     if not raw:
         return None
     try:
@@ -32,10 +23,20 @@ def parse_int_list(raw: Optional[str]) -> Optional[List[int]]:
 
 
 def parse_event_types(raw: Optional[str]) -> Optional[List[EventType]]:
-    """'BOT_COMMAND,SYSTEM_TRIGGER' → [EventType.BOT_COMMAND, ...]."""
     if not raw:
         return None
     return [EventType(e.strip()) for e in raw.split(",") if e.strip()]
+
+
+def serialize_event(item, bot_map) -> dict:
+    data = {c.name: getattr(item, c.name) for c in item.__table__.columns}
+    data["is_new"] = item.status == EventStatus.NEW
+    if item.bot_id is not None:
+        meta = bot_map.get(int(item.bot_id))
+        if meta:
+            data["tg_bot_username"] = meta.tg_bot_username
+            data["tg_bot_name"] = meta.tg_bot_name
+    return data
 
 
 @router.get("/", response_model=InboxListResponse)
@@ -71,51 +72,8 @@ async def list_inbox_events(
         offset=offset,
     )
 
-    results = [serialize_event(item, bot_map) for item in items]
     return InboxListResponse(
-        items=results,
+        items=[serialize_event(item, bot_map) for item in items],
         total=total,
         has_more=(offset + limit) < total,
-    )
-
-
-def serialize_event(item, bot_map) -> dict:
-    """Превращает ORM-событие в dict для InboxListResponse."""
-    data = {c.name: getattr(item, c.name) for c in item.__table__.columns}
-    data["is_new"] = (item.status == EventStatus.NEW)
-    if item.bot_id is not None:
-        meta = bot_map.get(int(item.bot_id))
-        if meta:
-            data["tg_bot_username"] = meta.tg_bot_username
-            data["tg_bot_name"] = meta.tg_bot_name
-    return data
-
-
-@router.post("/bulk-action")
-async def bulk_inbox_action(
-    request: BulkActionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    affected = await ExecuteBulkAction(db).execute(
-        owner_id=current_user.id,
-        event_ids=request.event_ids,
-        action=request.action,
-        apply_to_all=request.apply_to_all,
-    )
-    return {"status": "success", "affected_rows": affected}
-
-
-@router.post("/{event_id}/action", response_model=SpecificActionResult)
-async def execute_specific_action(
-    event_id: int,
-    request: SpecificActionRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    event = await find_event_or_404(db, event_id, current_user.id)
-    return await ExecuteSpecificAction(db).execute(
-        event=event,
-        action_type=request.action_type,
-        payload=request.payload,
     )

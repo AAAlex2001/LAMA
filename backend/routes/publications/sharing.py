@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.database import get_db
 from backend.models.auth import User
 from backend.routes.auth import get_current_user
-from backend.schemas.publications.publication_response import PublicationResponse
+from backend.schemas.publications.publications import PublicationResponse
 from backend.services.publications.features.sharing.consume_share_token import ConsumeShareToken
 from backend.services.publications.features.sharing.generate_share_token import GenerateShareToken
 from backend.services.publications.features.sharing.get_publication_by_token import (
