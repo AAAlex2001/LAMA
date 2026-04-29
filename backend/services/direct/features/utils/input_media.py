@@ -11,11 +11,7 @@ from aiogram.types import (
     URLInputFile,
 )
 
-from backend.services.publications.utils.media_utils import (
-    is_audio_url,
-    is_document_url,
-    is_video_url,
-)
+from backend.utils.media import is_audio_url, is_document_url, is_video_url
 
 
 def build_media_item(media_url: str, caption: Optional[str], file_id: Optional[str] = None):

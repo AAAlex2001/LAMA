@@ -12,11 +12,7 @@ from backend.services.direct.features.utils.message_extractors import (
     get_raw_message_data,
     message_get,
 )
-from backend.services.publications.utils.media_utils import (
-    is_audio_url,
-    is_document_url,
-    is_video_url,
-)
+from backend.utils.media import is_audio_url, is_document_url, is_video_url
 
 NON_TEXT_FIELDS: tuple[tuple[str, MessageType], ...] = (
     ("video", MessageType.VIDEO),
