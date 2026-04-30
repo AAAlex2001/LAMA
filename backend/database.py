@@ -1,5 +1,6 @@
-from typing import AsyncGenerator
 import os
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
@@ -48,7 +49,8 @@ async def dispose_celery_engine():
     celery_state["factory"] = None
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+@asynccontextmanager
+async def session_scope() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
@@ -56,6 +58,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
         except Exception:
             await session.rollback()
             raise
+
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with session_scope() as session:
+        yield session
 
 
 async def init_db():

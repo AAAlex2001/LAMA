@@ -1,8 +1,9 @@
 import logging
 
 from aiogram.types import Message, Update
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database import AsyncSessionLocal
+from backend.database import session_scope
 from backend.models.bots import BotStatus
 from backend.services.webhook.features.bot_context.resolve_bot_context import (
     ResolveBotContext,
@@ -33,60 +34,68 @@ logger = logging.getLogger(__name__)
 
 class RouteTelegramUpdate:
     async def execute(self, update: Update, bot_token: str | None = None) -> None:
+        ws_event = None
         try:
-            await self.route(update, bot_token)
+            async with session_scope() as db:
+                ws_event = await self.route(db, update, bot_token)
         except Exception as exc:
             logger.error("Bot logic error: %s", exc, exc_info=True)
+            return
 
-    async def route(self, update: Update, bot_token: str | None) -> None:
-        async with AsyncSessionLocal() as db:
-            bot_model = await ResolveBotContext().execute(db, update, bot_token)
+        if ws_event:
+            await self.broadcast_ws_event(ws_event)
 
-            if not bot_model:
-                logger.debug("Bot with requested token/chat not found in DB")
-                return
-            if bot_model.status == BotStatus.INACTIVE:
-                return
+    async def route(
+        self,
+        db: AsyncSession,
+        update: Update,
+        bot_token: str | None,
+    ):
+        bot_model = await ResolveBotContext().execute(db, update, bot_token)
 
-            message = GetUpdateMessage().execute(update)
-            if message and await self.route_direct_command(message, bot_token):
-                await db.commit()
-                return
+        if not bot_model:
+            logger.debug("Bot with requested token/chat not found in DB")
+            return None
+        if bot_model.status == BotStatus.INACTIVE:
+            return None
 
-            if message and message.chat.type in {"group", "supergroup", "channel"}:
-                blocked = await CheckMessage(db, bot_model).execute(message)
-                await db.commit()
-                if blocked:
-                    return
+        message = GetUpdateMessage().execute(update)
+        if message and await self.route_direct_command(message, bot_token):
+            return None
 
-            if update.chat_join_request:
-                await RouteJoinRequest(db, bot_model).execute(update.chat_join_request)
-                await db.commit()
-                return
+        if message and message.chat.type in {"group", "supergroup", "channel"}:
+            blocked = await CheckMessage(db, bot_model).execute(message)
+            if blocked:
+                return None
 
-            if message and message.chat:
-                route_message = RouteMessage(db, bot_model)
-                ws_event = await route_message.save(message)
-                await db.commit()
-                if ws_event:
-                    await ws_manager.broadcast_chat_update(**ws_event.model_dump())
-                await route_message.after_save(message)
-                await db.commit()
-                return
+        if update.chat_join_request:
+            await RouteJoinRequest(db, bot_model).execute(update.chat_join_request)
+            return None
 
-            if update.callback_query and update.callback_query.data:
-                await RouteCallback(db, bot_model).execute(update.callback_query)
-                await db.commit()
-                return
+        if message and message.chat:
+            route_message = RouteMessage(db, bot_model)
+            ws_event = await route_message.save(message)
+            await route_message.after_save(message)
+            return ws_event
 
-            if update.chat_member and update.chat_member.new_chat_member:
-                await UpdateSubscription(db, bot_model).execute(update.chat_member)
-                await db.commit()
-                return
+        if update.callback_query and update.callback_query.data:
+            await RouteCallback(db, bot_model).execute(update.callback_query)
+            return None
 
-            if update.my_chat_member:
-                await SyncBotMembership(db, bot_model).execute(update.my_chat_member)
-                await db.commit()
+        if update.chat_member and update.chat_member.new_chat_member:
+            await UpdateSubscription(db, bot_model).execute(update.chat_member)
+            return None
+
+        if update.my_chat_member:
+            await SyncBotMembership(db, bot_model).execute(update.my_chat_member)
+
+        return None
+
+    async def broadcast_ws_event(self, ws_event) -> None:
+        try:
+            await ws_manager.broadcast_chat_update(**ws_event.model_dump())
+        except Exception as exc:
+            logger.error("Websocket broadcast failed: %s", exc, exc_info=True)
 
     async def route_direct_command(self, message: Message, bot_token: str | None) -> bool:
         if not message.text:

@@ -61,6 +61,7 @@ class CreateModerationEvent:
             )
         except Exception as exc:
             logger.error("Failed to create moderation inbox event: %s", exc, exc_info=True)
+            raise
 
     @staticmethod
     def get_message_text(message: Message) -> str:

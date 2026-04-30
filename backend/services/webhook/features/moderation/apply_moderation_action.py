@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.channels import ActionType
 from backend.models.bots import Bot as BotModel
 from backend.services.bot_provider import resolve_by_token
+from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.webhook.features.moderation.ban_user import BanUser
 from backend.services.webhook.features.moderation.check_moderation_admin import (
     CheckModerationAdmin,
@@ -71,8 +72,11 @@ class ApplyModerationAction:
         except asyncio.TimeoutError:
             user_id = message.from_user.id if message.from_user else "unknown"
             logger.warning("Moderation action timeout for user %s", user_id)
+        except RateLimitTimeout as exc:
+            logger.warning("Moderation action skipped by Telegram rate limit: %s", exc)
         except Exception as exc:
             logger.error("Failed to apply moderation action: %s", exc, exc_info=True)
+            raise
         return False
 
     async def apply_user_action(

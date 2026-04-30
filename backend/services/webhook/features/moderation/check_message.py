@@ -42,8 +42,10 @@ class CheckMessage:
 
         except asyncio.TimeoutError:
             logger.warning("Moderation timeout for message %s", message.message_id)
+            raise
         except Exception as exc:
             logger.error("Moderation error: %s", exc, exc_info=True)
+            raise
         return False
 
     async def get_channel(self, message: Message):
