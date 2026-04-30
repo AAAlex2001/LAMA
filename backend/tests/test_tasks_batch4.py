@@ -110,7 +110,9 @@ class TestMultiMediaCommandWebhook:
     @pytest.mark.asyncio
     async def test_send_command_response_with_media_urls(self):
         """Если команда имеет response_media_urls, отправляется media_group."""
-        from backend.services.webhook.messages.commands import CommandProcessor
+        from backend.services.webhook.features.commands.send_command_response import (
+            SendCommandResponse,
+        )
 
         db = AsyncMock()
         bot_model = MagicMock()
@@ -118,7 +120,7 @@ class TestMultiMediaCommandWebhook:
         bot_model.first_name = "TestBot"
         telegram_bot = AsyncMock()
 
-        processor = CommandProcessor(db, bot_model, telegram_bot)
+        use_case = SendCommandResponse(db, bot_model, telegram_bot)
 
         command = MagicMock()
         command.response_text = "Привет!"
@@ -138,7 +140,7 @@ class TestMultiMediaCommandWebhook:
         message.from_user.first_name = "User"
         message.from_user.username = "user"
 
-        await processor.send_command_response(message, command)
+        await use_case.execute(message, command)
 
         telegram_bot.send_media_group.assert_called_once()
 
@@ -149,7 +151,7 @@ class TestMultiMediaAutoReplyWebhook:
     @pytest.mark.asyncio
     async def test_send_auto_reply_response_with_media_urls(self):
         """Если автоответ имеет response_media_urls, отправляется media_group."""
-        from backend.services.webhook.messages.text import TextProcessor
+        from backend.services.webhook.features.messages.send_auto_reply import SendAutoReply
 
         db = AsyncMock()
         bot_model = MagicMock()
@@ -157,7 +159,7 @@ class TestMultiMediaAutoReplyWebhook:
         bot_model.first_name = "TestBot"
         telegram_bot = AsyncMock()
 
-        processor = TextProcessor(db, bot_model, telegram_bot)
+        use_case = SendAutoReply(db, bot_model, telegram_bot)
 
         auto_reply = MagicMock()
         auto_reply.response_text = "Вот фото!"
@@ -177,7 +179,7 @@ class TestMultiMediaAutoReplyWebhook:
         message.from_user.first_name = "User"
         message.from_user.username = "user"
 
-        await processor.send_auto_reply_response(message, auto_reply)
+        await use_case.execute(message, auto_reply)
 
         telegram_bot.send_media_group.assert_called_once()
 
