@@ -23,7 +23,7 @@ class VerifyTelegramWidget:
         now = datetime.now(timezone.utc).timestamp()
         return now - auth_date > 86400
 
-    def _is_valid_hash(self, auth_data: TelegramAuthPayload) -> bool:
+    def _is_valid_hash(self, auth_data: TelegramAuthData) -> bool:
         check_data = {
             "auth_date": str(auth_data.auth_date),
             "first_name": auth_data.first_name,
