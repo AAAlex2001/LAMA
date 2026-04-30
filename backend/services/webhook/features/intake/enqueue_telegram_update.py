@@ -1,29 +1,19 @@
-import asyncio
 import logging
 
 from aiogram.types import Update
 
-from backend.services.webhook.features.dispatch.route_telegram_update import (
-    RouteTelegramUpdate,
+from backend.celery.telegram_tasks import (
+    PROCESS_TELEGRAM_UPDATE_TASK,
 )
+from backend.celery.app import celery_app
 
 logger = logging.getLogger(__name__)
 
 
 class EnqueueTelegramUpdate:
     def execute(self, update: Update, bot_token: str) -> None:
-        task = asyncio.create_task(
-            RouteTelegramUpdate().execute(update, bot_token),
-            name="telegram-webhook-route",
+        celery_app.send_task(
+            PROCESS_TELEGRAM_UPDATE_TASK,
+            args=[update.model_dump(mode="json", by_alias=True, exclude_none=True), bot_token],
+            queue="webhook",
         )
-        task.add_done_callback(self.log_result)
-
-    @staticmethod
-    def log_result(task: asyncio.Task) -> None:
-        if task.cancelled():
-            logger.warning("Webhook route task was cancelled")
-            return
-
-        exc = task.exception()
-        if exc:
-            logger.error("Webhook route failed: %s", exc, exc_info=exc)
