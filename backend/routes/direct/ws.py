@@ -1,25 +1,20 @@
-import os
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from backend.websockets.manager import ws_manager
-from backend.services.auth.token_service import TokenService
 from backend.database import AsyncSessionLocal
+from backend.services.auth.features.tokens.verify_access_token import VerifyAccessToken
+from backend.services.auth.settings import load_auth_settings
+from backend.websockets.manager import ws_manager
 
 router = APIRouter()
+
 
 @router.websocket("/ws")
 async def direct_websocket_endpoint(
     websocket: WebSocket,
     token: str = Query(..., description="JWT access token"),
 ):
-    """
-    WebSocket подключение для получения обновлений чатов Директа.
-    """
-    # Короткоживущая сессия только для проверки токена
     async with AsyncSessionLocal() as db:
-        jwt_secret = os.getenv("JWT_SECRET", "")
-        token_service = TokenService(db, jwt_secret)
-        user = await token_service.verify_access_token(token)
+        user = await VerifyAccessToken(db, load_auth_settings()).execute(token)
 
     if not user:
         await websocket.close(code=1008)
