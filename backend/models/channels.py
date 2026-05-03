@@ -361,24 +361,6 @@ class ChannelModerationRule(Base):
     channel = relationship("ChannelGroup", back_populates="moderation_rules")
 
 
-class ChannelFloodState(Base):
-    __tablename__ = "channel_flood_states"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    channel_id: Mapped[int] = mapped_column(Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"))
-    user_id: Mapped[int] = mapped_column(BigInteger)
-
-    message_count: Mapped[int] = mapped_column(Integer, default=0)
-    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-    last_message_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-    channel = relationship("ChannelGroup")
-
-    __table_args__ = (
-        Index("ix_channel_flood_states_channel_user", "channel_id", "user_id", unique=True),
-    )
-
-
 class ChannelAutoDeleteSettings(Base):
     __tablename__ = "channel_auto_delete_settings"
 

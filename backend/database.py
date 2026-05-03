@@ -54,9 +54,13 @@ async def session_scope() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
+            if session.in_transaction():
+                await session.commit()
+        except BaseException:
+            try:
+                await session.rollback()
+            except Exception:
+                pass
             raise
 
 

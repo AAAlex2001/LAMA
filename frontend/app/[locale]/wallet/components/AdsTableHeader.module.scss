@@ -1,0 +1,31 @@
+.row {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    width: 100%;
+  }
+}
+
+.firstCol,
+.col {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 16px;
+  color: #383F45;
+}
+
+.firstCol {
+  flex: 2 1 0;
+  min-width: 0;
+}
+
+.col {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
+}

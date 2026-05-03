@@ -1,0 +1,30 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+  color: #3B82F6;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+}
+
+.sm {
+  width: 24px;
+  height: 24px;
+}
+
+.lg {
+  width: 52px;
+  height: 52px;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+}

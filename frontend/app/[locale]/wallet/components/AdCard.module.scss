@@ -1,0 +1,136 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #FFFFFF;
+  border: 1px solid #EBF2FE;
+  border-radius: 12px;
+  padding: 10px;
+  gap: 15px;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.title {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.username {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amountBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 94px;
+  flex-shrink: 0;
+}
+
+.amountRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.amount {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #1A1A1A;
+}
+
+.date {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 16px;
+  color: #B0B4B8;
+  text-align: right;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.metaRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
+.metaLabel {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 16px;
+  color: #1A1A1A;
+}
+
+.metaValue {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  text-align: right;
+}

@@ -30,6 +30,12 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     broker_heartbeat=20,
     broker_heartbeat_checkrate=3,
+    broker_connection_retry_on_startup=True,
+    task_acks_late=True,
+    task_reject_on_worker_lost=True,
+    task_time_limit=300,
+    task_soft_time_limit=270,
+    result_expires=3600,
     task_default_queue="default",
     task_queues=(
         Queue("high"),

@@ -1,0 +1,57 @@
+.bar {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0 10px;
+    gap: 12px;
+    width: 100%;
+  }
+}
+
+.label {
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 24px;
+  color: #1A1A1A;
+  flex-shrink: 0;
+}
+
+.chips {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 25px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  white-space: nowrap;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.08);
+  }
+}

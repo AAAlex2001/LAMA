@@ -41,12 +41,13 @@ class CheckMessage:
             return await self.check_rules(message, channel, text_content)
 
         except asyncio.TimeoutError:
+            await self.db.rollback()
             logger.warning("Moderation timeout for message %s", message.message_id)
-            raise
+            return False
         except Exception as exc:
+            await self.db.rollback()
             logger.error("Moderation error: %s", exc, exc_info=True)
-            raise
-        return False
+            return False
 
     async def get_channel(self, message: Message):
         return await asyncio.wait_for(
@@ -67,12 +68,9 @@ class CheckMessage:
         ):
             return False
 
-        is_flood, action, mute_duration = await asyncio.wait_for(
-            CheckUserFlood(self.db).execute(
-                channel=channel,
-                user_id=message.from_user.id,
-            ),
-            timeout=DB_QUERY_TIMEOUT,
+        is_flood, action, mute_duration = await CheckUserFlood().execute(
+            channel=channel,
+            user_id=message.from_user.id,
         )
         if not (is_flood and action):
             return False

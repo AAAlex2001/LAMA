@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { CalendarArrowIcon, FilterSortIcon } from '@/components/icons';
-import ListDateRangePicker from '../views/list/ListDateRangePicker';
+import { DateRangePicker } from '@/components/date-range-picker';
 import ListFilterBar, { type FilterConfig } from '../views/list/ListFilterBar';
 import type { CalendarView } from '../store';
 import styles from './calendar-header.module.scss';
@@ -141,7 +141,7 @@ export default function CalendarHeader({
       <div className={styles.slideButtons}>
         {currentView === 'list' ? (
           <div className={styles.listRangeWrap}>
-            <ListDateRangePicker
+            <DateRangePicker
               value={listRange}
               onChange={onListRangeChange}
               postCounts={gridPostCounts}

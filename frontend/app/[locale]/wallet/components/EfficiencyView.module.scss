@@ -1,0 +1,20 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.exportSlot {
+  display: flex;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.exportBtn {
+  width: 100%;
+  justify-content: center;
+}

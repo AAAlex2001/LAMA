@@ -1,0 +1,35 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+
+  @media (min-width: 1440px) {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.moneyPair {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 1440px) {
+    display: contents;
+  }
+}

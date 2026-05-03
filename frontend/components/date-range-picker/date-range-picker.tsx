@@ -4,19 +4,21 @@ import React from 'react';
 import { CalendarIcon } from '@/components/icons';
 import DatePicker from '@/components/date-picker/date-picker';
 import Button from '@/components/button/button';
-import styles from './list-date-range-picker.module.scss';
+import styles from './date-range-picker.module.scss';
 
-type DateRange = { start: Date; end: Date };
+export type DateRange = { start: Date; end: Date };
 
-interface ListDateRangePickerProps {
+interface DateRangePickerProps {
   value: DateRange | null;
   onChange: (range: DateRange | null) => void;
   postCounts?: Record<string, number>;
   onMonthChange?: (date: Date) => void;
+  emptyLabel?: string;
+  resetText?: string;
 }
 
-function formatLabel(range: DateRange | null): string {
-  if (!range) return 'За весь период';
+function formatLabel(range: DateRange | null, emptyLabel: string): string {
+  if (!range) return emptyLabel;
   const fmt = (d: Date) => {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -27,7 +29,14 @@ function formatLabel(range: DateRange | null): string {
   return `${fmt(range.start)} — ${fmt(range.end)}`;
 }
 
-export default function ListDateRangePicker({ value, onChange, postCounts, onMonthChange }: ListDateRangePickerProps) {
+export default function DateRangePicker({
+  value,
+  onChange,
+  postCounts,
+  onMonthChange,
+  emptyLabel = 'За весь период',
+  resetText = 'Сбросить всё',
+}: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
   const [draftStart, setDraftStart] = React.useState<Date | null>(value?.start || null);
   const [draftEnd, setDraftEnd] = React.useState<Date | null>(value?.end || null);
@@ -94,7 +103,7 @@ export default function ListDateRangePicker({ value, onChange, postCounts, onMon
   return (
     <div className={styles.root} ref={rootRef}>
       <button type="button" className={styles.trigger} onClick={() => setOpen((v) => !v)}>
-        <span className={styles.triggerText}>{formatLabel(value)}</span>
+        <span className={styles.triggerText}>{formatLabel(value, emptyLabel)}</span>
         <span className={styles.triggerIcon}>
           <CalendarIcon width={24} height={24} color="#1E1E1E" />
         </span>
@@ -116,7 +125,7 @@ export default function ListDateRangePicker({ value, onChange, postCounts, onMon
             />
 
             <Button
-              text="Сбросить всё"
+              text={resetText}
               showArrow={false}
               fullWidth
               onClick={() => {

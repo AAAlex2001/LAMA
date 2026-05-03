@@ -71,7 +71,7 @@ export default function MobileBurgerMenu({ isOpen, onClose }: MobileBurgerMenuPr
     { id: 'bots', icon: <BotsIcon width={24} height={24} color="#000000" />, label: 'Боты', href: `/${locale}/bots` },
     { id: 'inbox', icon: <InboxIcon width={24} height={24} color="#000000" />, label: 'Входящие', href: `/${locale}/inbox` },
     { id: 'parser', icon: <ParserIcon width={24} height={24} color="#000000" />, label: 'Парсер', disabled: true },
-    { id: 'wallet', icon: <WalletIcon width={24} height={24} color="#000000" />, label: 'Рекламный кабинет', disabled: true },
+    { id: 'wallet', icon: <WalletIcon width={24} height={24} color="#000000" />, label: 'Рекламный кабинет', href: `/${locale}/wallet` },
   ];
 
   const footerItems: MenuItem[] = [

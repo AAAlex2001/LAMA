@@ -27,7 +27,7 @@ from backend.models.bots import (
 )
 from backend.models.channels import (
     ChannelGroup, BackedUpPost, PostRetransmission, BackupJob,
-    ChannelModerationRule, ChannelFloodState, ChannelAutoDeleteSettings
+    ChannelModerationRule, ChannelAutoDeleteSettings
 )
 from backend.models.landing import LandingSection, LandingContent
 from backend.models.publications import (

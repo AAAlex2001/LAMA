@@ -43,7 +43,7 @@ export default function AppSidebar() {
     { id: 'bots', icon: <BotsIcon width={24} height={24} />, label: 'Боты', href: `/${locale}/bots` },
     { id: 'inbox', icon: <InboxIcon width={24} height={24} />, label: 'Входящие', href: `/${locale}/inbox` },
     { id: 'parser', icon: <ParserIcon width={24} height={24} />, label: 'Парсер контента', disabled: true },
-    { id: 'wallet', icon: <WalletIcon width={24} height={24} />, label: 'Рекламный кабинет', disabled: true },
+    { id: 'wallet', icon: <WalletIcon width={24} height={24} />, label: 'Рекламный кабинет', href: `/${locale}/wallet` },
   ];
 
   const footerItems: SidebarItem[] = [
