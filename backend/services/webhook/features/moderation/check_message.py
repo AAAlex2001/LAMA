@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from aiogram.types import Message
@@ -11,6 +12,7 @@ from backend.services.channel.utils.query_utils import get_channel_by_telegram_i
 from backend.services.webhook.features.moderation.apply_moderation_action import (
     ApplyModerationAction,
 )
+from backend.services.webhook.types import DB_QUERY_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -38,16 +40,22 @@ class CheckMessage:
 
             return await self.check_rules(message, channel, text_content)
 
+        except asyncio.TimeoutError:
+            logger.warning("Moderation timeout for message %s", message.message_id)
+            raise
         except Exception as exc:
             logger.error("Moderation error: %s", exc, exc_info=True)
             raise
         return False
 
     async def get_channel(self, message: Message):
-        return await get_channel_by_telegram_id(
-            self.db,
-            message.chat.id,
-            bot_id=self.bot_model.id,
+        return await asyncio.wait_for(
+            get_channel_by_telegram_id(
+                self.db,
+                message.chat.id,
+                bot_id=self.bot_model.id,
+            ),
+            timeout=DB_QUERY_TIMEOUT,
         )
 
     async def check_flood(self, message: Message, channel) -> bool:
@@ -59,9 +67,12 @@ class CheckMessage:
         ):
             return False
 
-        is_flood, action, mute_duration = await CheckUserFlood(self.db).execute(
-            channel=channel,
-            user_id=message.from_user.id,
+        is_flood, action, mute_duration = await asyncio.wait_for(
+            CheckUserFlood(self.db).execute(
+                channel=channel,
+                user_id=message.from_user.id,
+            ),
+            timeout=DB_QUERY_TIMEOUT,
         )
         if not (is_flood and action):
             return False
@@ -99,7 +110,10 @@ class CheckMessage:
         if not channel.banned_words_enabled:
             return False
 
-        rule = await CheckMessageAgainstRules(self.db).execute(channel.id, text_content)
+        rule = await asyncio.wait_for(
+            CheckMessageAgainstRules(self.db).execute(channel.id, text_content),
+            timeout=DB_QUERY_TIMEOUT,
+        )
         if not rule:
             return False
 

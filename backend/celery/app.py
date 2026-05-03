@@ -21,7 +21,7 @@ celery_app = Celery(
     "lama",
     broker=config.broker_url,
     backend=config.result_backend,
-    include=["backend.celery.tasks", "backend.celery.telegram_tasks"],
+    include=["backend.celery.tasks"],
 )
 
 celery_app.conf.update(
@@ -36,12 +36,8 @@ celery_app.conf.update(
         Queue("default"),
         Queue("low"),
         Queue("autodelete"),
-        Queue("webhook"),
-        Queue("telegram"),
     ),
     task_routes={
-        "backend.celery.telegram_tasks.process_telegram_update": {"queue": "webhook"},
-        "backend.celery.telegram_tasks.telegram_moderation_action": {"queue": "telegram"},
         "backend.celery.tasks.publish_publication": {"queue": "high"},
         "backend.celery.tasks.process_scheduled_publications": {"queue": "default"},
         "backend.celery.tasks.process_auto_delete": {"queue": "default"},

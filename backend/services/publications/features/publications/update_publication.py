@@ -13,6 +13,7 @@ from backend.models.publications import (
 )
 from backend.schemas.publications.publications import PublicationUpdate
 from backend.services.publications.features.publications.lookup import find_owned_channels
+from backend.services.publications.features.tags.get_or_create_tags import GetOrCreateTags
 
 
 class UpdatePublication:
@@ -40,8 +41,7 @@ class UpdatePublication:
         tag_colors = update_data.pop("tag_colors", None)
         tag_color = update_data.pop("tag_color", None)
         if "tag_names" in update_data:
-            from backend.services.publications.tag_service import TagService
-            publication.tags = await TagService(self.db).get_or_create_tags(
+            publication.tags = await GetOrCreateTags(self.db).execute(
                 update_data.pop("tag_names"),
                 tag_color=tag_color,
                 tag_colors=tag_colors,

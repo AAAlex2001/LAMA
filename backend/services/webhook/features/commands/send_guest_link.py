@@ -34,11 +34,7 @@ class SendGuestLink:
             )
 
     async def get_guest_token(self, message: Message) -> str:
-        api_base_url = (
-            os.getenv("INTERNAL_API_BASE_URL")
-            or os.getenv("API_BASE_URL")
-            or "http://backend:8000/api"
-        )
+        api_base_url = os.getenv("API_BASE_URL", "http://localhost:8000/api")
         user = message.from_user
         payload = {
             "telegram_id": user.id,

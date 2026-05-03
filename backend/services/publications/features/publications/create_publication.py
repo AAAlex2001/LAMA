@@ -11,6 +11,7 @@ from backend.models.publications import (
 )
 from backend.schemas.publications.publications import PublicationCreate
 from backend.services.publications.features.publications.lookup import find_owned_channels
+from backend.services.publications.features.tags.get_or_create_tags import GetOrCreateTags
 
 
 class CreatePublication:
@@ -67,8 +68,7 @@ class CreatePublication:
             publication.channels = channels
 
         if data.tag_names:
-            from backend.services.publications.tag_service import TagService
-            publication.tags = await TagService(self.db).get_or_create_tags(
+            publication.tags = await GetOrCreateTags(self.db).execute(
                 data.tag_names,
                 tag_color=data.tag_color,
                 tag_colors=data.tag_colors,

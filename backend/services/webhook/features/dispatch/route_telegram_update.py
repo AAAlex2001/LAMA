@@ -27,38 +27,21 @@ from backend.services.webhook.features.moderation.check_message import CheckMess
 from backend.services.webhook.features.subscriptions.update_subscription import (
     UpdateSubscription,
 )
-from backend.services.telegram_jobs import (
-    collect_after_commit_jobs,
-    dispatch_after_commit_jobs,
-)
 from backend.websockets.manager import ws_manager
 
 logger = logging.getLogger(__name__)
 
 
 class RouteTelegramUpdate:
-    async def execute(
-        self,
-        update: Update,
-        bot_token: str | None = None,
-        raise_errors: bool = False,
-    ) -> None:
+    async def execute(self, update: Update, bot_token: str | None = None) -> None:
         ws_event = None
-        celery_jobs = []
         try:
             async with session_scope() as db:
                 ws_event = await self.route(db, update, bot_token)
-                celery_jobs = collect_after_commit_jobs(db)
         except Exception as exc:
             logger.error("Bot logic error: %s", exc, exc_info=True)
-            if raise_errors:
-                raise
             return
 
-        try:
-            await dispatch_after_commit_jobs(celery_jobs)
-        except Exception as exc:
-            logger.error("Post-commit Celery dispatch failed: %s", exc, exc_info=True)
         if ws_event:
             await self.broadcast_ws_event(ws_event)
 

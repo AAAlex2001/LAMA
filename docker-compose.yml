@@ -97,8 +97,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
     deploy:
-      replicas: 1
-    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,default,low,webhook,telegram,autodelete", "--max-tasks-per-child=100"]
+      replicas: 2
+    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,default,low", "--max-tasks-per-child=100"]
 
   celery-autodelete:
     build:
@@ -122,8 +122,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    profiles:
-      - autodelete
     restart: unless-stopped
     command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "autodelete", "--max-tasks-per-child=200"]
 
