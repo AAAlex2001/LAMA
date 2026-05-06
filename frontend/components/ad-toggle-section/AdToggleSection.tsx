@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import classnames from 'classnames';
-import { Button } from '@/components/new-button';
+import Input from '@/components/input/input';
+import CurrencySelect from '@/app/[locale]/wallet/components/CurrencySelect';
 import styles from './AdToggleSection.module.scss';
 
 export interface AdToggleValue {
@@ -16,7 +17,6 @@ export interface AdToggleValue {
 interface AdToggleSectionProps {
   value: AdToggleValue;
   onChange: (value: AdToggleValue) => void;
-  onAttachPost?: () => void;
 }
 
 const DEFAULT: AdToggleValue = {
@@ -31,7 +31,7 @@ export function emptyAdToggleValue(): AdToggleValue {
   return { ...DEFAULT };
 }
 
-export default function AdToggleSection({ value, onChange, onAttachPost }: AdToggleSectionProps) {
+export default function AdToggleSection({ value, onChange }: AdToggleSectionProps) {
   const [showFields, setShowFields] = useState(value.enabled);
 
   const setField = <K extends keyof AdToggleValue>(key: K, val: AdToggleValue[K]) => {
@@ -54,49 +54,29 @@ export default function AdToggleSection({ value, onChange, onAttachPost }: AdTog
       </button>
 
       {showFields && value.enabled && (
-        <div className={styles.fields}>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="Покупатель.."
+        <>
+          <Input
             value={value.buyer}
-            onChange={(e) => setField('buyer', e.target.value)}
+            onChange={(v) => setField('buyer', v)}
+            placeholder="Покупатель.."
           />
           <div className={styles.amountRow}>
-            <input
-              type="number"
-              className={styles.input}
-              placeholder="0"
+            <Input
               value={value.amount}
-              onChange={(e) => setField('amount', e.target.value)}
+              onChange={(v) => setField('amount', v)}
+              placeholder="0"
             />
-            <select
-              className={styles.currencySelect}
+            <CurrencySelect
               value={value.currency}
-              onChange={(e) => setField('currency', e.target.value)}
-            >
-              <option value="RUB">РУБ</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
+              onChange={(v) => setField('currency', v)}
+            />
           </div>
-          <input
-            type="text"
-            className={styles.input}
-            placeholder="Введите примечание для учета рекламных доходов.."
+          <Input
             value={value.note}
-            onChange={(e) => setField('note', e.target.value)}
+            onChange={(v) => setField('note', v)}
+            placeholder="Введите примечание для учета рекламных доходов.."
           />
-          <Button
-            variant="fill"
-            intent="gradient"
-            size="lg"
-            className={styles.attachBtn}
-            onClick={onAttachPost}
-          >
-            Прикрепить рекламный пост
-          </Button>
-        </div>
+        </>
       )}
     </div>
   );

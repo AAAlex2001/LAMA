@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import type { AdToggleValue } from '@/components/ad-toggle-section';
 import type {
   ChannelOption,
   Tag,
@@ -42,7 +43,9 @@ interface SettingsState {
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
-  
+
+  ad: AdToggleValue;
+
   replyToPostId: number | null;
 }
 
@@ -80,7 +83,9 @@ const initialState: SettingsState = {
   autoDeleteInterval: 'never',
   autoDeleteCustomDays: 0,
   autoDeleteCustomHours: 0,
-  
+
+  ad: { enabled: false, buyer: '', amount: '', currency: 'RUB', note: '' },
+
   replyToPostId: null,
 };
 
@@ -109,6 +114,10 @@ const settingsSlice = createSlice({
     },
     setPinPost(state, action: PayloadAction<boolean>) {
       state.pinPost = action.payload;
+    },
+
+    setAdSettings(state, action: PayloadAction<AdToggleValue>) {
+      state.ad = action.payload;
     },
     
     setRecentTags(state, action: PayloadAction<Tag[]>) {
@@ -231,6 +240,7 @@ export const {
   setShowCreateChannel,
   setNotifySubscribers,
   setPinPost,
+  setAdSettings,
   setRecentTags,
   setTagsLoading,
   setSearchResults,

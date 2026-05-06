@@ -46,3 +46,25 @@ export function updateAdRevenue(id: number, payload: AdRevenueUpdatePayload): Pr
 export function deleteAdRevenue(id: number): Promise<void> {
   return apiRequest<void>(`/ad-revenues/${id}`, { method: 'DELETE' });
 }
+
+export interface PublicationCompact {
+  id: number;
+  text: string | null;
+  status: string;
+  scheduled_time: string | null;
+  published_time: string | null;
+}
+
+interface PublicationCompactListResponse {
+  items: PublicationCompact[];
+  total: number;
+}
+
+export function fetchPublicationsByStatus(
+  status: 'draft' | 'scheduled' | 'published',
+  page = 1,
+  page_size = 50,
+): Promise<PublicationCompactListResponse> {
+  const params = new URLSearchParams({ status, page: String(page), page_size: String(page_size) });
+  return apiRequest<PublicationCompactListResponse>(`/publications/?${params.toString()}`);
+}

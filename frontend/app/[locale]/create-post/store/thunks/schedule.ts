@@ -12,6 +12,28 @@ import { resetReplyToPost } from '../slices/replyToPost';
 import { fetchTagsThunk } from './tags';
 import { apiRequest } from './api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
+import { createAdRevenue } from '../../../wallet/store/api';
+import type { AdToggleValue } from '@/components/ad-toggle-section';
+import type { CreatePostResponse } from '../types';
+
+async function maybeCreateAdRevenue(ad: AdToggleValue, publicationId: number): Promise<void> {
+  if (!ad?.enabled || !ad.amount || Number(ad.amount) <= 0) return;
+  const today = new Date();
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  try {
+    await createAdRevenue({
+      type: 'income',
+      buyer: ad.buyer || null,
+      amount: ad.amount,
+      currency: ad.currency || 'RUB',
+      revenue_date: iso,
+      note: ad.note || null,
+      publication_id: publicationId,
+    });
+  } catch (e) {
+    console.warn('Failed to create ad revenue', e);
+  }
+}
 
 export const schedulePost = createAsyncThunk(
   'createPost/schedulePost',
@@ -38,7 +60,12 @@ export const schedulePost = createAsyncThunk(
         mediaPayload, pollData, channelIds, scheduledDate.toISOString()
       );
       
-      await apiRequest('/publications', { method: 'POST', body: JSON.stringify(request) });
+      const createResponse = await apiRequest<CreatePostResponse>('/publications', {
+        method: 'POST', body: JSON.stringify(request),
+      });
+      if (createResponse.id) {
+        await maybeCreateAdRevenue(settings.ad, createResponse.id);
+      }
       
       // Если были теги, перезагружаем список тегов
       if (settings.selectedTags && settings.selectedTags.length > 0) {

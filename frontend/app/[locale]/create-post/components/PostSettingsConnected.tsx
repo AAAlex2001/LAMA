@@ -40,6 +40,7 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
   const autoDeleteInterval = useAppSelector(state => state.settings.autoDeleteInterval);
   const autoDeleteCustomDays = useAppSelector(state => state.settings.autoDeleteCustomDays);
   const autoDeleteCustomHours = useAppSelector(state => state.settings.autoDeleteCustomHours);
+  const ad = useAppSelector(state => state.settings.ad);
 
   const channelsState = useAppSelector(selectChannelsState);
 
@@ -132,6 +133,8 @@ export default function PostSettingsConnected({ onPreview, previewDisabled }: Po
       pinPost={pinPost}
       onNotifyChange={(v: boolean) => dispatch(settingsSlice.setNotifySubscribers(v))}
       onPinChange={(v: boolean) => dispatch(settingsSlice.setPinPost(v))}
+      ad={ad}
+      onAdChange={(v) => dispatch(settingsSlice.setAdSettings(v))}
       onReset={() => {
         dispatch(settingsSlice.resetSettings());
         dispatch(resetTags());

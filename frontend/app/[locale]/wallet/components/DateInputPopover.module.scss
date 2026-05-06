@@ -1,0 +1,62 @@
+.trigger {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 35px;
+  padding: 10px 16px;
+  background: #F8FAFF;
+  border: none;
+  outline: none;
+  box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
+  border-radius: 10px;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  cursor: pointer;
+  text-align: left;
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.value {
+  color: #1A1A1A;
+}
+
+.placeholder {
+  color: #B0B4B8;
+}
+
+.modal {
+  background: #FFFFFF;
+  border-radius: 14px;
+  padding: 16px;
+  width: 100%;
+  min-width: 320px;
+  max-width: 420px;
+}
+
+.calendar {
+  width: 100% !important;
+  max-width: none !important;
+
+  :global(.react-calendar),
+  :global(.react-calendar__viewContainer),
+  :global(.react-calendar__month-view) {
+    width: 100% !important;
+    max-width: none !important;
+  }
+
+  :global(.react-calendar__month-view__days) {
+    column-gap: 0;
+    row-gap: 4px;
+  }
+}

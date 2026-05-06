@@ -3,7 +3,11 @@
 import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
+import Input from '@/components/input/input';
 import AttachPostSourceModal, { PostSource } from './AttachPostSourceModal';
+import PostPickerModal from './PostPickerModal';
+import CurrencySelect from './CurrencySelect';
+import DateInputPopover from './DateInputPopover';
 import { AdRevenueCreatePayload, AdRevenueType } from '../store/types';
 import styles from './AddAdRevenueModal.module.scss';
 
@@ -24,8 +28,19 @@ const SUBMIT_BY_TYPE: Record<AdRevenueType, string> = {
   expense: 'Добавить расход',
 };
 
+const AMOUNT_LABEL_BY_TYPE: Record<AdRevenueType, string> = {
+  income: 'Цена продажи',
+  expense: 'Сумма расхода',
+};
+
+const DATE_LABEL_BY_TYPE: Record<AdRevenueType, string> = {
+  income: 'Дата дохода',
+  expense: 'Дата расхода',
+};
+
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: AddAdRevenueModalProps) {
@@ -35,12 +50,13 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
   const [revenueDate, setRevenueDate] = useState(todayIso());
   const [note, setNote] = useState('');
   const [publicationId, setPublicationId] = useState<number | null>(null);
+  const [publicationLabel, setPublicationLabel] = useState<string | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
+  const [pickerSource, setPickerSource] = useState<PostSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const handleAttach = (_source: PostSource) => {
-    // TODO: open post picker by selected source; пока сохраняем фейковый id-маркер
-    setPublicationId(null);
+  const handleAttach = (source: PostSource) => {
+    setPickerSource(source);
   };
 
   const handleSubmit = async () => {
@@ -69,75 +85,57 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
 
         <div className={styles.formGrid}>
           <div className={styles.field}>
-            <label className={styles.label}>Покупатель</label>
-            <input
-              type="text"
-              value={buyer}
-              onChange={(e) => setBuyer(e.target.value)}
-              placeholder="Введите текст"
-              className={styles.input}
-            />
+            <span className={styles.label}>Покупатель</span>
+            <Input value={buyer} onChange={setBuyer} placeholder="Введите текст" />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>{type === 'income' ? 'Цена продажи' : 'Сумма расхода'}</label>
+            <span className={styles.label}>{AMOUNT_LABEL_BY_TYPE[type]}</span>
             <div className={styles.amountRow}>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="Введите сумму"
-                className={styles.input}
-              />
-              <select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className={styles.currencySelect}
-              >
-                <option value="RUB">РУБ</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-              </select>
+              <Input value={amount} onChange={setAmount} placeholder="Введите сумму" />
+              <CurrencySelect value={currency} onChange={setCurrency} />
             </div>
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>Дата дохода</label>
-            <input
-              type="date"
-              value={revenueDate}
-              onChange={(e) => setRevenueDate(e.target.value)}
-              className={styles.input}
-            />
+            <span className={styles.label}>{DATE_LABEL_BY_TYPE[type]}</span>
+            <DateInputPopover value={revenueDate} onChange={setRevenueDate} />
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label}>&nbsp;</label>
-            <button
-              type="button"
-              className={styles.attachBtn}
+            <span className={styles.label}>&nbsp;</span>
+            <Button
+              variant="outline"
+              intent="gradient"
+              size="lg"
+              style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => setAttachOpen(true)}
             >
-              {publicationId ? 'Пост прикреплён' : 'Прикрепить рекламный пост'}
-            </button>
+              {publicationLabel ?? 'Прикрепить рекламный пост'}
+            </Button>
           </div>
 
           <div className={`${styles.field} ${styles.fieldFull}`}>
-            <label className={styles.label}>Примечание</label>
-            <input
-              type="text"
+            <span className={styles.label}>Примечание</span>
+            <Input
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={setNote}
               placeholder="Введите примечание для учета рекламных доходов..."
-              className={styles.input}
             />
           </div>
         </div>
 
         <div className={styles.actions}>
-          <button type="button" className={styles.cancelBtn} onClick={onClose} disabled={submitting}>
+          <Button
+            variant="outline"
+            intent="gradient"
+            size="lg"
+            onClick={onClose}
+            disabled={submitting}
+            style={{ flex: '1 1 0', justifyContent: 'center' }}
+          >
             Отменить
-          </button>
+          </Button>
           <Button
             variant="fill"
             intent="gradient"
@@ -145,7 +143,7 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
             onClick={handleSubmit}
             disabled={!amount || submitting}
             loading={submitting}
-            className={styles.submitBtn}
+            style={{ flex: '1 1 0', justifyContent: 'center' }}
           >
             {SUBMIT_BY_TYPE[type]}
           </Button>
@@ -156,6 +154,20 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
           onClose={() => setAttachOpen(false)}
           onAttach={handleAttach}
         />
+
+        {pickerSource && (
+          <PostPickerModal
+            isOpen
+            source={pickerSource}
+            onClose={() => setPickerSource(null)}
+            onSelect={(pub) => {
+              setPublicationId(pub.id);
+              setPublicationLabel(
+                (pub.text || '').trim().slice(0, 40) || `Пост #${pub.id}`,
+              );
+            }}
+          />
+        )}
       </ModalBase.Content>
     </ModalBase>
   );

@@ -23,6 +23,10 @@
   grid-template-columns: 1fr 1fr;
   gap: 16px 10px;
   width: 100%;
+
+  @media (max-width: 720px) {
+    grid-template-columns: 1fr;
+  }
 }
 
 .field {
@@ -43,74 +47,18 @@
   color: #1A1A1A;
 }
 
-.input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 40px;
-  padding: 10px 16px;
-  background: #F8FAFF;
-  border: 1px solid rgba(59, 130, 246, 0.1);
-  box-shadow: 0px 2px 12px rgba(1, 42, 249, 0.05);
-  border-radius: 10px;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  color: #1A1A1A;
-
-  &::placeholder {
-    color: #B0B4B8;
-  }
-
-  &:focus {
-    outline: none;
-    border-color: rgba(59, 130, 246, 0.4);
-  }
-}
-
 .amountRow {
   display: flex;
   flex-direction: row;
   gap: 5px;
   width: 100%;
-}
-
-.currencySelect {
-  flex-shrink: 0;
-  width: 75px;
-  height: 40px;
-  padding: 10px 9px 10px 16px;
-  background: #FFFFFF;
-  border: none;
-  border-radius: 10px;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  color: #383F45;
-  cursor: pointer;
+  align-items: stretch;
 }
 
 .attachBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 100%;
   height: 40px;
-  padding: 12px 10px;
-  background: #FFFFFF;
-  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  background: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  justify-content: center;
 }
 
 .actions {
@@ -121,26 +69,7 @@
   width: 100%;
 }
 
-.cancelBtn {
-  flex: 1 1 0;
-  height: 37px;
-  padding: 10px;
-  background: #FFFFFF;
-  box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
-  border-radius: 10px;
-  border: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  background-image: linear-gradient(90deg, #3B82F6 0%, #2F67C3 50%, #295AAA 75%, #26539D 87.5%, #244F96 93.75%, #234C90 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.submitBtn {
+.actionBtn {
   flex: 1 1 0;
   justify-content: center;
 }

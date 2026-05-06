@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
+import Checkbox from '@/components/checkbox/checkbox';
 import styles from './AttachPostSourceModal.module.scss';
 
 export type PostSource = 'calendar' | 'drafts';
@@ -36,22 +37,21 @@ export default function AttachPostSourceModal({
         </div>
         <div className={styles.options}>
           {OPTIONS.map((opt) => (
-            <label key={opt.id} className={styles.option}>
-              <input
-                type="radio"
-                name="post-source"
-                checked={source === opt.id}
-                onChange={() => setSource(opt.id)}
-              />
-              <span>{opt.label}</span>
-            </label>
+            <Checkbox
+              key={opt.id}
+              variant="radio"
+              checked={source === opt.id}
+              onChange={() => setSource(opt.id)}
+              label={opt.label}
+              className={styles.option}
+            />
           ))}
         </div>
         <Button
           variant="fill"
           intent="gradient"
           size="lg"
-          className={styles.attachBtn}
+          style={{ width: '100%', justifyContent: 'center' }}
           onClick={() => {
             onAttach(source);
             onClose();

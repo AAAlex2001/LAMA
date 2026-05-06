@@ -6,6 +6,7 @@ import Dropdown from '@/components/dropdown/dropdown';
 import Toggle from '@/components/toggle/toggle';
 import Button from '@/components/button/button';
 import ConnectChannelModal from '@/components/connect-channel-modal';
+import { AdToggleSection, AdToggleValue } from '@/components/ad-toggle-section';
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
@@ -82,6 +83,10 @@ interface PostSettingsProps {
   onNotifyChange: (checked: boolean) => void;
   onPinChange: (checked: boolean) => void;
 
+  // Ad
+  ad: AdToggleValue;
+  onAdChange: (value: AdToggleValue) => void;
+
   // Reset
   onReset: () => void;
 }
@@ -143,6 +148,9 @@ export default function PostSettings({
   pinPost,
   onNotifyChange,
   onPinChange,
+
+  ad,
+  onAdChange,
 
   onReset,
 }: PostSettingsProps) {
@@ -242,6 +250,8 @@ export default function PostSettings({
             <span className={styles.toggleLabel}>Закрепить пост после публикации</span>
             <Toggle checked={pinPost} onChange={onPinChange} />
           </div>
+
+          <AdToggleSection value={ad} onChange={onAdChange} />
 
           <div className={styles.settingsButtons}>
             <Button
