@@ -33,6 +33,7 @@ from backend.models.landing import LandingSection, LandingContent
 from backend.models.publications import (
     Publication, PublicationSeries, Tag, TelegramMessage, PublicationNotification, ButtonClick
 )
+from backend.models.ad_revenues import AdRevenue
 
 # this is the Alembic Config object
 config = context.config

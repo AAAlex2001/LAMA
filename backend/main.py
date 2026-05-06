@@ -28,6 +28,7 @@ from backend.routes.link_preview import router as link_preview_router
 from backend.routes.inbox import router as inbox_router
 from backend.routes.direct import direct_router
 from backend.routes.knowledge_base import router as kb_router
+from backend.routes.ad_revenues import router as ad_revenues_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,6 +71,7 @@ app.include_router(link_preview_router, prefix=api_prefix)
 app.include_router(inbox_router, prefix=api_prefix)
 app.include_router(direct_router, prefix=f"{api_prefix}/direct")
 app.include_router(kb_router, prefix=f"{api_prefix}/kb", tags=["knowledge-base"])
+app.include_router(ad_revenues_router, prefix=api_prefix)
 
 upload_dir = Path("uploads/landing")
 upload_dir.mkdir(parents=True, exist_ok=True)

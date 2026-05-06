@@ -1,33 +1,25 @@
-import asyncio
+from aiogram.types import ChatPermissions
 
-from aiogram.types import ChatPermissions, Message
-
-from backend.services.webhook.types import TELEGRAM_API_TIMEOUT
+UNMUTE_PERMISSIONS = ChatPermissions(
+    can_send_messages=True,
+    can_send_audios=True,
+    can_send_documents=True,
+    can_send_photos=True,
+    can_send_videos=True,
+    can_send_video_notes=True,
+    can_send_voice_notes=True,
+    can_send_polls=True,
+    can_send_other_messages=True,
+    can_add_web_page_previews=True,
+)
 
 
 class UnmuteUser:
-    async def execute(self, bot, message: Message) -> None:
-        if not message.from_user:
-            return
+    """Снять мьют с пользователя в чате."""
 
-        await asyncio.wait_for(
-            bot.restrict_chat_member(
-                chat_id=message.chat.id,
-                user_id=message.from_user.id,
-                permissions=self.get_permissions(),
-            ),
-            timeout=TELEGRAM_API_TIMEOUT,
-        )
-
-    @staticmethod
-    def get_permissions() -> ChatPermissions:
-        return ChatPermissions(
-            can_send_messages=True,
-            can_send_media_messages=True,
-            can_send_polls=True,
-            can_send_other_messages=True,
-            can_add_web_page_previews=True,
-            can_pin_messages=False,
-            can_change_info=False,
-            can_invite_users=True,
+    async def execute(self, bot, chat_id: int, user_id: int) -> None:
+        await bot.restrict_chat_member(
+            chat_id=chat_id,
+            user_id=user_id,
+            permissions=UNMUTE_PERMISSIONS,
         )

@@ -98,7 +98,7 @@ services:
     restart: unless-stopped
     deploy:
       replicas: 2
-    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,default,low", "--max-tasks-per-child=100"]
+    command: ["celery", "-A", "backend.celery.app.celery_app", "worker", "--loglevel=info", "-P", "solo", "-Q", "high,moderation,default,low", "--max-tasks-per-child=100"]
 
   celery-autodelete:
     build:

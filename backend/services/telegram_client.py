@@ -65,57 +65,57 @@ class RateLimitedBot:
 
     async def delete_message(self, chat_id: Union[int, str], message_id: int, **kwargs) -> bool:
         """Удалить сообщение"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.delete_message(chat_id=chat_id, message_id=message_id, **kwargs)
 
     async def pin_chat_message(self, chat_id: Union[int, str], message_id: int, **kwargs) -> bool:
         """Закрепить сообщение"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.pin_chat_message(chat_id=chat_id, message_id=message_id, **kwargs)
 
     async def unpin_chat_message(self, chat_id: Union[int, str], message_id: Optional[int] = None, **kwargs) -> bool:
         """Открепить сообщение"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.unpin_chat_message(chat_id=chat_id, message_id=message_id, **kwargs)
 
     async def restrict_chat_member(self, chat_id: Union[int, str], user_id: int, permissions: ChatPermissions, **kwargs) -> bool:
         """Ограничить участника"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=permissions, **kwargs)
 
     async def ban_chat_member(self, chat_id: Union[int, str], user_id: int, **kwargs) -> bool:
         """Забанить участника"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.ban_chat_member(chat_id=chat_id, user_id=user_id, **kwargs)
 
     async def unban_chat_member(self, chat_id: Union[int, str], user_id: int, **kwargs) -> bool:
         """Разбанить участника"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.unban_chat_member(chat_id=chat_id, user_id=user_id, **kwargs)
 
     async def approve_chat_join_request(self, chat_id: Union[int, str], user_id: int, **kwargs) -> bool:
         """Одобрить заявку на вступление"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.approve_chat_join_request(chat_id=chat_id, user_id=user_id, **kwargs)
 
     async def decline_chat_join_request(self, chat_id: Union[int, str], user_id: int, **kwargs) -> bool:
         """Отклонить заявку на вступление"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id)):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id), skip_chat_delay=True):
             return await self.bot.decline_chat_join_request(chat_id=chat_id, user_id=user_id, **kwargs)
 
     async def edit_message_text(self, text: str, chat_id: Optional[Union[int, str]] = None, message_id: Optional[int] = None, **kwargs) -> Any:
         """Редактировать текст сообщения"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None, skip_chat_delay=True):
             return await self.bot.edit_message_text(text=text, chat_id=chat_id, message_id=message_id, **kwargs)
 
     async def edit_message_caption(self, chat_id: Optional[Union[int, str]] = None, message_id: Optional[int] = None, caption: Optional[str] = None, **kwargs) -> Any:
         """Редактировать подпись сообщения"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None, skip_chat_delay=True):
             return await self.bot.edit_message_caption(chat_id=chat_id, message_id=message_id, caption=caption, **kwargs)
 
     async def edit_message_reply_markup(self, chat_id: Optional[Union[int, str]] = None, message_id: Optional[int] = None, reply_markup: Any = None, **kwargs) -> Any:
         """Редактировать клавиатуру сообщения"""
-        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None):
+        async with self.rate_limiter.limit(chat_id=self.extract_chat_id(chat_id) if chat_id else None, skip_chat_delay=True):
             return await self.bot.edit_message_reply_markup(chat_id=chat_id, message_id=message_id, reply_markup=reply_markup, **kwargs)
 
     async def answer_callback_query(self, callback_query_id: str, **kwargs) -> bool:
@@ -162,23 +162,24 @@ class RateLimitedBot:
         if not callable(attr) or not inspect.iscoroutinefunction(attr):
             return attr
 
-        write_prefixes = (
-            "send_",
+        send_prefixes = ("send_", "copy_", "forward_")
+        admin_prefixes = (
             "edit_",
             "delete_",
             "pin_",
             "unpin_",
-            "copy_",
-            "forward_",
             "restrict_",
             "ban_",
             "unban_",
             "approve_",
             "decline_",
         )
+        write_prefixes = send_prefixes + admin_prefixes
 
         if not name.startswith(write_prefixes):
             return attr
+
+        skip_chat_delay = name.startswith(admin_prefixes)
 
         async def rate_limited(*args, **kwargs):
             chat_id = kwargs.get("chat_id")
@@ -191,7 +192,11 @@ class RateLimitedBot:
             if extracted is None:
                 return await attr(*args, **kwargs)
 
-            async with self.rate_limiter.limit(chat_id=extracted, weight=weight):
+            async with self.rate_limiter.limit(
+                chat_id=extracted,
+                weight=weight,
+                skip_chat_delay=skip_chat_delay,
+            ):
                 return await attr(*args, **kwargs)
 
         return rate_limited

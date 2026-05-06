@@ -24,6 +24,9 @@ from backend.services.webhook.features.join_requests.route_join_request import (
 )
 from backend.services.webhook.features.messages.route_message import RouteMessage
 from backend.services.webhook.features.moderation.check_message import CheckMessage
+from backend.services.webhook.features.moderation.clear_ban_lock_on_unban import (
+    ClearBanLockOnUnban,
+)
 from backend.services.webhook.features.subscriptions.update_subscription import (
     UpdateSubscription,
 )
@@ -83,6 +86,7 @@ class RouteTelegramUpdate:
             return None
 
         if update.chat_member and update.chat_member.new_chat_member:
+            await ClearBanLockOnUnban().execute(update.chat_member)
             await UpdateSubscription(db, bot_model).execute(update.chat_member)
             return None
 

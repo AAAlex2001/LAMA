@@ -1,13 +1,13 @@
-import asyncio
 import logging
 
-from aiogram.exceptions import TelegramBadRequest
-from aiogram.types import Message
+from aiogram.exceptions import TelegramAPIError, TelegramBadRequest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.models.channels import ActionType
 from backend.models.bots import Bot as BotModel
-from backend.services.bot_provider import resolve_by_token
+from backend.models.channels import ActionType
+from backend.services.bot_provider import resolve_for_bot_id
+from backend.services.channel.features.flood import is_banned, mark_banned
+from backend.services.channel.utils.query_utils import get_channel_by_telegram_id
 from backend.services.rate_limiter import RateLimitTimeout
 from backend.services.webhook.features.moderation.ban_user import BanUser
 from backend.services.webhook.features.moderation.check_moderation_admin import (
@@ -27,77 +27,78 @@ logger = logging.getLogger(__name__)
 
 
 class ApplyModerationAction:
-    def __init__(self, db: AsyncSession, bot_model: BotModel):
+    """Применить модерационное действие к сообщению: ban/mute/kick + delete + inbox event."""
+
+    def __init__(self, db: AsyncSession):
         self.db = db
-        self.bot_model = bot_model
 
     async def execute(
         self,
-        message: Message,
-        action: ActionType | None,
-        mute_duration: int | None,
-        channel,
-        reason: str | None = None,
-        reason_source: str | None = None,
-        reason_context: dict | None = None,
-    ) -> bool:
-        if not action:
-            return False
-
-        try:
-            bot = resolve_by_token(self.bot_model.token)
-            if await CheckModerationAdmin().execute(bot, message):
-                return False
-
-            if message.from_user:
-                await self.apply_user_action(
-                    bot,
-                    message,
-                    action,
-                    mute_duration,
-                )
-
-            await DeleteModeratedMessage().execute(bot, message)
-            await CreateModerationEvent(self.db, self.bot_model).execute(
-                message=message,
-                channel=channel,
-                action=action,
-                mute_duration=mute_duration,
-                reason=reason,
-                reason_source=reason_source,
-                reason_context=reason_context,
-            )
-            return True
-
-        except asyncio.TimeoutError:
-            user_id = message.from_user.id if message.from_user else "unknown"
-            logger.warning("Moderation action timeout for user %s", user_id)
-        except RateLimitTimeout as exc:
-            logger.warning("Moderation action skipped by Telegram rate limit: %s", exc)
-        except Exception as exc:
-            logger.error("Failed to apply moderation action: %s", exc, exc_info=True)
-            raise
-        return False
-
-    async def apply_user_action(
-        self,
-        bot,
-        message: Message,
+        bot_id: int,
+        chat_id: int,
+        message_id: int,
+        user_id: int | None,
+        username: str | None,
+        message_text: str | None,
         action: ActionType,
         mute_duration: int | None,
-    ) -> None:
+        reason: str | None,
+        reason_source: str | None,
+        reason_context: dict | None,
+    ) -> str:
+        bot_model = await self.db.get(BotModel, bot_id)
+        if not bot_model:
+            return f"no_bot:{bot_id}"
+
+        channel = await get_channel_by_telegram_id(self.db, chat_id, bot_id=bot_id)
+        if not channel:
+            return f"no_channel:{chat_id}"
+
+        bot = await resolve_for_bot_id(self.db, bot_id)
+        already_banned = bool(user_id) and await is_banned(chat_id, user_id)
+
         try:
-            if action == ActionType.MUTE:
-                await MuteUser().execute(bot, message, mute_duration)
-            elif action == ActionType.KICK:
-                await KickUser().execute(bot, message)
-            elif action == ActionType.BAN:
-                await BanUser().execute(bot, message)
-            elif action == ActionType.UNMUTE:
-                await UnmuteUser().execute(bot, message)
+            if user_id and not already_banned:
+                if await CheckModerationAdmin().execute(bot, chat_id, user_id):
+                    await DeleteModeratedMessage().execute(bot, chat_id, message_id)
+                    return "admin_skipped"
+
+                if action == ActionType.MUTE:
+                    await MuteUser().execute(bot, chat_id, user_id, mute_duration)
+                elif action == ActionType.KICK:
+                    await KickUser().execute(bot, chat_id, user_id)
+                elif action == ActionType.BAN:
+                    await BanUser().execute(bot, chat_id, user_id)
+                elif action == ActionType.UNMUTE:
+                    await UnmuteUser().execute(bot, chat_id, user_id)
+
+                await mark_banned(chat_id, user_id)
+
+            await DeleteModeratedMessage().execute(bot, chat_id, message_id)
+
+            if user_id and not already_banned:
+                await CreateModerationEvent(self.db, bot_model).execute(
+                    channel_id=channel.id,
+                    chat_id=chat_id,
+                    message_id=message_id,
+                    user_id=user_id,
+                    username=username,
+                    message_text=message_text,
+                    action=action,
+                    mute_duration=mute_duration,
+                    reason=reason,
+                    reason_source=reason_source,
+                    reason_context=reason_context,
+                )
+
+            return "deleted_only" if already_banned else "ok"
+
+        except RateLimitTimeout as exc:
+            logger.warning("moderation_rate_limited: user=%s wait=%s", user_id, exc.wait_seconds)
+            return f"rate_limited:{int(exc.wait_seconds)}"
         except TelegramBadRequest as exc:
-            logger.debug(
-                "Cannot apply action to user=%s: %s",
-                message.from_user.id if message.from_user else None,
-                exc,
-            )
+            logger.debug("moderation_bad_request: user=%s %s", user_id, exc)
+            return "bad_request"
+        except TelegramAPIError as exc:
+            logger.warning("moderation_api_error: user=%s %s", user_id, exc)
+            return "api_error"

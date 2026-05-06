@@ -1,6 +1,5 @@
 import logging
 
-from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.bots import Bot as BotModel
@@ -11,82 +10,45 @@ from backend.services.inbox.features.create_event import CreateInboxEvent
 
 logger = logging.getLogger(__name__)
 
+EVENTABLE_ACTIONS = (ActionType.MUTE, ActionType.KICK, ActionType.BAN)
+TEXT_LIMIT = 500
+
 
 class CreateModerationEvent:
+    """Создать inbox-событие об автомодерации пользователя."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
 
     async def execute(
         self,
-        message: Message,
-        channel,
+        channel_id: int,
+        chat_id: int,
+        message_id: int,
+        user_id: int,
+        username: str | None,
+        message_text: str | None,
         action: ActionType,
         mute_duration: int | None,
         reason: str | None,
         reason_source: str | None,
         reason_context: dict | None,
     ) -> None:
-        if action not in (ActionType.MUTE, ActionType.KICK, ActionType.BAN):
-            return
-        if not (message.from_user and channel):
+        if action not in EVENTABLE_ACTIONS:
             return
 
-        try:
-            message_text = self.get_message_text(message)
-            payload = self.get_payload(
-                message,
-                action,
-                mute_duration,
-                message_text,
-                reason,
-                reason_source,
-                reason_context,
-            )
-            await CreateInboxEvent(self.db).execute(
-                InboxEventCreate(
-                    owner_id=self.bot_model.owner_id,
-                    category=InboxCategory.SYSTEM,
-                    entity_type=EntityType.CHANNEL,
-                    event_type=EventType.CHANNEL_BAN,
-                    bot_id=self.bot_model.id,
-                    channel_id=channel.id,
-                    tg_user_id=message.from_user.id,
-                    tg_username=message.from_user.username,
-                    status=EventStatus.NEW,
-                    description=message_text
-                    or f"Автомодерация пользователя {message.from_user.id}",
-                    payload=payload,
-                )
-            )
-        except Exception as exc:
-            logger.error("Failed to create moderation inbox event: %s", exc, exc_info=True)
-            raise
+        text = (message_text or "").strip()
+        if len(text) > TEXT_LIMIT:
+            text = f"{text[: TEXT_LIMIT - 3]}..."
 
-    @staticmethod
-    def get_message_text(message: Message) -> str:
-        message_text = (message.text or message.caption or "").strip()
-        if len(message_text) > 500:
-            return f"{message_text[:497]}..."
-        return message_text
-
-    @staticmethod
-    def get_payload(
-        message: Message,
-        action: ActionType,
-        mute_duration: int | None,
-        message_text: str,
-        reason: str | None,
-        reason_source: str | None,
-        reason_context: dict | None,
-    ) -> dict:
         payload = {
             "ban_type": "mute" if action == ActionType.MUTE else "ban",
             "is_unbanned": False,
             "duration_minutes": mute_duration,
-            "chat_id": message.chat.id,
-            "message_id": message.message_id,
-            "message_text": message_text or None,
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "message_text": text or None,
             "block_reason": reason,
             "reason": reason,
             "reason_source": reason_source,
@@ -95,4 +57,19 @@ class CreateModerationEvent:
         }
         if reason_context:
             payload["reason_context"] = reason_context
-        return payload
+
+        await CreateInboxEvent(self.db).execute(
+            InboxEventCreate(
+                owner_id=self.bot_model.owner_id,
+                category=InboxCategory.SYSTEM,
+                entity_type=EntityType.CHANNEL,
+                event_type=EventType.CHANNEL_BAN,
+                bot_id=self.bot_model.id,
+                channel_id=channel_id,
+                tg_user_id=user_id,
+                tg_username=username,
+                status=EventStatus.NEW,
+                description=text or f"Автомодерация пользователя {user_id}",
+                payload=payload,
+            )
+        )

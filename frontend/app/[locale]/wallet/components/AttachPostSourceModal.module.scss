@@ -1,0 +1,62 @@
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 340px;
+  max-width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.title {
+  margin: 0 auto;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #1A1A1A;
+  text-align: center;
+}
+
+.close {
+  width: 32px;
+  height: 32px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+}
+
+.option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+
+  input[type='radio'] {
+    width: 16px;
+    height: 16px;
+    accent-color: #3B82F6;
+    margin: 0;
+    cursor: pointer;
+  }
+}
+
+.attachBtn {
+  width: 100%;
+  justify-content: center;
+}

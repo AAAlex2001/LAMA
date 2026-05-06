@@ -22,6 +22,7 @@ def load_models() -> None:
         "backend.models.inbox",
         "backend.models.direct",
         "backend.models.knowledge_base",
+        "backend.models.ad_revenues",
     )
 
     for module_name in modules:

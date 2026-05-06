@@ -128,14 +128,21 @@ class RedisTelegramRateLimiter:
             await asyncio.sleep(sleep_s)
 
     @asynccontextmanager
-    async def limit(self, chat_id: Optional[int] = None, weight: int = 1, group_weight: Optional[int] = None):
+    async def limit(
+        self,
+        chat_id: Optional[int] = None,
+        weight: int = 1,
+        group_weight: Optional[int] = None,
+        skip_chat_delay: bool = False,
+    ):
         if chat_id is None:
             yield
             return
 
         w = max(weight, 1)
         gw = w if group_weight is None else group_weight
-        await self.wait_chat_delay(chat_id, w)
+        if not skip_chat_delay:
+            await self.wait_chat_delay(chat_id, w)
         await self.wait_group(chat_id, gw)
         await self.wait_global(w)
         try:

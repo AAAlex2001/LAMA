@@ -39,6 +39,7 @@ from backend.services.publications.features.series.publish_series_post import Pu
 from backend.services.publications.utils.repeat_calculator import calculate_next_repeat_time
 from backend.services.channel.features.auto_delete import SafeDeleteMessage
 from backend.services.channel.features.backup_jobs.process_job import ProcessBackupJob
+from backend.models.channels import ActionType
 from backend.utils.keyboard import build_keyboard
 
 logger = logging.getLogger(__name__)
@@ -652,3 +653,74 @@ async def captcha_timeout_check_async(
 
         await db.commit()
     return f"captcha_timeout:{pending_id}"
+
+
+@celery_app.task(
+    bind=True,
+    name="backend.celery.tasks.apply_moderation_action",
+    soft_time_limit=30,
+    time_limit=60,
+    acks_late=True,
+    max_retries=3,
+)
+def apply_moderation_action(
+    self,
+    bot_id: int,
+    chat_id: int,
+    message_id: int,
+    user_id: int | None,
+    username: str | None,
+    message_text: str | None,
+    action: str,
+    mute_duration: int | None,
+    reason: str | None,
+    reason_source: str | None,
+    reason_context: dict | None,
+) -> str:
+    result = run(apply_moderation_action_async(
+        bot_id, chat_id, message_id, user_id, username,
+        message_text, action, mute_duration,
+        reason, reason_source, reason_context,
+    ))
+    if result.startswith("rate_limited:"):
+        wait = int(result.split(":")[1])
+        jitter = random.randint(0, max(wait // 2, 5))
+        raise self.retry(countdown=wait + jitter)
+    return result
+
+
+async def apply_moderation_action_async(
+    bot_id: int,
+    chat_id: int,
+    message_id: int,
+    user_id: int | None,
+    username: str | None,
+    message_text: str | None,
+    action: str,
+    mute_duration: int | None,
+    reason: str | None,
+    reason_source: str | None,
+    reason_context: dict | None,
+) -> str:
+    from backend.services.webhook.features.moderation.apply_moderation_action import (
+        ApplyModerationAction,
+    )
+
+    async with CelerySessionLocal() as db:
+        result = await ApplyModerationAction(db).execute(
+            bot_id=bot_id,
+            chat_id=chat_id,
+            message_id=message_id,
+            user_id=user_id,
+            username=username,
+            message_text=message_text,
+            action=ActionType(action),
+            mute_duration=mute_duration,
+            reason=reason,
+            reason_source=reason_source,
+            reason_context=reason_context,
+        )
+        await db.commit()
+        return result
+
+
