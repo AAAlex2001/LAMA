@@ -1,6 +1,6 @@
 'use client';
 
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -45,56 +45,69 @@ export default function ActionsMenuConnected({
   return (
     <div className={className}>
       <div className={actionsRowClassName}>
-        <OldButton
-          text="Черновики"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<DraftsIcon width={24} height={24} />}
+        <Button
+          variant="soft"
+          intent="neutral"
+          size="lg"
+          style={{ width: '100%' }}
           className={actionButtonClassName}
           onClick={() => dispatch(uiSlice.setShowDraftsModal(true))}
-        />
-        <OldButton
-          text="Кнопки"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<InlineButtonIcon width={24} height={24} />}
+        >
+          <DraftsIcon width={24} height={24} />
+          Черновики
+        </Button>
+        <Button
+          variant="soft"
+          intent={inlineButtonsOpen ? 'gradient' : 'neutral'}
+          size="lg"
+          style={{ width: '100%' }}
           className={actionButtonClassName}
-          active={inlineButtonsOpen}
           disabled={!canShowInlineButtons}
           onClick={() => dispatch(inlineButtonsSlice.toggle())}
-        />
+        >
+          <InlineButtonIcon width={24} height={24} />
+          Кнопки
+        </Button>
       </div>
       <div className={actionsRowClassName}>
-        <OldButton
-          text="Шаблоны"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<TemplatesIcon width={24} height={24} />}
+        <Button
+          variant="soft"
+          intent="neutral"
+          size="lg"
+          style={{ width: '100%' }}
           className={actionButtonClassName}
           onClick={() => dispatch(uiSlice.setShowTemplatesModal(true))}
-        />
-        <OldButton
-          text="Опрос"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<QuizIcon width={24} height={24} />}
+        >
+          <TemplatesIcon width={24} height={24} />
+          Шаблоны
+        </Button>
+        <Button
+          variant="soft"
+          intent={quizOpen ? 'gradient' : 'neutral'}
+          size="lg"
+          style={{ width: '100%' }}
           className={actionButtonClassName}
-          active={quizOpen}
           onClick={() => dispatch(quizSlice.setOpen(!quizOpen))}
-        />
+        >
+          <QuizIcon width={24} height={24} />
+          Опрос
+        </Button>
       </div>
       <div className={actionsRowCenterClassName}>
-        <OldButton
-          text="Ответ на свой пост"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<ReplyIcon width={24} height={24} />}
+        <Button
+          variant="soft"
+          intent="neutral"
+          size="lg"
+          style={{ width: '100%' }}
           className={actionButtonCenterClassName}
           disabled={!canReplyToPost}
           onClick={() => {
             if (primaryChannel) dispatch(uiSlice.setShowReplyModal(true));
           }}
-        />
+        >
+          <ReplyIcon width={24} height={24} />
+          Ответ на свой пост
+        </Button>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import styles from "./hero.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 
 type Props = {
   locale: string;
@@ -86,9 +86,10 @@ export default function Hero({ locale, content, hideImagesOnMobile = false, vari
           ) : null}
           <div className={styles.buttonContainer}>
             <Button
-              text={safeContent.buttonText}
               href={safeContent.buttonUrl || `/${locale}/maintenance`}
-            />
+            >
+              {safeContent.buttonText}
+            </Button>
           </div>
         </motion.div>
       </div>

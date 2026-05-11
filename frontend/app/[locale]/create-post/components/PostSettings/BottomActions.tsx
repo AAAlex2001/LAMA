@@ -2,7 +2,6 @@
 
 import { FC } from 'react';
 import Toggle from '@/components/toggle/toggle';
-import OldButton from '@/components/button/button';
 import { Button } from '@/components/new-button';
 import { AdToggleSection } from '@/components/ad-toggle-section';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -58,13 +57,15 @@ const BottomActions: FC<BottomActionsProps> = ({ onPreview, previewDisabled }) =
         >
           Предпросмотр поста
         </Button>
-        <OldButton
-          text="Сбросить настройки"
-          showArrow={false}
-          fullWidth
-          variant="templateCardInternal"
+        <Button
+          variant="soft"
+          intent="neutral"
+          size="lg"
+          style={{ width: '100%' }}
           onClick={handleReset}
-        />
+        >
+          Сбросить настройки
+        </Button>
       </div>
     </div>
   );

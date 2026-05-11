@@ -3,7 +3,7 @@
 import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 
 type PricingContent = {
   headline: string;
@@ -189,11 +189,13 @@ export default function Pricing({ locale, content }: Props) {
               </ul>
               <div className={styles.cardButton}>
                 <Button
-                  text={plan.buttonText || "Выбрать план"}
+                  variant="fill"
+                  intent={index === 1 ? "gradient" : "primary"}
                   href={plan.buttonUrl || `/${locale}/maintenance`}
-                  fullWidth
-                  active={index === 1}
-                />
+                  style={{ width: '100%' }}
+                >
+                  {plan.buttonText || "Выбрать план"}
+                </Button>
               </div>
             </motion.div>
           )})}

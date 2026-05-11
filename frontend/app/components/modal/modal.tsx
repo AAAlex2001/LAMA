@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import classNames from 'classnames';
-import Button from '../button/button';
+import { Button, type ButtonVariant, type ButtonIntent } from '../new-button';
 import styles from './modal.module.scss';
 
 interface DeleteConfirmationModalProps {
@@ -22,6 +21,22 @@ interface DeleteConfirmationModalProps {
   hideButtons?: boolean;
 }
 
+const mapConfirmVariant = (
+  variant: NonNullable<DeleteConfirmationModalProps['confirmVariant']>,
+  active: boolean,
+): { variant: ButtonVariant; intent: ButtonIntent } => {
+  switch (variant) {
+    case 'outlined-red':
+      return { variant: 'outline', intent: 'destructive' };
+    case 'templateCard':
+    case 'inlineButton':
+      return { variant: 'outline', intent: active ? 'gradient' : 'primary' };
+    case 'default':
+    default:
+      return { variant: 'fill', intent: active ? 'gradient' : 'primary' };
+  }
+};
+
 export default function DeleteConfirmationModal({
   isOpen,
   onClose,
@@ -32,32 +47,23 @@ export default function DeleteConfirmationModal({
   cancelText = 'Отменить',
   confirmVariant = 'outlined-red',
   confirmActive = false,
-  cancelActive = true,
   confirmFirst = false,
   buttonsDirection = 'column',
   children,
   hideButtons = false,
 }: DeleteConfirmationModalProps) {
-  const [hoveredDelete, setHoveredDelete] = useState(false);
-
-  useEffect(() => {
-    if (!isOpen) {
-      setHoveredDelete(false);
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    setHoveredDelete(false);
     onConfirm();
     onClose();
   };
 
   const handleClose = () => {
-    setHoveredDelete(false);
     onClose();
   };
+
+  const confirmStyle = mapConfirmVariant(confirmVariant, confirmActive);
 
   return (
     <div className={styles.overlay} onClick={handleClose}>
@@ -76,36 +82,31 @@ export default function DeleteConfirmationModal({
           >
             {confirmFirst && (
               <Button
-                text={confirmText}
-                variant={confirmVariant}
+                variant={confirmStyle.variant}
+                intent={confirmStyle.intent}
                 onClick={handleConfirm}
-                showArrow={false}
-                fullWidth
-                active={confirmActive}
-                hovered={hoveredDelete}
-                onMouseEnter={() => setHoveredDelete(true)}
-                onMouseLeave={() => setHoveredDelete(false)}
-              />
+                style={{ width: '100%' }}
+              >
+                {confirmText}
+              </Button>
             )}
             <Button
-              text={cancelText}
+              variant="outline"
+              intent="gradient"
               onClick={handleClose}
-              showArrow={false}
-              fullWidth
-              active={cancelActive}
-            />
+              style={{ width: '100%' }}
+            >
+              {cancelText}
+            </Button>
             {!confirmFirst && (
               <Button
-                text={confirmText}
-                variant={confirmVariant}
+                variant={confirmStyle.variant}
+                intent={confirmStyle.intent}
                 onClick={handleConfirm}
-                showArrow={false}
-                fullWidth
-                active={confirmActive}
-                hovered={hoveredDelete}
-                onMouseEnter={() => setHoveredDelete(true)}
-                onMouseLeave={() => setHoveredDelete(false)}
-              />
+                style={{ width: '100%' }}
+              >
+                {confirmText}
+              </Button>
             )}
           </div>
           )}

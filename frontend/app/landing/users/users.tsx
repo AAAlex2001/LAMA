@@ -4,7 +4,7 @@ import { useId, useState } from 'react';
 import { motion, useMotionValue, useTransform, animate, useInView } from 'framer-motion';
 import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 
 type UsersContent = {
   number: number;
@@ -167,10 +167,12 @@ export default function Users({ locale, content }: Props) {
           </div>
           <p className={styles.textLine_1}>{renderText(safeContent.textLine_1)}</p>
           <Button
-            text={safeContent.buttonText || "Начать бесплатно"}
+            variant="fill"
+            intent="gradient"
             href={safeContent.buttonUrl || `/${locale}/maintenance`}
-            active={true}
-          />
+          >
+            {safeContent.buttonText || "Начать бесплатно"}
+          </Button>
         </motion.div>
       </div>
     </section>

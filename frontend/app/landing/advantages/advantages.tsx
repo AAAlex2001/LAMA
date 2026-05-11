@@ -6,7 +6,7 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 import Pagination from "@/components/pagination/pagination";
 
 type Props = {
@@ -92,10 +92,11 @@ export default function Advantages({ locale, content }: Props) {
                     <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                     <div className={styles.ctaButton}>
                       <Button
-                        text={card.ctaButtonText || "Начать бесплатно"}
                         href={card.ctaButtonUrl || `/${locale}/maintenance`}
-                        fullWidth
-                      />
+                        style={{ width: '100%' }}
+                      >
+                        {card.ctaButtonText || "Начать бесплатно"}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -141,10 +142,11 @@ export default function Advantages({ locale, content }: Props) {
                           <p className={styles.ctaCardText}>{renderText(card.description)}</p>
                           <div className={styles.ctaButton}>
                             <Button
-                              text={card.ctaButtonText || "Начать бесплатно"}
                               href={card.ctaButtonUrl || `/${locale}/maintenance`}
-                              fullWidth
-                            />
+                              style={{ width: '100%' }}
+                            >
+                              {card.ctaButtonText || "Начать бесплатно"}
+                            </Button>
                           </div>
                         </div>
                       ) : card.linkUrl ? (

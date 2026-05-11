@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./lama.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 
 export default function Lama() {
@@ -74,7 +74,14 @@ export default function Lama() {
               )}
             </p>
             <div className={styles.buttonWrapper}>
-              <Button text={buttonText} href={buttonHref} active showArrow={false} fullWidth={true} />
+              <Button
+                variant="fill"
+                intent="gradient"
+                href={buttonHref}
+                style={{ width: '100%' }}
+              >
+                {buttonText}
+              </Button>
             </div>
           </div>
         </div>

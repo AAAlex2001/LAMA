@@ -3,7 +3,7 @@
 import { FC, RefObject } from 'react';
 import MediaPreview from '@/components/media-preview';
 import type { MediaFile } from '@/components/media-preview';
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { PaperclipIcon } from '@/components/icons';
 import styles from '../CreateAutoReplyModal.module.scss';
 
@@ -45,14 +45,17 @@ const MediaSection: FC<MediaSectionProps> = ({
             <span className={styles.mediaDropzoneText}>
               Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
             </span>
-            <OldButton
-              text={isUploading ? 'Загрузка...' : 'Прикрепить файл'}
-              variant="templateCardInternal"
-              showArrow={false}
-              icon={<PaperclipIcon width={24} height={24} />}
+            <Button
+              variant="soft"
+              intent="neutral"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={!canAddMedia || isUploading}
               onClick={() => fileInputRef.current?.click()}
-            />
+            >
+              <PaperclipIcon width={24} height={24} />
+              {isUploading ? 'Загрузка...' : 'Прикрепить файл'}
+            </Button>
           </>
         ) : (
           <div className={styles.mediaDropzoneContent}>
@@ -62,14 +65,17 @@ const MediaSection: FC<MediaSectionProps> = ({
               onToggleBlur={onToggleBlur}
               onMove={onMove}
             />
-            <OldButton
-              text={isUploading ? 'Загрузка...' : 'Прикрепить ещё'}
-              variant="templateCardInternal"
-              showArrow={false}
-              icon={<PaperclipIcon width={24} height={24} />}
+            <Button
+              variant="soft"
+              intent="neutral"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={!canAddMedia || isUploading}
               onClick={() => fileInputRef.current?.click()}
-            />
+            >
+              <PaperclipIcon width={24} height={24} />
+              {isUploading ? 'Загрузка...' : 'Прикрепить ещё'}
+            </Button>
           </div>
         )}
       </div>

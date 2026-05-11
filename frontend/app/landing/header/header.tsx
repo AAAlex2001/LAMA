@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import styles from "./header.module.scss";
 import MobileMenu from "./mobile-menu";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 import ToolsPopup from "@/components/tools-popup/tools-popup";
 import { normalizeLocalizedHref } from '../normalize-localized-href';
 
@@ -194,20 +194,20 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
               )}
             </div>
             <div className={styles.loginButtonSmall}>
-              <Button 
-                text={loginText} 
-                href={normalizeLocalizedHref(loginHref, locale)} 
-                showArrow={false}
-                size="small"
-              />
+              <Button
+                href={normalizeLocalizedHref(loginHref, locale)}
+                size="sm"
+              >
+                {loginText}
+              </Button>
             </div>
             <div className={styles.loginButtonMedium}>
-              <Button 
-                text={loginText} 
-                href={normalizeLocalizedHref(loginHref, locale)} 
-                showArrow={false}
-                size="medium"
-              />
+              <Button
+                href={normalizeLocalizedHref(loginHref, locale)}
+                size="md"
+              >
+                {loginText}
+              </Button>
             </div>
             <button 
               className={styles.menuButton} 

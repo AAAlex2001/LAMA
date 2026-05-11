@@ -3,7 +3,7 @@
 import DatePicker from './date-picker';
 import { TimePicker, useRecentTimes } from '../time-picker';
 import styles from './date-picker-modal.module.scss';
-import Button from '../button/button';
+import { Button } from '../new-button';
 import type { DatePickerModalProps } from '@/types/post';
 
 export default function DatePickerModal({
@@ -51,14 +51,15 @@ export default function DatePickerModal({
         </div>
         <div className={styles.buttonWrapper}>
           <Button
-            text="Запланировать"
+            variant="fill"
+            intent="gradient"
             onClick={handleSchedule}
             disabled={!selectedDate || isLoading}
             loading={isLoading}
-            showArrow={false}
-            fullWidth={true}
-            active={true}
-          />
+            style={{ width: '100%' }}
+          >
+            Запланировать
+          </Button>
         </div>
       </div>
     </div>

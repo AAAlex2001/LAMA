@@ -3,7 +3,6 @@
 import { FC, useState, useEffect, useRef } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
-import OldButton from '@/components/button/button';
 import MediaPreview from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -232,15 +231,17 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({
                   onMove={handleMoveMedia}
                 />
               )}
-              <OldButton
-                text="Прикрепить файл"
-                variant="templateCardInternal"
-                showArrow={false}
-                icon={<PaperclipIcon width={24} height={24} />}
-                fullWidth
+              <Button
+                variant="soft"
+                intent="neutral"
+                size="lg"
+                style={{ width: '100%' }}
                 disabled={!canAddMedia}
                 onClick={() => fileInputRef.current?.click()}
-              />
+              >
+                <PaperclipIcon width={24} height={24} />
+                Прикрепить файл
+              </Button>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -257,15 +258,16 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({
               />
             </div>
 
-            <OldButton
-              text="Кнопки"
-              variant="templateCardInternal"
-              showArrow={false}
-              icon={<InlineButtonIcon width={24} height={24} />}
-              active={buttonsOpen}
-              fullWidth
+            <Button
+              variant="soft"
+              intent={buttonsOpen ? 'gradient' : 'neutral'}
+              size="lg"
+              style={{ width: '100%' }}
               onClick={toggleButtons}
-            />
+            >
+              <InlineButtonIcon width={24} height={24} />
+              Кнопки
+            </Button>
 
             <InlineButtons
               isOpen={buttonsOpen}

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import styles from './inline-buttons.module.scss';
 import Input from '@/components/input';
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { PlusIcon } from '@/components/icons';
 import InlineButtonTypePicker, { type ButtonTypeOption } from '@/components/inline-button-type-picker';
 import CallbackActionPicker, { type CallbackActionOption } from '@/components/callback-action-picker';
@@ -100,16 +100,17 @@ export default function InlineButtons({
                   const isHovered = hoveredButton === button.id;
 
                   return (
-                    <OldButton
+                    <Button
                       key={button.id}
-                      text={isHovered ? 'Удалить' : `Кнопка ${btnNumber}`}
-                      variant="inlineButton"
-                      showArrow={false}
+                      variant="outline"
+                      intent={isHovered ? 'destructive' : 'neutral'}
+                      size="sm"
                       onClick={() => onDeleteButton(row.id, button.id)}
-                      hovered={isHovered}
                       onMouseEnter={() => setHoveredButton(button.id)}
                       onMouseLeave={() => setHoveredButton(null)}
-                    />
+                    >
+                      {isHovered ? 'Удалить' : `Кнопка ${btnNumber}`}
+                    </Button>
                   );
                 })}
               </div>

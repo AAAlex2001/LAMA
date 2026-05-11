@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
 
-export type ButtonVariant = 'fill' | 'outline' | 'ghost' | 'tag';
+export type ButtonVariant = 'fill' | 'outline' | 'ghost' | 'tag' | 'soft';
 export type ButtonIntent = 'primary' | 'gradient' | 'destructive' | 'neutral' | 'white';
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'transparent';
 

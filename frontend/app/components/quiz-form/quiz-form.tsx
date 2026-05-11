@@ -3,7 +3,7 @@
 import styles from './quiz-form.module.scss';
 import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import CloseIcon from '@/components/icons/close-icon';
 
 export type QuizMode = 'poll_single' | 'poll_multi' | 'quiz';
@@ -95,14 +95,16 @@ export default function QuizForm({
             />
           ))}
 
-          <OldButton
-            text="Добавить ответ"
-            variant="templateCardInternal"
-            showArrow={false}
-            fullWidth
+          <Button
+            variant="soft"
+            intent="neutral"
+            size="lg"
+            style={{ width: '100%' }}
             onClick={onAddAnswer}
             disabled={!canAddAnswer}
-          />
+          >
+            Добавить ответ
+          </Button>
 
           {remainingAnswers > 0 && (
             <div className={styles.hint}>

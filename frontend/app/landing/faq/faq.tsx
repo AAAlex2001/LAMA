@@ -3,7 +3,7 @@
 import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./faq.module.scss";
-import Button from "@/components/button/button";
+import { Button } from "@/components/new-button";
 
 interface FAQItem {
   question: string;
@@ -140,19 +140,20 @@ export default function FAQ({ content, whiteBackground = false }: Props) {
         </div>
 
         <div className={styles.actions}>
-          <Button 
-            text={safe.actions.primaryText || "База знаний"} 
-            href={safe.actions.primaryLink || "/knowledge-base"} 
-            active={true} 
-            fullWidth={true} 
-            showArrow={false}
-          />
-          <Button 
-            text={safe.actions.secondaryText || "Telegram канал"} 
-            href={safe.actions.secondaryLink || "/telegram-channel"}  
-            fullWidth={true} 
-            showArrow={false}
-          />
+          <Button
+            variant="fill"
+            intent="gradient"
+            href={safe.actions.primaryLink || "/knowledge-base"}
+            style={{ width: '100%' }}
+          >
+            {safe.actions.primaryText || "База знаний"}
+          </Button>
+          <Button
+            href={safe.actions.secondaryLink || "/telegram-channel"}
+            style={{ width: '100%' }}
+          >
+            {safe.actions.secondaryText || "Telegram канал"}
+          </Button>
         </div>
 
           <div className={styles.help}>

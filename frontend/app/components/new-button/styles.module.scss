@@ -315,6 +315,64 @@ $shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
   }
 }
 
+.soft {
+  border-color: transparent;
+  box-shadow: none;
+  filter: none;
+  background-image: none;
+
+  &.neutral {
+    background: #F0F4FA;
+    color: #000000;
+
+    &:hover:not(:disabled):not(.loading) {
+      background: #E4EAF3;
+    }
+  }
+
+  &.primary {
+    background: rgba($blue, 0.08);
+    color: $blue;
+
+    &:hover:not(:disabled):not(.loading) {
+      background: rgba($blue, 0.16);
+    }
+  }
+
+  &.gradient {
+    background: rgba($blue, 0.08);
+
+    .label {
+      background: $blue-gradient;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    &:hover:not(:disabled):not(.loading) {
+      background: rgba($blue, 0.16);
+    }
+  }
+
+  &.destructive {
+    background: rgba($red, 0.08);
+    color: $red;
+
+    &:hover:not(:disabled):not(.loading) {
+      background: rgba($red, 0.16);
+    }
+  }
+
+  &.white {
+    background: rgba(#fff, 0.15);
+    color: #fff;
+
+    &:hover:not(:disabled):not(.loading) {
+      background: rgba(#fff, 0.25);
+    }
+  }
+}
+
 .tag {
   padding: 0 8px;
   gap: 10px;

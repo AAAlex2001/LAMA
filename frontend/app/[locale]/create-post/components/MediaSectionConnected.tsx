@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import MediaPreview from '@/components/media-preview/media-preview';
 import { PaperclipIcon } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -54,15 +54,17 @@ export default function MediaSectionConnected({
           onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))}
           onMove={onMoveMedia}
         />
-        <OldButton
-          text="Прикрепить файл"
-          variant="templateCardInternal"
-          showArrow={false}
-          icon={<PaperclipIcon width={24} height={24} />}
-          fullWidth
+        <Button
+          variant="soft"
+          intent="neutral"
+          size="lg"
+          style={{ width: '100%' }}
           disabled={!canAddMedia}
           onClick={() => fileInputRef.current?.click()}
-        />
+        >
+          <PaperclipIcon width={24} height={24} />
+          Прикрепить файл
+        </Button>
       </div>
       <div className={dropzoneClassName}>
         {mediaFiles.length === 0 ? (
@@ -70,14 +72,17 @@ export default function MediaSectionConnected({
             <span className={dropzoneTextClassName}>
               Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
             </span>
-            <OldButton
-              text="Прикрепить файл"
-              variant="templateCardInternal"
-              showArrow={false}
-              icon={<PaperclipIcon width={24} height={24} />}
+            <Button
+              variant="soft"
+              intent="neutral"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={!canAddMedia}
               onClick={() => fileInputRef.current?.click()}
-            />
+            >
+              <PaperclipIcon width={24} height={24} />
+              Прикрепить файл
+            </Button>
           </>
         ) : (
           <div className={dropzoneContentClassName}>
@@ -87,14 +92,17 @@ export default function MediaSectionConnected({
               onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))}
               onMove={onMoveMedia}
             />
-            <OldButton
-              text="Прикрепить файл"
-              variant="templateCardInternal"
-              showArrow={false}
-              icon={<PaperclipIcon width={24} height={24} />}
+            <Button
+              variant="soft"
+              intent="neutral"
+              size="lg"
+              style={{ width: '100%' }}
               disabled={!canAddMedia}
               onClick={() => fileInputRef.current?.click()}
-            />
+            >
+              <PaperclipIcon width={24} height={24} />
+              Прикрепить файл
+            </Button>
           </div>
         )}
       </div>

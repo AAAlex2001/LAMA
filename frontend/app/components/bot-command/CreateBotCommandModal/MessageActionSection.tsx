@@ -5,7 +5,7 @@ import { EyeIcon, InlineButtonIcon, PaperclipIcon } from '@/components/icons';
 import MediaPreview, { type MediaFile } from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import type { InlineButton, ButtonRow } from '@/components/inline-buttons';
-import OldButton from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { SHORTCODES, MAX_RESPONSE_LENGTH } from './constants';
 import styles from '../CreateBotCommandModal.module.scss';
 
@@ -142,14 +142,17 @@ const MessageActionSection: FC<MessageActionSectionProps> = ({
               <span className={styles.mediaDropzoneText}>
                 Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
               </span>
-              <OldButton
-                text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
-                variant="templateCardInternal"
-                showArrow={false}
-                icon={<PaperclipIcon width={24} height={24} />}
+              <Button
+                variant="soft"
+                intent="neutral"
+                size="lg"
+                style={{ width: '100%' }}
                 disabled={!canAddMedia || isUploadingMedia}
                 onClick={() => fileInputRef.current?.click()}
-              />
+              >
+                <PaperclipIcon width={24} height={24} />
+                {isUploadingMedia ? 'Загрузка...' : 'Прикрепить файл'}
+              </Button>
             </>
           ) : (
             <div className={styles.mediaDropzoneContent}>
@@ -159,14 +162,17 @@ const MessageActionSection: FC<MessageActionSectionProps> = ({
                 onToggleBlur={onToggleBlur}
                 onMove={onMoveMedia}
               />
-              <OldButton
-                text={isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
-                variant="templateCardInternal"
-                showArrow={false}
-                icon={<PaperclipIcon width={24} height={24} />}
+              <Button
+                variant="soft"
+                intent="neutral"
+                size="lg"
+                style={{ width: '100%' }}
                 disabled={!canAddMedia || isUploadingMedia}
                 onClick={() => fileInputRef.current?.click()}
-              />
+              >
+                <PaperclipIcon width={24} height={24} />
+                {isUploadingMedia ? 'Загрузка...' : 'Прикрепить ещё'}
+              </Button>
             </div>
           )}
         </div>
