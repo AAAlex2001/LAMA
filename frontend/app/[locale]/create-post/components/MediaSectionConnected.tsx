@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef } from 'react';
-import Button from '@/components/button/button';
+import OldButton from '@/components/button/button';
 import MediaPreview from '@/components/media-preview/media-preview';
 import { PaperclipIcon } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
@@ -54,7 +54,7 @@ export default function MediaSectionConnected({
           onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))}
           onMove={onMoveMedia}
         />
-        <Button
+        <OldButton
           text="Прикрепить файл"
           variant="templateCardInternal"
           showArrow={false}
@@ -70,7 +70,7 @@ export default function MediaSectionConnected({
             <span className={dropzoneTextClassName}>
               Перетащите сюда фото, видео и другие файлы или нажмите «Прикрепить файл»
             </span>
-            <Button
+            <OldButton
               text="Прикрепить файл"
               variant="templateCardInternal"
               showArrow={false}
@@ -87,7 +87,7 @@ export default function MediaSectionConnected({
               onToggleBlur={(id) => dispatch(mediaSlice.toggleBlur(id))}
               onMove={onMoveMedia}
             />
-            <Button
+            <OldButton
               text="Прикрепить файл"
               variant="templateCardInternal"
               showArrow={false}

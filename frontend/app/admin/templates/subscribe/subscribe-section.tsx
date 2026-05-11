@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTemplateContext } from '../store/template-context';
 import Input from '@/components/input/input';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import styles from './subscribe-section.module.scss';
 
 export default function SubscribeSection() {
@@ -72,7 +72,7 @@ export default function SubscribeSection() {
       {expanded && (
         <>
           <div className={styles.header}>
-            <Button text="Добавить блок" onClick={addBlock} showArrow={false} size="small" />
+            <Button onClick={addBlock} size="sm">Добавить блок</Button>
           </div>
 
           {subscribeBlocks.length === 0 ? <div className={styles.empty}>Пока нет блоков</div> : null}
@@ -81,7 +81,7 @@ export default function SubscribeSection() {
             <div key={index} className={styles.card}>
               <div className={styles.topRow}>
                 <div className={styles.label}>Subscribe блок {index + 1}</div>
-                <Button text="Удалить" onClick={() => removeBlock(index)} showArrow={false} size="small" />
+                <Button onClick={() => removeBlock(index)} size="sm">Удалить</Button>
               </div>
 
               <Input

@@ -1,6 +1,6 @@
 'use client';
 
-import { FC, useEffect, useState } from 'react';
+import { FC, useState } from 'react';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -21,20 +21,14 @@ import {
   setCommandListModalOpen,
 } from '@/components/bot-command';
 import type { Channel } from '@/types/channel';
-import { useAppDispatch, useAppSelector } from '../../store';
 import {
-  setInfoMessagesEnabled,
-  setAutoReplyEnabled,
-  setEditingMessage,
-} from '../../store/slices/automation';
-import type { InfoMessage } from '../../store/slices/automation';
-import {
-  fetchInfoMessagesThunk,
-  toggleInfoMessagesThunk,
-  toggleAutoReplyEnabledThunk,
-} from '../../store/thunks/automation';
-import { setCommandsEnabled } from '../../store/slices/moderation';
-import { updateQuickCommandsThunk } from '../../store/thunks/moderation';
+  useInfoMessagesQuery,
+  useToggleInfoMessagesMutation,
+  useToggleAutoRepliesMutation,
+  useQuickCommandsQuery,
+  useUpdateQuickCommandsMutation,
+  type InfoMessage,
+} from '@/store/channels';
 import CreateInfoMessageModal from './CreateInfoMessageModal';
 import InfoMessagesListModal from './InfoMessagesListModal';
 import styles from './AutomationSection.module.scss';
@@ -49,16 +43,16 @@ const AutoRepliesSection: FC<{ botId: number; channelId: number; channelTitle?: 
   channelTitle,
 }) => {
   const dispatch = useAutoReplyDispatch();
-  const appDispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const items = useAutoReplySelector((s) => s.list.items);
   const activeCount = items.filter((r) => r.is_active).length;
-  const autoReplyEnabled = useAppSelector((s) => s.automation.autoReplyEnabled);
+  const infoQuery = useInfoMessagesQuery(channelId);
+  const autoReplyEnabled = infoQuery.data?.auto_reply_enabled ?? false;
+  const toggleAutoReplies = useToggleAutoRepliesMutation();
 
   const handleToggleAutoReply = async (enabled: boolean) => {
-    appDispatch(setAutoReplyEnabled(enabled));
     try {
-      await appDispatch(toggleAutoReplyEnabledThunk({ channelId, enabled })).unwrap();
+      await toggleAutoReplies.mutateAsync({ channelId, enabled });
       showSuccess(enabled ? 'Автоответы включены' : 'Автоответы отключены');
     } catch {
       showError('Ошибка сохранения');
@@ -98,16 +92,20 @@ const BotCommandsBlock: FC<{ botId: number; channelId: number; channelTitle?: st
   channelTitle,
 }) => {
   const dispatch = useBotCommandDispatch();
-  const appDispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const items = useBotCommandSelector((s) => s.list.items);
   const activeCount = items.filter((c) => c.is_active).length;
-  const commandsEnabled = useAppSelector((s) => s.moderation.commandsEnabled);
+  const quickCommandsQuery = useQuickCommandsQuery(channelId);
+  const commandsEnabled = quickCommandsQuery.data?.commands_enabled ?? false;
+  const updateQuickCommands = useUpdateQuickCommandsMutation();
 
   const handleCommandsToggle = async (enabled: boolean) => {
-    appDispatch(setCommandsEnabled(enabled));
     try {
-      await appDispatch(updateQuickCommandsThunk({ channelId })).unwrap();
+      await updateQuickCommands.mutateAsync({
+        channelId,
+        enabled,
+        commands: quickCommandsQuery.data?.enabled_commands ?? [],
+      });
       showSuccess(enabled ? 'Команды включены' : 'Команды отключены');
     } catch {
       showError('Ошибка сохранения');
@@ -141,27 +139,24 @@ const BotCommandsBlock: FC<{ botId: number; channelId: number; channelTitle?: st
 };
 
 const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const [infoFormOpen, setInfoFormOpen] = useState(false);
   const [infoLibraryOpen, setInfoLibraryOpen] = useState(false);
-
-  const { enabled: infoMessagesEnabled, messages } = useAppSelector((s) => s.automation);
+  const [editingMessage, setEditingMessage] = useState<InfoMessage | null>(null);
 
   const channelId = channel.id;
   const botId = channel.bot_id;
   const isGroup = channel.channel_type === 'GROUP' || channel.channel_type === 'SUPERGROUP';
 
+  const infoQuery = useInfoMessagesQuery(channelId);
+  const toggleInfoMessages = useToggleInfoMessagesMutation();
+  const infoMessagesEnabled = infoQuery.data?.enabled ?? false;
+  const messages = infoQuery.data?.items ?? [];
   const infoActiveCount = messages.filter((m) => m.is_enabled).length;
 
-  useEffect(() => {
-    dispatch(fetchInfoMessagesThunk(channelId));
-  }, [channelId, dispatch]);
-
   const handleInfoMessagesToggle = async (enabled: boolean) => {
-    dispatch(setInfoMessagesEnabled(enabled));
     try {
-      await dispatch(toggleInfoMessagesThunk({ channelId, enabled })).unwrap();
+      await toggleInfoMessages.mutateAsync({ channelId, enabled });
       showSuccess(enabled ? 'Информационные сообщения включены' : 'Информационные сообщения отключены');
     } catch {
       showError('Ошибка сохранения');
@@ -169,7 +164,7 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
   };
 
   const openInfoComposer = (editing: InfoMessage | null) => {
-    dispatch(setEditingMessage(editing));
+    setEditingMessage(editing);
     setInfoFormOpen(true);
   };
 
@@ -229,6 +224,7 @@ const AutomationSection: FC<AutomationSectionProps> = ({ channel }) => {
         onClose={() => setInfoFormOpen(false)}
         channelId={channelId}
         channelTitle={channel.title}
+        editingMessage={editingMessage}
       />
     </div>
   );

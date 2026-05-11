@@ -6,7 +6,7 @@ import { Button } from '@/components/new-button';
 import Input from '@/components/input/input';
 import AttachPostSourceModal, { PostSource } from './AttachPostSourceModal';
 import PostPickerModal from './PostPickerModal';
-import CurrencySelect from './CurrencySelect';
+import CurrencySelect from '@/components/currency-select';
 import DateInputPopover from './DateInputPopover';
 import { AdRevenueCreatePayload, AdRevenueType } from '../store/types';
 import styles from './AddAdRevenueModal.module.scss';

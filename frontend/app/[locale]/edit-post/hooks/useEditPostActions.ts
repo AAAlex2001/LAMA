@@ -3,7 +3,8 @@
 import { useState, useCallback } from 'react';
 import type { AppDispatch } from '../../create-post/store';
 import { updatePost, createSingleOccurrence, moveToDraft } from '../../create-post/store/thunks/updatePost';
-import { apiRequest } from '../../create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
+import { invalidatePublications } from '@/store/publications/queries';
 import type { SeriesPostInfo } from './useEditPostLoader';
 import type { ChannelBasic } from '@/types';
 
@@ -66,6 +67,7 @@ export function useEditPostActions({
             `/publications/${activePostId}?repeat_mode=this&repeat_date=${dateStr}`,
             { method: 'DELETE' },
           );
+          invalidatePublications();
         } catch {
           // exclusion failed but new post was created
         }
@@ -100,6 +102,7 @@ export function useEditPostActions({
           `/publications/${activePostId}?repeat_mode=this&repeat_date=${dateStr}`,
           { method: 'DELETE' },
         );
+        invalidatePublications();
         showSuccess('Повтор на эту дату исключён');
         setTimeout(() => { window.location.href = '/calendar'; }, 1500);
       } catch {
@@ -133,6 +136,7 @@ export function useEditPostActions({
     if (!seriesId) return;
     try {
       await apiRequest(`/publications/series/${seriesId}`, { method: 'DELETE' });
+      invalidatePublications();
       setSeriesId(null);
       setSeriesPosts([]);
       showSuccess('Серия постов удалена');

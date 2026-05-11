@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import DatePicker from '@/components/date-picker/date-picker';
 import { TimePicker, useRecentTimes } from '@/components/time-picker';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { useAppDispatch, useAppSelector } from '../store';
-import { selectSelectedChannels } from '../store/selectors';
+import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import * as uiSlice from '../store/slices/ui';
 import { scheduleSeries } from '../store/thunks';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -24,7 +24,7 @@ export default function SeriesScheduleModalConnected() {
   const isOpen = useAppSelector(state => state.ui.showSeriesScheduleModal);
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
   const snapshots = useAppSelector(state => state.series.snapshots);
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const recentTimes = useRecentTimes();
 
   const [schedules, setSchedules] = useState<PostSchedule[]>([]);
@@ -148,14 +148,14 @@ export default function SeriesScheduleModalConnected() {
 
         <div className={styles.buttonWrapper}>
           <Button
-            text="Запланировать серию"
             onClick={handleSchedule}
             disabled={!allDatesSet || isScheduling}
             loading={isScheduling}
-            showArrow={false}
-            fullWidth
-            active
-          />
+            style={{ width: '100%' }}
+            intent="gradient"
+          >
+            Запланировать серию
+          </Button>
         </div>
       </div>
     </div>

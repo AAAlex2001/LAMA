@@ -1,7 +1,3 @@
-export { useInView, useOnInView, observe, defaultFallbackInView } from './useInView';
-export type {
-  IntersectionOptions,
-  InViewHookResponse,
-  IntersectionEffectOptions,
-  ObserverInstanceCallback,
-} from './useInView';
+// Calendar feature hooks. useInView is shared in @/hooks/useInView.
+export { useCalendarPageData } from './useCalendarPageData';
+export { useCalendarPostActions } from './useCalendarPostActions';

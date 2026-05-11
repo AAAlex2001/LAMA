@@ -1,0 +1,64 @@
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+
+  &:hover {
+    background: #EBF2FE;
+
+    svg path {
+      stroke: #3B82F6;
+    }
+  }
+
+  svg {
+    transition: all 0.2s ease;
+  }
+}
+
+.actionButtonBordered {
+  border: 1px solid rgba(176, 180, 184, 0.2);
+
+  &:hover {
+    background: #EBF2FE;
+
+    svg path {
+      fill: #3B82F6;
+      stroke: none;
+    }
+  }
+}
+
+.actionButtonDelete {
+  &:hover {
+    background: #FEF2F2 !important;
+    border-color: rgba(227, 51, 38, 0.3);
+
+    svg path {
+      stroke: #E33326 !important;
+      fill: none !important;
+    }
+  }
+}
+
+.actionButtonEdit {
+  border: 1px solid rgba(59, 130, 246, 0.1);
+
+  &:hover {
+    background: #EBF2FE;
+
+    svg path {
+      stroke: #3B82F6;
+    }
+  }
+}

@@ -1,11 +1,11 @@
 'use client';
 
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { TrashIcon } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import * as uiSlice from '../store/slices/ui';
 import { saveDraft } from '../store/thunks';
-import { selectSelectedChannels } from '../store/selectors';
+import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface FooterButtonsConnectedProps {
@@ -45,7 +45,7 @@ export default function FooterButtonsConnected({
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
   const snapshots = useAppSelector(state => state.series.snapshots);
   const activeIndex = useAppSelector(state => state.series.activeIndex);
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
 
   const canDeleteFromSeries = snapshots.length > 1;
 
@@ -55,8 +55,9 @@ export default function FooterButtonsConnected({
     <div className={className}>
       <div className={leftGroupClassName}>
         <Button
-          text="Сохранить в черновики"
-          showArrow={false}
+          variant="outline"
+          intent="gradient"
+          size="lg"
           className={saveDraftBtnClassName}
           loading={isSavingDraft}
           disabled={isSavingDraft}
@@ -72,34 +73,38 @@ export default function FooterButtonsConnected({
               showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения черновика');
             }
           }}
-        />
+        >
+          Сохранить в черновики
+        </Button>
         {canDeleteFromSeries && (
           <Button
-            text="Удалить из серии"
-            variant="delete"
-            showArrow={false}
-            icon={<TrashIcon width={15} height={16.67} />}
+            variant="fill"
+            intent="destructive"
             className={deleteFromSeriesBtnClassName}
             onClick={() => onRemovePost(activeIndex)}
-          />
+          >
+            <TrashIcon width={15} height={16.67} />
+            Удалить из серии
+          </Button>
         )}
       </div>
       {showPublishButtons && (
         <div className={publishRowClassName}>
           <Button
-            text="Опубликовать сейчас"
-            showArrow={false}
+            variant="outline"
+            intent="gradient"
+            size="lg"
             className={publishNowBtnClassName}
             onClick={() => {
               hasMultiplePosts ? onPublishSeries() : onPublishNow();
             }}
             loading={isPublishing}
             disabled={isPublishing}
-          />
+          >
+            Опубликовать сейчас
+          </Button>
           <Button
-            text="Запланировать"
-            showArrow={false}
-            active
+            intent="gradient"
             loading={isScheduling}
             disabled={isScheduling}
             className={scheduleBtnClassName}
@@ -110,7 +115,9 @@ export default function FooterButtonsConnected({
                 dispatch(uiSlice.setShowDatePickerModal(true));
               }
             }}
-          />
+          >
+            Запланировать
+          </Button>
         </div>
       )}
     </div>

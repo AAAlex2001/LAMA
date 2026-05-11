@@ -1,24 +1,15 @@
-'use client'
+'use client';
 
-import FilterTabs from "@/components/filter-tabs/filter-tabs";
-import { Button } from "@/components/new-button";
-import { FC, useState } from "react";
-import buttonStyles from "@/components/new-button/styles.module.scss";
-
-import styles from "./styles.module.scss";
-import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
-import LinkInvitesModal, { InvitationLink } from "../../../LinkInvitesModal";
-import CreateInviteLinkModal from "../../../CreateInviteLinkModal";
-import CreateTriggersModal from "../../../CreateTriggersModal";
-import CreateCommandModal from "../../../CreateCommandModal";
-import AutomatizationModal from "../../../AutomatizationModal";
-import type { CheckedItemsAction } from "../../hooks/useCheckedItems";
+import { FC } from 'react';
+import { Button } from '@/components/new-button';
+import type { CheckedItemsAction } from '../../hooks/useCheckedItems';
+import CheckingRow from './CheckingRow';
+import ModerationHeader from './ModerationHeader';
+import AutomationHeader from './AutomationHeader';
+import type { AutomationEventType, ModerationStatusType } from './constants';
+import styles from './styles.module.scss';
 
 export type ListHeaderType = 'all' | 'moderation' | 'system' | 'automation';
-
-type AutomationEventType = 'system_autoreply' | 'system_trigger' | 'bot_command' | null;
-
-type ModerationStatusType = 'new' | 'processed' | 'banned' | null;
 
 interface ListHeaderProps {
   type: ListHeaderType;
@@ -35,7 +26,6 @@ interface ListHeaderProps {
   onModerationSubFilterChange?: (filter: ModerationStatusType) => void;
 }
 
-
 const ListHeader: FC<ListHeaderProps> = ({
   type,
   selectionDispatch,
@@ -49,361 +39,44 @@ const ListHeader: FC<ListHeaderProps> = ({
   moderationSubFilter,
   onModerationSubFilterChange,
 }) => {
-  const [isLinksModalOpen, setIsLinksModalOpen] = useState(false);
-  const [isCreateInviteModalOpen, setIsCreateInviteModalOpen] = useState(false);
-  const [editingInvite, setEditingInvite] = useState<InvitationLink | null>(null);
-  const [isTriggerModalOpen, setIsTriggerModalOpen] = useState(false);
-  const [isCommandModalOpen, setIsCommandModalOpen] = useState(false);
-  const [isAutomatizationModalOpen, setIsAutomatizationModalOpen] = useState(false);
-
-  const filterOptionsModeration = [
-    { id: "all", label: "Все" },
-    { id: "new", label: "Ожидают" },
-    { id: "processed", label: "Обработанные" },
-    { id: "banned", label: "Заблокированные" },
-  ];
-
-  const filterOptionsAutomation = [
-    { id: "all", label: "Все" },
-    { id: "auto-reply", label: "Автоответ" },
-    { id: "trigger", label: "Триггер" },
-    { id: "commands", label: "Команды" },
-  ];
-
-  const selectedAutomationSubFilter = (() => {
-    switch (automationSubFilter) {
-      case 'system_autoreply':
-        return 'auto-reply';
-      case 'system_trigger':
-        return 'trigger';
-      case 'bot_command':
-        return 'commands';
-      default:
-        return 'all';
-    }
-  })();
-
-  const handleAutomationFilterChange = (filterId: string) => {
-    switch (filterId) {
-      case 'auto-reply':
-        onAutomationSubFilterChange?.('system_autoreply');
-        break;
-      case 'trigger':
-        onAutomationSubFilterChange?.('system_trigger');
-        break;
-      case 'commands':
-        onAutomationSubFilterChange?.('bot_command');
-        break;
-      default:
-        onAutomationSubFilterChange?.(null);
-        break;
-    }
-  };
-
-  const selectedModerationSubFilter = (() => {
-    switch (moderationSubFilter) {
-      case 'new':
-        return 'new';
-      case 'processed':
-        return 'processed';
-      case 'banned':
-        return 'banned';
-      default:
-        return 'all';
-    }
-  })();
-
-  const handleModerationFilterChange = (filterId: string) => {
-    switch (filterId) {
-      case 'new':
-        onModerationSubFilterChange?.('new');
-        break;
-      case 'processed':
-        onModerationSubFilterChange?.('processed');
-        break;
-      case 'banned':
-        onModerationSubFilterChange?.('banned');
-        break;
-      default:
-        onModerationSubFilterChange?.(null);
-        break;
-    }
-  };
-
   const checkingRow = (
-    <>
-      <DesktopWrapper>
-        <div className={styles.headerWrapper}>
-          {
-            isChecking ? (
-              <div className={styles.selectedItems}>
-                <span>Выбрано {checkedItems} уведомление</span>
-              </div>
-            ) : <div />
-          }
-          {
-            isChecking && (
-              <div className={styles.actions}>
-                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
-                  <span className={buttonStyles.label}>Прочитать</span>
-                </Button>
-                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
-                  <span className={buttonStyles.label}>Игнорировать</span>
-                </Button>
-                <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
-                  Удалить
-                </Button>
-                <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
-                  Заблокировать
-                </Button>
-                <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
-                  <span className={buttonStyles.label}>Разблокировать</span>
-                </Button>
-              </div>
-            )
-          }
-          <div className={styles.controls}>
-            <Button
-              variant="outline"
-              intent={isSelectedAll ? "primary" : "neutral"}
-              size="sm"
-              onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
-              className={styles.controlButton}
-            >
-              <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
-            </Button>
-            <Button
-              variant="outline"
-              intent={isChecking ? "primary" : "neutral"}
-              size="sm"
-              onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
-              className={styles.controlButton}
-            >
-              <span>{!isChecking ? 'Выбрать' : 'Отменить'}</span>
-            </Button>
-          </div>
-        </div>
-      </DesktopWrapper>
-      {isChecking && (
-        <MobileWrapper>
-          <div className={styles.selectedItemsMobile}>
-            <div className={styles.controls}>
-              <Button
-                variant="outline"
-                intent={isSelectedAll ? "primary" : "neutral"}
-                size="sm"
-                onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
-                className={styles.controlButton}
-              >
-                <span>{!isSelectedAll ? 'Выбрать все' : 'Снять выбор'}</span>
-              </Button>
-              <Button
-                variant="outline"
-                intent={isChecking ? "primary" : "neutral"}
-                size="sm"
-                onClick={() => selectionDispatch({ type: "setMode", checking: false })}
-                className={styles.controlButton}
-              >
-                <span>Отменить</span>
-              </Button>
-            </div>
-            <div className={styles.selectedItems}>
-              <span>Выбрано {checkedItems} уведомление</span>
-            </div>
-          </div>
-          <div className={styles.mobileActions}>
-            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('read')}>
-              <span className={buttonStyles.label}>Прочитать</span>
-            </Button>
-            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('ignore')}>
-              <span className={buttonStyles.label}>Игнорировать</span>
-            </Button>
-            <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('delete')}>
-              Удалить
-            </Button>
-            <Button variant="ghost" intent="destructive" size="transparent" onClick={() => onBulkAction?.('block')}>
-              Заблокировать
-            </Button>
-            <Button variant="ghost" intent="gradient" size="transparent" onClick={() => onBulkAction?.('unblock')}>
-              <span className={buttonStyles.label}>Разблокировать</span>
-            </Button>
-          </div>
-        </MobileWrapper>
-      )}
-    </>
+    <CheckingRow
+      selectionDispatch={selectionDispatch}
+      isChecking={isChecking}
+      allIds={allIds}
+      isSelectedAll={isSelectedAll}
+      checkedItems={checkedItems}
+      onBulkAction={onBulkAction}
+    />
   );
 
   switch (type) {
     case 'all':
+    case 'system':
       return checkingRow;
+
     case 'moderation':
       return (
         <>
-          <DesktopWrapper>
-            <LinkInvitesModal
-              isOpen={isLinksModalOpen}
-              onOpenChange={setIsLinksModalOpen}
-              onEditLink={(link) => {
-                setEditingInvite(link);
-                setIsCreateInviteModalOpen(true);
-              }}
-            />
-            <div className={styles.moderationWrapper}>
-              <FilterTabs
-                options={filterOptionsModeration}
-                selectedFilter={selectedModerationSubFilter}
-                onFilterChange={handleModerationFilterChange}
-              />
-              <div className={styles.controls}>
-                <Button
-                  variant="outline"
-                  intent="gradient"
-                  size="md"
-                  onClick={() => setIsLinksModalOpen(true)}
-                >
-                  <span className={buttonStyles.label}>Созданные ссылки-приглашения</span>
-                </Button>
-                <Button
-                  variant="fill"
-                  intent="gradient"
-                  size="md"
-                  onClick={() => {
-                    setEditingInvite(null);
-                    setIsCreateInviteModalOpen(true);
-                  }}
-                >
-                  <span>Создать ссылку-приглашение</span>
-                </Button>
-              </div>
-            </div>
-          </DesktopWrapper>
-          <MobileWrapper>
-            <LinkInvitesModal
-              isOpen={isLinksModalOpen}
-              onOpenChange={setIsLinksModalOpen}
-              onCreateLink={() => {
-                setEditingInvite(null);
-                setIsCreateInviteModalOpen(true);
-              }}
-              onEditLink={(link) => {
-                setEditingInvite(link);
-                setIsCreateInviteModalOpen(true);
-              }}
-            />
-            <div className={`${styles.moderationWrapperMobile} ${styles.mobileFlex}`}>
-              <FilterTabs
-                options={filterOptionsModeration}
-                selectedFilter={selectedModerationSubFilter}
-                onFilterChange={handleModerationFilterChange}
-                className={styles.filterTabsMobile}
-              />
-              <div className={styles.controlsMobile}>
-                <Button
-                  variant="fill"
-                  intent="gradient"
-                  size="lg"
-                  style={{ width: '100%' }}
-                  onClick={() => setIsLinksModalOpen(true)}
-                >
-                  <span>Ссылки-приглашения</span>
-                </Button>
-              </div>
-            </div>
-          </MobileWrapper>
-          <CreateInviteLinkModal
-            isOpen={isCreateInviteModalOpen}
-            onCreateLink={() => {}}
-            onOpenChange={(open) => {
-              setIsCreateInviteModalOpen(open);
-              if (!open) {
-                setEditingInvite(null);
-              }
-            }}
-            linkId={parseInt(editingInvite?.id ?? '0', 10)}
-            channelId={parseInt(editingInvite?.channelId ?? '0', 10)}
+          <ModerationHeader
+            moderationSubFilter={moderationSubFilter}
+            onModerationSubFilterChange={onModerationSubFilterChange}
           />
           {checkingRow}
         </>
-      )
-    case 'system':
-      return checkingRow
+      );
+
     case 'automation':
       return (
         <>
-          <DesktopWrapper>
-            <div className={styles.moderationWrapper}>
-              <FilterTabs
-                  options={filterOptionsAutomation}
-                  selectedFilter={selectedAutomationSubFilter}
-                  onFilterChange={handleAutomationFilterChange}
-                />
-              {automationSubFilter !== 'system_autoreply' && (
-                <div className={styles.controls}>
-                  {(automationSubFilter === null || automationSubFilter === 'system_trigger') && (
-                    <Button
-                      variant="fill"
-                      intent="gradient"
-                      size="md"
-                      onClick={() => setIsTriggerModalOpen(true)}
-                    >
-                      <span className={buttonStyles.label}>Создать триггер</span>
-                    </Button>
-                  )}
-                  {(automationSubFilter === null || automationSubFilter === 'bot_command') && (
-                    <Button
-                      variant="fill"
-                      intent="gradient"
-                      size="md"
-                      onClick={() => setIsCommandModalOpen(true)}
-                    >
-                      <span className={buttonStyles.label}>Создать команду</span>
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
-          </DesktopWrapper>
-          <MobileWrapper>
-            <div className={`${styles.moderationWrapperMobile} ${styles.mobileFlex}`}>
-              <div className={styles.controlsMobile}>
-                <Button
-                  variant="fill"
-                  intent="gradient"
-                  size="lg"
-                  style={{ width: '100%' }}
-                  onClick={() => setIsAutomatizationModalOpen(true)}
-                >
-                  <span className={buttonStyles.label}>Автоматизация действий</span>
-                </Button>
-              </div>
-              <div className={styles.filterTabsMobileWrapper}>
-                <FilterTabs
-                  options={filterOptionsAutomation}
-                  selectedFilter={selectedAutomationSubFilter}
-                  onFilterChange={handleAutomationFilterChange}
-                  className={styles.filterTabsMobile}
-                />
-              </div>
-            </div>
-          </MobileWrapper>
-          <AutomatizationModal
-            isOpen={isAutomatizationModalOpen}
-            onOpenChange={setIsAutomatizationModalOpen}
-            onOpenAutoReply={() => {}}
-            onOpenTrigger={() => setIsTriggerModalOpen(true)}
-            onOpenCommand={() => setIsCommandModalOpen(true)}
-          />
-          <CreateTriggersModal
-            isOpen={isTriggerModalOpen}
-            onOpenChange={setIsTriggerModalOpen}
-          />
-          <CreateCommandModal
-            isOpen={isCommandModalOpen}
-            onOpenChange={setIsCommandModalOpen}
+          <AutomationHeader
+            automationSubFilter={automationSubFilter}
+            onAutomationSubFilterChange={onAutomationSubFilterChange}
           />
           {checkingRow}
         </>
-      )
+      );
+
     default:
       return (
         <div className={styles.controls}>
@@ -411,23 +84,23 @@ const ListHeader: FC<ListHeaderProps> = ({
             variant="outline"
             intent="neutral"
             size="sm"
-            onClick={() => selectionDispatch({ type: "selectAll", allIds: allIds ?? [] })}
+            onClick={() => selectionDispatch({ type: 'selectAll', allIds: allIds ?? [] })}
             className={styles.controlButton}
           >
             <span>Выбрать все</span>
           </Button>
           <Button
             variant="outline"
-            intent={isChecking ? "gradient" : "neutral"}
+            intent={isChecking ? 'gradient' : 'neutral'}
             size="sm"
-            onClick={() => selectionDispatch({ type: "setMode", checking: !isChecking })}
+            onClick={() => selectionDispatch({ type: 'setMode', checking: !isChecking })}
             className={styles.controlButton}
           >
             <span>Выбрать</span>
           </Button>
         </div>
-      )
+      );
   }
-}
+};
 
 export default ListHeader;

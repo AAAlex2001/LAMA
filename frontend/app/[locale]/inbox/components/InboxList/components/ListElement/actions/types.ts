@@ -1,4 +1,4 @@
-import type { InboxEventResponse, InboxActionType } from "../../../../../store/thunks/inboxEvents";
+import type { InboxEventResponse, InboxActionType } from '@/store/inbox';
 import type { BlockStatus } from "../hooks/useInboxEventActions";
 
 export interface ActionGroupProps {

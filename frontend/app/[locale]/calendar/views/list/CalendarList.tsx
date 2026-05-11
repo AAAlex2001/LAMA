@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Loader from '@/components/loader';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import CalendarCard from '../../shared/CalendarCard';
 import type { Draft } from '@/types/post';
 import styles from '../../calendar.module.scss';
@@ -38,12 +38,12 @@ export default function CalendarList({
           <p className={styles.emptySubtitle}>Запланируйте или создайте публикацию</p>
         </div>
         <Button
-          text="Создать публикацию"
-          showArrow={false}
-          active
+          intent="gradient"
           className={styles.emptyCreateBtn}
           onClick={onAddPost ?? (() => { window.location.href = '/create-post'; })}
-        />
+        >
+          Создать публикацию
+        </Button>
       </div>
     );
   }

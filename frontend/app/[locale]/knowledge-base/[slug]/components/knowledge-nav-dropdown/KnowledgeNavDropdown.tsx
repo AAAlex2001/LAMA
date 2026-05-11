@@ -5,7 +5,6 @@ import { useState } from 'react';
 import BrainIcon from '@/components/icons/brain-icon';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
-import OldButton from '@/components/button/button';
 import styles from './KnowledgeNavDropdown.module.scss';
 import KnowledgeNavDropdownSection from './KnowledgeNavDropdownSection';
 import { SECTIONS } from './KnowledgeNavDropdown.data';
@@ -124,16 +123,17 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
             <Link key={item.href} href={item.href} className={styles.footerLink}>{item.label}</Link>
           ))}
         </div>
-        <OldButton
-          text="Написать в LamaPlannerBot"
+        <NewButton
           href={botHref}
           target="_blank"
           rel="noopener noreferrer"
-          variant="templateCard"
-          fullWidth
-          showArrow={false}
+          variant="outline"
+          intent="primary"
+          style={{ width: '100%' }}
           className={styles.botBtn}
-        />
+        >
+          Написать в LamaPlannerBot
+        </NewButton>
         <NewButton
           href={botHref}
           target="_blank"

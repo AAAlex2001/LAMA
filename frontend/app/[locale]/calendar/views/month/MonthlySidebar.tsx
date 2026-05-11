@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import type { Draft } from '@/types/post';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import { useInView } from '../../hooks/useInView';
+import { useInView } from '@/hooks/useInView';
 import {
   formatDayTitle,
   formatTime,
@@ -84,13 +84,13 @@ export default function MonthlySidebar({
       {!isPast && (
         <div className={styles.createBtnWrapper}>
           <Button
-            text="Создать публикацию"
-            showArrow={false}
-            active
-            fullWidth
+            intent="gradient"
+            style={{ width: '100%' }}
             className={styles.createBtn}
             onClick={() => router.push(buildCreatePostUrl(sidebarDate))}
-          />
+          >
+            Создать публикацию
+          </Button>
         </div>
       )}
 

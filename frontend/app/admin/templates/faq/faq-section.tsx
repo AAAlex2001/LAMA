@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTemplateContext } from '../store/template-context';
 import Input from '@/components/input/input';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import styles from './faq-section.module.scss';
 
 export default function FAQSection() {
@@ -49,7 +49,7 @@ export default function FAQSection() {
       {expanded && (
         <>
           <div className={styles.header}>
-            <Button text="Добавить вопрос" onClick={addFAQItem} showArrow={false} size="small" />
+            <Button onClick={addFAQItem} size="sm">Добавить вопрос</Button>
           </div>
 
       <Input
@@ -64,7 +64,7 @@ export default function FAQSection() {
         <div key={index} className={styles.card}>
           <div className={styles.topRow}>
             <div className={styles.label}>Вопрос {index + 1}</div>
-            <Button text="Удалить" onClick={() => removeFAQItem(index)} showArrow={false} size="small" />
+            <Button onClick={() => removeFAQItem(index)} size="sm">Удалить</Button>
           </div>
 
           <Input label="Question" value={String(item?.question ?? '')} onChange={(v) => updateFAQItem(index, 'question', v)} />

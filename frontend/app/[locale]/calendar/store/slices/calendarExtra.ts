@@ -1,7 +1,7 @@
 import type { ActionReducerMapBuilder } from '@reduxjs/toolkit';
 import type { Draft } from '@/types/post';
 import type { CalendarState, DayPageState } from './calendar';
-import { fetchCalendarData, fetchMoreListPosts, fetchMoreDayPosts, fetchDayCounts } from '../thunks';
+import { fetchCalendarData, fetchMoreListPosts, fetchMoreDayPosts } from '../thunks';
 
 export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarState>) {
   builder
@@ -20,9 +20,7 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
     })
     .addCase(fetchCalendarData.fulfilled, (state, action) => {
       const requestView = action.payload.request.view;
-      if (requestView !== state.currentView) {
-        return;
-      }
+      if (requestView !== state.currentView) return;
       state.isLoading = false;
       if (action.payload.type === 'grid') {
         const merge = action.payload.merge === true;
@@ -88,15 +86,5 @@ export function buildExtraReducers(builder: ActionReducerMapBuilder<CalendarStat
     .addCase(fetchMoreDayPosts.rejected, (state, action) => {
       const s = state.dayPageState[action.meta.arg];
       if (s) s.isLoading = false;
-    })
-
-    .addCase(fetchDayCounts.fulfilled, (state, action) => {
-      if (action.payload.anchor !== state.countsMonthAnchor) {
-        return;
-      }
-      state.monthPostCountsCache[action.payload.monthKey] = action.payload.counts;
-      state.monthPostCounts = action.payload.counts;
-      state.monthStatusCountsCache[action.payload.monthKey] = action.payload.statusCounts;
-      state.monthStatusCounts = action.payload.statusCounts;
     });
 }

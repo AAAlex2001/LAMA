@@ -46,8 +46,6 @@ export const selectMobilePosts = createSelector(
       : sortedPosts,
 );
 
-export const selectGridPostCounts = (s: RootState) => s.calendar.monthPostCounts;
-
 export const selectDayLoadingMap = createSelector(
   [(s: RootState) => s.calendar.dayPageState],
   (dps) => Object.fromEntries(Object.entries(dps).map(([k, v]) => [k, v.isLoading])),
@@ -81,11 +79,6 @@ export const selectListRangeEndObj = createSelector(
 export const selectIsGridView = createSelector(
   [selectCalendar],
   (calendar) => calendar.currentView === 'week' || calendar.currentView === 'month',
-);
-
-export const selectMonthStatusCounts = createSelector(
-  [(s: RootState) => s.calendar.monthStatusCounts],
-  (statusCounts) => statusCounts,
 );
 
 export const selectMobileFilterConfigs = createSelector(

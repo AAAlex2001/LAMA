@@ -23,7 +23,7 @@ import {
   resetCommandForm,
 } from '../../../store';
 import BotSearchSelector from '../../BotSearchSelector';
-import { selectBots, selectBotsLoading } from '../../../store/selectors';
+import { useBotsQuery } from '@/store/bots';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 import { buildInlineKeyboard } from '@/store/utils';
@@ -36,8 +36,9 @@ interface CommandFormProps {
 const CommandForm: React.FC<CommandFormProps> = ({ onSubmit, onCancel }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createCommandModal);
-  const bots = useAppSelector((state) => selectBots(state));
-  const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const botsQuery = useBotsQuery();
+  const bots = botsQuery.data?.items ?? [];
+  const botsLoading = botsQuery.isLoading;
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);

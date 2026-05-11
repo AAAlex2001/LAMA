@@ -5,8 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Loader from '@/components/loader/loader';
 import DeleteConfirmationModal from '@/components/modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch, useAppSelector } from '../store';
-import { deleteChannelThunk } from '@/store/channels';
+import { useChannelsQuery, useDeleteChannelMutation } from '@/store/channels';
 import type { Channel } from '@/types/channel';
 import SettingsHeader from './components/SettingsHeader';
 import ChannelInfoCard from './components/ChannelInfoCard';
@@ -24,14 +23,14 @@ interface ChannelSettingsViewProps {
 }
 
 const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'ru';
   const { showSuccess, showError } = useNotifications();
+  const deleteMutation = useDeleteChannelMutation();
 
-  const channels = useAppSelector((s) => s.channels.channels) as Channel[];
-  const total = useAppSelector((s) => s.channels.total);
+  const channelsQuery = useChannelsQuery();
+  const channels = (channelsQuery.data?.items ?? []) as Channel[];
   const channel = channels.find((ch) => ch.id === channelId);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -43,11 +42,11 @@ const ChannelSettingsView: FC<ChannelSettingsViewProps> = ({ channelId }) => {
   const handleDelete = async () => {
     if (!channel) return;
     try {
-      await dispatch(deleteChannelThunk(channel.id)).unwrap();
+      await deleteMutation.mutateAsync(channel.id);
       showSuccess('Канал удалён');
       router.push(`/${locale}/channels`);
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка удаления канала');
+      showError(err instanceof Error ? err.message : 'Ошибка удаления канала');
     } finally {
       setDeleteOpen(false);
     }

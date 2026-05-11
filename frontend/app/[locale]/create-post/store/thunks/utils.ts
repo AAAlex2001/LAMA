@@ -1,6 +1,6 @@
 import type { RootState } from '../index';
 import type { InlineKeyboard, CreatePostRequest, PollData, MediaFile, ButtonRow, SettingsState, UploadedFile, QuizAnswer, QuizMode } from '../types';
-import { uploadMediaFile, API_BASE_URL } from './api';
+import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 
 // Re-export from shared utils
 import { buildInlineKeyboard } from '@/store/utils';

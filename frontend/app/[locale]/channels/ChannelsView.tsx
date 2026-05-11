@@ -6,8 +6,11 @@ import FilterTabs from '@/components/filter-tabs/filter-tabs';
 import { Button } from '@/components/new-button';
 import Loader from '@/components/loader/loader';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch, useAppSelector } from './store';
-import { deleteChannelThunk, refreshChannelsThunk } from '@/store/channels';
+import {
+  useChannelsQuery,
+  useDeleteChannelMutation,
+  useRefreshChannelsMutation,
+} from '@/store/channels';
 import type { Channel } from '@/types/channel';
 import { CalendarRepeatIcon } from '@/components/icons';
 import ChannelCard from './components/ChannelCard';
@@ -26,16 +29,19 @@ const TAB_OPTIONS = [
 ];
 
 const ChannelsView: FC = () => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'ru';
   const { showSuccess, showError } = useNotifications();
 
-  const channels = useAppSelector((s) => s.channels.channels) as Channel[];
-  const loading = useAppSelector((s) => s.channels.loading);
-  const syncing = useAppSelector((s) => s.channels.syncing);
-  const total = useAppSelector((s) => s.channels.total);
+  const channelsQuery = useChannelsQuery();
+  const deleteMutation = useDeleteChannelMutation();
+  const refreshMutation = useRefreshChannelsMutation();
+
+  const channels = (channelsQuery.data?.items ?? []) as Channel[];
+  const total = channelsQuery.data?.total ?? 0;
+  const loading = channelsQuery.isLoading;
+  const syncing = refreshMutation.isPending;
 
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
   const [deleteTarget, setDeleteTarget] = useState<Channel | null>(null);
@@ -52,20 +58,20 @@ const ChannelsView: FC = () => {
 
   const handleRefresh = async () => {
     try {
-      await dispatch(refreshChannelsThunk()).unwrap();
+      await refreshMutation.mutateAsync();
       showSuccess('Каналы обновлены');
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка обновления');
+      showError(err instanceof Error ? err.message : 'Ошибка обновления');
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await dispatch(deleteChannelThunk(deleteTarget.id)).unwrap();
+      await deleteMutation.mutateAsync(deleteTarget.id);
       showSuccess('Канал удалён');
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка удаления канала');
+      showError(err instanceof Error ? err.message : 'Ошибка удаления канала');
     } finally {
       setDeleteTarget(null);
     }

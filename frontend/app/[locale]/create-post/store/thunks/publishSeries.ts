@@ -8,10 +8,9 @@ import { resetInlineButtons } from '../slices/inlineButtons';
 import { resetQuiz } from '../slices/quiz';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
-import { resetTags } from '../slices/tags';
-import { resetReplyToPost } from '../slices/replyToPost';
-import { fetchTagsThunk } from './tags';
-import { apiRequest } from './api';
+import { invalidateTags } from '@/store/tags/queries';
+import { invalidatePublications } from '@/store/publications/queries';
+import { apiRequest } from '@/store/api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
 
 export const publishSeries = createAsyncThunk(
@@ -112,10 +111,10 @@ export const publishSeries = createAsyncThunk(
       for (const pubId of createdIds) {
         await apiRequest(`/publications/${pubId}/publish`, { method: 'POST' });
       }
-      
-      // Если были теги, перезагружаем список тегов
+
+      invalidatePublications();
       if (settings.selectedTags && settings.selectedTags.length > 0) {
-        dispatch(fetchTagsThunk({ force: true }));
+        invalidateTags();
       }
       
       dispatch(resetEditor());
@@ -124,8 +123,6 @@ export const publishSeries = createAsyncThunk(
       dispatch(resetQuiz());
       dispatch(resetSettings());
       dispatch(resetSeries());
-      dispatch(resetTags());
-      dispatch(resetReplyToPost());
       dispatch(resetUi());
       return { success: true, message: `Серия из ${snapshots.length} постов опубликована` };
     } catch (err) {

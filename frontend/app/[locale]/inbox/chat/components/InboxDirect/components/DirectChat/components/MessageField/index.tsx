@@ -2,25 +2,25 @@
 
 import styles from './styles.module.scss';
 import PaperclipIcon from '@/components/icons/paperclip-icon';
-import InlineButtonIcon from '@/components/icons/inline-button-icon';
-import TemplatesIcon from '@/components/icons/templates-icon';
 import MediaPreview from '@/components/media-preview';
 import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';
 import TextTemplatesModal from '@/components/text-templates-modal/text-templates-modal';
 import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle, useLayoutEffect } from 'react';
-import { useMessageMedia } from './hooks/useMessageMedia';
-import { useInlineButtons } from './hooks/useInlineButtons';
+import { useMessageMedia } from '@/hooks/useMessageMedia';
+import { useInlineButtons } from '@/hooks/useInlineButtons';
 import { useTemplates } from './hooks/useTemplates';
-import { SendIcon, CloseIcon, ReplyToIcon } from '@/components/icons';
-import EditIcon from '@/components/icons/edit-icon';
+import { useDragDrop } from './hooks/useDragDrop';
+import { SendIcon } from '@/components/icons';
 import type { TextTemplate } from '@/types/post';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import classNames from 'classnames';
 import type { MediaFile } from '@/components/media-preview';
 import type { ButtonRow } from '@/components/inline-buttons/inline-buttons';
 import { useMessageInputMode } from '../../hooks/useMessageInputMode';
-import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { BotMessageResponse } from '@/[locale]/inbox/store/thunks/directChat';
+import EditReplyBar from './EditReplyBar';
+import ActionsRow from './ActionsRow';
 
 export interface MessageFieldRef {
   mediaFiles: MediaFile[];
@@ -62,8 +62,9 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     handleClearMedia,
   } = useMessageMedia();
 
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCounterRef = useRef(0);
+  const dragEnabled = !inputMode.editingMessage && canAddMedia;
+  const { isDragOver, handleDragEnter, handleDragLeave, handleDragOver, handleDrop, handlePaste } =
+    useDragDrop({ enabled: dragEnabled, onFiles: handleFilesAdd });
 
   const {
     isOpen: inlineButtonsOpen,
@@ -104,10 +105,8 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     if (!textarea) return;
 
     textarea.style.height = 'auto';
-
     const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 22.4;
     const maxHeight = lineHeight * 13;
-
     const newHeight = Math.min(textarea.scrollHeight, maxHeight);
     textarea.style.height = `${newHeight}px`;
   }, []);
@@ -142,10 +141,6 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
     getReplyingTo: () => inputMode.replyingTo,
   }), [mediaFiles, inlineButtonRows, handleClearMedia, resetInlineButtons, inputMode]);
 
-  const handleToggleInlineButtons = () => {
-    toggleInlineButtons();
-  };
-
   const handleOpenTemplatesModal = () => {
     setTemplatesSearchQuery('');
     setShowTemplatesModal(true);
@@ -176,66 +171,6 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
       setIsSendingMessage(false);
     }
   };
-
-  const ACCEPTED_TYPES = ['image/', 'video/', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
-  const isAcceptedFile = (file: File) => ACCEPTED_TYPES.some(t => file.type.startsWith(t));
-
-  const handlePaste = useCallback((e: React.ClipboardEvent) => {
-    if (inputMode.editingMessage || !canAddMedia) return;
-    const items = e.clipboardData?.items;
-    if (!items) return;
-
-    const files: File[] = [];
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      if (item.kind === 'file') {
-        const file = item.getAsFile();
-        if (file && isAcceptedFile(file)) {
-          files.push(file);
-        }
-      }
-    }
-    if (files.length > 0) {
-      e.preventDefault();
-      handleFilesAdd(files);
-    }
-  }, [inputMode.editingMessage, canAddMedia, handleFilesAdd]);
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current++;
-    if (e.dataTransfer.types.includes('Files')) {
-      setIsDragOver(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current--;
-    if (dragCounterRef.current === 0) {
-      setIsDragOver(false);
-    }
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounterRef.current = 0;
-    setIsDragOver(false);
-    if (inputMode.editingMessage || !canAddMedia) return;
-
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(isAcceptedFile);
-    if (droppedFiles.length > 0) {
-      handleFilesAdd(droppedFiles);
-    }
-  }, [inputMode.editingMessage, canAddMedia, handleFilesAdd]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -291,30 +226,12 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
         style={{ display: 'none' }}
       />
       <div className={styles.messageField}>
-        {inputMode.editingMessage && (
-          <div className={styles.editBar}>
-            <EditIcon width={18} height={18} color="var(--color-lama-blue)" />
-            <div className={styles.editBarContent}>
-              <span className={styles.editBarLabel}>Редактирование</span>
-              <span className={styles.editBarText}>{inputMode.editingMessage.text}</span>
-            </div>
-            <button className={styles.editBarClose} type="button" onClick={inputMode.cancelEdit}>
-              <CloseIcon width={18} height={18} />
-            </button>
-          </div>
-        )}
-        {!inputMode.editingMessage && inputMode.replyingTo && (
-          <div className={styles.replyBar}>
-            <ReplyToIcon width={20} height={20} color="var(--color-lama-blue)" />
-            <div className={styles.editBarContent}>
-              <span className={styles.editBarLabel}>Ответ</span>
-              <span className={styles.editBarText}>{inputMode.replyingTo.text}</span>
-            </div>
-            <button className={styles.editBarClose} type="button" onClick={inputMode.cancelReply}>
-              <CloseIcon width={18} height={18} />
-            </button>
-          </div>
-        )}
+        <EditReplyBar
+          editingMessage={inputMode.editingMessage}
+          replyingTo={inputMode.replyingTo}
+          onCancelEdit={inputMode.cancelEdit}
+          onCancelReply={inputMode.cancelReply}
+        />
         <div className={styles.inputRow}>
           <textarea
             ref={textareaRef}
@@ -352,32 +269,12 @@ const MessageField = forwardRef<MessageFieldRef, MessageFieldProps>(({
             </Button>
           )}
         </div>
-        <div className={styles.actionsRow}>
-          <Button
-            variant='tag'
-            intent={inlineButtonsOpen ? 'gradient' : 'primary'}
-            size="sm"
-            onClick={handleToggleInlineButtons}
-            disabled={!canShowInlineButtons}
-            style={{ flex: 1 }}
-          >
-            <InlineButtonIcon
-              width={24}
-              height={24}
-              color={inlineButtonsOpen ? '#FFFFFF' : '#000000'}
-            />
-            Кнопки
-          </Button>
-          <Button
-            variant="tag"
-            intent="primary"
-            onClick={handleOpenTemplatesModal}
-            style={{ flex: 1, display: "flex" }}
-          >
-            <TemplatesIcon width={24} height={24} color="#000000" />
-            Шаблоны
-          </Button>
-        </div>
+        <ActionsRow
+          inlineButtonsOpen={inlineButtonsOpen}
+          canShowInlineButtons={canShowInlineButtons}
+          onToggleInlineButtons={toggleInlineButtons}
+          onOpenTemplates={handleOpenTemplatesModal}
+        />
         <div className={classNames(styles.inlineButtonsContainer, { [styles.inlineOpen]: inlineButtonsOpen })}>
           <InlineButtons
             isOpen={inlineButtonsOpen}

@@ -6,7 +6,7 @@ import MessageField, { type MessageFieldRef } from './components/MessageField';
 import Header from './components/Header';
 import MessageList from './components/MessageList';
 import { useDateSeparator } from './hooks/useDateSeparator';
-import { useDirectChat, useDirectMessages } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import { useDirectChat, useDirectMessages } from '@/[locale]/inbox/store/hooks/useDirectChat';
 import { useRenderedMessages } from './hooks/useRenderedMessages';
 import { useMessageScroll } from './hooks/useMessageScroll';
 import { useReplyFromParam } from './hooks/useReplyFromParam';

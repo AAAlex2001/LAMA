@@ -6,8 +6,8 @@ import {
   selectTypeTriggers,
   selectTypeCommands,
   selectBotIds,
-  selectBots,
 } from "../../../store/selectors";
+import { useBotsQuery } from "@/store/bots";
 
 const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (item: string) => {
   setter((prev) => {
@@ -26,7 +26,8 @@ export const useTypeFilter = ({ botNames }: UseTypeFilterProps) => {
   const reduxTypeTriggers = useAppSelector(selectTypeTriggers);
   const reduxTypeCommands = useAppSelector(selectTypeCommands);
   const reduxBotIds = useAppSelector(selectBotIds);
-  const bots = useAppSelector(selectBots);
+  const botsQuery = useBotsQuery();
+  const bots = botsQuery.data?.items ?? [];
 
   const [typeDefault, setTypeDefault] = useState(true);
   const [typeAutoReply, setTypeAutoReply] = useState(false);

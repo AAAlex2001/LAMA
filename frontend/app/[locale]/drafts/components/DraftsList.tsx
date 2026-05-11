@@ -1,8 +1,8 @@
 'use client';
 
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
-import DraftCard from './DraftCard';
+import DraftCard from '@/components/draft-card';
 import type { Draft } from '@/types/post';
 import styles from '../drafts.module.scss';
 
@@ -43,12 +43,12 @@ export default function DraftsList({
           </p>
         </div>
         <Button
-          text="Создать черновик"
-          showArrow={false}
-          active
+          intent="gradient"
           className={styles.emptyDraftsCreateBtn}
           onClick={() => { window.location.href = '/create-draft'; }}
-        />
+        >
+          Создать черновик
+        </Button>
       </div>
     );
   }

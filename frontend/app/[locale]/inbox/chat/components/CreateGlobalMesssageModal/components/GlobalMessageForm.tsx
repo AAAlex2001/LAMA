@@ -15,7 +15,7 @@ import {
   setGlobalMessageBotSearch,
   toggleGlobalMessageSelectedBotId,
 } from '../../../../store';
-import { selectBots, selectBotsLoading } from '../../../../store/selectors';
+import { useBotsQuery } from '@/store/bots';
 import BotSearchSelector from '../../../../components/BotSearchSelector';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../../../components/ResponseTextSection';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
@@ -41,7 +41,8 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createGlobalMessageModal);
-  const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const botsQuery = useBotsQuery();
+  const botsLoading = botsQuery.isLoading;
   const botSearch = formState.botSearch;
   const selectedBotIds =  new Set(formState.selectedBotIds);
   const responseTextSectionRef = useRef<ResponseTextSectionRef>(null);

@@ -6,10 +6,18 @@ import FAQDecoration from "../../../landing/faq-decoration/faq-decoration";
 import LandingScrollBehavior from "../../../landing/LandingScrollBehavior";
 import TemplateBlocks from "@/components/template-block/template-blocks";
 import TemplateCardsBlock from "@/components/template-card/template-cards-block";
-import TemplateSubscribe from "@/components/template-subscribe/template-subscribe";
-import { headers } from "next/headers";
 import { notFound, permanentRedirect } from 'next/navigation';
 import type { Metadata } from "next";
+import { getApiBaseUrl, fetchJson, fetchJsonOptional } from './_lib/api';
+import { buildSubscribeBlocks } from './_lib/subscribe-blocks';
+import type {
+  HeroContent,
+  TemplatePageContent,
+  FooterContent,
+  HeaderContent,
+  ToolsContent,
+  TemplateItem,
+} from './_lib/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,148 +26,16 @@ type Props = {
   params: Promise<{ locale: string; templateId: string }>;
 };
 
-type HeroContent = {
-  headline: string;
-  paragraph: string;
-  paragraphSecondary: string;
-  buttonText: string;
-  buttonUrl?: string;
-  images: Array<{ url: string; alt: string }>;
-  templateImages?: Array<{ url: string; alt: string }>;
+const TEMPLATE_CONTENT_FALLBACK: TemplatePageContent = {
+  headline: '',
+  lead: '',
+  body: '',
 };
-
-type TemplateBlockAdvantage = {
-  text: string;
-};
-
-type TemplateBlockContent = {
-  title: string;
-  subtitle: string;
-  description: string;
-  advantages?: TemplateBlockAdvantage[];
-  image?: { url: string; alt: string };
-  imagePosition?: 'left' | 'right';
-};
-
-type FAQItem = {
-  question: string;
-  answer: string;
-};
-
-type FAQContent = {
-  headline: string;
-  faqItems: FAQItem[];
-  primaryButtonText?: string;
-  primaryButtonLink?: string;
-  secondaryButtonText?: string;
-  secondaryButtonLink?: string;
-  helpText?: string;
-  botLink?: string;
-};
-
-type TemplatePageContent = {
-  headline: string;
-  lead: string;
-  body: string;
-  ctaText?: string | null;
-  ctaUrl?: string | null;
-  images?: Array<{ url: string; alt: string }>;
-  blocks?: TemplateBlockContent[];
-  faq?: FAQContent | null;
-  cardsBlock?: {
-    headline: string;
-    cards: Array<{ title: string; text: string; buttonText: string; buttonLink?: string | null }>;
-  } | null;
-  subscribeBlocks?: Array<{
-    title: string;
-    subtitle: string;
-    buttonText: string;
-    buttonLink?: string | null;
-    placement?: {
-      position: 'after_block' | 'after_faq' | 'after_cards';
-      afterBlockNumber?: number | null;
-    } | null;
-  }>;
-  subscribeBlock?: {
-    title: string;
-    subtitle: string;
-    buttonText: string;
-    buttonLink?: string | null;
-  } | null;
-  subscribePlacement?: {
-    position: 'after_block' | 'after_faq' | 'after_cards';
-    afterBlockNumber?: number | null;
-  } | null;
-};
-
-type FooterContent = {
-  brandName: string;
-  copyright: string;
-  telegramLink: string;
-  instagramLink: string;
-  columns: Array<{ title: string; links: Array<{ text: string; href: string }> }>;
-};
-
-type HeaderContent = {
-  brandPrefix: string;
-  brandSuffix: string;
-  toolsLabel: string;
-  toolsOrder?: number;
-  loginText: string;
-  loginHref: string;
-  registerText: string;
-  registerHref: string;
-  telegramText: string;
-  telegramHref: string;
-  navLinks: Array<{ text: string; href: string; order?: number }>;
-};
-
-type ToolsContent = {
-  items: Array<{ title: string; description?: string | null; href: string; order?: number }>;
-};
-
-type TemplateItem = {
-  id: number;
-  slug: string;
-};
-
-async function getApiBaseUrl(): Promise<string> {
-  const envBase = (process.env.NEXT_PUBLIC_API_BASE_URL || '/api').replace(/\/+$/, '');
-  if (/^https?:\/\//i.test(envBase)) return envBase;
-
-  const h = await headers();
-  const proto = (h.get('x-forwarded-proto') || 'http').split(',')[0].trim();
-  const host = (h.get('x-forwarded-host') || h.get('host') || '').split(',')[0].trim();
-  const basePath = envBase.startsWith('/') ? envBase : `/${envBase}`;
-
-  if (!host) return envBase;
-  return `${proto}://${host}${basePath}`;
-}
-
-async function fetchJson<T>(url: string, fallback: T): Promise<T> {
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return fallback;
-    return (await res.json()) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-async function fetchJsonOptional<T>(url: string): Promise<T | null> {
-  try {
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch {
-    return null;
-  }
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, templateId } = await params;
   const raw = String(templateId || '').trim();
-  
+
   if (!raw) {
     return {
       title: 'Template Not Found',
@@ -169,20 +45,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   try {
     const apiBaseUrl = await getApiBaseUrl();
-    
-    const templateContentFallback: TemplatePageContent = {
-      headline: '',
-      lead: '',
-      body: '',
-    };
-
     const templateContent = await fetchJson<TemplatePageContent>(
       `${apiBaseUrl}/templates/slug/${encodeURIComponent(raw)}/content?locale=${locale}`,
-      templateContentFallback
+      TEMPLATE_CONTENT_FALLBACK,
     );
 
     const title = templateContent?.headline || 'LAMAplanner Template';
-    const description = templateContent?.lead || templateContent?.body?.substring(0, 160) || 'Template for Telegram posting automation';
+    const description =
+      templateContent?.lead ||
+      templateContent?.body?.substring(0, 160) ||
+      'Template for Telegram posting automation';
     const imageUrl = templateContent?.images?.[0]?.url || '';
 
     return {
@@ -196,27 +68,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description,
         url: `https://lamaplanner.com/${locale}/template/${raw}`,
         siteName: 'LAMAplanner',
-        locale: locale,
+        locale,
         type: 'article',
         ...(imageUrl && {
-          images: [
-            {
-              url: imageUrl,
-              alt: title,
-            },
-          ],
+          images: [{ url: imageUrl, alt: title }],
         }),
       },
       twitter: {
         card: 'summary_large_image',
         title: `${title} | LAMAplanner`,
         description,
-        ...(imageUrl && {
-          images: [imageUrl],
-        }),
+        ...(imageUrl && { images: [imageUrl] }),
       },
     };
-  } catch (error) {
+  } catch {
     return {
       title: 'LAMAplanner Template',
       description: 'Template for Telegram posting automation',
@@ -226,35 +91,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TemplatePage({ params }: Props) {
   const { locale, templateId } = await params;
-
   const raw = String(templateId || '').trim();
   if (!raw) notFound();
 
   const apiBaseUrl = await getApiBaseUrl();
 
   const heroFallback: HeroContent = {
-    headline: '',
-    paragraph: '',
-    paragraphSecondary: '',
-    buttonText: '',
-    images: [],
+    headline: '', paragraph: '', paragraphSecondary: '', buttonText: '', images: [],
   };
-
-  const templateContentFallback: TemplatePageContent = {
-    headline: '',
-    lead: '',
-    body: '',
-    ctaText: '',
-    ctaUrl: '',
-    images: [],
-  };
-
   const footerFallback: FooterContent = {
-    brandName: '',
-    copyright: '',
-    telegramLink: '',
-    instagramLink: '',
-    columns: [],
+    brandName: '', copyright: '', telegramLink: '', instagramLink: '', columns: [],
   };
 
   const [hero, footer, header, tools] = await Promise.all([
@@ -264,14 +110,6 @@ export default async function TemplatePage({ params }: Props) {
     fetchJsonOptional<ToolsContent>(`${apiBaseUrl}/tools?locale=${locale}`),
   ]);
 
-  const baseHeroForTemplate: HeroContent = {
-    headline: hero?.headline || '',
-    paragraph: hero?.paragraph || '',
-    paragraphSecondary: (hero as any)?.paragraphSecondary || '',
-    buttonText: hero?.buttonText || '',
-    images: [],
-  };
-
   const isNumeric = /^\d+$/.test(raw);
   if (isNumeric) {
     const id = Number(raw);
@@ -279,9 +117,8 @@ export default async function TemplatePage({ params }: Props) {
 
     const templatesIndex = await fetchJson<{ templates: TemplateItem[] }>(
       `${apiBaseUrl}/templates?locale=${locale}`,
-      { templates: [] }
+      { templates: [] },
     );
-
     const match = (templatesIndex.templates || []).find((t) => Number(t.id) === id && t.slug);
     if (!match) notFound();
     permanentRedirect(`/${locale}/template/${match.slug}`);
@@ -294,17 +131,17 @@ export default async function TemplatePage({ params }: Props) {
 
   const templateContent = await fetchJson<TemplatePageContent>(
     `${apiBaseUrl}/templates/slug/${encodeURIComponent(raw)}/content?locale=${locale}`,
-    templateContentFallback
+    { ...TEMPLATE_CONTENT_FALLBACK, ctaText: '', ctaUrl: '', images: [] },
   );
 
   const templateImages = Array.isArray(templateContent?.images) ? templateContent.images : [];
 
   const heroForTemplate: HeroContent = {
-    ...baseHeroForTemplate,
-    headline: templateContent?.headline || baseHeroForTemplate.headline,
-    paragraph: templateContent?.lead || baseHeroForTemplate.paragraph,
-    buttonText: (templateContent?.ctaText || baseHeroForTemplate.buttonText) as string,
-    buttonUrl: templateContent?.ctaUrl || baseHeroForTemplate.buttonUrl,
+    headline: templateContent?.headline || hero?.headline || '',
+    paragraph: templateContent?.lead || hero?.paragraph || '',
+    paragraphSecondary: (hero as { paragraphSecondary?: string })?.paragraphSecondary || '',
+    buttonText: (templateContent?.ctaText || hero?.buttonText || '') as string,
+    buttonUrl: templateContent?.ctaUrl || hero?.buttonUrl,
     images: templateImages,
   };
 
@@ -312,111 +149,42 @@ export default async function TemplatePage({ params }: Props) {
   const hasFaq = Boolean(
     faqContent &&
       (String(faqContent.headline || '').trim() ||
-        (Array.isArray(faqContent.faqItems) && faqContent.faqItems.length > 0))
+        (Array.isArray(faqContent.faqItems) && faqContent.faqItems.length > 0)),
   );
 
-  const blocksCount = Array.isArray(templateContent.blocks) ? templateContent.blocks.length : 0;
-
-  const subscribeItemsRaw = Array.isArray(templateContent.subscribeBlocks) ? templateContent.subscribeBlocks : [];
-  const subscribeLegacy = templateContent.subscribeBlock;
-  const subscribeLegacyPlacement = templateContent.subscribePlacement;
-
-  const subscribeItems = subscribeItemsRaw.length
-    ? subscribeItemsRaw
-    : subscribeLegacy
-      ? [
-          {
-            ...subscribeLegacy,
-            placement: subscribeLegacyPlacement ?? undefined,
-          },
-        ]
-      : [];
-
-  const subscribeAfterFaqNodes: React.ReactNode[] = [];
-  const subscribeAfterCardsNodes: React.ReactNode[] = [];
-  const subscribeInsertions: Array<{ afterBlockNumber: number; node: React.ReactNode; key?: string }> = [];
-
-  const paddingForPosition = (
-    position: 'after_block' | 'after_faq' | 'after_cards'
-  ): string => {
-    if (position === 'after_block') return '100px 20px 0 20px';
-    if (position === 'after_faq') return '0 20px 100px 20px';
-    return '0 20px 180px 20px';
-  };
-
-  subscribeItems.forEach((item, idx) => {
-    const title = String(item?.title || '').trim();
-    const subtitle = String(item?.subtitle || '').trim();
-    const buttonText = String(item?.buttonText || '').trim();
-    const buttonLink = String(item?.buttonLink || '').trim();
-    const hasAny = Boolean(title || subtitle || buttonText || buttonLink);
-    if (!hasAny) return;
-
-    const placement = item?.placement ?? null;
-    const position = placement?.position || 'after_cards';
-    const requestedAfterBlock = position === 'after_block' ? Number(placement?.afterBlockNumber || 0) : 0;
-    const canRenderInBlocks = requestedAfterBlock >= 1 && blocksCount >= requestedAfterBlock;
-
-    const node = (
-      <div style={{ padding: paddingForPosition(position) }}>
-        <TemplateSubscribe
-          title={item.title}
-          subtitle={item.subtitle}
-          buttonText={item.buttonText}
-          buttonLink={item.buttonLink}
-        />
-      </div>
-    );
-
-    if (position === 'after_faq') {
-      subscribeAfterFaqNodes.push(<div key={`sub_after_faq_${idx}`}>{node}</div>);
-      return;
-    }
-
-    if (position === 'after_block' && canRenderInBlocks) {
-      subscribeInsertions.push({
-        afterBlockNumber: requestedAfterBlock,
-        node,
-        key: `sub_after_block_${idx}`,
-      });
-      return;
-    }
-
-    subscribeAfterCardsNodes.push(<div key={`sub_after_cards_${idx}`}>{node}</div>);
-  });
+  const subscribe = buildSubscribeBlocks(templateContent);
 
   return (
     <main className="landing-page">
       <LandingScrollBehavior />
       <Header locale={locale} content={header || undefined} toolsItems={tools?.items} />
       <Hero locale={locale} content={heroForTemplate} hideImagesOnMobile={true} variant="template" />
-      
+
       {templateContent.blocks && templateContent.blocks.length > 0 && (
         <TemplateBlocks
           blocks={templateContent.blocks}
-          insertions={subscribeInsertions}
+          insertions={subscribe.insertions}
         />
       )}
 
-      {hasFaq && faqContent ? (
-          <>
-            <FAQ locale={locale} content={faqContent} whiteBackground={true} />
-          </>
-        ) : null}
+      {hasFaq && faqContent && (
+        <FAQ locale={locale} content={faqContent} whiteBackground={true} />
+      )}
 
-      {subscribeAfterFaqNodes.length ? subscribeAfterFaqNodes : null}
+      {subscribe.afterFaq.length > 0 && subscribe.afterFaq}
 
       {templateContent.cardsBlock &&
-      Array.isArray(templateContent.cardsBlock.cards) &&
-      templateContent.cardsBlock.cards.length > 0 ? (
-        <TemplateCardsBlock headline={templateContent.cardsBlock.headline} cards={templateContent.cardsBlock.cards} />
-      ) : null}
+       Array.isArray(templateContent.cardsBlock.cards) &&
+       templateContent.cardsBlock.cards.length > 0 && (
+        <TemplateCardsBlock
+          headline={templateContent.cardsBlock.headline}
+          cards={templateContent.cardsBlock.cards}
+        />
+      )}
 
-      {subscribeAfterCardsNodes.length ? subscribeAfterCardsNodes : null}
+      {subscribe.afterCards.length > 0 && subscribe.afterCards}
 
-      {hasFaq && faqContent ? (
-          <FAQDecoration />
-        ) : null}
+      {hasFaq && faqContent && <FAQDecoration />}
 
       <Footer locale={locale} content={footer} />
     </main>

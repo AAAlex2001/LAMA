@@ -1,26 +1,17 @@
 'use client';
 
-import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
 import PostPreviewModal from '@/components/post-preview-modal';
-import Modal from '@/components/modal';
-import Button from '@/components/button/button';
-import Input from '@/components/input/input';
-import Loader from '@/components/loader';
-import { CopyIcon, TelegramCircleIcon } from '@/components/icons';
-import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Draft } from '@/types/post';
-import type { TagsResponse, ChannelsResponse } from '@/types';
-import { apiRequest } from '@/store/api';
 import CalendarHeader from './CalendarHeader';
 import CalendarMainContent from './CalendarMainContent';
 import CalendarMobilePopup from './CalendarMobilePopup';
 import CalendarPostModal from './CalendarPostModal';
+import DeletePostModal from './modals/DeletePostModal';
+import DeleteRepeatModal from './modals/DeleteRepeatModal';
+import SharePostModal from './modals/SharePostModal';
 import {
   useAppDispatch,
-  useAppSelector,
-  type RootState,
   setSelectedDate,
   setCurrentView,
   setListDateRange,
@@ -28,21 +19,11 @@ import {
   setListSortOrder,
   setListStatusFilter,
   setCountsMonthAnchor,
-  selectSortedPosts,
-  selectMobilePosts,
-  selectGridPostCounts,
-  selectDayLoadingMap,
-  selectDayHasMoreMap,
-  selectSelectedDateObj,
-  selectSidebarDateObj,
-  selectListRangeStartObj,
-  selectListRangeEndObj,
-  selectIsGridView,
-  selectSidebarPosts,
-  selectMonthStatusCounts,
 } from '../store';
-import { fetchCalendarData, fetchMoreListPosts, fetchDayCounts, fetchMoreDayPosts, deletePublication, deleteSeries, deleteRepeatPublication } from '../store/thunks';
+import { fetchMoreListPosts, fetchMoreDayPosts } from '../store/thunks';
 import { navigateStep, sidebarDateChange } from '../store/thunks/navigation';
+import { useCalendarPageData } from '../hooks/useCalendarPageData';
+import { useCalendarPostActions } from '../hooks/useCalendarPostActions';
 import { getPreviewData } from '../utils/previewData';
 import {
   buildCreatePostUrl,
@@ -58,76 +39,16 @@ import styles from '../calendar.module.scss';
 export default function CalendarPageConnected() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const { showSuccess, showError } = useNotifications();
 
-  const calendar = useAppSelector((state: RootState) => state.calendar);
-  const selectedDate = useAppSelector(selectSelectedDateObj);
-  const sidebarDate = useAppSelector(selectSidebarDateObj);
-  const listRangeStart = useAppSelector(selectListRangeStartObj);
-  const listRangeEnd = useAppSelector(selectListRangeEndObj);
+  const data = useCalendarPageData();
+  const actions = useCalendarPostActions();
 
-  const sortedPosts = useAppSelector(selectSortedPosts);
-  const mobilePosts = useAppSelector(selectMobilePosts);
-  const gridPostCounts = useAppSelector(selectGridPostCounts);
-  const dayLoadingMap = useAppSelector(selectDayLoadingMap);
-  const dayHasMoreMap = useAppSelector(selectDayHasMoreMap);
-  const isGridView = useAppSelector(selectIsGridView);
-  const sidebarPosts = useAppSelector(selectSidebarPosts);
-  const monthStatusCounts = useAppSelector(selectMonthStatusCounts);
-
-  const [showMobile, setShowMobile] = React.useState(false);
-  const [previewPost, setPreviewPost] = React.useState<Draft | null>(null);
-  const [selectedPost, setSelectedPost] = React.useState<Draft | null>(null);
-  const [mobileActiveFilters, setMobileActiveFilters] = React.useState<Record<string, string[]>>({});
-  const [shareModalOpen, setShareModalOpen] = React.useState(false);
-  const [shareLink, setShareLink] = React.useState('');
-  const [isGeneratingShareLink, setIsGeneratingShareLink] = React.useState(false);
-  const [deleteConfirmPost, setDeleteConfirmPost] = React.useState<Draft | null>(null);
-  const [repeatDeletePost, setRepeatDeletePost] = React.useState<Draft | null>(null);
-  const [hoveredRepeatThis, setHoveredRepeatThis] = React.useState(false);
-  const [hoveredRepeatFollowing, setHoveredRepeatFollowing] = React.useState(false);
-
-  React.useEffect(() => {
-    setMobileActiveFilters({});
-  }, [calendar.currentView]);
-
-  React.useEffect(() => {
-    const main = document.querySelector('main');
-    if (main) main.scrollTop = 0;
-  }, [calendar.currentView, calendar.selectedDate]);
-
-  React.useEffect(() => {
-    dispatch(fetchCalendarData());
-  }, [
-    dispatch,
-    calendar.currentView,
-    calendar.selectedDate,
-    calendar.currentView === 'month' ? calendar.sidebarDate : null,
-    calendar.listRangeStart,
-    calendar.listRangeEnd,
-    calendar.listSortOrder,
-    calendar.listStatusFilter,
-  ]);
-
-  React.useEffect(() => {
-    dispatch(fetchDayCounts());
-  }, [dispatch, calendar.countsMonthAnchor]);
-
-  const { data: allTags } = useQuery({
-    queryKey: ['calendar-all-tags'],
-    queryFn: () => apiRequest<TagsResponse>('/publications/tags/?page=1&page_size=50'),
-    staleTime: Infinity,
-  });
-
-  const { data: allChannels } = useQuery({
-    queryKey: ['calendar-all-channels'],
-    queryFn: () => apiRequest<ChannelsResponse>('/channels/?page=1&page_size=200'),
-    staleTime: Infinity,
-  });
-
-  function handleLoadMoreList() {
-    dispatch(fetchMoreListPosts());
-  }
+  const {
+    calendar, selectedDate, sidebarDate, listRangeStart, listRangeEnd,
+    sortedPosts, mobilePosts, sidebarPosts, gridPostCounts, monthStatusCounts,
+    dayLoadingMap, dayHasMoreMap, isGridView, allTags, allChannels,
+    showMobile, setShowMobile, mobileActiveFilters, setMobileActiveFilters,
+  } = data;
 
   function handleHeaderArrowClick(direction: 'prev' | 'next') {
     const isMobile = window.matchMedia('(max-width: 1439px)').matches;
@@ -151,10 +72,8 @@ export default function CalendarPageConnected() {
   function handleViewChange(view: typeof calendar.currentView) {
     if (
       calendar.sidebarDate !== calendar.selectedDate
-      && (
-        view === 'day'
-        || (view === 'week' && (calendar.currentView === 'month' || calendar.currentView === 'list'))
-      )
+      && (view === 'day'
+        || (view === 'week' && (calendar.currentView === 'month' || calendar.currentView === 'list')))
     ) {
       dispatch(setSelectedDate(calendar.sidebarDate));
     }
@@ -165,7 +84,7 @@ export default function CalendarPageConnected() {
     }
   }
 
-  const previewData = previewPost ? getPreviewData(previewPost) : null;
+  const previewData = actions.previewPost ? getPreviewData(actions.previewPost) : null;
 
   const nonListFilterSourcePosts =
     calendar.currentView === 'day'
@@ -174,146 +93,34 @@ export default function CalendarPageConnected() {
         ? Object.values(calendar.weekItems).flat()
         : [] as Draft[];
 
-  const filterOpts = {
-    allChannels: allChannels?.items,
-    allTags: allTags?.items,
-  };
+  const filterOpts = { allChannels, allTags };
+  const isList = calendar.currentView === 'list';
 
   const desktopFilterConfigs =
-    calendar.currentView === 'list' ? [] : buildFilterConfigs(nonListFilterSourcePosts, filterOpts);
+    isList ? [] : buildFilterConfigs(nonListFilterSourcePosts, filterOpts);
 
-  const mobileFilterConfigs = React.useMemo(() => {
-    const isList = calendar.currentView === 'list';
-    const posts = isGridView ? sidebarPosts : sortedPosts;
-    return buildFilterConfigs(posts, {
-      withDateSort: isList,
-      withStatusFilter: isList,
-      withStatsFilters: isList,
-      ...filterOpts,
-    });
-  }, [calendar.currentView, isGridView, sidebarPosts, sortedPosts, allChannels, allTags]);
+  const mobileFilterConfigs = buildFilterConfigs(isGridView ? sidebarPosts : sortedPosts, {
+    withDateSort: isList,
+    withStatusFilter: isList,
+    withStatsFilters: isList,
+    ...filterOpts,
+  });
 
-  const filteredSortedPosts =
-    calendar.currentView === 'list' ? sortedPosts : applyPostFilters(sortedPosts, mobileActiveFilters);
+  const filteredSortedPosts = isList ? sortedPosts : applyPostFilters(sortedPosts, mobileActiveFilters);
+  const filteredMobilePosts = isList ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
+  const filteredWeekItems: Record<string, Draft[]> = isList
+    ? calendar.weekItems
+    : Object.fromEntries(
+      Object.entries(calendar.weekItems).map(([dateKey, posts]) => [
+        dateKey,
+        applyPostFilters(posts, mobileActiveFilters),
+      ]),
+    );
 
-  const filteredWeekItems: Record<string, Draft[]> =
-    calendar.currentView === 'list'
-      ? calendar.weekItems
-      : Object.fromEntries(
-        Object.entries(calendar.weekItems).map(([dateKey, posts]) => [
-          dateKey,
-          applyPostFilters(posts, mobileActiveFilters),
-        ]),
-      );
-
-  const filteredMobilePosts =
-    calendar.currentView === 'list' ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
-
-  function handlePostClick(post: Draft) {
-    if (post.is_bot_message) return;
-    setSelectedPost(post);
-  }
-
-  function handlePreviewFromModal() {
-    if (!selectedPost) return;
-    setPreviewPost(selectedPost);
-    setSelectedPost(null);
-  }
-
-  function handleEditFromModal() {
-    if (!selectedPost) return;
-    const isDraft = selectedPost.status === 'draft';
-    const isScheduled = selectedPost.status === 'scheduled';
-    if (isDraft) {
-      window.location.href = `/edit-draft?draft=${selectedPost.id}`;
-    } else if (isScheduled) {
-      const params = new URLSearchParams({ post: String(selectedPost.id) });
-      if (selectedPost.scheduled_time) {
-        params.set('date', selectedPost.scheduled_time);
-      }
-      window.location.href = `/edit-post?${params}`;
-    }
-  }
-
-  function handleDeleteFromModal() {
-    if (!selectedPost) return;
-    const hasRepeat = selectedPost.repeat_interval && selectedPost.repeat_interval !== 'never';
-    if (hasRepeat) {
-      setRepeatDeletePost(selectedPost);
-    } else {
-      setDeleteConfirmPost(selectedPost);
-    }
-    setSelectedPost(null);
-  }
-
-  async function confirmDelete() {
-    if (!deleteConfirmPost) return;
-    try {
-      if (deleteConfirmPost.series_id) {
-        await dispatch(deleteSeries({ seriesId: deleteConfirmPost.series_id })).unwrap();
-      } else {
-        const isPublished = deleteConfirmPost.status === 'published' || deleteConfirmPost.status === 'partial_success';
-        await dispatch(deletePublication({ id: deleteConfirmPost.id, deleteFromChannel: isPublished })).unwrap();
-      }
-      setDeleteConfirmPost(null);
-      showSuccess('Публикация удалена');
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Ошибка удаления публикации');
-    }
-  }
-
-  async function confirmRepeatDelete(mode: 'this' | 'this_and_following') {
-    if (!repeatDeletePost) return;
-    try {
-      await dispatch(deleteRepeatPublication({
-        id: repeatDeletePost.id,
-        mode,
-        repeatDate: repeatDeletePost.scheduled_time,
-      })).unwrap();
-      setRepeatDeletePost(null);
-      showSuccess(mode === 'this' ? 'Повтор удалён' : 'Повторы удалены');
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Ошибка удаления');
-    }
-  }
-
-  async function handleShareFromModal() {
-    if (!selectedPost) return;
-    const token = localStorage.getItem('lamaplanner_access_token');
-
-    setShareModalOpen(true);
-    setShareLink('');
-    setIsGeneratingShareLink(true);
-    setSelectedPost(null);
-
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${selectedPost.id}/share`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        },
-      );
-
-      if (!response.ok) {
-        throw new Error('Не удалось сгенерировать ссылку');
-      }
-
-      const data = await response.json();
-      setShareLink(`${window.location.origin}/drafts?token=${data.share_token}`);
-    } catch (error) {
-      showError(error instanceof Error ? error.message : 'Ошибка шаринга');
-      setShareModalOpen(false);
-    } finally {
-      setIsGeneratingShareLink(false);
-    }
-  }
+  const pageClass = `${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'month' ? styles.pageMonth : ''} ${isList ? styles.pageList : ''}`;
 
   return (
-    <div className={`${styles.page} ${calendar.currentView === 'week' ? styles.pageWeek : ''} ${calendar.currentView === 'month' ? styles.pageMonth : ''} ${calendar.currentView === 'list' ? styles.pageList : ''}`}>
+    <div className={pageClass}>
       <div className={styles.container}>
         <CalendarHeader
           selectedDate={selectedDate}
@@ -360,16 +167,16 @@ export default function CalendarPageConnected() {
           dayHasMoreMap={dayHasMoreMap}
           mobileActiveFilters={mobileActiveFilters}
           onMobileFilterChange={handleMobileFilterChange}
-          onEdit={handlePostClick}
+          onEdit={actions.openPost}
           onAddPost={(date) => router.push(buildCreatePostUrl(date))}
           onLoadMoreDay={(dateKey) => dispatch(fetchMoreDayPosts(dateKey))}
-          onLoadMoreList={handleLoadMoreList}
+          onLoadMoreList={() => dispatch(fetchMoreListPosts())}
           onListSortChange={(order) => dispatch(setListSortOrder(order))}
           onListStatusChange={(status) => dispatch(setListStatusFilter(status))}
           onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}
           onSidebarDateChange={(date) => dispatch(sidebarDateChange(date))}
-          allChannels={allChannels?.items}
-          allTags={allTags?.items}
+          allChannels={allChannels}
+          allTags={allTags}
         />
       </div>
 
@@ -393,14 +200,14 @@ export default function CalendarPageConnected() {
         onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}
         onOpenPost={(post) => {
           setShowMobile(false);
-          handlePostClick(post);
+          actions.openPost(post);
         }}
       />
 
       {previewData && (
         <PostPreviewModal
-          isOpen={!!previewPost}
-          onClose={() => setPreviewPost(null)}
+          isOpen={!!actions.previewPost}
+          onClose={() => actions.setPreviewPost(null)}
           channelTitle={previewData.channelTitle}
           channelExtraCount={previewData.channelExtraCount}
           channelPhotoUrl={previewData.channelPhotoUrl ?? undefined}
@@ -413,120 +220,31 @@ export default function CalendarPageConnected() {
       )}
 
       <CalendarPostModal
-        isOpen={!!selectedPost}
-        post={selectedPost}
-        onClose={() => setSelectedPost(null)}
-        onPreview={handlePreviewFromModal}
-        onShare={handleShareFromModal}
-        onDelete={handleDeleteFromModal}
-        onEdit={selectedPost?.status === 'draft' || selectedPost?.status === 'scheduled' ? handleEditFromModal : undefined}
+        isOpen={!!actions.selectedPost}
+        post={actions.selectedPost}
+        onClose={() => actions.setSelectedPost(null)}
+        onPreview={actions.previewSelected}
+        onShare={actions.startShareSelected}
+        onDelete={actions.startDeleteSelected}
+        onEdit={actions.selectedPost?.status === 'draft' || actions.selectedPost?.status === 'scheduled' ? actions.editSelected : undefined}
       />
 
-      <Modal
-        isOpen={!!deleteConfirmPost}
-        onClose={() => setDeleteConfirmPost(null)}
-        onConfirm={confirmDelete}
-        title={deleteConfirmPost?.series_id ? 'Удалить серию?' : 'Удалить публикацию?'}
-        confirmText="Удалить"
-        cancelText="Отмена"
-      >
-        <p style={{ margin: 0, fontSize: 14, lineHeight: '20px', color: '#0D0D0D' }}>
-          {deleteConfirmPost?.series_id
-            ? 'Все посты серии будут удалены. Опубликованные посты будут также удалены из каналов в Telegram. Это действие нельзя отменить.'
-            : deleteConfirmPost?.status === 'published' || deleteConfirmPost?.status === 'partial_success'
-            ? 'Публикация будет удалена из календаря и из канала в Telegram. Это действие нельзя отменить.'
-            : 'Публикация будет удалена. Это действие нельзя отменить.'}
-        </p>
-      </Modal>
+      <DeletePostModal
+        post={actions.deleteConfirmPost}
+        onClose={() => actions.setDeleteConfirmPost(null)}
+        onConfirm={actions.confirmDelete}
+      />
 
-      <Modal
-        isOpen={!!repeatDeletePost}
-        onClose={() => setRepeatDeletePost(null)}
-        onConfirm={() => {}}
-        title="Удаление повтора"
-        hideButtons
-      >
-        <div className={styles.repeatDeleteButtons}>
-          <Button
-            text="Удалить этот пост"
-            variant="outlined-red"
-            onClick={() => confirmRepeatDelete('this')}
-            showArrow={false}
-            fullWidth
-            hovered={hoveredRepeatThis}
-            onMouseEnter={() => setHoveredRepeatThis(true)}
-            onMouseLeave={() => setHoveredRepeatThis(false)}
-          />
-          <Button
-            text="Удалить этот и следующие"
-            variant="outlined-red"
-            onClick={() => confirmRepeatDelete('this_and_following')}
-            showArrow={false}
-            fullWidth
-            hovered={hoveredRepeatFollowing}
-            onMouseEnter={() => setHoveredRepeatFollowing(true)}
-            onMouseLeave={() => setHoveredRepeatFollowing(false)}
-          />
-          <Button
-            text="Отмена"
-            onClick={() => setRepeatDeletePost(null)}
-            showArrow={false}
-            fullWidth
-            active
-          />
-        </div>
-      </Modal>
+      <DeleteRepeatModal
+        isOpen={!!actions.repeatDeletePost}
+        onClose={() => actions.setRepeatDeletePost(null)}
+        onConfirm={actions.confirmRepeatDelete}
+      />
 
-      <div className={styles.shareModal}>
-        <Modal
-          isOpen={shareModalOpen}
-          onClose={() => setShareModalOpen(false)}
-          onConfirm={() => setShareModalOpen(false)}
-          title="Поделиться постом"
-          hideButtons
-        >
-          <div className={styles.shareModalContent}>
-            <p className={styles.shareDescription}>
-              Вы можете скопировать ссылку и отправить её удобным способом или нажать на иконку Telegram, после чего выбрать чат и поделиться ссылкой напрямую.<br /><br />
-              <strong>Внимание:</strong> ссылка действительна <strong>7 дней</strong> и может быть использована <strong>только один раз</strong>.
-            </p>
-            <div className={styles.shareLinkRow}>
-              <div className={styles.shareLinkInput}>
-                <Input
-                  value={shareLink}
-                  onChange={() => {}}
-                  variant="white"
-                  icon={<CopyIcon width={24} height={24} color="#000000" />}
-                  iconDisabled={isGeneratingShareLink || !shareLink}
-                  onIconClick={() => {
-                    if (!isGeneratingShareLink && shareLink) {
-                      navigator.clipboard.writeText(shareLink);
-                      showSuccess('Ссылка скопирована!');
-                    }
-                  }}
-                />
-                {isGeneratingShareLink && (
-                  <div className={styles.shareLinkLoader}>
-                    <Loader size={16} color="blue" />
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                className={styles.telegramBtn}
-                onClick={() => {
-                  if (!isGeneratingShareLink && shareLink) {
-                    window.open(`https://t.me/share/url?url=${encodeURIComponent(shareLink)}`, '_blank');
-                  }
-                }}
-                disabled={isGeneratingShareLink || !shareLink}
-              >
-                <TelegramCircleIcon width={32} height={32} color="#1E1E1E" />
-              </button>
-            </div>
-          </div>
-        </Modal>
-      </div>
+      <SharePostModal
+        postId={actions.sharingPostId}
+        onClose={() => actions.setSharingPostId(null)}
+      />
     </div>
   );
 }

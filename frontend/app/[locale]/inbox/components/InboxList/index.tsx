@@ -1,20 +1,22 @@
-import { FC, useEffect } from "react";
-import ListElement from "./components/ListElement";
-import styles from "./styles.module.scss";
-import ListHeader, { ListHeaderType } from "./components/ListHeader";
-import EmptyState from "../EmptyState";
-import Loader from "@/components/loader/loader";
-import ConfirmBlockModal from "../ConfirmBlockModal";
+'use client';
+
+import { FC, useEffect } from 'react';
+import ListElement from './components/ListElement';
+import styles from './styles.module.scss';
+import ListHeader, { ListHeaderType } from './components/ListHeader';
+import EmptyState from '../EmptyState';
+import Loader from '@/components/loader/loader';
+import ConfirmBlockModal from '../ConfirmBlockModal';
+import {
+  useInboxEventsQuery,
+  useBulkInboxActionMutation,
+  type InboxCategory,
+} from '@/store/inbox';
+import { useInView } from '@/hooks/useInView';
+import { useScrollContainer } from '@/components/app-layout';
 import {
   useAppDispatch,
   useAppSelector,
-  bulkInboxActionThunk,
-  fetchInboxEventsThunk,
-  fetchMoreInboxEventsThunk,
-  selectInboxItems,
-  selectInboxItemsLoading,
-  selectInboxItemsHasMore,
-  selectInboxItemsTotal,
   selectSortDir,
   selectStatusFilter,
   selectSelectedFilter,
@@ -30,13 +32,17 @@ import {
   setTypeAutoReplies,
   setTypeTriggers,
   setTypeCommands,
-} from "../../store";
-import type { InboxCategory, ListFilterType } from "../../store";
-import { CATEGORY_MAP } from "../../store/thunks/inboxEvents";
-import { useInView } from "@/app/[locale]/calendar/store/useInView";
-import { useScrollContainer } from "@/components/app-layout";
-import { useCheckedItems } from "./hooks/useCheckedItems";
-import { useBlockConfirmation } from "./hooks/useBlockConfirmation";
+} from '../../store';
+import type { ListFilterType } from '../../store';
+import { useCheckedItems } from './hooks/useCheckedItems';
+import { useBlockConfirmation } from './hooks/useBlockConfirmation';
+
+const CATEGORY_MAP: Record<ListFilterType, InboxCategory | undefined> = {
+  all: undefined,
+  moderation: 'moderation',
+  system: 'system',
+  automation: 'automation',
+};
 
 interface InboxListProps {
   type: ListHeaderType;
@@ -50,10 +56,6 @@ interface InboxListProps {
 
 const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }) => {
   const dispatch = useAppDispatch();
-  const data = useAppSelector(selectInboxItems);
-  const itemsLoading = useAppSelector(selectInboxItemsLoading);
-  const itemsHasMore = useAppSelector(selectInboxItemsHasMore);
-  const itemsTotal = useAppSelector(selectInboxItemsTotal);
   const selectedFilter = useAppSelector(selectSelectedFilter);
   const sortDir = useAppSelector(selectSortDir);
   const statusFilter = useAppSelector(selectStatusFilter);
@@ -65,30 +67,35 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
   const typeCommands = useAppSelector(selectTypeCommands);
   const search = useAppSelector(selectSearch);
 
+  const eventsQuery = useInboxEventsQuery({
+    category: CATEGORY_MAP[selectedFilter as ListFilterType],
+    status: statusFilter,
+    sort: sortDir,
+    botIds,
+    channelIds,
+    system,
+    typeAutoReplies,
+    typeTriggers,
+    typeCommands,
+    search,
+  });
+
+  const items = eventsQuery.data?.pages.flatMap((p) => p.items) ?? [];
+  const itemsLoading = eventsQuery.isLoading || eventsQuery.isFetchingNextPage;
+  const itemsHasMore = eventsQuery.hasNextPage ?? false;
+  const itemsTotal = eventsQuery.data?.pages[0]?.total ?? 0;
+
+  const bulkAction = useBulkInboxActionMutation();
+
   const scrollContainer = useScrollContainer();
   const { ref: sentinelRef, inView } = useInView({ root: scrollContainer, rootMargin: '0px 0px 500px 0px' });
   const { ref: lastItemRef, inView: isLastItemInView } = useInView({ root: scrollContainer });
   const { checkedItems, isChecking, dispatch: checkedItemsDispatch } = useCheckedItems();
   const { blockConfirm, blockDispatch, confirm, cancel, onOpenChange } = useBlockConfirmation();
 
-  const isEmpty = !itemsLoading && data.length === 0;
-
-  const hasLoadedAllFromTotal = itemsTotal > 0 && data.length >= itemsTotal;
+  const isEmpty = !itemsLoading && items.length === 0;
+  const hasLoadedAllFromTotal = itemsTotal > 0 && items.length >= itemsTotal;
   const showBottomGradient = !hasLoadedAllFromTotal || !isLastItemInView;
-
-  const fetchParams = {
-    category: CATEGORY_MAP[selectedFilter as ListFilterType] as InboxCategory,
-    status: statusFilter ?? undefined,
-    sort: sortDir,
-    bot_ids: botIds?.length ? botIds : undefined,
-    channel_ids: channelIds?.length ? channelIds : undefined,
-    system,
-    type_auto_replies: typeAutoReplies,
-    type_triggers: typeTriggers,
-    type_commands: typeCommands,
-    search: search ?? undefined,
-    limit: 50,
-  };
 
   const handleEventTypeFilterChange = (eventType: 'system_autoreply' | 'system_trigger' | 'bot_command' | null) => {
     dispatch(setTypeAutoReplies(eventType === 'system_autoreply' ? true : null));
@@ -102,14 +109,13 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
       handleStatusFilterChange: (status) => dispatch(setStatusFilter(status)),
       handleEventTypeFilterChange,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onHandlersReady]);
 
   useEffect(() => {
     if (!isReady) return;
-    checkedItemsDispatch({ type: "clear" });
-    dispatch(fetchInboxEventsThunk({ ...fetchParams, offset: 0 }));
+    checkedItemsDispatch({ type: 'clear' });
   }, [
-    dispatch,
     isReady,
     selectedFilter,
     statusFilter,
@@ -121,25 +127,27 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
     typeTriggers,
     typeCommands,
     search,
+    checkedItemsDispatch,
   ]);
 
   useEffect(() => {
     if (inView && itemsHasMore && !itemsLoading) {
-      dispatch(fetchMoreInboxEventsThunk());
+      eventsQuery.fetchNextPage();
     }
-  }, [inView, itemsHasMore, itemsLoading, dispatch]);
+  }, [inView, itemsHasMore, itemsLoading, eventsQuery]);
 
   const handleBulkAction = (action: 'read' | 'ignore' | 'delete' | 'block' | 'unblock') => {
     const eventIds = Array.from(checkedItems).map(Number);
     if (eventIds.length === 0) return;
-    dispatch(bulkInboxActionThunk({ event_ids: eventIds, action }));
-    checkedItemsDispatch({ type: "clear" });
+    bulkAction.mutate({ event_ids: eventIds, action });
+    checkedItemsDispatch({ type: 'clear' });
   };
 
-  const handleModerationSubFilterChange = (status: 'new' | 'processed' | 'banned' | null) => dispatch(setStatusFilter(status));
-  const allIds = data.map((item) => item.id.toString());
+  const handleModerationSubFilterChange = (status: 'new' | 'processed' | 'banned' | null) =>
+    dispatch(setStatusFilter(status));
+  const allIds = items.map((item) => item.id.toString());
 
-  if (itemsLoading && data.length === 0) {
+  if (eventsQuery.isLoading && items.length === 0) {
     return (
       <div className={styles.loaderContainer}>
         <Loader size={32} color="blue" />
@@ -162,21 +170,26 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
           selectionDispatch={checkedItemsDispatch}
           isChecking={isChecking}
           allIds={allIds}
-          isSelectedAll={checkedItems.size > 0 && checkedItems.size === data.length}
+          isSelectedAll={checkedItems.size > 0 && checkedItems.size === items.length}
           checkedItems={checkedItems.size}
           onBulkAction={handleBulkAction}
-          automationSubFilter={typeAutoReplies ? 'system_autoreply' : typeTriggers ? 'system_trigger' : typeCommands ? 'bot_command' : null}
+          automationSubFilter={
+            typeAutoReplies ? 'system_autoreply'
+              : typeTriggers ? 'system_trigger'
+                : typeCommands ? 'bot_command'
+                  : null
+          }
           onAutomationSubFilterChange={handleEventTypeFilterChange}
           moderationSubFilter={statusFilter}
-            onModerationSubFilterChange={handleModerationSubFilterChange}
+          onModerationSubFilterChange={handleModerationSubFilterChange}
         />
         {isEmpty ? (
           <EmptyState />
         ) : (
           <>
             <div className={styles.list}>
-              {data.map((item, index) => (
-                <div key={item.id} ref={index === data.length - 1 ? lastItemRef : undefined}>
+              {items.map((item, index) => (
+                <div key={item.id} ref={index === items.length - 1 ? lastItemRef : undefined}>
                   <ListElement
                     item={item}
                     isChecked={isChecking ? checkedItems.has(item.id.toString()) : undefined}
@@ -190,14 +203,12 @@ const InboxList: FC<InboxListProps> = ({ type, onHandlersReady, isReady = true }
                 <div ref={sentinelRef as React.Ref<HTMLDivElement>} className={styles.scrollSentinel} />
               ) : null}
             </div>
-            {itemsLoading && data.length > 0 && (
+            {itemsLoading && items.length > 0 && (
               <div className={styles.loaderContainer} style={{ padding: '16px 0' }}>
                 <Loader size={24} color="blue" />
               </div>
             )}
-            {showBottomGradient && (
-              <div className={styles.bottomGradient} />
-            )}
+            {showBottomGradient && <div className={styles.bottomGradient} />}
           </>
         )}
       </div>

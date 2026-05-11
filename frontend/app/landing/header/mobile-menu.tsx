@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import styles from './mobile-menu.module.scss';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { normalizeLocalizedHref } from '../normalize-localized-href';
 
 interface MobileMenuProps {
@@ -138,23 +138,23 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
         </nav>
 
         <div className={styles.actions}>
-          <Button 
-            text={registerText} 
+          <Button
             href={normalizeLocalizedHref(registerHref, locale)}
-            showArrow={false}
             className={styles.loginButton}
-            fullWidth={true}
+            style={{ width: '100%' }}
             onClick={handleClose}
-          />
-          <Button 
-            text={telegramText} 
-            href={normalizeLocalizedHref(telegramHref, locale)} 
-            showArrow={false}
+          >
+            {registerText}
+          </Button>
+          <Button
+            href={normalizeLocalizedHref(telegramHref, locale)}
+            intent="gradient"
             className={styles.telegramButton}
-            fullWidth={true}
-            active={true}
+            style={{ width: '100%' }}
             onClick={handleClose}
-          />
+          >
+            {telegramText}
+          </Button>
         </div>
       </div>
     </div>

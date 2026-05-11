@@ -7,8 +7,8 @@ import styles from '../styles.module.scss';
 import buttonStyles from '@/components/new-button/styles.module.scss';
 import { InviteLinkData } from '../index';
 import { ChannelBasic } from '@/types';
-import { deleteInviteLinkThunk } from '../../../store/thunks/inviteLinks';
-import { useAppDispatch, useAppSelector } from '../../../store';
+import { useDeleteInviteLinkMutation } from '@/store/inbox';
+import { useAppSelector } from '../../../store';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface ConfirmInviteStepProps {
@@ -32,9 +32,9 @@ const ConfirmInviteStep: React.FC<ConfirmInviteStepProps> = ({
   isEditing,
   isLoading
 }) => {
-  const dispatch = useAppDispatch();
   const modalState = useAppSelector((state) => state.createInviteLinkModal);
   const { showSuccess, showError } = useNotifications();
+  const deleteMutation = useDeleteInviteLinkMutation();
   const formatValidity = () => {
     if (previewData.validityPeriod === 'indefinite') return 'Бессрочно';
     if (!previewData.expirationDate) return '';
@@ -57,11 +57,10 @@ const ConfirmInviteStep: React.FC<ConfirmInviteStepProps> = ({
     if (!modalState.editingLinkId) return;
     
     try {
-      await dispatch(deleteInviteLinkThunk({ 
-        channelId: Number(previewData.channelId), 
-        linkId: Number(modalState.editingLinkId) 
-      })).unwrap();
-      
+      await deleteMutation.mutateAsync({
+        channelId: Number(previewData.channelId),
+        linkId: Number(modalState.editingLinkId),
+      });
       showSuccess('Ссылка-приглашение успешно удалена');
       onClose?.();
     } catch (error) {

@@ -8,10 +8,9 @@ import { clearFiles } from '../slices/media';
 import { resetInlineButtons } from '../slices/inlineButtons';
 import { resetSettings } from '../slices/settings';
 import { resetSeries } from '../slices/series';
-import { resetTags } from '../slices/tags';
-import { resetReplyToPost } from '../slices/replyToPost';
-import { fetchTagsThunk } from './tags';
-import { apiRequest } from './api';
+import { invalidateTags } from '@/store/tags/queries';
+import { invalidatePublications } from '@/store/publications/queries';
+import { apiRequest } from '@/store/api';
 import { prepareMediaPayload, buildCreatePostRequest, extractPlainText } from './utils';
 
 interface SaveDraftParams {
@@ -167,8 +166,9 @@ export const saveDraft = createAsyncThunk(
         }
       }
 
+      invalidatePublications();
       if (settings.selectedTags && settings.selectedTags.length > 0) {
-        dispatch(fetchTagsThunk({ force: true }));
+        invalidateTags();
       }
 
       dispatch(resetEditor());
@@ -177,8 +177,6 @@ export const saveDraft = createAsyncThunk(
       dispatch(resetQuiz());
       dispatch(resetSettings());
       dispatch(resetSeries());
-      dispatch(resetTags());
-      dispatch(resetReplyToPost());
       dispatch(resetUi());
       return {
         success: true,

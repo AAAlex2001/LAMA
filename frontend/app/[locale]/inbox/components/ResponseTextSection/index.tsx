@@ -10,8 +10,8 @@ import classNames from 'classnames';
 import styles from './styles.module.scss';
 import Input from '@/components/input';
 import buttonStyles from '@/components/new-button/styles.module.scss';
-import { useMessageMedia } from '../../chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
-import { useInlineButtons } from '../../chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
+import { useMessageMedia } from '@/hooks/useMessageMedia';
+import { useInlineButtons } from '@/hooks/useInlineButtons';
 
 export interface ResponseTextSectionRef {
   limitedMediaFiles: MediaFile[];

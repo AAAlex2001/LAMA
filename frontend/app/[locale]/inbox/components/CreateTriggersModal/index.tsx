@@ -8,7 +8,7 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { useCreateTrigger } from '../../store/hooks';
 import { useAppDispatch } from '../../store';
 import { setCreateTriggerModalOpen, resetTriggerForm, setTriggerSelectedBotIds, setTriggerIsSubmitting } from '../../store';
-import type { TriggerCreate } from '../../store/slices/triggers';
+import type { TriggerCreate } from '@/store/inbox';
 
 interface CreateTriggersModalProps {
   isOpen: boolean;

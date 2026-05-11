@@ -1,16 +1,19 @@
 'use client';
 
 import { FC, useState, useCallback } from 'react';
-import Dropdown from '@/components/dropdown/dropdown';
+import ChannelPicker from '@/components/channel-picker';
 import Toggle from '@/components/toggle/toggle';
 import Checkbox from '@/components/checkbox/checkbox';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Bot, ApprovalMode } from '@/store/bots';
-import { bindBotToChannelThunk, unbindBotFromChannelThunk, updateBotThunk } from '@/store/bots';
+import {
+  useBindBotToChannelMutation,
+  useUnbindBotFromChannelMutation,
+  useUpdateBotMutation,
+} from '@/store/bots';
 import ConnectChannelModal from '@/components/connect-channel-modal';
-import { fetchChannelsThunk } from '@/store/channels';
+import { useQueryClient } from '@tanstack/react-query';
 import type { ChannelBasic } from '@/types/channel';
-import { useAppDispatch } from '../../store';
 import s from './BotGeneralSection.module.scss';
 
 interface BotGeneralSectionProps {
@@ -20,8 +23,11 @@ interface BotGeneralSectionProps {
 }
 
 const BotGeneralSection: FC<BotGeneralSectionProps> = ({ bot, channels, allChannels }) => {
-  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const { showError } = useNotifications();
+  const bindBot = useBindBotToChannelMutation();
+  const unbindBot = useUnbindBotFromChannelMutation();
+  const updateBot = useUpdateBotMutation();
 
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>(bot.auto_approval_mode || 'AUTO');
   const [destInbox, setDestInbox] = useState(
@@ -50,54 +56,54 @@ const BotGeneralSection: FC<BotGeneralSectionProps> = ({ bot, channels, allChann
       const channelId = Number(id);
       try {
         if (checked) {
-          await dispatch(bindBotToChannelThunk({ channelId, botId: bot.id })).unwrap();
+          await bindBot.mutateAsync({ channelId, botId: bot.id });
         } else {
-          await dispatch(unbindBotFromChannelThunk(channelId)).unwrap();
+          await unbindBot.mutateAsync(channelId);
         }
       } catch (err) {
-        showError(typeof err === 'string' ? err : 'Ошибка привязки канала');
+        showError(err instanceof Error ? err.message : 'Ошибка привязки канала');
       }
     },
-    [dispatch, bot.id, showError],
+    [bindBot, unbindBot, bot.id, showError],
   );
 
   const handleDropdownToggle = useCallback(
     (open: boolean) => {
       setDropdownOpen(open);
-      if (open) dispatch(fetchChannelsThunk({ force: true }));
+      if (open) queryClient.invalidateQueries({ queryKey: ['channels'] });
     },
-    [dispatch],
+    [queryClient],
   );
 
   const handleApprovalModeChange = useCallback(
     (mode: ApprovalMode) => {
       setApprovalMode(mode);
-      dispatch(updateBotThunk({ botId: bot.id, data: { auto_approval_mode: mode } as any }));
+      updateBot.mutate({ botId: bot.id, data: { auto_approval_mode: mode } });
     },
-    [dispatch, bot.id],
+    [updateBot, bot.id],
   );
 
   const handleDestInboxChange = useCallback(
     (checked: boolean) => {
       setDestInbox(checked);
       const dest = checked ? 'INBOX' : 'TELEGRAM_BOT';
-      dispatch(updateBotThunk({ botId: bot.id, data: { approval_destination: dest } }));
+      updateBot.mutate({ botId: bot.id, data: { approval_destination: dest } });
     },
-    [dispatch, bot.id],
+    [updateBot, bot.id],
   );
 
   const handleDestTelegramChange = useCallback(
     (checked: boolean) => {
       setDestTelegram(checked);
       const dest = checked ? 'TELEGRAM_BOT' : 'INBOX';
-      dispatch(updateBotThunk({ botId: bot.id, data: { approval_destination: dest } }));
+      updateBot.mutate({ botId: bot.id, data: { approval_destination: dest } });
     },
-    [dispatch, bot.id],
+    [updateBot, bot.id],
   );
 
   const handleConnectSuccess = useCallback(() => {
-    dispatch(fetchChannelsThunk({ force: true }));
-  }, [dispatch]);
+    queryClient.invalidateQueries({ queryKey: ['channels'] });
+  }, [queryClient]);
 
   return (
     <div className={s.section}>
@@ -113,16 +119,14 @@ const BotGeneralSection: FC<BotGeneralSectionProps> = ({ bot, channels, allChann
         </div>
       </div>
 
-      <Dropdown
+      <ChannelPicker
         label={`Привязан к: ${channels.length} ${channels.length === 1 ? 'каналу' : 'каналам'}`}
-        variant="channels"
         options={channelOptions}
         showSearch
         showCheckboxes
         placeholder="Поиск канала"
         selectedCount={channels.length}
         totalCount={allChannels.length}
-        addNewLabel="Подключить новый"
         onOptionChange={handleChannelToggle}
         onAddNew={() => setConnectOpen(true)}
         isOpen={dropdownOpen}

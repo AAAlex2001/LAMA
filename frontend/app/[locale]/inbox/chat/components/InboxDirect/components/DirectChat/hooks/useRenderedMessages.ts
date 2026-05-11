@@ -1,4 +1,4 @@
-import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { BotMessageResponse } from '@/[locale]/inbox/store/thunks/directChat';
 
 function formatMessageTime(dateStr: string): string {
   const date = new Date(dateStr);

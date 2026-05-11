@@ -3,10 +3,10 @@
 import React from 'react';
 import type { Draft } from '@/types/post';
 import DatePicker from '@/components/date-picker/date-picker';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import { useInView } from '../../hooks/useInView';
+import { useInView } from '@/hooks/useInView';
 import {
   formatTime,
   getSourceDate,
@@ -53,6 +53,15 @@ export default function MonthCalendarView({
   const isPast = isBeforeToday(sidebarDate);
 
   const [postListEl, setPostListEl] = React.useState<HTMLDivElement | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1439px)');
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const loadingRef = React.useRef(isDayLoading);
   loadingRef.current = isDayLoading;
@@ -64,10 +73,10 @@ export default function MonthCalendarView({
   dayKeyRef.current = dayKey;
 
   const { ref: sentinelRef } = useInView({
-    root: postListEl,
+    root: isMobile ? null : postListEl,
     rootMargin: '0px 0px 400px 0px',
     threshold: 0,
-    skip: !hasDayMore || isDayLoading || !postListEl,
+    skip: !hasDayMore || isDayLoading || (!isMobile && !postListEl),
     onChange(inView) {
       if (inView && hasMoreRef.current && !loadingRef.current) {
         onLoadRef.current(dayKeyRef.current);
@@ -93,12 +102,12 @@ export default function MonthCalendarView({
         {!isPast && (
           <div className={styles.createWrap}>
             <Button
-              text="Создать публикацию"
-              showArrow={false}
-              active
+              intent="gradient"
               className={styles.createBtn}
               onClick={() => onAddPost(sidebarDate)}
-            />
+            >
+              Создать публикацию
+            </Button>
           </div>
         )}
 

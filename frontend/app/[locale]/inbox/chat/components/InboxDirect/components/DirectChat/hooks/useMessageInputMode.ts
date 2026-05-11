@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { BotMessageResponse } from '@/[locale]/inbox/store/thunks/directChat';
 import { getReplyText } from './useRenderedMessages';
 
 export interface MessageInputModeReturn {

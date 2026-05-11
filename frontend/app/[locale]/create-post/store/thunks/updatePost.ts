@@ -1,7 +1,8 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import type { RootState } from '../index';
 import { selectPollData } from '../slices/quiz';
-import { apiRequest } from './api';
+import { apiRequest } from '@/store/api';
+import { invalidatePublications } from '@/store/publications/queries';
 import {
   prepareMediaPayload,
   buildCreatePostRequest,
@@ -56,6 +57,7 @@ export const updatePost = createAsyncThunk(
         body: JSON.stringify(request),
       });
 
+      invalidatePublications();
       return { success: true };
     } catch (err) {
       return rejectWithValue(
@@ -115,6 +117,7 @@ export const createSingleOccurrence = createAsyncThunk(
         body: JSON.stringify(request),
       });
 
+      invalidatePublications();
       return { success: true };
     } catch (err) {
       return rejectWithValue(
@@ -132,6 +135,7 @@ export const moveToDraft = createAsyncThunk(
         method: 'PUT',
         body: JSON.stringify({ status: 'draft', scheduled_time: null }),
       });
+      invalidatePublications();
       return { success: true };
     } catch (err) {
       return rejectWithValue(

@@ -4,13 +4,10 @@ import { FC, useState, useEffect } from 'react';
 import { ChevronDownIcon } from '@/components/icons';
 import DeleteConfirmationModal from '@/components/modal/modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch, useAppSelector } from '../../store';
 import {
-  fetchBotThunk,
-  toggleBotOnChannelThunk,
-  removeBotFromChannelThunk,
-  selectCurrentBot,
-  selectBotsToggling,
+  useBotQuery,
+  useToggleBotOnChannelMutation,
+  useRemoveBotFromChannelMutation,
 } from '@/store/bots';
 import type { BotCardChannel } from '@/components/bot-card';
 import BotCard from '@/components/bot-card';
@@ -25,11 +22,13 @@ interface BotsSectionProps {
 }
 
 const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
 
-  const bot = useAppSelector(selectCurrentBot);
-  const toggling = useAppSelector(selectBotsToggling);
+  const botQuery = useBotQuery(channel.bot_id ?? null);
+  const bot = botQuery.data;
+  const toggleBot = useToggleBotOnChannelMutation();
+  const removeBot = useRemoveBotFromChannelMutation();
+  const toggling = toggleBot.isPending || removeBot.isPending;
 
   const [botsOpen, setBotsOpen] = useState(false);
   const [removeBotOpen, setRemoveBotOpen] = useState(false);
@@ -40,27 +39,21 @@ const BotsSection: FC<BotsSectionProps> = ({ channel, botChannels }) => {
     }
   }, []);
 
-  useEffect(() => {
-    if (channel.bot_id) {
-      dispatch(fetchBotThunk(channel.bot_id));
-    }
-  }, [channel.bot_id, dispatch]);
-
   const handleToggle = async () => {
     try {
-      const newActive = await dispatch(toggleBotOnChannelThunk(channel)).unwrap();
-      showSuccess(newActive ? 'Бот активирован' : 'Бот деактивирован');
+      const updated = await toggleBot.mutateAsync(channel);
+      showSuccess(updated.is_bot_active ? 'Бот активирован' : 'Бот деактивирован');
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка переключения бота');
+      showError(err instanceof Error ? err.message : 'Ошибка переключения бота');
     }
   };
 
   const handleRemove = async () => {
     try {
-      await dispatch(removeBotFromChannelThunk(channel)).unwrap();
+      await removeBot.mutateAsync(channel);
       showSuccess('Бот удалён с канала');
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка удаления бота');
+      showError(err instanceof Error ? err.message : 'Ошибка удаления бота');
     } finally {
       setRemoveBotOpen(false);
     }

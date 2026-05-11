@@ -26,10 +26,6 @@ export interface CalendarState {
   listRangeStart: string | null;
   listRangeEnd: string | null;
   currentView: CalendarView;
-  monthPostCounts: Record<string, number>;
-  monthPostCountsCache: Record<string, Record<string, number>>;
-  monthStatusCounts: Record<string, DayStatusCount>;
-  monthStatusCountsCache: Record<string, Record<string, DayStatusCount>>;
   countsMonthAnchor: string;
   currentRangeKey: string;
   currentPage: number;
@@ -54,10 +50,6 @@ export const initialState: CalendarState = {
   listRangeStart: null,
   listRangeEnd: null,
   currentView: 'day',
-  monthPostCounts: {},
-  monthPostCountsCache: {},
-  monthStatusCounts: {},
-  monthStatusCountsCache: {},
   countsMonthAnchor: todayMonthAnchor,
   currentRangeKey: '',
   currentPage: 1,
@@ -75,15 +67,9 @@ const calendarSlice = createSlice({
   initialState,
   reducers: {
     setSelectedDate: (state, action: PayloadAction<string>) => {
-      const prevMonthKey = state.selectedDate.slice(0, 7);
       state.selectedDate = action.payload;
       state.sidebarDate = action.payload;
       state.countsMonthAnchor = `${action.payload.slice(0, 7)}-01`;
-      const monthKey = action.payload.slice(0, 7);
-      if (monthKey !== prevMonthKey) {
-        state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
-        state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
-      }
     },
     setSidebarDate: (state, action: PayloadAction<string>) => {
       state.sidebarDate = action.payload;
@@ -106,13 +92,7 @@ const calendarSlice = createSlice({
       state.listStatusFilter = action.payload;
     },
     setCountsMonthAnchor: (state, action: PayloadAction<string>) => {
-      const prevMonthKey = state.countsMonthAnchor.slice(0, 7);
       state.countsMonthAnchor = action.payload;
-      const monthKey = action.payload.slice(0, 7);
-      if (monthKey !== prevMonthKey) {
-        state.monthPostCounts = state.monthPostCountsCache[monthKey] || {};
-        state.monthStatusCounts = state.monthStatusCountsCache[monthKey] || {};
-      }
     },
     removeItem: (state, action: PayloadAction<number>) => {
       state.items = state.items.filter((d) => d.id !== action.payload);

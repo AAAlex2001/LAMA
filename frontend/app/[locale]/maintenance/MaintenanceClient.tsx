@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { TelegramIcon } from '@/components/icons';
 import styles from './maintenance.module.scss';
 
@@ -42,13 +42,13 @@ export default function MaintenanceClient({ locale }: MaintenanceClientProps) {
         <p className={styles.description}>{text.title}</p>
         
         <div className={styles.buttonContainer}>
-          <Button 
-            text={text.buttonText}
-            icon={<TelegramIcon />}
+          <Button
             href="https://t.me/lamaplanner"
-            showArrow={false}
-            fullWidth={true}
-          />
+            style={{ width: '100%' }}
+          >
+            <TelegramIcon />
+            {text.buttonText}
+          </Button>
         </div>
         
         <p className={styles.footer}>{text.footer}</p>

@@ -7,8 +7,7 @@ import Toggle from '@/components/toggle/toggle';
 import { WheelPicker } from '@/components/wheel-picker';
 import styles from './styles.module.scss';
 import { Button } from '@/components/new-button';
-import { useAppDispatch, useAppSelector, specificInboxActionThunk, selectSpecificActionLoading } from '../../store';
-import type { SpecificActionResponse } from '../../store/thunks/inboxEvents';
+import { useSpecificInboxActionMutation, type SpecificActionResponse } from '@/store/inbox';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 interface BlockModalProps {
@@ -41,8 +40,8 @@ export default function BlockModal({
   onSave,
   onActionResult,
 }: BlockModalProps) {
-  const dispatch = useAppDispatch();
-  const isLoading = useAppSelector(selectSpecificActionLoading);
+  const mutation = useSpecificInboxActionMutation();
+  const isLoading = mutation.isPending;
   const { showError } = useNotifications();
   const [blockType, setBlockType] = useState<'ban' | 'mute'>('ban');
   const [days, setDays] = useState(6);
@@ -77,12 +76,12 @@ export default function BlockModal({
       };
 
       try {
-        const result = await dispatch(specificInboxActionThunk({
+        const response = await mutation.mutateAsync({
           eventId,
           action_type: 'change_ban',
           payload,
-        })).unwrap();
-        onActionResult?.(result.response);
+        });
+        onActionResult?.(response);
         onOpenChange?.(false);
       } catch {
         showError('Не удалось обновить блокировку');

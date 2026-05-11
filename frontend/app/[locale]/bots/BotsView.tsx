@@ -6,23 +6,21 @@ import Loader from '@/components/loader/loader';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import DeleteConfirmationModal from '@/components/modal/modal';
+import { apiRequest } from '@/store/api';
 import type { ChannelBasic } from '@/types/channel';
 import {
   type Bot,
   type BotStatsPayload,
-  selectBots,
-  selectBotsLoading,
-  fetchBotsThunk,
-  createBotThunk,
-  deleteBotThunk,
-  deactivateBotThunk,
-  activateBotThunk,
-  fetchBotStatsThunk,
+  useBotsQuery,
+  useCreateBotMutation,
+  useDeleteBotMutation,
+  useActivateBotMutation,
+  useDeactivateBotMutation,
 } from '@/store/bots';
+import { useChannelsQuery } from '@/store/channels';
 import BotCard, { type BotCardChannel } from '@/components/bot-card';
 import ConnectBotModal from './components/ConnectBotModal';
 import BotStatsModal from './components/BotStatsModal';
-import { useAppDispatch, useAppSelector } from './store';
 import s from './styles.module.scss';
 
 const MAX_BOTS = 5;
@@ -39,14 +37,20 @@ function buildChannelMap(channels: ChannelBasic[]): Map<number, BotCardChannel[]
 }
 
 const BotsView: FC = () => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
   const locale = usePathname().split('/')[1] || 'ru';
   const { showSuccess, showError } = useNotifications();
 
-  const bots = useAppSelector(selectBots);
-  const loading = useAppSelector(selectBotsLoading);
-  const channels = useAppSelector((s) => s.channels.channels) as ChannelBasic[];
+  const botsQuery = useBotsQuery();
+  const channelsQuery = useChannelsQuery();
+  const createBot = useCreateBotMutation();
+  const deleteBot = useDeleteBotMutation();
+  const activateBot = useActivateBotMutation();
+  const deactivateBot = useDeactivateBotMutation();
+
+  const bots = botsQuery.data?.items ?? [];
+  const loading = botsQuery.isLoading;
+  const channels = (channelsQuery.data?.items ?? []) as ChannelBasic[];
 
   const [connectOpen, setConnectOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Bot | null>(null);
@@ -59,11 +63,10 @@ const BotsView: FC = () => {
 
   const handleCreate = async (token: string) => {
     try {
-      await dispatch(createBotThunk({ token })).unwrap();
+      await createBot.mutateAsync({ token });
       showSuccess('Бот подключён');
-      dispatch(fetchBotsThunk({}));
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Не удалось подключить бота');
+      showError(err instanceof Error ? err.message : 'Не удалось подключить бота');
       throw err;
     }
   };
@@ -77,7 +80,7 @@ const BotsView: FC = () => {
     setStatsData(null);
     setStatsLoading(true);
     try {
-      const data = await dispatch(fetchBotStatsThunk(bot.id)).unwrap();
+      const data = await apiRequest<BotStatsPayload>(`/bots/${bot.id}/stats`, { method: 'GET' });
       setStatsData(data);
     } catch {
       showError('Не удалось загрузить статистику');
@@ -91,14 +94,14 @@ const BotsView: FC = () => {
     setToggleId(bot.id);
     try {
       if (bot.status === 'ACTIVE') {
-        await dispatch(deactivateBotThunk(bot.id)).unwrap();
+        await deactivateBot.mutateAsync(bot.id);
         showSuccess('Бот остановлен');
       } else {
-        await dispatch(activateBotThunk(bot.id)).unwrap();
+        await activateBot.mutateAsync(bot.id);
         showSuccess('Бот запущен');
       }
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Не удалось изменить статус');
+      showError(err instanceof Error ? err.message : 'Не удалось изменить статус');
     } finally {
       setToggleId(null);
     }
@@ -107,10 +110,10 @@ const BotsView: FC = () => {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
-      await dispatch(deleteBotThunk(deleteTarget.id)).unwrap();
+      await deleteBot.mutateAsync(deleteTarget.id);
       showSuccess('Бот удалён');
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Не удалось удалить бота');
+      showError(err instanceof Error ? err.message : 'Не удалось удалить бота');
     } finally {
       setDeleteTarget(null);
     }

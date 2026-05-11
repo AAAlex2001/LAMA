@@ -19,7 +19,7 @@ export {
 } from './slices/calendar';
 export {
   selectSortedPosts, selectSidebarPosts, selectMobilePosts,
-  selectGridPostCounts, selectMonthStatusCounts, selectDayLoadingMap, selectDayHasMoreMap,
+  selectDayLoadingMap, selectDayHasMoreMap,
   selectSelectedDateObj, selectSidebarDateObj,
   selectListRangeStartObj, selectListRangeEndObj,
   selectIsGridView, selectMobileFilterConfigs,

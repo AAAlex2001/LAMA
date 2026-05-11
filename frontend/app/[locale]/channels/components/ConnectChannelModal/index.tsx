@@ -1,9 +1,8 @@
 'use client';
 
 import { FC } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import ConnectChannelModal from '@/components/connect-channel-modal';
-import { useAppDispatch } from '../../store';
-import { fetchChannelsThunk } from '@/store/channels';
 
 interface ChannelsConnectModalProps {
   isOpen: boolean;
@@ -11,10 +10,10 @@ interface ChannelsConnectModalProps {
 }
 
 const ChannelsConnectModal: FC<ChannelsConnectModalProps> = ({ isOpen, onOpenChange }) => {
-  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
 
   const handleSuccess = () => {
-    dispatch(fetchChannelsThunk({ force: true }));
+    queryClient.invalidateQueries({ queryKey: ['channels'] });
   };
 
   return (

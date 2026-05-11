@@ -1,7 +1,7 @@
 import { FC, memo, useState } from "react";
 import { useParams } from "next/navigation";
 import { DesktopWrapper, MobileWrapper } from "@/components/responsive-wrappers";
-import BlockModal, { BlockModalData } from "@/app/[locale]/inbox/components/BlockModal";
+import BlockModal, { BlockModalData } from "@/[locale]/inbox/components/BlockModal";
 import styles from "./styles.module.scss";
 import { useLongPress } from "./hooks/useLongPress";
 import { useInboxEventActions } from "./hooks/useInboxEventActions";
@@ -12,10 +12,7 @@ import { ActionGroup } from "./actions/ActionGroup";
 import { ListElementDesktop } from "./ListElementDesktop";
 import { ListElementMobile } from "./ListElementMobile";
 import { ListHeaderType } from "../ListHeader";
-import type {
-  InboxEventResponse,
-  SpecificActionResponse,
-} from "../../../../store/thunks/inboxEvents";
+import type { InboxEventResponse, SpecificActionResponse } from '@/store/inbox';
 import type { CheckedItemsAction } from "../../hooks/useCheckedItems";
 
 interface ListElementProps {

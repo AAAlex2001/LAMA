@@ -1,18 +1,12 @@
-import { useAppDispatch } from '../index';
-import { sendMessageThunk } from '../thunks/globalMessages';
-import type { SendMessageRequest } from '../thunks/globalMessages';
-
+import { useSendBotMessageMutation, type SendMessageRequest } from '@/store/inbox';
 
 export function useSendGlobalMessage() {
-  const dispatch = useAppDispatch();
+  const mutation = useSendBotMessageMutation();
 
   const sendGlobalMessage = async (params: { botIds: number[]; data: SendMessageRequest }) => {
-    const results = await Promise.all(
-      params.botIds.map(botId =>
-        dispatch(sendMessageThunk({ botId, data: params.data })).unwrap()
-      )
+    return Promise.all(
+      params.botIds.map((botId) => mutation.mutateAsync({ botId, data: params.data })),
     );
-    return results;
   };
 
   return { sendGlobalMessage };

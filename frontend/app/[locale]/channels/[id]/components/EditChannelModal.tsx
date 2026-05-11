@@ -5,11 +5,10 @@ import { PlusIcon } from '@/components/icons';
 import Input from '@/components/input/input';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch } from '../../store';
 import {
-  updateChannelTelegramThunk,
-  uploadChannelPhotoThunk,
-} from '../../store/thunks/channel-settings';
+  useUpdateChannelTelegramMutation,
+  useUploadChannelPhotoMutation,
+} from '@/store/channels';
 import type { Channel } from '@/types/channel';
 import styles from './EditChannelModal.module.scss';
 
@@ -22,9 +21,10 @@ interface EditChannelModalProps {
 const MAX_DESCRIPTION = 255;
 
 const EditChannelModal: FC<EditChannelModalProps> = ({ channel, isOpen, onClose }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const updateTelegram = useUpdateChannelTelegramMutation();
+  const uploadPhoto = useUploadChannelPhotoMutation();
 
   const [title, setTitle] = useState(channel.title || '');
   const [description, setDescription] = useState(channel.description || '');
@@ -57,22 +57,22 @@ const EditChannelModal: FC<EditChannelModalProps> = ({ channel, isOpen, onClose 
     setSaving(true);
     try {
       if (photoFile) {
-        await dispatch(uploadChannelPhotoThunk({ channelId: channel.id, file: photoFile })).unwrap();
+        await uploadPhoto.mutateAsync({ channelId: channel.id, file: photoFile });
       }
 
       const titleChanged = title !== channel.title;
       const descChanged = description !== (channel.description || '');
       if (titleChanged || descChanged) {
-        const data: { channelId: number; title?: string; description?: string } = { channelId: channel.id };
+        const data: { title?: string; description?: string } = {};
         if (titleChanged) data.title = title;
         if (descChanged) data.description = description;
-        await dispatch(updateChannelTelegramThunk(data)).unwrap();
+        await updateTelegram.mutateAsync({ channelId: channel.id, data });
       }
 
       showSuccess('Канал обновлён');
       onClose();
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка обновления канала');
+      showError(err instanceof Error ? err.message : 'Ошибка обновления канала');
     } finally {
       setSaving(false);
     }

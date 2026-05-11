@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import styles from '../edit-post.module.scss';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { ShareIcon, TrashIcon } from '@/components/icons';
 import Tooltip from '@/components/tooltip/tooltip';
 
@@ -31,21 +31,23 @@ export default function EditPostFooter({
     <div className={styles.footerButtons}>
       {seriesId && (
         <Button
-          text="Удалить из серии"
-          variant="delete"
-          showArrow={false}
-          icon={<TrashIcon width={15} height={16.67} />}
+          variant="fill"
+          intent="destructive"
           className={styles.deleteSeriesBtn}
           onClick={onDeleteFromSeries}
-        />
+        >
+          <TrashIcon width={15} height={16.67} />
+          Удалить из серии
+        </Button>
       )}
       <Button
-        text="Перенести в черновик"
         variant="outline"
-        showArrow={false}
+        intent="primary"
         className={styles.moveToDraftBtn}
         onClick={onMoveToDraft}
-      />
+      >
+        Перенести в черновик
+      </Button>
       <div className={styles.rightButtons}>
         <button
           type="button"
@@ -60,14 +62,14 @@ export default function EditPostFooter({
           {hoveredShareBtn && <Tooltip text="Поделиться" />}
         </button>
         <Button
-          text="Сохранить изменения"
-          showArrow={false}
-          active
+          intent="gradient"
           className={styles.saveBtn}
           onClick={onSave}
           loading={isSaving}
           disabled={isSaving}
-        />
+        >
+          Сохранить изменения
+        </Button>
       </div>
     </div>
   );

@@ -2,7 +2,7 @@ import { FC, MouseEvent, KeyboardEvent, PointerEvent as ReactPointerEvent, React
 import Link from "next/link";
 import Checkbox from "@/components/checkbox/checkbox";
 import styles from "./styles.module.scss";
-import type { InboxEventResponse } from "../../../../store/thunks/inboxEvents";
+import type { InboxEventResponse } from '@/store/inbox';
 
 interface ListElementMobileProps {
   item: InboxEventResponse;

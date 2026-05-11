@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import styles from './register.module.scss';
 import { useRegister } from './store';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Card from '@/components/card';
 import Input from '@/components/input';
 import { Checkbox } from '@/components/checkbox';
@@ -51,25 +51,25 @@ export default function RegisterClient({ locale }: Props) {
         <div className={styles.telegramButtons}>
           <div className={styles.telegramAuthWrapper}>
             <Button
-              text="Через Telegram"
-              icon={<TelegramIcon />}
-              showArrow={false}
               onClick={() => {}}
-              fullWidth
-              active={true}
+              style={{ width: '100%' }}
+              intent="gradient"
               className={styles.telegramButton}
-            />
+            >
+              <TelegramIcon />
+              Через Telegram
+            </Button>
             <div ref={widgetContainerRef} className={styles.telegramWidgetOverlay} />
           </div>
 
           <Button
-            text="Telegram бот"
-            icon={<BotIcon />}
-            showArrow={false}
             onClick={openBotForLogin}
-            fullWidth
-            active={true}
-          />
+            style={{ width: '100%' }}
+            intent="gradient"
+          >
+            <BotIcon />
+            Telegram бот
+          </Button>
         </div>
 
         <div className={styles.actions}>
@@ -133,13 +133,13 @@ export default function RegisterClient({ locale }: Props) {
         </div>
 
         <Button
-          text="Завершить регистрацию"
-          showArrow={false}
           onClick={addEmailToAccount}
-          active
-          fullWidth
+          intent="gradient"
+          style={{ width: '100%' }}
           loading={state.loading}
-        />
+        >
+          Завершить регистрацию
+        </Button>
       </div>
     </>
   );

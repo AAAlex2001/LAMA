@@ -30,7 +30,7 @@ import {
   type ActionTypeEnum,
 } from '../../../store';
 import BotSearchSelector from '../../BotSearchSelector';
-import { selectBots, selectBotsLoading } from '../../../store/selectors';
+import { useBotsQuery } from '@/store/bots';
 import ResponseTextSection, { type ResponseTextSectionRef } from '../../ResponseTextSection';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 import { buildInlineKeyboard } from '@/store/utils';
@@ -65,8 +65,9 @@ const ACTION_TYPE_LABELS: Record<ActionTypeEnum, string> = {
 const TriggerForm: React.FC<TriggerFormProps> = ({ onSubmit, onCancel, bots: propsBots, hideSearchBar = false }) => {
   const dispatch = useAppDispatch();
   const formState = useAppSelector((state) => state.createTriggerModal);
-  const storeBots = useAppSelector((state) => selectBots(state));
-  const botsLoading = useAppSelector((state) => selectBotsLoading(state));
+  const botsQuery = useBotsQuery();
+  const storeBots = botsQuery.data?.items ?? [];
+  const botsLoading = botsQuery.isLoading;
   const bots = propsBots || storeBots;
   const botSearch = formState.botSearch;
   const selectedBotIds = new Set(formState.selectedBotIds);

@@ -1,5 +1,5 @@
 
-import type { DirectChatResponse, EditDirectMessageParams, MessageType, SendDirectMessageParams } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { DirectChatResponse, EditDirectMessageParams, MessageType, SendDirectMessageParams } from '@/[locale]/inbox/store/thunks/directChat';
 import type { MessageFieldRef } from '../components/MessageField';
 import type { MessageScrollReturn } from './useMessageScroll';
 import { buildInlineKeyboard } from '@/store/utils';

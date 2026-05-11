@@ -5,10 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { apiRequest } from '@/store/api';
 import type { Draft, DraftListResponse } from '@/types/post';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
 import PostAccordion from '@/components/post-accordion/post-accordion';
-import CalendarCard from '@/app/[locale]/calendar/shared/CalendarCard';
+import CalendarCard from '@/[locale]/calendar/shared/CalendarCard';
 import createPostStyles from '../../create-post/create-post.module.scss';
 import styles from './series-drafts.module.scss';
 
@@ -53,7 +53,7 @@ export default function SeriesDraftsPageView() {
     return (
       <div className={styles.pageInner}>
         <p className={styles.error}>Некорректная ссылка на серию.</p>
-        <Button text="К черновикам" showArrow={false} onClick={() => router.push(`/${locale}/drafts`)} />
+        <Button onClick={() => router.push(`/${locale}/drafts`)}>К черновикам</Button>
       </div>
     );
   }
@@ -62,10 +62,10 @@ export default function SeriesDraftsPageView() {
     <div className={styles.pageInner}>
       <div className={styles.topBar}>
         <Button
-          text="← К списку черновиков"
-          showArrow={false}
           onClick={() => router.push(`/${locale}/drafts`)}
-        />
+        >
+          ← К списку черновиков
+        </Button>
       </div>
       <div>
         <p className={styles.subtitle}>

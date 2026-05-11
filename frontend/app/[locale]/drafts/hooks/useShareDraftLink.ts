@@ -2,42 +2,27 @@
 
 import { useEffect, useState } from 'react';
 import type { Draft } from '@/types/post';
+import { useShareDraftLinkMutation } from '@/store/publications/queries';
 
-export function useShareDraftLink(shareDraft: Draft | null) {
+export function useShareDraftLink(draft: Draft | null) {
   const [shareLink, setShareLink] = useState('');
-  const [isGeneratingShareLink, setIsGeneratingShareLink] = useState(false);
+  const mutation = useShareDraftLinkMutation();
 
   useEffect(() => {
-    if (!shareDraft) {
+    if (!draft) {
       setShareLink('');
-      setIsGeneratingShareLink(false);
+      mutation.reset();
       return;
     }
+    mutation
+      .mutateAsync(draft.id)
+      .then(({ share_token }) => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        setShareLink(`${origin}/drafts?token=${share_token}`);
+      })
+      .catch(() => setShareLink(''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft]);
 
-    const generateTokenAndGetLink = async () => {
-      setIsGeneratingShareLink(true);
-      try {
-        const accessToken = localStorage.getItem('lamaplanner_access_token');
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/publications/${shareDraft.id}/share`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (!response.ok) throw new Error('Failed');
-        const data = await response.json();
-        const link = `${typeof window !== 'undefined' ? window.location.origin : ''}/drafts?token=${data.share_token}`;
-        setShareLink(link);
-      } catch {
-        setShareLink('');
-      } finally {
-        setIsGeneratingShareLink(false);
-      }
-    };
-
-    generateTokenAndGetLink();
-  }, [shareDraft]);
-
-  return { shareLink, isGeneratingShareLink };
+  return { shareLink, isGeneratingShareLink: mutation.isPending };
 }

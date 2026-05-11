@@ -31,8 +31,8 @@ import {
   setHasCaptcha,
   buildPreviewData,
   setStep,
-  fetchChannelsThunk,
 } from '../../../store';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface InviteFormProps {
   channels: ChannelBasic[];
@@ -48,8 +48,8 @@ const InviteForm: React.FC<InviteFormProps> = ({
   fixedChannelId,
 }) => {
   const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const modalState = useAppSelector((state) => state.createInviteLinkModal);
-  const channelsState = useAppSelector((state) => state.channels);
   const { showSuccess, showError } = useNotifications();
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   
@@ -89,7 +89,7 @@ const InviteForm: React.FC<InviteFormProps> = ({
   };
 
   const handleChannelAdded = () => {
-    dispatch(fetchChannelsThunk({ force: true }));
+    queryClient.invalidateQueries({ queryKey: ['channels'] });
     setShowCreateChannel(false);
   };
 

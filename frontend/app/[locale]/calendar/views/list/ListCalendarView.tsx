@@ -29,7 +29,7 @@ import {
   formatCompact,
   getMediaFilterTypes,
 } from '../../utils/calendar-helpers';
-import { useInView } from '../../hooks/useInView';
+import { useInView } from '@/hooks/useInView';
 import styles from './list-calendar-view.module.scss';
 
 interface ListCalendarViewProps {

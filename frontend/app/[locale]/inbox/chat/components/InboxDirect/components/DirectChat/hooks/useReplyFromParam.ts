@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { BotMessageResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { BotMessageResponse } from '@/[locale]/inbox/store/thunks/directChat';
 
 export function useReplyFromParam(
   replyMessageId: number | undefined,

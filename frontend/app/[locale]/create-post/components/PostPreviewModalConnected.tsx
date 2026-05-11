@@ -1,9 +1,9 @@
 'use client';
 
 import PostPreviewModal from '@/components/post-preview-modal';
-import { getAccessToken } from '@/app/[locale]/register/store/actions';
+import { getAuthToken } from '@/store/api';
 import { useAppDispatch, useAppSelector } from '../store';
-import { selectSelectedChannels } from '../store/selectors';
+import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import * as uiSlice from '../store/slices/ui';
 import type { MediaFile as MediaPreviewFile } from '@/components/media-preview/media-preview';
 
@@ -22,7 +22,7 @@ export default function PostPreviewModalConnected() {
   const quizAnswers = quizState.answers;
   const quizCorrectAnswerId = quizState.correctAnswerId;
 
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const selectedCount = selectedChannels.length;
   const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;
   const channelExtraCount = selectedCount > 1 ? `+${selectedCount - 1}` : undefined;
@@ -48,7 +48,7 @@ export default function PostPreviewModalConnected() {
       .filter(row => row.length > 0),
   } : undefined;
 
-  const token = getAccessToken() || undefined;
+  const token = getAuthToken() || undefined;
 
   return (
     <PostPreviewModal

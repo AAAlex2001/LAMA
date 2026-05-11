@@ -1,5 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { apiRequest } from '@/store/api';
+import { invalidatePublications } from '@/store/publications/queries';
 import { removeItem } from '../slices/calendar';
 import { fetchCalendarData } from './fetchCalendarData';
 import type { RootState, AppDispatch } from '../index';
@@ -16,6 +17,7 @@ export const deletePublication = createAsyncThunk<
     const qs = params.toString();
     await apiRequest(`/publications/${id}${qs ? `?${qs}` : ''}`, { method: 'DELETE' });
     dispatch(removeItem(id));
+    invalidatePublications();
     dispatch(fetchCalendarData());
   },
 );
@@ -28,6 +30,7 @@ export const deleteSeries = createAsyncThunk<
   'calendar/deleteSeries',
   async ({ seriesId }, { dispatch }) => {
     await apiRequest(`/publications/series/${seriesId}`, { method: 'DELETE' });
+    invalidatePublications();
     dispatch(fetchCalendarData());
   },
 );
@@ -44,6 +47,7 @@ export const deleteRepeatPublication = createAsyncThunk<
       params.set('repeat_date', repeatDate);
     }
     await apiRequest(`/publications/${id}?${params}`, { method: 'DELETE' });
+    invalidatePublications();
     dispatch(fetchCalendarData());
   },
 );

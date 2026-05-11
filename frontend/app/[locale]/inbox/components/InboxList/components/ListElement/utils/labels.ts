@@ -1,4 +1,4 @@
-import type { EventType, InboxEventResponse } from '../../../../../store/thunks/inboxEvents';
+import type { EventType, InboxEventResponse } from '@/store/inbox';
 
 export const SOURCE_LABELS: Record<string, string> = {
   bot: 'Бот',

@@ -1,25 +1,21 @@
 'use client';
 
-import { FC, useState, useEffect } from 'react';
+import { FC, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Loader from '@/components/loader/loader';
 import DeleteConfirmationModal from '@/components/modal';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { ChannelBasic } from '@/types/channel';
 import {
-  type Bot,
-  selectCurrentBot,
-  fetchBotThunk,
-  deleteBotThunk,
-  deactivateBotThunk,
-  activateBotThunk,
-  createBotThunk,
-  fetchBotsThunk,
-  selectBots,
+  useBotQuery,
+  useBotsQuery,
+  useDeleteBotMutation,
+  useActivateBotMutation,
+  useDeactivateBotMutation,
+  useCreateBotMutation,
 } from '@/store/bots';
-import { fetchChannelsThunk } from '@/store/channels';
+import { useChannelsQuery } from '@/store/channels';
 import ConnectBotModal from '../components/ConnectBotModal';
-import { useAppDispatch, useAppSelector } from '../store';
 import BotSettingsHeader from './components/BotSettingsHeader';
 import BotInfoCard from './components/BotInfoCard';
 import BotGeneralSection from './components/BotGeneralSection';
@@ -32,36 +28,38 @@ interface BotSettingsViewProps {
 }
 
 const BotSettingsView: FC<BotSettingsViewProps> = ({ botId }) => {
-  const dispatch = useAppDispatch();
   const router = useRouter();
   const pathname = usePathname();
   const locale = pathname.split('/')[1] || 'ru';
   const { showSuccess, showError } = useNotifications();
 
-  const bot = useAppSelector(selectCurrentBot);
-  const bots = useAppSelector(selectBots);
-  const channels = useAppSelector((s) => s.channels.channels) as ChannelBasic[];
+  const botQuery = useBotQuery(botId);
+  const botsQuery = useBotsQuery();
+  const channelsQuery = useChannelsQuery();
+  const deleteBot = useDeleteBotMutation();
+  const activateBot = useActivateBotMutation();
+  const deactivateBot = useDeactivateBotMutation();
+  const createBot = useCreateBotMutation();
+
+  const bot = botQuery.data;
+  const bots = botsQuery.data?.items ?? [];
+  const channels = (channelsQuery.data?.items ?? []) as ChannelBasic[];
 
   const [activeTab, setActiveTab] = useState('settings');
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [connectOpen, setConnectOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  useEffect(() => {
-    dispatch(fetchBotThunk(botId));
-    dispatch(fetchChannelsThunk({ force: true }));
-  }, [dispatch, botId]);
-
   const botChannels = channels.filter((ch) => ch.bot_id === botId);
 
   const handleDelete = async () => {
     if (!bot) return;
     try {
-      await dispatch(deleteBotThunk(bot.id)).unwrap();
+      await deleteBot.mutateAsync(bot.id);
       showSuccess('Бот удалён');
       router.push(`/${locale}/bots`);
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка удаления бота');
+      showError(err instanceof Error ? err.message : 'Ошибка удаления бота');
     } finally {
       setDeleteOpen(false);
     }
@@ -71,14 +69,14 @@ const BotSettingsView: FC<BotSettingsViewProps> = ({ botId }) => {
     if (!bot) return;
     try {
       if (bot.status === 'ACTIVE') {
-        await dispatch(deactivateBotThunk(bot.id)).unwrap();
+        await deactivateBot.mutateAsync(bot.id);
         showSuccess('Бот остановлен');
       } else {
-        await dispatch(activateBotThunk(bot.id)).unwrap();
+        await activateBot.mutateAsync(bot.id);
         showSuccess('Бот запущен');
       }
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Не удалось изменить статус');
+      showError(err instanceof Error ? err.message : 'Не удалось изменить статус');
     }
   };
 
@@ -140,9 +138,8 @@ const BotSettingsView: FC<BotSettingsViewProps> = ({ botId }) => {
         isOpen={connectOpen}
         onOpenChange={setConnectOpen}
         onSubmit={async (token) => {
-          await dispatch(createBotThunk({ token })).unwrap();
+          await createBot.mutateAsync({ token });
           showSuccess('Бот подключён');
-          dispatch(fetchBotsThunk({}));
         }}
       />
     </div>

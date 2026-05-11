@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import type { DirectChatResponse } from '@/[locale]/inbox/store/thunks/directChat';
 import type { MessageScrollReturn } from './useMessageScroll';
 
 interface UseScrollToMessageProps {

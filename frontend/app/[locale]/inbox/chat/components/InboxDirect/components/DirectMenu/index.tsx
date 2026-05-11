@@ -4,10 +4,10 @@ import styles from "./styles.module.scss";
 import ChatItem from "./components/ChatItem";
 import ModalBotAutomatization from "./components/ModalBotAutomatization";
 import { FC, useEffect } from "react";
-import { useInView } from "@/app/[locale]/calendar/store/useInView";
-import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
-import { makeChatKey } from '@/app/[locale]/inbox/store/slices/directChat';
-import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
+import { useInView } from "@/hooks/useInView";
+import { useDirectChat } from '@/[locale]/inbox/store/hooks/useDirectChat';
+import { makeChatKey } from '@/[locale]/inbox/store/slices/directChat';
+import type { DirectChatResponse } from '@/[locale]/inbox/store/thunks/directChat';
 import Loader from '@/components/loader/loader';
 
 function getChatDisplayName(chat: DirectChatResponse): string {

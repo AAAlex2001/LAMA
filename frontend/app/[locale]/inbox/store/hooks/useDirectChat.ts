@@ -269,11 +269,11 @@ export function useDirectChat() {
 }
 
 export function useDirectMessages(chatKey: string) {
-  const messages = useAppSelector(selectDirectMessages(chatKey));
-  const loading = useAppSelector(selectDirectMessagesLoading(chatKey));
-  const hasMore = useAppSelector(selectDirectMessagesHasMore(chatKey));
-  const hasNewer = useAppSelector(selectDirectMessagesHasNewer(chatKey));
-  const isDetached = useAppSelector(selectDirectMessagesDetached(chatKey));
+  const messages = useAppSelector((s) => selectDirectMessages(s, chatKey));
+  const loading = useAppSelector((s) => selectDirectMessagesLoading(s, chatKey));
+  const hasMore = useAppSelector((s) => selectDirectMessagesHasMore(s, chatKey));
+  const hasNewer = useAppSelector((s) => selectDirectMessagesHasNewer(s, chatKey));
+  const isDetached = useAppSelector((s) => selectDirectMessagesDetached(s, chatKey));
 
   return { messages, loading, hasMore, hasNewer, isDetached };
 }

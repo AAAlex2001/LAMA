@@ -2,10 +2,10 @@
 
 import React from 'react';
 import type { Draft } from '@/types/post';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
 import CalendarCard from '../../shared/CalendarCard';
-import { useInView } from '../../hooks/useInView';
+import { useInView } from '@/hooks/useInView';
 import { isBeforeToday } from '../../utils/calendar-helpers';
 import styles from './day-calendar-view.module.scss';
 
@@ -76,12 +76,12 @@ export default function DayCalendarView({
           {!isPast && (
             <div className={styles.createWrap}>
               <Button
-                text="Создать публикацию"
-                showArrow={false}
-                active
+                intent="gradient"
                 className={styles.createBtn}
                 onClick={() => onAddPost(selectedDate)}
-              />
+              >
+                Создать публикацию
+              </Button>
             </div>
           )}
       </div>

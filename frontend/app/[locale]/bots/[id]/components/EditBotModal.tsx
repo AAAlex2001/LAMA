@@ -6,8 +6,11 @@ import Input from '@/components/input/input';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import type { Bot } from '@/store/bots';
-import { updateBotThunk, uploadBotPhotoThunk, deleteBotPhotoThunk } from '@/store/bots';
-import { useAppDispatch } from '../../store';
+import {
+  useUpdateBotMutation,
+  useUploadBotPhotoMutation,
+  useDeleteBotPhotoMutation,
+} from '@/store/bots';
 import styles from './EditBotModal.module.scss';
 
 interface EditBotModalProps {
@@ -19,9 +22,11 @@ interface EditBotModalProps {
 const MAX_DESCRIPTION = 512;
 
 const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const updateBot = useUpdateBotMutation();
+  const uploadPhoto = useUploadBotPhotoMutation();
+  const deletePhoto = useDeleteBotPhotoMutation();
 
   const [name, setName] = useState(bot.first_name || bot.title || '');
   const [description, setDescription] = useState(bot.description || '');
@@ -57,9 +62,9 @@ const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
     setSaving(true);
     try {
       if (photoFile) {
-        await dispatch(uploadBotPhotoThunk({ botId: bot.id, file: photoFile })).unwrap();
+        await uploadPhoto.mutateAsync({ botId: bot.id, file: photoFile });
       } else if (photoRemoved && bot.photo_url) {
-        await dispatch(deleteBotPhotoThunk(bot.id)).unwrap();
+        await deletePhoto.mutateAsync(bot.id);
       }
 
       const data: { name?: string; description?: string } = {};
@@ -67,13 +72,13 @@ const EditBotModal: FC<EditBotModalProps> = ({ bot, isOpen, onClose }) => {
       if (description !== (bot.description || '')) data.description = description;
 
       if (Object.keys(data).length > 0) {
-        await dispatch(updateBotThunk({ botId: bot.id, data })).unwrap();
+        await updateBot.mutateAsync({ botId: bot.id, data });
       }
 
       showSuccess('Бот обновлён');
       onClose();
     } catch (err) {
-      showError(typeof err === 'string' ? err : 'Ошибка обновления бота');
+      showError(err instanceof Error ? err.message : 'Ошибка обновления бота');
     } finally {
       setSaving(false);
     }

@@ -9,7 +9,7 @@ import {
   CalendarViewsIcon,
   CalendarBotMessageIcon,
 } from '@/components/icons';
-import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
+import { DraftContentIcons } from '@/components/draft-card';
 import {
   formatTime,
   getPreviewText,

@@ -1,6 +1,6 @@
 'use client';
 
-import Button from '@/components/button/button';
+import OldButton from '@/components/button/button';
 import {
   DraftsIcon,
   InlineButtonIcon,
@@ -9,13 +9,10 @@ import {
   ReplyIcon,
 } from '@/components/icons';
 import { useAppDispatch, useAppSelector } from '../store';
-import { selectSelectedChannels } from '../store/selectors';
+import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import * as inlineButtonsSlice from '../store/slices/inlineButtons';
 import * as quizSlice from '../store/slices/quiz';
 import * as uiSlice from '../store/slices/ui';
-import * as draftsSlice from '../store/slices/drafts';
-import * as templatesSlice from '../store/slices/templates';
-import * as replyToPostSlice from '../store/slices/replyToPost';
 
 interface ActionsMenuConnectedProps {
   className?: string;
@@ -40,7 +37,7 @@ export default function ActionsMenuConnected({
 
   const canShowInlineButtons = mediaFiles.length <= 1;
 
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const selectedCount = selectedChannels.length;
   const canReplyToPost = selectedCount === 1;
   const primaryChannel = selectedChannels.length > 0 ? selectedChannels[0] : undefined;
@@ -48,18 +45,15 @@ export default function ActionsMenuConnected({
   return (
     <div className={className}>
       <div className={actionsRowClassName}>
-        <Button
+        <OldButton
           text="Черновики"
           variant="templateCardInternal"
           showArrow={false}
           icon={<DraftsIcon width={24} height={24} />}
           className={actionButtonClassName}
-          onClick={() => {
-            dispatch(draftsSlice.setSearchQuery(''));
-            dispatch(uiSlice.setShowDraftsModal(true));
-          }}
+          onClick={() => dispatch(uiSlice.setShowDraftsModal(true))}
         />
-        <Button
+        <OldButton
           text="Кнопки"
           variant="templateCardInternal"
           showArrow={false}
@@ -71,18 +65,15 @@ export default function ActionsMenuConnected({
         />
       </div>
       <div className={actionsRowClassName}>
-        <Button
+        <OldButton
           text="Шаблоны"
           variant="templateCardInternal"
           showArrow={false}
           icon={<TemplatesIcon width={24} height={24} />}
           className={actionButtonClassName}
-          onClick={() => {
-            dispatch(templatesSlice.setSearchQuery(''));
-            dispatch(uiSlice.setShowTemplatesModal(true));
-          }}
+          onClick={() => dispatch(uiSlice.setShowTemplatesModal(true))}
         />
-        <Button
+        <OldButton
           text="Опрос"
           variant="templateCardInternal"
           showArrow={false}
@@ -93,7 +84,7 @@ export default function ActionsMenuConnected({
         />
       </div>
       <div className={actionsRowCenterClassName}>
-        <Button
+        <OldButton
           text="Ответ на свой пост"
           variant="templateCardInternal"
           showArrow={false}
@@ -101,10 +92,7 @@ export default function ActionsMenuConnected({
           className={actionButtonCenterClassName}
           disabled={!canReplyToPost}
           onClick={() => {
-            if (primaryChannel) {
-              dispatch(replyToPostSlice.setSearchQuery(''));
-              dispatch(uiSlice.setShowReplyModal(true));
-            }
+            if (primaryChannel) dispatch(uiSlice.setShowReplyModal(true));
           }}
         />
       </div>

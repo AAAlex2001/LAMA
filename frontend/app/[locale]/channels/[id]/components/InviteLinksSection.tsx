@@ -3,11 +3,10 @@
 import { FC, useState, useEffect } from 'react';
 import { ChevronDownIcon } from '@/components/icons';
 import { Button } from '@/components/new-button';
-import { InboxProvider } from '@/app/[locale]/inbox/store/provider';
-import CreateInviteLinkModal from '@/app/[locale]/inbox/components/CreateInviteLinkModal';
-import LinkInvitesModal from '@/app/[locale]/inbox/components/LinkInvitesModal';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchInviteLinksThunk } from '../../store/thunks/invite-links';
+import { InboxProvider } from '@/[locale]/inbox/store/provider';
+import CreateInviteLinkModal from '@/[locale]/inbox/components/CreateInviteLinkModal';
+import LinkInvitesModal from '@/[locale]/inbox/components/LinkInvitesModal';
+import { useInviteLinksQuery } from '@/store/inbox';
 import type { Channel } from '@/types/channel';
 import styles from './InviteLinksSection.module.scss';
 
@@ -16,8 +15,9 @@ interface InviteLinksSectionProps {
 }
 
 const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
-  const dispatch = useAppDispatch();
-  const { links, loaded } = useAppSelector((s) => s.inviteLinks);
+  const { data, isSuccess } = useInviteLinksQuery(channel.id);
+  const links = data?.items ?? [];
+  const loaded = isSuccess;
 
   const [open, setOpen] = useState(false);
   const [linksOpen, setLinksOpen] = useState(false);
@@ -28,16 +28,6 @@ const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
       setOpen(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (channel.id) {
-      dispatch(fetchInviteLinksThunk(channel.id));
-    }
-  }, [dispatch, channel.id]);
-
-  const handleCreateDone = () => {
-    dispatch(fetchInviteLinksThunk(channel.id));
-  };
 
   return (
     <div className={styles.section}>
@@ -90,7 +80,7 @@ const InviteLinksSection: FC<InviteLinksSectionProps> = ({ channel }) => {
         <CreateInviteLinkModal
           isOpen={createOpen}
           onOpenChange={setCreateOpen}
-          onCreateLink={handleCreateDone}
+          onCreateLink={() => {}}
           channelId={channel.id}
         />
       </InboxProvider>

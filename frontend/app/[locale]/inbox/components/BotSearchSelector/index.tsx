@@ -6,8 +6,8 @@ import { Button } from '@/components/new-button';
 import SearchBar from '@/components/search-bar/search-bar';
 import Loader from '@/components/loader/loader';
 import ConnectBotModal from '../ConnectBot';
-import { addBot, useAppDispatch } from '../../store';
-import { fetchBotsThunk } from '../../store';
+import { useQueryClient } from '@tanstack/react-query';
+import { invalidateBots } from '@/store/bots';
 import buttonStyles from '@/components/new-button/styles.module.scss';
 import styles from './styles.module.scss';
 
@@ -44,7 +44,7 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
   searchPlaceholder = 'Поиск по ботам',
   createButtonLabel = 'Подключить нового',
 }) => {
-  const dispatch = useAppDispatch();
+  const queryClient = useQueryClient();
   const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
 
   const handleOpenConnectModal = () => {
@@ -55,8 +55,8 @@ const BotSearchSelector: React.FC<BotSearchSelectorProps> = ({
     }
   };
 
-  const handleConnectSuccess = async (data: any) => {
-    await dispatch(addBot(data.botData));
+  const handleConnectSuccess = async () => {
+    invalidateBots(queryClient);
   };
 
   const filteredBots = (() => {

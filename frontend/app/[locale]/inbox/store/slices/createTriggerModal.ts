@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { TriggerType, ActionType, ChatType } from './triggers';
+import type { TriggerType, TriggerActionType as ActionType, TriggerChatType as ChatType } from '@/store/inbox';
 import type { InlineKeyboard } from '@/types/post';
 
 export type TriggerTypeEnum = 

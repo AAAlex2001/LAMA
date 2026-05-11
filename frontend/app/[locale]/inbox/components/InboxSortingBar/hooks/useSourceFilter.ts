@@ -5,9 +5,9 @@ import {
   selectBotIds,
   selectChannelIds,
   selectSystem,
-  selectChannels,
-  selectBots,
 } from "../../../store/selectors";
+import { useBotsQuery } from "@/store/bots";
+import { useChannelsQuery } from "@/store/channels";
 
 const toggleSetItem = (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (item: string) => {
   setter((prev) => {
@@ -26,8 +26,10 @@ export const useSourceFilter = ({ channelNames, botNames }: UseSourceFilterProps
   const reduxChannelIds = useAppSelector(selectChannelIds);
   const reduxBotIds = useAppSelector(selectBotIds);
   const reduxSystem = useAppSelector(selectSystem);
-  const channels = useAppSelector(selectChannels);
-  const bots = useAppSelector(selectBots);
+  const channelsQuery = useChannelsQuery();
+  const channels = channelsQuery.data?.items ?? [];
+  const botsQuery = useBotsQuery();
+  const bots = botsQuery.data?.items ?? [];
 
   const [sourceDefault, setSourceDefault] = useState(true);
   const [sourceChannels, setSourceChannels] = useState(false);

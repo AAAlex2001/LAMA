@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import AdminMenu from '@/components/admin-menu/admin-menu';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import styles from './templates-admin.module.scss';
 
 import { TemplateProvider } from './store/template-context';
@@ -411,7 +411,9 @@ export default function TemplatesAdminPage() {
               <option value="en">🇬🇧 Английский</option>
             </select>
             <Button
-              text="+ Новый шаблон"
+              variant="fill"
+              intent="primary"
+              size="md"
               onClick={() => {
                 const slug = prompt('Введите slug (английский, через дефис):');
                 const title = prompt('Введите заголовок (английский):');
@@ -429,7 +431,9 @@ export default function TemplatesAdminPage() {
                     .catch(() => alert('Ошибка создания'));
                 }
               }}
-            />
+            >
+              + Новый шаблон
+            </Button>
           </div>
         </div>
 
@@ -483,12 +487,14 @@ export default function TemplatesAdminPage() {
               </div>
               <div className={styles.editorActions}>
                 <Button
-                  text={saving ? 'Сохранение…' : 'Сохранить'}
+                  variant="fill"
+                  intent="primary"
+                  size="sm"
                   onClick={handleSave}
-                  showArrow={false}
-                  size="small"
                   loading={saving}
-                />
+                >
+                  {saving ? 'Сохранение…' : 'Сохранить'}
+                </Button>
               </div>
             </div>
 

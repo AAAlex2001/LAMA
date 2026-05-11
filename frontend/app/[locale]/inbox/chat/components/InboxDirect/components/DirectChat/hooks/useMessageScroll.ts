@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
-import type { DirectChatResponse } from '@/app/[locale]/inbox/store/thunks/directChat';
-import { useInView } from '@/app/[locale]/calendar/store/useInView';
+import type { DirectChatResponse } from '@/[locale]/inbox/store/thunks/directChat';
+import { useInView } from '@/hooks/useInView';
 
 export interface MessageScrollOpts {
   messages: Array<{ id: number; telegram_message_id?: number }>;

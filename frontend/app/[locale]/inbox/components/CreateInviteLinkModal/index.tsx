@@ -8,8 +8,7 @@ import InviteForm from './components/InviteForm';
 import ConfirmInviteStep from './components/ConfirmInviteStep';
 import { InvitationLink } from '../LinkInvitesModal';
 import { ChannelBasic } from '@/types';
-import { 
-  useCreateInviteLink,
+import {
   useAppSelector,
   useAppDispatch,
   setModalOpen,
@@ -18,12 +17,12 @@ import {
   setEditingLinkIds,
   populateFormFromInviteLink,
   resetForm,
-  patchInviteLinkThunk,
-  fetchInviteLinkByIdThunk,
   buildPreviewData,
   inboxStore,
-  selectChannels,
 } from '../../store';
+import { useInviteLinkByIdQuery, usePatchInviteLinkMutation } from '@/store/inbox';
+import { useChannelsQuery } from '@/store/channels';
+import { useCreateInviteLink } from '../../store/hooks/useCreateInviteLink';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 
 export interface ChannelSimple {
@@ -70,11 +69,14 @@ const CreateInviteLinkModal: React.FC<{
   channelId = undefined,
 }) => {
   const dispatch = useAppDispatch();
-  const channelsState = useAppSelector(selectChannels);
+  const channelsQuery = useChannelsQuery();
+  const channelsState = channelsQuery.data?.items ?? [];
   const modalState = useAppSelector((state) => state.createInviteLinkModal);
   const { showSuccess, showError } = useNotifications();
-  const [isFetchingLink, setIsFetchingLink] = useState(false);
-  const [isUpdatingLink, setIsUpdatingLink] = useState(false);
+  const patchMutation = usePatchInviteLinkMutation();
+  const inviteLinkQuery = useInviteLinkByIdQuery(channelId ?? null, linkId ?? null);
+  const isFetchingLink = inviteLinkQuery.isLoading && !!linkId && !!channelId;
+  const isUpdatingLink = patchMutation.isPending;
   
   const channelsOptions = channelsState.map(ch => ({
     id: ch.id,
@@ -102,28 +104,20 @@ const CreateInviteLinkModal: React.FC<{
   }, [isOpen, linkId, channelId, dispatch]);
   
   useEffect(() => {
-    if (linkId && channelId) {
-      if (!isNaN(channelId) && !isNaN(linkId)) {
-        setIsFetchingLink(true);
-        dispatch(setEditingLinkIds({ linkId, channelId }));
-        dispatch(fetchInviteLinkByIdThunk({ channelId, linkId }))
-          .unwrap()
-          .then((inviteLink) => {
-            dispatch(populateFormFromInviteLink(inviteLink));
-            dispatch(buildPreviewData());
-          })
-          .catch((error) => {
-            console.error('Failed to fetch invite link:', error);
-          })
-          .finally(() => {
-            setIsFetchingLink(false);
-          });
-      }
+    if (linkId && channelId && !isNaN(channelId) && !isNaN(linkId)) {
+      dispatch(setEditingLinkIds({ linkId, channelId }));
     } else if (!linkId && !channelId) {
       dispatch(setEditingLinkIds(null));
-      setIsFetchingLink(false);
     }
   }, [linkId, channelId, dispatch]);
+
+  // Подхватываем загруженную через TQ ссылку и заполняем форму
+  useEffect(() => {
+    if (inviteLinkQuery.data) {
+      dispatch(populateFormFromInviteLink(inviteLinkQuery.data));
+      dispatch(buildPreviewData());
+    }
+  }, [inviteLinkQuery.data, dispatch]);
   
   const handleEditingConfirm = async () => {
     if (!linkId || !channelId) return;
@@ -133,7 +127,6 @@ const CreateInviteLinkModal: React.FC<{
     
     if (!previewData) return;
 
-    setIsUpdatingLink(true);
     try {
       let expireDate: string | undefined;
       if (previewData.validityPeriod === 'date' && previewData.expirationDate) {
@@ -161,11 +154,11 @@ const CreateInviteLinkModal: React.FC<{
         entry_method: entryMethod,
       };
 
-      const updatedInviteLink = await dispatch(patchInviteLinkThunk({
+      const updatedInviteLink = await patchMutation.mutateAsync({
         channelId,
-        inviteLinkId: linkId,
-        patchData,
-      })).unwrap();
+        linkId,
+        data: patchData,
+      });
 
       try {
         await navigator.clipboard.writeText(updatedInviteLink.invite_link);
@@ -182,8 +175,6 @@ const CreateInviteLinkModal: React.FC<{
         return 'Не удалось обновить ссылку-приглашение';
       })();
       showError(message);
-    } finally {
-      setIsUpdatingLink(false);
     }
   };
 

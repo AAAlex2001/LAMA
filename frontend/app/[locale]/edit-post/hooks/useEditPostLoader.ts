@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useAppDispatch } from '../../create-post/store';
 import { loadDraftById } from '../../create-post/store/thunks';
-import { apiRequest } from '../../create-post/store/thunks/api';
+import { apiRequest } from '@/store/api';
 
 export interface SeriesPostInfo {
   id: number;

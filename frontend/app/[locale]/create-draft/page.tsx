@@ -4,7 +4,7 @@ import { useRef, Suspense } from 'react';
 import styles from './create-draft.module.scss';
 
 import { AppLayout } from '@/components/app-layout';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
 import {
   QuizFormConnected,
@@ -22,13 +22,11 @@ import { hasPlainUrlLikeText } from '@/components/rich-text-editor/editor/link-u
 
 import { CreatePostProvider } from '../create-post/store/provider';
 import { useAppDispatch, useAppSelector } from '../create-post/store';
-import { selectSelectedChannels } from '../create-post/store/selectors';
+import { useSelectedChannels } from '../create-post/hooks/useSelectedChannels';
 import * as editorSlice from '../create-post/store/slices/editor';
 import * as mediaSlice from '../create-post/store/slices/media';
-import {
-  saveAsTemplate,
-  saveDraft,
-} from '../create-post/store/thunks';
+import { saveDraft } from '../create-post/store/thunks';
+import { useSaveTextTemplateMutation } from '@/store/text-templates/queries';
 import { useTokenFromUrl } from '../create-post/hooks/useTokenFromUrl';
 import { useDraftFromUrl } from '../create-post/hooks/useDraftFromUrl';
 import Loader from '@/components/loader';
@@ -49,8 +47,9 @@ function CreateDraftPageContent() {
   const showLinkPreview = useAppSelector(state => state.editor.showLinkPreview);
   const mediaFiles = useAppSelector(state => state.media.files);
   const isSavingDraft = useAppSelector(state => state.ui.isSavingDraft);
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
+  const saveTemplate = useSaveTextTemplateMutation();
 
   const handleSaveDraft = async () => {
     const result = await dispatch(saveDraft({ channelIds: selectedChannels.map(c => c.id) }));
@@ -70,18 +69,23 @@ function CreateDraftPageContent() {
       <EditorHeaderConnected
         className={styles.header}
         headerRef={headerRef}
+        showSettingsButton={false}
       />
 
       <div className={styles.content}>
-        <RichTextEditor ref={editorRef} value={text} onChange={(v) => dispatch(editorSlice.setText(v))} placeholder="Напишите текст публикации..." maxLength={editorMaxLength} onSaveAsTemplate={(html) => {
-          dispatch(saveAsTemplate(html)).then((result) => {
-            if (result.meta.requestStatus === 'fulfilled') {
-              showSuccess('Шаблон успешно сохранён');
-            } else if (result.meta.requestStatus === 'rejected') {
-              showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения шаблона');
-            }
-          });
-        }} headerRef={headerRef} />
+        <RichTextEditor
+          ref={editorRef}
+          value={text}
+          onChange={(v) => dispatch(editorSlice.setText(v))}
+          placeholder="Напишите текст публикации..."
+          maxLength={editorMaxLength}
+          onSaveAsTemplate={(html) =>
+            saveTemplate.mutateAsync(html ?? text)
+              .then(() => showSuccess('Шаблон успешно сохранён'))
+              .catch((err) => showError(err instanceof Error ? err.message : 'Ошибка сохранения шаблона'))
+          }
+          headerRef={headerRef}
+        />
 
         {text && hasPlainUrlLikeText(text) && (
           <div className={styles.linkPreviewToggle}>
@@ -149,14 +153,14 @@ function CreateDraftPageContent() {
 
       <div className={styles.footerButtons}>
         <Button
-          text="Сохранить в черновики"
-          showArrow={false}
-          active
+          intent="gradient"
           className={styles.saveDraftBtn}
           onClick={handleSaveDraft}
           loading={isSavingDraft}
           disabled={isSavingDraft}
-        />
+        >
+          Сохранить в черновики
+        </Button>
       </div>
     </div>
   );
@@ -171,11 +175,11 @@ function CreateDraftPageContent() {
 
       <div className={styles.draftsHeaderWrapper}>
         <Button
-          text="Список черновиков"
-          showArrow={false}
-          active
+          intent="gradient"
           onClick={() => { window.location.href = '/drafts'; }}
-        />
+        >
+          Список черновиков
+        </Button>
       </div>
 
       <div

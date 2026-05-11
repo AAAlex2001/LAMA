@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/types/post';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
-import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
+import { DraftContentIcons } from '@/components/draft-card';
 import Loader from '@/components/loader';
 import {
   formatDateDot,

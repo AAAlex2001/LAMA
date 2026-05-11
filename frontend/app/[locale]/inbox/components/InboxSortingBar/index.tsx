@@ -9,8 +9,8 @@ import { ListHeaderType } from "../InboxList/components/ListHeader";
 import { FilterSortIcon, ChevronDownIcon, SortClearIcon } from "@/components/icons";
 import { Button } from "@/components/new-button";
 import PopupFilter from "./components/PopupFilter";
-import { useAppSelector } from "../../store";
-import { selectChannels, selectBots } from "../../store/selectors";
+import { useChannelsQuery } from "@/store/channels";
+import { useBotsQuery } from "@/store/bots";
 import type { SortOptionType, SortOption } from "../sortTypes";
 import { useSourceFilter } from "./hooks/useSourceFilter";
 import { useTypeFilter } from "./hooks/useTypeFilter";
@@ -55,8 +55,10 @@ const InboxSortingBar: FC<InboxSortingBarProps> = ({
   const filterButtonRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
 
-  const channels = useAppSelector(selectChannels);
-  const bots = useAppSelector(selectBots);
+  const channelsQuery = useChannelsQuery();
+  const channels = channelsQuery.data?.items ?? [];
+  const botsQuery = useBotsQuery();
+  const bots = botsQuery.data?.items ?? [];
 
   const channelNames = channels.map((c) => c.title);
   const botNames = bots.map((b) => b.title || b.username);

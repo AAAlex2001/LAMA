@@ -4,8 +4,10 @@ import { FC, useState, useEffect, useRef } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { updateCaptchaSettingsThunk } from '../../store/thunks/join-settings';
+import {
+  useCaptchaSettingsQuery,
+  useUpdateCaptchaSettingsMutation,
+} from '@/store/channels';
 import styles from './CaptchaSettingsModal.module.scss';
 
 interface CaptchaSettingsModalProps {
@@ -25,14 +27,14 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
   onOpenChange,
   channelId,
 }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const {
-    captchaMessageBefore,
-    captchaMessageFail,
-    captchaMessageSuccess,
-    saving,
-  } = useAppSelector((s) => s.joinSettings);
+  const captchaQuery = useCaptchaSettingsQuery(channelId);
+  const updateCaptcha = useUpdateCaptchaSettingsMutation();
+
+  const captchaMessageBefore = captchaQuery.data?.captcha_message_before ?? null;
+  const captchaMessageFail = captchaQuery.data?.captcha_message_fail ?? null;
+  const captchaMessageSuccess = captchaQuery.data?.captcha_message_success ?? null;
+  const saving = updateCaptcha.isPending;
 
   const [before, setBefore] = useState(captchaMessageBefore || '');
   const [fail, setFail] = useState(captchaMessageFail || '');
@@ -79,21 +81,21 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
     }
   };
 
-  const handleSave = () => {
-    dispatch(updateCaptchaSettingsThunk({
-      channelId,
-      data: {
-        captcha_message_before: before || null,
-        captcha_message_fail: fail || null,
-        captcha_message_success: success || null,
-      },
-    }))
-      .unwrap()
-      .then(() => {
-        showSuccess('Тексты капчи сохранены');
-        onOpenChange(false);
-      })
-      .catch(() => showError('Ошибка сохранения'));
+  const handleSave = async () => {
+    try {
+      await updateCaptcha.mutateAsync({
+        channelId,
+        data: {
+          captcha_message_before: before || null,
+          captcha_message_fail: fail || null,
+          captcha_message_success: success || null,
+        },
+      });
+      showSuccess('Тексты капчи сохранены');
+      onOpenChange(false);
+    } catch {
+      showError('Ошибка сохранения');
+    }
   };
 
   return (
@@ -196,7 +198,7 @@ const CaptchaSettingsModal: FC<CaptchaSettingsModalProps> = ({
         <div className={styles.footer}>
           <Button
             variant="outline"
-            intent="neutral"
+            intent="gradient"
             size="lg"
             onClick={() => onOpenChange(false)}
           >

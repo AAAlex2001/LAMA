@@ -1,6 +1,6 @@
 'use client';
 
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import { ChevronDownIcon, FilterSortIcon } from '@/components/icons';
 import styles from '../drafts.module.scss';
 
@@ -47,13 +47,13 @@ export default function DraftsHeaderDisabled() {
 
       <div className={styles.headerCreateBtn}>
         <Button
-          text="Список черновиков"
-          showArrow={false}
-          fullWidth
-          active
+          style={{ width: '100%' }}
+          intent="gradient"
           className={styles.createButton}
           onClick={() => { window.location.href = '/drafts'; }}
-        />
+        >
+          Список черновиков
+        </Button>
       </div>
 
       <div className={styles.mobileFilterWrapper}>

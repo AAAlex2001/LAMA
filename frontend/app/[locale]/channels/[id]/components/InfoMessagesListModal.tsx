@@ -1,16 +1,19 @@
 'use client';
 
-import { FC, useEffect, useMemo, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button } from '@/components/new-button';
 import { EditIcon, TrashIcon } from '@/components/icons';
 import Tooltip from '@/components/tooltip/tooltip';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { fetchInfoMessagesThunk, updateInfoMessageThunk, deleteInfoMessageThunk } from '../../store/thunks/automation';
-import type { InfoMessage } from '../../store/slices/automation';
-import draftCardStyles from '@/app/[locale]/drafts/components/draft-card.module.scss';
+import {
+  useInfoMessagesQuery,
+  useUpdateInfoMessageMutation,
+  useDeleteInfoMessageMutation,
+  type InfoMessage,
+} from '@/store/channels';
+import draftCardStyles from '@/components/card-action-button';
 import styles from '@/components/auto-reply/AutoReplyListModal.module.scss';
 
 interface InfoMessagesListModalProps {
@@ -30,17 +33,14 @@ const InfoMessagesListModal: FC<InfoMessagesListModalProps> = ({
   onOpenChange,
   onCompose,
 }) => {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
-  const messages = useAppSelector((s) => s.automation.messages);
+  const infoQuery = useInfoMessagesQuery(isOpen ? channelId : null);
+  const messages = infoQuery.data?.items ?? [];
+  const updateMessage = useUpdateInfoMessageMutation();
+  const deleteMessage = useDeleteInfoMessageMutation();
   const [search, setSearch] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<{ id: number; type: 'delete' | 'edit' } | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    dispatch(fetchInfoMessagesThunk(channelId));
-  }, [isOpen, channelId, dispatch]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -51,14 +51,11 @@ const InfoMessagesListModal: FC<InfoMessagesListModalProps> = ({
   const handleToggle = async (item: InfoMessage) => {
     const next = !item.is_enabled;
     try {
-      await dispatch(
-        updateInfoMessageThunk({
-          channelId,
-          messageId: item.id,
-          data: { is_enabled: next },
-          savingType: 'draft',
-        }),
-      ).unwrap();
+      await updateMessage.mutateAsync({
+        channelId,
+        messageId: item.id,
+        data: { is_enabled: next },
+      });
       showSuccess(next ? 'Сообщение активировано' : 'Сообщение отключено');
     } catch {
       showError('Ошибка сохранения');
@@ -68,7 +65,7 @@ const InfoMessagesListModal: FC<InfoMessagesListModalProps> = ({
   const handleDelete = async (id: number) => {
     setConfirmDeleteId(null);
     try {
-      await dispatch(deleteInfoMessageThunk({ channelId, messageId: id })).unwrap();
+      await deleteMessage.mutateAsync({ channelId, messageId: id });
       showSuccess('Сообщение удалено');
     } catch {
       showError('Ошибка удаления');

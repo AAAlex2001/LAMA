@@ -14,7 +14,6 @@ interface UiState {
   isPublishing: boolean;
   isSavingDraft: boolean;
   isScheduling: boolean;
-  isSavingTemplate: boolean;
   isLoadingAi: boolean;
 }
 
@@ -32,7 +31,6 @@ const initialState: UiState = {
   isPublishing: false,
   isSavingDraft: false,
   isScheduling: false,
-  isSavingTemplate: false,
   isLoadingAi: false,
 };
 
@@ -77,9 +75,6 @@ const uiSlice = createSlice({
     setIsScheduling(state, action: PayloadAction<boolean>) {
       state.isScheduling = action.payload;
     },
-    setIsSavingTemplate(state, action: PayloadAction<boolean>) {
-      state.isSavingTemplate = action.payload;
-    },
     setIsLoadingAi(state, action: PayloadAction<boolean>) {
       state.isLoadingAi = action.payload;
     },
@@ -103,7 +98,6 @@ export const {
   setIsPublishing,
   setIsSavingDraft,
   setIsScheduling,
-  setIsSavingTemplate,
   setIsLoadingAi,
   reset: resetUi,
 } = uiSlice.actions;

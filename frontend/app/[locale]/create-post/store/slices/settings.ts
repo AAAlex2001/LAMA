@@ -1,8 +1,7 @@
-import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { AdToggleValue } from '@/components/ad-toggle-section';
 import type {
   ChannelOption,
-  Tag,
   TagColor,
   RepeatOption,
   RepeatCustomUnit,
@@ -13,18 +12,14 @@ interface SettingsState {
   channels: ChannelOption[];
   channelsLoading: boolean;
   showCreateChannel: boolean;
-  
+
   notifySubscribers: boolean;
   pinPost: boolean;
-  
-  recentTags: Tag[];
-  tagsLoading: boolean;
-  searchResults: Tag[];
-  searching: boolean;
+
   tagInputValue: string;
   selectedTags: Array<{ id?: number; name: string; color: TagColor }>;
   selectedTagColor: TagColor;
-  
+
   repeatInterval: RepeatOption;
   repeatPublishTimeType: 'from_publish' | 'exact_time';
   repeatPublishHours: number;
@@ -39,7 +34,7 @@ interface SettingsState {
   repeatYearDays: number[];
   repeatEndType: 'never' | 'date';
   repeatEndDate: string | null;
-  
+
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;
@@ -53,18 +48,14 @@ const initialState: SettingsState = {
   channels: [],
   channelsLoading: false,
   showCreateChannel: false,
-  
+
   notifySubscribers: true,
   pinPost: false,
-  
-  recentTags: [],
-  tagsLoading: false,
-  searchResults: [],
-  searching: false,
+
   tagInputValue: '',
   selectedTags: [],
   selectedTagColor: '#FAC7C7',
-  
+
   repeatInterval: 'never',
   repeatPublishTimeType: 'from_publish',
   repeatPublishHours: 12,
@@ -79,7 +70,7 @@ const initialState: SettingsState = {
   repeatYearDays: [1],
   repeatEndType: 'never',
   repeatEndDate: null,
-  
+
   autoDeleteInterval: 'never',
   autoDeleteCustomDays: 0,
   autoDeleteCustomHours: 0,
@@ -100,15 +91,13 @@ const settingsSlice = createSlice({
       state.channelsLoading = action.payload;
     },
     toggleChannel(state, action: PayloadAction<string>) {
-      const channel = state.channels.find(c => c.id === action.payload);
-      if (channel) {
-        channel.checked = !channel.checked;
-      }
+      const channel = state.channels.find((c) => c.id === action.payload);
+      if (channel) channel.checked = !channel.checked;
     },
     setShowCreateChannel(state, action: PayloadAction<boolean>) {
       state.showCreateChannel = action.payload;
     },
-    
+
     setNotifySubscribers(state, action: PayloadAction<boolean>) {
       state.notifySubscribers = action.payload;
     },
@@ -119,19 +108,7 @@ const settingsSlice = createSlice({
     setAdSettings(state, action: PayloadAction<AdToggleValue>) {
       state.ad = action.payload;
     },
-    
-    setRecentTags(state, action: PayloadAction<Tag[]>) {
-      state.recentTags = action.payload;
-    },
-    setTagsLoading(state, action: PayloadAction<boolean>) {
-      state.tagsLoading = action.payload;
-    },
-    setSearchResults(state, action: PayloadAction<Tag[]>) {
-      state.searchResults = action.payload;
-    },
-    setSearching(state, action: PayloadAction<boolean>) {
-      state.searching = action.payload;
-    },
+
     setTagInputValue(state, action: PayloadAction<string>) {
       state.tagInputValue = action.payload;
     },
@@ -139,34 +116,31 @@ const settingsSlice = createSlice({
       state.selectedTagColor = action.payload;
     },
     addTag(state, action: PayloadAction<{ id?: number; name: string; color: TagColor }>) {
-      const exists = state.selectedTags.some(t => t.name === action.payload.name);
+      const exists = state.selectedTags.some((t) => t.name === action.payload.name);
       if (!exists && action.payload.name.trim()) {
         state.selectedTags.push(action.payload);
       }
       state.tagInputValue = '';
-      state.searchResults = [];
     },
     updateSelectedTagId(state, action: PayloadAction<{ name: string; id: number }>) {
-      const tag = state.selectedTags.find(t => t.name === action.payload.name);
-      if (tag) {
-        tag.id = action.payload.id;
-      }
+      const tag = state.selectedTags.find((t) => t.name === action.payload.name);
+      if (tag) tag.id = action.payload.id;
     },
     updateSelectedTag(state, action: PayloadAction<{ id: number; name: string; color: TagColor }>) {
-      const tag = state.selectedTags.find(t => t.id === action.payload.id);
+      const tag = state.selectedTags.find((t) => t.id === action.payload.id);
       if (tag) {
         tag.name = action.payload.name;
         tag.color = action.payload.color;
       }
     },
     removeSelectedTag(state, action: PayloadAction<string>) {
-      state.selectedTags = state.selectedTags.filter(t => t.name !== action.payload);
+      state.selectedTags = state.selectedTags.filter((t) => t.name !== action.payload);
     },
     clearTags(state) {
       state.selectedTags = [];
       state.tagInputValue = '';
     },
-    
+
     setRepeatInterval(state, action: PayloadAction<RepeatOption>) {
       state.repeatInterval = action.payload;
     },
@@ -205,14 +179,12 @@ const settingsSlice = createSlice({
     },
     setRepeatEndType(state, action: PayloadAction<'never' | 'date'>) {
       state.repeatEndType = action.payload;
-      if (action.payload === 'never') {
-        state.repeatEndDate = null;
-      }
+      if (action.payload === 'never') state.repeatEndDate = null;
     },
     setRepeatEndDate(state, action: PayloadAction<string | null>) {
       state.repeatEndDate = action.payload;
     },
-    
+
     setAutoDeleteInterval(state, action: PayloadAction<AutoDeleteOption>) {
       state.autoDeleteInterval = action.payload;
     },
@@ -222,11 +194,11 @@ const settingsSlice = createSlice({
     setAutoDeleteCustomHours(state, action: PayloadAction<number>) {
       state.autoDeleteCustomHours = action.payload;
     },
-    
+
     setReplyToPostId(state, action: PayloadAction<number | null>) {
       state.replyToPostId = action.payload;
     },
-    
+
     reset() {
       return initialState;
     },
@@ -241,10 +213,6 @@ export const {
   setNotifySubscribers,
   setPinPost,
   setAdSettings,
-  setRecentTags,
-  setTagsLoading,
-  setSearchResults,
-  setSearching,
   setTagInputValue,
   setSelectedTagColor,
   addTag,

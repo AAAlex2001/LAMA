@@ -1,5 +1,6 @@
+import { usePublicationByIdQuery } from '@/store/publications/queries';
 import { useAppDispatch, useAppSelector } from '../store';
-import * as replyToPostSlice from '../store/slices/replyToPost';
+import * as settingsSlice from '../store/slices/settings';
 import ReplyToPostInfo from '@/components/reply-to-post-info/reply-to-post-info';
 
 function stripHtmlTags(html: string): string {
@@ -8,24 +9,20 @@ function stripHtmlTags(html: string): string {
 
 export default function ReplyToPostInfoConnected() {
   const dispatch = useAppDispatch();
-  const selectedPost = useAppSelector(state => state.replyToPost.selectedPost);
+  const replyToPostId = useAppSelector((s) => s.settings.replyToPostId);
+  const { data: post } = usePublicationByIdQuery(replyToPostId);
 
-  if (!selectedPost) return null;
+  if (!post) return null;
 
-  const handleRemove = () => {
-    dispatch(replyToPostSlice.setSelectedPost(null));
-    dispatch(replyToPostSlice.setSelectedPostId(null));
-  };
-
-  const rawTitle = selectedPost.text || selectedPost.text_content || 'Без названия';
+  const rawTitle = post.text_content || 'Без названия';
   const postTitle = stripHtmlTags(rawTitle);
-  const publishedAt = selectedPost.published_at || selectedPost.created_at;
+  const publishedAt = post.published_at || post.created_at;
 
   return (
     <ReplyToPostInfo
       postTitle={postTitle}
       publishedAt={publishedAt}
-      onRemove={handleRemove}
+      onRemove={() => dispatch(settingsSlice.setReplyToPostId(null))}
     />
   );
 }

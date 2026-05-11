@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/date-picker/date-picker';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import type { Draft } from '@/types/post';
 import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
 import {
@@ -58,13 +58,13 @@ export default function CalendarSidebar({
         {!isPast && (
           <div className={styles.createBtnWrapper}>
             <Button
-              text="Создать публикацию"
-              showArrow={false}
-              active
-              fullWidth
+              intent="gradient"
+              style={{ width: '100%' }}
               className={styles.createBtn}
               onClick={() => router.push(buildCreatePostUrl(selectedDate))}
-            />
+            >
+              Создать публикацию
+            </Button>
           </div>
         )}
 

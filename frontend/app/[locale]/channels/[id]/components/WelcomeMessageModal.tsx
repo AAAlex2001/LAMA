@@ -7,12 +7,13 @@ import OldButton from '@/components/button/button';
 import MediaPreview from '@/components/media-preview';
 import InlineButtons from '@/components/inline-buttons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useMessageMedia } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useMessageMedia';
-import { useInlineButtons } from '@/app/[locale]/inbox/chat/components/InboxDirect/components/DirectChat/components/MessageField/hooks/useInlineButtons';
+import { useMessageMedia } from '@/hooks/useMessageMedia';
+import { useInlineButtons } from '@/hooks/useInlineButtons';
 import { uploadMediaFile } from '@/store/api';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { updateWelcomeSettingsThunk } from '../../store/thunks/welcomeSettings';
-import { setModalOpen, setSaving } from '../../store/slices/welcomeSettings';
+import {
+  useWelcomeSettingsQuery,
+  useUpdateWelcomeSettingsMutation,
+} from '@/store/channels';
 import { EyeIcon, PaperclipIcon, InlineButtonIcon } from '@/components/icons';
 import PostPreviewModal from '@/components/post-preview-modal';
 import styles from './WelcomeMessageModal.module.scss';
@@ -34,12 +35,21 @@ const MEDIA_TYPE_MAP: Record<string, string> = {
 interface WelcomeMessageModalProps {
   botId: number;
   channelTitle?: string;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle }) => {
-  const dispatch = useAppDispatch();
+const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({
+  botId, channelTitle, isOpen, onOpenChange,
+}) => {
   const { showSuccess, showError } = useNotifications();
-  const { modalOpen, message, mediaUrl, mediaType, buttons, saving } = useAppSelector((s) => s.welcomeSettings);
+  const welcomeQuery = useWelcomeSettingsQuery(botId);
+  const updateWelcome = useUpdateWelcomeSettingsMutation();
+  const message = welcomeQuery.data?.message ?? null;
+  const mediaUrl = welcomeQuery.data?.mediaUrl ?? null;
+  const mediaType = welcomeQuery.data?.mediaType ?? null;
+  const buttons = welcomeQuery.data?.buttons ?? null;
+  const saving = updateWelcome.isPending;
 
   const [text, setText] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -62,7 +72,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
   const canAddMedia = mediaFiles.length < 1 && !existingMedia;
 
   useEffect(() => {
-    if (!modalOpen) return;
+    if (!isOpen) return;
 
     setText(message || '');
     handleClearMedia();
@@ -87,7 +97,7 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
     } else {
       resetButtons();
     }
-  }, [modalOpen, message, mediaUrl, mediaType, buttons]);
+  }, [isOpen, message, mediaUrl, mediaType, buttons]);
 
   const insertShortcode = (code: string) => {
     if (textareaRef.current) {
@@ -113,8 +123,6 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
       return;
     }
 
-    dispatch(setSaving(true));
-
     let uploadedMediaUrl: string | null = null;
     let uploadedMediaType: string | null = null;
 
@@ -125,7 +133,6 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
         uploadedMediaType = MEDIA_TYPE_MAP[mediaFiles[0].type] || 'DOCUMENT';
       } catch {
         showError('Ошибка загрузки файла');
-        dispatch(setSaving(false));
         return;
       }
     }
@@ -134,25 +141,30 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
       ? rows.map((row) => row.buttons.map((btn) => ({ text: btn.text, url: btn.url || '' })))
       : null;
 
-    const data: Record<string, unknown> = {
-      welcome_message: text || null,
-      welcome_media_url: uploadedMediaUrl ?? (existingMedia ? existingMedia.url : null),
-      welcome_media_type: uploadedMediaType ?? (existingMedia ? existingMedia.type : null),
-      welcome_buttons: inlineKeyboard ? { inline_keyboard: inlineKeyboard } : null,
-    };
+    const finalMediaUrl = uploadedMediaUrl ?? (existingMedia ? existingMedia.url : null);
+    const finalMediaType = (uploadedMediaType ?? (existingMedia ? existingMedia.type : null)) as
+      | 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'ANIMATION' | null;
 
-    dispatch(updateWelcomeSettingsThunk({ botId, data }))
-      .unwrap()
-      .then(() => {
-        showSuccess('Приветствие сохранено');
-        dispatch(setModalOpen(false));
-      })
-      .catch(() => showError('Ошибка сохранения'));
+    try {
+      await updateWelcome.mutateAsync({
+        botId,
+        data: {
+          welcome_message: text || null,
+          welcome_media_url: finalMediaUrl,
+          welcome_media_type: finalMediaType,
+          welcome_buttons: inlineKeyboard ? { inline_keyboard: inlineKeyboard } : null,
+        },
+      });
+      showSuccess('Приветствие сохранено');
+      onOpenChange(false);
+    } catch {
+      showError('Ошибка сохранения');
+    }
   };
 
   return (
     <>
-      <ModalBase isOpen={modalOpen} onOpenChange={(v) => dispatch(setModalOpen(v))}>
+      <ModalBase isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalBase.Content size="xl" padding="sm" className={styles.modal}>
           <div className={styles.header}>
             <span className={styles.title}>Приветственное сообщение</span>
@@ -270,9 +282,9 @@ const WelcomeMessageModal: FC<WelcomeMessageModalProps> = ({ botId, channelTitle
             <div className={styles.footerLeft}>
               <Button
                 variant="outline"
-                intent="neutral"
+                intent="gradient"
                 size="lg"
-                onClick={() => dispatch(setModalOpen(false))}
+                onClick={() => onOpenChange(false)}
               >
                 Отменить
               </Button>

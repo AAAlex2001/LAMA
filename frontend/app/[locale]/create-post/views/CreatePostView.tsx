@@ -3,7 +3,7 @@
 import { useRef } from 'react';
 import styles from '../create-post.module.scss';
 
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import {
   PostSettingsConnected,
   EditorHeaderConnected,
@@ -18,7 +18,7 @@ import {
 import PostAccordion from '@/components/post-accordion/post-accordion';
 
 import { useAppDispatch, useAppSelector } from '../store';
-import { selectSelectedChannels } from '../store/selectors';
+import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import * as uiSlice from '../store/slices/ui';
 import { selectPollData } from '../store/slices/quiz';
 import { usePublishHandlers } from '../hooks/usePublishHandlers';
@@ -47,7 +47,7 @@ export default function CreatePostView() {
   const snapshots = useAppSelector((state) => state.series.snapshots);
   const activeIndex = useAppSelector((state) => state.series.activeIndex);
   const pollData = selectPollData(quizState);
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const selectedTags = useAppSelector((state) => state.settings.selectedTags);
 
   const hasContentForPreview =
@@ -148,11 +148,14 @@ export default function CreatePostView() {
             editorBlock
           )}
           <Button
-            text="Добавить серию постов"
-            showArrow={false}
+            variant="outline"
+            intent="gradient"
+            size="lg"
             className={styles.addSeriesBtn}
             onClick={() => handleAddSeries(currentSnapshot)}
-          />
+          >
+            Добавить серию постов
+          </Button>
         </div>
         <div className={styles.settingsPanelDesktop}>
           <PostSettingsConnected

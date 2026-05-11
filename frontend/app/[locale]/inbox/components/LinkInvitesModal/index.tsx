@@ -8,7 +8,8 @@ import FilterTabsWithBadges from './components/FilterTabsWithBadges';
 import InvitationLinkItem from './components/InvitationLinkItem';
 import Loader from '@/components/loader/loader';
 import styles from './styles.module.scss';
-import { useAppSelector, useAppDispatch, fetchAllInviteLinksThunk, selectInbox } from '../../store';
+import { useChannelsQuery } from '@/store/channels';
+import { useInviteLinksBatchQuery } from '@/store/inbox';
 import type { InviteLink } from '@/types';
 
 export interface InvitationLink {
@@ -85,26 +86,18 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'expired'>('all');
 
-  const dispatch = useAppDispatch();
-  const channels = useAppSelector((state) => state.channels.channels);
-  const inboxState = useAppSelector(selectInbox);
-  const inviteLinksState: Record<number, InviteLink[]> = inboxState.inviteLinks;
-  const inviteLinksLoadingState: Record<number, boolean> = inboxState.inviteLinksLoading;
-  
+  const channelsQuery = useChannelsQuery();
+  const channels = channelsQuery.data?.items ?? [];
   const channelNameMap = new Map(channels.map((ch) => [ch.id, ch.title]));
-    
 
-  useEffect(() => {
-    if (isOpen && channels.length > 0) {
-      dispatch(fetchAllInviteLinksThunk());
-    }
-  }, [isOpen, channels.length, dispatch]);
+  // Грузим invite-links для всех каналов параллельно через TQ
+  const targetChannelIds = isOpen
+    ? (channelId !== undefined ? [channelId] : channels.map((ch) => ch.id))
+    : [];
+  const queries = useInviteLinksBatchQuery(targetChannelIds);
 
-  const allInviteLinks = channelId
-    ? (inviteLinksState[channelId] || [])
-    : Object.values(inviteLinksState).flat();
-
-  const isLoading = Object.values(inviteLinksLoadingState).some(loading => loading === true);
+  const allInviteLinks: InviteLink[] = queries.flatMap((q) => q.data?.items ?? []);
+  const isLoading = queries.some((q) => q.isLoading);
 
   const mappedLinks = allInviteLinks && !!allInviteLinks.length ? 
     allInviteLinks.map((link) => {

@@ -1,6 +1,6 @@
 import type { Draft, InlineButton } from '@/types/post';
 import type { ButtonRow, MediaFile, PostSnapshot, QuizAnswer } from '../store/types';
-import { API_BASE_URL } from '../store/thunks/api';
+import { API_BASE_URL } from '@/store/api';
 import { TAG_COLORS } from '@/types';
 import type { TagColor } from '@/types';
 

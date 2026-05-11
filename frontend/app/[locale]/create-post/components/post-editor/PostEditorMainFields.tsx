@@ -15,10 +15,10 @@ import MediaSectionConnected from '../MediaSectionConnected';
 import QuizFormConnected from '../QuizFormConnected';
 import ReplyToPostInfoConnected from '../ReplyToPostInfoConnected';
 
+import { useSaveTextTemplateMutation } from '@/store/text-templates/queries';
 import { useAppDispatch, useAppSelector } from '../../store';
 import * as editorSlice from '../../store/slices/editor';
 import * as mediaSlice from '../../store/slices/media';
-import { saveAsTemplate } from '../../store/thunks';
 import { mediaFilesFromInput } from '../../utils/mediaFilesFromInput';
 
 export type PostEditorMainFieldsClassNames = {
@@ -52,6 +52,7 @@ export function PostEditorMainFields({ styles, headerRef, editorRef }: Props) {
   const showLinkPreview = useAppSelector((state) => state.editor.showLinkPreview);
   const mediaFiles = useAppSelector((state) => state.media.files);
   const editorMaxLength = mediaFiles.length > 0 ? 1024 : 4096;
+  const saveTemplate = useSaveTextTemplateMutation();
 
   return (
     <div className={styles.content}>
@@ -61,15 +62,11 @@ export function PostEditorMainFields({ styles, headerRef, editorRef }: Props) {
         onChange={(v) => dispatch(editorSlice.setText(v))}
         placeholder="Напишите текст публикации..."
         maxLength={editorMaxLength}
-        onSaveAsTemplate={(html) => {
-          dispatch(saveAsTemplate(html)).then((result) => {
-            if (result.meta.requestStatus === 'fulfilled') {
-              showSuccess('Шаблон успешно сохранён');
-            } else if (result.meta.requestStatus === 'rejected') {
-              showError(typeof result.payload === 'string' ? result.payload : 'Ошибка сохранения шаблона');
-            }
-          });
-        }}
+        onSaveAsTemplate={(html) =>
+          saveTemplate.mutateAsync(html ?? text)
+            .then(() => showSuccess('Шаблон успешно сохранён'))
+            .catch((err) => showError(err instanceof Error ? err.message : 'Ошибка сохранения шаблона'))
+        }
         headerRef={headerRef}
       />
 

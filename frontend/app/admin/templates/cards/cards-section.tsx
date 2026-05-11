@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTemplateContext } from '../store/template-context';
 import Input from '@/components/input/input';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import styles from './cards-section.module.scss';
 import type { TemplateCardItem } from '../types';
 
@@ -50,7 +50,7 @@ export default function CardsSection() {
       {expanded && (
         <>
           <div className={styles.header}>
-            <Button text="Добавить карточку" onClick={addCard} showArrow={false} size="small" />
+            <Button variant="fill" intent="primary" size="sm" onClick={addCard}>Добавить карточку</Button>
           </div>
 
       <Input
@@ -65,7 +65,7 @@ export default function CardsSection() {
         <div key={index} className={styles.card}>
           <div className={styles.topRow}>
             <div className={styles.label}>Карточка {index + 1}</div>
-            <Button text="Удалить" onClick={() => removeCard(index)} showArrow={false} size="small" />
+            <Button variant="outline" intent="destructive" size="sm" onClick={() => removeCard(index)}>Удалить</Button>
           </div>
 
           <Input label="Title" value={String(card?.title ?? '')} onChange={(v) => updateCard(index, 'title', v)} />

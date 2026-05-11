@@ -3,8 +3,7 @@
 import React from 'react';
 import { CloseIcon, PostIcon, CalendarRepeatIcon } from '@/components/icons';
 import type { Draft } from '@/types/post';
-import DraftContentIcons from '@/app/[locale]/drafts/components/DraftContentIcons';
-import DraftCardActions from '@/app/[locale]/drafts/components/DraftCardActions';
+import { DraftContentIcons, DraftCardActions } from '@/components/draft-card';
 import {
   formatDateDot,
   formatTime,

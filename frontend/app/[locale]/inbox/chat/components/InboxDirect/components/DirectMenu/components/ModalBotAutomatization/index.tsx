@@ -5,11 +5,10 @@ import ChatItem from '../ChatItem';
 import styles from './styles.module.scss';
 import { Button } from '@/components/new-button';
 import buttonStyles from '@/components/new-button/styles.module.scss';
-import { useAppSelector } from '@/app/[locale]/inbox/store';
-import { selectBots } from '@/app/[locale]/inbox/store/selectors';
-import CreateTriggersModal from '@/app/[locale]/inbox/components/CreateTriggersModal';
-import CreateGlobalMessageModal from '@/app/[locale]/inbox/chat/components/CreateGlobalMesssageModal';
-import { useDirectChat } from '@/app/[locale]/inbox/store/hooks/useDirectChat';
+import { useBotsQuery } from '@/store/bots';
+import CreateTriggersModal from '@/[locale]/inbox/components/CreateTriggersModal';
+import CreateGlobalMessageModal from '@/[locale]/inbox/chat/components/CreateGlobalMesssageModal';
+import { useDirectChat } from '@/[locale]/inbox/store/hooks/useDirectChat';
 
 export interface BotProps {
   id: number;
@@ -38,7 +37,8 @@ export default function ModalBotAutomatization({
   onTrigger,
 }: ModalBotAutomatizationProps) {
 
-  const bots = useAppSelector(selectBots);
+  const botsQuery = useBotsQuery();
+  const bots = botsQuery.data?.items ?? [];
   const {
     isBotAutomatizationModalOpen,
     isTriggerModalOpen,

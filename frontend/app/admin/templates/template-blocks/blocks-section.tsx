@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTemplateContext } from '../store/template-context';
 import Input from '@/components/input/input';
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import styles from './blocks-section.module.scss';
 
 export default function BlocksSection() {
@@ -137,7 +137,7 @@ export default function BlocksSection() {
       {expanded && (
         <>
           <div className={styles.header}>
-            <Button text="Добавить блок" onClick={addBlock} showArrow={false} size="small" />
+            <Button onClick={addBlock} size="sm">Добавить блок</Button>
           </div>
 
       {blocks.length === 0 ? <div className={styles.empty}>Пока нет блоков</div> : null}
@@ -151,7 +151,7 @@ export default function BlocksSection() {
           <div key={blockIndex} className={styles.card}>
             <div className={styles.topRow}>
               <div className={styles.label}>Блок {blockIndex + 1}</div>
-              <Button text="Удалить" onClick={() => removeBlock(blockIndex)} showArrow={false} size="small" />
+              <Button onClick={() => removeBlock(blockIndex)} size="sm">Удалить</Button>
             </div>
 
             <Input label="Title" value={String(block?.title ?? '')} onChange={(v) => updateBlockField(blockIndex, 'title', v)} />
@@ -207,14 +207,14 @@ export default function BlocksSection() {
               <Input label="Image ALT" value={imageAlt} onChange={(v) => updateBlockImage(blockIndex, imageUrl, v)} />
 
               {imageUrl ? (
-                <Button text="Убрать картинку" onClick={() => clearBlockImage(blockIndex)} showArrow={false} size="small" />
+                <Button onClick={() => clearBlockImage(blockIndex)} size="sm">Убрать картинку</Button>
               ) : null}
             </div>
 
             <div className={styles.advantagesSection}>
               <div className={styles.advantagesHeader}>
                 <div className={styles.advantagesTitle}>Advantages (опционально)</div>
-                <Button text="Добавить" onClick={() => addAdvantage(blockIndex)} showArrow={false} size="small" />
+                <Button onClick={() => addAdvantage(blockIndex)} size="sm">Добавить</Button>
               </div>
 
               {advantages.length === 0 ? <div className={styles.advantagesEmpty}>Пока нет преимуществ</div> : null}
@@ -223,7 +223,7 @@ export default function BlocksSection() {
                 {advantages.map((adv, advIndex) => (
                   <div key={advIndex} className={styles.advRow}>
                     <Input label={`Преимущество ${advIndex + 1}`} value={String(adv?.text ?? '')} onChange={(v) => updateAdvantage(blockIndex, advIndex, v)} />
-                    <Button text="Удалить" onClick={() => removeAdvantage(blockIndex, advIndex)} showArrow={false} size="small" />
+                    <Button onClick={() => removeAdvantage(blockIndex, advIndex)} size="sm">Удалить</Button>
                   </div>
                 ))}
               </div>

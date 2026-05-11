@@ -3,7 +3,7 @@ import type { DraftListResponse, Draft, BotMessageCompact } from '@/types/post';
 import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, getVisibleDayKeys } from '../../utils/calendar-helpers';
-import { groupSeriesPosts } from '../../utils/groupSeries';
+import { groupSeriesPosts } from '@/store/publications/groupSeries';
 
 interface WeekBatchDay {
   items: Draft[];

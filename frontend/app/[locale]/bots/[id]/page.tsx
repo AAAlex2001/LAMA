@@ -1,5 +1,4 @@
 import { AppLayout } from '@/components/app-layout';
-import { BotsProvider } from '../provider';
 import BotSettingsView from './BotSettingsView';
 
 interface BotSettingsPageProps {
@@ -11,9 +10,7 @@ const BotSettingsPage = async ({ params }: BotSettingsPageProps) => {
 
   return (
     <AppLayout pageTitle="Настройки бота">
-      <BotsProvider>
-        <BotSettingsView botId={Number(id)} />
-      </BotsProvider>
+      <BotSettingsView botId={Number(id)} />
     </AppLayout>
   );
 };

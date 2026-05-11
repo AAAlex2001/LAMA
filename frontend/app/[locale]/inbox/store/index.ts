@@ -2,26 +2,18 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import inboxReducer from './slices/inbox';
 import createInviteLinkModalReducer from './slices/createInviteLinkModal';
-import commandsReducer from './slices/commands';
-import triggersReducer from './slices/triggers';
 import createTriggerModalReducer from './slices/createTriggerModal';
 import createCommandModalReducer from './slices/createCommandModal';
 import createGlobalMessageModalReducer from './slices/createGlobalMessageModal';
-import { botsReducer } from '@/store/bots';
 import directChatReducer from './slices/directChat';
-import { channelsReducer } from '@/store/channels';
 
 export const inboxStore = configureStore({
-  reducer: { 
+  reducer: {
     inbox: inboxReducer,
-    channels: channelsReducer,
     createInviteLinkModal: createInviteLinkModalReducer,
-    commands: commandsReducer,
-    triggers: triggersReducer,
     createTriggerModal: createTriggerModalReducer,
     createCommandModal: createCommandModalReducer,
     createGlobalMessageModal: createGlobalMessageModalReducer,
-    bots: botsReducer,
     directChat: directChatReducer,
   },
   devTools: process.env.NODE_ENV !== 'production',
@@ -46,48 +38,9 @@ export {
   setTypeTriggers,
   setTypeCommands,
   setSearch,
-  removeItem,
-  updateItem,
-  addInviteLink,
-  setInviteLinksLoading,
-  setInviteLinks,
-  updateInviteLink,
-  removeInviteLink,
 } from './slices/inbox';
 export {
-  fetchInboxEventsThunk,
-  fetchMoreInboxEventsThunk,
-  bulkInboxActionThunk,
-  specificInboxActionThunk,
-} from './thunks/inboxEvents';
-export type {
-  InboxCategory,
-  EntityType as InboxEntityType,
-  EventType as InboxEventType,
-  EventStatus as InboxEventStatus,
-  SortDir as InboxSortDir,
-  BulkActionType,
-  InboxEventResponse,
-  InboxListResponse,
-  FetchInboxEventsParams,
-  BulkActionParams,
-  SpecificActionParams,
-  SpecificActionResult,
-  SpecificActionResponse,
-  InboxActionType,
-} from './thunks/inboxEvents';
-export {
   selectInbox,
-  selectFilteredItems,
-  selectSortedItems,
-  selectInboxItems,
-  selectInboxItemsLoading,
-  selectInboxItemsError,
-  selectInboxItemsTotal,
-  selectInboxItemsHasMore,
-  selectInboxItemsOffset,
-  selectBulkActionLoading,
-  selectSpecificActionLoading,
   selectSelectedFilter,
   selectSortDir,
   selectStatusFilter,
@@ -98,45 +51,9 @@ export {
   selectTypeTriggers,
   selectTypeCommands,
   selectSearch,
-  selectChannels,
-  selectChannelsLoading,
-  selectChannelsPagination,
-  selectInviteLinks,
-  selectInviteLinksTotal,
-  selectInviteLinksLoading,
 } from './selectors';
 export type { InviteLink, InviteLinksResponse } from '@/types';
 export { useCreateInviteLink } from './hooks/useCreateInviteLink';
-export {
-  setChannels,
-  addChannel,
-  updateChannel,
-  removeChannel,
-  toggleChannelSelected,
-  selectAllChannels,
-  deselectAllChannels,
-  setLoading,
-  setSyncing,
-  setError,
-  setTotal,
-  clearError,
-  resetChannels,
-} from '@/store/channels';
-export {
-  fetchChannelsThunk,
-  addChannelThunk,
-  deleteChannelThunk
-} from '@/store/channels';
-
-export {
-  createInviteLinkThunk,
-  fetchInviteLinksThunk,
-  fetchAllInviteLinksThunk,
-  patchInviteLinkThunk,
-  fetchInviteLinkByIdThunk,
-  deleteInviteLinkThunk,
-} from './thunks/inviteLinks';
-export type { PatchInviteLinkRequest } from './thunks/inviteLinks';
 export {
   setModalOpen,
   setStep,
@@ -161,32 +78,6 @@ export {
   buildPreviewData,
 } from './slices/createInviteLinkModal';
 export type { CreateInviteLinkModalState, ModalStep } from './slices/createInviteLinkModal';
-export {
-  setCommands,
-  addCommand,
-  updateCommand,
-  removeCommand,
-  resetCommands,
-} from './slices/commands';
-export type { BotCommand, BotCommandCreate } from './slices/commands';
-export {
-  setTriggers,
-  addTrigger,
-  updateTrigger,
-  removeTrigger,
-  resetTriggers,
-} from './slices/triggers';
-export type { Trigger, TriggerCreate, TriggerType, ActionType, ChatType } from './slices/triggers';
-export {
-  fetchCommandsThunk,
-  createCommandThunk,
-} from './thunks/commands';
-export type { FetchCommandsParams } from './thunks/commands';
-export {
-  fetchTriggersThunk,
-  createTriggerThunk,
-} from './thunks/triggers';
-export type { FetchTriggersParams } from './thunks/triggers';
 export {
   setModalOpen as setCreateTriggerModalOpen,
   setName as setTriggerName,
@@ -223,22 +114,7 @@ export {
   resetForm as resetCommandForm,
 } from './slices/createCommandModal';
 export type { CreateCommandModalState } from './slices/createCommandModal';
-export {
-  setBots,
-  addBot,
-  updateBot,
-  removeBot,
-  setLoading as setBotsLoading,
-  setError as setBotsError,
-  clearError as clearBotsError,
-  setPagination as setBotsPagination,
-  resetBots,
-} from '@/store/bots';
 export type { Bot, BotCreate, BotStatus } from '@/store/bots';
-export {
-  fetchBotsThunk,
-  createBotThunk,
-} from '@/store/bots';
 export type { FetchBotsParams, BotListResponse } from '@/store/bots';
 export {
   setModalOpen as setCreateGlobalMessageModalOpen,
@@ -253,10 +129,6 @@ export {
   setIsLoading as setGlobalMessageIsLoading,
 } from './slices/createGlobalMessageModal';
 export type { CreateGlobalMessageModalState } from './slices/createGlobalMessageModal';
-export {
-  sendMessageThunk,
-} from './thunks/globalMessages';
-export type { FetchMessagesParams, SendMessageParams, SendMessageRequest, BotMessageResponse, BotMessageListResponse } from './thunks/globalMessages';
 export {
   setActiveChatId,
   setChatSort,

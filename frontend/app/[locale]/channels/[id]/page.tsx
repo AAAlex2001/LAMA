@@ -1,5 +1,4 @@
 import { AppLayout } from '@/components/app-layout';
-import { ChannelsProvider } from '../store/provider';
 import ChannelSettingsView from './ChannelSettingsView';
 
 interface ChannelSettingsPageProps {
@@ -11,9 +10,7 @@ const ChannelSettingsPage = async ({ params }: ChannelSettingsPageProps) => {
 
   return (
     <AppLayout pageTitle="Настройки канала">
-      <ChannelsProvider>
-        <ChannelSettingsView channelId={Number(id)} />
-      </ChannelsProvider>
+      <ChannelSettingsView channelId={Number(id)} />
     </AppLayout>
   );
 };

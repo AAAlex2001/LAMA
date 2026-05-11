@@ -1,5 +1,5 @@
 import { AppLayout } from "@/components/app-layout";
-import InboxView from "@/app/[locale]/inbox/InboxView";
+import InboxView from "@/[locale]/inbox/InboxView";
 import { InboxProvider } from "./store/provider";
 
 const InboxPage = () => {

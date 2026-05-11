@@ -3,7 +3,7 @@ import type { DraftListResponse, Draft } from '@/types/post';
 import { apiRequest } from '@/store/api';
 import type { RootState } from '..';
 import { parseDate, getRangeForView, mergeUniqueById } from '../../utils/calendar-helpers';
-import { groupSeriesPosts } from '../../utils/groupSeries';
+import { groupSeriesPosts } from '@/store/publications/groupSeries';
 
 export const fetchMoreListPosts = createAsyncThunk<
   { items: Draft[]; page: number; total: number; hasMore: boolean }, void, { state: RootState }
@@ -63,7 +63,7 @@ export const fetchMoreDayPosts = createAsyncThunk<
     if (!dayState) throw new Error(`No day state for ${dateKey}`);
 
     const nextPage = dayState.page + 1;
-    const pageSize = 20;
+    const pageSize = 50;
     const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const params = new URLSearchParams({
       page: String(nextPage), page_size: String(pageSize),

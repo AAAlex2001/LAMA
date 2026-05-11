@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import styles from '../edit-post.module.scss';
 
-import Button from '@/components/button/button';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
 import {
   PostSettingsConnected,
@@ -18,7 +18,7 @@ import {
 } from '../../create-post/components/post-editor';
 
 import { useAppDispatch, useAppSelector } from '../../create-post/store';
-import { selectSelectedChannels } from '../../create-post/store/selectors';
+import { useSelectedChannels } from '../../create-post/hooks/useSelectedChannels';
 import * as uiSlice from '../../create-post/store/slices/ui';
 import { useTokenFromUrl } from '../../create-post/hooks/useTokenFromUrl';
 import { usePostEditorChannelEffects } from '../../create-post/hooks/usePostEditorChannelEffects';
@@ -66,7 +66,7 @@ export default function EditPostView() {
     showError,
   });
 
-  const selectedChannels = useAppSelector(selectSelectedChannels);
+  const selectedChannels = useSelectedChannels();
   const activePostId = series.expandedPostId ?? (postId ? Number(postId) : null);
 
   const actions = useEditPostActions({
@@ -166,11 +166,11 @@ export default function EditPostView() {
 
       <div className={styles.editHeaderWrapper}>
         <Button
-          text="Назад в календарь"
-          showArrow={false}
-          active
+          intent="gradient"
           onClick={() => { window.location.href = '/calendar'; }}
-        />
+        >
+          Назад в календарь
+        </Button>
       </div>
 
       <div
