@@ -1,27 +1,33 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { Draft } from '@/types/post';
 import { useChannelsQuery } from '@/store/channels';
 import { useTagsQuery } from '@/store/tags/queries';
-import { useDayCountsQuery, type DayCountItem, type DayCountsResponse } from '@/store/publications/queries';
 import {
-  useAppDispatch,
+  useDayCountsQuery,
+  type DayCountItem,
+  type DayCountsResponse,
+} from '@/store/publications/queries';
+import {
+  useCalendarDataQuery,
+  useFetchMoreDayPostsMutation,
+  useFetchMoreListPostsMutation,
+  calendarKeys,
+  type CalendarData,
+} from '@/store/calendar/queries';
+import {
   useAppSelector,
   type RootState,
   type DayStatusCount,
-  selectSortedPosts,
-  selectMobilePosts,
-  selectDayLoadingMap,
-  selectDayHasMoreMap,
   selectSelectedDateObj,
   selectSidebarDateObj,
   selectListRangeStartObj,
   selectListRangeEndObj,
   selectIsGridView,
-  selectSidebarPosts,
 } from '../store';
-import { fetchCalendarData } from '../store/thunks';
 import { parseDate, formatDateOnly } from '../utils/calendar-helpers';
+import { sortPostsByTime } from '../utils/post-helpers';
 
 function parseDayCounts(data: DayCountsResponse | undefined): {
   counts: Record<string, number>;
@@ -48,32 +54,130 @@ function parseDayCounts(data: DayCountsResponse | undefined): {
   return { counts, statusCounts };
 }
 
+interface DerivedCalendarData {
+  items: Draft[];
+  weekItems: Record<string, Draft[]>;
+  dayHasMoreMap: Record<string, boolean>;
+  dayPageMap: Record<string, number>;
+  hasMore: boolean;
+  listTotal: number;
+  listPage: number;
+}
+
+function deriveFromQueryData(data: CalendarData | undefined): DerivedCalendarData {
+  if (!data) {
+    return {
+      items: [],
+      weekItems: {},
+      dayHasMoreMap: {},
+      dayPageMap: {},
+      hasMore: false,
+      listTotal: 0,
+      listPage: 1,
+    };
+  }
+  if (data.type === 'grid') {
+    const weekItems: Record<string, Draft[]> = {};
+    const dayHasMoreMap: Record<string, boolean> = {};
+    const dayPageMap: Record<string, number> = {};
+    for (const r of data.results) {
+      weekItems[r.dateKey] = r.items;
+      dayHasMoreMap[r.dateKey] = r.hasMore;
+      dayPageMap[r.dateKey] = r.page;
+    }
+    return {
+      items: [],
+      weekItems,
+      dayHasMoreMap,
+      dayPageMap,
+      hasMore: false,
+      listTotal: 0,
+      listPage: 1,
+    };
+  }
+  return {
+    items: data.items,
+    weekItems: {},
+    dayHasMoreMap: {},
+    dayPageMap: {},
+    hasMore: data.hasMore,
+    listTotal: data.total,
+    listPage: data.page,
+  };
+}
+
 /**
- * Server data календаря: списки/grid через Redux thunks (см. fetchCalendarData),
- * счётчики и status по месяцу — через TanStack Query.
+ * Server data календаря: списки/grid через TanStack Query (см. useCalendarDataQuery),
+ * счётчики и status по месяцу — через useDayCountsQuery.
  * UI state из Redux.
  */
 export function useCalendarPageData() {
-  const dispatch = useAppDispatch();
-
   const calendar = useAppSelector((state: RootState) => state.calendar);
   const selectedDate = useAppSelector(selectSelectedDateObj);
   const sidebarDate = useAppSelector(selectSidebarDateObj);
   const listRangeStart = useAppSelector(selectListRangeStartObj);
   const listRangeEnd = useAppSelector(selectListRangeEndObj);
-
-  const sortedPosts = useAppSelector(selectSortedPosts);
-  const mobilePosts = useAppSelector(selectMobilePosts);
-  const dayLoadingMap = useAppSelector(selectDayLoadingMap);
-  const dayHasMoreMap = useAppSelector(selectDayHasMoreMap);
   const isGridView = useAppSelector(selectIsGridView);
-  const sidebarPosts = useAppSelector(selectSidebarPosts);
+
+  const queryParams = {
+    view: calendar.currentView,
+    selectedDate: calendar.selectedDate,
+    sidebarDate: calendar.sidebarDate,
+    listRangeStart: calendar.listRangeStart,
+    listRangeEnd: calendar.listRangeEnd,
+    listSortOrder: calendar.listSortOrder,
+    listStatusFilter: calendar.listStatusFilter,
+  };
+
+  const calendarQuery = useCalendarDataQuery(queryParams);
+  const fetchMoreDay = useFetchMoreDayPostsMutation();
+  const fetchMoreList = useFetchMoreListPostsMutation();
+  const queryKey = useMemo(() => calendarKeys.data(queryParams), [
+    queryParams.view,
+    queryParams.selectedDate,
+    queryParams.sidebarDate,
+    queryParams.listRangeStart,
+    queryParams.listRangeEnd,
+    queryParams.listSortOrder,
+    queryParams.listStatusFilter,
+  ]);
+
+  const derived = useMemo(() => deriveFromQueryData(calendarQuery.data), [calendarQuery.data]);
+
+  const dayLoadingMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    if (fetchMoreDay.isPending && fetchMoreDay.variables) {
+      map[fetchMoreDay.variables.dateKey] = true;
+    }
+    return map;
+  }, [fetchMoreDay.isPending, fetchMoreDay.variables]);
+
+  const sortedPosts = useMemo(() => {
+    if (calendar.currentView === 'list') {
+      return sortPostsByTime(derived.items, calendar.listSortOrder === 'asc' ? 'asc' : 'desc');
+    }
+    return sortPostsByTime(derived.items, 'desc');
+  }, [derived.items, calendar.currentView, calendar.listSortOrder]);
+
+  const sidebarPosts = useMemo(() => {
+    if (calendar.currentView === 'week' || calendar.currentView === 'month') {
+      return sortPostsByTime(derived.weekItems[calendar.sidebarDate] || []);
+    }
+    return sortPostsByTime(derived.items);
+  }, [calendar.currentView, calendar.sidebarDate, derived.weekItems, derived.items]);
+
+  const mobilePosts = useMemo(() => {
+    if (calendar.currentView === 'week' || calendar.currentView === 'month') {
+      return sortPostsByTime(derived.weekItems[calendar.sidebarDate] || []);
+    }
+    return sortedPosts;
+  }, [calendar.currentView, calendar.sidebarDate, derived.weekItems, sortedPosts]);
 
   const { data: allTags } = useTagsQuery();
   const { data: channelsData } = useChannelsQuery();
   const allChannels = channelsData?.items;
 
-  // Counts и status по месяцу — через TQ (раньше fetchDayCounts thunk + дублирующий кэш)
+  // Counts и status по месяцу — через TQ
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const monthAnchor = parseDate(calendar.countsMonthAnchor);
   const monthStart = formatDateOnly(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1));
@@ -99,20 +203,6 @@ export function useCalendarPageData() {
     if (main) main.scrollTop = 0;
   }, [calendar.currentView, calendar.selectedDate]);
 
-  // Запрос grid/list данных при смене view/диапазона/фильтров
-  useEffect(() => {
-    dispatch(fetchCalendarData());
-  }, [
-    dispatch,
-    calendar.currentView,
-    calendar.selectedDate,
-    calendar.currentView === 'month' ? calendar.sidebarDate : null,
-    calendar.listRangeStart,
-    calendar.listRangeEnd,
-    calendar.listSortOrder,
-    calendar.listStatusFilter,
-  ]);
-
   return {
     calendar,
     selectedDate,
@@ -122,10 +212,17 @@ export function useCalendarPageData() {
     sortedPosts,
     mobilePosts,
     sidebarPosts,
+    weekItems: derived.weekItems,
+    isLoading: calendarQuery.isLoading,
+    isLoadingMore: fetchMoreList.isPending,
+    hasMore: derived.hasMore,
+    listTotal: derived.listTotal,
+    listPage: derived.listPage,
+    dayPageMap: derived.dayPageMap,
     gridPostCounts,
     monthStatusCounts,
     dayLoadingMap,
-    dayHasMoreMap,
+    dayHasMoreMap: derived.dayHasMoreMap,
     isGridView,
     allTags,
     allChannels,
@@ -133,5 +230,8 @@ export function useCalendarPageData() {
     setShowMobile,
     mobileActiveFilters,
     setMobileActiveFilters,
+    queryKey,
+    fetchMoreDay,
+    fetchMoreList,
   };
 }

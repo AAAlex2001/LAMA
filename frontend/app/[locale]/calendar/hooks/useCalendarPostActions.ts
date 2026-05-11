@@ -3,16 +3,22 @@
 import { useState } from 'react';
 import type { Draft } from '@/types/post';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
-import { useAppDispatch } from '../store';
-import { deletePublication, deleteSeries, deleteRepeatPublication } from '../store/thunks';
+import {
+  useDeletePublicationMutation,
+  useDeleteSeriesMutation,
+  useDeleteRepeatPublicationMutation,
+} from '@/store/calendar/queries';
 
 /**
  * Управляет всеми действиями над постом из календаря: открытие/закрытие preview,
  * подтверждение удаления (обычное + repeat), share-link, edit-навигация.
  */
 export function useCalendarPostActions() {
-  const dispatch = useAppDispatch();
   const { showSuccess, showError } = useNotifications();
+
+  const deletePublication = useDeletePublicationMutation();
+  const deleteSeries = useDeleteSeriesMutation();
+  const deleteRepeat = useDeleteRepeatPublicationMutation();
 
   const [previewPost, setPreviewPost] = useState<Draft | null>(null);
   const [selectedPost, setSelectedPost] = useState<Draft | null>(null);
@@ -65,11 +71,11 @@ export function useCalendarPostActions() {
     if (!deleteConfirmPost) return;
     try {
       if (deleteConfirmPost.series_id) {
-        await dispatch(deleteSeries({ seriesId: deleteConfirmPost.series_id })).unwrap();
+        await deleteSeries.mutateAsync({ seriesId: deleteConfirmPost.series_id });
       } else {
         const isPublished = deleteConfirmPost.status === 'published'
           || deleteConfirmPost.status === 'partial_success';
-        await dispatch(deletePublication({ id: deleteConfirmPost.id, deleteFromChannel: isPublished })).unwrap();
+        await deletePublication.mutateAsync({ id: deleteConfirmPost.id, deleteFromChannel: isPublished });
       }
       showSuccess('Публикация удалена');
     } catch (error) {
@@ -82,11 +88,11 @@ export function useCalendarPostActions() {
   async function confirmRepeatDelete(mode: 'this' | 'this_and_following') {
     if (!repeatDeletePost) return;
     try {
-      await dispatch(deleteRepeatPublication({
+      await deleteRepeat.mutateAsync({
         id: repeatDeletePost.id,
         mode,
         repeatDate: repeatDeletePost.scheduled_time,
-      })).unwrap();
+      });
       showSuccess(mode === 'this' ? 'Повтор удалён' : 'Повторы удалены');
     } catch (error) {
       showError(error instanceof Error ? error.message : 'Ошибка удаления');

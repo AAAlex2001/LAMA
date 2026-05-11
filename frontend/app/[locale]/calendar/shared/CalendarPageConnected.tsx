@@ -20,7 +20,6 @@ import {
   setListStatusFilter,
   setCountsMonthAnchor,
 } from '../store';
-import { fetchMoreListPosts, fetchMoreDayPosts } from '../store/thunks';
 import { navigateStep, sidebarDateChange } from '../store/thunks/navigation';
 import { useCalendarPageData } from '../hooks/useCalendarPageData';
 import { useCalendarPostActions } from '../hooks/useCalendarPostActions';
@@ -48,6 +47,8 @@ export default function CalendarPageConnected() {
     sortedPosts, mobilePosts, sidebarPosts, gridPostCounts, monthStatusCounts,
     dayLoadingMap, dayHasMoreMap, isGridView, allTags, allChannels,
     showMobile, setShowMobile, mobileActiveFilters, setMobileActiveFilters,
+    weekItems, isLoading, isLoadingMore, hasMore,
+    queryKey, fetchMoreDay, fetchMoreList, dayPageMap, listPage,
   } = data;
 
   function handleHeaderArrowClick(direction: 'prev' | 'next') {
@@ -84,13 +85,37 @@ export default function CalendarPageConnected() {
     }
   }
 
+  function handleLoadMoreDay(dateKey: string) {
+    if (fetchMoreDay.isPending) return;
+    const currentItems = weekItems[dateKey] || [];
+    const currentPage = dayPageMap[dateKey] ?? 1;
+    if (!dayHasMoreMap[dateKey]) return;
+    fetchMoreDay.mutate({ queryKey, dateKey, currentItems, currentPage });
+  }
+
+  function handleLoadMoreList() {
+    if (fetchMoreList.isPending || !hasMore) return;
+    if (calendar.currentView === 'week' || calendar.currentView === 'month') return;
+    fetchMoreList.mutate({
+      queryKey,
+      currentItems: sortedPosts,
+      currentPage: listPage,
+      view: calendar.currentView,
+      selectedDate: calendar.selectedDate,
+      listRangeStart: calendar.listRangeStart,
+      listRangeEnd: calendar.listRangeEnd,
+      listSortOrder: calendar.listSortOrder,
+      listStatusFilter: calendar.listStatusFilter,
+    });
+  }
+
   const previewData = actions.previewPost ? getPreviewData(actions.previewPost) : null;
 
   const nonListFilterSourcePosts =
     calendar.currentView === 'day'
       ? sortedPosts
       : calendar.currentView === 'week' || calendar.currentView === 'month'
-        ? Object.values(calendar.weekItems).flat()
+        ? Object.values(weekItems).flat()
         : [] as Draft[];
 
   const filterOpts = { allChannels, allTags };
@@ -109,9 +134,9 @@ export default function CalendarPageConnected() {
   const filteredSortedPosts = isList ? sortedPosts : applyPostFilters(sortedPosts, mobileActiveFilters);
   const filteredMobilePosts = isList ? mobilePosts : applyPostFilters(mobilePosts, mobileActiveFilters);
   const filteredWeekItems: Record<string, Draft[]> = isList
-    ? calendar.weekItems
+    ? weekItems
     : Object.fromEntries(
-      Object.entries(calendar.weekItems).map(([dateKey, posts]) => [
+      Object.entries(weekItems).map(([dateKey, posts]) => [
         dateKey,
         applyPostFilters(posts, mobileActiveFilters),
       ]),
@@ -153,12 +178,12 @@ export default function CalendarPageConnected() {
           weekItems={filteredWeekItems}
           selectedDate={selectedDate}
           sidebarDate={sidebarDate}
-          isLoading={calendar.isLoading}
+          isLoading={isLoading}
           currentView={calendar.currentView}
           sortedPosts={filteredSortedPosts}
           isGridView={isGridView}
-          isLoadingMore={calendar.isLoadingMore}
-          hasMore={calendar.hasMore}
+          isLoadingMore={isLoadingMore}
+          hasMore={hasMore}
           listSortOrder={calendar.listSortOrder}
           listStatusFilter={calendar.listStatusFilter}
           gridPostCounts={gridPostCounts}
@@ -169,8 +194,8 @@ export default function CalendarPageConnected() {
           onMobileFilterChange={handleMobileFilterChange}
           onEdit={actions.openPost}
           onAddPost={(date) => router.push(buildCreatePostUrl(date))}
-          onLoadMoreDay={(dateKey) => dispatch(fetchMoreDayPosts(dateKey))}
-          onLoadMoreList={() => dispatch(fetchMoreListPosts())}
+          onLoadMoreDay={handleLoadMoreDay}
+          onLoadMoreList={handleLoadMoreList}
           onListSortChange={(order) => dispatch(setListSortOrder(order))}
           onListStatusChange={(status) => dispatch(setListStatusFilter(status))}
           onMonthChange={(date) => dispatch(setCountsMonthAnchor(formatDateOnly(date)))}

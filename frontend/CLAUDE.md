@@ -30,11 +30,12 @@ Pages are thin: they render an `*View` or directly compose section components. H
 - `store/tags/` — `useTagsQuery`
 - `store/publications/` — `useDayCountsQuery` and related
 - `store/inbox/` — `useInboxEventsQuery`, `useInviteLinksQuery`, `useBotCommandsQuery`, `useTriggersQuery`, `useSendBotMessageMutation`
+- `store/calendar/` — `useCalendarDataQuery`, `useFetchMoreDayPostsMutation`, `useFetchMoreListPostsMutation`, `useDeletePublicationMutation`, `useDeleteSeriesMutation`, `useDeleteRepeatPublicationMutation`. Returns `{ type: 'grid', results } | { type: 'list', items, hasMore, total }` depending on view. Day-level load-more uses `pageSize=50` to match initial week-batch `per_day=50` (mismatch breaks infinite scroll — historic bug).
 
 Mutations invalidate queries via `qc.invalidateQueries({ queryKey: ... })`. Hooks accept `null` for disabled state (e.g. `useBotQuery(channel.bot_id ?? null)`).
 
 **Redux is reserved for local UI state**, not server data:
-- `app/[locale]/calendar/store/` → `CalendarProvider` — grid cache (`weekItems`, `dayPageState`) is complex enough to keep in Redux for now
+- `app/[locale]/calendar/store/` → `CalendarProvider` — UI state only (selectedDate, sidebarDate, currentView, listSortOrder, listStatusFilter, countsMonthAnchor, listRangeStart/End). All server data via TQ.
 - `app/[locale]/create-post/store/` → `CreatePostProvider` (also reused by `edit-post` and `edit-draft`) — Tiptap editor / media / inline-buttons / quiz / settings / dates
 - `app/[locale]/drafts/store/` → own Provider
 - `app/[locale]/inbox/store/` → own Provider — modal forms, sort/filter UI state, direct chat slice
@@ -90,9 +91,7 @@ For per-day grid views (week/month), use `useInView` per-day with `dayHasMore[da
 
 ### Calendar Feature
 
-Views: `day`, `week`, `month`, `list`. State in `store/slices/calendar.ts`. Thunks (`fetchCalendarData`, `fetchMoreListPosts`, `fetchMoreDayPosts`, `navigation`) fetch from backend and populate per-dateKey buckets. Utils in `app/[locale]/calendar/utils/`: `calendar-helpers.ts` (date math), `post-helpers.ts` (`formatCompact` returns `"0"` not `"—"`), `filterPosts.ts`, `buildFilterConfigs.ts`.
-
-Calendar TQ migration is intentionally pending — grid cache is non-trivial.
+Views: `day`, `week`, `month`, `list`. UI state (`selectedDate`, `sidebarDate`, `currentView`, etc.) in `store/slices/calendar.ts`. Server data via `useCalendarDataQuery` from `@/store/calendar` — returns either `{type: 'grid', results: GridDayResult[]}` (week/month) or `{type: 'list', items, hasMore, total}` (day/list). Per-day load-more (`useFetchMoreDayPostsMutation`) uses `setQueryData` to append to the day bucket. Utils in `app/[locale]/calendar/utils/`: `calendar-helpers.ts` (date math), `post-helpers.ts` (`formatCompact` returns `"0"` not `"—"`), `filterPosts.ts`, `buildFilterConfigs.ts`.
 
 ### Create-Post / Edit Flow
 
@@ -108,7 +107,7 @@ Rich-text editor powered by **Tiptap** (extensions: link, underline, placeholder
 | `components/app-layout/` | Shell: header, sidebar, main |
 | `components/notifications/` | Global toast via `useNotifications()` |
 | `components/icons/` | All SVG icons as React components |
-| `components/new-button/` | Modern Button (`variant: fill\|outline\|ghost\|tag` × `intent: primary\|gradient\|destructive\|neutral\|white`). Old `components/button/` is `@deprecated` and kept only for 9 consumers using `templateCardInternal` / `inlineButton` variants (no equivalent in new-button — would need new CSS variants to fully retire) |
+| `components/new-button/` | The single Button. Variants: `fill\|outline\|ghost\|tag\|soft` × intent `primary\|gradient\|destructive\|neutral\|white` × size `sm\|md\|lg\|transparent`. Old `components/button/` deleted entirely. |
 | `store/api.ts` | Shared `apiRequest<T>` + `getAuthToken()` + `uploadMediaFile()` |
 | `store/<resource>/queries.ts` | TQ hooks for that resource |
 | `hooks/useInView/` | IntersectionObserver hook for infinite scroll |

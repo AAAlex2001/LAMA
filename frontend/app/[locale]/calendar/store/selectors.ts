@@ -1,60 +1,8 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from './index';
-import { sortPostsByTime } from '../utils/post-helpers';
 import { parseDate } from '../utils/calendar-helpers';
-import { buildFilterConfigs } from '../utils/buildFilterConfigs';
 
 const selectCalendar = (s: RootState) => s.calendar;
-
-export const selectSortedPosts = createSelector(
-  [
-    (s: RootState) => s.calendar.items,
-    (s: RootState) => s.calendar.currentView,
-    (s: RootState) => s.calendar.listSortOrder,
-  ],
-  (items, view, listSortOrder) => {
-    if (view === 'list') {
-      return sortPostsByTime(items, listSortOrder === 'asc' ? 'asc' : 'desc');
-    }
-    return sortPostsByTime(items, 'desc');
-  },
-);
-
-export const selectSidebarPosts = createSelector(
-  [
-    (s: RootState) => s.calendar.currentView,
-    (s: RootState) => s.calendar.weekItems,
-    (s: RootState) => s.calendar.sidebarDate,
-    (s: RootState) => s.calendar.items,
-  ],
-  (view, weekItems, sidebarDate, items) =>
-    ['week', 'month'].includes(view)
-      ? sortPostsByTime(weekItems[sidebarDate] || [])
-      : sortPostsByTime(items),
-);
-
-export const selectMobilePosts = createSelector(
-  [
-    (s: RootState) => s.calendar.currentView,
-    (s: RootState) => s.calendar.weekItems,
-    (s: RootState) => s.calendar.sidebarDate,
-    selectSortedPosts,
-  ],
-  (view, weekItems, sidebarDate, sortedPosts) =>
-    ['week', 'month'].includes(view)
-      ? sortPostsByTime(weekItems[sidebarDate] || [])
-      : sortedPosts,
-);
-
-export const selectDayLoadingMap = createSelector(
-  [(s: RootState) => s.calendar.dayPageState],
-  (dps) => Object.fromEntries(Object.entries(dps).map(([k, v]) => [k, v.isLoading])),
-);
-
-export const selectDayHasMoreMap = createSelector(
-  [(s: RootState) => s.calendar.dayPageState],
-  (dps) => Object.fromEntries(Object.entries(dps).map(([k, v]) => [k, v.hasMore])),
-);
 
 export const selectSelectedDateObj = createSelector(
   [selectCalendar],
@@ -79,16 +27,4 @@ export const selectListRangeEndObj = createSelector(
 export const selectIsGridView = createSelector(
   [selectCalendar],
   (calendar) => calendar.currentView === 'week' || calendar.currentView === 'month',
-);
-
-export const selectMobileFilterConfigs = createSelector(
-  [selectCalendar, selectIsGridView, selectSidebarPosts, selectSortedPosts],
-  (calendar, isGridView, sidebarPosts, sortedPosts) => {
-    const isList = calendar.currentView === 'list';
-    return buildFilterConfigs(isGridView ? sidebarPosts : sortedPosts, {
-      withDateSort: isList,
-      withStatusFilter: isList,
-      withStatsFilters: isList,
-    });
-  },
 );
