@@ -1,9 +1,10 @@
 'use client';
 
-import { ReactNode } from 'react';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
+import Loader from '@/components/loader';
 import EmptyContent from './EmptyContent';
-import styles from './ListPanel.module.scss';
+import type { CommunityFilter, CommunityStatsItem } from '../store/types';
+import styles from './CommunitiesPanel.module.scss';
 
 const TABS: FilterOption[] = [
   { id: 'all', label: 'Все' },
@@ -13,26 +14,39 @@ const TABS: FilterOption[] = [
 ];
 
 interface CommunitiesPanelProps {
-  activeTab: string;
-  onTabChange: (id: string) => void;
-  isEmpty?: boolean;
+  activeTab: CommunityFilter;
+  onTabChange: (id: CommunityFilter) => void;
+  items: CommunityStatsItem[];
+  loading: boolean;
+  currency: string;
   onAddClick?: () => void;
-  children?: ReactNode;
 }
 
 export default function CommunitiesPanel({
   activeTab,
   onTabChange,
-  isEmpty = true,
+  items,
+  loading,
+  currency,
   onAddClick,
-  children,
 }: CommunitiesPanelProps) {
+  const hasItems = items.length > 0;
+
   return (
     <section className={styles.panel}>
       <div className={styles.tabsRow}>
-        <FilterTabs options={TABS} selectedFilter={activeTab} onFilterChange={onTabChange} />
+        <FilterTabs
+          options={TABS}
+          selectedFilter={activeTab}
+          onFilterChange={(id) => onTabChange(id as CommunityFilter)}
+        />
       </div>
-      {isEmpty ? (
+
+      {loading ? (
+        <div className={styles.loaderRow}>
+          <Loader size={24} color="blue" />
+        </div>
+      ) : !hasItems ? (
         <EmptyContent
           title="Здесь появятся ваши сообщества"
           description="Добавьте рекламные публикации, чтобы видеть доходы и расходы по каждому каналу"
@@ -40,8 +54,76 @@ export default function CommunitiesPanel({
           onButtonClick={onAddClick}
         />
       ) : (
-        children
+        <>
+          <div className={styles.headerRow}>
+            <span className={styles.headTitleCommunity}>Сообщество</span>
+            <span className={styles.headCell}>Доходы</span>
+            <span className={styles.headCell}>Расходы</span>
+            <span className={styles.headCell}>Опублик.</span>
+            <span className={styles.headCell}>Заплан.</span>
+          </div>
+
+          <div className={styles.rows}>
+            {items.map((item) => (
+              <CommunityRow key={`${item.kind}-${item.id}`} item={item} currency={currency} />
+            ))}
+          </div>
+        </>
       )}
     </section>
   );
+}
+
+interface CommunityRowProps {
+  item: CommunityStatsItem;
+  currency: string;
+}
+
+function CommunityRow({ item, currency }: CommunityRowProps) {
+  const handle = item.username ? `@${item.username.replace(/^@/, '')}` : '';
+  return (
+    <div className={styles.row}>
+      <div className={styles.community}>
+        <div className={styles.avatar}>
+          {item.photo_url ? (
+            <img src={item.photo_url} alt="" />
+          ) : (
+            <span className={styles.avatarFallback}>{getInitials(item.title)}</span>
+          )}
+        </div>
+        <div className={styles.communityText}>
+          <span className={styles.communityTitle}>{item.title}</span>
+          {handle && <span className={styles.communityHandle}>{handle}</span>}
+        </div>
+      </div>
+      <span className={styles.cell}>{formatMoney(item.income, currency)}</span>
+      <span className={styles.cell}>{formatMoney(item.expense, currency)}</span>
+      <span className={styles.cell}>{formatInt(item.published_ads_count)}</span>
+      <span className={styles.cell}>{formatInt(item.scheduled_ads_count)}</span>
+    </div>
+  );
+}
+
+function getInitials(title: string): string {
+  const trimmed = title.trim();
+  if (!trimmed) return '?';
+  const parts = trimmed.split(/\s+/).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || trimmed[0].toUpperCase();
+}
+
+function formatMoney(value: string, currency: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n === 0) return '—';
+  return n.toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ' + currencySymbol(currency);
+}
+
+function currencySymbol(code: string): string {
+  if (code === 'RUB') return '₽';
+  if (code === 'USD') return '$';
+  if (code === 'EUR') return '€';
+  return code;
+}
+
+function formatInt(n: number): string {
+  return n > 0 ? String(n) : '—';
 }

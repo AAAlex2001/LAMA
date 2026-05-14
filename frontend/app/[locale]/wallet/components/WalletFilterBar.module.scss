@@ -1,115 +1,144 @@
-.bar {
-  display: none;
-
-  @media (min-width: 1440px) {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    padding: 0 10px;
-    width: 100%;
-    height: 24px;
-  }
+.sortingBar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px;
+  width: 100%;
+  min-height: 24px;
 }
 
-.periodLabel {
+.sortLabel {
   font-weight: 500;
   font-size: 12px;
   line-height: 24px;
-  color: #1A1A1A;
-  flex-shrink: 0;
+  color: #000000;
   white-space: nowrap;
-  padding-right: 4px;
+  flex-shrink: 0;
 }
 
-.chips {
+.sortGroup {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 }
 
-.chipWrap {
+.sortDropdown {
   position: relative;
   flex-shrink: 0;
 }
 
-.chip {
-  display: inline-flex;
+.sortButton {
+  display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
   padding: 4px 12px;
+  gap: 6px;
+  height: 24px;
   border-radius: 25px;
-  background: transparent;
+  background: #FFFFFF;
   border: none;
   cursor: pointer;
-  font-family: inherit;
+}
+
+.sortButtonActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.sortButtonText {
   font-weight: 500;
   font-size: 12px;
   line-height: 15px;
   color: #1A1A1A;
   white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  &:hover {
-    background: rgba(59, 130, 246, 0.08);
+.sortChevron {
+  color: #1E1E1E;
+}
+
+.sortClear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+
+  svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+
+  &:hover svg path:first-child {
+    fill: #3B82F6;
+    stroke: #3B82F6;
+  }
+
+  &:hover svg path:last-child {
+    stroke: #FFFFFF;
   }
 }
 
-.chipActive {
-  background: rgba(59, 130, 246, 0.1);
-}
-
-.menu {
+.sortMenu {
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 8px);
   left: 0;
-  z-index: 30;
   display: flex;
   flex-direction: column;
-  min-width: 200px;
-  padding: 6px;
-  background: #FFFFFF;
-  border: 1px solid #F0F4FA;
+  align-items: flex-start;
+  padding: 0 8px;
+  gap: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  background: linear-gradient(0deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.1)), #FFFFFF;
   border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(16, 24, 40, 0.08);
+  z-index: 20;
+  overflow-x: hidden;
+  min-width: 200px;
 }
 
-.menuItem {
+.sortOption {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  padding: 6px 8px;
-  border: none;
+  padding: 8px 0;
+  width: 100%;
   background: transparent;
+  border: none;
   cursor: pointer;
-  font-family: inherit;
-  font-weight: 400;
-  font-size: 13px;
-  line-height: 16px;
-  color: #1A1A1A;
-  text-align: left;
-  border-radius: 6px;
 
-  &:hover {
-    background: rgba(59, 130, 246, 0.06);
+  &:hover .sortOptionText {
+    color: #3B82F6;
   }
 }
 
-.radio {
-  display: inline-flex;
-  justify-content: center;
+.sortOptionText {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #000000;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sortRadio {
+  display: flex;
   align-items: center;
-  width: 14px;
-  height: 14px;
-  padding: 3px;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   border-radius: 100px;
   background: #FFFFFF;
   box-shadow:
@@ -119,18 +148,19 @@
   flex-shrink: 0;
 }
 
-.radioActive {
-  background: #3B82F6;
-  box-shadow: none;
-}
-
-.radioDot {
+.sortRadioDot {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: 999px;
   background: transparent;
+  flex-shrink: 0;
+}
 
-  .radioActive & {
+.sortRadioActive {
+  background: #3B82F6;
+  box-shadow: none;
+
+  .sortRadioDot {
     background: #FFFFFF;
   }
 }

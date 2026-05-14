@@ -45,6 +45,14 @@ class AdRevenueUpdate(BaseModel):
     is_repeating: Optional[bool] = None
 
 
+class AdRevenuePlacement(BaseModel):
+    channel_id: int
+    title: str
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    post_link: Optional[str] = None
+
+
 class AdRevenueResponse(AdRevenueBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -60,6 +68,8 @@ class AdRevenueResponse(AdRevenueBase):
     comments_count: int = 0
     clicks_count: int = 0
     post_link: Optional[str] = None
+
+    placements: List[AdRevenuePlacement] = Field(default_factory=list)
 
 
 class AdRevenueListResponse(BaseModel):
@@ -77,3 +87,30 @@ class AdRevenueStats(BaseModel):
     scheduled_ads_count: int = 0
     currency: str = "RUB"
     currencies: List[str] = Field(default_factory=list)
+
+
+class CommunityStatsItem(BaseModel):
+    id: int
+    kind: str
+    title: str
+    username: Optional[str] = None
+    photo_url: Optional[str] = None
+    income: Decimal = Decimal(0)
+    expense: Decimal = Decimal(0)
+    published_ads_count: int = 0
+    scheduled_ads_count: int = 0
+
+
+class CommunityStatsResponse(BaseModel):
+    items: List[CommunityStatsItem]
+
+
+class MonthlyAdStatItem(BaseModel):
+    month: int = Field(ge=1, le=12)
+    income: Decimal = Decimal(0)
+    expense: Decimal = Decimal(0)
+
+
+class MonthlyAdStatsResponse(BaseModel):
+    year: int
+    months: List[MonthlyAdStatItem]

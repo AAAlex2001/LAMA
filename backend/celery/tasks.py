@@ -386,22 +386,27 @@ async def process_recurring_messages_async() -> str:
         return f"processed_recurring:{len(pending)}"
 
 
-@celery_app.task(name="backend.celery.tasks.sync_ad_post_metrics")
-def sync_ad_post_metrics() -> str:
-    """Периодически обновляет метрики (views/forwards/reactions/comments/clicks)
-    для рекламных постов на основе данных Telegram API."""
+@celery_app.task(
+    name="backend.celery.tasks.sync_message_metrics",
+    soft_time_limit=3300,
+    time_limit=3600,
+)
+def sync_message_metrics() -> str:
+    """Ночной полный обход: обновляет метрики (views/forwards/reactions/comments)
+    всех опубликованных сообщений из публичных каналов через парсинг t.me."""
 
-    return run(sync_ad_post_metrics_async())
+    return run(sync_message_metrics_async())
 
 
-async def sync_ad_post_metrics_async() -> str:
-    from backend.services.publications.features.publications.sync_ad_metrics import (
-        SyncAdPostMetrics,
+async def sync_message_metrics_async() -> str:
+    from backend.services.publications.features.publications.sync_message_metrics import (
+        SyncMessageMetrics,
     )
 
     async with CelerySessionLocal() as db:
-        updated = await SyncAdPostMetrics(db).execute()
-    return f"sync_ad_metrics:{updated}"
+        processed = await SyncMessageMetrics(db).execute()
+        await db.commit()
+    return f"sync_message_metrics:{processed}"
 
 
 @celery_app.task(name="backend.celery.tasks.process_repeating_publications")

@@ -13,12 +13,19 @@ from backend.schemas.ad_revenues.ad_revenue import (
     AdRevenueResponse,
     AdRevenueStats,
     AdRevenueUpdate,
+    CommunityStatsResponse,
+    MonthlyAdStatsResponse,
 )
 from backend.schemas.ad_revenues.enums import AdRevenueType
 from backend.services.ad_revenues.features.create_ad_revenue import CreateAdRevenue
 from backend.services.ad_revenues.features.delete_ad_revenue import DeleteAdRevenue
 from backend.services.ad_revenues.features.get_ad_revenue import GetAdRevenue
 from backend.services.ad_revenues.features.get_ad_revenue_stats import GetAdRevenueStats
+from backend.services.ad_revenues.features.get_community_stats import (
+    COMMUNITY_FILTERS,
+    GetCommunityStats,
+)
+from backend.services.ad_revenues.features.get_monthly_stats import GetMonthlyAdStats
 from backend.services.ad_revenues.features.list_ad_revenues import ListAdRevenues
 from backend.services.ad_revenues.features.update_ad_revenue import UpdateAdRevenue
 
@@ -60,10 +67,44 @@ async def list_ad_revenues(
         limit=limit,
         offset=offset,
     )
-    return AdRevenueListResponse(
-        items=[AdRevenueResponse.model_validate(item) for item in items],
-        total=total,
+    return AdRevenueListResponse(items=items, total=total)
+
+
+@router.get("/monthly", response_model=MonthlyAdStatsResponse)
+async def monthly_ad_stats(
+    year: Optional[int] = Query(None),
+    currency: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> MonthlyAdStatsResponse:
+    resolved_year = year or date.today().year
+    months = await GetMonthlyAdStats(db).execute(
+        owner_id=current_user.id,
+        year=resolved_year,
+        currency=currency,
     )
+    return MonthlyAdStatsResponse(year=resolved_year, months=months)
+
+
+@router.get("/communities", response_model=CommunityStatsResponse)
+async def community_stats(
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    currency: Optional[str] = Query(None),
+    kind: Literal["all", "channels", "groups", "bots"] = Query("all"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> CommunityStatsResponse:
+    if kind not in COMMUNITY_FILTERS:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid kind")
+    items = await GetCommunityStats(db).execute(
+        owner_id=current_user.id,
+        date_from=date_from,
+        date_to=date_to,
+        currency=currency,
+        kind=kind,
+    )
+    return CommunityStatsResponse(items=items)
 
 
 @router.get("/stats", response_model=AdRevenueStats)

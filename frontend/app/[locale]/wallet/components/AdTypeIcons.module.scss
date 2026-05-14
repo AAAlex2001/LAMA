@@ -2,7 +2,7 @@
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  gap: 0;
+  gap: 4px;
 
   > * {
     width: 16px;
@@ -11,8 +11,9 @@
   }
 }
 
-.iconWrap {
+.pinnedIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: #3B82F6;
 }

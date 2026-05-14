@@ -1,0 +1,148 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  width: 100%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 10px 0;
+  box-sizing: border-box;
+}
+
+.tabsRow {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 7px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loaderRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  align-self: stretch;
+  width: 100%;
+  padding: 32px 0;
+}
+
+.headerRow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 90px 90px 90px 90px;
+  gap: 20px;
+  padding: 0 14px;
+  align-items: center;
+}
+
+.headTitleCommunity {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 16px;
+  color: #383F45;
+  text-align: left;
+}
+
+.headCell {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 16px;
+  color: #383F45;
+  text-align: center;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 16px;
+  padding: 10px 14px;
+  width: 100%;
+  max-height: 320px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) 90px 90px 90px 90px;
+  gap: 20px;
+  align-items: center;
+  height: 48px;
+  flex-shrink: 0;
+
+  &:nth-child(odd) {
+    background: #F0F4FA;
+    border-radius: 50px;
+  }
+}
+
+.community {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #E5EAF2;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.avatarFallback {
+  font-weight: 600;
+  font-size: 16px;
+  color: #383F45;
+}
+
+.communityText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.communityTitle {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 19px;
+  color: #383F45;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.communityHandle {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #B0B4B8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cell {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 16px;
+  color: #383F45;
+  text-align: center;
+}

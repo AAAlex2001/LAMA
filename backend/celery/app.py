@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import timedelta
 
 from celery import Celery
+from celery.schedules import crontab
 from kombu import Queue
 
 from backend.celery.config import load_celery_config
@@ -56,6 +57,7 @@ celery_app.conf.update(
         "backend.celery.tasks.republish_publication": {"queue": "default"},
         "backend.celery.tasks.delayed_delete_message": {"queue": "autodelete"},
         "backend.celery.tasks.apply_moderation_action": {"queue": "moderation"},
+        "backend.celery.tasks.sync_message_metrics": {"queue": "low"},
     },
     beat_schedule={
         "process-scheduled-publications": {
@@ -78,9 +80,9 @@ celery_app.conf.update(
             "task": "backend.celery.tasks.process_repeating_publications",
             "schedule": timedelta(seconds=30),
         },
-        "sync-ad-post-metrics": {
-            "task": "backend.celery.tasks.sync_ad_post_metrics",
-            "schedule": timedelta(minutes=15),
+        "sync-message-metrics-nightly": {
+            "task": "backend.celery.tasks.sync_message_metrics",
+            "schedule": crontab(hour=22, minute=0),
         },
     },
 )
