@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 from sqlalchemy import Integer, String, Text, DateTime, Boolean, JSON, ForeignKey, Enum as SQLEnum, Table, func, Column, Index, BigInteger
+import sqlalchemy as sa
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from backend.models.base import Base
 import enum
@@ -107,6 +108,8 @@ class Publication(Base):
     
     ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
     ai_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    is_ad: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa.text("false"), nullable=False, index=True)
     
     share_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True, index=True)
     share_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)

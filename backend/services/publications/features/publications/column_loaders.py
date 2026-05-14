@@ -23,6 +23,7 @@ PUB_COMPACT_COLUMNS = [
     Publication.owner_id,
     Publication.series_id,
     Publication.series_order,
+    Publication.is_ad,
 ]
 
 REPEAT_EXTRA_COLUMNS = [

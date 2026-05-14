@@ -86,6 +86,7 @@ class GetDayCounts:
         draft_count = func.count(case(
             (Publication.status == DBPublicationStatus.DRAFT, 1),
         ))
+        ads_count = func.count(case((Publication.is_ad.is_(True), 1)))
 
         query = (
             select(
@@ -94,6 +95,7 @@ class GetDayCounts:
                 published_count.label("published"),
                 scheduled_count.label("scheduled"),
                 draft_count.label("draft"),
+                ads_count.label("ads"),
             )
             .where(and_(*filters))
             .group_by(date_expr)
@@ -109,6 +111,7 @@ class GetDayCounts:
                 published=row.published,
                 scheduled=row.scheduled,
                 draft=row.draft,
+                ads=row.ads,
             )
         return counts_map
 
@@ -123,6 +126,7 @@ def merge_repeat(existing: Optional[DayCount], proj: DayCount) -> DayCount:
         published=existing.published + proj.published,
         scheduled=existing.scheduled,
         draft=existing.draft,
+        ads=existing.ads,
     )
 
 
@@ -136,5 +140,6 @@ def merge_bot_messages(existing: Optional[DayCount], bc: DayCount) -> DayCount:
         published=existing.published + bc.published,
         scheduled=existing.scheduled,
         draft=existing.draft,
+        ads=existing.ads,
         bot_messages=existing.bot_messages + bc.bot_messages,
     )

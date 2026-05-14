@@ -96,6 +96,7 @@ async def get_publications(
     search: Optional[str] = None,
     sort_order: Optional[Literal["asc", "desc"]] = Query(None),
     date_mode: PublicationDateMode = Query(default=PublicationDateMode.scheduled),
+    is_ad: Optional[bool] = Query(None, description="Filter posts marked as advertisements"),
     tz: str = Query("UTC"),
     page: int = 1,
     page_size: int = Query(50, ge=1, le=200),
@@ -120,6 +121,7 @@ async def get_publications(
         search=search,
         sort_order=sort_order,
         date_mode=date_mode.value,
+        is_ad=is_ad,
         skip=skip,
         limit=page_size,
     )
@@ -139,6 +141,7 @@ async def get_week_batch(
     end_date: datetime,
     per_day: int = Query(20, ge=1, le=50),
     tz: str = Query("UTC"),
+    is_ad: Optional[bool] = Query(None, description="Filter posts marked as advertisements"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -148,6 +151,7 @@ async def get_week_batch(
         end_date=end_date,
         per_day=per_day,
         tz=tz,
+        is_ad=is_ad,
     )
 
 

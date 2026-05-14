@@ -45,6 +45,7 @@ class PublicationBase(BaseModel):
     series_id: Optional[int] = None
     series_order: Optional[int] = None
     ai_prompt: Optional[str] = None
+    is_ad: bool = False
     channel_ids: List[int] = Field(default_factory=list)
     tag_names: List[str] = Field(default_factory=list)
     tag_color: Optional[str] = None
@@ -158,6 +159,7 @@ class PublicationUpdate(BaseModel):
     series_order: Optional[int] = None
     reply_to_post_id: Optional[int] = None
     status: Optional[PublicationStatus] = None
+    is_ad: Optional[bool] = None
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
     tag_color: Optional[str] = None
@@ -246,6 +248,7 @@ class PublicationCompact(BaseModel):
     scheduled_time: Optional[datetime] = None
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
+    is_ad: bool = False
     created_at: datetime
     updated_at: datetime
     channels: List[ChannelCompact] = []
@@ -298,6 +301,7 @@ class PublicationResponse(BaseModel):
     reply_to_post_id: Optional[int] = None
     ai_generated: bool
     ai_prompt: Optional[str] = None
+    is_ad: bool = False
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     repeat_custom_days: Optional[int] = None
@@ -334,6 +338,7 @@ class DayCount(BaseModel):
     scheduled: int = 0
     draft: int = 0
     bot_messages: int = 0
+    ads: int = 0
 
 
 class WeekBatchDay(BaseModel):

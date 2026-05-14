@@ -44,6 +44,7 @@ class ListPublications:
         search: Optional[str] = None,
         sort_order: Optional[str] = None,
         date_mode: Optional[str] = "scheduled",
+        is_ad: Optional[bool] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> List[Publication]:
@@ -62,6 +63,7 @@ class ListPublications:
             end_date=end_date,
             search=search,
             date_mode=date_mode,
+            is_ad=is_ad,
         )
         query = apply_pagination_and_sort(query, date_mode, sort_order, skip, limit)
 
@@ -90,6 +92,7 @@ def build_filtered_query(
     end_date: Optional[datetime],
     search: Optional[str],
     date_mode: Optional[str],
+    is_ad: Optional[bool] = None,
 ):
     """Базовый SELECT + load_only + все фильтры одним местом."""
     query = (
@@ -109,6 +112,8 @@ def build_filtered_query(
     if column_conditions:
         query = query.where(and_(*column_conditions))
 
+    if is_ad is not None:
+        query = query.where(Publication.is_ad == is_ad)
     if channel_id:
         query = query.where(channel_filter(channel_id))
     if tag_ids:

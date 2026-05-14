@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -63,28 +64,38 @@ class GetWeekBatch:
         end_date: datetime,
         per_day: int = 20,
         tz: str = "UTC",
+        is_ad: Optional[bool] = None,
     ) -> WeekBatchResponse:
         utc_start, utc_end = local_range_to_utc(start_date, end_date, tz)
 
-        posts = await fetch_scheduled_posts(self.db, owner_id, utc_start, utc_end, tz)
+        posts = await fetch_scheduled_posts(self.db, owner_id, utc_start, utc_end, tz, is_ad)
         await add_repeat_projections(self.db, owner_id, start_date, end_date, posts)
-        bots = await fetch_bot_message_buckets(self.db, owner_id, utc_start, utc_end, tz)
+        # Бот-сообщения никогда не являются рекламой — при is_ad=True исключаем их.
+        bots = (
+            PostBuckets() if is_ad is True
+            else await fetch_bot_message_buckets(self.db, owner_id, utc_start, utc_end, tz)
+        )
 
         return WeekBatchResponse(days=build_days(posts, bots, per_day))
 
 
 async def fetch_scheduled_posts(
     db: AsyncSession, owner_id: int, utc_start: datetime, utc_end: datetime, tz: str,
+    is_ad: Optional[bool] = None,
 ) -> PostBuckets:
     """Запланированные/опубликованные посты в окне → раскладка по дням."""
+    filters = [
+        Publication.owner_id == owner_id,
+        Publication.scheduled_time >= utc_start,
+        Publication.scheduled_time <= utc_end,
+        Publication.status.notin_([DBPublicationStatus.DELETED]),
+    ]
+    if is_ad is not None:
+        filters.append(Publication.is_ad == is_ad)
+
     query = (
         select(Publication)
-        .where(
-            Publication.owner_id == owner_id,
-            Publication.scheduled_time >= utc_start,
-            Publication.scheduled_time <= utc_end,
-            Publication.status.notin_([DBPublicationStatus.DELETED]),
-        )
+        .where(*filters)
         .options(
             load_only(*PUB_COMPACT_COLUMNS),
             selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),

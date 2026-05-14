@@ -56,6 +56,7 @@ class CreatePublication:
             reply_to_post_id=data.reply_to_post_id,
             ai_generated=bool(data.ai_prompt),
             ai_prompt=data.ai_prompt,
+            is_ad=data.is_ad,
         )
 
         if data.channel_ids:
