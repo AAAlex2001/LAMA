@@ -6,6 +6,10 @@ import {
   AdRevenueListResponse,
   AdRevenueStats,
   AdRevenueUpdatePayload,
+  CommunityStatsFilters,
+  CommunityStatsResponse,
+  MonthlyAdStatsFilters,
+  MonthlyAdStatsResponse,
 } from './types';
 
 function buildQuery(filters: AdRevenueListFilters): string {
@@ -17,6 +21,10 @@ function buildQuery(filters: AdRevenueListFilters): string {
   if (filters.date_to) params.set('date_to', filters.date_to);
   if (filters.limit !== undefined) params.set('limit', String(filters.limit));
   if (filters.offset !== undefined) params.set('offset', String(filters.offset));
+  if (filters.sort_by) params.set('sort_by', filters.sort_by);
+  if (filters.sort_dir) params.set('sort_dir', filters.sort_dir);
+  if (filters.status) params.set('status', filters.status);
+  if (filters.currency) params.set('currency', filters.currency);
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
@@ -27,6 +35,25 @@ export function fetchAdRevenues(filters: AdRevenueListFilters = {}): Promise<AdR
 
 export function fetchAdRevenueStats(filters: Omit<AdRevenueListFilters, 'limit' | 'offset' | 'type'> = {}): Promise<AdRevenueStats> {
   return apiRequest<AdRevenueStats>(`/ad-revenues/stats${buildQuery(filters)}`);
+}
+
+export function fetchCommunityStats(filters: CommunityStatsFilters = {}): Promise<CommunityStatsResponse> {
+  const params = new URLSearchParams();
+  if (filters.date_from) params.set('date_from', filters.date_from);
+  if (filters.date_to) params.set('date_to', filters.date_to);
+  if (filters.currency) params.set('currency', filters.currency);
+  if (filters.kind) params.set('kind', filters.kind);
+  const qs = params.toString();
+  return apiRequest<CommunityStatsResponse>(`/ad-revenues/communities${qs ? `?${qs}` : ''}`);
+}
+
+export function fetchMonthlyAdStats(filters: MonthlyAdStatsFilters = {}): Promise<MonthlyAdStatsResponse> {
+  const params = new URLSearchParams();
+  if (filters.year !== undefined) params.set('year', String(filters.year));
+  if (filters.currency) params.set('currency', filters.currency);
+  if (filters.channel_id !== undefined) params.set('channel_id', String(filters.channel_id));
+  const qs = params.toString();
+  return apiRequest<MonthlyAdStatsResponse>(`/ad-revenues/monthly${qs ? `?${qs}` : ''}`);
 }
 
 export function createAdRevenue(payload: AdRevenueCreatePayload): Promise<AdRevenue> {

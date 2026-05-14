@@ -258,16 +258,23 @@
     background: #FFFFFF;
   }
 
-  .postIndicator {
+  .indicatorRow {
     position: absolute;
     bottom: 4px;
     left: 50%;
     transform: translateX(-50%);
-    width: 21px;
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1px;
+    height: 3px;
+    z-index: 4;
+  }
+
+  .postIndicator {
     height: 3px;
     background: #3B82F6;
     border-radius: 100px;
-    z-index: 4;
   }
 
   .postIndicatorActive {
@@ -280,15 +287,9 @@
   }
 
   .adsIndicator {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 21px;
     height: 3px;
     background: #FF8D28;
     border-radius: 100px;
-    z-index: 4;
   }
 
   .adsIndicatorActive {

@@ -5,7 +5,7 @@ import type { Draft } from '@/types/post';
 import DatePicker from '@/components/date-picker/date-picker';
 import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon, WalletAdIcon } from '@/components/icons';
 import { useInView } from '@/hooks/useInView';
 import {
   formatTime,
@@ -133,7 +133,9 @@ export default function MonthCalendarView({
                   className={styles.postRow}
                   onClick={() => onEdit(post)}
                 >
-                  {post.is_bot_message ? (
+                  {post.is_ad ? (
+                    <WalletAdIcon width={16} height={16} />
+                  ) : post.is_bot_message ? (
                     <CalendarBotMessageIcon width={14} height={14} />
                   ) : post.status === 'draft' ? (
                     <CalendarDraftIcon width={14} height={14} />

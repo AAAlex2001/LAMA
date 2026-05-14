@@ -1,26 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import clsx from 'clsx';
 import DatePicker from '@/components/date-picker/date-picker';
 import Checkbox from '@/components/checkbox/checkbox';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { Button } from '@/components/new-button';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon, WalletAdIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CloseIcon, SearchIcon, WalletAdIcon } from '@/components/icons';
 import type { Draft } from '@/types/post';
 import { getPreviewText, getSourceDate } from '@/[locale]/calendar/utils/calendar-helpers';
 import { useDayBatchQuery, useDayCountsQuery, useDraftsListQuery } from '../store/queries';
 import styles from './PostSourcePanel.module.scss';
 
-type Source = 'ads' | 'calendar' | 'drafts';
-type StatusFilter = 'all' | 'scheduled' | 'published';
+type Source = 'calendar' | 'drafts';
+type StatusTab = 'all' | 'scheduled' | 'published';
 
-const SOURCE_OPTIONS: { id: Source; label: string }[] = [
-  { id: 'ads', label: 'Рекламные посты' },
-  { id: 'calendar', label: 'Календарь публикаций' },
-  { id: 'drafts', label: 'Черновики' },
-];
-
-const STATUS_OPTIONS: { id: StatusFilter; label: string }[] = [
+const STATUS_TABS: { id: StatusTab; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 'scheduled', label: 'Запланированные' },
   { id: 'published', label: 'Опубликованные' },
@@ -38,148 +34,293 @@ interface PostSourcePanelProps {
 }
 
 export default function PostSourcePanel({ onClose, onSelect }: PostSourcePanelProps) {
-  const [source, setSource] = useState<Source>('ads');
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const router = useRouter();
+  const params = useParams<{ locale?: string }>();
+  const locale = params?.locale ?? 'ru';
+
+  const [source, setSource] = useState<Source>('calendar');
+  const [statusTab, setStatusTab] = useState<StatusTab>('all');
   const [pickedDate, setPickedDate] = useState<Date>(todayMidnight);
   const [monthStart, setMonthStart] = useState<Date>(() => firstOfMonth(todayMidnight()));
 
-  const dayCounts = useDayCountsQuery(monthStart);
-  const dayBatch = useDayBatchQuery(source === 'drafts' ? null : pickedDate, {
-    isAd: source === 'ads',
-  });
-  const drafts = useDraftsListQuery();
-
-  const isDrafts = source === 'drafts';
-  const draftsByDay = isDrafts ? groupDraftsByDay(drafts.data ?? []) : {};
-
-  const indicatorCounts = source === 'ads' ? undefined : pickSourceCounts(source, dayCounts.data, draftsByDay);
-  const adsCounts = source === 'ads' ? dayCounts.data?.ads : undefined;
-  const rawDayItems = isDrafts
-    ? draftsByDay[dateKey(pickedDate)] ?? []
-    : dayBatch.data ?? [];
-  const dayItems = applyStatusFilter(rawDayItems, statusFilter);
-  const loading = isDrafts ? drafts.isLoading : dayBatch.isLoading;
-  const showStatusFilter = source !== 'drafts';
+  const isCalendar = source === 'calendar';
 
   return (
     <aside className={styles.panel}>
       <div className={styles.header}>
         <h3 className={styles.title}>Выберите источник поста</h3>
         <button type="button" className={styles.closeBtn} onClick={onClose} aria-label="Закрыть">
-          <ChevronDownIcon width={16} height={16} color="#383F45" />
+          <CloseIcon width={16} height={16} color="#383F45" />
         </button>
       </div>
 
       <div className={styles.body}>
-        <div className={styles.sourcesList}>
-          {SOURCE_OPTIONS.map((opt) => (
-            <label
-              key={opt.id}
-              className={styles.sourceRow}
-              onClick={(e) => {
-                e.preventDefault();
-                setSource(opt.id);
-              }}
-            >
-              <Checkbox
-                variant="radio"
-                checked={source === opt.id}
-                onChange={() => setSource(opt.id)}
-              />
-              <span className={styles.sourceLabel}>{opt.label}</span>
-            </label>
-          ))}
-        </div>
+        <SourceRadio
+          checked={isCalendar}
+          label="Календарь публикаций"
+          onSelect={() => setSource('calendar')}
+        />
 
-        {showStatusFilter && (
-          <div className={styles.statusFilter}>
-            {STATUS_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                className={`${styles.statusChip} ${statusFilter === opt.id ? styles.statusChipActive : ''}`}
-                onClick={() => setStatusFilter(opt.id)}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        {isCalendar && (
+          <CalendarView
+            pickedDate={pickedDate}
+            onPickedDateChange={setPickedDate}
+            monthStart={monthStart}
+            onMonthStartChange={setMonthStart}
+            statusTab={statusTab}
+            onStatusTabChange={setStatusTab}
+            onSelect={onSelect}
+          />
         )}
 
-        <div className={styles.calendarWrap}>
-          <DatePicker
-            value={pickedDate}
-            onChange={setPickedDate}
-            onMonthChange={(d) => setMonthStart(firstOfMonth(d))}
-            locale="ru"
-            minDate={null}
-            postCounts={indicatorCounts}
-            adsCounts={adsCounts}
-          />
-        </div>
+        <SourceRadio
+          checked={!isCalendar}
+          label="Черновики"
+          onSelect={() => setSource('drafts')}
+        />
 
-        <div className={styles.dayHeader}>{formatDayHeader(pickedDate)}</div>
-
-        <div className={styles.postsList}>
-          {loading && (
-            <div className={styles.loaderRow}>
-              <Loader size={24} color="blue" />
-            </div>
-          )}
-          {!loading && dayItems.length === 0 && (
-            <div className={styles.empty}>{emptyText(source)}</div>
-          )}
-          {!loading &&
-            dayItems
-              .slice()
-              .sort(byTimeAsc)
-              .map((post) => (
-                <PostRow key={post.id} post={post} source={source} onClick={() => onSelect(post)} />
-              ))}
-        </div>
+        {!isCalendar && <DraftsView onSelect={onSelect} />}
       </div>
+
+      <Button
+        variant="fill"
+        intent="gradient"
+        size="lg"
+        style={{ width: '100%', justifyContent: 'center' }}
+        onClick={() => router.push(`/${locale}/create-post?ad=1`)}
+      >
+        Создать рекламный пост
+      </Button>
     </aside>
   );
 }
 
-// ----------------------------------------------------------------
-// Row component
-// ----------------------------------------------------------------
+// ──────────── Source radio (non-section-specific) ────────────
+
+interface SourceRadioProps {
+  checked: boolean;
+  label: string;
+  onSelect: () => void;
+}
+
+function SourceRadio({ checked, label, onSelect }: SourceRadioProps) {
+  return (
+    <label
+      className={styles.sourceRow}
+      onClick={(e) => {
+        e.preventDefault();
+        onSelect();
+      }}
+    >
+      <Checkbox variant="radio" checked={checked} onChange={onSelect} />
+      <span className={styles.sourceLabel}>{label}</span>
+    </label>
+  );
+}
+
+// ──────────── Calendar view: date-picker + status tabs + ads badge + list ────────────
+
+interface CalendarViewProps {
+  pickedDate: Date;
+  onPickedDateChange: (d: Date) => void;
+  monthStart: Date;
+  onMonthStartChange: (d: Date) => void;
+  statusTab: StatusTab;
+  onStatusTabChange: (t: StatusTab) => void;
+  onSelect: (post: Draft) => void;
+}
+
+function CalendarView({
+  pickedDate,
+  onPickedDateChange,
+  monthStart,
+  onMonthStartChange,
+  statusTab,
+  onStatusTabChange,
+  onSelect,
+}: CalendarViewProps) {
+  const dayCounts = useDayCountsQuery(monthStart);
+  const dayBatch = useDayBatchQuery(pickedDate, {
+    isAd: true,
+    status: statusTab === 'all' ? null : statusTab,
+  });
+
+  const monthAdsTotal = sumCounts(dayCounts.data?.ads);
+  const items = dayBatch.data ?? [];
+
+  return (
+    <div className={styles.sidebar}>
+      <div className={styles.calendarWrap}>
+        <DatePicker
+          value={pickedDate}
+          onChange={onPickedDateChange}
+          onMonthChange={(d) => onMonthStartChange(firstOfMonth(d))}
+          locale="ru"
+          minDate={null}
+          adsCounts={dayCounts.data?.ads}
+          className={styles.calendar}
+        />
+      </div>
+
+      <div className={styles.dayHeader}>{formatDayHeader(pickedDate)}</div>
+
+      <div className={styles.tabsAndPosts}>
+        <div className={styles.tabsRow}>
+          {STATUS_TABS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={clsx(styles.tab, statusTab === opt.id && styles.tabActive)}
+              onClick={() => onStatusTabChange(opt.id)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        <div className={styles.adsBadgeRow}>
+          <span className={styles.adsBadge}>{monthAdsTotal} рекл.</span>
+        </div>
+
+        <PostsList
+          loading={dayBatch.isLoading}
+          items={items}
+          onSelect={onSelect}
+          emptyText="Рекламных постов на эту дату нет"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ──────────── Drafts view: search + list ────────────
+
+interface DraftsViewProps {
+  onSelect: (post: Draft) => void;
+}
+
+function DraftsView({ onSelect }: DraftsViewProps) {
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const drafts = useDraftsListQuery(search);
+  const items = drafts.data ?? [];
+
+  return (
+    <div className={styles.draftsView}>
+      <div className={styles.searchBar}>
+        <input
+          className={styles.searchInput}
+          type="text"
+          placeholder="Поиск по черновикам"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+        <SearchIcon width={12} height={12} />
+      </div>
+
+      <div className={styles.draftsList}>
+        {drafts.isLoading && (
+          <div className={styles.loaderRow}>
+            <Loader size={20} color="blue" />
+          </div>
+        )}
+        {!drafts.isLoading && items.length === 0 && (
+          <div className={styles.empty}>
+            {search ? 'По запросу ничего не найдено' : 'У вас нет черновиков'}
+          </div>
+        )}
+        {!drafts.isLoading &&
+          items.map((d) => (
+            <DraftRow key={d.id} draft={d} onSelect={() => onSelect(d)} />
+          ))}
+      </div>
+    </div>
+  );
+}
+
+interface DraftRowProps {
+  draft: Draft;
+  onSelect: () => void;
+}
+
+function DraftRow({ draft, onSelect }: DraftRowProps) {
+  const label = getPreviewText(draft) || '(без текста)';
+  return (
+    <button type="button" className={styles.draftRow} onClick={onSelect}>
+      <Checkbox variant="radio" checked={false} onChange={onSelect} />
+      <span className={styles.draftLabel}>{label.slice(0, 60)}</span>
+    </button>
+  );
+}
+
+// ──────────── Posts list (calendar/ads) ────────────
+
+interface PostsListProps {
+  loading: boolean;
+  items: Draft[];
+  onSelect: (post: Draft) => void;
+  emptyText: string;
+}
+
+function PostsList({ loading, items, onSelect, emptyText }: PostsListProps) {
+  if (loading) {
+    return (
+      <div className={styles.postsList}>
+        <div className={styles.loaderRow}>
+          <Loader size={24} color="blue" />
+        </div>
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className={styles.postsList}>
+        <div className={styles.empty}>{emptyText}</div>
+      </div>
+    );
+  }
+  return (
+    <div className={styles.postsList}>
+      {items.slice().sort(byTimeAsc).map((post) => (
+        <PostRow key={post.id} post={post} onClick={() => onSelect(post)} />
+      ))}
+    </div>
+  );
+}
 
 interface PostRowProps {
   post: Draft;
-  source: Source;
   onClick: () => void;
 }
 
-function PostRow({ post, source, onClick }: PostRowProps) {
+function PostRow({ post, onClick }: PostRowProps) {
   const date = getItemDate(post);
   const preview = getPreviewText(post) || '(без текста)';
   return (
     <button type="button" className={styles.postRow} onClick={onClick}>
-      <SourceIcon source={source} post={post} />
+      <span className={styles.postIcon}>
+        {post.is_ad ? (
+          <WalletAdIcon width={16} height={16} />
+        ) : (
+          <CalendarDocPostIcon width={16} height={16} />
+        )}
+      </span>
       {date && <span className={styles.postTime}>{formatTime(date)}</span>}
       <span className={styles.postPreview}>{preview.slice(0, 60)}</span>
     </button>
   );
 }
 
-function SourceIcon({ source, post }: { source: Source; post: Draft }) {
-  if (source === 'ads' || post.is_ad) return <WalletAdIcon width={16} height={16} />;
-  if (source === 'drafts') return <CalendarDraftIcon width={14} height={14} />;
-  return <CalendarDocPostIcon width={16} height={16} />;
-}
-
-// ----------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------
+// ──────────── Helpers ────────────
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');
-}
-
-function dateKey(d: Date): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function getItemDate(item: Draft): Date | null {
@@ -205,45 +346,13 @@ function formatDayHeader(d: Date): string {
   return `${d.getDate()} ${RU_MONTHS_GEN[d.getMonth()]}, ${RU_WEEKDAYS[d.getDay()]}`;
 }
 
-function emptyText(source: Source): string {
-  if (source === 'drafts') return 'Черновиков на эту дату нет';
-  if (source === 'ads') return 'Рекламных постов на эту дату нет';
-  return 'Постов на эту дату нет';
-}
-
-function groupDraftsByDay(drafts: Draft[]): Record<string, Draft[]> {
-  const result: Record<string, Draft[]> = {};
-  for (const d of drafts) {
-    const date = getItemDate(d);
-    if (!date) continue;
-    const key = dateKey(date);
-    (result[key] ||= []).push(d);
-  }
-  return result;
-}
-
-function countMap(byDay: Record<string, Draft[]>): Record<string, number> {
-  const result: Record<string, number> = {};
-  for (const [key, list] of Object.entries(byDay)) result[key] = list.length;
-  return result;
-}
-
-function pickSourceCounts(
-  source: Source,
-  dayCounts: { total: Record<string, number>; ads: Record<string, number> } | undefined,
-  draftsByDay: Record<string, Draft[]>,
-): Record<string, number> {
-  if (source === 'drafts') return countMap(draftsByDay);
-  if (source === 'ads') return dayCounts?.ads ?? {};
-  return dayCounts?.total ?? {};
-}
-
 function byTimeAsc(a: Draft, b: Draft): number {
   return (getItemDate(a)?.getTime() ?? 0) - (getItemDate(b)?.getTime() ?? 0);
 }
 
-function applyStatusFilter(items: Draft[], filter: StatusFilter): Draft[] {
-  if (filter === 'all') return items;
-  if (filter === 'scheduled') return items.filter((p) => p.status === 'scheduled');
-  return items.filter((p) => p.status === 'published' || p.status === 'partial_success');
+function sumCounts(counts: Record<string, number> | undefined): number {
+  if (!counts) return 0;
+  let total = 0;
+  for (const v of Object.values(counts)) total += v;
+  return total;
 }

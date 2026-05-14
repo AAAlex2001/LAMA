@@ -7,16 +7,28 @@ import AdMetricsRow, { AdMetrics } from './AdMetricsRow';
 import AdTypeIcons, { AdType } from './AdTypeIcons';
 import styles from './AdCard.module.scss';
 
+export interface AdPlacement {
+  channelId: number;
+  title: string;
+  username: string | null;
+  photoUrl: string | null;
+  postLink: string | null;
+}
+
 export interface Ad {
   id: string;
   title: string;
   username: string;
   amount: string;
+  amountValue: number;
   date: string;
+  dateValue: number;
   buyer: string;
   metrics: AdMetrics;
+  metricsValues: { comments: number; views: number; clicks: number; reactions: number };
   types: AdType[];
   postLink?: string;
+  placements?: AdPlacement[];
 }
 
 interface AdCardProps {

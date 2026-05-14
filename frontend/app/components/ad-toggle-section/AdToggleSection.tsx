@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import classnames from 'classnames';
 import Input from '@/components/input/input';
 import CurrencySelect from '@/components/currency-select';
@@ -17,6 +16,7 @@ export interface AdToggleValue {
 interface AdToggleSectionProps {
   value: AdToggleValue;
   onChange: (value: AdToggleValue) => void;
+  locked?: boolean;
 }
 
 const DEFAULT: AdToggleValue = {
@@ -31,29 +31,33 @@ export function emptyAdToggleValue(): AdToggleValue {
   return { ...DEFAULT };
 }
 
-export default function AdToggleSection({ value, onChange }: AdToggleSectionProps) {
-  const [showFields, setShowFields] = useState(value.enabled);
-
+export default function AdToggleSection({ value, onChange, locked = false }: AdToggleSectionProps) {
   const setField = <K extends keyof AdToggleValue>(key: K, val: AdToggleValue[K]) => {
     onChange({ ...value, [key]: val });
   };
 
   const toggle = () => {
-    const next = !value.enabled;
-    setShowFields(next);
-    onChange({ ...value, enabled: next });
+    if (locked) return;
+    onChange({ ...value, enabled: !value.enabled });
   };
 
   return (
     <div className={styles.section}>
-      <button type="button" className={styles.toggleRow} onClick={toggle}>
+      <button
+        type="button"
+        className={styles.toggleRow}
+        onClick={toggle}
+        disabled={locked}
+        aria-disabled={locked}
+        style={locked ? { cursor: 'default' } : undefined}
+      >
         <span className={styles.label}>Реклама</span>
         <span className={classnames(styles.switch, { [styles.switchOn]: value.enabled })}>
           <span className={styles.knob} />
         </span>
       </button>
 
-      {showFields && value.enabled && (
+      {value.enabled && (
         <>
           <Input
             value={value.buyer}

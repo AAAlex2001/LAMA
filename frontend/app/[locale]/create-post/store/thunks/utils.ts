@@ -153,6 +153,10 @@ export function buildCreatePostRequest(
     reply_to_post_id: settings.replyToPostId || undefined,
     auto_delete_delay_seconds: autoDeleteSeconds,
     is_ad: !!settings.ad?.enabled,
+    ad_buyer: settings.ad?.enabled ? (settings.ad.buyer || null) : null,
+    ad_amount: settings.ad?.enabled ? (settings.ad.amount || null) : null,
+    ad_currency: settings.ad?.enabled ? (settings.ad.currency || null) : null,
+    ad_note: settings.ad?.enabled ? (settings.ad.note || null) : null,
     ...repeatPayload,
   };
 }

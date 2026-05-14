@@ -1,5 +1,6 @@
 'use client';
 
+import clsx from 'clsx';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
 import Loader from '@/components/loader';
 import EmptyContent from './EmptyContent';
@@ -19,6 +20,8 @@ interface CommunitiesPanelProps {
   items: CommunityStatsItem[];
   loading: boolean;
   currency: string;
+  selectedChannelId: number | null;
+  onChannelSelect: (channelId: number | null) => void;
   onAddClick?: () => void;
 }
 
@@ -28,6 +31,8 @@ export default function CommunitiesPanel({
   items,
   loading,
   currency,
+  selectedChannelId,
+  onChannelSelect,
   onAddClick,
 }: CommunitiesPanelProps) {
   const hasItems = items.length > 0;
@@ -64,9 +69,23 @@ export default function CommunitiesPanel({
           </div>
 
           <div className={styles.rows}>
-            {items.map((item) => (
-              <CommunityRow key={`${item.kind}-${item.id}`} item={item} currency={currency} />
-            ))}
+            {items.map((item) => {
+              const isChannel = item.kind !== 'bot';
+              const isActive = isChannel && selectedChannelId === item.id;
+              return (
+                <CommunityRow
+                  key={`${item.kind}-${item.id}`}
+                  item={item}
+                  currency={currency}
+                  active={isActive}
+                  onClick={
+                    isChannel
+                      ? () => onChannelSelect(isActive ? null : item.id)
+                      : undefined
+                  }
+                />
+              );
+            })}
           </div>
         </>
       )}
@@ -77,12 +96,30 @@ export default function CommunitiesPanel({
 interface CommunityRowProps {
   item: CommunityStatsItem;
   currency: string;
+  active: boolean;
+  onClick?: () => void;
 }
 
-function CommunityRow({ item, currency }: CommunityRowProps) {
+function CommunityRow({ item, currency, active, onClick }: CommunityRowProps) {
   const handle = item.username ? `@${item.username.replace(/^@/, '')}` : '';
+  const clickable = Boolean(onClick);
   return (
-    <div className={styles.row}>
+    <div
+      className={clsx(styles.row, active && styles.rowActive, clickable && styles.rowClickable)}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+    >
       <div className={styles.community}>
         <div className={styles.avatar}>
           {item.photo_url ? (

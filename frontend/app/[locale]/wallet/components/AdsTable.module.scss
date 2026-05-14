@@ -25,9 +25,11 @@
   > div {
     box-sizing: border-box;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
     padding: 5px;
+    gap: 4px;
   }
 }
 
@@ -36,6 +38,29 @@
   font-size: 14px;
   line-height: 17px;
   color: #1A1A1A;
+}
+
+.headerSortable {
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.04);
+  }
+}
+
+.sortChevron {
+  opacity: 0.4;
+  flex-shrink: 0;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.sortChevronActive {
+  opacity: 1;
+}
+
+.sortChevronUp {
+  transform: rotate(180deg);
 }
 
 .dataRow {
@@ -55,17 +80,63 @@
   }
 }
 
-.col_date         { width: 89px;     flex: 0 0 89px; align-items: flex-start; }
-.col_community    { width: 190px;    flex: 0 0 190px; }
-.col_price        { flex: 0 1 auto;  min-width: 90px; max-width: 160px; }
-.col_buyer        { width: 190px;    flex: 0 0 190px; }
-.col_post         { width: 144px;    flex: 0 0 144px; }
-.col_type         { width: 92px;     flex: 0 0 92px;  flex-direction: row !important; align-items: center !important; }
-.col_link         { width: 64px;     flex: 0 0 64px;  align-items: center !important; }
-.col_comments     { width: 120px;    flex: 0 0 120px; }
-.col_views        { flex: 1 1 0;     min-width: 0; }
-.col_clicks       { flex: 1 1 0;     min-width: 0; }
-.col_reactions    { flex: 1 1 0;     min-width: 0; }
+.col_date {
+  flex: 0 0 89px;
+  min-width: 0;
+}
+
+.col_community {
+  flex: 0 0 170px;
+  min-width: 0;
+}
+
+.col_price {
+  flex: 0 0 120px;
+  min-width: 0;
+}
+
+.col_buyer {
+  flex: 0 0 150px;
+  min-width: 0;
+}
+
+.col_post {
+  flex: 0 0 130px;
+  min-width: 0;
+}
+
+.col_type {
+  flex: 0 0 92px;
+  min-width: 0;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+
+.col_link {
+  flex: 0 0 60px;
+  min-width: 0;
+  align-items: center !important;
+}
+
+.col_comments {
+  flex: 1 1 0;
+  min-width: 80px;
+}
+
+.col_views {
+  flex: 1 1 0;
+  min-width: 80px;
+}
+
+.col_clicks {
+  flex: 1 1 0;
+  min-width: 60px;
+}
+
+.col_reactions {
+  flex: 1 1 0;
+  min-width: 60px;
+}
 
 .dateText {
   font-weight: 400;
@@ -77,6 +148,8 @@
 }
 
 .community {
+  display: block;
+  max-width: 100%;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
@@ -86,7 +159,39 @@
   white-space: nowrap;
 }
 
+.communityCell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+}
+
+.communityExtra {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #F0F4FA;
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 14px;
+  color: #3B82F6;
+}
+
+.linksCell {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
 .price {
+  display: block;
+  max-width: 100%;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
@@ -97,6 +202,8 @@
 }
 
 .buyer {
+  display: block;
+  max-width: 100%;
   font-weight: 400;
   font-size: 14px;
   line-height: 17px;
@@ -133,9 +240,10 @@
 
 .metric {
   display: inline-block;
+  width: 100%;
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
   color: #1A1A1A;
-  padding: 0 10px;
+  text-align: center;
 }

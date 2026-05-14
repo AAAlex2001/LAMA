@@ -74,6 +74,7 @@ async def list_ad_revenues(
 async def monthly_ad_stats(
     year: Optional[int] = Query(None),
     currency: Optional[str] = Query(None),
+    channel_id: Optional[int] = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MonthlyAdStatsResponse:
@@ -82,6 +83,7 @@ async def monthly_ad_stats(
         owner_id=current_user.id,
         year=resolved_year,
         currency=currency,
+        channel_id=channel_id,
     )
     return MonthlyAdStatsResponse(year=resolved_year, months=months)
 

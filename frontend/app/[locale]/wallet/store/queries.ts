@@ -8,6 +8,8 @@ import {
   deleteAdRevenue,
   fetchAdRevenues,
   fetchAdRevenueStats,
+  fetchCommunityStats,
+  fetchMonthlyAdStats,
   updateAdRevenue,
 } from './api';
 import type {
@@ -16,6 +18,10 @@ import type {
   AdRevenueListResponse,
   AdRevenueStats,
   AdRevenueUpdatePayload,
+  CommunityStatsFilters,
+  CommunityStatsResponse,
+  MonthlyAdStatsFilters,
+  MonthlyAdStatsResponse,
 } from './types';
 
 // ============================================================
@@ -27,10 +33,14 @@ export const walletKeys = {
   revenues: (filters: AdRevenueListFilters) => ['wallet', 'revenues', filters] as const,
   stats: (filters: Omit<AdRevenueListFilters, 'limit' | 'offset' | 'type'>) =>
     ['wallet', 'stats', filters] as const,
+  communities: (filters: CommunityStatsFilters) =>
+    ['wallet', 'communities', filters] as const,
+  monthly: (filters: MonthlyAdStatsFilters) =>
+    ['wallet', 'monthly', filters] as const,
   dayCounts: (monthKey: string) => ['wallet', 'day-counts', monthKey] as const,
-  dayBatch: (dateKey: string, isAd: boolean) =>
-    ['wallet', 'day-batch', dateKey, isAd] as const,
-  drafts: () => ['wallet', 'drafts'] as const,
+  dayBatch: (dateKey: string, isAd: boolean, status: string) =>
+    ['wallet', 'day-batch', dateKey, isAd, status] as const,
+  drafts: (search: string) => ['wallet', 'drafts', search] as const,
 };
 
 // ============================================================
@@ -55,9 +65,35 @@ export function useAdRevenueStatsQuery(
   });
 }
 
+export function useCommunityStatsQuery(
+  filters: CommunityStatsFilters = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery<CommunityStatsResponse>({
+    queryKey: walletKeys.communities(filters),
+    queryFn: () => fetchCommunityStats(filters),
+    staleTime: 30 * 1000,
+    enabled: options.enabled ?? true,
+  });
+}
+
+export function useMonthlyAdStatsQuery(
+  filters: MonthlyAdStatsFilters = {},
+  options: { enabled?: boolean } = {},
+) {
+  return useQuery<MonthlyAdStatsResponse>({
+    queryKey: walletKeys.monthly(filters),
+    queryFn: () => fetchMonthlyAdStats(filters),
+    staleTime: 30 * 1000,
+    enabled: options.enabled ?? true,
+  });
+}
+
 function invalidateRevenues(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: ['wallet', 'revenues'] });
   qc.invalidateQueries({ queryKey: ['wallet', 'stats'] });
+  qc.invalidateQueries({ queryKey: ['wallet', 'communities'] });
+  qc.invalidateQueries({ queryKey: ['wallet', 'monthly'] });
 }
 
 export function useAddAdRevenueMutation() {
@@ -166,12 +202,15 @@ function botMessageToDraft(msg: BotMessageCompact): Draft {
   };
 }
 
-export function useDayBatchQuery(date: Date | null, options: { isAd?: boolean } = {}) {
-  const { isAd = false } = options;
+export function useDayBatchQuery(
+  date: Date | null,
+  options: { isAd?: boolean; status?: 'scheduled' | 'published' | null } = {},
+) {
+  const { isAd = false, status = null } = options;
   const dateKey = date ? formatDateOnly(date) : '';
 
   return useQuery<Draft[]>({
-    queryKey: walletKeys.dayBatch(dateKey, isAd),
+    queryKey: walletKeys.dayBatch(dateKey, isAd, status ?? 'all'),
     enabled: !!date,
     queryFn: async () => {
       const qs = new URLSearchParams({
@@ -181,6 +220,7 @@ export function useDayBatchQuery(date: Date | null, options: { isAd?: boolean } 
         tz: getTz(),
       });
       if (isAd) qs.set('is_ad', 'true');
+      if (status) qs.set('status', status);
       const res = await apiRequest<WeekBatchResponse>(`/publications/week-batch/?${qs}`);
       const day = res.days?.[dateKey];
       const items = day?.items ?? [];
@@ -195,19 +235,21 @@ export function useDayBatchQuery(date: Date | null, options: { isAd?: boolean } 
 // Drafts: one-shot fetch (count is small, filter client-side)
 // ============================================================
 
-export function useDraftsListQuery() {
+export function useDraftsListQuery(search = '') {
+  const trimmed = search.trim();
   return useQuery<Draft[]>({
-    queryKey: walletKeys.drafts(),
+    queryKey: walletKeys.drafts(trimmed),
     queryFn: async () => {
       const qs = new URLSearchParams({
         status: 'draft',
         page: '1',
-        page_size: '200',
+        page_size: '50',
         tz: getTz(),
       });
+      if (trimmed) qs.set('search', trimmed);
       const res = await apiRequest<DraftListResponse>(`/publications/?${qs}`);
       return res.items ?? [];
     },
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
   });
 }

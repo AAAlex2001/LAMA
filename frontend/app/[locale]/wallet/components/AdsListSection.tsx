@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
 import AdCard, { Ad } from './AdCard';
 import AdsTable from './AdsTable';
 import EmptyContent from './EmptyContent';
 import WalletFilterBar, { WalletFilterDef } from './WalletFilterBar';
+import type { AdRevenueSortKey } from '../store/types';
 import styles from './AdsListSection.module.scss';
 
 const TABS: FilterOption[] = [
@@ -14,16 +14,14 @@ const TABS: FilterOption[] = [
 ];
 
 const SORT_DIRECTION_OPTIONS = [
-  { value: 'asc', label: 'По возрастанию' },
   { value: 'desc', label: 'По убыванию' },
+  { value: 'asc', label: 'По возрастанию' },
 ];
 
 const INCOME_FILTERS: WalletFilterDef[] = [
   { id: 'date', label: 'Дата', options: SORT_DIRECTION_OPTIONS },
-  { id: 'communityTags', label: 'Сообщество и тэги', options: SORT_DIRECTION_OPTIONS },
-  { id: 'type', label: 'Тип', options: SORT_DIRECTION_OPTIONS },
   { id: 'price', label: 'Цена', options: SORT_DIRECTION_OPTIONS },
-  { id: 'buyer', label: 'Покупатель', options: SORT_DIRECTION_OPTIONS },
+  { id: 'type', label: 'Тип', options: SORT_DIRECTION_OPTIONS },
   { id: 'comments', label: 'Комментарии', options: SORT_DIRECTION_OPTIONS },
   { id: 'views', label: 'Просмотры', options: SORT_DIRECTION_OPTIONS },
   { id: 'clicks', label: 'Клики', options: SORT_DIRECTION_OPTIONS },
@@ -32,13 +30,8 @@ const INCOME_FILTERS: WalletFilterDef[] = [
 
 const EXPENSES_FILTERS: WalletFilterDef[] = [
   { id: 'date', label: 'По дате', options: SORT_DIRECTION_OPTIONS },
-  { id: 'target', label: 'По тому что рекламируем', options: SORT_DIRECTION_OPTIONS },
-  { id: 'type', label: 'По типу', options: SORT_DIRECTION_OPTIONS },
   { id: 'price', label: 'По цене', options: SORT_DIRECTION_OPTIONS },
-  { id: 'channel', label: 'По каналу размещения', options: SORT_DIRECTION_OPTIONS },
-  { id: 'inflow', label: 'Приток ПДП', options: SORT_DIRECTION_OPTIONS },
-  { id: 'unsubs', label: 'Отписок ПДП', options: SORT_DIRECTION_OPTIONS },
-  { id: 'retention', label: 'Удержание ПДП', options: SORT_DIRECTION_OPTIONS },
+  { id: 'type', label: 'По типу', options: SORT_DIRECTION_OPTIONS },
 ];
 
 const INCOME_EMPTY = {
@@ -57,7 +50,16 @@ interface AdsListSectionProps {
   ads: Ad[];
   onAddClick?: () => void;
   periodLabel?: string;
+  sortBy: AdRevenueSortKey;
+  sortDir: 'asc' | 'desc';
+  statusFilter: 'scheduled' | 'published' | undefined;
+  onSortChange: (by: AdRevenueSortKey, dir: 'asc' | 'desc') => void;
+  onStatusFilterChange: (s: 'scheduled' | 'published' | undefined) => void;
 }
+
+const VALID_SORT_KEYS: AdRevenueSortKey[] = [
+  'date', 'price', 'type', 'comments', 'views', 'clicks', 'reactions',
+];
 
 export default function AdsListSection({
   activeTab,
@@ -65,14 +67,20 @@ export default function AdsListSection({
   ads,
   onAddClick,
   periodLabel,
+  sortBy,
+  sortDir,
+  onSortChange,
 }: AdsListSectionProps) {
   const isExpenses = activeTab === 'expenses';
   const filterDefs = isExpenses ? EXPENSES_FILTERS : INCOME_FILTERS;
   const emptyTexts = isExpenses ? EXPENSES_EMPTY : INCOME_EMPTY;
 
-  const [filterValues, setFilterValues] = useState<Record<string, string | null>>({});
+  const filterValues: Record<string, string | null> = { [sortBy]: sortDir };
+
   const handleFilterChange = (id: string, value: string | null) => {
-    setFilterValues((prev) => ({ ...prev, [id]: value }));
+    if (!VALID_SORT_KEYS.includes(id as AdRevenueSortKey)) return;
+    const nextDir: 'asc' | 'desc' = value === 'asc' ? 'asc' : 'desc';
+    onSortChange(id as AdRevenueSortKey, nextDir);
   };
 
   return (

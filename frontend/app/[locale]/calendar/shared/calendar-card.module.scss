@@ -135,6 +135,7 @@
 }
 
 .preview {
+  width: 100%;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
@@ -144,8 +145,6 @@
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   word-break: break-word;
-  flex: 1;
-  min-width: 0;
   white-space: pre-wrap;
 
   :global(p) {

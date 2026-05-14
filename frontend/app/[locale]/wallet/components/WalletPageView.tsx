@@ -6,13 +6,14 @@ import WalletHeader, { WalletTopTab } from './WalletHeader';
 import MainView from './MainView';
 import EfficiencyView from './EfficiencyView';
 import AddAdRevenueModal from './AddAdRevenueModal';
+import AddAdExpenseModal from './AddAdExpenseModal';
 import ExportDataModal, { type ExportDataPayload } from './ExportDataModal';
 import {
   useAddAdRevenueMutation,
   useAdRevenueStatsQuery,
   useAdRevenuesQuery,
 } from '../store/queries';
-import { AdRevenueType } from '../store/types';
+import type { AdRevenueListFilters, AdRevenueSortKey, AdRevenueType } from '../store/types';
 import styles from './WalletPageView.module.scss';
 
 const RU_MONTHS_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
@@ -37,8 +38,12 @@ export default function WalletPageView() {
   const [range, setRange] = useState<DateRange | null>(null);
   const [modalType, setModalType] = useState<AdRevenueType | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [sortBy, setSortBy] = useState<AdRevenueSortKey>('date');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [statusFilter, setStatusFilter] = useState<'scheduled' | 'published' | undefined>(undefined);
+  const [currency, setCurrency] = useState<string | undefined>(undefined);
 
-  const filters = useMemo(
+  const baseFilters = useMemo<AdRevenueListFilters>(
     () => ({
       date_from: range ? toIso(range.start) : undefined,
       date_to: range ? toIso(range.end) : undefined,
@@ -46,16 +51,33 @@ export default function WalletPageView() {
     [range],
   );
 
-  const revenuesQuery = useAdRevenuesQuery(filters);
-  const statsQuery = useAdRevenueStatsQuery(filters);
+  const statsFilters = useMemo<AdRevenueListFilters>(
+    () => ({ ...baseFilters, currency }),
+    [baseFilters, currency],
+  );
+
+  const statsQuery = useAdRevenueStatsQuery(statsFilters);
+  const stats = statsQuery.data ?? null;
+  const activeCurrency = stats?.currency;
+
+  const listFilters = useMemo<AdRevenueListFilters>(
+    () => ({
+      ...baseFilters,
+      sort_by: sortBy,
+      sort_dir: sortDir,
+      status: statusFilter,
+      currency: activeCurrency,
+    }),
+    [baseFilters, sortBy, sortDir, statusFilter, activeCurrency],
+  );
+
+  const revenuesQuery = useAdRevenuesQuery(listFilters);
   const addMutation = useAddAdRevenueMutation();
 
   const items = revenuesQuery.data?.items ?? [];
-  const stats = statsQuery.data ?? null;
   const periodLabel = formatRangeLabel(range) || 'За весь период';
 
   const handleExport = (payload: ExportDataPayload) => {
-    // TODO: подключить реальный API экспорта когда появится endpoint.
     console.log('export wallet data', { ...payload, range });
   };
 
@@ -69,20 +91,44 @@ export default function WalletPageView() {
         onExportClick={() => setExportOpen(true)}
       />
       {topTab === 'main' ? (
-        <MainView stats={stats} onAddIncome={() => setModalType('income')} />
+        <MainView
+          stats={stats}
+          onAddIncome={() => setModalType('income')}
+          onAddExpense={() => setModalType('expense')}
+          currency={stats?.currency ?? currency ?? 'RUB'}
+          onCurrencyChange={setCurrency}
+          dateFrom={range ? toIso(range.start) : undefined}
+          dateTo={range ? toIso(range.end) : undefined}
+        />
       ) : (
         <EfficiencyView
           ads={items}
           onAddIncome={() => setModalType('income')}
           onExportClick={() => setExportOpen(true)}
           periodLabel={periodLabel}
+          sortBy={sortBy}
+          sortDir={sortDir}
+          statusFilter={statusFilter}
+          onSortChange={(by, dir) => {
+            setSortBy(by);
+            setSortDir(dir);
+          }}
+          onStatusFilterChange={setStatusFilter}
         />
       )}
 
-      {modalType && (
+      {modalType === 'income' && (
         <AddAdRevenueModal
           isOpen
-          type={modalType}
+          type="income"
+          onClose={() => setModalType(null)}
+          onSubmit={(payload) => addMutation.mutateAsync(payload).then(() => undefined)}
+        />
+      )}
+
+      {modalType === 'expense' && (
+        <AddAdExpenseModal
+          isOpen
           onClose={() => setModalType(null)}
           onSubmit={(payload) => addMutation.mutateAsync(payload).then(() => undefined)}
         />

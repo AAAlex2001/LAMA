@@ -164,26 +164,31 @@ export default function DatePicker({
           const m = String(date.getMonth() + 1).padStart(2, '0');
           const d = String(date.getDate()).padStart(2, '0');
           const key = `${y}-${m}-${d}`;
-          const count = postCounts?.[key];
-          const adsCount = adsCounts?.[key];
-          if (!count && !adsCount) return null;
+          const totalCount = postCounts?.[key] ?? 0;
+          const adsCount = adsCounts?.[key] ?? 0;
+          if (!totalCount && !adsCount) return null;
+          // Делим единую полоску max 21px на синюю слева (обычные посты)
+          // и оранжевую справа (рекламные). Полоска одна, на одной линии.
+          const unit = 21 / 5;
+          const nonAdsCount = Math.max(0, totalCount - adsCount);
+          const blueWidth = Math.max(1, Math.min(5, nonAdsCount)) * unit;
+          const orangeWidth = Math.max(1, Math.min(5, adsCount)) * unit;
           const isSelected = isSameDay(date, selectedDate);
-          const indicatorWidth = (n: number) => `${(21 / 5) * Math.max(1, Math.min(5, n))}px`;
           return (
-            <>
-              {count ? (
-                <div
+            <span className={styles.indicatorRow}>
+              {nonAdsCount > 0 && (
+                <span
                   className={`${styles.postIndicator} ${isSelected ? styles.postIndicatorActive : ''}`}
-                  style={{ width: indicatorWidth(count) }}
+                  style={{ width: `${blueWidth}px` }}
                 />
-              ) : null}
-              {adsCount ? (
-                <div
+              )}
+              {adsCount > 0 && (
+                <span
                   className={`${styles.adsIndicator} ${isSelected ? styles.adsIndicatorActive : ''}`}
-                  style={{ width: indicatorWidth(adsCount) }}
+                  style={{ width: `${orangeWidth}px` }}
                 />
-              ) : null}
-            </>
+              )}
+            </span>
           );
         }}
         formatShortWeekday={(locale, date) => {

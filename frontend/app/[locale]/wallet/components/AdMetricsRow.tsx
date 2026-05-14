@@ -40,7 +40,7 @@ export interface AdMetrics {
   comments: string;
   views: string;
   clicks: string;
-  likes: string;
+  reactions: string;
 }
 
 interface AdMetricsRowProps {
@@ -64,7 +64,7 @@ export default function AdMetricsRow({ metrics }: AdMetricsRowProps) {
       </span>
       <span className={styles.metric}>
         {LIKE_ICON}
-        {metrics.likes}
+        {metrics.reactions}
       </span>
     </div>
   );

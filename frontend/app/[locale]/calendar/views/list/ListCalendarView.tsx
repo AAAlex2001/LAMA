@@ -4,6 +4,7 @@ import React from 'react';
 import type { Draft } from '@/types/post';
 import {
   AudioIcon,
+  CalendarCommentsIcon,
   CalendarReactionsIcon,
   CalendarRepeatIcon,
   CalendarViewsIcon,
@@ -13,6 +14,7 @@ import {
   QuizIcon,
   VideoIcon,
   CalendarBotMessageIcon,
+  WalletAdIcon,
 } from '@/components/icons';
 import Loader from '@/components/loader';
 import CalendarCard from '../../shared/CalendarCard';
@@ -202,6 +204,7 @@ export default function ListCalendarView({
             const tags = post.tags || [];
             const views = post.views_count ?? post.views;
             const reactions = post.reactions_count ?? post.likes_count;
+            const comments = post.comments_count ?? 0;
 
             const isSeries = (post.series_count ?? 0) > 1;
 
@@ -241,6 +244,7 @@ export default function ListCalendarView({
                 <MediaIcons post={post} />
 
                 <div className={styles.statusBlock}>
+                  {post.is_ad && <WalletAdIcon width={14} height={14} />}
                   {post.is_bot_message && <CalendarBotMessageIcon width={14} height={14} />}
                   <span className={styles.status}>{getStatusLabel(post.status)}</span>
                   {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} color="#3B82F6" />}
@@ -255,6 +259,10 @@ export default function ListCalendarView({
                   <div className={styles.statItem}>
                     <CalendarReactionsIcon width={12} height={12} color="#B0B4B8" />
                     <span className={styles.statValue}>{formatCompact(reactions)}</span>
+                  </div>
+                  <div className={styles.statItem}>
+                    <CalendarCommentsIcon width={12} height={12} color="#B0B4B8" />
+                    <span className={styles.statValue}>{formatCompact(comments)}</span>
                   </div>
                 </div>
               </div>

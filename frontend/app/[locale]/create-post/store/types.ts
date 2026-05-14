@@ -93,6 +93,10 @@ export interface CreatePostRequest {
   auto_delete_delay_seconds?: number;
   reply_to_post_id?: number;
   is_ad?: boolean;
+  ad_buyer?: string | null;
+  ad_amount?: string | null;
+  ad_currency?: string | null;
+  ad_note?: string | null;
 }
 
 export interface CreatePostResponse {

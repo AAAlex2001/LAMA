@@ -194,8 +194,9 @@ function niceCeil(value: number): number {
 function formatAxis(value: number): string {
   if (value === 0) return '0';
   const abs = Math.abs(value);
+  if (abs >= 1_000_000_000) return trim(value / 1_000_000_000) + 'B';
   if (abs >= 1_000_000) return trim(value / 1_000_000) + 'M';
-  if (abs >= 1_000) return trim(value / 1_000) + 'K';
+  if (abs >= 10_000) return trim(value / 1_000) + 'K';
   return trim(value);
 }
 

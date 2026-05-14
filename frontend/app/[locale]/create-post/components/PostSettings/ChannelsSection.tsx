@@ -1,12 +1,12 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import ChannelPicker from '@/components/channel-picker';
 import ConnectChannelModal from '@/components/connect-channel-modal';
 import { useChannelsQuery, invalidateChannels } from '@/store/channels';
 import { useAppDispatch, useAppSelector } from '../../store';
-import { toggleChannelId } from '../../store/slices/channelsSelection';
+import { setSelectedChannelIds, toggleChannelId } from '../../store/slices/channelsSelection';
 import { setShowCreateChannel } from '../../store/slices/settings';
 
 interface ChannelsSectionProps {
@@ -24,6 +24,19 @@ const ChannelsSection: FC<ChannelsSectionProps> = ({ isOpen, onToggle }) => {
   const channelsQuery = useChannelsQuery();
   const channels = channelsQuery.data?.items ?? [];
   const selectedSet = new Set(selectedIds);
+
+  // Авто-выбор всех каналов при первой загрузке (если ещё ничего не выбрано).
+  const didAutoSelectRef = useRef(false);
+  useEffect(() => {
+    if (didAutoSelectRef.current) return;
+    if (channels.length === 0) return;
+    if (selectedIds.length > 0) {
+      didAutoSelectRef.current = true;
+      return;
+    }
+    dispatch(setSelectedChannelIds(channels.map((c) => c.id)));
+    didAutoSelectRef.current = true;
+  }, [channels, selectedIds.length, dispatch]);
 
   const channelOptions = channels.map((ch) => ({
     id: String(ch.id),

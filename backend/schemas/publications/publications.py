@@ -268,6 +268,11 @@ class PublicationCompact(BaseModel):
     tags: List[TagCompact] = []
     series_id: Optional[int] = None
     series_order: Optional[int] = None
+    views_count: int = 0
+    forwards_count: int = 0
+    reactions_count: int = 0
+    comments_count: int = 0
+    clicks_count: int = 0
 
 
 class BotMessageCompact(BaseModel):

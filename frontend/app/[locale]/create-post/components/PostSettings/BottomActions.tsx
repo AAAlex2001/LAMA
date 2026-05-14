@@ -1,6 +1,7 @@
 'use client';
 
-import { FC } from 'react';
+import { FC, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
 import { AdToggleSection } from '@/components/ad-toggle-section';
@@ -17,9 +18,17 @@ interface BottomActionsProps {
 
 const BottomActions: FC<BottomActionsProps> = ({ onPreview, previewDisabled }) => {
   const dispatch = useAppDispatch();
+  const searchParams = useSearchParams();
+  const adLocked = searchParams.get('ad') === '1';
   const notifySubscribers = useAppSelector((s) => s.settings.notifySubscribers);
   const pinPost = useAppSelector((s) => s.settings.pinPost);
   const ad = useAppSelector((s) => s.settings.ad);
+
+  useEffect(() => {
+    if (adLocked && !ad.enabled) {
+      dispatch(settingsSlice.setAdSettings({ ...ad, enabled: true }));
+    }
+  }, [adLocked]);
 
   const handleReset = () => {
     dispatch(settingsSlice.resetSettings());
@@ -45,7 +54,11 @@ const BottomActions: FC<BottomActionsProps> = ({ onPreview, previewDisabled }) =
         />
       </div>
 
-      <AdToggleSection value={ad} onChange={(v) => dispatch(settingsSlice.setAdSettings(v))} />
+      <AdToggleSection
+        value={ad}
+        onChange={(v) => dispatch(settingsSlice.setAdSettings(v))}
+        locked={adLocked}
+      />
 
       <div className={styles.settingsButtons}>
         <Button

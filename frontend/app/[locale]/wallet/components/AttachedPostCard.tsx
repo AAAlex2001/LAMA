@@ -1,7 +1,14 @@
 'use client';
 
 import type { Draft } from '@/types/post';
-import { CalendarRepeatIcon, EyeIcon, TrashIcon, WalletAdIcon } from '@/components/icons';
+import {
+  CalendarCommentsIcon,
+  CalendarReactionsIcon,
+  CalendarRepeatIcon,
+  EyeIcon,
+  TrashIcon,
+  WalletAdIcon,
+} from '@/components/icons';
 import { formatCompact, getPreviewText, getSourceDate, hasRepeat } from '@/[locale]/calendar/utils/calendar-helpers';
 import styles from './AttachedPostCard.module.scss';
 
@@ -9,17 +16,6 @@ interface AttachedPostCardProps {
   post: Draft;
   onRemove: () => void;
 }
-
-const LIKE_ICON = (
-  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path
-      d="M6 10.5S1.5 7.5 1.5 4.5C1.5 3.12 2.62 2 4 2c.83 0 1.57.4 2 1.04C6.43 2.4 7.17 2 8 2c1.38 0 2.5 1.12 2.5 2.5C10.5 7.5 6 10.5 6 10.5z"
-      stroke="#B0B4B8"
-      strokeWidth="1"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
 
 function formatDateShort(iso: string | undefined): string {
   if (!iso) return '';
@@ -36,6 +32,7 @@ export default function AttachedPostCard({ post, onRemove }: AttachedPostCardPro
   const extraChannels = channels.length > 1 ? channels.length - 1 : 0;
   const views = post.views_count ?? post.views;
   const likes = post.reactions_count ?? post.likes_count;
+  const comments = post.comments_count ?? 0;
   const repeat = hasRepeat(post);
 
   return (
@@ -75,8 +72,12 @@ export default function AttachedPostCard({ post, onRemove }: AttachedPostCardPro
               {formatCompact(typeof views === 'number' ? views : 0)}
             </span>
             <span className={styles.metric}>
-              {LIKE_ICON}
+              <CalendarReactionsIcon width={12} height={12} color="#B0B4B8" />
               {formatCompact(typeof likes === 'number' ? likes : 0)}
+            </span>
+            <span className={styles.metric}>
+              <CalendarCommentsIcon width={12} height={12} color="#B0B4B8" />
+              {formatCompact(comments)}
             </span>
           </div>
         </div>

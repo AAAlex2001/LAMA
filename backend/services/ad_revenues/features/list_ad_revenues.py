@@ -303,6 +303,7 @@ def build_publication_response(pub: Publication) -> AdRevenueResponse:
         comments_count=metrics.comments,
         clicks_count=metrics.clicks,
         placements=placements,
+        publication_status=pub.status.value if pub.status else None,
     )
 
 
@@ -311,6 +312,15 @@ def build_response(item: AdRevenue) -> AdRevenueResponse:
     metrics = collect_metrics(publication)
     placements = collect_placements(item)
     fallback_link = placements[0].post_link if placements else None
+    pub_repeating = (
+        publication is not None
+        and publication.repeat_interval is not None
+        and publication.repeat_interval != DBRepeatInterval.NEVER
+    )
+    pub_auto_delete = publication is not None and bool(
+        publication.auto_delete_hours or publication.auto_delete_seconds
+    )
+    pub_pinned = publication is not None and bool(publication.pin_message)
     return AdRevenueResponse(
         id=item.id,
         owner_id=item.owner_id,
@@ -327,13 +337,14 @@ def build_response(item: AdRevenue) -> AdRevenueResponse:
         updated_at=item.updated_at,
         channel_username=item.channel_username,
         post_link=item.post_link or fallback_link,
-        is_pinned=item.is_pinned,
-        is_auto_delete=item.is_auto_delete,
-        is_repeating=item.is_repeating,
+        is_pinned=item.is_pinned or pub_pinned,
+        is_auto_delete=item.is_auto_delete or pub_auto_delete,
+        is_repeating=item.is_repeating or pub_repeating,
         views_count=metrics.views,
         forwards_count=metrics.forwards,
         reactions_count=metrics.reactions,
         comments_count=metrics.comments,
         clicks_count=metrics.clicks,
         placements=placements,
+        publication_status=publication.status.value if publication and publication.status else None,
     )

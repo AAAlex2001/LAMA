@@ -16,6 +16,9 @@ from backend.models.publications import (
     publication_tags,
 )
 from backend.schemas.publications.enums import ContentType, PublicationStatus
+from backend.services.publications.features.publications.attach_metrics import (
+    attach_publication_metrics,
+)
 from backend.services.publications.features.publications.column_loaders import (
     CHANNEL_COMPACT_COLUMNS,
     PUB_COMPACT_COLUMNS,
@@ -72,6 +75,7 @@ class ListPublications:
         if start_date and end_date and owner_id:
             posts = await merge_repeating(self.db, posts, start_date, end_date, owner_id)
 
+        await attach_publication_metrics(self.db, posts)
         return posts
 
 

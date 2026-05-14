@@ -7,7 +7,9 @@ import {
   CalendarRepeatIcon,
   CalendarReactionsIcon,
   CalendarViewsIcon,
+  CalendarCommentsIcon,
   CalendarBotMessageIcon,
+  WalletAdIcon,
 } from '@/components/icons';
 import { DraftContentIcons } from '@/components/draft-card';
 import {
@@ -44,7 +46,9 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
       <div className={styles.headerRow}>
         <span className={styles.time}>{time}</span>
         <div className={styles.icons}>
-          {isBotMessage ? (
+          {post.is_ad ? (
+            <WalletAdIcon width={14} height={14} />
+          ) : isBotMessage ? (
             <CalendarBotMessageIcon width={14} height={14} />
           ) : isDraft ? (
             <CalendarDraftIcon width={14} height={14} />
@@ -102,6 +106,12 @@ export default function WeeklyCard({ post, onEdit }: WeeklyCardProps) {
             <CalendarViewsIcon />
             <span className={styles.statValue}>
               {post.views_count ?? 0}
+            </span>
+          </div>
+          <div className={styles.statItem}>
+            <CalendarCommentsIcon />
+            <span className={styles.statValue}>
+              {post.comments_count ?? 0}
             </span>
           </div>
         </div>

@@ -70,6 +70,7 @@ class AdRevenueResponse(AdRevenueBase):
     post_link: Optional[str] = None
 
     placements: List[AdRevenuePlacement] = Field(default_factory=list)
+    publication_status: Optional[str] = None
 
 
 class AdRevenueListResponse(BaseModel):

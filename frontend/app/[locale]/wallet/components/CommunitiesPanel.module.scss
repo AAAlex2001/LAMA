@@ -72,10 +72,24 @@
   align-items: center;
   height: 48px;
   flex-shrink: 0;
+  background: #FFFFFF;
+  border-radius: 50px;
+  transition: background 0.15s ease;
+}
 
-  &:nth-child(odd) {
+.rowClickable {
+  cursor: pointer;
+
+  &:hover {
+    background: #F8FAFF;
+  }
+}
+
+.rowActive {
+  background: #F0F4FA;
+
+  &:hover {
     background: #F0F4FA;
-    border-radius: 50px;
   }
 }
 

@@ -128,6 +128,10 @@ export interface Draft {
   bot_total_chats?: number;
   bot_success_chats?: number;
   is_ad?: boolean;
+  ad_buyer?: string | null;
+  ad_amount?: string | null;
+  ad_currency?: string | null;
+  ad_note?: string | null;
 }
 
 export interface BotMessageCompact {

@@ -18,6 +18,9 @@ from backend.schemas.publications.publications import (
     WeekBatchDay,
     WeekBatchResponse,
 )
+from backend.services.publications.features.publications.attach_metrics import (
+    attach_publication_metrics,
+)
 from backend.services.publications.features.publications.column_loaders import (
     CHANNEL_COMPACT_COLUMNS,
     PUB_COMPACT_COLUMNS,
@@ -133,6 +136,7 @@ async def fetch_scheduled_posts(
         .order_by(Publication.scheduled_time.asc(), Publication.id.asc())
     )
     rows = list((await db.execute(query)).scalars().all())
+    await attach_publication_metrics(db, rows)
 
     buckets = PostBuckets()
     for post in rows:
@@ -187,7 +191,9 @@ async def fetch_repeating_publications(
         )
         .limit(200)
     )
-    return list((await db.execute(query)).scalars().all())
+    rows = list((await db.execute(query)).scalars().all())
+    await attach_publication_metrics(db, rows)
+    return rows
 
 
 async def fetch_bot_message_buckets(

@@ -85,7 +85,9 @@ export default function CalendarSidebar({
                     className={styles.postRow}
                     onClick={() => onEdit(post)}
                   >
-                    {post.is_bot_message ? (
+                    {post.is_ad ? (
+                      <WalletAdIcon width={16} height={16} />
+                    ) : post.is_bot_message ? (
                       <CalendarBotMessageIcon width={14} height={14} />
                     ) : post.status === 'draft' ? (
                       <CalendarDraftIcon width={14} height={14} />
@@ -96,7 +98,6 @@ export default function CalendarSidebar({
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}
                     </span>
-                    {post.is_ad && <WalletAdIcon width={14} height={14} />}
                     {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                   </div>
                 );

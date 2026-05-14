@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Draft } from '@/types/post';
-import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon, WalletAdIcon } from '@/components/icons';
 import { DraftContentIcons } from '@/components/draft-card';
 import Loader from '@/components/loader';
 import {
@@ -61,7 +61,8 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
           <div className={listMode ? styles.timeBlockList : styles.timeBlock}>
             {!listMode && (
               <>
-                {isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
+                {post.is_ad ? <WalletAdIcon width={16} height={16} /> :
+                isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
                 post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
                 <CalendarDocPostIcon width={16} height={16} />}
                 {isRepeating && <CalendarRepeatIcon width={14} height={14} />}
@@ -72,7 +73,8 @@ export default function CalendarCard({ post, onEdit, listMode = false }: Calenda
           <div className={listMode ? styles.statusIconsOnly : styles.statusBlock}>
             {listMode && (
               <>
-                {isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
+                {post.is_ad ? <WalletAdIcon width={16} height={16} /> :
+                isBotMessage ? <CalendarBotMessageIcon width={14} height={14} /> :
                 post.status === 'draft' ? <CalendarDraftIcon width={14} height={14} /> :
                 <CalendarDocPostIcon width={16} height={16} />}
                 {isRepeating && <CalendarRepeatIcon width={16} height={16} />}
