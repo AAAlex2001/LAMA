@@ -35,12 +35,53 @@ export type Channel = ChannelBasic;
 
 // Re-export shared types from @/types/post (needed locally)
 import type { InlineKeyboard, PollData, MediaFile, ButtonRow, QuizAnswer, QuizMode, PublicationStatus } from '@/types/post';
+import type { TagColor } from '@/types';
+import type { AdToggleValue } from '@/components/ad-toggle-section';
 
 // === Create-post specific types ===
 
 export type RepeatOption = 'never' | 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'custom';
 export type RepeatCustomUnit = 'days' | 'weeks' | 'months' | 'years';
 export type AutoDeleteOption = 'never' | '24h' | '48h' | '72h' | 'custom';
+
+// Минимальное число постов в серии. Меньше — это уже одиночный пост, не серия.
+export const MIN_SERIES_POSTS = 2;
+
+/**
+ * Настройки отдельного поста серии. Полный слепок того что находится в
+ * Redux-слайсе `settings`, минус кэш списка каналов (это TQ-данные).
+ *
+ * Каждый пост в серии хранит свою копию — каналы публикации, повтор,
+ * автоудаление, закреп, теги, реклама. На слайс `settings` смотрит UI
+ * активного поста; при переключении вкладок мы сохраняем текущие
+ * значения в snapshot и подгружаем значения нового активного поста.
+ */
+export interface PostSettings {
+  selectedChannelIds: number[];
+  notifySubscribers: boolean;
+  pinPost: boolean;
+  selectedTags: Array<{ id?: number; name: string; color: TagColor }>;
+  selectedTagColor: TagColor;
+  repeatInterval: RepeatOption;
+  repeatPublishTimeType: 'from_publish' | 'exact_time';
+  repeatPublishHours: number;
+  repeatPublishMinutes: number;
+  repeatCustomDays: number;
+  repeatCustomHours: number;
+  repeatCustomUnit: RepeatCustomUnit;
+  repeatCustomValue: number;
+  repeatWeekdays: number[];
+  repeatMonthDays: number[];
+  repeatYearMonth: number;
+  repeatYearDays: number[];
+  repeatEndType: 'never' | 'date';
+  repeatEndDate: string | null;
+  autoDeleteInterval: AutoDeleteOption;
+  autoDeleteCustomDays: number;
+  autoDeleteCustomHours: number;
+  ad: AdToggleValue;
+  replyToPostId: number | null;
+}
 
 export interface PostSnapshot {
   text: string;
@@ -53,6 +94,8 @@ export interface PostSnapshot {
   quizAnswers: QuizAnswer[];
   quizCorrectAnswerId: string | null;
   showLinkPreview: boolean;
+  // Опционально для обратной совместимости — старые драфты могут не иметь settings.
+  settings?: PostSettings;
   selectedTags?: Array<{ name: string; color: string }>;
   sourcePublicationId?: number;
   seriesId?: number;

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { PostSnapshot, QuizMode, QuizAnswer, ButtonRow, MediaFile } from '../types';
+import type { PostSettings, PostSnapshot } from '../types';
 
-function createEmptySnapshot(): PostSnapshot {
+function createEmptySnapshot(settings?: PostSettings): PostSnapshot {
   return {
     text: '',
     mediaFiles: [],
@@ -16,6 +16,7 @@ function createEmptySnapshot(): PostSnapshot {
     ],
     quizCorrectAnswerId: null,
     showLinkPreview: false,
+    settings,
   };
 }
 
@@ -33,8 +34,8 @@ const seriesSlice = createSlice({
   name: 'series',
   initialState,
   reducers: {
-    addPost(state) {
-      state.snapshots.push(createEmptySnapshot());
+    addPost(state, action: PayloadAction<PostSettings | undefined>) {
+      state.snapshots.push(createEmptySnapshot(action.payload));
       state.activeIndex = state.snapshots.length - 1;
     },
     removePost(state, action: PayloadAction<number>) {

@@ -71,8 +71,10 @@ export function usePublishHandlers({
   }, [dispatch, mediaFiles, pollData, selectedChannels, showError, showSuccess, text, validateSinglePost]);
 
   const handlePublishSeries = useCallback(async () => {
-    const channelIds = selectedChannels.map(c => c.id);
-
+    // Сохраняем текущий редактор как snapshot активного поста — чтобы
+    // последние правки попали в серию. Валидацию и сборку запроса по
+    // каждому посту выполняет publishSeries-thunk (он читает per-post
+    // settings из snapshot, включая каналы публикации).
     const currentSnap: PostSnapshot = {
       text,
       mediaFiles,
@@ -87,41 +89,17 @@ export function usePublishHandlers({
     };
     dispatch(saveCurrentSnapshot(toSerializableSnapshot(currentSnap)));
 
-    const snapshotsWithCurrent = [...snapshots];
-    snapshotsWithCurrent[activeIndex] = currentSnap;
-
-    for (let i = 0; i < snapshotsWithCurrent.length; i++) {
-      const snap = snapshotsWithCurrent[i];
-      const snapPoll = snap.quizOpen ? {
-        question: snap.quizQuestion,
-        options: snap.quizAnswers.map(a => a.text).filter(t => t.trim()),
-        is_anonymous: true,
-        allows_multiple_answers: snap.quizMode === 'poll_multi',
-        correct_option_id: snap.quizMode === 'quiz'
-          ? snap.quizAnswers.findIndex(a => a.id === snap.quizCorrectAnswerId)
-          : null,
-        is_quiz: snap.quizMode === 'quiz',
-      } : null;
-
-      const error = validatePost(snap.text, snap.mediaFiles?.length || 0, snapPoll, channelIds);
-      if (error) {
-        showError(`Пост ${i + 1}: ${error}`);
-        return;
-      }
-      const mediaError = validateTelegramMediaRules(snap.text, snap.mediaFiles || [], snapPoll);
-      if (mediaError) {
-        showError(`Пост ${i + 1}: ${mediaError}`);
-        return;
-      }
-    }
-
     try {
-      const result = await dispatch(publishSeries(channelIds)).unwrap();
+      const result = await dispatch(publishSeries()).unwrap();
       showSuccess(result?.message || 'Серия поставлена в очередь');
     } catch (err) {
       showError(typeof err === 'string' ? err : 'Ошибка публикации серии');
     }
-  }, [activeIndex, buttonRows, dispatch, inlineButtonsOpen, mediaFiles, quizAnswers, quizCorrectAnswerId, quizMode, quizOpen, quizQuestion, selectedChannels, showError, showLinkPreview, showSuccess, snapshots, text]);
+  }, [
+    buttonRows, dispatch, inlineButtonsOpen, mediaFiles,
+    quizAnswers, quizCorrectAnswerId, quizMode, quizOpen, quizQuestion,
+    showError, showLinkPreview, showSuccess, text,
+  ]);
 
   const handleSchedule = useCallback(async (date: Date) => {
     const error = validateSinglePost(text, mediaFiles, pollData);

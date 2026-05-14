@@ -14,6 +14,7 @@ from sqlalchemy.sql import nullslast
 from backend.models.channels import ChannelGroup
 from backend.models.publications import (
     Publication,
+    PublicationSeries,
     PublicationStatus as DBPublicationStatus,
     TelegramMessage,
 )
@@ -26,6 +27,8 @@ from backend.services.telegram_client import RateLimitedBot
 
 logger = logging.getLogger(__name__)
 
+BotResolver = Callable[[ChannelGroup], Awaitable[RateLimitedBot]]
+
 
 class PublishSeriesPost:
     """Параллельная публикация поста серии во все каналы; поддерживает reply-цепочку."""
@@ -36,7 +39,7 @@ class PublishSeriesPost:
     async def execute(
         self,
         publication: Publication,
-        bot_resolver: Callable[[ChannelGroup], Awaitable[RateLimitedBot]],
+        bot_resolver: BotResolver,
     ) -> PublishResult:
         if not publication.series_id:
             raise HTTPException(status_code=400, detail="Publication must belong to a series")
@@ -70,8 +73,8 @@ class PublishSeriesPost:
 async def prepare_send_jobs(
     db: AsyncSession,
     publication: Publication,
-    series,
-    bot_resolver,
+    series: PublicationSeries,
+    bot_resolver: BotResolver,
 ) -> tuple[list, List[ChannelPublishResult]]:
     """Резолвит ботов и reply-id; возвращает корутины-отправители + ранние FAILED-результаты."""
     coros: list = []
@@ -147,7 +150,19 @@ def update_publication_status(
 async def get_reply_to_message_id(
     db: AsyncSession, series_id: int, channel_id: int,
 ) -> Optional[int]:
-    """telegram_message_id последнего опубликованного поста серии в канале."""
+    """Возвращает telegram_message_id предыдущего поста серии в этом канале.
+
+    Используется для построения reply-цепочки: каждый следующий пост серии
+    отвечает на последний реально отправленный пост этой серии в этом канале.
+
+    Порядок сортировки выбран так, чтобы выдержать любые корнер-кейсы:
+    - series_order DESC NULLS LAST — приоритет имеет пост с самым большим
+      номером в серии (т.е. предыдущий по порядку).
+    - published_time DESC NULLS LAST — на случай если series_order не задан,
+      берём самый недавний по времени публикации.
+    - publication.id DESC, telegram_message.id DESC — детерминистичный
+      tie-breaker при одинаковых остальных полях.
+    """
     query = (
         select(TelegramMessage.telegram_message_id)
         .join(Publication, Publication.id == TelegramMessage.publication_id)
@@ -211,7 +226,11 @@ async def send_to_channel(
 
 
 def channel_display_name(channel: ChannelGroup) -> str:
-    """Лучший доступный текстовый идентификатор канала."""
+    """Лучший доступный текстовый идентификатор канала для логов и ошибок.
+
+    Падает на `title` (основное имя), потом на `name` (легаси-поле некоторых
+    инстансов), и в худшем случае на telegram_id (числовой идентификатор).
+    """
     return getattr(channel, "title", None) or getattr(channel, "name", None) or str(channel.telegram_id)
 
 

@@ -1,10 +1,44 @@
 import type { RootState } from '../index';
-import type { InlineKeyboard, CreatePostRequest, PollData, MediaFile, ButtonRow, SettingsState, UploadedFile, QuizAnswer, QuizMode } from '../types';
+import type {
+  ButtonRow,
+  CreatePostRequest,
+  InlineKeyboard,
+  MediaFile,
+  PollData,
+  PostSettings,
+  PostSnapshot,
+  SettingsState,
+  UploadedFile,
+  QuizAnswer,
+  QuizMode,
+} from '../types';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 
 // Re-export from shared utils
 import { buildInlineKeyboard } from '@/store/utils';
 export { buildInlineKeyboard };
+
+/**
+ * Сериализовать состояние опроса/викторины snapshot'а в формат бекенда.
+ * Возвращает null если опрос не активен или невалиден.
+ *
+ * Этот же формат раньше дублировался в трёх местах (валидация серии, отправка
+ * серии и publishSeries). Теперь — один источник истины.
+ */
+export function buildPollDataFromSnapshot(snapshot: PostSnapshot): PollData | null {
+  if (!snapshot.quizOpen) return null;
+  const options = snapshot.quizAnswers.map((a) => a.text).filter((t) => t.trim());
+  return {
+    question: snapshot.quizQuestion,
+    options,
+    is_quiz: snapshot.quizMode === 'quiz',
+    allows_multiple_answers: snapshot.quizMode === 'poll_multi',
+    correct_option_id:
+      snapshot.quizMode === 'quiz'
+        ? snapshot.quizAnswers.findIndex((a) => a.id === snapshot.quizCorrectAnswerId)
+        : null,
+  };
+}
 
 export function extractPlainText(html: string): string {
   return (html || '')
@@ -65,8 +99,41 @@ export async function prepareMediaPayload(files: MediaFile[]) {
   return { mediaUrls, mediaFileIds, mediaThumbnailUrls, mediaBlurArray };
 }
 
+/**
+ * Все поля настроек, которые реально читаются при сборке запроса публикации.
+ *
+ * Это пересечение `SettingsState` (для одиночных постов) и `PostSettings`
+ * (для каждого поста серии). Кэш доступных каналов / UI-флаги типа
+ * `tagInputValue` / `channelsLoading` здесь не нужны.
+ */
+export type PublicationSettingsInput = Pick<
+  SettingsState,
+  | 'notifySubscribers'
+  | 'pinPost'
+  | 'selectedTags'
+  | 'repeatInterval'
+  | 'repeatPublishTimeType'
+  | 'repeatPublishHours'
+  | 'repeatPublishMinutes'
+  | 'repeatCustomDays'
+  | 'repeatCustomHours'
+  | 'repeatCustomUnit'
+  | 'repeatCustomValue'
+  | 'repeatWeekdays'
+  | 'repeatMonthDays'
+  | 'repeatYearMonth'
+  | 'repeatYearDays'
+  | 'repeatEndType'
+  | 'repeatEndDate'
+  | 'autoDeleteInterval'
+  | 'autoDeleteCustomDays'
+  | 'autoDeleteCustomHours'
+  | 'ad'
+  | 'replyToPostId'
+>;
+
 export function buildCreatePostRequest(
-  text: string, showLinkPreview: boolean, settings: SettingsState, buttonRows: ButtonRow[],
+  text: string, showLinkPreview: boolean, settings: PublicationSettingsInput, buttonRows: ButtonRow[],
   mediaPayload: Awaited<ReturnType<typeof prepareMediaPayload>>,
   pollData: PollData | null, channelIds: number[], scheduledTime?: string,
   tagOverride?: Array<{ name: string; color: string }> | null,

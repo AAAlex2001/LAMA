@@ -5,7 +5,6 @@ import DatePicker from '@/components/date-picker/date-picker';
 import { TimePicker, useRecentTimes } from '@/components/time-picker';
 import { Button } from '@/components/new-button';
 import { useAppDispatch, useAppSelector } from '../store';
-import { useSelectedChannels } from '../hooks/useSelectedChannels';
 import * as uiSlice from '../store/slices/ui';
 import { scheduleSeries } from '../store/thunks';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
@@ -24,7 +23,6 @@ export default function SeriesScheduleModalConnected() {
   const isOpen = useAppSelector(state => state.ui.showSeriesScheduleModal);
   const isScheduling = useAppSelector(state => state.ui.isScheduling);
   const snapshots = useAppSelector(state => state.series.snapshots);
-  const selectedChannels = useSelectedChannels();
   const recentTimes = useRecentTimes();
 
   const [schedules, setSchedules] = useState<PostSchedule[]>([]);
@@ -70,10 +68,7 @@ export default function SeriesScheduleModalConnected() {
     });
 
     try {
-      const result = await dispatch(scheduleSeries({
-        channelIds: selectedChannels.map(c => c.id),
-        scheduledDates,
-      })).unwrap();
+      const result = await dispatch(scheduleSeries({ scheduledDates })).unwrap();
       showSuccess(result?.message || 'Серия запланирована');
       dispatch(uiSlice.setShowSeriesScheduleModal(false));
       setSchedules([]);

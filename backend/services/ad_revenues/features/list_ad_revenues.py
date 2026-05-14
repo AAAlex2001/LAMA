@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import List, Literal, Optional, Set, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -113,7 +113,11 @@ class ListAdRevenues:
         if type_ == AdRevenueType.EXPENSE:
             return []
 
-        conds = [Publication.owner_id == owner_id, Publication.is_ad.is_(True)]
+        conds = [
+            Publication.owner_id == owner_id,
+            Publication.is_ad.is_(True),
+            or_(Publication.series_id.is_(None), Publication.series_order == 0),
+        ]
         if exclude_publication_ids:
             conds.append(~Publication.id.in_(exclude_publication_ids))
         if date_from is not None:
