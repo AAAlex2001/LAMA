@@ -386,6 +386,24 @@ async def process_recurring_messages_async() -> str:
         return f"processed_recurring:{len(pending)}"
 
 
+@celery_app.task(name="backend.celery.tasks.sync_ad_post_metrics")
+def sync_ad_post_metrics() -> str:
+    """Периодически обновляет метрики (views/forwards/reactions/comments/clicks)
+    для рекламных постов на основе данных Telegram API."""
+
+    return run(sync_ad_post_metrics_async())
+
+
+async def sync_ad_post_metrics_async() -> str:
+    from backend.services.publications.features.publications.sync_ad_metrics import (
+        SyncAdPostMetrics,
+    )
+
+    async with CelerySessionLocal() as db:
+        updated = await SyncAdPostMetrics(db).execute()
+    return f"sync_ad_metrics:{updated}"
+
+
 @celery_app.task(name="backend.celery.tasks.process_repeating_publications")
 def process_repeating_publications() -> str:
     """Найти повторяющиеся публикации, которые пора переопубликовать, и поставить их в очередь."""

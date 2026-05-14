@@ -142,6 +142,7 @@ async def get_week_batch(
     per_day: int = Query(20, ge=1, le=50),
     tz: str = Query("UTC"),
     is_ad: Optional[bool] = Query(None, description="Filter posts marked as advertisements"),
+    status: Optional[Literal["scheduled", "published"]] = Query(None, description="Filter by status"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -152,6 +153,7 @@ async def get_week_batch(
         per_day=per_day,
         tz=tz,
         is_ad=is_ad,
+        status=status,
     )
 
 

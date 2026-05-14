@@ -110,6 +110,10 @@ class Publication(Base):
     ai_prompt: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     is_ad: Mapped[bool] = mapped_column(Boolean, default=False, server_default=sa.text("false"), nullable=False, index=True)
+    ad_buyer: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    ad_amount: Mapped[Optional[float]] = mapped_column(sa.Numeric(15, 2), nullable=True)
+    ad_currency: Mapped[Optional[str]] = mapped_column(String(8), nullable=True)
+    ad_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     
     share_token: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True, index=True)
     share_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -177,6 +181,7 @@ class TelegramMessage(Base):
     __tablename__ = 'telegram_messages'
     __table_args__ = (
         Index('ix_telegram_messages_pub_channel', 'publication_id', 'channel_id'),
+        Index('ix_telegram_messages_metrics_sync', 'metrics_synced_at'),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -184,7 +189,14 @@ class TelegramMessage(Base):
     channel_id: Mapped[int] = mapped_column(Integer, ForeignKey('channel_groups.id', ondelete='CASCADE'))
     telegram_message_id: Mapped[int] = mapped_column(Integer)
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    
+
+    views_count: Mapped[int] = mapped_column(Integer, default=0, server_default=sa.text("0"), nullable=False)
+    forwards_count: Mapped[int] = mapped_column(Integer, default=0, server_default=sa.text("0"), nullable=False)
+    reactions_count: Mapped[int] = mapped_column(Integer, default=0, server_default=sa.text("0"), nullable=False)
+    comments_count: Mapped[int] = mapped_column(Integer, default=0, server_default=sa.text("0"), nullable=False)
+    clicks_count: Mapped[int] = mapped_column(Integer, default=0, server_default=sa.text("0"), nullable=False)
+    metrics_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
     publication = relationship('Publication', back_populates='telegram_messages')
     channel = relationship('ChannelGroup', back_populates='telegram_messages')
 

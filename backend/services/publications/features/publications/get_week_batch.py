@@ -51,6 +51,33 @@ class BotMessageBuckets:
     by_day: dict[str, list[BotMessageCompact]] = field(default_factory=dict)
 
 
+def status_filters(status: Optional[str], default_active: bool = False) -> list:
+    """Конвертирует строковый статус в условие SQLAlchemy.
+
+    `default_active=True` означает, что без явного status берутся только
+    активные посты (PUBLISHED/PARTIAL_SUCCESS/SCHEDULED) — для проекций повторов.
+    """
+    if status == "scheduled":
+        return [Publication.status == DBPublicationStatus.SCHEDULED]
+    if status == "published":
+        return [
+            Publication.status.in_(
+                [DBPublicationStatus.PUBLISHED, DBPublicationStatus.PARTIAL_SUCCESS]
+            )
+        ]
+    if default_active:
+        return [
+            Publication.status.in_(
+                [
+                    DBPublicationStatus.PUBLISHED,
+                    DBPublicationStatus.PARTIAL_SUCCESS,
+                    DBPublicationStatus.SCHEDULED,
+                ]
+            )
+        ]
+    return [Publication.status.notin_([DBPublicationStatus.DELETED])]
+
+
 class GetWeekBatch:
     """Все дни диапазона за один проход: посты + проекции повторов + бот-сообщения."""
 
@@ -65,11 +92,12 @@ class GetWeekBatch:
         per_day: int = 20,
         tz: str = "UTC",
         is_ad: Optional[bool] = None,
+        status: Optional[str] = None,
     ) -> WeekBatchResponse:
         utc_start, utc_end = local_range_to_utc(start_date, end_date, tz)
 
-        posts = await fetch_scheduled_posts(self.db, owner_id, utc_start, utc_end, tz, is_ad)
-        await add_repeat_projections(self.db, owner_id, start_date, end_date, posts)
+        posts = await fetch_scheduled_posts(self.db, owner_id, utc_start, utc_end, tz, is_ad, status)
+        await add_repeat_projections(self.db, owner_id, start_date, end_date, posts, is_ad, status)
         # Бот-сообщения никогда не являются рекламой — при is_ad=True исключаем их.
         bots = (
             PostBuckets() if is_ad is True
@@ -82,14 +110,15 @@ class GetWeekBatch:
 async def fetch_scheduled_posts(
     db: AsyncSession, owner_id: int, utc_start: datetime, utc_end: datetime, tz: str,
     is_ad: Optional[bool] = None,
+    status: Optional[str] = None,
 ) -> PostBuckets:
     """Запланированные/опубликованные посты в окне → раскладка по дням."""
     filters = [
         Publication.owner_id == owner_id,
         Publication.scheduled_time >= utc_start,
         Publication.scheduled_time <= utc_end,
-        Publication.status.notin_([DBPublicationStatus.DELETED]),
     ]
+    filters.extend(status_filters(status))
     if is_ad is not None:
         filters.append(Publication.is_ad == is_ad)
 
@@ -121,9 +150,11 @@ async def add_repeat_projections(
     start_date: datetime,
     end_date: datetime,
     buckets: PostBuckets,
+    is_ad: Optional[bool] = None,
+    status: Optional[str] = None,
 ) -> None:
     """Добавляет проекции повторяющихся постов в дни, где их ещё нет."""
-    repeating = await fetch_repeating_publications(db, owner_id)
+    repeating = await fetch_repeating_publications(db, owner_id, is_ad, status)
 
     for pub in repeating:
         for day_key, projected_time in project_repeat_occurrences(pub, start_date, end_date):
@@ -135,20 +166,20 @@ async def add_repeat_projections(
 
 
 async def fetch_repeating_publications(
-    db: AsyncSession, owner_id: int,
+    db: AsyncSession, owner_id: int, is_ad: Optional[bool] = None, status: Optional[str] = None,
 ) -> list[Publication]:
     """До 200 повторяющихся публикаций пользователя."""
+    filters = [
+        Publication.owner_id == owner_id,
+        Publication.repeat_interval != DBRepeatInterval.NEVER,
+    ]
+    filters.extend(status_filters(status, default_active=True))
+    if is_ad is not None:
+        filters.append(Publication.is_ad == is_ad)
+
     query = (
         select(Publication)
-        .where(
-            Publication.owner_id == owner_id,
-            Publication.repeat_interval != DBRepeatInterval.NEVER,
-            Publication.status.in_([
-                DBPublicationStatus.PUBLISHED,
-                DBPublicationStatus.PARTIAL_SUCCESS,
-                DBPublicationStatus.SCHEDULED,
-            ]),
-        )
+        .where(*filters)
         .options(
             load_only(*PUB_COMPACT_COLUMNS, *REPEAT_EXTRA_COLUMNS),
             selectinload(Publication.channels).load_only(*CHANNEL_COMPACT_COLUMNS),

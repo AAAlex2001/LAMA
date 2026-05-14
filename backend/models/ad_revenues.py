@@ -1,8 +1,8 @@
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, Numeric, String, Text
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func, text
 
 from backend.models.base import Base
-from backend.schemas.ad_revenues.enums import AdRevenueType
 
 
 class AdRevenue(Base):
@@ -26,5 +26,13 @@ class AdRevenue(Base):
     channel_id = Column(Integer, ForeignKey("channel_groups.id", ondelete="SET NULL"), nullable=True, index=True)
     bot_id = Column(Integer, ForeignKey("bots.id", ondelete="SET NULL"), nullable=True, index=True)
 
+    channel_username = Column(String(255), nullable=True)
+    post_link = Column(String(512), nullable=True)
+    is_pinned = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+    is_auto_delete = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+    is_repeating = Column(Boolean, nullable=False, default=False, server_default=text("false"))
+
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    publication = relationship("Publication", foreign_keys=[publication_id])

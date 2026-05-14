@@ -57,6 +57,10 @@ class CreatePublication:
             ai_generated=bool(data.ai_prompt),
             ai_prompt=data.ai_prompt,
             is_ad=data.is_ad,
+            ad_buyer=data.ad_buyer,
+            ad_amount=data.ad_amount,
+            ad_currency=data.ad_currency,
+            ad_note=data.ad_note,
         )
 
         if data.channel_ids:

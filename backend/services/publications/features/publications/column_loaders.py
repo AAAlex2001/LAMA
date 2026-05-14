@@ -24,6 +24,10 @@ PUB_COMPACT_COLUMNS = [
     Publication.series_id,
     Publication.series_order,
     Publication.is_ad,
+    Publication.ad_buyer,
+    Publication.ad_amount,
+    Publication.ad_currency,
+    Publication.ad_note,
 ]
 
 REPEAT_EXTRA_COLUMNS = [

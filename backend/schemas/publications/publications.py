@@ -1,4 +1,5 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator, validator
@@ -46,6 +47,10 @@ class PublicationBase(BaseModel):
     series_order: Optional[int] = None
     ai_prompt: Optional[str] = None
     is_ad: bool = False
+    ad_buyer: Optional[str] = None
+    ad_amount: Optional[Decimal] = None
+    ad_currency: Optional[str] = None
+    ad_note: Optional[str] = None
     channel_ids: List[int] = Field(default_factory=list)
     tag_names: List[str] = Field(default_factory=list)
     tag_color: Optional[str] = None
@@ -160,6 +165,10 @@ class PublicationUpdate(BaseModel):
     reply_to_post_id: Optional[int] = None
     status: Optional[PublicationStatus] = None
     is_ad: Optional[bool] = None
+    ad_buyer: Optional[str] = None
+    ad_amount: Optional[Decimal] = None
+    ad_currency: Optional[str] = None
+    ad_note: Optional[str] = None
     channel_ids: Optional[List[int]] = None
     tag_names: Optional[List[str]] = None
     tag_color: Optional[str] = None
@@ -249,6 +258,10 @@ class PublicationCompact(BaseModel):
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     is_ad: bool = False
+    ad_buyer: Optional[str] = None
+    ad_amount: Optional[Decimal] = None
+    ad_currency: Optional[str] = None
+    ad_note: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     channels: List[ChannelCompact] = []
@@ -302,6 +315,10 @@ class PublicationResponse(BaseModel):
     ai_generated: bool
     ai_prompt: Optional[str] = None
     is_ad: bool = False
+    ad_buyer: Optional[str] = None
+    ad_amount: Optional[Decimal] = None
+    ad_currency: Optional[str] = None
+    ad_note: Optional[str] = None
     published_time: Optional[datetime] = None
     repeat_interval: RepeatInterval = RepeatInterval.NEVER
     repeat_custom_days: Optional[int] = None

@@ -78,5 +78,9 @@ celery_app.conf.update(
             "task": "backend.celery.tasks.process_repeating_publications",
             "schedule": timedelta(seconds=30),
         },
+        "sync-ad-post-metrics": {
+            "task": "backend.celery.tasks.sync_ad_post_metrics",
+            "schedule": timedelta(minutes=15),
+        },
     },
 )
