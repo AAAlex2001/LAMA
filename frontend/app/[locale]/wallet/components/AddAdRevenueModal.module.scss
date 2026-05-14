@@ -1,12 +1,53 @@
 .content {
   display: flex;
   flex-direction: column;
+  width: 742px !important;
+  max-width: 742px !important;
+  background: transparent !important;
+  border-radius: 0;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.wideContent {
+  display: flex;
+  flex-direction: column;
+  width: 1098px !important;
+  max-width: min(1098px, calc(100vw - 32px)) !important;
+  background: transparent !important;
+  border-radius: 0;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+
+.layout {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+
+  @media (max-width: 1080px) {
+    flex-direction: column;
+  }
+}
+
+.formColumn {
+  display: flex;
+  flex-direction: column;
   gap: 24px;
+  flex: 1 1 auto;
+  min-width: 0;
   width: 742px;
   max-width: 100%;
   background: #FFFFFF;
   border-radius: 12px;
   padding: 16px;
+  box-sizing: border-box;
+
+  @media (max-width: 1080px) {
+    width: 100%;
+  }
 }
 
 .title {

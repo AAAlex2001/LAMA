@@ -1,0 +1,141 @@
+.tableWrap {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 10px 5px;
+    box-sizing: border-box;
+  }
+}
+
+.headerRow,
+.dataRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.headerRow {
+  height: 27px;
+
+  > div {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 5px;
+  }
+}
+
+.headerLabel {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+}
+
+.dataRow {
+  min-height: 36px;
+
+  > div {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 5px;
+    border-top: 1px solid #F0F4FA;
+  }
+
+  > div + div {
+    border-left: 1px solid #F0F4FA;
+  }
+}
+
+.col_date         { width: 89px;     flex: 0 0 89px; align-items: flex-start; }
+.col_community    { width: 190px;    flex: 0 0 190px; }
+.col_price        { flex: 0 1 auto;  min-width: 90px; max-width: 160px; }
+.col_buyer        { width: 190px;    flex: 0 0 190px; }
+.col_post         { width: 144px;    flex: 0 0 144px; }
+.col_type         { width: 92px;     flex: 0 0 92px;  flex-direction: row !important; align-items: center !important; }
+.col_link         { width: 64px;     flex: 0 0 64px;  align-items: center !important; }
+.col_comments     { width: 120px;    flex: 0 0 120px; }
+.col_views        { flex: 1 1 0;     min-width: 0; }
+.col_clicks       { flex: 1 1 0;     min-width: 0; }
+.col_reactions    { flex: 1 1 0;     min-width: 0; }
+
+.dateText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+  text-align: center;
+  width: 100%;
+}
+
+.community {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buyer {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.postLink {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+}
+
+.linkIcon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.metric {
+  display: inline-block;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  padding: 0 10px;
+}

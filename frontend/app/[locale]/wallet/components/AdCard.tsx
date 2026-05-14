@@ -16,6 +16,7 @@ export interface Ad {
   buyer: string;
   metrics: AdMetrics;
   types: AdType[];
+  postLink?: string;
 }
 
 interface AdCardProps {

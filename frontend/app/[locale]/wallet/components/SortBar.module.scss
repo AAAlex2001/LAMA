@@ -1,14 +1,5 @@
 .bar {
   display: none;
-
-  @media (min-width: 1440px) {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    padding: 0 10px;
-    gap: 12px;
-    width: 100%;
-  }
 }
 
 .label {

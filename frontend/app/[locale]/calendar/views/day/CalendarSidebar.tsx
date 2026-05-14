@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/date-picker/date-picker';
 import { Button } from '@/components/new-button';
 import type { Draft } from '@/types/post';
-import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon, WalletAdIcon } from '@/components/icons';
 import {
   formatTime,
   getPreviewText,
@@ -24,6 +24,7 @@ interface CalendarSidebarProps {
   onEdit: (post: Draft) => void;
   highlightedDates?: number[];
   postCounts?: Record<string, number>;
+  adsCounts?: Record<string, number>;
   onMonthChange?: (date: Date) => void;
 }
 
@@ -35,6 +36,7 @@ export default function CalendarSidebar({
   onEdit,
   highlightedDates = [],
   postCounts,
+  adsCounts,
   onMonthChange,
 }: CalendarSidebarProps) {
   const router = useRouter();
@@ -51,6 +53,7 @@ export default function CalendarSidebar({
           minDate={null}
           className={styles.calendar}
           postCounts={postCounts}
+          adsCounts={adsCounts}
         />
       </div>
 
@@ -93,6 +96,7 @@ export default function CalendarSidebar({
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}
                     </span>
+                    {post.is_ad && <WalletAdIcon width={14} height={14} />}
                     {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                   </div>
                 );

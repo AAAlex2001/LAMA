@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
 import AdCard, { Ad } from './AdCard';
+import AdsTable from './AdsTable';
 import EmptyContent from './EmptyContent';
-import SortBar from './SortBar';
+import WalletFilterBar, { WalletFilterDef } from './WalletFilterBar';
 import styles from './AdsListSection.module.scss';
 
 const TABS: FilterOption[] = [
@@ -11,27 +13,32 @@ const TABS: FilterOption[] = [
   { id: 'expenses', label: 'Расходы' },
 ];
 
-const INCOME_SORT_OPTIONS = [
-  'Дата',
-  'Сообщество и тэги',
-  'Тип',
-  'Цена',
-  'Покупатель',
-  'Комментарии',
-  'Просмотры',
-  'Клики',
-  'Реакции',
+const SORT_DIRECTION_OPTIONS = [
+  { value: 'asc', label: 'По возрастанию' },
+  { value: 'desc', label: 'По убыванию' },
 ];
 
-const EXPENSES_SORT_OPTIONS = [
-  'По дате',
-  'По тому что рекламируем',
-  'По типу',
-  'По цене',
-  'По каналу размещения',
-  'Приток ПДП',
-  'Отписок ПДП',
-  'Удержание ПДП',
+const INCOME_FILTERS: WalletFilterDef[] = [
+  { id: 'date', label: 'Дата', options: SORT_DIRECTION_OPTIONS },
+  { id: 'communityTags', label: 'Сообщество и тэги', options: SORT_DIRECTION_OPTIONS },
+  { id: 'type', label: 'Тип', options: SORT_DIRECTION_OPTIONS },
+  { id: 'price', label: 'Цена', options: SORT_DIRECTION_OPTIONS },
+  { id: 'buyer', label: 'Покупатель', options: SORT_DIRECTION_OPTIONS },
+  { id: 'comments', label: 'Комментарии', options: SORT_DIRECTION_OPTIONS },
+  { id: 'views', label: 'Просмотры', options: SORT_DIRECTION_OPTIONS },
+  { id: 'clicks', label: 'Клики', options: SORT_DIRECTION_OPTIONS },
+  { id: 'reactions', label: 'Реакции', options: SORT_DIRECTION_OPTIONS },
+];
+
+const EXPENSES_FILTERS: WalletFilterDef[] = [
+  { id: 'date', label: 'По дате', options: SORT_DIRECTION_OPTIONS },
+  { id: 'target', label: 'По тому что рекламируем', options: SORT_DIRECTION_OPTIONS },
+  { id: 'type', label: 'По типу', options: SORT_DIRECTION_OPTIONS },
+  { id: 'price', label: 'По цене', options: SORT_DIRECTION_OPTIONS },
+  { id: 'channel', label: 'По каналу размещения', options: SORT_DIRECTION_OPTIONS },
+  { id: 'inflow', label: 'Приток ПДП', options: SORT_DIRECTION_OPTIONS },
+  { id: 'unsubs', label: 'Отписок ПДП', options: SORT_DIRECTION_OPTIONS },
+  { id: 'retention', label: 'Удержание ПДП', options: SORT_DIRECTION_OPTIONS },
 ];
 
 const INCOME_EMPTY = {
@@ -49,13 +56,24 @@ interface AdsListSectionProps {
   onTabChange: (id: string) => void;
   ads: Ad[];
   onAddClick?: () => void;
-  onSortSelect?: (option: string) => void;
+  periodLabel?: string;
 }
 
-export default function AdsListSection({ activeTab, onTabChange, ads, onAddClick, onSortSelect }: AdsListSectionProps) {
+export default function AdsListSection({
+  activeTab,
+  onTabChange,
+  ads,
+  onAddClick,
+  periodLabel,
+}: AdsListSectionProps) {
   const isExpenses = activeTab === 'expenses';
-  const sortOptions = isExpenses ? EXPENSES_SORT_OPTIONS : INCOME_SORT_OPTIONS;
+  const filterDefs = isExpenses ? EXPENSES_FILTERS : INCOME_FILTERS;
   const emptyTexts = isExpenses ? EXPENSES_EMPTY : INCOME_EMPTY;
+
+  const [filterValues, setFilterValues] = useState<Record<string, string | null>>({});
+  const handleFilterChange = (id: string, value: string | null) => {
+    setFilterValues((prev) => ({ ...prev, [id]: value }));
+  };
 
   return (
     <section className={styles.card}>
@@ -64,7 +82,12 @@ export default function AdsListSection({ activeTab, onTabChange, ads, onAddClick
         <FilterTabs options={TABS} selectedFilter={activeTab} onFilterChange={onTabChange} />
       </div>
 
-      <SortBar options={sortOptions} onSelect={onSortSelect} />
+      <WalletFilterBar
+        periodLabel={periodLabel || 'За весь период'}
+        filters={filterDefs}
+        values={filterValues}
+        onChange={handleFilterChange}
+      />
 
       {ads.length === 0 ? (
         <EmptyContent
@@ -74,11 +97,14 @@ export default function AdsListSection({ activeTab, onTabChange, ads, onAddClick
           onButtonClick={onAddClick}
         />
       ) : (
-        <div className={styles.list}>
-          {ads.map((ad) => (
-            <AdCard key={ad.id} ad={ad} />
-          ))}
-        </div>
+        <>
+          <div className={styles.list}>
+            {ads.map((ad) => (
+              <AdCard key={ad.id} ad={ad} />
+            ))}
+          </div>
+          <AdsTable ads={ads} />
+        </>
       )}
     </section>
   );

@@ -12,6 +12,7 @@ export interface AdRevenue {
   publication_id: number | null;
   channel_id: number | null;
   bot_id: number | null;
+  post_link: string | null;
   created_at: string;
   updated_at: string;
 }

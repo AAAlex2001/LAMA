@@ -52,7 +52,7 @@
 - **PostgreSQL** - надежная реляционная БД
 - **SQLAlchemy 2.0** - async ORM
 - **aiogram 3.x** - Telegram Bot API
-- **Celery + Redis** - очередь задач и планировщик
+- **APScheduler** - планировщик задач
 - **Pydantic** - валидация данных
 
 ## Установка

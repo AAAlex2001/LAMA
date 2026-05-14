@@ -141,6 +141,7 @@ export interface DayCountItem {
   scheduled?: number;
   draft?: number;
   bot_messages?: number;
+  ads?: number;
 }
 
 export interface DayCountsResponse {

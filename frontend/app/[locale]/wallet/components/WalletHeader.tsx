@@ -3,6 +3,7 @@
 import FilterTabs from '@/components/filter-tabs/filter-tabs';
 import FilterSortIcon from '@/components/icons/filter-sort-icon';
 import { DateRangePicker, DateRange } from '@/components/date-range-picker';
+import { Button } from '@/components/new-button';
 import styles from './WalletHeader.module.scss';
 
 export type WalletTopTab = 'main' | 'performance';
@@ -18,6 +19,7 @@ interface WalletHeaderProps {
   range: DateRange | null;
   onRangeChange: (range: DateRange | null) => void;
   onFiltersClick?: () => void;
+  onExportClick?: () => void;
 }
 
 export default function WalletHeader({
@@ -26,6 +28,7 @@ export default function WalletHeader({
   range,
   onRangeChange,
   onFiltersClick,
+  onExportClick,
 }: WalletHeaderProps) {
   return (
     <header className={styles.header}>
@@ -36,6 +39,17 @@ export default function WalletHeader({
           onFilterChange={(id) => onTabChange(id as WalletTopTab)}
           className={styles.topTabs}
         />
+        {activeTab === 'performance' && (
+          <Button
+            variant="fill"
+            intent="gradient"
+            size="lg"
+            className={styles.exportBtn}
+            onClick={onExportClick}
+          >
+            Экспорт данных
+          </Button>
+        )}
         <button
           type="button"
           className={styles.filtersBtn}

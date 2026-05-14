@@ -92,6 +92,7 @@ export interface CreatePostRequest {
   series_order?: number;
   auto_delete_delay_seconds?: number;
   reply_to_post_id?: number;
+  is_ad?: boolean;
 }
 
 export interface CreatePostResponse {
@@ -110,9 +111,18 @@ export interface PublicationResponse {
   status: string;
 }
 
+export interface AdSettings {
+  enabled: boolean;
+  buyer: string;
+  amount: string;
+  currency: string;
+  note: string;
+}
+
 export interface SettingsState {
   pinPost: boolean;
   notifySubscribers: boolean;
+  ad?: AdSettings;
   autoDeleteInterval: AutoDeleteOption;
   autoDeleteCustomDays: number;
   autoDeleteCustomHours: number;

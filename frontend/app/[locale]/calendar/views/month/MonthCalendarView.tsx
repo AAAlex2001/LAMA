@@ -23,6 +23,7 @@ interface MonthCalendarViewProps {
   onSidebarDateChange: (date: Date) => void;
   weekItems: Record<string, Draft[]>;
   gridPostCounts: Record<string, number>;
+  gridAdsCounts?: Record<string, number>;
   onMonthChange: (date: Date) => void;
   onEdit: (post: Draft) => void;
   onAddPost: (date: Date) => void;
@@ -38,6 +39,7 @@ export default function MonthCalendarView({
   onSidebarDateChange,
   weekItems,
   gridPostCounts,
+  gridAdsCounts,
   onMonthChange,
   onEdit,
   onAddPost,
@@ -94,6 +96,7 @@ export default function MonthCalendarView({
           locale="ru"
           minDate={null}
           postCounts={gridPostCounts}
+          adsCounts={gridAdsCounts}
           className={styles.monthDatePicker}
         />
       </div>

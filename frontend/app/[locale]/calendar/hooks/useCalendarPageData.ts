@@ -31,16 +31,19 @@ import { sortPostsByTime } from '../utils/post-helpers';
 
 function parseDayCounts(data: DayCountsResponse | undefined): {
   counts: Record<string, number>;
+  adsCounts: Record<string, number>;
   statusCounts: Record<string, DayStatusCount>;
 } {
   const counts: Record<string, number> = {};
+  const adsCounts: Record<string, number> = {};
   const statusCounts: Record<string, DayStatusCount> = {};
-  if (!data) return { counts, statusCounts };
+  if (!data) return { counts, adsCounts, statusCounts };
 
   if (Array.isArray(data.counts)) {
     for (const item of data.counts as DayCountItem[]) {
       if (!item?.date) continue;
       counts[item.date] = item.count || 0;
+      if (item.ads) adsCounts[item.date] = item.ads;
       statusCounts[item.date] = {
         published: item.published ?? 0,
         scheduled: item.scheduled ?? 0,
@@ -51,7 +54,7 @@ function parseDayCounts(data: DayCountsResponse | undefined): {
   } else {
     Object.assign(counts, data.counts);
   }
-  return { counts, statusCounts };
+  return { counts, adsCounts, statusCounts };
 }
 
 interface DerivedCalendarData {
@@ -185,9 +188,9 @@ export function useCalendarPageData() {
   const dayCountsQuery = useDayCountsQuery({ startDate: monthStart, endDate: monthEnd, tz: userTz });
   // Стабилизируем reference: parseDayCounts создаёт новые объекты, что пробрасывалось
   // в DatePicker/Header через props и могло сбрасывать IntersectionObserver state.
-  const { gridPostCounts, monthStatusCounts } = useMemo(() => {
-    const { counts, statusCounts } = parseDayCounts(dayCountsQuery.data);
-    return { gridPostCounts: counts, monthStatusCounts: statusCounts };
+  const { gridPostCounts, gridAdsCounts, monthStatusCounts } = useMemo(() => {
+    const { counts, adsCounts, statusCounts } = parseDayCounts(dayCountsQuery.data);
+    return { gridPostCounts: counts, gridAdsCounts: adsCounts, monthStatusCounts: statusCounts };
   }, [dayCountsQuery.data]);
 
   // Mobile UI state
@@ -220,6 +223,7 @@ export function useCalendarPageData() {
     listPage: derived.listPage,
     dayPageMap: derived.dayPageMap,
     gridPostCounts,
+    gridAdsCounts,
     monthStatusCounts,
     dayLoadingMap,
     dayHasMoreMap: derived.dayHasMoreMap,

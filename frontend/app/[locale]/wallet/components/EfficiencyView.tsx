@@ -11,9 +11,10 @@ interface EfficiencyViewProps {
   ads: AdRevenue[];
   onAddIncome?: () => void;
   onExportClick?: () => void;
+  periodLabel?: string;
 }
 
-export default function EfficiencyView({ ads, onAddIncome, onExportClick }: EfficiencyViewProps) {
+export default function EfficiencyView({ ads, onAddIncome, onExportClick, periodLabel }: EfficiencyViewProps) {
   const [adsTab, setAdsTab] = useState('income');
 
   const filtered = useMemo(
@@ -39,6 +40,7 @@ export default function EfficiencyView({ ads, onAddIncome, onExportClick }: Effi
         onTabChange={setAdsTab}
         ads={filtered}
         onAddClick={onAddIncome}
+        periodLabel={periodLabel}
       />
     </div>
   );
@@ -54,6 +56,7 @@ function mapToAd(r: AdRevenue): Ad {
     buyer: r.buyer || '',
     metrics: { comments: '0', views: '0', clicks: '0', likes: '0' },
     types: [],
+    postLink: r.post_link ?? undefined,
   };
 }
 

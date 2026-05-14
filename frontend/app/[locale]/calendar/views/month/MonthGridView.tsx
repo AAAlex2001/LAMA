@@ -18,6 +18,7 @@ interface MonthGridViewProps {
   selectedDate: Date;
   sidebarDate: Date;
   postCounts: Record<string, number>;
+  adsCounts?: Record<string, number>;
   statusCounts: Record<string, DayStatusCount>;
   onDayClick: (date: Date) => void;
 }
@@ -58,6 +59,7 @@ export default function MonthGridView({
   selectedDate,
   sidebarDate,
   postCounts,
+  adsCounts,
   statusCounts,
   onDayClick,
 }: MonthGridViewProps) {

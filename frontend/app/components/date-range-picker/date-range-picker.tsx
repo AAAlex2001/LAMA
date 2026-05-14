@@ -12,6 +12,7 @@ interface DateRangePickerProps {
   value: DateRange | null;
   onChange: (range: DateRange | null) => void;
   postCounts?: Record<string, number>;
+  adsCounts?: Record<string, number>;
   onMonthChange?: (date: Date) => void;
   emptyLabel?: string;
   resetText?: string;
@@ -33,6 +34,7 @@ export default function DateRangePicker({
   value,
   onChange,
   postCounts,
+  adsCounts,
   onMonthChange,
   emptyLabel = 'За весь период',
   resetText = 'Сбросить всё',
@@ -121,11 +123,15 @@ export default function DateRangePicker({
               selectedDateKeys={selectedDateKeys}
               rangeSelection
               postCounts={postCounts}
+              adsCounts={adsCounts}
               className={styles.calendar}
             />
 
             <Button
-              style={{ width: '100%' }}
+              variant="outline"
+              intent="gradient"
+              size="lg"
+              style={{ width: '100%', justifyContent: 'center' }}
               onClick={() => {
                 setDraftStart(null);
                 setDraftEnd(null);

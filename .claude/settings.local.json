@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(wc:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "PowerShell($p = \"c:\\\\Users\\\\alex\\\\Documents\\\\GitHub\\\\LAMA\\\\frontend\\\\app\\\\[locale]\\\\calendar\\\\utils\"; Get-ChildItem -LiteralPath $p -Force | ForEach-Object { $_.Name })"
     ]
   }
 }

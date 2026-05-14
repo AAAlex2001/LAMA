@@ -152,6 +152,7 @@ export function buildCreatePostRequest(
     tag_colors: selectedTags.length > 0 ? selectedTags.map(t => t.color) : undefined,
     reply_to_post_id: settings.replyToPostId || undefined,
     auto_delete_delay_seconds: autoDeleteSeconds,
+    is_ad: !!settings.ad?.enabled,
     ...repeatPayload,
   };
 }

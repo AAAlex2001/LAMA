@@ -17,6 +17,7 @@ interface DatePickerProps {
   minDate?: Date | null;
   highlightWeek?: boolean;
   postCounts?: Record<string, number>;
+  adsCounts?: Record<string, number>;
   selectedDateKeys?: string[];
   rangeSelection?: boolean;
 }
@@ -32,9 +33,9 @@ function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-export default function DatePicker({ 
-  value, 
-  onChange, 
+export default function DatePicker({
+  value,
+  onChange,
   onMonthChange,
   locale = 'ru',
   className,
@@ -43,6 +44,7 @@ export default function DatePicker({
   minDate,
   highlightWeek = false,
   postCounts,
+  adsCounts,
   selectedDateKeys = [],
   rangeSelection = false,
 }: DatePickerProps) {
@@ -158,20 +160,30 @@ export default function DatePicker({
         minDate={minDate === null ? undefined : (minDate ?? today)}
         tileClassName={({ date }) => getTileClassName(date)}
         tileContent={({ date }) => {
-          if (!postCounts) return null;
           const y = date.getFullYear();
           const m = String(date.getMonth() + 1).padStart(2, '0');
           const d = String(date.getDate()).padStart(2, '0');
-          const count = postCounts[`${y}-${m}-${d}`];
-          if (!count) return null;
+          const key = `${y}-${m}-${d}`;
+          const count = postCounts?.[key];
+          const adsCount = adsCounts?.[key];
+          if (!count && !adsCount) return null;
           const isSelected = isSameDay(date, selectedDate);
-          const progressUnits = Math.max(1, Math.min(5, count));
-          const progressWidth = `${(21 / 5) * progressUnits}px`;
+          const indicatorWidth = (n: number) => `${(21 / 5) * Math.max(1, Math.min(5, n))}px`;
           return (
-            <div
-              className={`${styles.postIndicator} ${isSelected ? styles.postIndicatorActive : ''}`}
-              style={{ width: progressWidth }}
-            />
+            <>
+              {count ? (
+                <div
+                  className={`${styles.postIndicator} ${isSelected ? styles.postIndicatorActive : ''}`}
+                  style={{ width: indicatorWidth(count) }}
+                />
+              ) : null}
+              {adsCount ? (
+                <div
+                  className={`${styles.adsIndicator} ${isSelected ? styles.adsIndicatorActive : ''}`}
+                  style={{ width: indicatorWidth(adsCount) }}
+                />
+              ) : null}
+            </>
           );
         }}
         formatShortWeekday={(locale, date) => {

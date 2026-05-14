@@ -4,7 +4,7 @@ import React from 'react';
 import DatePicker from '@/components/date-picker/date-picker';
 import type { Draft } from '@/types/post';
 import Loader from '@/components/loader';
-import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon } from '@/components/icons';
+import { CalendarDocPostIcon, CalendarDraftIcon, CalendarRepeatIcon, CalendarBotMessageIcon, WalletAdIcon } from '@/components/icons';
 import {
   formatDayTitle,
   formatTime,
@@ -22,6 +22,7 @@ interface WeeklySidebarProps {
   sidebarDate: Date;
   weekItems: Record<string, Draft[]>;
   postCounts: Record<string, number>;
+  adsCounts?: Record<string, number>;
   isLoading?: boolean;
   onMonthChange?: (date: Date) => void;
   onSidebarDateChange: (date: Date) => void;
@@ -34,6 +35,7 @@ export default function WeeklySidebar({
   sidebarDate,
   weekItems,
   postCounts,
+  adsCounts,
   isLoading = false,
   onMonthChange,
   onSidebarDateChange,
@@ -75,6 +77,7 @@ export default function WeeklySidebar({
           className={styles.calendar}
           highlightWeek={highlightWeek}
           postCounts={postCounts}
+          adsCounts={adsCounts}
         />
       </div>
 
@@ -134,6 +137,7 @@ export default function WeeklySidebar({
                     <span className={styles.postPreview}>
                       {preview || '(без текста)'}
                     </span>
+                    {post.is_ad && <WalletAdIcon width={14} height={14} />}
                     {hasRepeat(post) && <CalendarRepeatIcon width={14} height={14} />}
                     {isSeries && <span className={styles.seriesBadge}>Серия · {post.series_count}</span>}
                   </div>

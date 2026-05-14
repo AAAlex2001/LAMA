@@ -278,6 +278,27 @@
   :global(.react-calendar__tile--selected) .postIndicator {
     background: #FFFFFF;
   }
+
+  .adsIndicator {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 21px;
+    height: 3px;
+    background: #FF8D28;
+    border-radius: 100px;
+    z-index: 4;
+  }
+
+  .adsIndicatorActive {
+    background: #FFFFFF;
+  }
+
+  :global(.react-calendar__tile--active) .adsIndicator,
+  :global(.react-calendar__tile--selected) .adsIndicator {
+    background: #FFFFFF;
+  }
 }
 
 .rangeMode {

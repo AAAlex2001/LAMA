@@ -44,7 +44,7 @@ export default function CalendarPageConnected() {
 
   const {
     calendar, selectedDate, sidebarDate, listRangeStart, listRangeEnd,
-    sortedPosts, mobilePosts, sidebarPosts, gridPostCounts, monthStatusCounts,
+    sortedPosts, mobilePosts, sidebarPosts, gridPostCounts, gridAdsCounts, monthStatusCounts,
     dayLoadingMap, dayHasMoreMap, isGridView, allTags, allChannels,
     showMobile, setShowMobile, mobileActiveFilters, setMobileActiveFilters,
     weekItems, isLoading, isLoadingMore, hasMore,
@@ -187,6 +187,7 @@ export default function CalendarPageConnected() {
           listSortOrder={calendar.listSortOrder}
           listStatusFilter={calendar.listStatusFilter}
           gridPostCounts={gridPostCounts}
+          gridAdsCounts={gridAdsCounts}
           statusCounts={monthStatusCounts}
           dayLoadingMap={dayLoadingMap}
           dayHasMoreMap={dayHasMoreMap}

@@ -7,11 +7,19 @@ import MainView from './MainView';
 import EfficiencyView from './EfficiencyView';
 import AddAdRevenueModal from './AddAdRevenueModal';
 import ExportDataModal, { type ExportDataPayload } from './ExportDataModal';
-import { useAdRevenues } from '../store/useAdRevenues';
+import {
+  useAddAdRevenueMutation,
+  useAdRevenueStatsQuery,
+  useAdRevenuesQuery,
+} from '../store/queries';
 import { AdRevenueType } from '../store/types';
 import styles from './WalletPageView.module.scss';
 
 const RU_MONTHS_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+
+function toIso(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
 
 function formatRangeLabel(range: DateRange | null): string | undefined {
   if (!range) return undefined;
@@ -30,16 +38,21 @@ export default function WalletPageView() {
   const [modalType, setModalType] = useState<AdRevenueType | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
 
-  const filters = useMemo(() => ({
-    date_from: range ? toIso(range.start) : undefined,
-    date_to: range ? toIso(range.end) : undefined,
-  }), [range]);
+  const filters = useMemo(
+    () => ({
+      date_from: range ? toIso(range.start) : undefined,
+      date_to: range ? toIso(range.end) : undefined,
+    }),
+    [range],
+  );
 
-  const { items, stats, add } = useAdRevenues(filters);
+  const revenuesQuery = useAdRevenuesQuery(filters);
+  const statsQuery = useAdRevenueStatsQuery(filters);
+  const addMutation = useAddAdRevenueMutation();
 
-  const handleSubmit = async (payload: Parameters<typeof add>[0]) => {
-    await add(payload);
-  };
+  const items = revenuesQuery.data?.items ?? [];
+  const stats = statsQuery.data ?? null;
+  const periodLabel = formatRangeLabel(range) || 'За весь период';
 
   const handleExport = (payload: ExportDataPayload) => {
     // TODO: подключить реальный API экспорта когда появится endpoint.
@@ -53,6 +66,7 @@ export default function WalletPageView() {
         onTabChange={setTopTab}
         range={range}
         onRangeChange={setRange}
+        onExportClick={() => setExportOpen(true)}
       />
       {topTab === 'main' ? (
         <MainView stats={stats} onAddIncome={() => setModalType('income')} />
@@ -61,6 +75,7 @@ export default function WalletPageView() {
           ads={items}
           onAddIncome={() => setModalType('income')}
           onExportClick={() => setExportOpen(true)}
+          periodLabel={periodLabel}
         />
       )}
 
@@ -69,7 +84,7 @@ export default function WalletPageView() {
           isOpen
           type={modalType}
           onClose={() => setModalType(null)}
-          onSubmit={handleSubmit}
+          onSubmit={(payload) => addMutation.mutateAsync(payload).then(() => undefined)}
         />
       )}
 
@@ -81,8 +96,4 @@ export default function WalletPageView() {
       />
     </div>
   );
-}
-
-function toIso(d: Date): string {
-  return d.toISOString().slice(0, 10);
 }

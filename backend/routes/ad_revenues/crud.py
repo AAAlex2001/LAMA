@@ -2,10 +2,16 @@ from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database import get_db
 from backend.models.auth import User
+from backend.routes.ad_revenues.dependencies import (
+    get_create_service,
+    get_delete_service,
+    get_list_service,
+    get_lookup_service,
+    get_stats_service,
+    get_update_service,
+)
 from backend.routes.auth import get_current_user
 from backend.schemas.ad_revenues.ad_revenue import (
     AdRevenueCreate,
@@ -34,10 +40,10 @@ async def list_ad_revenues(
     date_to: Optional[date] = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    service: ListAdRevenues = Depends(get_list_service),
 ) -> AdRevenueListResponse:
-    items, total = await ListAdRevenues(db).execute(
+    items, total = await service.execute(
         owner_id=current_user.id,
         type_=type,
         channel_id=channel_id,
@@ -59,10 +65,10 @@ async def stats_ad_revenues(
     date_to: Optional[date] = Query(None),
     channel_id: Optional[int] = Query(None),
     bot_id: Optional[int] = Query(None),
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    service: GetAdRevenueStats = Depends(get_stats_service),
 ) -> AdRevenueStats:
-    return await GetAdRevenueStats(db).execute(
+    return await service.execute(
         owner_id=current_user.id,
         date_from=date_from,
         date_to=date_to,
@@ -74,20 +80,20 @@ async def stats_ad_revenues(
 @router.post("/", response_model=AdRevenueResponse, status_code=status.HTTP_201_CREATED)
 async def create_ad_revenue(
     payload: AdRevenueCreate,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    service: CreateAdRevenue = Depends(get_create_service),
 ) -> AdRevenueResponse:
-    item = await CreateAdRevenue(db).execute(owner_id=current_user.id, payload=payload)
+    item = await service.execute(owner_id=current_user.id, payload=payload)
     return AdRevenueResponse.model_validate(item)
 
 
 @router.get("/{ad_revenue_id}", response_model=AdRevenueResponse)
 async def get_ad_revenue(
     ad_revenue_id: int,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    service: GetAdRevenue = Depends(get_lookup_service),
 ) -> AdRevenueResponse:
-    item = await GetAdRevenue(db).execute(ad_revenue_id, current_user.id)
+    item = await service.execute(ad_revenue_id, current_user.id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AdRevenue not found")
     return AdRevenueResponse.model_validate(item)
@@ -97,23 +103,25 @@ async def get_ad_revenue(
 async def update_ad_revenue(
     ad_revenue_id: int,
     payload: AdRevenueUpdate,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lookup: GetAdRevenue = Depends(get_lookup_service),
+    service: UpdateAdRevenue = Depends(get_update_service),
 ) -> AdRevenueResponse:
-    item = await GetAdRevenue(db).execute(ad_revenue_id, current_user.id)
+    item = await lookup.execute(ad_revenue_id, current_user.id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AdRevenue not found")
-    updated = await UpdateAdRevenue(db).execute(item, payload)
+    updated = await service.execute(item, payload)
     return AdRevenueResponse.model_validate(updated)
 
 
 @router.delete("/{ad_revenue_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_ad_revenue(
     ad_revenue_id: int,
-    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    lookup: GetAdRevenue = Depends(get_lookup_service),
+    service: DeleteAdRevenue = Depends(get_delete_service),
 ) -> None:
-    item = await GetAdRevenue(db).execute(ad_revenue_id, current_user.id)
+    item = await lookup.execute(ad_revenue_id, current_user.id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AdRevenue not found")
-    await DeleteAdRevenue(db).execute(item)
+    await service.execute(item)

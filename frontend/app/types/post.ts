@@ -127,6 +127,7 @@ export interface Draft {
   bot_username?: string;
   bot_total_chats?: number;
   bot_success_chats?: number;
+  is_ad?: boolean;
 }
 
 export interface BotMessageCompact {

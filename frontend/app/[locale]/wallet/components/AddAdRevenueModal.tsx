@@ -4,10 +4,11 @@ import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import { Button } from '@/components/new-button';
 import Input from '@/components/input/input';
-import AttachPostSourceModal, { PostSource } from './AttachPostSourceModal';
-import PostPickerModal from './PostPickerModal';
+import PostSourcePanel from './PostSourcePanel';
+import AttachedPostCard from './AttachedPostCard';
 import CurrencySelect from '@/components/currency-select';
 import DateInputPopover from './DateInputPopover';
+import type { Draft } from '@/types/post';
 import { AdRevenueCreatePayload, AdRevenueType } from '../store/types';
 import styles from './AddAdRevenueModal.module.scss';
 
@@ -49,15 +50,9 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
   const [currency, setCurrency] = useState('RUB');
   const [revenueDate, setRevenueDate] = useState(todayIso());
   const [note, setNote] = useState('');
-  const [publicationId, setPublicationId] = useState<number | null>(null);
-  const [publicationLabel, setPublicationLabel] = useState<string | null>(null);
+  const [attachedPost, setAttachedPost] = useState<Draft | null>(null);
   const [attachOpen, setAttachOpen] = useState(false);
-  const [pickerSource, setPickerSource] = useState<PostSource | null>(null);
   const [submitting, setSubmitting] = useState(false);
-
-  const handleAttach = (source: PostSource) => {
-    setPickerSource(source);
-  };
 
   const handleSubmit = async () => {
     if (!amount) return;
@@ -70,7 +65,7 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
         currency,
         revenue_date: revenueDate,
         note: note.trim() || null,
-        publication_id: publicationId,
+        publication_id: attachedPost?.id ?? null,
       });
       onClose();
     } finally {
@@ -78,96 +73,108 @@ export default function AddAdRevenueModal({ isOpen, type, onClose, onSubmit }: A
     }
   };
 
+  const handlePostSelect = (draft: Draft) => {
+    setAttachedPost(draft);
+    setAttachOpen(false);
+  };
+
+  const handlePostRemove = () => {
+    setAttachedPost(null);
+  };
+
   return (
     <ModalBase isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <ModalBase.Content size="lg" padding="md" className={styles.content}>
-        <h2 className={styles.title}>{TITLE_BY_TYPE[type]}</h2>
+      <ModalBase.Content
+        size={attachOpen ? 'xl' : 'lg'}
+        padding="md"
+        className={attachOpen ? styles.wideContent : styles.content}
+      >
+        <div className={styles.layout}>
+          <div className={styles.formColumn}>
+            <h2 className={styles.title}>{TITLE_BY_TYPE[type]}</h2>
 
-        <div className={styles.formGrid}>
-          <div className={styles.field}>
-            <span className={styles.label}>Покупатель</span>
-            <Input value={buyer} onChange={setBuyer} placeholder="Введите текст" />
-          </div>
+            <div className={styles.formGrid}>
+              <div className={styles.field}>
+                <span className={styles.label}>Покупатель</span>
+                <Input value={buyer} onChange={setBuyer} placeholder="Введите никнейм" />
+              </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>{AMOUNT_LABEL_BY_TYPE[type]}</span>
-            <div className={styles.amountRow}>
-              <Input value={amount} onChange={setAmount} placeholder="Введите сумму" />
-              <CurrencySelect value={currency} onChange={setCurrency} />
+              <div className={styles.field}>
+                <span className={styles.label}>{AMOUNT_LABEL_BY_TYPE[type]}</span>
+                <div className={styles.amountRow}>
+                  <Input value={amount} onChange={setAmount} placeholder="Введите сумму" />
+                  <CurrencySelect value={currency} onChange={setCurrency} />
+                </div>
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>{DATE_LABEL_BY_TYPE[type]}</span>
+                <DateInputPopover value={revenueDate} onChange={setRevenueDate} />
+              </div>
+
+              <div className={styles.field}>
+                <span className={styles.label}>&nbsp;</span>
+                <Button
+                  variant="outline"
+                  intent="gradient"
+                  size="lg"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => setAttachOpen((v) => !v)}
+                >
+                  {attachedPost ? 'Сменить прикреплённый пост' : 'Прикрепить рекламный пост'}
+                </Button>
+              </div>
+
+              {attachedPost && (
+                <div className={`${styles.field} ${styles.fieldFull}`}>
+                  <span className={styles.label}>Прикреплённый пост</span>
+                  <AttachedPostCard post={attachedPost} onRemove={handlePostRemove} />
+                </div>
+              )}
+
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <span className={styles.label}>Примечание</span>
+                <Input
+                  value={note}
+                  onChange={setNote}
+                  placeholder="Введите примечание для учета рекламных доходов..."
+                />
+              </div>
+            </div>
+
+            <div className={styles.actions}>
+              <Button
+                variant="outline"
+                intent="gradient"
+                size="lg"
+                onClick={onClose}
+                disabled={submitting}
+                style={{ flex: '1 1 0', justifyContent: 'center' }}
+              >
+                Отменить
+              </Button>
+              <Button
+                variant="fill"
+                intent="gradient"
+                size="lg"
+                onClick={handleSubmit}
+                disabled={!amount || submitting}
+                loading={submitting}
+                style={{ flex: '1 1 0', justifyContent: 'center' }}
+              >
+                {SUBMIT_BY_TYPE[type]}
+              </Button>
             </div>
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.label}>{DATE_LABEL_BY_TYPE[type]}</span>
-            <DateInputPopover value={revenueDate} onChange={setRevenueDate} />
-          </div>
-
-          <div className={styles.field}>
-            <span className={styles.label}>&nbsp;</span>
-            <Button
-              variant="outline"
-              intent="gradient"
-              size="lg"
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={() => setAttachOpen(true)}
-            >
-              {publicationLabel ?? 'Прикрепить рекламный пост'}
-            </Button>
-          </div>
-
-          <div className={`${styles.field} ${styles.fieldFull}`}>
-            <span className={styles.label}>Примечание</span>
-            <Input
-              value={note}
-              onChange={setNote}
-              placeholder="Введите примечание для учета рекламных доходов..."
+          {attachOpen && (
+            <PostSourcePanel
+              onClose={() => setAttachOpen(false)}
+              onSelect={handlePostSelect}
             />
-          </div>
+          )}
         </div>
 
-        <div className={styles.actions}>
-          <Button
-            variant="outline"
-            intent="gradient"
-            size="lg"
-            onClick={onClose}
-            disabled={submitting}
-            style={{ flex: '1 1 0', justifyContent: 'center' }}
-          >
-            Отменить
-          </Button>
-          <Button
-            variant="fill"
-            intent="gradient"
-            size="lg"
-            onClick={handleSubmit}
-            disabled={!amount || submitting}
-            loading={submitting}
-            style={{ flex: '1 1 0', justifyContent: 'center' }}
-          >
-            {SUBMIT_BY_TYPE[type]}
-          </Button>
-        </div>
-
-        <AttachPostSourceModal
-          isOpen={attachOpen}
-          onClose={() => setAttachOpen(false)}
-          onAttach={handleAttach}
-        />
-
-        {pickerSource && (
-          <PostPickerModal
-            isOpen
-            source={pickerSource}
-            onClose={() => setPickerSource(null)}
-            onSelect={(pub) => {
-              setPublicationId(pub.id);
-              setPublicationLabel(
-                (pub.text || '').trim().slice(0, 40) || `Пост #${pub.id}`,
-              );
-            }}
-          />
-        )}
       </ModalBase.Content>
     </ModalBase>
   );

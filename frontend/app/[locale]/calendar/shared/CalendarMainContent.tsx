@@ -27,6 +27,7 @@ interface CalendarMainContentProps {
   listSortOrder: 'asc' | 'desc' | null;
   listStatusFilter: string | null;
   gridPostCounts: Record<string, number>;
+  gridAdsCounts?: Record<string, number>;
   statusCounts: Record<string, DayStatusCount>;
   dayLoadingMap: Record<string, boolean>;
   dayHasMoreMap: Record<string, boolean>;
@@ -57,6 +58,7 @@ export default function CalendarMainContent({
   listSortOrder,
   listStatusFilter,
   gridPostCounts,
+  gridAdsCounts,
   statusCounts,
   dayLoadingMap,
   dayHasMoreMap,
@@ -82,6 +84,7 @@ export default function CalendarMainContent({
               selectedDate={selectedDate}
               sidebarDate={sidebarDate}
               postCounts={gridPostCounts}
+              adsCounts={gridAdsCounts}
               statusCounts={statusCounts}
               onDayClick={onSidebarDateChange}
             />
@@ -100,6 +103,7 @@ export default function CalendarMainContent({
             onSidebarDateChange={onSidebarDateChange}
             weekItems={weekItems}
             gridPostCounts={gridPostCounts}
+            gridAdsCounts={gridAdsCounts}
             onMonthChange={onMonthChange}
             onEdit={onEdit}
             onAddPost={onAddPost}
@@ -128,6 +132,7 @@ export default function CalendarMainContent({
             sidebarDate={sidebarDate}
             weekItems={weekItems}
             postCounts={gridPostCounts}
+            adsCounts={gridAdsCounts}
             isLoading={isLoading}
             onMonthChange={onMonthChange}
             onSidebarDateChange={onSidebarDateChange}
@@ -175,6 +180,7 @@ export default function CalendarMainContent({
             posts={sortedPosts}
             onEdit={onEdit}
             postCounts={gridPostCounts}
+            adsCounts={gridAdsCounts}
             onMonthChange={onMonthChange}
           />
         </>
@@ -197,6 +203,7 @@ export default function CalendarMainContent({
             posts={sortedPosts}
             onEdit={onEdit}
             postCounts={gridPostCounts}
+            adsCounts={gridAdsCounts}
             onMonthChange={onMonthChange}
           />
         </>

@@ -68,7 +68,7 @@ const ExportDataModal: FC<ExportDataModalProps> = ({ isOpen, onClose, onExport, 
 
   return (
     <ModalBase isOpen={isOpen} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <ModalBase.Content size="sm" padding="sm" className={styles.modal}>
+      <ModalBase.Content size="md" padding="sm" className={styles.modal}>
         <div className={styles.content}>
           <div className={styles.header}>
             <h3 className={styles.title}>{titleByStep}</h3>
