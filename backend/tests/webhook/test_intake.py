@@ -141,12 +141,13 @@ async def test_receive_rejects_invalid_secret(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_receive_returns_error_when_no_bot_token(monkeypatch):
+    """Пустой bot_token — handler возвращает ok=False (Pydantic не пускает None, но пустая строка проходит)."""
     monkeypatch.setattr(
         "backend.services.webhook.features.intake.receive_telegram_webhook.TELEGRAM_WEBHOOK_SECRET",
         None,
     )
     request = MagicMock()
-    payload = TelegramWebhookRequest(bot_token=None, secret_token=None)
+    payload = TelegramWebhookRequest(bot_token="", secret_token=None)
 
     response = await ReceiveTelegramWebhook().execute(request=request, webhook_request=payload)
     assert response.ok is False

@@ -28,6 +28,7 @@ def make_update(chat_id=None, has_message=True):
         message=message,
         edited_message=None,
         channel_post=None,
+        edited_channel_post=None,
         callback_query=None,
         my_chat_member=None,
         chat_member=None,

@@ -95,6 +95,7 @@ def make_message(text="hello", chat_id=-100, chat_type="supergroup"):
 def make_update(**kwargs):
     defaults = dict(
         message=None, edited_message=None, channel_post=None,
+        edited_channel_post=None,
         callback_query=None, my_chat_member=None, chat_member=None,
         chat_join_request=None,
     )

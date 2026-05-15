@@ -28,7 +28,7 @@ def stub_all_handlers(monkeypatch):
         "ShowPublicationHiddenText": "publication_hidden_text",
         "ExecutePublicationCallbackAction": "publication_callback",
         "ShowCommandHiddenText": "command_hidden_text",
-        "ExecuteCallbackAction": "command_callback",
+        "ExecuteCommandCallbackAction": "command_callback",
     }
     for cls_name, handler_key in classes.items():
         target = handlers[handler_key]
@@ -36,15 +36,6 @@ def stub_all_handlers(monkeypatch):
             f"backend.services.webhook.features.callbacks.route_callback.{cls_name}",
             lambda db, bot_model, _target=target: SimpleNamespace(execute=_target),
         )
-    # `ExecuteCallbackAction` импортирован дважды (как ExecuteCommandCallbackAction):
-    # фикс — заменим напрямую в namespace модуля.
-    import backend.services.webhook.features.callbacks.route_callback as mod
-    mod.ExecuteCommandCallbackAction = lambda db, bot_model: SimpleNamespace(
-        execute=handlers["command_callback"],
-    )
-    mod.ExecutePublicationCallbackAction = lambda db, bot_model: SimpleNamespace(
-        execute=handlers["publication_callback"],
-    )
     return handlers
 
 

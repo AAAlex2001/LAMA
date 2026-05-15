@@ -184,7 +184,7 @@ async def test_already_banned_only_deletes_message(db, test_bot, test_channel, s
 
 @pytest.mark.asyncio
 async def test_rate_limited_returns_marker(db, test_bot, test_channel, stub_helpers):
-    stub_helpers["check_admin"].side_effect = RateLimitTimeout(wait_seconds=15)
+    stub_helpers["check_admin"].side_effect = RateLimitTimeout(chat_id=-100, wait_seconds=15)
 
     result = await ApplyModerationAction(db).execute(
         bot_id=test_bot.id, chat_id=test_channel.telegram_id, message_id=1,
