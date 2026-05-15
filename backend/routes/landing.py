@@ -1,11 +1,10 @@
-"""
-Роуты для получения и сохранения контента лендинга
-"""
+﻿"""Роуты лендинга. GET-эндпоинты публичны (читает любой посетитель сайта), PUT/POST/PATCH/DELETE — только admin."""
 from fastapi import APIRouter, Depends, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
 from backend.models.landing import Locale
+from backend.routes.auth import get_current_admin
 from backend.services.landing import hero, advantages, key_advantages, pricing, faq, users, lama, footer, templates, header, tools
 from backend.schemas.landing import (
     HeroContentRequest,
@@ -24,6 +23,7 @@ from backend.schemas.landing import (
 )
 
 router = APIRouter()
+admin = APIRouter(dependencies=[Depends(get_current_admin)])
 
 
 def parse_locale(locale: str) -> Locale:
@@ -36,33 +36,30 @@ def parse_locale(locale: str) -> Locale:
     return mapping.get(normalized, Locale.RU)
 
 
-@router.get("/hero")
+@router.get("/hero", summary="GET Hero", description="Контент Hero-секции лендинга для указанной локали.")
 async def get_hero_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Hero"""
     parsed_locale = parse_locale(locale)
     return await hero.get_hero_content(db, locale=parsed_locale.value)
 
 
-@router.get("/header")
+@router.get("/header", summary="GET Header", description="Контент шапки сайта: бренд, навигация, кнопки логина/регистрации.")
 async def get_header_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для Header"""
     parsed_locale = parse_locale(locale)
     return await header.get_header_content(db, locale=parsed_locale.value)
 
 
-@router.put("/header")
+@admin.put("/header", summary="PUT Header", description="Сохраняет контент шапки для текущей локали. Полная замена.")
 async def save_header_content(
     data: HeaderContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для Header"""
     parsed_locale = parse_locale(locale)
     return await header.save_header_content(
         db,
@@ -76,43 +73,40 @@ async def save_header_content(
         register_href=data.registerHref,
         telegram_text=data.telegramText,
         telegram_href=data.telegramHref,
-        nav_links=[link.dict() for link in data.navLinks],
+        nav_links=[link.model_dump() for link in data.navLinks],
         locale=parsed_locale.value,
     )
 
 
-@router.get("/tools")
+@router.get("/tools", summary="GET Tools", description="Блок Tools на лендинге: список инструментов с иконками и описаниями.")
 async def get_tools_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для Tools"""
     parsed_locale = parse_locale(locale)
     return await tools.get_tools_content(db, locale=parsed_locale.value)
 
 
-@router.put("/tools")
+@admin.put("/tools", summary="PUT Tools", description="Сохраняет блок Tools для текущей локали. Полная замена items.")
 async def save_tools_content(
     data: ToolsContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для Tools"""
     parsed_locale = parse_locale(locale)
     return await tools.save_tools_content(
         db,
-        items=[item.dict() for item in data.items],
+        items=[item.model_dump() for item in data.items],
         locale=parsed_locale.value,
     )
 
 
-@router.put("/hero")
+@admin.put("/hero", summary="PUT Hero", description="Сохраняет контент Hero-секции для текущей локали (полная замена).")
 async def save_hero_content(
     data: HeroContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Hero"""
     images = [{"url": img.url, "alt": img.alt} for img in data.images]
     template_images = [{"url": img.url, "alt": img.alt} for img in (data.templateImages or [])]
     parsed_locale = parse_locale(locale)
@@ -129,70 +123,64 @@ async def save_hero_content(
     )
 
 
-@router.get("/advantages")
+@router.get("/advantages", summary="GET Advantages", description="Блок Advantages: заголовок + карточки преимуществ.")
 async def get_advantages_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Advantages"""
     parsed_locale = parse_locale(locale)
     return await advantages.get_advantages_content(db, locale=parsed_locale.value)
 
 
-@router.get("/templates")
+@router.get("/templates", summary="GET список шаблонов", description="Список всех активных шаблонов (slug + title + description + order).")
 async def list_templates(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Список всех активных шаблонов."""
     parsed_locale = parse_locale(locale)
     return await templates.list_templates(db, locale=parsed_locale.value)
 
 
-@router.get("/templates/{template_id}")
+@router.get("/templates/{template_id}", summary="GET шаблон по ID")
 async def get_template(
     template_id: int = Path(ge=1, description="ID шаблона"),
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Получить шаблон по ID."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template(db, template_id=template_id, locale=parsed_locale.value)
     return template
 
 
-@router.get("/templates/slug/{slug}")
+@router.get("/templates/slug/{slug}", summary="GET шаблон по slug")
 async def get_template_by_slug(
     slug: str = Path(min_length=1, description="Slug шаблона"),
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Получить шаблон по slug."""
     parsed_locale = parse_locale(locale)
     template = await templates.get_template_by_slug(db, slug=slug, locale=parsed_locale.value)
     return template
 
 
-@router.get("/templates/slug/{slug}/content")
+@router.get("/templates/slug/{slug}/content", summary="GET контент страницы шаблона", description="Полный JSON-контент посадочной страницы под slug (редактируется через админку).")
 async def get_template_page_content(
     slug: str = Path(min_length=1, description="Slug шаблона"),
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Получить контент страницы конкретного шаблона (редактируется в админке)."""
     parsed_locale = parse_locale(locale)
     content = await templates.get_template_content(db, slug=slug, locale=parsed_locale.value)
     return content
 
 
-@router.put("/templates/slug/{slug}/content")
+@admin.put("/templates/slug/{slug}/content", summary="PUT контент страницы шаблона", description="Полная замена контента посадочной страницы (headline, body, blocks, faq, cards, ...).")
 async def save_template_page_content(
     data: TemplateContentRequest,
     slug: str = Path(min_length=1, description="Slug шаблона"),
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента"),
 ):
-    """Сохранить контент страницы конкретного шаблона (редактируется в админке)."""
     parsed_locale = parse_locale(locale)
     result = await templates.save_template_content(
         db,
@@ -223,23 +211,22 @@ async def save_template_page_content(
                 if data.blocks is not None
                 else None
             ),
-            "faq": (data.faq.dict() if data.faq is not None else None),
-            "cardsBlock": (data.cardsBlock.dict() if data.cardsBlock is not None else None),
-            "subscribeBlock": (data.subscribeBlock.dict() if data.subscribeBlock is not None else None),
-            "subscribePlacement": (data.subscribePlacement.dict() if data.subscribePlacement is not None else None),
-            "subscribeBlocks": ([b.dict() for b in (data.subscribeBlocks or [])] if data.subscribeBlocks is not None else None),
+            "faq": (data.faq.model_dump() if data.faq is not None else None),
+            "cardsBlock": (data.cardsBlock.model_dump() if data.cardsBlock is not None else None),
+            "subscribeBlock": (data.subscribeBlock.model_dump() if data.subscribeBlock is not None else None),
+            "subscribePlacement": (data.subscribePlacement.model_dump() if data.subscribePlacement is not None else None),
+            "subscribeBlocks": ([b.model_dump() for b in (data.subscribeBlocks or [])] if data.subscribeBlocks is not None else None),
         },
         locale=parsed_locale.value,
     )
     return result
 
 
-@router.post("/templates")
+@admin.post("/templates", summary="POST новый шаблон", description="Создаёт новый шаблон с указанным slug, title и order.")
 async def create_template(
     data: CreateTemplateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Создать новый шаблон."""
     return await templates.create_template(
         db,
         slug=data.slug,
@@ -249,13 +236,12 @@ async def create_template(
     )
 
 
-@router.patch("/templates/slug/{slug}")
+@admin.patch("/templates/slug/{slug}", summary="PATCH шаблон", description="Частичное обновление шаблона: title, description, order, is_active.")
 async def update_template(
     data: UpdateTemplateRequest,
     slug: str = Path(min_length=1, description="Slug шаблона"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Обновить шаблон."""
     result = await templates.update_template(
         db,
         slug=slug,
@@ -267,23 +253,21 @@ async def update_template(
     return result
 
 
-@router.delete("/templates/slug/{slug}")
+@admin.delete("/templates/slug/{slug}", summary="DELETE шаблон", description="Полное удаление шаблона и его контента.")
 async def delete_template(
     slug: str = Path(min_length=1, description="Slug шаблона"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Удалить шаблон."""
     success = await templates.delete_template(db, slug=slug)
     return {"status": "ok", "message": "Template deleted"}
 
 
-@router.put("/advantages")
+@admin.put("/advantages", summary="PUT Advantages", description="Сохраняет блок Advantages: headline + cards (полная замена).")
 async def save_advantages_content(
     data: AdvantagesContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Advantages"""
     cards = [
         {
             "uid": getattr(card, "uid", None),
@@ -308,23 +292,21 @@ async def save_advantages_content(
     )
 
 
-@router.get("/key-advantages")
+@router.get("/key-advantages", summary="GET Key Advantages", description="Блок Key Advantages: ключевые преимущества с иконками.")
 async def get_key_advantages_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Key Advantages"""
     parsed_locale = parse_locale(locale)
     return await key_advantages.get_key_advantages_content(db, locale=parsed_locale.value)
 
 
-@router.put("/key-advantages")
+@admin.put("/key-advantages", summary="PUT Key Advantages", description="Сохраняет блок Key Advantages (полная замена advantages-листа).")
 async def save_key_advantages_content(
     data: KeyAdvantagesContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Key Advantages"""
     advantages_list = [
         {
             "icon": advantage.icon,
@@ -342,23 +324,21 @@ async def save_key_advantages_content(
     )
 
 
-@router.get("/pricing")
+@router.get("/pricing", summary="GET Pricing", description="Блок Pricing: тарифы с описанием и кнопками.")
 async def get_pricing_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Pricing"""
     parsed_locale = parse_locale(locale)
     return await pricing.get_pricing_content(db, locale=parsed_locale.value)
 
 
-@router.put("/pricing")
+@admin.put("/pricing", summary="PUT Pricing", description="Сохраняет блок Pricing (headline + список планов).")
 async def save_pricing_content(
     data: PricingContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Pricing"""
     plans = [
         {
             "title": plan.title,
@@ -381,23 +361,21 @@ async def save_pricing_content(
     )
 
 
-@router.get("/faq")
+@router.get("/faq", summary="GET FAQ", description="Блок FAQ: вопросы/ответы + кнопки + бот-ссылка для поддержки.")
 async def get_faq_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции FAQ"""
     parsed_locale = parse_locale(locale)
     return await faq.get_faq_content(db, locale=parsed_locale.value)
 
 
-@router.put("/faq")
+@admin.put("/faq", summary="PUT FAQ", description="Сохраняет блок FAQ (полная замена items + button-полей).")
 async def save_faq_content(
     data: FAQContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции FAQ"""
     faq_items = [
         {
             "question": item.question,
@@ -420,23 +398,21 @@ async def save_faq_content(
     )
 
 
-@router.get("/users")
+@router.get("/users", summary="GET Users block", description="Блок Users: счётчик пользователей + текст + кнопка.")
 async def get_users_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Users"""
     parsed_locale = parse_locale(locale)
     return await users.get_users_content(db, locale=parsed_locale.value)
 
 
-@router.put("/users")
+@admin.put("/users", summary="PUT Users block")
 async def save_users_content(
     data: UsersContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Users"""
     parsed_locale = parse_locale(locale)
     return await users.save_users_content(
         db,
@@ -449,23 +425,21 @@ async def save_users_content(
     )
 
 
-@router.get("/lama")
+@router.get("/lama", summary="GET Lama block", description="Блок Lama: рекламный кабинет / канал автора + кнопка.")
 async def get_lama_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Lama"""
     parsed_locale = parse_locale(locale)
     return await lama.get_lama_content(db, locale=parsed_locale.value)
 
 
-@router.put("/lama")
+@admin.put("/lama", summary="PUT Lama block")
 async def save_lama_content(
     data: LamaContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Lama"""
     parsed_locale = parse_locale(locale)
     return await lama.save_lama_content(
         db,
@@ -478,23 +452,21 @@ async def save_lama_content(
     )
 
 
-@router.get("/footer")
+@router.get("/footer", summary="GET Footer", description="Блок Footer: бренд, копирайт, соц-ссылки, колонки навигации.")
 async def get_footer_content(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Получить контент для секции Footer"""
     parsed_locale = parse_locale(locale)
     return await footer.get_footer_content(db, locale=parsed_locale.value)
 
 
-@router.put("/footer")
+@admin.put("/footer", summary="PUT Footer", description="Сохраняет блок Footer (полная замена бренда + соц-ссылок + колонок).")
 async def save_footer_content(
     data: FooterContentRequest,
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru", description="Локаль контента")
 ):
-    """Сохранить контент для секции Footer"""
     columns = [
         {
             "title": column.title,
@@ -513,3 +485,5 @@ async def save_footer_content(
         locale=parsed_locale.value
     )
 
+
+router.include_router(admin)

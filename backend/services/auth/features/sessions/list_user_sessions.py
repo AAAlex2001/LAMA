@@ -5,6 +5,8 @@ from backend.models.auth import UserSession
 
 
 class ListUserSessions:
+    """Возвращает все сессии юзера (включая неактивные) + total."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

@@ -7,6 +7,8 @@ from backend.services.auth.features.users.get_user import GetUser
 
 
 class UpdateUser:
+    """Обновляет `role` и/или `is_active` юзера. Не трогает email/пароль/telegram."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

@@ -34,6 +34,8 @@ class TelegramMessageResponse(BaseModel):
 
 
 class ChannelPublishResult(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     channel: str
     success: bool
     error: Optional[str] = None
@@ -44,9 +46,6 @@ class ChannelPublishResult(BaseModel):
     sent_messages: Optional[Any] = None
     channel_obj: Optional[Any] = None
     notification_error: Optional[str] = None
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class PublishResult(BaseModel):

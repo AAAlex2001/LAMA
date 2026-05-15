@@ -4,6 +4,8 @@ from backend.services.auth.features.users.get_user import GetUser
 
 
 class DeleteUser:
+    """Физически удаляет юзера. Каскадом удаляет telegram_account, sessions, ботов, каналы."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

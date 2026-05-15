@@ -1,6 +1,4 @@
-"""
-Методы для работы с секцией Advantages
-"""
+"""Секция Advantages: набор карточек преимуществ. Поддерживает CTA-карточки с отдельной кнопкой. UID/slug на карточке генерируются если их нет, чтобы можно было ссылаться на конкретную карточку (например, /templates/<slug>)."""
 from typing import List, Dict, Any
 from uuid import uuid4
 import re
@@ -61,7 +59,6 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 
 
 async def get_advantages_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
-    """Получить контент для секции Advantages"""
     locale_enum = coerce_locale(locale)
     section_result = await db.execute(
         select(LandingSection)
@@ -95,8 +92,7 @@ async def get_advantages_content(db: AsyncSession, locale: str | Locale | None =
         elif content.key == "advantages_subtitle":
             response["subtitle"] = content.text or ""
         elif content.key.startswith("advantages_card_"):
-            # Новый формат: ключ advantages_card_<uid>, порядок берём из order.
-            # Старый формат: advantages_card_<index> — тоже поддерживаем.
+            # формат ключа: advantages_card_<uid> (новый) или advantages_card_<index> (legacy)
             suffix = content.key[len("advantages_card_"):]
             fallback_uid = suffix if suffix else None
 
@@ -134,7 +130,6 @@ async def save_advantages_content(
     cards: List[Dict[str, Any]],
     locale: str | Locale | None = None,
 ) -> Dict[str, str]:
-    """Сохранить контент для секции Advantages"""
     locale_enum = coerce_locale(locale)
     result = await db.execute(
         select(LandingSection).where(
@@ -189,7 +184,6 @@ async def save_advantages_content(
             "slug": slug,
         }
 
-        # Добавляем CTA кнопку если есть
         if card.get("ctaButtonText"):
             extra_data["ctaButtonText"] = card.get("ctaButtonText")
         if card.get("ctaButtonUrl"):

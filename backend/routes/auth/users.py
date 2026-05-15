@@ -12,7 +12,12 @@ from backend.services.auth.features.users.update_user import UpdateUser
 router = APIRouter(dependencies=[Depends(get_current_admin)])
 
 
-@router.get("/users/{user_id}", response_model=UserResponse)
+@router.get(
+    "/users/{user_id}",
+    response_model=UserResponse,
+    summary="[admin] Профиль юзера",
+    description="Возвращает любого юзера по id. 404 если нет такого. Только для админов.",
+)
 async def get_user(
     user_id: int,
     db: AsyncSession = Depends(get_db),
@@ -20,7 +25,15 @@ async def get_user(
     return await GetUser(db).execute(user_id)
 
 
-@router.put("/users/{user_id}", response_model=UserResponse)
+@router.put(
+    "/users/{user_id}",
+    response_model=UserResponse,
+    summary="[admin] Обновить роль / активность юзера",
+    description=(
+        "Меняет `role` и/или `is_active`. Только для админов. Не трогает email/пароль/"
+        "telegram-связку."
+    ),
+)
 async def update_user(
     user_id: int,
     data: UserUpdateRequest,
@@ -33,7 +46,15 @@ async def update_user(
     )
 
 
-@router.delete("/users/{user_id}", status_code=204)
+@router.delete(
+    "/users/{user_id}",
+    status_code=204,
+    summary="[admin] Удалить юзера",
+    description=(
+        "Полное физическое удаление юзера. Каскадом удаляются `telegram_account`, "
+        "`user_sessions`, `bots`, `channel_groups`, `publications` и т.д. Только для админов."
+    ),
+)
 async def delete_user(
     user_id: int,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +63,12 @@ async def delete_user(
     return Response(status_code=204)
 
 
-@router.get("/users/{user_id}/stats", response_model=UserStatsResponse)
+@router.get(
+    "/users/{user_id}/stats",
+    response_model=UserStatsResponse,
+    summary="[admin] Счётчики юзера",
+    description="То же что `/me/stats`, но для произвольного юзера. Только для админов.",
+)
 async def get_user_stats(
     user_id: int,
     db: AsyncSession = Depends(get_db),

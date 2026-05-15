@@ -12,14 +12,27 @@ from backend.services.auth.features.users.get_user_stats import GetUserStats
 router = APIRouter()
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    summary="Профиль текущего юзера",
+    description="Возвращает юзера, чей access-токен пришёл в `Authorization: Bearer ...`.",
+)
 async def get_current_user_info(
     current_user: User = Depends(get_current_user),
 ):
     return current_user
 
 
-@router.get("/me/stats", response_model=UserStatsResponse)
+@router.get(
+    "/me/stats",
+    response_model=UserStatsResponse,
+    summary="Счётчики текущего юзера",
+    description=(
+        "Возвращает количество ботов / каналов / публикаций / сессий текущего юзера "
+        "(всего и активных)."
+    ),
+)
 async def get_current_user_stats(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -27,7 +40,15 @@ async def get_current_user_stats(
     return await GetUserStats(db).execute(current_user.id)
 
 
-@router.get("/me/sessions", response_model=SessionListResponse)
+@router.get(
+    "/me/sessions",
+    response_model=SessionListResponse,
+    summary="Активные сессии текущего юзера",
+    description=(
+        "Список строк `user_sessions` юзера (включая `is_active=False`) с User-Agent / IP. "
+        "Сортировка — новые сверху."
+    ),
+)
 async def get_current_user_sessions(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -36,7 +57,15 @@ async def get_current_user_sessions(
     return SessionListResponse(items=sessions, total=total)
 
 
-@router.delete("/me/sessions/{session_id}", status_code=204)
+@router.delete(
+    "/me/sessions/{session_id}",
+    status_code=204,
+    summary="Отозвать сессию",
+    description=(
+        "Помечает чужую (для текущего юзера) сессию `is_active=False`. 404 если такой "
+        "сессии нет или она принадлежит другому юзеру."
+    ),
+)
 async def revoke_session(
     session_id: int,
     db: AsyncSession = Depends(get_db),

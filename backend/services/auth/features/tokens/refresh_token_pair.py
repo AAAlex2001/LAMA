@@ -13,13 +13,32 @@ from backend.services.auth.settings import AuthSettings
 from backend.services.auth.types import AuthResult
 
 
+def decode_refresh_user_id(refresh_token: str, settings: AuthSettings) -> int:
+    try:
+        payload = jwt.decode(
+            refresh_token,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+    except (JWTError, TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid token type")
+    try:
+        return int(payload.get("sub"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+
 class RefreshTokenPair:
+    """Обновляет пару access/refresh: ищет активную сессию по refresh-токену, пишет новые токены в ту же строку."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings
 
     async def execute(self, refresh_token: str) -> AuthResult:
-        user_id = self._decode_user_id(refresh_token)
+        user_id = decode_refresh_user_id(refresh_token, self.settings)
 
         session_query = select(UserSession).where(
             UserSession.user_id == user_id,
@@ -56,16 +75,3 @@ class RefreshTokenPair:
             access_token=access_token,
             refresh_token=next_refresh_token,
         )
-
-    def _decode_user_id(self, refresh_token: str) -> int:
-        try:
-            payload = jwt.decode(
-                refresh_token,
-                self.settings.jwt_secret,
-                algorithms=[self.settings.jwt_algorithm],
-            )
-            if payload.get("type") != "refresh":
-                raise HTTPException(status_code=401, detail="Invalid token type")
-            return int(payload.get("sub"))
-        except (JWTError, TypeError, ValueError):
-            raise HTTPException(status_code=401, detail="Invalid or expired refresh token")

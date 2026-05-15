@@ -6,6 +6,8 @@ from backend.models.auth import UserSession
 
 
 class RevokeUserSession:
+    """Помечает чужую сессию `is_active=False`. 404 если она не принадлежит юзеру."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

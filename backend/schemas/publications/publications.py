@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
 
 from backend.schemas.publications.common import ChannelResponse, InlineKeyboard, PollData
 from backend.schemas.publications.enums import (
@@ -83,16 +83,19 @@ class PublicationBase(BaseModel):
             raise ValueError("repeat_end_time cannot be earlier than scheduled_time")
         return values
 
-    @validator("poll_data")
-    def validate_poll_data(cls, value, values):
-        if "content_type" in values and values["content_type"] in [ContentType.POLL, ContentType.QUIZ]:
+    @field_validator("poll_data")
+    @classmethod
+    def validate_poll_data(cls, value, info: ValidationInfo):
+        content_type = info.data.get("content_type")
+        if content_type in (ContentType.POLL, ContentType.QUIZ):
             if value is None:
                 raise ValueError("poll_data is required for polls and quizzes")
-            if values["content_type"] == ContentType.QUIZ and value.correct_option_id is None:
+            if content_type == ContentType.QUIZ and value.correct_option_id is None:
                 raise ValueError("correct_option_id is required for quizzes")
         return value
 
-    @validator("repeat_weekdays")
+    @field_validator("repeat_weekdays")
+    @classmethod
     def validate_repeat_weekdays(cls, value):
         if value is None:
             return value
@@ -102,7 +105,8 @@ class PublicationBase(BaseModel):
                 raise ValueError("repeat_weekdays must be in range 0..6")
         return unique
 
-    @validator("repeat_month_days", "repeat_year_days")
+    @field_validator("repeat_month_days", "repeat_year_days")
+    @classmethod
     def validate_repeat_month_days(cls, value):
         if value is None:
             return value
@@ -112,7 +116,8 @@ class PublicationBase(BaseModel):
                 raise ValueError("repeat month/day values must be in range 1..31")
         return unique
 
-    @validator("tag_names")
+    @field_validator("tag_names")
+    @classmethod
     def validate_tag_names(cls, value):
         if value is None:
             return value
@@ -174,7 +179,8 @@ class PublicationUpdate(BaseModel):
     tag_color: Optional[str] = None
     tag_colors: Optional[List[str]] = None
 
-    @validator("tag_names")
+    @field_validator("tag_names")
+    @classmethod
     def validate_update_tag_names(cls, value):
         if value is None:
             return value
@@ -202,7 +208,8 @@ class PublicationUpdate(BaseModel):
             raise ValueError("repeat_end_time cannot be earlier than scheduled_time")
         return values
 
-    @validator("repeat_weekdays")
+    @field_validator("repeat_weekdays")
+    @classmethod
     def validate_repeat_weekdays(cls, value):
         if value is None:
             return value
@@ -212,7 +219,8 @@ class PublicationUpdate(BaseModel):
                 raise ValueError("repeat_weekdays must be in range 0..6")
         return unique
 
-    @validator("repeat_month_days", "repeat_year_days")
+    @field_validator("repeat_month_days", "repeat_year_days")
+    @classmethod
     def validate_repeat_month_days(cls, value):
         if value is None:
             return value

@@ -6,6 +6,8 @@ from backend.models.auth import UserSession
 
 
 class LogoutSession:
+    """Помечает `UserSession.is_active=False` по access-токену."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

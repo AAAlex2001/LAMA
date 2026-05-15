@@ -6,6 +6,8 @@ from backend.models.auth import User
 
 
 class GetUserByEmail:
+    """Возвращает юзера по email (нечувствительно к регистру) или None."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

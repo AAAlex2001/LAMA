@@ -1,5 +1,10 @@
 # Тестирование backend
 
+## Recent changes
+
+- **Security-fix**: все `PUT/POST/PATCH/DELETE` в `routes/landing.py`, `routes/upload.py`, `routes/knowledge_base.py` теперь требуют `Depends(get_current_admin)`. `GET` и `POST /articles/.../feedback` остались публичными.
+- **Pydantic v1 → v2**: убраны последние `class Config:` и `@validator` в `schemas/inbox/events.py`, `schemas/publications/publications.py`, `schemas/channels/info_messages.py`, `schemas/publications/publishing.py`, `schemas/common.py`. Все `data.dict()` в `routes/landing.py` заменены на `.model_dump()`.
+
 ## Как запускать
 
 ```bash
@@ -14,6 +19,10 @@ docker exec -it lama-backend python -m pytest backend/tests/publications -v
 docker exec -it lama-backend python -m pytest backend/tests/channel -v
 docker exec -it lama-backend python -m pytest backend/tests/bot -v
 docker exec -it lama-backend python -m pytest backend/tests/webhook -v
+docker exec -it lama-backend python -m pytest backend/tests/auth -v
+docker exec -it lama-backend python -m pytest backend/tests/inbox -v
+docker exec -it lama-backend python -m pytest backend/tests/direct -v
+docker exec -it lama-backend python -m pytest backend/tests/landing -v
 ```
 
 Зависимости (`pytest-asyncio`, `asgi-lifespan`, `aiosqlite`) лежат в [requirements.txt](requirements.txt) — после `docker compose build backend` они окажутся в образе.
@@ -105,7 +114,48 @@ docker exec -it lama-backend python -m pytest backend/tests/webhook -v
 | `test_subscriptions.py` | 10 | `HasRecentJoinEvent` (окно 2 мин), `FindInviteLinkFromInbox` (latest), `MarkJoinRequestAccepted` (помечает payload + status) |
 | `test_callbacks_publications.py` | 7 | `TrackButtonClick` (idempotent per user, разные юзеры), `ShowHiddenText` (no-op для битого callback, кнопка не найдена, subscribed vs unsubscribed) |
 
-### Итого: **~411 тестов** через ~50 файлов
+### `auth` — ~75 кейсов
+
+| Файл | Кейсов | Покрытие |
+|---|---|---|
+| `test_passwords.py` | 5 | bcrypt hash/verify, битый хеш, пустой хеш |
+| `test_tokens.py` | 16 | CreateAccess/Refresh, VerifyAccess (все ветки: missing/inactive/expire/refresh-token rejected), RefreshTokenPair (rotate, missing session, inactive user), LogoutSession |
+| `test_telegram_widget.py` | 11 | HMAC compute + verify (correct/tampered/old/modified/no-optional-fields), UpsertTelegramUser (create/update/auth_date), AuthenticateTelegramWidget (success + inactive 403) |
+| `test_email_flow.py` | 13 | RegisterWithEmail (consent, dup, normalize), LoginWithEmail (unknown/wrong/telegram-only/inactive), AddEmailToUser (dup, re-add) |
+| `test_bot_login.py` | 10 | AuthenticateBotUser (create/idempotent/inactive), CreateBotLoginCode (TTL/unique), RedeemBotLoginCode (success/unknown/used/expired) |
+| `test_users.py` | 17 | GetUser/GetUserByEmail/GetUserByTelegramId/ListUsers/UpdateUser/DeleteUser/GetUserStats + session CRUD + RevokeUserSession (owner-check) |
+
+### `inbox` — ~40 кейсов
+
+| Файл | Кейсов | Покрытие |
+|---|---|---|
+| `test_list_events.py` | 11 | Owner-isolation, category/status/bot_ids/event_types/system/auto_replies filter, pagination, sort old/new, bot_map preload |
+| `test_lookup.py` | 6 | find_event_or_404 (owner check, 404), mark_payload_handled (with/without key/empty) |
+| `test_create_event.py` | 2 | CreateInboxEvent — пишет строку, дефолт status=NEW |
+| `test_bulk_action.py` | 11 | READ/IGNORE/DELETE, apply_to_all, empty-ids, BLOCK для DM + канала, UNBLOCK, swallow TelegramAPIError, skip без required fields |
+| `test_specific_actions.py` | 10 | mark_resolved / ignore / reply + accept_join (approve + state + handled), reject_join, 404 без channel.telegram_id, dispatcher routes/404/400/wraps-500 |
+
+### `direct` — ~90 кейсов
+
+| Файл | Кейсов | Покрытие |
+|---|---|---|
+| `test_chats.py` | 17 | GetOrCreateChat (idempotent, profile-update, skip-empty), ListChats (фильтры bot_id/unread/read, pinned first, preview), UpdateChatStatus (pin/block), IncrementUnread (multi + noop), ResetUnread, UpdateLastMessage |
+| `test_lookup.py` | 7 | get_chat_and_bot (owner-check, 404), find_chat_by_id_or_404, bot_belongs_to_owner |
+| `test_media_detectors.py` | 13 | detect_media_type по расширению, extract_incoming_media (photo/video/text), extract_media_type, extract_media_file_id (photo последний/video/TEXT none/404) |
+| `test_message_extractors.py` | 15 | message_get (dict/object), get_raw_message_data, extract_nested_id (dict/object/custom-key/404), extract_file_id_from_entity (dict/object/None/empty), extract_file_id_from_collection (photos[], single, empty, str-not-iterable) |
+| `test_send_to_telegram.py` | 11 | Маршрутизация по media-count: 0+text → send_message, 0 no-text → empty, single photo/video/document/audio, detect type by URL, album → send_media_group, лимит 10, reply_params passthrough; wrap_for_send |
+| `test_save_messages.py` | 9 | SaveOutgoingMessage (text, photo+caption, fallback type, reply_to); SaveIncomingMessage (dict text, photo+caption, 404 bot, reply_to) |
+| `test_edit_delete.py` | 10 | EditMessage (text/caption/empty skip/foreign 404/incoming 404/TG-error 400); DeleteMessage (db row gone after TG, db kept on TG fail, foreign 404) |
+
+### `landing` — ~13 кейсов
+
+| Файл | Кейсов | Покрытие |
+|---|---|---|
+| `test_hero.py` | 5 | get для пустой секции, save+get round-trip, full replacement, locale isolation, coerce_locale |
+| `test_faq.py` | 3 | Пустая секция, save+get, замена items |
+| `test_advantages.py` | 4 | Пустая, save+get, slug generation из title (translit), preserve explicit uid+slug |
+
+### Итого: **~630 тестов** через ~65 файлов
 
 ## Что НЕ покрыто (честный список)
 
@@ -175,6 +225,52 @@ docker exec -it lama-backend python -m pytest backend/tests/webhook -v
 | `moderation/check_message` | Не покрыт изолированно (асимметричный путь enqueue celery после проверки), но логика `flood/links/banned_words` покрыта в `tests/channel/`. |
 
 **Почему не сделал**: каждый из этих файлов требует моков целой цепочки (aiogram.Update → bot → DB-сессия → celery → ws_manager → trigger-firing pipeline). Реалистично — это ещё 100+ тестов и 4-5 сессий работы. **Лучше покрывается e2e против реального тестового бота на тестовом канале**, чем пытаться мокать всю инфраструктуру.
+
+### `auth`
+
+| Use-case | Почему не покрыт |
+|---|---|
+| `routes/auth/*` HTTP-уровень | Тесты идут на уровне сервисов; httpx-интеграцию не делал — все ветки проверены через прямой вызов use-case'ов. |
+| `dependencies.get_current_user` / `get_current_admin` | Тонкие обёртки над `VerifyAccessToken`. Логика VerifyAccessToken покрыта целиком (5 веток). |
+
+### `inbox`
+
+| Use-case | Почему не покрыт |
+|---|---|
+| `features/actions/block_user.py`, `unban_user.py`, `delete_message.py`, `delete_and_block.py`, `change_ban.py` | Тонкие обёртки над `client.ban/unban/delete + UPDATE status`. Логика диспатча покрыта (`test_specific_actions.py::test_dispatcher_*`), остальное — проверка моков. |
+| `features/create_block_notification.py` | Создание уведомления — простой INSERT. Не критично. |
+| `features/fire_join_trigger.py`, `features/increment_link_counter.py` | Замоканы в `test_specific_actions.py::accept_join_request`. Отдельные тесты не делал. |
+
+### `direct`
+
+| Use-case | Почему не покрыт |
+|---|---|
+| `features/messages/send_to_telegram.py` + `send_message.py` | Полная цепочка отправки требует моков aiogram (send_message / send_photo / send_media_group), aiohttp (media URLs), ws_manager. Покрыто фрагментарно: маршрутизация по media-count — план, нужно ~10 тестов. |
+| `features/messages/save_outgoing_message.py` / `save_incoming_message.py` | Запись BotMessage с разбором raw_data из aiogram — нужны fixture aiogram-объектов. |
+| `features/messages/edit_message.py` / `delete_message.py` | Тонкие обёртки над bot.edit_*/delete_* + WS-эвент. Малая ценность. |
+| `features/messages/broadcast.py` | Цикл по chat-id с `send_message`. Тестируется через `send_message`. |
+| `features/messages/resolve_media_url.py` | Дёргает `bot.get_file()` — нужен мок aiogram. План. |
+| `features/utils/*` | Pure-функции (media_detectors, input_media, message_extractors). Лёгкие unit-тесты — план. |
+| `features/chats/get_chat_messages.py` + `fetch_chat_messages.py` + `enrich_chat_messages.py` | Цепочка fetch + reply lookahead + enrich. Требует фикстуры с reply_to цепочкой — план. |
+| `routes/direct/ws.py` | WebSocket-handshake требует `asgi-lifespan` + `httpx.AsyncClient.websocket_connect`. План. |
+
+### `landing`
+
+Покрыто **только 3 секции** (Hero / FAQ / Advantages) из 11. Остальные секции (`header`, `key_advantages`, `pricing`, `users`, `lama`, `footer`, `tools`, `templates`) — **тот же паттерн** "section + key-value contents + полная замена при save". Один аналогичный тест на каждую секцию закрывает всё, нет смысла делать 8 копий.
+
+| Use-case | Почему не покрыт |
+|---|---|
+| `templates.*` | Самый большой модуль с JSON-контентом (blocks/faq/cards/subscribeBlocks). Тест save+get round-trip покрыл бы 80%; не делал — много сериализаций, лучше протестировать через httpx-роуты. |
+| `header`, `pricing`, `users`, `lama`, `footer`, `tools`, `key_advantages` | Тот же шаблон что Hero/FAQ. Покрывается копированием test_hero.py с заменой ключей. |
+
+### `misc routes`
+
+| Файл | Тесты |
+|---|---|
+| `knowledge_base.py` | Не покрыто. CRUD простой; интеграционный тест через httpx достаточен. |
+| `link_preview.py` | Не покрыто. Требует мока aiohttp + reference HTML с OG-тегами. Малая ценность. |
+| `media_upload.py` | Не покрыто. Цепочка storage + bot_provider + warmup. Лучше e2e против тестового S3-бакета. |
+| `upload.py` | Не покрыто. Запись на FS — простой smoke-тест плана не сделал. |
 
 ### Где гарантировано работает только на postgres
 

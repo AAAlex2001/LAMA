@@ -9,6 +9,8 @@ from backend.services.auth.features.users.get_user import GetUser
 
 
 class UpsertTelegramUser:
+    """Создаёт User+TelegramAccount по `telegram_id` или обновляет уже существующий аккаунт."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
+
+from pydantic import BaseModel, ConfigDict
 
 
 class InfoMessageCreate(BaseModel):
@@ -21,6 +22,8 @@ class InfoMessageUpdate(BaseModel):
 
 
 class InfoMessageResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     channel_id: int
     text: str
@@ -32,9 +35,6 @@ class InfoMessageResponse(BaseModel):
     share_token: Optional[str] = None
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class InfoMessagesListResponse(BaseModel):

@@ -7,6 +7,8 @@ from backend.models.auth import BotLoginCode
 
 
 class CreateBotLoginCode:
+    """Создаёт одноразовый код для логина через бота (по умолчанию TTL 5 минут)."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

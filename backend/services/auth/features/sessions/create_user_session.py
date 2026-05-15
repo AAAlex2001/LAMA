@@ -8,6 +8,8 @@ from backend.services.auth.types import ClientContext
 
 
 class CreateUserSession:
+    """Пишет строку `user_sessions` с парой токенов и контекстом клиента (UA + IP)."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings

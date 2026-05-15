@@ -24,7 +24,16 @@ from backend.services.auth.settings import AuthSettings
 router = APIRouter()
 
 
-@router.post("/register", response_model=AuthResponse)
+@router.post(
+    "/register",
+    response_model=AuthResponse,
+    summary="Регистрация по email + паролю",
+    description=(
+        "Создаёт нового юзера с email и bcrypt-хешем пароля. Требует "
+        "`agree_personal_data=True` и `agree_terms=True` — иначе 400. "
+        "409 — если email уже занят. В ответе `registration_completed=true` всегда."
+    ),
+)
 async def register_with_email(
     register_data: RegisterRequest,
     request: Request,
@@ -41,7 +50,16 @@ async def register_with_email(
     return build_auth_response(result, settings, completed=True)
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post(
+    "/login",
+    response_model=AuthResponse,
+    summary="Логин по email + паролю",
+    description=(
+        "Ищет юзера по email, проверяет `bcrypt.checkpw`. 401 — если юзер не найден, "
+        "пароль неверный или у аккаунта нет `password_hash` (telegram-only). "
+        "403 — если `is_active=False`."
+    ),
+)
 async def login_with_email(
     login_data: EmailLoginRequest,
     request: Request,
@@ -56,7 +74,16 @@ async def login_with_email(
     return build_auth_response(result, settings)
 
 
-@router.post("/me/add-email", response_model=UserResponse)
+@router.post(
+    "/me/add-email",
+    response_model=UserResponse,
+    summary="Привязать email к существующему аккаунту",
+    description=(
+        "Добавляет email + пароль к юзеру, который зашёл через Telegram. "
+        "Требует валидный access-токен. Перезаписывает `password_hash` если уже есть. "
+        "409 — email уже принадлежит другому юзеру."
+    ),
+)
 async def add_email_to_account(
     data: AddEmailRequest,
     db: AsyncSession = Depends(get_db),

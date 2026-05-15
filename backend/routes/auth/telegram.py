@@ -14,7 +14,17 @@ from backend.services.auth.types import TelegramAuthData
 router = APIRouter()
 
 
-@router.post("/telegram", response_model=AuthResponse)
+@router.post(
+    "/telegram",
+    response_model=AuthResponse,
+    summary="Логин через Telegram Login Widget",
+    description=(
+        "Проверяет HMAC-подпись от Telegram Login Widget (через `TELEGRAM_BOT_TOKEN`), "
+        "создаёт или обновляет юзера + `TelegramAccount`, выпускает пару access/refresh "
+        "и пишет сессию. Возвращает токены, юзера и флаг `registration_completed`. "
+        "401 — если подпись неверна или `auth_date` старше 24 часов."
+    ),
+)
 async def login_with_telegram(
     auth_data: TelegramAuthPayload,
     request: Request,

@@ -20,12 +20,21 @@ MAX_FILE_SIZE = 50 * 1024 * 1024
 TOTAL_MAX_SIZE = 50 * 1024 * 1024  # Общий размер всех файлов не более 50MB
 
 
-@router.post("/upload-media")
+@router.post(
+    "/upload-media",
+    summary="Загрузка медиа для публикации",
+    description=(
+        "Принимает 1..N файлов (картинки/видео/документы). "
+        "Лимиты: каждый файл ≤ 50 MB, общий размер всех ≤ 50 MB. "
+        "Сохраняет через `storage` (S3/local), генерирует thumbnail для image/video. "
+        "После загрузки прогревает медиа в Telegram через мастер-бота — возвращает `file_ids`, "
+        "которые публикация использует для повторных send_* (избегает повторной заливки)."
+    ),
+)
 async def upload_media(
     files: List[UploadFile] = File(...),
     background_tasks: BackgroundTasks = None,
 ):
-    """Загрузить медиа файлы для публикации (с поддержкой облачного хранилища и прогревом в Telegram)"""
     storage = get_storage_service()
     uploaded_files = []
     media_urls = []

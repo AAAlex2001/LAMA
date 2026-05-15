@@ -14,6 +14,8 @@ from backend.services.auth.types import AuthResult, ClientContext
 
 
 class RedeemBotLoginCode:
+    """Обменивает одноразовый код от бота на access+refresh пару."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings
@@ -23,8 +25,16 @@ class RedeemBotLoginCode:
         code: str,
         context: ClientContext | None = None,
     ) -> AuthResult:
-        login_code = await self._get_active_code(code)
-        self._ensure_not_expired(login_code)
+        query = select(BotLoginCode).where(
+            BotLoginCode.code == code,
+            BotLoginCode.is_used.is_(False),
+        )
+        result = await self.db.execute(query)
+        login_code = result.scalar_one_or_none()
+        if not login_code:
+            raise HTTPException(status_code=401, detail="Invalid or expired login code")
+        if datetime.now(timezone.utc) > login_code.expires_at:
+            raise HTTPException(status_code=401, detail="Login code has expired")
 
         user = await UpsertTelegramUser(self.db).execute(
             telegram_id=login_code.telegram_id,
@@ -54,19 +64,3 @@ class RedeemBotLoginCode:
             access_token=access_token,
             refresh_token=refresh_token,
         )
-
-    async def _get_active_code(self, code: str) -> BotLoginCode:
-        query = select(BotLoginCode).where(
-            BotLoginCode.code == code,
-            BotLoginCode.is_used.is_(False),
-        )
-        result = await self.db.execute(query)
-        login_code = result.scalar_one_or_none()
-        if not login_code:
-            raise HTTPException(status_code=401, detail="Invalid or expired login code")
-        return login_code
-
-    @staticmethod
-    def _ensure_not_expired(login_code: BotLoginCode) -> None:
-        if datetime.now(timezone.utc) > login_code.expires_at:
-            raise HTTPException(status_code=401, detail="Login code has expired")

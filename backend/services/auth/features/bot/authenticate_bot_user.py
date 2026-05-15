@@ -10,6 +10,8 @@ from backend.services.auth.types import AuthResult, ClientContext
 
 
 class AuthenticateBotUser:
+    """Bot-side логин: бот даёт `telegram_id`, мы делаем upsert юзера и выпускаем токены."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings

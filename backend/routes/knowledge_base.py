@@ -18,9 +18,11 @@ from backend.schemas.knowledge_base import (
     ArticleUpdatedResponse,
     StatusResponse,
 )
+from backend.routes.auth import get_current_admin
 from backend.services import knowledge_base as kb_service
 
 router = APIRouter()
+admin = APIRouter(dependencies=[Depends(get_current_admin)])
 
 
 def parse_locale(locale: str) -> Locale:
@@ -31,7 +33,12 @@ def parse_locale(locale: str) -> Locale:
 
 # --------------- Public ---------------
 
-@router.get("/articles", response_model=ArticleListResponse)
+@router.get(
+    "/articles",
+    response_model=ArticleListResponse,
+    summary="Список статей KB",
+    description="Список активных статей базы знаний с фильтром по `category` (slug).",
+)
 async def list_articles(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru"),
@@ -41,7 +48,12 @@ async def list_articles(
     return await kb_service.list_articles(db, locale=parsed.value, category_slug=category)
 
 
-@router.get("/articles/slug/{slug}", response_model=ArticleResponse)
+@router.get(
+    "/articles/slug/{slug}",
+    response_model=ArticleResponse,
+    summary="Статья KB по slug",
+    description="Полный контент статьи (sections массивом) + meta + breadcrumbs.",
+)
 async def get_article(
     slug: str = Path(min_length=1),
     db: AsyncSession = Depends(get_db),
@@ -51,7 +63,12 @@ async def get_article(
     return await kb_service.get_article_by_slug(db, slug=slug, locale=parsed.value)
 
 
-@router.get("/navigation", response_model=list[NavigationCategory])
+@router.get(
+    "/navigation",
+    response_model=list[NavigationCategory],
+    summary="Навигация KB",
+    description="Категории KB со статьями для бокового меню.",
+)
 async def get_navigation(
     db: AsyncSession = Depends(get_db),
     locale: str = Query(default="ru"),
@@ -60,7 +77,12 @@ async def get_navigation(
     return await kb_service.get_navigation(db, locale=parsed.value)
 
 
-@router.post("/articles/slug/{slug}/feedback", response_model=FeedbackResponse)
+@router.post(
+    "/articles/slug/{slug}/feedback",
+    response_model=FeedbackResponse,
+    summary="Отметить статью полезной/бесполезной",
+    description="Инкрементирует helpful или unhelpful counter у статьи. Без аутентификации.",
+)
 async def submit_feedback(
     data: FeedbackRequest,
     slug: str = Path(min_length=1),
@@ -73,7 +95,12 @@ async def submit_feedback(
 
 # --------------- Admin ---------------
 
-@router.post("/categories", response_model=CategoryResponse)
+@admin.post(
+    "/categories",
+    response_model=CategoryResponse,
+    summary="[admin] Создать KB-категорию",
+    description="Создаёт категорию с slug + title + order.",
+)
 async def create_category(
     data: CreateKBCategoryRequest,
     db: AsyncSession = Depends(get_db),
@@ -83,7 +110,11 @@ async def create_category(
     )
 
 
-@router.patch("/categories/slug/{slug}", response_model=CategoryResponse)
+@admin.patch(
+    "/categories/slug/{slug}",
+    response_model=CategoryResponse,
+    summary="[admin] Обновить KB-категорию",
+)
 async def update_category(
     data: UpdateKBCategoryRequest,
     slug: str = Path(min_length=1),
@@ -94,7 +125,12 @@ async def update_category(
     )
 
 
-@router.delete("/categories/slug/{slug}", response_model=StatusResponse)
+@admin.delete(
+    "/categories/slug/{slug}",
+    response_model=StatusResponse,
+    summary="[admin] Удалить KB-категорию",
+    description="Удаляет категорию вместе со всеми её статьями (cascade).",
+)
 async def delete_category(
     slug: str = Path(min_length=1),
     db: AsyncSession = Depends(get_db),
@@ -103,7 +139,12 @@ async def delete_category(
     return StatusResponse(status="ok", message="Category deleted")
 
 
-@router.post("/articles", response_model=ArticleCreatedResponse)
+@admin.post(
+    "/articles",
+    response_model=ArticleCreatedResponse,
+    summary="[admin] Создать KB-статью",
+    description="Полная замена в рамках locale. `sections[]` — JSON-блоки страницы.",
+)
 async def create_article(
     data: CreateKBArticleRequest,
     db: AsyncSession = Depends(get_db),
@@ -126,7 +167,12 @@ async def create_article(
     )
 
 
-@router.patch("/articles/slug/{slug}", response_model=ArticleUpdatedResponse)
+@admin.patch(
+    "/articles/slug/{slug}",
+    response_model=ArticleUpdatedResponse,
+    summary="[admin] Обновить KB-статью",
+    description="Частичный апдейт; если передан `sections` — полная замена всех блоков.",
+)
 async def update_article(
     data: UpdateKBArticleRequest,
     slug: str = Path(min_length=1),
@@ -153,7 +199,11 @@ async def update_article(
     )
 
 
-@router.delete("/articles/slug/{slug}", response_model=StatusResponse)
+@admin.delete(
+    "/articles/slug/{slug}",
+    response_model=StatusResponse,
+    summary="[admin] Удалить KB-статью",
+)
 async def delete_article(
     slug: str = Path(min_length=1),
     db: AsyncSession = Depends(get_db),
@@ -162,3 +212,6 @@ async def delete_article(
     parsed = parse_locale(locale)
     await kb_service.delete_article(db, slug=slug, locale=parsed.value)
     return StatusResponse(status="ok", message="Article deleted")
+
+
+router.include_router(admin)

@@ -1,6 +1,4 @@
-"""
-Методы для работы с секцией Key Advantages
-"""
+"""Секция Key Advantages: блок «фишек» с иконкой+заголовком+описанием. Иконка может быть URL или сырой SVG-строкой — последняя кладётся в `extra_data.icon`."""
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete

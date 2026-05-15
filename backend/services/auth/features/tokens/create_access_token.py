@@ -7,6 +7,8 @@ from backend.services.auth.settings import AuthSettings
 
 
 class CreateAccessToken:
+    """Выпускает access JWT с `sub=user_id`, `type='access'`, TTL из настроек."""
+
     def __init__(self, settings: AuthSettings):
         self.settings = settings
 

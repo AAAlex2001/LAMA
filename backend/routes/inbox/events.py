@@ -39,7 +39,18 @@ def serialize_event(item, bot_map) -> dict:
     return data
 
 
-@router.get("/", response_model=InboxListResponse)
+@router.get(
+    "/",
+    response_model=InboxListResponse,
+    summary="Список событий inbox с фильтрами",
+    description=(
+        "Возвращает пагинированный список событий текущего юзера. "
+        "Поддерживает фильтры по `category`, `status`, `bot_ids` (CSV), "
+        "`channel_ids` (CSV), `event_types` (CSV), `system` (системные события), "
+        "и флагам типов автоматизации `type_auto_replies`/`type_triggers`/`type_commands`. "
+        "Сортировка по `created_at`: NEW_FIRST / OLD_FIRST."
+    ),
+)
 async def list_inbox_events(
     category: Optional[InboxCategory] = Query(None),
     status: Optional[EventStatus] = Query(None),

@@ -7,6 +7,8 @@ from backend.services.auth.settings import AuthSettings
 
 
 class CreateRefreshToken:
+    """Выпускает refresh JWT с `sub=user_id`, `type='refresh'`, TTL из настроек."""
+
     def __init__(self, settings: AuthSettings):
         self.settings = settings
 

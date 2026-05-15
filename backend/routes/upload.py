@@ -1,13 +1,14 @@
-"""
-Роуты для загрузки файлов (картинок для лендинга)
-"""
+"""Роут загрузки картинок для лендинга. Доступен только admin."""
 import os
 import uuid
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, HTTPException
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
-router = APIRouter()
+from backend.routes.auth import get_current_admin
+
+router = APIRouter(dependencies=[Depends(get_current_admin)])
 
 # Папка для загрузки файлов
 UPLOAD_DIR = Path("uploads/landing")
@@ -18,9 +19,17 @@ ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".svg", ".webp", ".gif"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
-@router.post("/upload-image")
+@router.post(
+    "/upload-image",
+    summary="Загрузка картинки для лендинга",
+    description=(
+        "Принимает один файл-картинку, сохраняет на диск в `uploads/landing/` под UUID-именем "
+        "и возвращает URL для использования в landing-контенте. "
+        "Лимит — 5 MB. Форматы: png/jpg/jpeg/svg/webp/gif. "
+        "Только admin (через `Depends(get_current_admin)`)."
+    ),
+)
 async def upload_image(file: UploadFile = File(...)):
-    """Загрузить картинку для лендинга"""
 
     file_ext = os.path.splitext(file.filename or "")[1].lower()
     if file_ext not in ALLOWED_EXTENSIONS:

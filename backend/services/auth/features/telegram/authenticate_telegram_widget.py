@@ -13,6 +13,8 @@ from backend.services.auth.types import AuthResult, ClientContext, TelegramAuthD
 
 
 class AuthenticateTelegramWidget:
+    """Логин через Telegram Login Widget: HMAC-проверка + upsert юзера + выпуск пары токенов."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings

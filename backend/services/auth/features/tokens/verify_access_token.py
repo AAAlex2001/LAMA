@@ -10,6 +10,8 @@ from backend.services.auth.settings import AuthSettings
 
 
 class VerifyAccessToken:
+    """Декодирует access JWT и проверяет что сессия в БД ещё активна + юзер активен."""
+
     def __init__(self, db: AsyncSession, settings: AuthSettings):
         self.db = db
         self.settings = settings

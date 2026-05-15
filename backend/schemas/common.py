@@ -4,7 +4,7 @@
 from datetime import datetime
 from typing import Optional, List, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TokenPair(BaseModel):
@@ -33,11 +33,10 @@ class IncomingMediaInfo(BaseModel):
 
 
 class DownloadedMedia(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     file_bytes: bytes
     mime_type: str
-
-    class Config:
-        arbitrary_types_allowed = True
 
 
 class PaginatedResponse(BaseModel):

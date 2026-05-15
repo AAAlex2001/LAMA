@@ -1,5 +1,5 @@
 from typing import Optional, Any, Dict, List
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 from datetime import datetime
 
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus, BulkActionType
@@ -20,6 +20,8 @@ class InboxEventCreate(InboxEventBase):
     owner_id: int
 
 class InboxEventResponse(InboxEventBase):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
@@ -63,9 +65,6 @@ class InboxEventResponse(InboxEventBase):
             if isinstance(raw_source, str) and raw_source.strip():
                 self.reason_source = raw_source.strip()
         return self
-
-    class Config:
-        from_attributes = True
 
 class InboxListResponse(BaseModel):
     items: List[InboxEventResponse]

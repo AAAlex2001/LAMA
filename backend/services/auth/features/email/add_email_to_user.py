@@ -8,6 +8,8 @@ from backend.services.auth.features.users.get_user_by_email import GetUserByEmai
 
 
 class AddEmailToUser:
+    """Привязка email+пароля к существующему юзеру (для telegram-only аккаунтов)."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

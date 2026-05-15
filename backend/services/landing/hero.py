@@ -1,6 +1,4 @@
-"""
-Методы для работы с секцией Hero
-"""
+"""Секция Hero: заголовок, два абзаца, кнопка, изображения для лендинга и для шаблонов."""
 from typing import List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
@@ -17,9 +15,7 @@ def coerce_locale(locale: str | Locale | None) -> Locale:
 
 
 async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None) -> Dict[str, Any]:
-    """Получить контент для секции Hero"""
     locale_enum = coerce_locale(locale)
-    # Получаем секцию Hero (только активную)
     section_result = await db.execute(
         select(LandingSection)
         .where(LandingSection.section_type == SectionType.HERO)
@@ -48,7 +44,6 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
     )
     contents: List[LandingContent] = list(content_result.scalars().all())
 
-    # Формируем ответ из контента
     response = {}
     images = []
     template_images = []
@@ -65,14 +60,13 @@ async def get_hero_content(db: AsyncSession, locale: str | Locale | None = None)
         elif content.key == "hero_button_url":
             response["buttonUrl"] = content.text or ""
         elif content.key.startswith("hero_image_template_"):
-            # Картинки для шаблонов
             if content.image_url:
                 template_images.append({
                     "url": content.image_url,
                     "alt": content.image_alt or "Hero illustration",
                 })
         elif content.key.startswith("hero_image_landing_") or content.key.startswith("hero_image_"):
-            # Картинки для лендинга (поддержка legacy hero_image_*)
+            # legacy: hero_image_* без суффикса landing/template — считаем картинкой лендинга
             if content.image_url:
                 images.append({
                     "url": content.image_url,
@@ -101,9 +95,7 @@ async def save_hero_content(
     template_images: List[Dict[str, str]] | None = None,
     locale: str | Locale | None = None,
 ) -> Dict[str, str]:
-    """Сохранить контент для секции Hero"""
     locale_enum = coerce_locale(locale)
-    # Получаем или создаем секцию Hero
     result = await db.execute(
         select(LandingSection).where(
             LandingSection.section_type == SectionType.HERO)
@@ -122,14 +114,13 @@ async def save_hero_content(
 
     template_images = template_images or []
 
-    # Удаляем старый контент только для текущей локали
+    # save = полная замена контента для текущей локали
     await db.execute(
         delete(LandingContent)
         .where(LandingContent.section_id == section.id)
         .where(LandingContent.locale == locale_enum)
     )
 
-    # Создаем новый контент
     contents = [
         LandingContent(
             section_id=section.id,
@@ -178,7 +169,6 @@ async def save_hero_content(
         )
     ]
 
-    # Добавляем картинки
     for i, image in enumerate(images):
         contents.append(LandingContent(
             section_id=section.id,

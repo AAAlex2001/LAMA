@@ -6,6 +6,8 @@ from backend.models.auth import User, UserRole
 
 
 class ListUsers:
+    """Пагинированный список юзеров с фильтрами по role / is_active."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

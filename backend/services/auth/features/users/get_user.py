@@ -7,6 +7,8 @@ from backend.models.auth import User
 
 
 class GetUser:
+    """Возвращает юзера по id с подгруженным `telegram_account`. 404 если нет."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

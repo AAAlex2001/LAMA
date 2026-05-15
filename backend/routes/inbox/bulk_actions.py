@@ -10,7 +10,17 @@ from backend.services.inbox.features.execute_bulk_action import ExecuteBulkActio
 router = APIRouter()
 
 
-@router.post("/bulk-action")
+@router.post(
+    "/bulk-action",
+    summary="Массовое действие над событиями",
+    description=(
+        "Применяет action ко всем `event_ids` (или ко всем событиям юзера если "
+        "`apply_to_all=True`). Поддерживаемые actions: READ / IGNORE / DELETE / "
+        "BLOCK / UNBLOCK. Для BLOCK/UNBLOCK дёргает Telegram bot.ban/unban_chat_member, "
+        "ошибки TG логируются но не пробрасываются. "
+        "Возвращает `{status, affected_rows}`."
+    ),
+)
 async def bulk_inbox_action(
     request: BulkActionRequest,
     db: AsyncSession = Depends(get_db),

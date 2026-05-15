@@ -6,6 +6,8 @@ from backend.models.auth import TelegramAccount, User
 
 
 class GetUserByTelegramId:
+    """Возвращает юзера по `TelegramAccount.telegram_id` или None."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 
