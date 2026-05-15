@@ -1,4 +1,3 @@
-export { default as botsReducer } from './slice';
 export type { Bot, BotCreate, BotStatus, ApprovalMode, ApprovalDestination, BotsState } from './slice';
 
 export {

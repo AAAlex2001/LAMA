@@ -70,8 +70,8 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
   const faqIn = (safe as any).faq;
   const faqItemsIn = Array.isArray(faqIn?.faqItems) ? faqIn.faqItems : [];
   const faqItems = faqItemsIn
-    .filter((it: any) => it && typeof it === 'object')
-    .map((it: any) => ({ question: String(it.question ?? ''), answer: String(it.answer ?? '') }))
+    .filter((it: unknown): it is Record<string, unknown> => it !== null && typeof it === 'object')
+    .map((it: Record<string, unknown>) => ({ question: String(it.question ?? ''), answer: String(it.answer ?? '') }))
     .filter((it: FAQItem) => Boolean(it.question.trim() || it.answer.trim()));
 
   const faq: FAQContent = {
@@ -99,12 +99,12 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
   const cardsBlockIn = (safe as any).cardsBlock;
   const cardsIn = Array.isArray(cardsBlockIn?.cards) ? cardsBlockIn.cards : [];
   const cards = cardsIn
-    .filter((c: any) => c && typeof c === 'object')
-    .map((c: any) => ({
+    .filter((c: unknown): c is Record<string, unknown> => c !== null && typeof c === 'object')
+    .map((c: Record<string, unknown>) => ({
       title: String(c.title ?? ''),
       text: String(c.text ?? ''),
       buttonText: String(c.buttonText ?? ''),
-      buttonLink: (c.buttonLink ?? '') as any,
+      buttonLink: String(c.buttonLink ?? ''),
     }))
     .filter((c: TemplateCardItem) => Boolean(c.title.trim() || c.text.trim() || c.buttonText.trim() || String(c.buttonLink ?? '').trim()));
 
@@ -116,19 +116,20 @@ function normalizeTemplateContent(data: Partial<TemplatePageContent> | null | un
 
   const subscribeBlocksIn = Array.isArray((safe as any).subscribeBlocks) ? (safe as any).subscribeBlocks : [];
   const subscribeBlocks = subscribeBlocksIn
-    .filter((b: any) => b && typeof b === 'object')
-    .map((b: any) => {
+    .filter((b: unknown): b is Record<string, unknown> => b !== null && typeof b === 'object')
+    .map((b: Record<string, unknown>) => {
       const title = String(b.title ?? '').trim();
       const subtitle = String(b.subtitle ?? '').trim();
       const buttonText = String(b.buttonText ?? '').trim();
       const buttonLink = String(b.buttonLink ?? '').trim() || null;
 
-      const placementPos = String(b.placement?.position ?? '').trim();
+      const placementIn = (b.placement ?? {}) as Record<string, unknown>;
+      const placementPos = String(placementIn.position ?? '').trim();
       const position = (placementPos === 'after_block' || placementPos === 'after_faq' ? placementPos : 'after_cards') as
         | 'after_block'
         | 'after_faq'
         | 'after_cards';
-      const afterBlockNum = Number(b.placement?.afterBlockNumber ?? 0);
+      const afterBlockNum = Number(placementIn.afterBlockNumber ?? 0);
       const placement = {
         position,
         afterBlockNumber: position === 'after_block' && Number.isFinite(afterBlockNum) && afterBlockNum >= 1 ? afterBlockNum : null,

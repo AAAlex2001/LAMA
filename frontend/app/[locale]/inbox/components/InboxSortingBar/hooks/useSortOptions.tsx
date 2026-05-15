@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import SourceContent from "../components/SourceComponent";
+import SourceContent, { type SourceFilterOption } from "../components/SourceComponent";
 import type { SortOptionType, SortOption } from "../../sortTypes";
 import { ListHeaderType } from "../../InboxList/components/ListHeader";
 
@@ -33,10 +33,10 @@ interface UseSortOptionsProps {
   sortValues: Record<SortOptionType, string>;
   sourceDefault: boolean;
   setSourceDefault: (value: boolean) => void;
-  sourceFilterOptions: any[];
+  sourceFilterOptions: SourceFilterOption[];
   typeDefault: boolean;
   setTypeDefault: (value: boolean) => void;
-  typeFilterOptions: any[];
+  typeFilterOptions: SourceFilterOption[];
 }
 
 export const useSortOptions = ({

@@ -2,6 +2,8 @@
 
 import Modal from '@/components/modal';
 import PostPreviewModal from '@/components/post-preview-modal';
+import type { MediaFile } from '@/components/media-preview';
+import type { InlineKeyboardPreviewData } from '@/components/post-preview-modal/inline-keyboard-preview/inline-keyboard-preview';
 
 interface DraftsDialogsProps {
   deleteConfirmId: number | null;
@@ -13,8 +15,8 @@ interface DraftsDialogsProps {
     channelMembersCount?: number | null;
     channelExtraCount?: string;
     html: string;
-    mediaFiles: any[];
-    inlineKeyboard?: { buttons: any[] };
+    mediaFiles: MediaFile[];
+    inlineKeyboard?: InlineKeyboardPreviewData;
     quizData?: {
       mode: 'quiz' | 'poll';
       question: string;

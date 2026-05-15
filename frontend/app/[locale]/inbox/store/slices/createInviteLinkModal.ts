@@ -144,7 +144,15 @@ const createInviteLinkModalSlice = createSlice({
       }
     },
     
-    populateFormFromInviteLink(state, action: PayloadAction<any>) {
+    populateFormFromInviteLink(state, action: PayloadAction<{
+      channel_id?: number;
+      name?: string;
+      creates_join_request?: boolean;
+      member_limit?: number;
+      expire_date?: string | null;
+      protection_type?: string | null;
+      entry_method?: string | null;
+    }>) {
       const inviteLink = action.payload;
       
       if (inviteLink.channel_id) {

@@ -396,16 +396,10 @@ export default function RepeatCustomCase({
 
       <RepeatEndSelector
         value={repeatEndType}
-        onChange={(value) => {
-          console.log('RepeatEndSelector onChange:', value);
-          onRepeatEndTypeChange?.(value);
-        }}
+        onChange={(value) => onRepeatEndTypeChange?.(value)}
         endDate={repeatEndDate}
         scheduledMinDate={scheduledMinDate}
-        onEndDateChange={(date) => {
-          console.log('RepeatEndSelector onEndDateChange:', date);
-          onRepeatEndDateChange?.(date);
-        }}
+        onEndDateChange={(date) => onRepeatEndDateChange?.(date)}
       />
     </div>
   );

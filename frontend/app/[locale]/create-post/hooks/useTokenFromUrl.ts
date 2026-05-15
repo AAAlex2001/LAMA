@@ -24,13 +24,11 @@ export function useTokenFromUrl() {
     // Only treat it as an auth access token if it looks like a JWT.
     if (tokenParam && isJwtLike(tokenParam)) {
       localStorage.setItem('lamaplanner_access_token', tokenParam);
-      
+
       // Удаляем токен из URL для безопасности
       const url = new URL(window.location.href);
       url.searchParams.delete('token');
       router.replace(url.pathname + url.search, { scroll: false });
-      
-      console.log('✅ Токен из URL сохранён');
     }
   }, [searchParams, router]);
 }

@@ -8,10 +8,14 @@ import { useNotifications } from '@/components/notifications/NotificationProvide
 import { apiRequest } from '@/store/api';
 import styles from './styles.module.scss';
 
+interface ConnectBotResponse {
+  botError?: string;
+}
+
 interface ConnectBotModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSuccess?: (data: any) => void;
+  onSuccess?: (data: ConnectBotResponse) => void;
 }
 
 const ConnectBotModal: React.FC<ConnectBotModalProps> = ({

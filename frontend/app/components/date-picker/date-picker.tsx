@@ -69,7 +69,7 @@ export default function DatePicker({
     }
   }, [value?.getTime()]);
 
-  const handleDateChange = (newValue: any) => {
+  const handleDateChange = (newValue: Date | Date[] | [Date | null, Date | null] | null) => {
     if (newValue instanceof Date) {
       setSelectedDate(newValue);
       onChange?.(newValue);

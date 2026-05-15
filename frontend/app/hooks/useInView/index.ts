@@ -21,7 +21,7 @@ export type IntersectionChangeEffect<TElement extends Element = Element> = (
 interface RenderProps {
   inView: boolean;
   entry: IntersectionObserverEntry | undefined;
-  ref: React.RefObject<any> | ((node?: Element | null) => void);
+  ref: React.RefObject<Element | null> | ((node?: Element | null) => void);
 }
 
 export interface IntersectionOptions extends IntersectionObserverInit {

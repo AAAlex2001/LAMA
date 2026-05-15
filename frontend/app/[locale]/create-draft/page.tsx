@@ -5,7 +5,7 @@ import styles from './create-draft.module.scss';
 
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/new-button';
-import RichTextEditor from '@/components/rich-text-editor/rich-text-editor.container';
+import RichTextEditor, { type RichTextEditorRef } from '@/components/rich-text-editor/rich-text-editor.container';
 import {
   QuizFormConnected,
   InlineButtonsConnected,
@@ -42,7 +42,7 @@ function CreateDraftPageContent() {
   const { isDraftLoading } = useDraftFromUrl();
 
   const headerRef = useRef<HTMLDivElement>(null);
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<RichTextEditorRef>(null);
   const text = useAppSelector(state => state.editor.text);
   const showLinkPreview = useAppSelector(state => state.editor.showLinkPreview);
   const mediaFiles = useAppSelector(state => state.media.files);
