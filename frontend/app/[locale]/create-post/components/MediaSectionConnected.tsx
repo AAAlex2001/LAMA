@@ -58,7 +58,7 @@ export default function MediaSectionConnected({
           variant="soft"
           intent="neutral"
           size="lg"
-          style={{ width: '100%' }}
+          style={{ width: 200, alignSelf: 'center' }}
           disabled={!canAddMedia}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -76,7 +76,7 @@ export default function MediaSectionConnected({
               variant="soft"
               intent="neutral"
               size="lg"
-              style={{ width: '100%' }}
+              style={{ width: 200 }}
               disabled={!canAddMedia}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -96,7 +96,7 @@ export default function MediaSectionConnected({
               variant="soft"
               intent="neutral"
               size="lg"
-              style={{ width: '100%' }}
+              style={{ width: 200 }}
               disabled={!canAddMedia}
               onClick={() => fileInputRef.current?.click()}
             >

@@ -7,6 +7,7 @@ import type { Swiper as SwiperType } from 'swiper';
 import 'swiper/css';
 import styles from "./advantages.module.scss";
 import { Button } from "@/components/new-button";
+import { ArrowRightIcon } from "@/components/icons";
 import Pagination from "@/components/pagination/pagination";
 
 type Props = {
@@ -98,7 +99,10 @@ export default function Advantages({ locale, content }: Props) {
                         size="lg"
                         style={{ width: '100%' }}
                       >
-                        {card.ctaButtonText || "Начать бесплатно"}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                          {card.ctaButtonText || "Начать бесплатно"}
+                          <ArrowRightIcon width={20} height={20} variant="gradient" />
+                        </span>
                       </Button>
                     </div>
                   </div>
@@ -151,7 +155,10 @@ export default function Advantages({ locale, content }: Props) {
                               size="lg"
                               style={{ width: '100%' }}
                             >
-                              {card.ctaButtonText || "Начать бесплатно"}
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                {card.ctaButtonText || "Начать бесплатно"}
+                                <ArrowRightIcon width={20} height={20} variant="gradient" />
+                              </span>
                             </Button>
                           </div>
                         </div>

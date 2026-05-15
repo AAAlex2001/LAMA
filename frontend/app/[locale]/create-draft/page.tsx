@@ -154,6 +154,7 @@ function CreateDraftPageContent() {
       <div className={styles.footerButtons}>
         <Button
           intent="gradient"
+          size="lg"
           className={styles.saveDraftBtn}
           onClick={handleSaveDraft}
           loading={isSavingDraft}
@@ -176,6 +177,7 @@ function CreateDraftPageContent() {
       <div className={styles.draftsHeaderWrapper}>
         <Button
           intent="gradient"
+          size="lg"
           onClick={() => { window.location.href = '/drafts'; }}
         >
           Список черновиков

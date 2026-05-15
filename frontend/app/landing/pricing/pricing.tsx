@@ -4,6 +4,7 @@ import { useState, useId } from 'react';
 import { motion } from 'framer-motion';
 import styles from "./pricing.module.scss";
 import { Button } from "@/components/new-button";
+import { ArrowRightIcon } from "@/components/icons";
 
 type PricingContent = {
   headline: string;
@@ -195,7 +196,14 @@ export default function Pricing({ locale, content }: Props) {
                   href={plan.buttonUrl || `/${locale}/maintenance`}
                   style={{ width: '100%' }}
                 >
-                  {plan.buttonText || "Выбрать план"}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                    {plan.buttonText || "Выбрать план"}
+                    {index === 1 ? (
+                      <ArrowRightIcon width={20} height={20} color="#ffffff" />
+                    ) : (
+                      <ArrowRightIcon width={20} height={20} variant="gradient" />
+                    )}
+                  </span>
                 </Button>
               </div>
             </motion.div>

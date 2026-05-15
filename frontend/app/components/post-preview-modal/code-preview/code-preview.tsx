@@ -10,18 +10,19 @@ interface CodePreviewProps {
   code: string;
 }
 
+const escapeHtml = (value: string) =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
 export default function CodePreview({ language, code }: CodePreviewProps) {
-  if (!code) return null;
-
-  const escapeHtml = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-
   const { detectedLanguage, highlightedCode } = useMemo(() => {
+    if (!code) {
+      return { detectedLanguage: 'plaintext', highlightedCode: '' };
+    }
     const lang = language || detectLanguage(code);
     const isPlain = lang === 'plaintext' || !hljs.getLanguage(lang);
 
@@ -49,6 +50,7 @@ export default function CodePreview({ language, code }: CodePreviewProps) {
     }
   }, [code, language]);
 
+  if (!code) return null;
   const displayLanguage = getLanguageLabel(detectedLanguage);
 
   return (

@@ -85,19 +85,14 @@
   align-items: center;
   gap: 10px;
 
-  svg path {
-    stroke: currentColor;
-    transition: stroke 0.2s ease;
-  }
+  // Не трогаем `stroke` у SVG — внутри outline+gradient кнопки она
+  // отрисована с inline `stroke="url(#gradient)"`. CSS-override
+  // ломал gradient (наследовал `color: transparent` из gradient-text).
+  // Hover-цвет переключается в new-button/styles.module.scss.
 }
 
 .heroBtn {
   transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover:not(:disabled) {
-    background: #FFFFFF;
-    color: #3B82F6;
-  }
 }
 
 .images {

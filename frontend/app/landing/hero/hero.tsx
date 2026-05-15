@@ -88,14 +88,14 @@ export default function Hero({ locale, content, hideImagesOnMobile = false, vari
           <div className={styles.buttonContainer}>
             <Button
               href={safeContent.buttonUrl || `/${locale}/maintenance`}
-              variant="fill"
+              variant="outline"
               intent="gradient"
               size="lg"
               className={styles.heroBtn}
             >
               <span className={styles.buttonInner}>
                 {safeContent.buttonText}
-                <ArrowRightIcon width={20} height={20} />
+                <ArrowRightIcon width={20} height={20} variant="gradient" />
               </span>
             </Button>
           </div>

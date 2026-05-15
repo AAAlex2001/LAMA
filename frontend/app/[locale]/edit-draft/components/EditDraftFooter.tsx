@@ -31,6 +31,8 @@ export default function EditDraftFooter({
     <div className={styles.footerButtons}>
       {isLastSeriesPost && (
         <Button
+          variant="outline"
+          intent="gradient"
           className={styles.saveBtn}
           onClick={onSave}
           loading={isSavingDraft}

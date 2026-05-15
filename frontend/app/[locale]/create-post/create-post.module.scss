@@ -373,40 +373,22 @@
 }
 
 .saveDraftBtn {
-  width: 100%;
-  display: flex;
-
-  button {
-    width: 100%;
-    justify-content: center;
-  }
+  width: 100% !important;
+  height: 37px;
+  justify-content: center;
 
   @media (min-width: 1440px) {
-    width: auto;
-    display: inline-block;
-
-    button {
-      width: auto;
-    }
+    width: auto !important;
   }
 }
 
 .deleteFromSeriesBtn {
-  width: 100%;
-  display: flex;
-
-  button {
-    width: 100%;
-    justify-content: center;
-  }
+  width: 100% !important;
+  height: 37px;
+  justify-content: center;
 
   @media (min-width: 1440px) {
-    width: auto;
-    display: inline-block;
-
-    button {
-      width: auto;
-    }
+    width: auto !important;
   }
 }
 

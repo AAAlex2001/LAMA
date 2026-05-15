@@ -146,10 +146,20 @@
 
 .loginButtonSmall {
   display: block;
+
+  button, a {
+    min-width: 80px;
+    justify-content: center;
+  }
 }
 
 .loginButtonMedium {
   display: none;
+
+  button, a {
+    min-width: 100px;
+    justify-content: center;
+  }
 }
 
 .menuButton {

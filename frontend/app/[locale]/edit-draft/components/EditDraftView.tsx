@@ -153,6 +153,7 @@ export default function EditDraftView() {
       <div className={styles.draftsHeaderWrapper}>
         <Button
           intent="gradient"
+          size="lg"
           onClick={() => { window.location.href = '/drafts'; }}
         >
           Список черновиков

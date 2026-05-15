@@ -292,8 +292,12 @@
 }
 
 .saveDraftBtn {
-  button {
-    justify-content: center;
+  width: 100% !important;
+  height: 37px;
+  justify-content: center;
+
+  @media (min-width: 1440px) {
+    width: auto !important;
   }
 }
 

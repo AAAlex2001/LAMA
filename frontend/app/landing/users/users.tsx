@@ -5,6 +5,7 @@ import { motion, useMotionValue, useTransform, animate, useInView } from 'framer
 import { useEffect, useRef } from 'react';
 import styles from "./users.module.scss";
 import { Button } from "@/components/new-button";
+import { ArrowRightIcon } from "@/components/icons";
 
 type UsersContent = {
   number: number;
@@ -172,7 +173,10 @@ export default function Users({ locale, content }: Props) {
             size="lg"
             href={safeContent.buttonUrl || `/${locale}/maintenance`}
           >
-            {safeContent.buttonText || "Начать бесплатно"}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+              {safeContent.buttonText || "Начать бесплатно"}
+              <ArrowRightIcon width={20} height={20} color="#ffffff" />
+            </span>
           </Button>
         </motion.div>
       </div>
