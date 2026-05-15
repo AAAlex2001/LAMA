@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,15 +12,20 @@ router = APIRouter()
 
 
 def build_quick_commands_response(channel) -> QuickCommandsResponse:
+    """Достаёт поля быстрых команд из канала в response-модель."""
     return QuickCommandsResponse(
         commands_enabled=channel.commands_enabled,
         enabled_commands=channel.enabled_commands,
     )
 
 
-@router.get("/{channel_id}/quick-commands", response_model=QuickCommandsResponse)
+@router.get(
+    "/{channel_id}/quick-commands",
+    response_model=QuickCommandsResponse,
+    summary="Получить настройки быстрых команд бота в канале",
+)
 async def get_quick_commands(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -28,10 +33,14 @@ async def get_quick_commands(
     return build_quick_commands_response(channel)
 
 
-@router.put("/{channel_id}/quick-commands", response_model=QuickCommandsResponse)
+@router.put(
+    "/{channel_id}/quick-commands",
+    response_model=QuickCommandsResponse,
+    summary="Обновить настройки быстрых команд (включение + список разрешённых)",
+)
 async def update_quick_commands(
-    channel_id: int,
     data: QuickCommandsUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

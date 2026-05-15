@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def build_captcha_response(channel) -> CaptchaSettingsResponse:
+    """Достаёт поля капчи из канала в response-модель."""
     return CaptchaSettingsResponse(
         captcha_enabled=channel.captcha_enabled,
         captcha_timeout_seconds=channel.captcha_timeout_seconds,
@@ -24,9 +25,13 @@ def build_captcha_response(channel) -> CaptchaSettingsResponse:
     )
 
 
-@router.get("/{channel_id}/captcha", response_model=CaptchaSettingsResponse)
+@router.get(
+    "/{channel_id}/captcha",
+    response_model=CaptchaSettingsResponse,
+    summary="Получить настройки капчи для новых участников канала",
+)
 async def get_captcha_settings(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -34,10 +39,14 @@ async def get_captcha_settings(
     return build_captcha_response(channel)
 
 
-@router.put("/{channel_id}/captcha", response_model=CaptchaSettingsResponse)
+@router.put(
+    "/{channel_id}/captcha",
+    response_model=CaptchaSettingsResponse,
+    summary="Обновить настройки капчи (включение, таймаут, действие при провале)",
+)
 async def update_captcha_settings(
-    channel_id: int,
     data: CaptchaSettingsUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

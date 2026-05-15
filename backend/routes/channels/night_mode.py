@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def build_night_mode_response(channel) -> NightModeResponse:
+    """Достаёт поля ночного режима из канала в response-модель."""
     return NightModeResponse(
         night_mode_enabled=channel.night_mode_enabled,
         night_mode_start=channel.night_mode_start,
@@ -21,9 +22,13 @@ def build_night_mode_response(channel) -> NightModeResponse:
     )
 
 
-@router.get("/{channel_id}/night-mode", response_model=NightModeResponse)
+@router.get(
+    "/{channel_id}/night-mode",
+    response_model=NightModeResponse,
+    summary="Получить настройки ночного режима канала (тихие часы)",
+)
 async def get_night_mode(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -31,10 +36,14 @@ async def get_night_mode(
     return build_night_mode_response(channel)
 
 
-@router.put("/{channel_id}/night-mode", response_model=NightModeResponse)
+@router.put(
+    "/{channel_id}/night-mode",
+    response_model=NightModeResponse,
+    summary="Обновить настройки ночного режима (включение, окно времени, что блокировать)",
+)
 async def update_night_mode(
-    channel_id: int,
     data: NightModeUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

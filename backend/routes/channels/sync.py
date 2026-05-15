@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,7 +12,11 @@ from backend.services.channel.utils.query_utils import find_channel_or_404
 router = APIRouter()
 
 
-@router.post("/sync", response_model=SyncChannelResponse)
+@router.post(
+    "/sync",
+    response_model=SyncChannelResponse,
+    summary="Подтянуть новый канал из Telegram по username/invite/telegram_id",
+)
 async def sync_channel(
     data: SyncChannelRequest,
     db: AsyncSession = Depends(get_db),
@@ -29,9 +33,13 @@ async def sync_channel(
     return SyncChannelResponse(success=True, channel=channel, message="Channel synchronized successfully")
 
 
-@router.post("/{channel_id}/sync", response_model=ChannelGroupResponse)
+@router.post(
+    "/{channel_id}/sync",
+    response_model=ChannelGroupResponse,
+    summary="Пересинхронизировать существующий канал с Telegram",
+)
 async def sync_existing_channel(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

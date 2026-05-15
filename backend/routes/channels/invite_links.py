@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -25,9 +25,13 @@ from backend.services.channel.utils.query_utils import find_channel_or_404
 router = APIRouter()
 
 
-@router.get("/{channel_id}/invite-links", response_model=InviteLinkListResponse)
+@router.get(
+    "/{channel_id}/invite-links",
+    response_model=InviteLinkListResponse,
+    summary="Список invite-ссылок канала",
+)
 async def list_invite_links(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -36,10 +40,15 @@ async def list_invite_links(
     return InviteLinkListResponse(items=links, total=len(links))
 
 
-@router.post("/{channel_id}/invite-links", response_model=InviteLinkResponse, status_code=201)
+@router.post(
+    "/{channel_id}/invite-links",
+    response_model=InviteLinkResponse,
+    status_code=201,
+    summary="Создать новую invite-ссылку (через Telegram API канала)",
+)
 async def create_invite_link(
-    channel_id: int,
     data: InviteLinkCreate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -47,10 +56,14 @@ async def create_invite_link(
     return await CreateInviteLink(db).execute(channel, data, current_user.id)
 
 
-@router.get("/{channel_id}/invite-links/{link_id}", response_model=InviteLinkResponse)
+@router.get(
+    "/{channel_id}/invite-links/{link_id}",
+    response_model=InviteLinkResponse,
+    summary="Получить invite-ссылку + перечитать актуальное состояние из Telegram",
+)
 async def get_invite_link(
-    channel_id: int,
-    link_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    link_id: int = Path(..., description="ID ссылки."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -59,11 +72,15 @@ async def get_invite_link(
     return await RefreshInviteLink(db).execute(channel, link)
 
 
-@router.patch("/{channel_id}/invite-links/{link_id}", response_model=InviteLinkResponse)
+@router.patch(
+    "/{channel_id}/invite-links/{link_id}",
+    response_model=InviteLinkResponse,
+    summary="Обновить invite-ссылку (лимиты, имя, дата истечения)",
+)
 async def update_invite_link(
-    channel_id: int,
-    link_id: int,
     data: InviteLinkUpdate,
+    channel_id: int = Path(..., description="ID канала."),
+    link_id: int = Path(..., description="ID ссылки."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -71,10 +88,14 @@ async def update_invite_link(
     return await UpdateInviteLink(db).execute(channel, link_id, data)
 
 
-@router.post("/{channel_id}/invite-links/{link_id}/revoke", response_model=InviteLinkResponse)
+@router.post(
+    "/{channel_id}/invite-links/{link_id}/revoke",
+    response_model=InviteLinkResponse,
+    summary="Отозвать invite-ссылку (она перестанет работать в Telegram)",
+)
 async def revoke_invite_link(
-    channel_id: int,
-    link_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    link_id: int = Path(..., description="ID ссылки."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -82,10 +103,13 @@ async def revoke_invite_link(
     return await RevokeInviteLink(db).execute(channel, link_id)
 
 
-@router.delete("/{channel_id}/invite-links/{link_id}")
+@router.delete(
+    "/{channel_id}/invite-links/{link_id}",
+    summary="Удалить invite-ссылку из БД",
+)
 async def delete_invite_link(
-    channel_id: int,
-    link_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    link_id: int = Path(..., description="ID ссылки."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -94,9 +118,13 @@ async def delete_invite_link(
     return {"success": True, "message": "Invite link deleted"}
 
 
-@router.post("/{channel_id}/invite-links/sync", response_model=InviteLinkListResponse)
+@router.post(
+    "/{channel_id}/invite-links/sync",
+    response_model=InviteLinkListResponse,
+    summary="Подтянуть все invite-ссылки канала из Telegram",
+)
 async def sync_invite_links(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

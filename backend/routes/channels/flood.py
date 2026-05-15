@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def build_flood_response(channel) -> FloodSettingsResponse:
+    """Достаёт поля флуд-настроек из канала в response-модель."""
     return FloodSettingsResponse(
         flood_message_limit=channel.flood_message_limit,
         flood_interval_seconds=channel.flood_interval_seconds,
@@ -20,9 +21,13 @@ def build_flood_response(channel) -> FloodSettingsResponse:
     )
 
 
-@router.get("/{channel_id}/flood", response_model=FloodSettingsResponse)
+@router.get(
+    "/{channel_id}/flood",
+    response_model=FloodSettingsResponse,
+    summary="Получить настройки антифлуда канала",
+)
 async def get_flood_settings(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -30,10 +35,14 @@ async def get_flood_settings(
     return build_flood_response(channel)
 
 
-@router.put("/{channel_id}/flood", response_model=FloodSettingsResponse)
+@router.put(
+    "/{channel_id}/flood",
+    response_model=FloodSettingsResponse,
+    summary="Обновить настройки антифлуда (лимит сообщений, окно, действие)",
+)
 async def update_flood_settings(
-    channel_id: int,
     data: FloodSettingsUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

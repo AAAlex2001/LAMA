@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -10,9 +10,13 @@ from backend.services.channel.features.forum_topics import ListChannelTopics
 router = APIRouter()
 
 
-@router.get("/{channel_id}/topics", response_model=list[ForumTopicResponse])
+@router.get(
+    "/{channel_id}/topics",
+    response_model=list[ForumTopicResponse],
+    summary="Список форум-тем (топиков) супергруппы",
+)
 async def list_forum_topics(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала (должен быть супергруппой с включёнными темами)."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

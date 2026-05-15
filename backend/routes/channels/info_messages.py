@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -24,19 +24,26 @@ from backend.services.channel.features.info_messages.update_message import Updat
 router = APIRouter()
 
 
-@router.get("/{channel_id}/info-messages", response_model=InfoMessagesListResponse)
+@router.get(
+    "/{channel_id}/info-messages",
+    response_model=InfoMessagesListResponse,
+    summary="Список инфо-сообщений канала (приветствия, FAQ, правила)",
+)
 async def list_info_messages(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await ListInfoMessages(db).execute(channel_id=channel_id, owner_id=current_user.id)
 
 
-@router.put("/{channel_id}/auto-replies/toggle")
+@router.put(
+    "/{channel_id}/auto-replies/toggle",
+    summary="Включить/выключить авто-ответы бота в канале",
+)
 async def toggle_auto_reply_enabled(
-    channel_id: int,
     data: AutoReplyToggle,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -44,10 +51,13 @@ async def toggle_auto_reply_enabled(
     return {"ok": True}
 
 
-@router.put("/{channel_id}/info-messages/toggle")
+@router.put(
+    "/{channel_id}/info-messages/toggle",
+    summary="Включить/выключить отправку инфо-сообщений в канале",
+)
 async def toggle_info_messages(
-    channel_id: int,
     data: InfoMessagesToggle,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -55,21 +65,30 @@ async def toggle_info_messages(
     return {"ok": True}
 
 
-@router.post("/{channel_id}/info-messages", response_model=InfoMessageResponse, status_code=201)
+@router.post(
+    "/{channel_id}/info-messages",
+    response_model=InfoMessageResponse,
+    status_code=201,
+    summary="Создать инфо-сообщение",
+)
 async def create_info_message(
-    channel_id: int,
     data: InfoMessageCreate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await CreateInfoMessage(db).execute(channel_id=channel_id, data=data, owner_id=current_user.id)
 
 
-@router.put("/{channel_id}/info-messages/{message_id}", response_model=InfoMessageResponse)
+@router.put(
+    "/{channel_id}/info-messages/{message_id}",
+    response_model=InfoMessageResponse,
+    summary="Обновить инфо-сообщение",
+)
 async def update_info_message(
-    channel_id: int,
-    message_id: int,
     data: InfoMessageUpdate,
+    channel_id: int = Path(..., description="ID канала."),
+    message_id: int = Path(..., description="ID инфо-сообщения."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -78,20 +97,28 @@ async def update_info_message(
     )
 
 
-@router.delete("/{channel_id}/info-messages/{message_id}", status_code=204)
+@router.delete(
+    "/{channel_id}/info-messages/{message_id}",
+    status_code=204,
+    summary="Удалить инфо-сообщение",
+)
 async def delete_info_message(
-    channel_id: int,
-    message_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    message_id: int = Path(..., description="ID инфо-сообщения."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     await DeleteInfoMessage(db).execute(channel_id=channel_id, message_id=message_id, owner_id=current_user.id)
 
 
-@router.post("/{channel_id}/info-messages/{message_id}/publish", response_model=InfoMessageResponse)
+@router.post(
+    "/{channel_id}/info-messages/{message_id}/publish",
+    response_model=InfoMessageResponse,
+    summary="Опубликовать инфо-сообщение в канал прямо сейчас",
+)
 async def publish_info_message(
-    channel_id: int,
-    message_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    message_id: int = Path(..., description="ID инфо-сообщения."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -100,10 +127,13 @@ async def publish_info_message(
     )
 
 
-@router.post("/{channel_id}/info-messages/{message_id}/share")
+@router.post(
+    "/{channel_id}/info-messages/{message_id}/share",
+    summary="Сгенерировать share-токен инфо-сообщения для шаринга на просмотр",
+)
 async def share_info_message(
-    channel_id: int,
-    message_id: int,
+    channel_id: int = Path(..., description="ID канала."),
+    message_id: int = Path(..., description="ID инфо-сообщения."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

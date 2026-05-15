@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -35,10 +35,14 @@ from backend.services.channel.utils.query_utils import find_channel_or_404
 router = APIRouter()
 
 
-@router.post("/{channel_id}/backup-mode", response_model=ChannelGroupResponse)
+@router.post(
+    "/{channel_id}/backup-mode",
+    response_model=ChannelGroupResponse,
+    summary="Настроить режим бэкапа канала и куда ретранслировать",
+)
 async def update_backup_mode(
-    channel_id: int,
     data: BackupModeUpdateRequest,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -53,11 +57,15 @@ async def update_backup_mode(
     )
 
 
-@router.get("/{channel_id}/backed-posts", response_model=BackedUpPostListResponse)
+@router.get(
+    "/{channel_id}/backed-posts",
+    response_model=BackedUpPostListResponse,
+    summary="Список сохранённых (бэкапнутых) постов канала",
+)
 async def get_backed_up_posts(
-    channel_id: int,
-    page: int = 1,
-    page_size: int = 50,
+    channel_id: int = Path(..., description="ID канала."),
+    page: int = Query(1, ge=1, description="Номер страницы."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -66,9 +74,13 @@ async def get_backed_up_posts(
     return BackedUpPostListResponse(items=posts, total=total, page=page, page_size=page_size)
 
 
-@router.get("/{channel_id}/stats", response_model=ChannelStatsResponse)
+@router.get(
+    "/{channel_id}/stats",
+    response_model=ChannelStatsResponse,
+    summary="Статистика по бэкапу канала (количество постов по типам, диапазон дат)",
+)
 async def get_channel_stats(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -76,9 +88,12 @@ async def get_channel_stats(
     return await GetBackupStats(db).execute(channel_id)
 
 
-@router.get("/{channel_id}/backup-day-counts")
+@router.get(
+    "/{channel_id}/backup-day-counts",
+    summary="Сколько бэкапнутых постов в каждом дне — для календарного индикатора",
+)
 async def get_backup_day_counts(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -86,7 +101,12 @@ async def get_backup_day_counts(
     return await GetBackupDayCounts(db).execute(channel_id)
 
 
-@router.post("/backup-jobs", response_model=BackupJobResponse, status_code=201)
+@router.post(
+    "/backup-jobs",
+    response_model=BackupJobResponse,
+    status_code=201,
+    summary="Создать backup-job (копирование постов из канала-источника в целевой)",
+)
 async def create_backup_job(
     data: BackupJobCreate,
     db: AsyncSession = Depends(get_db),
@@ -97,11 +117,18 @@ async def create_backup_job(
     return job
 
 
-@router.get("/backup-jobs", response_model=BackupJobListResponse)
+@router.get(
+    "/backup-jobs",
+    response_model=BackupJobListResponse,
+    summary="Список backup-job пользователя",
+)
 async def list_backup_jobs(
-    page: int = 1,
-    page_size: int = 50,
-    status: Optional[BackupStatus] = None,
+    page: int = Query(1, ge=1, description="Номер страницы."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
+    status: Optional[BackupStatus] = Query(
+        None,
+        description="Фильтр по статусу: ACTIVE / IN_PROGRESS / COMPLETED / FAILED.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -114,16 +141,24 @@ async def list_backup_jobs(
     return BackupJobListResponse(items=jobs, total=total, page=page, page_size=page_size)
 
 
-@router.get("/backup-jobs/{job_id}", response_model=BackupJobResponse)
+@router.get(
+    "/backup-jobs/{job_id}",
+    response_model=BackupJobResponse,
+    summary="Получить один backup-job по id",
+)
 async def get_backup_job(
-    job_id: int,
+    job_id: int = Path(..., description="ID job-а."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await find_backup_job_or_404(db, job_id=job_id, owner_id=current_user.id)
 
 
-@router.post("/restore", response_model=RestoreBackupResponse)
+@router.post(
+    "/restore",
+    response_model=RestoreBackupResponse,
+    summary="Запустить восстановление бэкапа в целевой канал",
+)
 async def restore_backup(
     data: RestoreBackupRequest,
     db: AsyncSession = Depends(get_db),
@@ -141,9 +176,12 @@ async def restore_backup(
     return RestoreBackupResponse(success=True, job_id=job.id, message="Восстановление запущено")
 
 
-@router.get("/{channel_id}/export")
+@router.get(
+    "/{channel_id}/export",
+    summary="Скачать JSON со всеми бэкапнутыми постами канала",
+)
 async def export_backed_up_posts(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -16,19 +16,27 @@ from backend.services.channel.features.auto_delete import (
 router = APIRouter()
 
 
-@router.get("/{channel_id}/auto-delete", response_model=ChannelAutoDeleteSettingsResponse)
+@router.get(
+    "/{channel_id}/auto-delete",
+    response_model=ChannelAutoDeleteSettingsResponse,
+    summary="Получить настройки автоудаления сообщений в канале",
+)
 async def get_auto_delete_settings(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await GetAutoDeleteSettings(db).execute(channel_id, owner_id=current_user.id)
 
 
-@router.put("/{channel_id}/auto-delete", response_model=ChannelAutoDeleteSettingsResponse)
+@router.put(
+    "/{channel_id}/auto-delete",
+    response_model=ChannelAutoDeleteSettingsResponse,
+    summary="Обновить настройки автоудаления (включение, задержка, типы сообщений)",
+)
 async def update_auto_delete_settings(
-    channel_id: int,
     data: ChannelAutoDeleteSettingsUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

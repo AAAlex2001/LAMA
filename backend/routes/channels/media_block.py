@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -11,9 +11,13 @@ from backend.services.channel.utils.query_utils import find_channel_or_404
 router = APIRouter()
 
 
-@router.get("/{channel_id}/media-block", response_model=MediaBlockResponse)
+@router.get(
+    "/{channel_id}/media-block",
+    response_model=MediaBlockResponse,
+    summary="Получить список типов медиа, которые блокируются в канале",
+)
 async def get_media_block(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -21,10 +25,14 @@ async def get_media_block(
     return MediaBlockResponse(block_media_types=channel.block_media_types)
 
 
-@router.put("/{channel_id}/media-block", response_model=MediaBlockResponse)
+@router.put(
+    "/{channel_id}/media-block",
+    response_model=MediaBlockResponse,
+    summary="Обновить список блокируемых типов медиа (стикеры, гифки, голосовые и т.д.)",
+)
 async def update_media_block(
-    channel_id: int,
     data: MediaBlockUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

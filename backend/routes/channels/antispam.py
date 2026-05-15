@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,6 +12,7 @@ router = APIRouter()
 
 
 def build_antispam_response(channel) -> AntispamSettingsResponse:
+    """Достаёт поля антиспам-настроек из канала в response-модель."""
     return AntispamSettingsResponse(
         link_filter_mode=channel.link_filter_mode,
         link_whitelist=channel.link_whitelist,
@@ -21,9 +22,13 @@ def build_antispam_response(channel) -> AntispamSettingsResponse:
     )
 
 
-@router.get("/{channel_id}/antispam", response_model=AntispamSettingsResponse)
+@router.get(
+    "/{channel_id}/antispam",
+    response_model=AntispamSettingsResponse,
+    summary="Получить настройки антиспама (фильтр ссылок) канала",
+)
 async def get_antispam_settings(
-    channel_id: int,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -31,10 +36,14 @@ async def get_antispam_settings(
     return build_antispam_response(channel)
 
 
-@router.put("/{channel_id}/antispam", response_model=AntispamSettingsResponse)
+@router.put(
+    "/{channel_id}/antispam",
+    response_model=AntispamSettingsResponse,
+    summary="Обновить настройки антиспама (режим фильтра, белый/чёрный список, действие)",
+)
 async def update_antispam_settings(
-    channel_id: int,
     data: AntispamSettingsUpdate,
+    channel_id: int = Path(..., description="ID канала."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
