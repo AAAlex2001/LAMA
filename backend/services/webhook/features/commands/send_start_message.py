@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendStartMessage:
+    """Отправляет welcome-сообщение бота в ответ на /start."""
+
     async def execute(self, message: Message, bot_token: str | None) -> None:
         if not message.from_user or not bot_token:
             return

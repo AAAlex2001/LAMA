@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 class SaveGroupComment:
+    """Сохраняет комментарий пользователя в канале/группе."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

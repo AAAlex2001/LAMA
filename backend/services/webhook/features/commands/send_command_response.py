@@ -11,6 +11,8 @@ from backend.services.webhook.types import GetShortcodeContext
 
 
 class SendCommandResponse:
+    """Отправляет ответ на кастомную команду из bot_commands."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

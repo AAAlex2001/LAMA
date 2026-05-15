@@ -7,6 +7,8 @@ from backend.models.channels import ChannelGroup
 
 
 class GetBotByChat:
+    """Резолвит бота, к которому привязан чат (по telegram_id или linked_chat_id канала)."""
+
     async def execute(self, db: AsyncSession, chat_id: int) -> BotModel | None:
         channel = await self.get_channel(db, chat_id)
         return channel.bot if channel and channel.bot else None

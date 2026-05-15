@@ -6,6 +6,8 @@ from backend.services.webhook.features.dispatch.get_update_message import (
 
 
 class GetUpdateChatId:
+    """Достаёт chat_id из любой ветки aiogram.Update."""
+
     def execute(self, update: Update) -> int | None:
         message = GetUpdateMessage().execute(update)
         if message and message.chat:

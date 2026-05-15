@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 
 class ExecuteModerationCommand:
+    """Выполняет модерационную команду /ban /mute /kick из бот-сообщения."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

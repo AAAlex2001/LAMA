@@ -6,6 +6,8 @@ from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEv
 
 
 class FireDirectJoinEvents:
+    """Триггеры MEMBER_JOINED при прямом вступлении."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.bot_model = bot_model
         self.fire_event = FireTriggerEvent(db)

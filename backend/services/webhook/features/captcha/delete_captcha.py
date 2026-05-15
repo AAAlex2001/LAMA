@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class DeleteCaptcha:
+    """Удаляет captcha-сообщение в TG (глушит ошибки aiogram)."""
+
     async def execute(self, bot, message) -> None:
         if not message:
             return

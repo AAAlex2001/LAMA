@@ -6,6 +6,8 @@ from backend.models.publications import ButtonClick
 
 
 class TrackButtonClick:
+    """Идемпотентно записывает клик пользователя по inline-кнопке."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

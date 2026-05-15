@@ -15,9 +15,6 @@ from backend.models.base import Base
 from backend.services.auth.settings import AuthSettings
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 @compiles(JSONB, "sqlite")
 def _sqlite_jsonb(element, compiler, **kw):
     return "JSON"

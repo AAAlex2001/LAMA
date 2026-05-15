@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class SaveOutgoingIfDirect:
+    """Если сообщение DM от бота — пишет в BotMessage(is_incoming=False)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

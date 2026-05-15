@@ -15,12 +15,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class ChatMetadataEvent:
+    """Описание события об изменении метаданных чата (фото, название)."""
+
     event_type: EventType
     description: str
     payload: dict
 
 
 class CreateChatMetadataEvents:
+    """Создаёт InboxEvent при изменении title/photo/etc. в чате."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

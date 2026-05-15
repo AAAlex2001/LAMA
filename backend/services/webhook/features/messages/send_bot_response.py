@@ -6,6 +6,8 @@ from backend.utils.media import is_document_url, is_video_url
 
 
 class SendBotResponse:
+    """Универсальный шлёт-сообщение от бота: текст + медиа + buttons."""
+
     async def execute(
         self,
         telegram_bot,

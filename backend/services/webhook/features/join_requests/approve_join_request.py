@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class ApproveJoinRequest:
+    """approve_chat_join_request с проверкой бот-канал."""
+
     async def execute(self, telegram_bot, chat_id: int, user_id: int) -> bool:
         try:
             await telegram_bot.approve_chat_join_request(

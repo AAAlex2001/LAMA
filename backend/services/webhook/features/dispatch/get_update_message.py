@@ -2,6 +2,8 @@ from aiogram.types import Message, Update
 
 
 class GetUpdateMessage:
+    """Достаёт Message (message/channel_post/edited_*) из Update."""
+
     def execute(self, update: Update) -> Message | None:
         return (
             update.message

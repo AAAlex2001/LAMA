@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class CheckMessage:
+    """Главный модерационный фильтр: антиспам + flood + banned_words + links."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

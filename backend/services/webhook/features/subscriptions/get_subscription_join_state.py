@@ -2,6 +2,8 @@ from aiogram.types import ChatMemberUpdated
 
 
 class GetSubscriptionJoinState:
+    """Возвращает join_state из payload последнего join-event."""
+
     def is_new_join(self, chat_member: ChatMemberUpdated) -> bool:
         old_status = chat_member.old_chat_member.status
         new_status = chat_member.new_chat_member.status

@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class RouteTextMessage:
+    """Маршрутизирует обычное текстовое сообщение: триггеры + автоответы."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

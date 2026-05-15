@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class MarkJoinRequestAccepted:
+    """Помечает join-event как accepted в payload + status=PROCESSED."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

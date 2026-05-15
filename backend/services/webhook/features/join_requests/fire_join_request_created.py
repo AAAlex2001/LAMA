@@ -6,6 +6,8 @@ from backend.services.bot.features.triggers.fire.fire_event import FireTriggerEv
 
 
 class FireJoinRequestCreated:
+    """Триггер JOIN_REQUEST_CREATED."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.bot_model = bot_model
         self.fire_event = FireTriggerEvent(db)

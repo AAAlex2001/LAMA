@@ -12,9 +12,6 @@ from backend.models import load_models
 from backend.models.base import Base
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 @compiles(JSONB, "sqlite")
 def _sqlite_jsonb(element, compiler, **kw):
     return "JSON"

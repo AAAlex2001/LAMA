@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class IncrementInviteMemberCount:
+    """+1 к member_count у конкретной invite-ссылки."""
+
     async def execute(self, db: AsyncSession, invite_link_url: str) -> None:
         try:
             stmt = (

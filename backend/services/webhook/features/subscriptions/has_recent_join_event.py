@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class HasRecentJoinEvent:
+    """True если в инбоксе есть join-event для (user, channel) за 2 минуты."""
+
     async def execute(
         self,
         db: AsyncSession,

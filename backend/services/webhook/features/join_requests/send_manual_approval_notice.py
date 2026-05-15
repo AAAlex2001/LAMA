@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendManualApprovalNotice:
+    """Уведомляет владельца канала о новой заявке (ручное одобрение)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

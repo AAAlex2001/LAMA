@@ -11,6 +11,8 @@ from backend.services.webhook.types import GetShortcodeContext
 
 
 class SendAutoReply:
+    """Отправляет автоответ на текст по правилам бота."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

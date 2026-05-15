@@ -2,6 +2,8 @@ from backend.models.bots import Bot as BotModel
 
 
 class NormalizeCommand:
+    """Нормализует текст команды: /cmd@bot → /cmd."""
+
     def execute(self, command_text: str, bot_model: BotModel) -> str:
         normalized = command_text.strip().lower()
         bot_username = (bot_model.username or "").lower()

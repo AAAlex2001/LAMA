@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class CreateMemberEvent:
+    """InboxEvent для входа/выхода участника (CHANNEL_LINK_JOIN/CHANNEL_BAN)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

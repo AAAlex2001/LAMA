@@ -2,6 +2,8 @@ from aiogram.types import ChatPermissions
 
 
 class GetCaptchaRestriction:
+    """Возвращает ChatPermissions для muted-пользователя на время капчи."""
+
     def execute(self, channel=None) -> ChatPermissions:
         restriction_type = channel.captcha_restriction_type if channel else None
 

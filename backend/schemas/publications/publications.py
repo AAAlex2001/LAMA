@@ -57,31 +57,30 @@ class PublicationBase(BaseModel):
     tag_colors: Optional[List[str]] = None
 
     @model_validator(mode="after")
-    def validate_content_payload(cls, values):
-        content_type = values.content_type
-        has_text = bool(values.text_content and values.text_content.strip())
-        has_media = bool(values.media_urls)
+    def validate_content_payload(self):
+        has_text = bool(self.text_content and self.text_content.strip())
+        has_media = bool(self.media_urls)
 
-        if content_type == ContentType.TEXT and not has_text:
+        if self.content_type == ContentType.TEXT and not has_text:
             raise ValueError("text_content is required for text publications")
-        if content_type == ContentType.TEXT_WITH_MEDIA and not (has_text or has_media):
+        if self.content_type == ContentType.TEXT_WITH_MEDIA and not (has_text or has_media):
             raise ValueError("text_content or media_urls required for text_with_media")
         media_types = {ContentType.IMAGE, ContentType.VIDEO, ContentType.AUDIO, ContentType.DOCUMENT}
-        if content_type in media_types and not has_media:
-            raise ValueError(f"media_urls is required for {content_type.value} publications")
-        return values
+        if self.content_type in media_types and not has_media:
+            raise ValueError(f"media_urls is required for {self.content_type.value} publications")
+        return self
 
     @model_validator(mode="after")
-    def validate_auto_delete(cls, values):
-        if values.auto_delete_hours is not None and values.auto_delete_delay_seconds is not None:
+    def validate_auto_delete(self):
+        if self.auto_delete_hours is not None and self.auto_delete_delay_seconds is not None:
             raise ValueError("Provide either auto_delete_hours or auto_delete_delay_seconds, not both")
-        return values
+        return self
 
     @model_validator(mode="after")
-    def validate_repeat_end_time(cls, values):
-        if values.repeat_end_time and values.scheduled_time and values.repeat_end_time < values.scheduled_time:
+    def validate_repeat_end_time(self):
+        if self.repeat_end_time and self.scheduled_time and self.repeat_end_time < self.scheduled_time:
             raise ValueError("repeat_end_time cannot be earlier than scheduled_time")
-        return values
+        return self
 
     @field_validator("poll_data")
     @classmethod
@@ -197,16 +196,16 @@ class PublicationUpdate(BaseModel):
         return cleaned
 
     @model_validator(mode="after")
-    def validate_auto_delete(cls, values):
-        if values.auto_delete_hours is not None and values.auto_delete_delay_seconds is not None:
+    def validate_auto_delete(self):
+        if self.auto_delete_hours is not None and self.auto_delete_delay_seconds is not None:
             raise ValueError("Provide either auto_delete_hours or auto_delete_delay_seconds, not both")
-        return values
+        return self
 
     @model_validator(mode="after")
-    def validate_repeat_end_time(cls, values):
-        if values.repeat_end_time and values.scheduled_time and values.repeat_end_time < values.scheduled_time:
+    def validate_repeat_end_time(self):
+        if self.repeat_end_time and self.scheduled_time and self.repeat_end_time < self.scheduled_time:
             raise ValueError("repeat_end_time cannot be earlier than scheduled_time")
-        return values
+        return self
 
     @field_validator("repeat_weekdays")
     @classmethod

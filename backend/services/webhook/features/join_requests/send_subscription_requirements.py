@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendSubscriptionRequirements:
+    """Сообщает юзеру про обязательные подписки на другие каналы."""
+
     async def execute(
         self,
         telegram_bot,

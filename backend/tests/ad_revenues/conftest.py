@@ -28,7 +28,6 @@ from backend.routes.ad_revenues import router as ad_revenues_router
 from backend.routes.auth import get_current_user
 
 
-pytest_plugins = ["pytest_asyncio"]
 
 
 def pytest_configure(config):

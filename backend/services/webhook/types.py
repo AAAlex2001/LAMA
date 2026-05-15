@@ -21,11 +21,15 @@ class TelegramUpdateType(StrEnum):
 
 @dataclass(frozen=True, slots=True)
 class SavedMessageResult:
+    """Результат save_*-операции: сохранённый BotMessage + side-effects."""
+
     ws_event: DirectChatWsEvent | None = None
     saved_message: object | None = None
 
 
 class DetectMessageType:
+    """Определяет тип update (CallbackQuery/Message/JoinRequest/etc.)."""
+
     def execute(self, message: Message) -> MessageType:
         if message.photo:
             return MessageType.PHOTO
@@ -45,6 +49,8 @@ class DetectMessageType:
 
 
 class GetShortcodeContext:
+    """Контекст для подстановки шорткодов в сообщениях бота."""
+
     def execute(self, message: Message, bot_model: BotModel) -> dict:
         from_user = message.from_user
         return {

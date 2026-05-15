@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class CheckSubscriber:
+    """Проверяет что юзер — подписчик канала через get_chat_member."""
+
     async def execute(self, bot, chat_id: int, user_id: int) -> bool:
         try:
             member = await asyncio.wait_for(

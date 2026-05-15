@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class FireCommandTriggers:
+    """Запускает триггеры с типом COMMAND_CALLED."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

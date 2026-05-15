@@ -9,6 +9,8 @@ from backend.services.inbox.features.create_event import CreateInboxEvent
 
 
 class CreateCommandEvent:
+    """Пишет InboxEvent с category=AUTOMATION/type=BOT_COMMAND."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

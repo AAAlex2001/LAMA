@@ -3,11 +3,15 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CallbackButtonTarget:
+    """Распарсенный target inline-кнопки: entity_id + button_id."""
+
     entity_id: int
     button_id: str
 
 
 class GetCallbackButtonTarget:
+    """Парсит callback_data вида '<prefix>:<entity_id>:<button_id>'."""
+
     def execute(self, data: str | None) -> CallbackButtonTarget | None:
         if not data:
             return None

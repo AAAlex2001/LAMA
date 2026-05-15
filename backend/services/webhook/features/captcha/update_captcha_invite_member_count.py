@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateCaptchaInviteMemberCount:
+    """После успешной капчи увеличивает counter у invite-ссылки."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

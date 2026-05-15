@@ -8,6 +8,8 @@ logger = logging.getLogger(__name__)
 
 
 class DeleteWebhook:
+    """Удаляет webhook у Telegram-бота."""
+
     async def execute(self, token: str, evict_cache: bool = True) -> None:
         try:
             bot = resolve_by_token(token).bot

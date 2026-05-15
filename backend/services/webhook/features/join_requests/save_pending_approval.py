@@ -4,6 +4,8 @@ from backend.models.bots import Bot as BotModel, PendingJoinApproval
 
 
 class SavePendingApproval:
+    """Сохраняет заявку как PendingApproval + captcha_question."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

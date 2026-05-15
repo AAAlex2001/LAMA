@@ -6,6 +6,8 @@ from backend.schemas.publications.common import InlineButton
 
 
 class GetPublicationButton:
+    """Достаёт кнопку публикации по (publication_id, button_id)."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

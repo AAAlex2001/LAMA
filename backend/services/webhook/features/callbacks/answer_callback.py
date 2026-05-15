@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class AnswerCallback:
+    """answer_callback_query с автоглушением ошибки 'query too old'."""
+
     async def execute(
         self,
         bot,

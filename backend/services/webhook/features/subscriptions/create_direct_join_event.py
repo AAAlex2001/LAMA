@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class CreateDirectJoinEvent:
+    """InboxEvent для прямого вступления (без капчи/approval)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

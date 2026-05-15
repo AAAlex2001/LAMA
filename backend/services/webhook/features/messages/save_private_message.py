@@ -20,11 +20,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True, slots=True)
 class ReplyContext:
+    """Контекст reply_to_message для save_private_message."""
+
     suffix: str
     payload: dict[str, Any]
 
 
 class SavePrivateMessage:
+    """Сохраняет входящее DM-сообщение, обновляет чат, шлёт WS."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

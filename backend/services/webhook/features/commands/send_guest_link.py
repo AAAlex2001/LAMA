@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendGuestLink:
+    """Отправляет гостевую ссылку приглашения в ответ на /guest."""
+
     async def execute(self, message: Message, bot_token: str | None) -> None:
         if not message.from_user or not bot_token:
             return

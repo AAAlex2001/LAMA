@@ -19,9 +19,6 @@ from backend.models.bots import Bot, BotStatus
 from backend.models.direct import DirectChat
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 @compiles(JSONB, "sqlite")
 def _sqlite_jsonb(element, compiler, **kw):
     return "JSON"

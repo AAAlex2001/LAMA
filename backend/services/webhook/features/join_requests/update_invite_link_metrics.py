@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateInviteLinkMetrics:
+    """Обновляет метрики invite-ссылки: clicks + last_used_at."""
+
     async def execute(self, db: AsyncSession, invite_link_url: str) -> None:
         try:
             stmt = (

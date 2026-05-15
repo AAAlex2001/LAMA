@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class CreateJoinRequestEvent:
+    """Пишет InboxEvent для новой заявки на вступление."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

@@ -8,11 +8,15 @@ from backend.models.bots import PendingApproval
 
 @dataclass(frozen=True)
 class CaptchaCallbackData:
+    """Распарсенный captcha-callback: pending_id + user_answer."""
+
     pending_id: int
     user_answer: str
 
 
 class GetCaptcha:
+    """Парсит captcha-callback, ищет chat_id у PendingApproval."""
+
     def __init__(self, db: AsyncSession | None = None):
         self.db = db
 

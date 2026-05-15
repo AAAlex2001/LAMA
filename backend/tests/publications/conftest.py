@@ -29,9 +29,6 @@ from backend.routes.auth import get_current_user
 from backend.routes.publications.publications import router as publications_router
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 _EXTRACT_FORMAT = {"year": "%Y", "month": "%m", "day": "%d", "hour": "%H", "minute": "%M"}
 
 

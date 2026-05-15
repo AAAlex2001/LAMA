@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendCaptchaWelcome:
+    """Welcome-сообщение после прохождения капчи."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

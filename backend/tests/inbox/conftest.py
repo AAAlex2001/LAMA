@@ -21,9 +21,6 @@ from backend.models.inbox import InboxEvent
 from backend.schemas.inbox.enums import EntityType, EventStatus, EventType, InboxCategory
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 @compiles(JSONB, "sqlite")
 def _sqlite_jsonb(element, compiler, **kw):
     return "JSON"

@@ -5,6 +5,8 @@ from backend.models.bots import Bot as BotModel
 
 
 class GetBotByToken:
+    """Резолвит бота по telegram bot-токену из URL."""
+
     async def execute(self, db: AsyncSession, token: str) -> BotModel | None:
         result = await db.execute(
             select(BotModel)

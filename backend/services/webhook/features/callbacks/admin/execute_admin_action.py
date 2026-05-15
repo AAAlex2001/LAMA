@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class AdminCallbackData:
+    """Распарсенный admincall_-callback: action + ids."""
+
     action: str
     chat_id: int
     user_id: int
@@ -23,6 +25,8 @@ class AdminCallbackData:
 
 
 class ExecuteAdminAction:
+    """Выполняет admin-action (kick/ban/unmute) из inline-кнопки админ-меню."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

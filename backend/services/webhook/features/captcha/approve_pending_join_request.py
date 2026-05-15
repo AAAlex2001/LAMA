@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class ApprovePendingJoinRequest:
+    """approve_chat_join_request в TG + помечает PendingApproval handled."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

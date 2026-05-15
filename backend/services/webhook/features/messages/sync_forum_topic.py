@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class SyncForumTopic:
+    """Создаёт/обновляет ForumTopic по message_thread_id."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

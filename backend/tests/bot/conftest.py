@@ -29,9 +29,6 @@ from backend.models.bots import Bot, BotStatus
 from backend.routes.auth import get_current_user
 
 
-pytest_plugins = ["pytest_asyncio"]
-
-
 _EXTRACT_FORMAT = {"year": "%Y", "month": "%m", "day": "%d", "hour": "%H", "minute": "%M"}
 
 

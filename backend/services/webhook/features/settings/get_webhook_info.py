@@ -6,6 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class GetWebhookInfo:
+    """Возвращает текущий getWebhookInfo Telegram-а."""
+
     async def execute(self, bot):
         try:
             return await bot.get_webhook_info()

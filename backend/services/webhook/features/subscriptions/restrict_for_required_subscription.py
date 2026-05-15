@@ -10,6 +10,8 @@ logger = logging.getLogger(__name__)
 
 
 class RestrictForRequiredSubscription:
+    """restrict_chat_member пока юзер не подписан на обязательные каналы."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

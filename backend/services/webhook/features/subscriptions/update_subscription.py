@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateSubscription:
+    """Обновляет ChannelMember + invite-counter при изменении статуса."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

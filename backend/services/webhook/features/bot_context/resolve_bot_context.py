@@ -8,6 +8,8 @@ from backend.services.webhook.features.dispatch.get_update_chat_id import GetUpd
 
 
 class ResolveBotContext:
+    """Сначала ищет бота по чату, потом fallback на токен из URL."""
+
     async def execute(
         self,
         db: AsyncSession,

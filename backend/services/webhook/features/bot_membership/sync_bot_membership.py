@@ -12,6 +12,8 @@ logger = logging.getLogger(__name__)
 
 
 class SyncBotMembership:
+    """Обновляет статус бота в чате (kicked/admin/member) по my_chat_member."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

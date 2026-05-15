@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class FindInviteLinkFromInbox:
+    """Ищет invite-ссылку из последнего join-event в инбоксе."""
+
     async def execute(
         self,
         db: AsyncSession,

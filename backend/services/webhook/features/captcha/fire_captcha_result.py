@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class FireCaptchaResult:
+    """Выстреливает CAPTCHA_PASSED/FAILED триггеры бота."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.bot_model = bot_model
         self.fire_event = FireTriggerEvent(db)

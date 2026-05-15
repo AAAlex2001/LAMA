@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendClaimToAdmin:
+    """Отправляет claim-уведомление админам канала (жалоба на сообщение)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

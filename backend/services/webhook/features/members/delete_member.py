@@ -11,6 +11,8 @@ from backend.services.webhook.features.members.create_member_event import (
 
 
 class DeleteMember:
+    """Удаляет ChannelMember при выходе пользователя из чата."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel, telegram_bot):
         self.db = db
         self.bot_model = bot_model

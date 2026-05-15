@@ -6,6 +6,8 @@ from backend.models.channels import ChatInviteLink
 
 
 class GetInviteLink:
+    """Резолвит InviteLink, по которой пришла заявка (по link_url из апдейта)."""
+
     async def execute(
         self,
         db: AsyncSession,

@@ -14,6 +14,8 @@ from backend.services.webhook.features.callbacks.get_callback_button_target impo
 
 
 class ShowHiddenText:
+    """Раскрывает скрытый блок при клике (subscribed/unsubscribed-варианты)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

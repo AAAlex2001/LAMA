@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class UnlockCaptchaUser:
+    """restrict_chat_member: возвращает права писать (глушит ошибки)."""
+
     async def execute(self, bot, chat_id: int, user_id: int) -> None:
         try:
             await bot.restrict_chat_member(

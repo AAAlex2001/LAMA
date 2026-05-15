@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 class UpdateInviteMemberCount:
+    """Инкрементит counter у invite-ссылки при вступлении через неё."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

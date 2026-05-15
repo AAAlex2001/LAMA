@@ -6,6 +6,8 @@ from backend.schemas.publications.common import InlineButton
 
 
 class GetCommandButton:
+    """Достаёт кнопку команды бота по (command_id, button_id)."""
+
     def __init__(self, db: AsyncSession):
         self.db = db
 

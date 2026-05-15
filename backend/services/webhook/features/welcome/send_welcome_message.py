@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 
 class SendWelcomeMessage:
+    """Отправляет welcome-сообщение новому участнику канала."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.bot_model = bot_model
         self.send_welcome = SendWelcome(db)

@@ -22,6 +22,8 @@ from backend.services.webhook.features.captcha.unlock_captcha_user import (
 
 
 class CheckGroupCaptcha:
+    """Обрабатывает callback от group-капчи: правильный ответ → unmute, иначе игнор."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
