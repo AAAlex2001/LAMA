@@ -39,10 +39,9 @@ def patch_celery(monkeypatch):
     return fake_task
 
 
+@pytest.mark.no_snapshot_patch
 @pytest.mark.asyncio
 async def test_skips_when_no_channel(db, patch_celery, monkeypatch):
-    # Снимаем глобальный autouse-патч, который заменяет execute целиком,
-    # чтобы протестировать оригинальную логику.
     from backend.services.ad_revenues.features import schedule_ad_revenue_snapshots as mod
     monkeypatch.setattr(
         mod.TakeChannelSnapshot, "execute", AsyncMock(return_value=None)
@@ -55,6 +54,7 @@ async def test_skips_when_no_channel(db, patch_celery, monkeypatch):
     patch_celery.apply_async.assert_not_called()
 
 
+@pytest.mark.no_snapshot_patch
 @pytest.mark.asyncio
 async def test_takes_baseline_and_queues_two_deferred(db, patch_celery, monkeypatch):
     from backend.services.ad_revenues.features import schedule_ad_revenue_snapshots as mod

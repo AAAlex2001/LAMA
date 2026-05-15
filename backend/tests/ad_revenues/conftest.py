@@ -13,6 +13,7 @@ import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.pool import StaticPool
@@ -30,6 +31,15 @@ from backend.routes.auth import get_current_user
 pytest_plugins = ["pytest_asyncio"]
 
 
+def pytest_configure(config):
+    """Регистрируем кастомные маркеры — иначе pytest пишет PytestUnknownMarkWarning.
+    Делаем здесь, чтобы не зависеть от pytest.ini (он может не доехать в контейнер)."""
+    config.addinivalue_line(
+        "markers",
+        "no_snapshot_patch: отключает autouse-подмену ScheduleAdRevenueSnapshots для теста",
+    )
+
+
 # Postgres-only `EXTRACT(field FROM ts)` переводим в SQLite-аналог `strftime`.
 # Регистрируется глобально, но срабатывает только когда диалект — sqlite,
 # так что прод (postgres) этим хуком не задет.
@@ -42,6 +52,11 @@ def _sqlite_extract(element, compiler, **kw):
     if fmt is None:
         return compiler.visit_extract(element, **kw)
     return f"CAST(strftime('{fmt}', {compiler.process(element.expr, **kw)}) AS INTEGER)"
+
+
+@compiles(JSONB, "sqlite")
+def _sqlite_jsonb(element, compiler, **kw):
+    return "JSON"
 
 
 @pytest_asyncio.fixture
@@ -100,8 +115,14 @@ async def test_channel(db: AsyncSession, test_user: User) -> ChannelGroup:
 
 
 @pytest.fixture(autouse=True)
-def patch_snapshot_side_effects(monkeypatch):
-    """Глушим побочные эффекты CreateAdRevenue: celery-задачи и сетевой вызов в Telegram."""
+def patch_snapshot_side_effects(request, monkeypatch):
+    """Глушим побочные эффекты CreateAdRevenue: celery-задачи и сетевой вызов в Telegram.
+
+    Тест может отказаться от этой подмены маркером `@pytest.mark.no_snapshot_patch`,
+    если он сам проверяет реальную логику ScheduleAdRevenueSnapshots.
+    """
+    if "no_snapshot_patch" in request.keywords:
+        return
 
     async def fake_execute(self, ad_revenue):
         from backend.services.ad_revenues.features.schedule_ad_revenue_snapshots import (

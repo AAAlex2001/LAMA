@@ -82,7 +82,7 @@ async def test_patch_updates_partial_fields(client, db, test_user):
 
 
 @pytest.mark.asyncio
-async def test_delete_positive_id_removes_row(client, db, test_user):
+async def test_delete_positive_id_removes_row(client, db, session_factory, test_user):
     row = AdRevenue(
         owner_id=test_user.id,
         type="income",
@@ -93,16 +93,20 @@ async def test_delete_positive_id_removes_row(client, db, test_user):
     db.add(row)
     await db.commit()
     await db.refresh(row)
+    row_id = row.id
 
-    response = await client.delete(f"/api/ad-revenues/{row.id}")
+    response = await client.delete(f"/api/ad-revenues/{row_id}")
 
     assert response.status_code == 204
-    remaining = (await db.execute(select(AdRevenue).where(AdRevenue.id == row.id))).scalar_one_or_none()
+    async with session_factory() as fresh:
+        remaining = (await fresh.execute(
+            select(AdRevenue).where(AdRevenue.id == row_id)
+        )).scalar_one_or_none()
     assert remaining is None
 
 
 @pytest.mark.asyncio
-async def test_delete_negative_id_clears_publication_ad_fields(client, db, test_user):
+async def test_delete_negative_id_clears_publication_ad_fields(client, db, session_factory, test_user):
     pub = Publication(
         owner_id=test_user.id,
         content_type=ContentType.TEXT,
@@ -115,13 +119,17 @@ async def test_delete_negative_id_clears_publication_ad_fields(client, db, test_
     db.add(pub)
     await db.commit()
     await db.refresh(pub)
+    pub_id = pub.id
 
-    response = await client.delete(f"/api/ad-revenues/{-pub.id}")
+    response = await client.delete(f"/api/ad-revenues/{-pub_id}")
 
     assert response.status_code == 204
-    refreshed = (await db.execute(select(Publication).where(Publication.id == pub.id))).scalar_one()
-    assert refreshed.is_ad is False
-    assert refreshed.ad_buyer is None
+    async with session_factory() as fresh:
+        refreshed = (await fresh.execute(
+            select(Publication).where(Publication.id == pub_id)
+        )).scalar_one()
+        assert refreshed.is_ad is False
+        assert refreshed.ad_buyer is None
 
 
 @pytest.mark.asyncio
