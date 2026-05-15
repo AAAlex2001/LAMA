@@ -44,6 +44,7 @@
   font-size: 14px;
   line-height: 17px;
   color: #383F45;
+  white-space: nowrap;
 }
 
 .dataRow {
@@ -64,10 +65,10 @@
 }
 
 .col_date          { flex: 0 0 89px; min-width: 0; }
-.col_subject       { flex: 0 0 138px; min-width: 0; }
+.col_subject       { flex: 0 0 160px; min-width: 160px; }
 .col_price         { flex: 0 0 79px; min-width: 0; }
 .col_seller        { flex: 0 0 117px; min-width: 0; }
-.col_placement     { flex: 0 0 147px; min-width: 0; }
+.col_placement     { flex: 0 0 170px; min-width: 170px; }
 .col_type {
   flex: 0 0 105px;
   min-width: 0;
@@ -192,30 +193,39 @@
   gap: 10px;
   padding: 0 10px;
   height: 24px;
-  background: rgba(59, 130, 246, 0.1);
+  background: transparent;
   border-radius: 8px;
   width: fit-content;
   max-width: 100%;
 }
 
+.metricBadgeHighlight {
+  background: rgba(59, 130, 246, 0.1);
+}
+
 .metricLabel {
+  min-width: 40px;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
   color: #1A1A1A;
+  white-space: nowrap;
 }
 
 .metricValue {
+  width: 40px;
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
   color: #1A1A1A;
-  min-width: 28px;
+  white-space: nowrap;
 }
 
 .metricStrong {
+  width: 40px;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;
   color: #1A1A1A;
+  white-space: nowrap;
 }

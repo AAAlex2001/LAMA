@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ChevronDownIcon, LinkIcon } from '@/components/icons';
 import AdMetricsRow, { AdMetrics } from './AdMetricsRow';
 import AdTypeIcons, { AdType } from './AdTypeIcons';
+import ExpenseMetricsBlock from './ExpenseMetricsBlock';
 import styles from './AdCard.module.scss';
 
 export interface AdPlacement {
@@ -44,6 +45,11 @@ export interface ExpenseMetrics {
 interface AdCardProps {
   ad: Ad;
   onShowPlacements?: (placements: AdPlacement[]) => void;
+}
+
+function extractCurrencySymbol(amountStr: string): string {
+  const parts = amountStr.trim().split(/\s+/);
+  return parts[parts.length - 1] || '';
 }
 
 export default function AdCard({ ad, onShowPlacements }: AdCardProps) {
@@ -124,10 +130,17 @@ export default function AdCard({ ad, onShowPlacements }: AdCardProps) {
 
       {isOpen && (
         <div className={styles.body}>
-          <AdMetricsRow metrics={ad.metrics} />
+          {ad.expenseMetrics ? (
+            <ExpenseMetricsBlock
+              metrics={ad.expenseMetrics}
+              currency={extractCurrencySymbol(ad.amount)}
+            />
+          ) : (
+            <AdMetricsRow metrics={ad.metrics} />
+          )}
           <div className={styles.metaRow}>
-            <span className={styles.metaLabel}>Покупатель</span>
-            <span className={styles.metaValue}>{ad.buyer}</span>
+            <span className={styles.metaLabel}>{ad.expenseMetrics ? 'Продавец' : 'Покупатель'}</span>
+            <span className={styles.metaValue}>{ad.buyer || '—'}</span>
           </div>
           <div className={styles.metaRow}>
             <span className={styles.metaLabel}>Тип</span>

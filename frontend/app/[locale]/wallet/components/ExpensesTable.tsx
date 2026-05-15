@@ -41,7 +41,7 @@ export default function ExpensesTable({ ads, onShowPlacements }: ExpensesTablePr
               justifyContent: 'center' in col && col.center ? 'center' : 'flex-start',
             }}
           >
-            <span className={styles.headerLabel}>{col.label}</span>
+            <HeaderCell columnKey={col.key} label={col.label} />
           </div>
         ))}
       </div>
@@ -150,6 +150,39 @@ function LinksCell({ ad, onShowPlacements }: CellProps) {
   );
 }
 
+function HeaderCell({ columnKey, label }: { columnKey: string; label: string }) {
+  if (columnKey === 'subscribersIn') {
+    return (
+      <div className={`${styles.metricBadge} ${styles.metricBadgeHighlight}`}>
+        <SubscribersInIcon />
+        <span className={styles.metricLabel}>ПДП</span>
+        <span className={styles.metricValue}>24 ч.</span>
+        <span className={styles.metricValue}>48 ч.</span>
+        <span className={styles.metricStrong}>Цена</span>
+      </div>
+    );
+  }
+  if (columnKey === 'subscribersOut') {
+    return (
+      <div className={`${styles.metricBadge} ${styles.metricBadgeHighlight}`}>
+        <SubscribersOutIcon />
+        <span className={styles.metricLabel}>ПДП</span>
+        <span className={styles.metricValue}>24 ч.</span>
+        <span className={styles.metricValue}>48 ч.</span>
+      </div>
+    );
+  }
+  if (columnKey === 'retention') {
+    return (
+      <div className={`${styles.metricBadge} ${styles.metricBadgeHighlight}`}>
+        <RetentionIcon />
+        <span className={styles.metricLabel}>Удержание</span>
+      </div>
+    );
+  }
+  return <span className={styles.headerLabel}>{label}</span>;
+}
+
 function SubscribersInBadge({ metrics, currency }: { metrics?: ExpenseMetrics; currency: string }) {
   const in24 = metrics?.subscribersIn24h;
   const in48 = metrics?.subscribersIn48h;
@@ -183,7 +216,7 @@ function RetentionBadge({ metrics }: { metrics?: ExpenseMetrics }) {
   return (
     <div className={styles.metricBadge}>
       <RetentionIcon />
-      <span className={styles.metricStrong}>
+      <span className={styles.metricLabel}>
         {value === null || value === undefined ? '—' : `${Math.round(value)}%`}
       </span>
     </div>
