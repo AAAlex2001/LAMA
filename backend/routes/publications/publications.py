@@ -1,7 +1,7 @@
 from datetime import datetime, timezone as dt_tz
 from typing import List, Literal, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.celery.tasks import delete_publication_messages
@@ -36,7 +36,12 @@ from backend.services.publications.utils.repeat_utils import local_range_to_utc
 router = APIRouter()
 
 
-@router.post("/", response_model=PublicationResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=PublicationResponse,
+    status_code=201,
+    summary="Создать публикацию",
+)
 async def create_publication(
     data: PublicationCreate,
     db: AsyncSession = Depends(get_db),
@@ -45,12 +50,20 @@ async def create_publication(
     return await CreatePublication(db).execute(data, owner_id=current_user.id)
 
 
-@router.get("/drafts", response_model=PublicationCompactListResponse)
+@router.get(
+    "/drafts",
+    response_model=PublicationCompactListResponse,
+    summary="Список черновиков",
+)
 async def get_drafts(
-    tag_names: Optional[List[str]] = None,
-    tag_ids: Optional[List[int]] = None,
-    page: int = 1,
-    page_size: int = Query(50, ge=1, le=200),
+    tag_names: Optional[List[str]] = Query(
+        None, description="Фильтр по именам тегов (можно передать несколько)."
+    ),
+    tag_ids: Optional[List[int]] = Query(
+        None, description="Фильтр по id тегов."
+    ),
+    page: int = Query(1, ge=1, description="Номер страницы, начиная с 1."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -66,10 +79,14 @@ async def get_drafts(
     return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
 
 
-@router.get("/scheduled", response_model=PublicationCompactListResponse)
+@router.get(
+    "/scheduled",
+    response_model=PublicationCompactListResponse,
+    summary="Список запланированных публикаций",
+)
 async def get_scheduled(
-    page: int = 1,
-    page_size: int = Query(50, ge=1, le=200),
+    page: int = Query(1, ge=1, description="Номер страницы."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -83,23 +100,45 @@ async def get_scheduled(
     return PublicationCompactListResponse(items=publications, page=page, page_size=page_size)
 
 
-@router.get("/", response_model=PublicationCompactListResponse)
+@router.get(
+    "/",
+    response_model=PublicationCompactListResponse,
+    summary="Список публикаций с фильтрами",
+)
 async def get_publications(
-    status: Optional[PublicationStatus] = None,
-    content_type: Optional[ContentType] = None,
-    channel_id: Optional[int] = None,
-    tag_names: Optional[List[str]] = None,
-    tag_ids: Optional[List[int]] = None,
-    series_id: Optional[int] = None,
-    start_date: Optional[datetime] = None,
-    end_date: Optional[datetime] = None,
-    search: Optional[str] = None,
-    sort_order: Optional[Literal["asc", "desc"]] = Query(None),
-    date_mode: PublicationDateMode = Query(default=PublicationDateMode.scheduled),
-    is_ad: Optional[bool] = Query(None, description="Filter posts marked as advertisements"),
-    tz: str = Query("UTC"),
-    page: int = 1,
-    page_size: int = Query(50, ge=1, le=200),
+    status: Optional[PublicationStatus] = Query(
+        None, description="Фильтр по статусу: draft / scheduled / published / failed / deleted."
+    ),
+    content_type: Optional[ContentType] = Query(
+        None, description="Фильтр по типу контента: text / image / video / poll и т.д."
+    ),
+    channel_id: Optional[int] = Query(
+        None, description="Только публикации, привязанные к этому каналу."
+    ),
+    tag_names: Optional[List[str]] = Query(None, description="Фильтр по именам тегов."),
+    tag_ids: Optional[List[int]] = Query(None, description="Фильтр по id тегов."),
+    series_id: Optional[int] = Query(None, description="Только публикации из этой серии."),
+    start_date: Optional[datetime] = Query(
+        None, description="Нижняя граница периода по дате (см. date_mode)."
+    ),
+    end_date: Optional[datetime] = Query(
+        None, description="Верхняя граница периода по дате."
+    ),
+    search: Optional[str] = Query(None, description="Поиск по text_content."),
+    sort_order: Optional[Literal["asc", "desc"]] = Query(
+        None, description="Сортировка по scheduled_time."
+    ),
+    date_mode: PublicationDateMode = Query(
+        default=PublicationDateMode.scheduled,
+        description="К какому полю применять start_date/end_date: scheduled или created.",
+    ),
+    is_ad: Optional[bool] = Query(None, description="Только посты с галкой «реклама»."),
+    tz: str = Query(
+        "UTC",
+        description="Часовой пояс пользователя — start_date/end_date переводятся из локального в UTC.",
+    ),
+    page: int = Query(1, ge=1, description="Номер страницы."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -135,14 +174,25 @@ async def get_publications(
     )
 
 
-@router.get("/week-batch", response_model=WeekBatchResponse)
+@router.get(
+    "/week-batch",
+    response_model=WeekBatchResponse,
+    summary="Календарь на диапазон дат (всё разом)",
+)
 async def get_week_batch(
-    start_date: datetime,
-    end_date: datetime,
-    per_day: int = Query(20, ge=1, le=50),
-    tz: str = Query("UTC"),
-    is_ad: Optional[bool] = Query(None, description="Filter posts marked as advertisements"),
-    status: Optional[Literal["scheduled", "published"]] = Query(None, description="Filter by status"),
+    start_date: datetime = Query(..., description="Начало диапазона (включительно)."),
+    end_date: datetime = Query(..., description="Конец диапазона (включительно)."),
+    per_day: int = Query(
+        20,
+        ge=1,
+        le=50,
+        description="Сколько публикаций возвращать на один день.",
+    ),
+    tz: str = Query("UTC", description="Часовой пояс юзера для группировки по дням."),
+    is_ad: Optional[bool] = Query(None, description="Только рекламные публикации."),
+    status: Optional[Literal["scheduled", "published"]] = Query(
+        None, description="Фильтр по статусу публикации."
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -157,19 +207,27 @@ async def get_week_batch(
     )
 
 
-@router.get("/{publication_id}", response_model=PublicationResponse)
+@router.get(
+    "/{publication_id}",
+    response_model=PublicationResponse,
+    summary="Получить публикацию по id",
+)
 async def get_publication(
-    publication_id: int,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await find_publication_or_404(db, publication_id, owner_id=current_user.id)
 
 
-@router.put("/{publication_id}", response_model=PublicationResponse)
+@router.put(
+    "/{publication_id}",
+    response_model=PublicationResponse,
+    summary="Полное обновление публикации",
+)
 async def update_publication(
-    publication_id: int,
     data: PublicationUpdate,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -177,10 +235,14 @@ async def update_publication(
     return await UpdatePublication(db).execute(publication, data, owner_id=current_user.id)
 
 
-@router.patch("/{publication_id}", response_model=PublicationResponse)
+@router.patch(
+    "/{publication_id}",
+    response_model=PublicationResponse,
+    summary="Частичное обновление публикации",
+)
 async def patch_publication(
-    publication_id: int,
     data: PublicationUpdate,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -188,12 +250,29 @@ async def patch_publication(
     return await UpdatePublication(db).execute(publication, data, owner_id=current_user.id)
 
 
-@router.delete("/{publication_id}", status_code=204)
+@router.delete(
+    "/{publication_id}",
+    status_code=204,
+    summary="Удалить публикацию (с опциями для повторов и удаления из канала)",
+)
 async def delete_publication(
-    publication_id: int,
-    delete_from_channel: bool = Query(False),
-    repeat_mode: Optional[Literal["this", "this_and_following"]] = Query(None),
-    repeat_date: Optional[str] = Query(None),
+    publication_id: int = Path(..., description="ID публикации."),
+    delete_from_channel: bool = Query(
+        False,
+        description="Если true и публикация опубликована — поставит celery-задачу на удаление сообщений в Telegram.",
+    ),
+    repeat_mode: Optional[Literal["this", "this_and_following"]] = Query(
+        None,
+        description=(
+            "Для повторяющихся публикаций. "
+            "'this' — добавить дату repeat_date в исключения (пропустить только этот повтор). "
+            "'this_and_following' — обрезать повтор по repeat_date (удалить этот и все будущие)."
+        ),
+    ),
+    repeat_date: Optional[str] = Query(
+        None,
+        description="Дата конкретного повтора (ISO 8601) — требуется при repeat_mode.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

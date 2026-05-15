@@ -37,8 +37,12 @@ class GetPublicationByShareToken:
 
 
 def is_token_invalid(publication: Publication) -> bool:
-    """True если токен использован или истёк."""
+    """True если токен использован или истёк. Naive datetime трактуется как UTC."""
     if publication.share_token_used:
         return True
     expires = publication.share_token_expires_at
-    return bool(expires and expires < datetime.now(timezone.utc))
+    if not expires:
+        return False
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return expires < datetime.now(timezone.utc)

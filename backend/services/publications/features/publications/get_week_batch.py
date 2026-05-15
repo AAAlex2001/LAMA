@@ -101,7 +101,6 @@ class GetWeekBatch:
 
         posts = await fetch_scheduled_posts(self.db, owner_id, utc_start, utc_end, tz, is_ad, status)
         await add_repeat_projections(self.db, owner_id, start_date, end_date, posts, is_ad, status)
-        # Бот-сообщения никогда не являются рекламой — при is_ad=True исключаем их.
         bots = (
             PostBuckets() if is_ad is True
             else await fetch_bot_message_buckets(self.db, owner_id, utc_start, utc_end, tz)

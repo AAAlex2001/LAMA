@@ -79,11 +79,6 @@ class ListPublications:
         return posts
 
 
-# ──────────────────────────────────────────────────────────────────────
-# Запрос: фильтры и сортировка собираются отдельно
-# ──────────────────────────────────────────────────────────────────────
-
-
 def build_filtered_query(
     owner_id: Optional[int],
     status: Optional[PublicationStatus],
@@ -151,11 +146,6 @@ def primary_date_field(date_mode: Optional[str]):
     if mode == "updated":
         return func.coalesce(Publication.updated_at, Publication.created_at)
     return Publication.scheduled_time
-
-
-# ──────────────────────────────────────────────────────────────────────
-# Условия для query.where() — каждое в своей мини-функции
-# ──────────────────────────────────────────────────────────────────────
 
 
 def collect_column_conditions(

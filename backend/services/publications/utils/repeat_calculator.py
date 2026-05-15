@@ -1,3 +1,10 @@
+"""Вычисление следующего срабатывания для повторяющейся публикации.
+
+Берёт базовое время и настройки повтора (интервал, кастомные дни/часы, конкретные
+дни недели/месяца/года) и возвращает дату+время следующего запуска. Если повтор
+закончился (превысил repeat_end_time) — возвращает None.
+"""
+
 from datetime import datetime, timedelta
 from typing import Optional, List
 import calendar as cal_mod
@@ -10,6 +17,7 @@ MAX_PERIOD_SEARCH = 120
 
 
 def normalize_datetime(dt: Optional[datetime]) -> Optional[datetime]:
+    """Убирает timezone у datetime для безопасного сравнения с naive-датами."""
     if dt is None:
         return None
     return dt.replace(tzinfo=None) if dt.tzinfo else dt
@@ -28,6 +36,7 @@ def calculate_next_repeat_time(
     repeat_year_month: Optional[int] = None,
     repeat_year_days: Optional[List[int]] = None,
 ) -> Optional[datetime]:
+    """Считает следующее время повтора. Возвращает None если повтора больше не будет."""
     if repeat_interval == DBRepeatInterval.NEVER:
         return None
 
@@ -69,6 +78,7 @@ def compute_custom(
     year_month: Optional[int],
     year_days: Optional[List[int]],
 ) -> Optional[datetime]:
+    """Кастомный интервал: либо unit+value (дни/недели/месяцы/годы), либо custom_days+custom_hours."""
     if unit and value and value > 0:
         if unit == "days":
             return base_time + relativedelta(days=value)
@@ -91,6 +101,7 @@ def find_next_weekly(
     value: int,
     weekdays: Optional[List[int]],
 ) -> Optional[datetime]:
+    """Ищет ближайший день из weekdays через `value` недель."""
     allowed = weekdays or ([0] if base_time.weekday() == 6 else [base_time.weekday() + 1])
     normalized = sorted({(6 if d == 0 else d - 1) for d in allowed})
     base_date = base_time.date()
@@ -109,6 +120,7 @@ def find_next_monthly(
     value: int,
     month_days: Optional[List[int]],
 ) -> Optional[datetime]:
+    """Ищет первый существующий день из month_days в следующем месяце через `value` месяцев."""
     days = sorted(set(month_days or [base_time.day]))
     candidate = base_time + relativedelta(months=value)
     for _ in range(MAX_PERIOD_SEARCH):
@@ -126,6 +138,7 @@ def find_next_yearly(
     year_month: Optional[int],
     year_days: Optional[List[int]],
 ) -> Optional[datetime]:
+    """Ищет первый существующий день в указанном месяце через `value` лет."""
     days = sorted(set(year_days or [base_time.day]))
     month = year_month or base_time.month
     candidate_year = base_time.year + value

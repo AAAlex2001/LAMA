@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.celery.tasks import publish_publication
@@ -29,9 +29,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/{publication_id}/publish", response_model=PublicationResponse, status_code=202)
+@router.post(
+    "/{publication_id}/publish",
+    response_model=PublicationResponse,
+    status_code=202,
+    summary="Опубликовать прямо сейчас (ставит celery-задачу)",
+)
 async def publish_now(
-    publication_id: int,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -56,10 +61,14 @@ async def publish_now(
     return publication
 
 
-@router.post("/{publication_id}/reschedule", response_model=PublicationResponse)
+@router.post(
+    "/{publication_id}/reschedule",
+    response_model=PublicationResponse,
+    summary="Перенести время публикации (статус → SCHEDULED)",
+)
 async def reschedule_publication(
-    publication_id: int,
     data: RescheduleRequest,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -67,10 +76,13 @@ async def reschedule_publication(
     return await ReschedulePublication(db).execute(publication, data.scheduled_time)
 
 
-@router.post("/{publication_id}/edit-published")
+@router.post(
+    "/{publication_id}/edit-published",
+    summary="Отредактировать уже опубликованное сообщение в Telegram",
+)
 async def edit_published_message(
-    publication_id: int,
     data: EditPublishedRequest,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -80,9 +92,12 @@ async def edit_published_message(
     )
 
 
-@router.delete("/{publication_id}/telegram-messages")
+@router.delete(
+    "/{publication_id}/telegram-messages",
+    summary="Удалить отправленные сообщения публикации в Telegram (БД-публикация остаётся)",
+)
 async def delete_telegram_messages(
-    publication_id: int,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

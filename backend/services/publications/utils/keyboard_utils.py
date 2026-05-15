@@ -1,9 +1,17 @@
+"""Подготовка inline-клавиатуры публикации к отправке в Telegram."""
+
 from typing import Optional
 
 from backend.models.publications import Publication
 
 
 def prepare_inline_keyboard_data(publication: Publication) -> Optional[dict]:
+    """Превращает сохранённую структуру кнопок в формат для Telegram.
+
+    Кнопки `hidden_text` и `callback` получают `callback_data` вида
+    `<type>:<publication_id>:<button_id>` — по ней потом ловится нажатие в webhook.
+    Кнопки-ссылки оставляются как есть.
+    """
     if not publication.inline_keyboard:
         return None
 

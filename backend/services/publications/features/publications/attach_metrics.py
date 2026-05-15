@@ -1,3 +1,5 @@
+"""Дозагружает агрегаты метрик (просмотры/клики/...) к публикациям из telegram_messages."""
+
 from typing import Iterable
 
 from sqlalchemy import func, select

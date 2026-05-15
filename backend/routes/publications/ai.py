@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +23,12 @@ from backend.services.publications.features.publications.lookup import find_publ
 router = APIRouter()
 
 
-@router.post("/ai/generate", response_model=PublicationResponse, status_code=201)
+@router.post(
+    "/ai/generate",
+    response_model=PublicationResponse,
+    status_code=201,
+    summary="Сгенерировать новую публикацию через AI",
+)
 async def generate_content_with_ai(
     request: AIGenerateRequest,
     db: AsyncSession = Depends(get_db),
@@ -42,7 +47,11 @@ async def generate_content_with_ai(
     return await CreatePublication(db).execute(publication_data, owner_id=current_user.id)
 
 
-@router.post("/ai/edit-text", response_model=AIEditTextResponse)
+@router.post(
+    "/ai/edit-text",
+    response_model=AIEditTextResponse,
+    summary="Отредактировать текст через AI (одним ответом, не stream)",
+)
 async def edit_text_with_ai(
     request: AIEditTextRequest,
     current_user: User = Depends(get_current_user),
@@ -51,7 +60,10 @@ async def edit_text_with_ai(
     return AIEditTextResponse(result=result)
 
 
-@router.post("/ai/edit-text-stream")
+@router.post(
+    "/ai/edit-text-stream",
+    summary="Отредактировать текст через AI с потоковой отдачей (SSE)",
+)
 async def edit_text_with_ai_stream(
     request: AIEditTextRequest,
     current_user: User = Depends(get_current_user),
@@ -73,10 +85,14 @@ async def edit_text_with_ai_stream(
     )
 
 
-@router.post("/{publication_id}/ai/edit", response_model=PublicationResponse)
+@router.post(
+    "/{publication_id}/ai/edit",
+    response_model=PublicationResponse,
+    summary="Отредактировать текст конкретной публикации через AI",
+)
 async def edit_content_with_ai(
-    publication_id: int,
     data: AIEditRequest,
+    publication_id: int = Path(..., description="ID публикации."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

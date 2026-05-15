@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -21,7 +21,12 @@ from backend.services.publications.features.templates.update_template import Upd
 router = APIRouter(prefix="/text-templates")
 
 
-@router.post("/", response_model=TextTemplateResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=TextTemplateResponse,
+    status_code=201,
+    summary="Создать текстовый шаблон",
+)
 async def create_text_template(
     data: TextTemplateCreate,
     db: AsyncSession = Depends(get_db),
@@ -30,39 +35,55 @@ async def create_text_template(
     return await CreateTextTemplate(db).execute(current_user.id, data)
 
 
-@router.get("/", response_model=TextTemplateListResponse)
+@router.get(
+    "/",
+    response_model=TextTemplateListResponse,
+    summary="Список текстовых шаблонов с поиском и пагинацией",
+)
 async def list_text_templates(
-    search: Optional[str] = Query(None),
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=500),
+    search: Optional[str] = Query(None, description="Поиск по имени шаблона (ILIKE)."),
+    skip: int = Query(0, ge=0, description="Сдвиг для пагинации."),
+    limit: int = Query(100, ge=1, le=500, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await ListTextTemplates(db).execute(current_user.id, search, skip, limit)
 
 
-@router.get("/{template_id}", response_model=TextTemplateResponse)
+@router.get(
+    "/{template_id}",
+    response_model=TextTemplateResponse,
+    summary="Получить шаблон по id",
+)
 async def get_text_template(
-    template_id: int,
+    template_id: int = Path(..., description="ID шаблона."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await find_template_or_404(db, template_id, current_user.id)
 
 
-@router.patch("/{template_id}", response_model=TextTemplateResponse)
+@router.patch(
+    "/{template_id}",
+    response_model=TextTemplateResponse,
+    summary="Частично обновить шаблон",
+)
 async def update_text_template(
-    template_id: int,
     data: TextTemplateUpdate,
+    template_id: int = Path(..., description="ID шаблона."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     return await UpdateTextTemplate(db).execute(template_id, current_user.id, data)
 
 
-@router.delete("/{template_id}", status_code=204)
+@router.delete(
+    "/{template_id}",
+    status_code=204,
+    summary="Удалить шаблон",
+)
 async def delete_text_template(
-    template_id: int,
+    template_id: int = Path(..., description="ID шаблона."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

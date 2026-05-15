@@ -1,3 +1,10 @@
+"""Подготовка HTML-текста к отправке в Telegram.
+
+Telegram поддерживает только узкий набор HTML-тегов (b, i, u, s, a, tg-spoiler,
+blockquote, pre, code). Всё остальное надо убрать или экранировать, иначе API
+вернёт 400. Этот модуль чистит произвольный HTML и оставляет только разрешённое.
+"""
+
 from typing import Optional
 import html as html_module
 import logging
@@ -7,7 +14,12 @@ logger = logging.getLogger(__name__)
 
 
 def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
-    """Normalize HTML to a Telegram-safe subset and preserve supported tags."""
+    """Приводит произвольный HTML к подмножеству, разрешённому Telegram-ом.
+
+    Сохраняет: b, strong, i, em, u, s, strike, del, a, tg-spoiler, blockquote, pre, code.
+    Конвертирует <br>, <p>, <div> в переносы строк. Содержимое <code>/<pre> экранируется.
+    Любые неподдерживаемые теги выбрасываются, текст внутри них — экранируется.
+    """
     if not text:
         return text
 
@@ -26,6 +38,7 @@ def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
     code_placeholders = []
 
     def stash_code(match):
+        """Сохраняет содержимое <code>/<pre> в плейсхолдер до этапа экранирования."""
         raw = match.group(1)
         unescaped = html_module.unescape(raw)
         escaped = html_module.escape(unescaped, quote=False)
@@ -50,6 +63,7 @@ def clean_html_for_telegram(text: Optional[str]) -> Optional[str]:
     placeholders = []
 
     def stash_tag(match):
+        """Сохраняет разрешённый тег в плейсхолдер, чтобы экранирование его не съело."""
         placeholders.append(match.group(0))
         return f"__TG_TAG_{len(placeholders) - 1}__"
 
