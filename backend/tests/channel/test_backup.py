@@ -167,7 +167,7 @@ async def test_get_stats_counts_retransmissions(db, test_user, test_channel):
     db.add(PostRetransmission(
         original_post_id=post.id,
         target_channel_id=target.id,
-        telegram_message_id=999,
+        target_message_id=999,
     ))
     await db.commit()
 

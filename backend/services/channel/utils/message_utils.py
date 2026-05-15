@@ -1,3 +1,7 @@
+"""Распознавание системных сообщений Telegram (joined / left / pinned / payment и т.д.)
+и работа с временными окнами (ночной режим, мьюты).
+"""
+
 from typing import Optional
 
 from aiogram.types import Message

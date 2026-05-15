@@ -1,3 +1,5 @@
+"""Хелперы для работы с медиа из aiogram-сообщений: определение типа, извлечение file_id, сборка InputMedia для ретрансляции."""
+
 from typing import List, Optional
 
 from aiogram.enums import ParseMode

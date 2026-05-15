@@ -1,3 +1,5 @@
+"""Парсинг ссылок из текста сообщения — для антиспам-фильтра ссылок."""
+
 import re
 from typing import List, Optional
 from urllib.parse import urlparse

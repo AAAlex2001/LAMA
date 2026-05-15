@@ -1,3 +1,9 @@
+"""Нормализация данных канала из Telegram API в плоский dict для записи в БД.
+
+Telegram отдаёт `Chat` с разными полями для каналов/групп/супергрупп; этот модуль
+сглаживает различия и достаёт фото канала.
+"""
+
 import asyncio
 from backend.services.telegram_client import RateLimitedBot
 from aiogram.types import Chat
