@@ -167,5 +167,6 @@ async def delete_ad_revenue(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:
-    item = await _find_or_404(db, ad_revenue_id, current_user.id)
-    await DeleteAdRevenue(db).execute(item)
+    deleted = await DeleteAdRevenue(db).execute(ad_revenue_id, current_user.id)
+    if not deleted:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AdRevenue not found")

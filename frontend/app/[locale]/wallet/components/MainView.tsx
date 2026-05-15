@@ -78,7 +78,11 @@ export default function MainView({
   const expenses = stats ? Number(stats.expense_total) : 0;
   const publishedAds = stats?.published_ads_count ?? 0;
   const scheduledAds = stats?.scheduled_ads_count ?? 0;
-  const currencies = stats?.currencies ?? [];
+  const SUPPORTED_CURRENCIES = ['RUB', 'USD', 'EUR'];
+  const currenciesFromStats = stats?.currencies ?? [];
+  const currencies = currenciesFromStats.length > 1
+    ? currenciesFromStats
+    : Array.from(new Set([currency, ...SUPPORTED_CURRENCIES]));
 
   const goToCreateAd = () => router.push(`/${locale}/create-post?ad=1`);
 
