@@ -44,13 +44,18 @@ async def test_bot_login_rejects_inactive_user(db, auth_settings):
     assert exc.value.status_code == 403
 
 
+def to_aware_utc(dt):
+    """SQLite теряет tzinfo при чтении — приводим к aware UTC."""
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
 @pytest.mark.asyncio
 async def test_create_login_code_uses_default_ttl(db):
     code = await CreateBotLoginCode(db).execute(telegram_id=12345)
     await db.commit()
     assert code.code
     assert code.is_used is False
-    delta = code.expires_at - datetime.now(timezone.utc)
+    delta = to_aware_utc(code.expires_at) - datetime.now(timezone.utc)
     assert timedelta(minutes=4) < delta <= timedelta(minutes=5)
 
 
@@ -58,7 +63,7 @@ async def test_create_login_code_uses_default_ttl(db):
 async def test_create_login_code_custom_ttl(db):
     code = await CreateBotLoginCode(db).execute(telegram_id=99, expires_minutes=30)
     await db.commit()
-    delta = code.expires_at - datetime.now(timezone.utc)
+    delta = to_aware_utc(code.expires_at) - datetime.now(timezone.utc)
     assert timedelta(minutes=29) < delta <= timedelta(minutes=30)
 
 

@@ -91,18 +91,14 @@ async def test_chat(db: AsyncSession, test_bot: Bot) -> DirectChat:
 
 @pytest.fixture(autouse=True)
 def mute_ws_broadcast(monkeypatch):
-    """Глушит все ws_manager.broadcast_* во всех тестах."""
-    fake_manager = SimpleNamespace(
-        broadcast=AsyncMock(),
-        broadcast_chat_update=AsyncMock(),
-        broadcast_message_new=AsyncMock(),
-        broadcast_message_edited=AsyncMock(),
-        broadcast_message_deleted=AsyncMock(),
-        connect=AsyncMock(),
-        disconnect=lambda *_: None,
-    )
-    monkeypatch.setattr("backend.websockets.manager.ws_manager", fake_manager)
-    return fake_manager
+    """Глушит ws_manager.broadcast_* — патчим методы на самом объекте, чтобы перехватить все импорты."""
+    from backend.websockets import manager as ws_module
+
+    for name in ("broadcast", "broadcast_chat_update", "broadcast_message_new",
+                 "broadcast_message_edited", "broadcast_message_deleted"):
+        if hasattr(ws_module.ws_manager, name):
+            monkeypatch.setattr(ws_module.ws_manager, name, AsyncMock())
+    return ws_module.ws_manager
 
 
 @pytest.fixture

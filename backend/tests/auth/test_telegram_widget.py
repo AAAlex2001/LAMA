@@ -110,7 +110,10 @@ async def test_upsert_writes_auth_date(db):
     moment = datetime(2026, 1, 1, 12, 0, tzinfo=timezone.utc)
     user = await UpsertTelegramUser(db).execute(telegram_id=200, auth_date=moment)
     await db.commit()
-    assert user.telegram_account.auth_date == moment
+    saved = user.telegram_account.auth_date
+    if saved.tzinfo is None:
+        saved = saved.replace(tzinfo=timezone.utc)
+    assert saved == moment
 
 
 @pytest.mark.asyncio

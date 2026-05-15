@@ -35,32 +35,21 @@ def test_detect_media_type_unknown_defaults_to_photo():
 
 
 def test_extract_incoming_returns_photo():
-    photo = [SimpleNamespace(file_id="ph_1"), SimpleNamespace(file_id="ph_2")]
-    msg = SimpleNamespace(photo=photo, video=None, document=None, audio=None,
-                          voice=None, animation=None, sticker=None,
-                          raw_data=None, model_dump=None)
+    msg = {"photo": [{"file_id": "ph_1"}, {"file_id": "ph_2"}]}
     media_type, file_id = extract_incoming_media(msg)
     assert media_type == MessageType.PHOTO
+    assert file_id == "ph_2"
 
 
 def test_extract_incoming_returns_video():
-    msg = SimpleNamespace(
-        photo=None,
-        video=SimpleNamespace(file_id="v_id"),
-        document=None, audio=None, voice=None, animation=None, sticker=None,
-        raw_data=None, model_dump=None,
-    )
+    msg = {"video": {"file_id": "v_id"}}
     media_type, file_id = extract_incoming_media(msg)
     assert media_type == MessageType.VIDEO
     assert file_id == "v_id"
 
 
 def test_extract_incoming_returns_text_when_nothing():
-    msg = SimpleNamespace(
-        photo=None, video=None, document=None, audio=None,
-        voice=None, animation=None, sticker=None,
-        raw_data=None, model_dump=None,
-    )
+    msg = {}
     media_type, file_id = extract_incoming_media(msg)
     assert media_type == MessageType.TEXT
     assert file_id is None

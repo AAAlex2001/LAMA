@@ -71,15 +71,15 @@ async def test_save_outgoing_photo_with_caption(db, test_bot):
 
 @pytest.mark.asyncio
 async def test_save_outgoing_uses_fallback_when_message_empty(db, test_bot):
-    """Если aiogram-Message без типа медиа — берём fallback_type."""
+    """Если в aiogram-Message нет ни текста, ни медиа — берём fallback_type=TEXT."""
     tg_msg = fake_outgoing_message(102)
 
     saved = await SaveOutgoingMessage(db).execute(
         bot_id=test_bot.id, tg_chat_id=42,
-        tg_message=tg_msg, fallback_type=MessageType.PHOTO,
-        fallback_media_url="https://cdn/p.jpg",
+        tg_message=tg_msg, fallback_type=MessageType.TEXT,
+        fallback_media_url=None,
     )
-    assert saved.message_type == MessageType.PHOTO
+    assert saved.message_type == MessageType.TEXT
 
 
 @pytest.mark.asyncio

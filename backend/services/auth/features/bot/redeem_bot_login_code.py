@@ -33,7 +33,10 @@ class RedeemBotLoginCode:
         login_code = result.scalar_one_or_none()
         if not login_code:
             raise HTTPException(status_code=401, detail="Invalid or expired login code")
-        if datetime.now(timezone.utc) > login_code.expires_at:
+        expires_at = login_code.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > expires_at:
             raise HTTPException(status_code=401, detail="Login code has expired")
 
         user = await UpsertTelegramUser(self.db).execute(
