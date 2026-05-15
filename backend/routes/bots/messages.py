@@ -1,5 +1,6 @@
 from typing import Optional
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -13,13 +14,19 @@ from backend.services.bot.features.messaging.send_message import SendBotMessage
 
 router = APIRouter()
 
-@router.post('/{bot_id}/messages', status_code=201)
+
+@router.post(
+    "/{bot_id}/messages",
+    status_code=201,
+    summary="Отправить сообщение от бота (в один чат либо broadcast всем подписчикам)",
+)
 async def send_message(
-    bot_id: int,
     data: SendMessageRequest,
+    bot_id: int = Path(..., description="ID бота."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    """Если chat_id не задан — broadcast по всем DirectChat'ам бота."""
     if data.chat_id is None:
         return await BroadcastToChats(db).execute(bot_id, data, owner_id=current_user.id)
     await SendBotMessage(db).execute(bot_id, data, owner_id=current_user.id)
@@ -29,13 +36,21 @@ async def send_message(
     if messages:
         return messages[0]
 
-@router.get('/{bot_id}/messages', response_model=BotMessageListResponse)
+
+@router.get(
+    "/{bot_id}/messages",
+    response_model=BotMessageListResponse,
+    summary="Лог сообщений бота с фильтрами",
+)
 async def get_messages(
-    bot_id: int,
-    chat_id: Optional[int] = None,
-    is_incoming: Optional[bool] = None,
-    page: int = 1,
-    page_size: int = 50,
+    bot_id: int = Path(..., description="ID бота."),
+    chat_id: Optional[int] = Query(None, description="Только сообщения этого чата."),
+    is_incoming: Optional[bool] = Query(
+        None,
+        description="Фильтр направления: true — входящие в бот, false — исходящие от бота.",
+    ),
+    page: int = Query(1, ge=1, description="Номер страницы."),
+    page_size: int = Query(50, ge=1, le=200, description="Размер страницы."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

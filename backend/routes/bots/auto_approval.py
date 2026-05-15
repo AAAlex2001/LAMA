@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -12,15 +12,20 @@ router = APIRouter()
 
 
 def build_auto_approval_response(bot) -> AutoApprovalResponse:
+    """Собирает поля авто-одобрения бота в response-модель."""
     return AutoApprovalResponse(
         auto_approval_mode=bot.auto_approval_mode,
         approval_criteria=bot.approval_criteria,
     )
 
 
-@router.get("/{bot_id}/auto-approval", response_model=AutoApprovalResponse)
+@router.get(
+    "/{bot_id}/auto-approval",
+    response_model=AutoApprovalResponse,
+    summary="Получить настройки авто-одобрения join-request'ов",
+)
 async def get_auto_approval_settings(
-    bot_id: int,
+    bot_id: int = Path(..., description="ID бота."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -28,10 +33,14 @@ async def get_auto_approval_settings(
     return build_auto_approval_response(bot)
 
 
-@router.put("/{bot_id}/auto-approval", response_model=AutoApprovalResponse)
+@router.put(
+    "/{bot_id}/auto-approval",
+    response_model=AutoApprovalResponse,
+    summary="Обновить настройки авто-одобрения (режим + критерии)",
+)
 async def update_auto_approval_settings(
-    bot_id: int,
     data: AutoApprovalUpdate,
+    bot_id: int = Path(..., description="ID бота."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):

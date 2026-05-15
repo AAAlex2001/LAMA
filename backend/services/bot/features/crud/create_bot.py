@@ -1,3 +1,5 @@
+"""Регистрация нового бота: проверка токена, дедуп, установка webhook."""
+
 from datetime import datetime, timezone
 
 from fastapi import HTTPException
@@ -11,10 +13,13 @@ from backend.services.webhook.features.settings.set_webhook import SetWebhook
 
 
 class CreateBot:
+    """Регистрирует бота по токену: достаёт инфо из TG, проверяет дубль, ставит webhook."""
+
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
 
     async def execute(self, data: BotCreate, owner_id: int) -> BotModel:
+        """400 если бот уже у этого юзера; 409 если этот бот зарегистрирован другим."""
         bot_info, description, short_description = await fetch_bot_info(data.token)
         await self.guard_duplicates(bot_info.id, owner_id)
 
@@ -41,6 +46,7 @@ class CreateBot:
         return bot
 
     async def guard_duplicates(self, telegram_id: int, owner_id: int) -> None:
+        """Проверка дублирования: 400 если уже свой, 409 если уже чужой."""
         if await get_bot_by_telegram_id(self.db, telegram_id, owner_id=owner_id):
             raise HTTPException(status_code=400, detail="You have already registered this bot")
         if await get_bot_by_telegram_id(self.db, telegram_id):

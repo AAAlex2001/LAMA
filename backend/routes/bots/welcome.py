@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -13,6 +13,7 @@ router = APIRouter()
 
 
 def build_welcome_response(bot) -> WelcomeSettingsResponse:
+    """Собирает welcome-поля бота в response-модель."""
     return WelcomeSettingsResponse(
         welcome_enabled=bot.welcome_enabled,
         welcome_message=bot.welcome_message,
@@ -27,9 +28,13 @@ def build_welcome_response(bot) -> WelcomeSettingsResponse:
     )
 
 
-@router.get("/{bot_id}/welcome", response_model=WelcomeSettingsResponse)
+@router.get(
+    "/{bot_id}/welcome",
+    response_model=WelcomeSettingsResponse,
+    summary="Получить welcome-настройки бота (приветствие + капча на вход)",
+)
 async def get_welcome_settings(
-    bot_id: int,
+    bot_id: int = Path(..., description="ID бота."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -37,10 +42,14 @@ async def get_welcome_settings(
     return build_welcome_response(bot)
 
 
-@router.put("/{bot_id}/welcome", response_model=WelcomeSettingsResponse)
+@router.put(
+    "/{bot_id}/welcome",
+    response_model=WelcomeSettingsResponse,
+    summary="Обновить welcome-настройки (текст, медиа, кнопки, капча, таймаут)",
+)
 async def update_welcome_settings(
-    bot_id: int,
     data: WelcomeSettingsUpdate,
+    bot_id: int = Path(..., description="ID бота."),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
