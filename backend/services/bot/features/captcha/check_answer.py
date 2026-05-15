@@ -53,8 +53,13 @@ class CheckCaptchaAnswer:
 
 
 def is_expired(pending: PendingApproval) -> bool:
-    """True если истёк срок действия капчи."""
-    return bool(pending.expires_at and datetime.now(timezone.utc) > pending.expires_at)
+    """True если истёк срок действия капчи. Naive datetime трактуется как UTC."""
+    if not pending.expires_at:
+        return False
+    expires = pending.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) > expires
 
 
 def is_correct_answer(stored: Optional[str], user_answer: str) -> bool:

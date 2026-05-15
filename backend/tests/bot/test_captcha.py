@@ -26,10 +26,10 @@ def test_generate_captcha_returns_question_and_answer():
 
 
 def test_generate_captcha_answer_matches_question():
+    import re
     for _ in range(20):
         question, answer = generate_captcha()
-        # достаём числа из строки "Сколько будет A + B?"
-        numbers = [int(s) for s in question.split() if s.isdigit()]
+        numbers = [int(s) for s in re.findall(r"\d+", question)]
         assert len(numbers) == 2
         assert int(answer) == numbers[0] + numbers[1]
 
@@ -69,9 +69,11 @@ async def test_create_pending_writes_db(db):
     assert pending.id is not None
     assert pending.captcha_question == "2+2=?"
     assert pending.captcha_answer == "4"
-    # TTL = CAPTCHA_TTL_MINUTES
     assert pending.expires_at is not None
-    assert (pending.expires_at - datetime.now(timezone.utc)).total_seconds() < CAPTCHA_TTL_MINUTES * 60 + 5
+    expires = pending.expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    assert (expires - datetime.now(timezone.utc)).total_seconds() < CAPTCHA_TTL_MINUTES * 60 + 5
 
 
 @pytest.mark.asyncio

@@ -20,7 +20,7 @@ async def test_create_trigger(db, test_user, test_bot):
     trigger = await CreateTrigger(db).execute(
         bot_id=test_bot.id,
         name="Welcome new member",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         action_data={"text": "Привет!"},
         owner_id=test_user.id,
@@ -29,7 +29,7 @@ async def test_create_trigger(db, test_user, test_bot):
 
     assert trigger.id is not None
     assert trigger.name == "Welcome new member"
-    assert trigger.trigger_type == TriggerType.NEW_MEMBER
+    assert trigger.trigger_type == TriggerType.MEMBER_JOINED
     assert trigger.action_data == {"text": "Привет!"}
 
 
@@ -39,7 +39,7 @@ async def test_create_404_for_foreign_bot(db, test_user):
         await CreateTrigger(db).execute(
             bot_id=99999,
             name="X",
-            trigger_type=TriggerType.NEW_MEMBER,
+            trigger_type=TriggerType.MEMBER_JOINED,
             action_type=TriggerActionType.SEND_MESSAGE,
             owner_id=test_user.id,
         )
@@ -50,7 +50,7 @@ async def test_create_404_for_foreign_bot(db, test_user):
 async def test_update_partial(db, test_user, test_bot):
     trigger = await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="Old",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         action_data={"text": "v1"},
         owner_id=test_user.id,
@@ -71,13 +71,13 @@ async def test_update_partial(db, test_user, test_bot):
 async def test_list_filters_by_type(db, test_user, test_bot):
     await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="a",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         owner_id=test_user.id,
     )
     await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="b",
-        trigger_type=TriggerType.MESSAGE_TEXT,
+        trigger_type=TriggerType.USER_MESSAGE,
         action_type=TriggerActionType.SEND_MESSAGE,
         owner_id=test_user.id,
     )
@@ -85,24 +85,24 @@ async def test_list_filters_by_type(db, test_user, test_bot):
 
     items, total = await ListTriggers(db).execute(
         bot_id=test_bot.id,
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         owner_id=test_user.id,
     )
     assert total == 1
-    assert items[0].trigger_type == TriggerType.NEW_MEMBER
+    assert items[0].trigger_type == TriggerType.MEMBER_JOINED
 
 
 @pytest.mark.asyncio
 async def test_list_filter_is_active(db, test_user, test_bot):
     await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="on",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         is_active=True, owner_id=test_user.id,
     )
     await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="off",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         is_active=False, owner_id=test_user.id,
     )
@@ -119,7 +119,7 @@ async def test_list_filter_is_active(db, test_user, test_bot):
 async def test_delete_trigger(db, test_user, test_bot):
     trigger = await CreateTrigger(db).execute(
         bot_id=test_bot.id, name="bye",
-        trigger_type=TriggerType.NEW_MEMBER,
+        trigger_type=TriggerType.MEMBER_JOINED,
         action_type=TriggerActionType.SEND_MESSAGE,
         owner_id=test_user.id,
     )

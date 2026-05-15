@@ -110,7 +110,7 @@ async def test_triggers_create_and_list(client, test_bot):
         f"/api/bots/{test_bot.id}/triggers",
         json={
             "name": "Привет новенькому",
-            "trigger_type": "NEW_MEMBER",
+            "trigger_type": "MEMBER_JOINED",
             "action_type": "SEND_MESSAGE",
             "action_data": {"text": "Welcome"},
         },
