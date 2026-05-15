@@ -213,7 +213,6 @@ const CreateBotCommandModal: FC<CreateBotCommandModalProps> = ({ botId, channelI
         return;
       }
 
-      // CLAIM_ADMIN
       const isSpecific = claimRecipientTarget === 'SPECIFIC_CHANNEL';
       if (isSpecific && claimSelectedChannelIds.length === 0) return;
 

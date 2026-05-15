@@ -1,8 +1,6 @@
 import type { ChannelBasic } from './channel';
 import type { Tag } from './tag';
 
-// === Inline Buttons ===
-
 export type InlineButtonType = 'url' | 'callback' | 'hidden_text';
 
 export type CallbackAction = 'send_dm' | 'reply_in_chat' | 'track_click';
@@ -37,8 +35,6 @@ export interface InlineKeyboard {
   buttons: InlineKeyboardButton[][];
 }
 
-// === Media ===
-
 export interface MediaFile {
   id: string;
   url?: string;
@@ -57,8 +53,6 @@ export interface UploadedFile {
   thumbnailUrl?: string;
 }
 
-// === Poll / Quiz ===
-
 export interface QuizAnswer {
   id: string;
   text: string;
@@ -76,12 +70,8 @@ export interface PollData {
   is_quiz?: boolean;
 }
 
-// === Content Types ===
-
 export type ContentType = 'text' | 'text_with_media' | 'poll' | 'quiz';
 export type PublicationStatus = 'draft' | 'scheduled' | 'published';
-
-// === Draft ===
 
 export interface Draft {
   id: number;
@@ -155,8 +145,6 @@ export interface DraftListResponse {
   bot_messages?: BotMessageCompact[];
 }
 
-// === Template ===
-
 export interface TextTemplate {
   id: number;
   owner_id: number;
@@ -179,8 +167,6 @@ export interface UpdateTextTemplateRequest {
   name?: string;
   formatted_content?: Record<string, any>;
 }
-
-// === Post ===
 
 export interface Post {
   id: number;
@@ -208,8 +194,6 @@ export interface PostListResponse {
   page: number;
   page_size: number;
 }
-
-// === Component Props ===
 
 export interface DraftsModalProps {
   isOpen: boolean;

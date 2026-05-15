@@ -1,6 +1,3 @@
-/**
- * Shared types for template admin editor sections
- */
 
 export type FAQItem = {
   question: string;

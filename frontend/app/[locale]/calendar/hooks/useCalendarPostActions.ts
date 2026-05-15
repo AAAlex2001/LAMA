@@ -9,10 +9,6 @@ import {
   useDeleteRepeatPublicationMutation,
 } from '@/store/calendar/queries';
 
-/**
- * Управляет всеми действиями над постом из календаря: открытие/закрытие preview,
- * подтверждение удаления (обычное + repeat), share-link, edit-навигация.
- */
 export function useCalendarPostActions() {
   const { showSuccess, showError } = useNotifications();
 

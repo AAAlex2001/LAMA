@@ -225,8 +225,6 @@ export function useCalendarDataQuery(params: CalendarQueryParams) {
   });
 }
 
-// === Load-more mutations ==================================================
-
 export interface FetchMoreDayArgs {
   queryKey: QueryKey;
   dateKey: string;
@@ -347,8 +345,6 @@ export function useFetchMoreListPostsMutation() {
     },
   });
 }
-
-// === Delete mutations =====================================================
 
 function invalidateCalendar(qc: ReturnType<typeof useQueryClient>) {
   qc.invalidateQueries({ queryKey: calendarKeys.all });

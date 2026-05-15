@@ -71,10 +71,6 @@ export function usePublishHandlers({
   }, [dispatch, mediaFiles, pollData, selectedChannels, showError, showSuccess, text, validateSinglePost]);
 
   const handlePublishSeries = useCallback(async () => {
-    // Сохраняем текущий редактор как snapshot активного поста — чтобы
-    // последние правки попали в серию. Валидацию и сборку запроса по
-    // каждому посту выполняет publishSeries-thunk (он читает per-post
-    // settings из snapshot, включая каналы публикации).
     const currentSnap: PostSnapshot = {
       text,
       mediaFiles,

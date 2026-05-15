@@ -37,7 +37,6 @@ export const useBotCommandSelector: TypedUseSelectorHook<BotCommandState> = crea
 
 interface BotCommandProviderProps {
   botId: number;
-  /** Группа / супергруппа — список команд привязан к этому channel_groups.id */
   channelId: number;
   children: ReactNode;
 }

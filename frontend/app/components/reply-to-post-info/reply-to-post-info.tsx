@@ -11,7 +11,6 @@ interface ReplyToPostInfoProps {
 export default function ReplyToPostInfo({ postTitle, publishedAt, onRemove }: ReplyToPostInfoProps) {
   const [hoveredDelete, setHoveredDelete] = useState(false);
 
-  // Форматируем дату в нужный формат
   const formatDate = (isoDate: string) => {
     const date = new Date(isoDate);
     const day = String(date.getDate()).padStart(2, '0');

@@ -71,7 +71,6 @@ export default function HeroAdminPage() {
       .catch(() => setLoading(false));
   }, [locale]);
 
-  // Сохраняем контент
   const handleSave = async () => {
     setSaving(true);
     setMessage('');
@@ -97,14 +96,12 @@ export default function HeroAdminPage() {
       const file = e.dataTransfer.files[0];
       if (!file) return;
 
-      // Проверяем формат
       const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'image/webp', 'image/gif'];
       if (!validTypes.includes(file.type)) {
         setMessage('❌ Неподдерживаемый формат. Используйте PNG, JPG, SVG, WebP или GIF');
         return;
       }
 
-      // Загружаем файл
       const formData = new FormData();
       formData.append('file', file);
 
@@ -132,7 +129,6 @@ export default function HeroAdminPage() {
     e.preventDefault();
   };
 
-  // Загрузка по клику
   const handleFileSelect = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

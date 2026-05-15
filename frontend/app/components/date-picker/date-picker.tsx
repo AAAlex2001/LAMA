@@ -60,8 +60,6 @@ export default function DatePicker({
         if (prev.getTime() === value.getTime()) return prev;
         return value;
       });
-      // Only reset visible month when the selected date actually changes
-      // (prevents month navigation from being overridden by re-renders)
       setActiveStartDate((prev) => {
         if (value.getFullYear() === prev.getFullYear() && value.getMonth() === prev.getMonth()) return prev;
         return new Date(value.getFullYear(), value.getMonth(), 1);
@@ -167,8 +165,6 @@ export default function DatePicker({
           const totalCount = postCounts?.[key] ?? 0;
           const adsCount = adsCounts?.[key] ?? 0;
           if (!totalCount && !adsCount) return null;
-          // Делим единую полоску max 21px на синюю слева (обычные посты)
-          // и оранжевую справа (рекламные). Полоска одна, на одной линии.
           const unit = 21 / 5;
           const nonAdsCount = Math.max(0, totalCount - adsCount);
           const blueWidth = Math.max(1, Math.min(5, nonAdsCount)) * unit;

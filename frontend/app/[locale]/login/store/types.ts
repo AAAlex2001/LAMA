@@ -1,4 +1,3 @@
-// Типы для системы авторизации
 
 export interface TelegramWidgetUser {
   id: number;
@@ -30,7 +29,6 @@ export interface User {
   telegram_account?: TelegramAccount;
 }
 
-// API Request/Response типы
 export interface AuthResponse {
   access_token: string;
   refresh_token?: string;
@@ -57,7 +55,6 @@ export interface LoginResult {
   requiresRegistration?: boolean;
 }
 
-// State типы
 export interface LoginState {
   loading: boolean;
   error: string | null;

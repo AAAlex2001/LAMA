@@ -22,8 +22,6 @@ const JoinSettingsSection: FC<JoinSettingsSectionProps> = ({ channel }) => {
   const channelsQuery = useChannelsQuery();
   const channels = (channelsQuery.data?.items ?? []) as Channel[];
 
-  // Captcha enabled определяется здесь, чтобы ApprovalBlock мог скрыть «проверять подписку»
-  // когда капча активна (см. UX логику оригинальной секции).
   const captchaQuery = useCaptchaSettingsQuery(isGroup ? channelId : null);
   const captchaEnabled = captchaQuery.data?.captcha_enabled ?? false;
 

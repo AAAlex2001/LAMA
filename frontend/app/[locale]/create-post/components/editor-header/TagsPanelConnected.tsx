@@ -90,7 +90,6 @@ export default function TagsPanelConnected() {
       const created = await createTag.mutateAsync({ name, color });
       dispatch(settingsSlice.updateSelectedTagId({ name, id: created.id }));
     } catch {
-      // mutation state хранит ошибку, локальный chip уже добавлен
     }
   }
 

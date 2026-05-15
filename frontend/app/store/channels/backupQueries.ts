@@ -44,7 +44,6 @@ export function useBackupDayCountsQuery(channelId: number | null) {
   });
 }
 
-/** Универсальная mutation: payload собирается на стороне consumer'а. */
 export function useUpdateBackupModeMutation() {
   const qc = useQueryClient();
   return useMutation({

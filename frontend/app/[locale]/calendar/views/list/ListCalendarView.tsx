@@ -110,7 +110,6 @@ export default function ListCalendarView({
     allTags,
   });
 
-
   let filteredPosts = applyPostFilters(posts, activeFilters, mobileActiveFilters);
 
   const dateSort = activeFilters['date']?.[0];

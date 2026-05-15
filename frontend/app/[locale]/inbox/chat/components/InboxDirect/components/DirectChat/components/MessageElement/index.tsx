@@ -70,7 +70,6 @@ const MessageElement = memo(({ type, text, messageId, userPhoto, mediaItems, tim
     setIsDeleteModalOpen(false);
   };
 
-  // const mediaItemsKey = (mediaItems || []).map((item) => `${item.id ?? ''}|${item.type}|${item.src ?? ''}`).join(',');
   const mediaFiles: MediaFile[] = (mediaItems || []).map((item, i): MediaFile => ({
     id: item.id || `item-${i}`,
     type: (item.type === 'image' ? 'image' : item.type === 'video' ? 'video' : 'document') as 'image' | 'video' | 'document',

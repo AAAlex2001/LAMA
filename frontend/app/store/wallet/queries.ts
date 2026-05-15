@@ -24,10 +24,6 @@ import type {
   MonthlyAdStatsResponse,
 } from './types';
 
-// ============================================================
-// Query keys
-// ============================================================
-
 export const walletKeys = {
   all: ['wallet'] as const,
   revenues: (filters: AdRevenueListFilters) => ['wallet', 'revenues', filters] as const,
@@ -42,10 +38,6 @@ export const walletKeys = {
     ['wallet', 'day-batch', dateKey, isAd, status] as const,
   drafts: (search: string) => ['wallet', 'drafts', search] as const,
 };
-
-// ============================================================
-// AdRevenue: list, stats, mutations
-// ============================================================
 
 export function useAdRevenuesQuery(
   filters: AdRevenueListFilters = {},
@@ -124,10 +116,6 @@ export function useDeleteAdRevenueMutation() {
     onSuccess: () => invalidateRevenues(qc),
   });
 }
-
-// ============================================================
-// Publications: day-counts (calendar dots) + day batch (single day)
-// ============================================================
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const formatDateOnly = (d: Date) =>
@@ -234,10 +222,6 @@ export function useDayBatchQuery(
     staleTime: 30 * 1000,
   });
 }
-
-// ============================================================
-// Drafts: one-shot fetch (count is small, filter client-side)
-// ============================================================
 
 export function useDraftsListQuery(search = '') {
   const trimmed = search.trim();

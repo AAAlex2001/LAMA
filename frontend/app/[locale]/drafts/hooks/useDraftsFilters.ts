@@ -10,7 +10,6 @@ const defaultSortByDate = 'Сначала новые';
 const defaultSortByTags = 'По тегам';
 const defaultSortBySource = 'По источнику';
 
-/** UI-state фильтров и сортировки drafts: значения, дропдауны, click-outside. */
 export function useDraftsFilters() {
   const [sortByDate, setSortByDate] = useState(defaultSortByDate);
   const [sortBySource, setSortBySource] = useState(defaultSortBySource);
@@ -59,7 +58,6 @@ export function useDraftsFilters() {
   };
 }
 
-/** Опции тегов для фильтра: из allTags, иначе fallback из самих черновиков. */
 export function getTagOptions(allTags: Tag[], drafts: Draft[]): TagOption[] {
   if (allTags.length > 0) return allTags.map((t) => ({ id: t.id, name: t.name }));
 
@@ -78,7 +76,6 @@ export function getTagOptions(allTags: Tag[], drafts: Draft[]): TagOption[] {
     .map(({ id, name }) => ({ id, name }));
 }
 
-/** Подпись для кнопки "По тегам" в зависимости от выбранных. */
 export function getTagButtonLabel(tagOptions: TagOption[], selectedIds: number[]): string {
   if (selectedIds.length === 0) return defaultSortByTags;
   if (selectedIds.length === 1) {

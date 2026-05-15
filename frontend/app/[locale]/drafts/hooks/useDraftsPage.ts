@@ -64,7 +64,6 @@ export function useDraftsPage() {
         showSuccess('Черновик удалён');
       }
     } catch {
-      // mutation хранит ошибку
     } finally {
       setDeleteConfirmDraft(null);
     }

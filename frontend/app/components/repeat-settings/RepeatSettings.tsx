@@ -23,7 +23,6 @@ export default function RepeatSettings({
 }: Props) {
   const [viewMode, setViewMode] = useState<RepeatViewMode>('list');
 
-  // Если значение сброшено — возвращаемся в list-режим
   useEffect(() => {
     if (contentProps.repeatValue === 'never') setViewMode('list');
   }, [contentProps.repeatValue]);

@@ -26,8 +26,6 @@ export const joinSettingsKeys = {
   captcha: (channelId: number) => [...joinSettingsKeys.all, 'captcha', channelId] as const,
 };
 
-// === Auto-approval =======================================================
-
 export function useAutoApprovalQuery(botId: number | null) {
   return useQuery({
     queryKey: botId !== null ? joinSettingsKeys.autoApproval(botId) : ['auto-approval', 'disabled'],
@@ -54,8 +52,6 @@ export function useUpdateAutoApprovalMutation() {
       qc.invalidateQueries({ queryKey: joinSettingsKeys.autoApproval(botId) }),
   });
 }
-
-// === Captcha =============================================================
 
 export function useCaptchaSettingsQuery(channelId: number | null) {
   return useQuery({

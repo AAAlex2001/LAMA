@@ -53,7 +53,6 @@ export default function InlineButtons({
 
   if (!isOpen) return null;
 
-  // Собираем все кнопки с их номерами
   const allButtons: Array<{
     rowId: string;
     button: InlineButton;

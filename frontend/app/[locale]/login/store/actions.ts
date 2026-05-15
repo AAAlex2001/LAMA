@@ -1,4 +1,3 @@
-// Бизнес-логика для авторизации
 
 import type { TelegramWidgetUser, EmailLoginRequest, BotLoginRequest, LoginResult } from './types';
 import { loginWithTelegram, loginWithBot, loginWithEmail, logout as apiLogout } from './api';
@@ -8,9 +7,6 @@ const TOKEN_KEYS = {
   refresh: 'lamaplanner_refresh_token',
 } as const;
 
-/**
- * Сохранить токены в localStorage
- */
 export function saveTokens(accessToken: string, refreshToken?: string): void {
   if (typeof window === 'undefined') return;
   
@@ -20,9 +16,6 @@ export function saveTokens(accessToken: string, refreshToken?: string): void {
   }
 }
 
-/**
- * Удалить токены из localStorage
- */
 export function clearTokens(): void {
   if (typeof window === 'undefined') return;
   
@@ -30,17 +23,11 @@ export function clearTokens(): void {
   localStorage.removeItem(TOKEN_KEYS.refresh);
 }
 
-/**
- * Получить access токен
- */
 export function getAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem(TOKEN_KEYS.access);
 }
 
-/**
- * Обработчик входа через Telegram Widget
- */
 export async function handleTelegramLogin(
   user: TelegramWidgetUser
 ): Promise<LoginResult> {
@@ -51,7 +38,6 @@ export async function handleTelegramLogin(
       saveTokens(response.access_token, response.refresh_token);
     }
 
-    // Если регистрация не завершена - нужно перейти на шаг 2
     if (response.registration_completed === false) {
       return {
         success: true,
@@ -71,9 +57,6 @@ export async function handleTelegramLogin(
   }
 }
 
-/**
- * Обработчик входа через бота
- */
 export async function handleBotLogin(
   data: BotLoginRequest
 ): Promise<LoginResult> {
@@ -103,14 +86,10 @@ export async function handleBotLogin(
   }
 }
 
-/**
- * Обработчик входа по email/password
- */
 export async function handleEmailLogin(
   credentials: EmailLoginRequest
 ): Promise<LoginResult> {
   try {
-    // Валидация
     if (!credentials.email || !credentials.password) {
       return {
         success: false,
@@ -150,9 +129,6 @@ export async function handleEmailLogin(
   }
 }
 
-/**
- * Обработчик выхода
- */
 export async function handleLogout(): Promise<void> {
   const token = getAccessToken();
 
@@ -160,7 +136,6 @@ export async function handleLogout(): Promise<void> {
     try {
       await apiLogout(token);
     } catch {
-      // Игнорируем ошибки logout
     }
   }
 

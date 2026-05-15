@@ -21,13 +21,11 @@ export function useCreatePostHandlers({
 }: UseCreatePostHandlersParams) {
   const store = useStore<RootState>();
 
-  /** Снимок поля `mediaFiles` без File-объектов — для сериализуемого хранения в Redux. */
   const toSerializableSnapshot = (snapshot: PostSnapshot): PostSnapshot => ({
     ...snapshot,
     mediaFiles: snapshot.mediaFiles.map(({ file: _file, ...rest }) => rest),
   });
 
-  /** Дополняем сохраняемый snapshot полями серии и текущим срезом settings. */
   const buildSnapshotForSave = (snapshot: PostSnapshot): PostSnapshot => {
     const base = snapshots[activeIndex];
     return toSerializableSnapshot({
@@ -39,7 +37,6 @@ export function useCreatePostHandlers({
     });
   };
 
-  /** Залить в глобальные слайсы редактор/медиа/кнопки/опрос/настройки целевого поста. */
   const loadSnapshotIntoEditor = (snapshot: PostSnapshot) => {
     dispatch(editorSlice.setText(snapshot.text));
     dispatch(mediaSlice.setFiles(snapshot.mediaFiles));
@@ -69,9 +66,6 @@ export function useCreatePostHandlers({
   };
 
   const handleAddSeries = (currentSnapshot: PostSnapshot) => {
-    // Текущие настройки — это, по сути, настройки поста, который пользователь только что
-    // редактировал; они уезжают в snapshot. Новый пост наследует те же настройки,
-    // чтобы каналы / повтор / автоудаление не сбрасывались случайно.
     dispatch(seriesSlice.saveCurrentSnapshot(buildSnapshotForSave(currentSnapshot)));
     dispatch(seriesSlice.addPost(captureSnapshotSettings(store.getState())));
 

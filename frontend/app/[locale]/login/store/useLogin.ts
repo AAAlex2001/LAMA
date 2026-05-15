@@ -25,7 +25,6 @@ export function useLogin(locale: string = 'ru') {
   const router = useRouter();
   const widgetContainerRef = useRef<HTMLDivElement | null>(null);
 
-  // Регистрация глобального обработчика для Telegram Widget
   useEffect(() => {
     const handleTelegramAuth = async (user: TelegramWidgetUser) => {
       dispatch({ type: "SET_STATUS", payload: "loading" });
@@ -59,7 +58,6 @@ export function useLogin(locale: string = 'ru') {
     };
   }, [router, locale]);
 
-  // Инициализация Telegram Widget
   const initTelegramWidget = () => {
     if (!widgetContainerRef.current) return;
 
@@ -79,12 +77,10 @@ export function useLogin(locale: string = 'ru') {
     widgetContainerRef.current.appendChild(script);
   };
 
-  // Открытие бота для авторизации
   const openBotForLogin = () => {
     window.open(`https://t.me/${TELEGRAM_BOT_USERNAME}?start=login`, "_blank");
   };
 
-  // Обработка авторизации через бота (по URL параметрам)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tgId = params.get("tg_id");
@@ -125,14 +121,12 @@ export function useLogin(locale: string = 'ru') {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Вход по email/password
   const loginWithEmail = async () => {
     dispatch({ type: "CLEAR_FIELD_ERRORS" });
     dispatch({ type: "CLEAR_NOTIFICATIONS" });
 
     const { email, password } = state.form;
 
-    // Локальная валидация с отображением ошибок в полях
     let hasErrors = false;
     if (!email) {
       dispatch({ type: "SET_FIELD_ERROR", payload: { field: "email", message: "Введите email" } });
@@ -172,7 +166,6 @@ export function useLogin(locale: string = 'ru') {
     return false;
   };
 
-  // Выход
   const logout = async () => {
     await handleLogout();
     dispatch({ type: "SET_USER", payload: null });
@@ -180,7 +173,6 @@ export function useLogin(locale: string = 'ru') {
     router.push("/login");
   };
 
-  // Простые действия с формой
   const actions = {
     setEmail: (v: string) => dispatch({ type: "SET_EMAIL", payload: v }),
     setPassword: (v: string) => dispatch({ type: "SET_PASSWORD", payload: v }),
@@ -201,6 +193,5 @@ export function useLogin(locale: string = 'ru') {
   };
 }
 
-// Экспорт типов для внешнего использования
 export type { LoginState, User, TelegramWidgetUser };
 export type LoginStore = ReturnType<typeof useLogin>;

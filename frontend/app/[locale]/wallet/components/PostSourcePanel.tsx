@@ -95,8 +95,6 @@ export default function PostSourcePanel({ onClose, onSelect }: PostSourcePanelPr
   );
 }
 
-// ──────────── Source radio (non-section-specific) ────────────
-
 interface SourceRadioProps {
   checked: boolean;
   label: string;
@@ -117,8 +115,6 @@ function SourceRadio({ checked, label, onSelect }: SourceRadioProps) {
     </label>
   );
 }
-
-// ──────────── Calendar view: date-picker + status tabs + ads badge + list ────────────
 
 interface CalendarViewProps {
   pickedDate: Date;
@@ -193,8 +189,6 @@ function CalendarView({
   );
 }
 
-// ──────────── Drafts view: search + list ────────────
-
 interface DraftsViewProps {
   onSelect: (post: Draft) => void;
 }
@@ -259,8 +253,6 @@ function DraftRow({ draft, onSelect }: DraftRowProps) {
   );
 }
 
-// ──────────── Posts list (calendar/ads) ────────────
-
 interface PostsListProps {
   loading: boolean;
   items: Draft[];
@@ -316,8 +308,6 @@ function PostRow({ post, onClick }: PostRowProps) {
     </button>
   );
 }
-
-// ──────────── Helpers ────────────
 
 function pad(n: number): string {
   return String(n).padStart(2, '0');

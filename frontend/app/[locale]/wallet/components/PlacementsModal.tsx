@@ -10,11 +10,6 @@ interface PlacementsModalProps {
   onClose: () => void;
 }
 
-/**
- * Модалка со списком всех размещений рекламы: канал + ссылка на пост в нём.
- * Используется когда у строки рекламы >1 канала и пользователь хочет
- * перейти к конкретному посту.
- */
 export default function PlacementsModal({ placements, onClose }: PlacementsModalProps) {
   return (
     <ModalBase isOpen onOpenChange={(open) => !open && onClose()}>

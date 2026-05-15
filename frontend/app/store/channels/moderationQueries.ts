@@ -3,8 +3,6 @@ import type { QueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/store/api';
 import { queryClient as defaultQueryClient } from '@/store/query-client';
 
-// === Типы ================================================================
-
 export interface FloodSettings {
   flood_message_limit: number | null;
   flood_interval_seconds: number | null;
@@ -45,8 +43,6 @@ export interface QuickCommandsResponse {
   enabled_commands: string[] | null;
 }
 
-// === Keys ================================================================
-
 export const moderationKeys = {
   all: ['channel-moderation'] as const,
   flood: (channelId: number) => [...moderationKeys.all, 'flood', channelId] as const,
@@ -54,8 +50,6 @@ export const moderationKeys = {
   mediaBlock: (channelId: number) => [...moderationKeys.all, 'media-block', channelId] as const,
   quickCommands: (channelId: number) => [...moderationKeys.all, 'quick-commands', channelId] as const,
 };
-
-// === Flood ===============================================================
 
 export function useFloodSettingsQuery(channelId: number | null) {
   return useQuery({
@@ -79,8 +73,6 @@ export function useUpdateFloodSettingsMutation() {
   });
 }
 
-// === Auto-delete =========================================================
-
 export function useAutoDeleteSettingsQuery(channelId: number | null) {
   return useQuery({
     queryKey: channelId !== null ? moderationKeys.autoDelete(channelId) : ['auto-delete', 'disabled'],
@@ -103,8 +95,6 @@ export function useUpdateAutoDeleteSettingsMutation() {
   });
 }
 
-// === Media-block =========================================================
-
 export function useMediaBlockQuery(channelId: number | null) {
   return useQuery({
     queryKey: channelId !== null ? moderationKeys.mediaBlock(channelId) : ['media-block', 'disabled'],
@@ -126,8 +116,6 @@ export function useUpdateMediaBlockMutation() {
       qc.invalidateQueries({ queryKey: moderationKeys.mediaBlock(channelId) }),
   });
 }
-
-// === Quick-commands ======================================================
 
 export function useQuickCommandsQuery(channelId: number | null) {
   return useQuery({

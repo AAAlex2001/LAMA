@@ -59,7 +59,6 @@
   }
 }
 
-/* --- Editor section --- */
 .editorSection {
   display: flex;
   flex-direction: column;
@@ -67,7 +66,6 @@
   width: 100%;
 }
 
-/* --- Menu buttons --- */
 .menuRow {
   display: flex;
   flex-direction: row;
@@ -120,7 +118,6 @@
   }
 }
 
-/* --- Shortcodes --- */
 .shortcodesSection {
   display: flex;
   flex-direction: column;
@@ -207,7 +204,6 @@
   color: #CED2D6;
 }
 
-/* --- Footer --- */
 .footer {
   display: flex;
   flex-direction: column;
@@ -278,7 +274,6 @@
   height: 37px !important;
 }
 
-/* --- Share modal --- */
 .shareModal {
   z-index: 1000;
 }

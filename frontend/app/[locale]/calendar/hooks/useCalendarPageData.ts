@@ -109,11 +109,6 @@ function deriveFromQueryData(data: CalendarData | undefined): DerivedCalendarDat
   };
 }
 
-/**
- * Server data календаря: списки/grid через TanStack Query (см. useCalendarDataQuery),
- * счётчики и status по месяцу — через useDayCountsQuery.
- * UI state из Redux.
- */
 export function useCalendarPageData() {
   const calendar = useAppSelector((state: RootState) => state.calendar);
   const selectedDate = useAppSelector(selectSelectedDateObj);
@@ -180,20 +175,16 @@ export function useCalendarPageData() {
   const { data: channelsData } = useChannelsQuery();
   const allChannels = channelsData?.items;
 
-  // Counts и status по месяцу — через TQ
   const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const monthAnchor = parseDate(calendar.countsMonthAnchor);
   const monthStart = formatDateOnly(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth(), 1));
   const monthEnd = formatDateOnly(new Date(monthAnchor.getFullYear(), monthAnchor.getMonth() + 1, 0));
   const dayCountsQuery = useDayCountsQuery({ startDate: monthStart, endDate: monthEnd, tz: userTz });
-  // Стабилизируем reference: parseDayCounts создаёт новые объекты, что пробрасывалось
-  // в DatePicker/Header через props и могло сбрасывать IntersectionObserver state.
   const { gridPostCounts, gridAdsCounts, monthStatusCounts } = useMemo(() => {
     const { counts, adsCounts, statusCounts } = parseDayCounts(dayCountsQuery.data);
     return { gridPostCounts: counts, gridAdsCounts: adsCounts, monthStatusCounts: statusCounts };
   }, [dayCountsQuery.data]);
 
-  // Mobile UI state
   const [showMobile, setShowMobile] = useState(false);
   const [mobileActiveFilters, setMobileActiveFilters] = useState<Record<string, string[]>>({});
 

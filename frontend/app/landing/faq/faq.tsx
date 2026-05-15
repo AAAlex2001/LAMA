@@ -75,7 +75,6 @@ export default function FAQ({ content, whiteBackground = false }: Props) {
     });
   };
 
-
   const toggleItem = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
   };

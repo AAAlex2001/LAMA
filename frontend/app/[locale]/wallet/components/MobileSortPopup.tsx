@@ -16,11 +16,6 @@ interface MobileSortPopupProps {
   onChange: (filterId: string, value: WalletFilterValue) => void;
 }
 
-/**
- * Мобильное всплывающее меню сортировки. Внешний вид и поведение совпадают с
- * `PopupFilter` из инбокса: список сортировок вертикально, у каждого пункта
- * раскрывается подменю с radio-выбором направления.
- */
 export default function MobileSortPopup({
   isOpen,
   onClose,

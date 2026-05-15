@@ -197,7 +197,6 @@ const ModalTitle = ({ children, className, as: Component = 'h2' }: ModalTitlePro
   );
 };
 
-// ModalDescription - description component
 interface ModalDescriptionProps {
   children: ReactNode;
   className?: string;

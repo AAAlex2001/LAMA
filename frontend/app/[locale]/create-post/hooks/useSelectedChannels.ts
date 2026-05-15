@@ -4,7 +4,6 @@ import { useChannelsQuery } from '@/store/channels';
 import type { ChannelBasic } from '@/types';
 import { useAppSelector } from '../store';
 
-/** Список выбранных каналов: TQ-данные ∩ локальная selection. */
 export function useSelectedChannels(): ChannelBasic[] {
   const { data } = useChannelsQuery();
   const selectedIds = useAppSelector((s) => s.channelsSelection.selectedIds);

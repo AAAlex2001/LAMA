@@ -57,7 +57,6 @@ export default function CalendarMobilePopup({
           className={styles.mobilePopupDatePicker}
         />
 
-
       </div>
     </div>
   );

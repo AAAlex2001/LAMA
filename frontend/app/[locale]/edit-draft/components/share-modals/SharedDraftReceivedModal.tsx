@@ -12,12 +12,10 @@ interface Props {
   onPreview: () => void;
 }
 
-/** Заглушка для consume share-token (fire-and-forget). */
 export async function consumeShareToken(token: string): Promise<void> {
   try {
     await fetch(`${API_BASE_URL}/publications/shared/${token}/consume`, { method: 'POST' });
   } catch {
-    // ignore
   }
 }
 

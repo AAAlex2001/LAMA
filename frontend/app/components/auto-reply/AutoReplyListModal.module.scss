@@ -1,4 +1,3 @@
-/* Modal */
 .modal {
   width: 100%;
   overflow-x: hidden;
@@ -7,8 +6,6 @@
     max-width: 1018px !important;
   }
 }
-
-/* ==================== HEADER ==================== */
 
 .header {
   display: grid;
@@ -28,7 +25,6 @@
   flex-shrink: 0;
 }
 
-/* Controls: search + add button */
 .headerControls {
   display: flex;
   flex-direction: row;
@@ -91,8 +87,6 @@
   }
 }
 
-/* ==================== BODY ==================== */
-
 .body {
   display: flex;
   flex-direction: column;
@@ -112,8 +106,6 @@
   padding: 40px 0;
 }
 
-/* ==================== GRID ==================== */
-
 .grid {
   display: flex;
   flex-direction: column;
@@ -126,8 +118,6 @@
     align-items: start;
   }
 }
-
-/* ==================== CARD ==================== */
 
 .card {
   display: flex;
@@ -143,7 +133,6 @@
   width: 100%;
 }
 
-/* Card info block */
 .cardBody {
   display: flex;
   flex-direction: column;
@@ -203,7 +192,6 @@
   overflow: hidden;
 }
 
-/* Card actions row */
 .cardActions {
   display: flex;
   flex-direction: row;
@@ -233,13 +221,11 @@
   flex-shrink: 0;
 }
 
-/* Select button */
 .selectBtn {
   min-width: 75px;
   flex-shrink: 0;
 }
 
-/* Confirm delete modal */
 .confirmModal {
   max-width: 400px !important;
 }

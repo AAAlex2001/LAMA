@@ -25,7 +25,6 @@ const ChannelsSection: FC<ChannelsSectionProps> = ({ isOpen, onToggle }) => {
   const channels = channelsQuery.data?.items ?? [];
   const selectedSet = new Set(selectedIds);
 
-  // Авто-выбор всех каналов при первой загрузке (если ещё ничего не выбрано).
   const didAutoSelectRef = useRef(false);
   useEffect(() => {
     if (didAutoSelectRef.current) return;

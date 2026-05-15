@@ -35,27 +35,22 @@ interface MediaPreviewState {
 }
 
 interface MediaPreviewActions {
-  // Image loading
   markImageLoaded: (id: string) => void;
 
-  // Drag & Drop (HTML5)
   handleDragStart: (e: React.DragEvent, fileId: string) => void;
   handleDragEnd: () => void;
   handleDragOver: (e: React.DragEvent, fileId: string) => void;
   handleDragLeave: (fileId: string) => void;
   handleDrop: (e: React.DragEvent, targetId: string, onMove: (from: string, to: string) => void) => void;
 
-  // Pointer drag (touch/swipe)
   handlePointerDown: (e: React.PointerEvent, fileId: string, files: MediaFile[]) => void;
   handlePointerMove: (e: React.PointerEvent) => void;
   finishPointerDrag: (e: React.PointerEvent, onMove: (from: string, to: string) => void) => void;
 
-  // Lightbox
   openLightbox: (file: MediaFile) => void;
   closeLightbox: () => void;
   setLightboxLoaded: () => void;
 
-  // Helpers
   getPreviewUrl: (file: MediaFile) => string;
   shouldSuppressClick: () => boolean;
 }
@@ -111,7 +106,6 @@ function createStore() {
     return () => listeners.delete(listener);
   };
 
-  // Actions
   const markImageLoaded = (id: string) => {
     const newSet = new Set(state.loadedImages);
     newSet.add(id);
@@ -157,7 +151,6 @@ function createStore() {
   const handlePointerDown = (e: React.PointerEvent, fileId: string, files: MediaFile[]) => {
     if (e.button !== 0) return;
     const target = e.target as HTMLElement | null;
-    // Skip if clicking on controls
     if (target?.closest('[data-controls]')) return;
     
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);

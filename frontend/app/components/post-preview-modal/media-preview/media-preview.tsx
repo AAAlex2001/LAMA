@@ -120,7 +120,6 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     />
   ) : null;
 
-  // 1 медиа — одна большая картинка 16:9
   if (items.length === 1) {
     const item = items[0];
     if (!item.url) return null;
@@ -161,7 +160,6 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     );
   }
 
-  // 2 медиа — два квадрата рядом
   if (items.length === 2) {
     if (!items[0].url || !items[1].url) return null;
     return (
@@ -175,7 +173,6 @@ export default function MediaPreview({ items }: MediaPreviewProps) {
     );
   }
 
-  // 3+ медиа — первый большой + грид снизу
   const main = items[0];
   if (!main.url) return null;
 

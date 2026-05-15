@@ -23,7 +23,6 @@ function unauthorized(): NextResponse {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Защита админки через Basic Auth (логин/пароль из .env)
   if (isAdminPath(pathname)) {
     const adminLogin = process.env.ADMIN_LOGIN;
     const adminPassword = process.env.ADMIN_PASSWORD;
@@ -54,7 +53,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Пропускаем статические файлы и API
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -64,7 +62,6 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Проверяем, есть ли язык в URL
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   );
@@ -73,14 +70,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Редирект на дефолтный язык
   if (pathname === '/') {
     const url = new URL(`/${defaultLocale}`, request.url);
     url.search = request.nextUrl.search;
     return NextResponse.redirect(url);
   }
 
-  // Для остальных путей без языка добавляем дефолтный
   const url = new URL(`/${defaultLocale}${pathname}`, request.url);
   url.search = request.nextUrl.search;
   return NextResponse.redirect(url);

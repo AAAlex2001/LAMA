@@ -123,7 +123,6 @@ const GlobalMessageForm: React.FC<GlobalMessageFormProps> = ({
           selectedBotIds={selectedBotIds}
           onBotToggle={(botId) => dispatch(toggleGlobalMessageSelectedBotId(botId))}
           isLoading={botsLoading}
-          // maxBots={maxBots}
           onShowCreateBot={onShowCreateBot}
         />
       )}

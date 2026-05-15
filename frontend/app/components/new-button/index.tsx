@@ -44,7 +44,6 @@ export function Button({
     className,
   );
 
-
   const getLoaderColor = (): 'blue' | 'white' | 'inherit' => {
     if (intent === 'white' || intent === 'neutral') {
       return 'blue';

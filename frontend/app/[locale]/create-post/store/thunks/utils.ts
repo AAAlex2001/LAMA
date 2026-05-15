@@ -14,17 +14,9 @@ import type {
 } from '../types';
 import { uploadMediaFile, API_BASE_URL } from '@/store/api';
 
-// Re-export from shared utils
 import { buildInlineKeyboard } from '@/store/utils';
 export { buildInlineKeyboard };
 
-/**
- * Сериализовать состояние опроса/викторины snapshot'а в формат бекенда.
- * Возвращает null если опрос не активен или невалиден.
- *
- * Этот же формат раньше дублировался в трёх местах (валидация серии, отправка
- * серии и publishSeries). Теперь — один источник истины.
- */
 export function buildPollDataFromSnapshot(snapshot: PostSnapshot): PollData | null {
   if (!snapshot.quizOpen) return null;
   const options = snapshot.quizAnswers.map((a) => a.text).filter((t) => t.trim());
@@ -99,13 +91,6 @@ export async function prepareMediaPayload(files: MediaFile[]) {
   return { mediaUrls, mediaFileIds, mediaThumbnailUrls, mediaBlurArray };
 }
 
-/**
- * Все поля настроек, которые реально читаются при сборке запроса публикации.
- *
- * Это пересечение `SettingsState` (для одиночных постов) и `PostSettings`
- * (для каждого поста серии). Кэш доступных каналов / UI-флаги типа
- * `tagInputValue` / `channelsLoading` здесь не нужны.
- */
 export type PublicationSettingsInput = Pick<
   SettingsState,
   | 'notifySubscribers'

@@ -17,11 +17,6 @@ export interface DropdownBaseProps {
   className?: string;
 }
 
-/**
- * Тонкая обёртка дропдауна: label + chevron + open/close + click-outside.
- * Контент задаётся children — конкретная бизнес-логика живёт в обёртках
- * (ChannelPicker, RepeatSettings, AutoDeletePicker, ...).
- */
 export default function DropdownBase({
   label,
   children,

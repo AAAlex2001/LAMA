@@ -1,8 +1,6 @@
-// Основной хук
 export { useLogin } from './useLogin';
 export type { LoginStore } from './useLogin';
 
-// Типы
 export type {
   LoginState,
   LoginAction,
@@ -16,7 +14,6 @@ export type {
 } from './types';
 export { initialLoginState, loginReducer } from './types';
 
-// API
 export {
   loginWithTelegram,
   loginWithBot,
@@ -25,7 +22,6 @@ export {
   getCurrentUser,
 } from './api';
 
-// Actions
 export {
   handleTelegramLogin,
   handleBotLogin,

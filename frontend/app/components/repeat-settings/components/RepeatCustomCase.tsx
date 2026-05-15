@@ -148,7 +148,6 @@ export default function RepeatCustomCase({
   useEffect(() => {
     const now = new Date();
     const newDate = new Date(now.getFullYear(), selectedYearMonth, 1);
-    // Update selected dates when month changes
   }, [selectedYearMonth]);
 
   const getIntervalLabel = (type: IntervalType, value: number): string => {

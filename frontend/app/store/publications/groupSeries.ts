@@ -1,9 +1,5 @@
 import type { Draft } from '@/types/post';
 
-/**
- * Сворачивает посты одной серии в одну карточку с series_count = N.
- * Посты без series_id остаются как есть.
- */
 export function groupSeriesPosts(items: Draft[]): Draft[] {
   const result: Draft[] = [];
   const seriesSeen = new Map<number, Draft>();

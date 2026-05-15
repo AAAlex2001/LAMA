@@ -10,13 +10,6 @@ interface MobileSectionProps {
   defaultOpen?: boolean;
 }
 
-/**
- * Аккордеон для мобильного варианта главной кошелька.
- *
- * На мобилке (<1440px) — кликабельный заголовок 36px высотой + контент при
- * раскрытии. На десктопе компонент **не используется** — там панели рисуются
- * напрямую внутри двух колонок.
- */
 export default function MobileSection({ title, children, defaultOpen = false }: MobileSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
 

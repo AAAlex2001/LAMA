@@ -1,6 +1,5 @@
 import type { MediaFile } from '@/components/media-preview';
 
-// Quiz/Poll preview data
 export interface QuizPreviewData {
   mode: 'quiz' | 'poll';
   question: string;
@@ -10,7 +9,6 @@ export interface QuizPreviewData {
   correctAnswerIndex?: number;
 }
 
-// Channel info for preview header
 export interface ChannelPreviewData {
   title: string;
   subtitle?: string;
@@ -18,7 +16,6 @@ export interface ChannelPreviewData {
   membersCount?: number;
 }
 
-// Document item for documents preview
 export interface DocumentPreviewItem {
   id: string;
   name: string;
@@ -26,7 +23,6 @@ export interface DocumentPreviewItem {
   url?: string;
 }
 
-// Media item with resolved URL
 export interface MediaPreviewItem {
   id: string;
   type: 'image' | 'video';
@@ -35,7 +31,6 @@ export interface MediaPreviewItem {
   blur?: boolean;
 }
 
-// Main modal props
 export interface PreviewModalProps {
   isOpen: boolean;
   onClose: () => void;

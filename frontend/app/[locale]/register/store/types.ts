@@ -1,4 +1,3 @@
-// Типы для регистрации
 
 export interface TelegramWidgetUser {
   id: number;
@@ -65,7 +64,6 @@ export interface RegisterState {
   user: User | null;
   accessToken: string | null;
 
-  // Step 2
   email: string;
   password: string;
   agreePersonalData: boolean;

@@ -3,7 +3,6 @@ import Checkbox from "@/components/checkbox/checkbox";
 import styles from "./styles.module.scss";
 import classNames from "classnames";
 
-
 export interface ChatProps {
   id: number;
   name: string;

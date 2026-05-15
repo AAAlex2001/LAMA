@@ -10,9 +10,6 @@ const WIDTH = 620;
 const HEIGHT = 180;
 const Y_STEPS = 5;
 
-// Реалистичный потолок шкалы — миллион. Реклама в Telegram-канале обычно
-// 10K–100K, миллионники — редкость. Если данные выше, линия уйдёт за пределы
-// графика, но ось останется читаемой: 0, 200K, 400K, 600K, 800K, 1M.
 const AXIS_MAX_CAP = 1_000_000;
 
 interface MonthlyChartProps {
@@ -199,8 +196,6 @@ function niceCeil(value: number): number {
 function formatAxis(value: number): string {
   if (value === 0) return '0';
   const abs = Math.abs(value);
-  // Реклама в Telegram обычно в диапазоне 1K–100K. Миллион — потолок шкалы.
-  // 1_000 → "1K", 100_000 → "100K", 1_000_000 → "1M".
   if (abs >= 1_000_000) return trim(value / 1_000_000) + 'M';
   if (abs >= 1_000) return trim(value / 1_000) + 'K';
   return trim(value);

@@ -3,13 +3,6 @@ import * as channelsSelectionSlice from './slices/channelsSelection';
 import * as settingsSlice from './slices/settings';
 import type { PostSettings } from './types';
 
-/**
- * Снять снимок настроек активного поста.
- *
- * Берём selectedIds из `channelsSelection` (источник правды для выбранных
- * каналов) + все per-post поля из `settings`. Кэш доступных каналов и
- * UI-флаги (channelsLoading, tagInputValue) общие — не трогаем.
- */
 export function captureSnapshotSettings(state: RootState): PostSettings {
   const s = state.settings;
   return {
@@ -40,13 +33,6 @@ export function captureSnapshotSettings(state: RootState): PostSettings {
   };
 }
 
-/**
- * Залить настройки конкретного поста серии в глобальные слайсы.
- *
- * После вызова UI настроек (PostSettingsConnected, AdToggleSection, и т.д.)
- * отрисует значения именно этого поста, потому что все эти компоненты
- * читают из `settings` / `channelsSelection`.
- */
 export function applySnapshotSettings(dispatch: AppDispatch, settings: PostSettings): void {
   dispatch(channelsSelectionSlice.setSelectedChannelIds(settings.selectedChannelIds));
 

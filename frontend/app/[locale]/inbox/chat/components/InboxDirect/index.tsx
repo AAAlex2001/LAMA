@@ -43,7 +43,6 @@ const InboxDirect = ( { onClose, isReady = true }: { onClose: () => void; isRead
     showError(chatsError);
   }, [chatsError]);
 
-
   useEffect(() => {
     if (!isReady) return;
     if (initialParamsProcessedRef.current) return;

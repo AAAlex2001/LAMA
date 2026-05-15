@@ -119,11 +119,6 @@ export const publishSeries = createAsyncThunk(
   },
 );
 
-/**
- * Создать одну Publication из snapshot'а серии.
- * Только первый пост серии (`order === 0`) хранит monetary-поля рекламы —
- * см. комментарий в scheduleSeries.ts.
- */
 async function createSeriesPost(
   snapshot: PostSnapshot,
   order: number,

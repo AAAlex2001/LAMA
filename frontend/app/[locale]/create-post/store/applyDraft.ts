@@ -33,7 +33,6 @@ async function fetchContentLength(url: string): Promise<number | null> {
     const length = head.headers.get('content-length');
     if (length) return Number(length);
   } catch {
-    // fall through
   }
   try {
     const range = await fetch(url, { method: 'GET', headers: { Range: 'bytes=0-0' } });
@@ -45,7 +44,6 @@ async function fetchContentLength(url: string): Promise<number | null> {
     const length = range.headers.get('content-length');
     if (length) return Number(length);
   } catch {
-    // ignore
   }
   return null;
 }

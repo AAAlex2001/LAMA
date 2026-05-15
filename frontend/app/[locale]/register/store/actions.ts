@@ -1,4 +1,3 @@
-// Бизнес-логика регистрации
 
 import type { AddEmailRequest, RegisterResult, TelegramWidgetUser } from './types';
 import { addEmail, registerWithTelegram } from './api';

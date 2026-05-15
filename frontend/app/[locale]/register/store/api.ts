@@ -1,4 +1,3 @@
-// API клиент для регистрации
 
 import type { AddEmailRequest, AuthResponse, TelegramWidgetUser, User } from './types';
 

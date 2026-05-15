@@ -32,7 +32,6 @@ export function useChannelsQuery(params: FetchChannelsParams = {}) {
   });
 }
 
-/** Загрузить каналы вне React-контекста (для thunks). Использует TQ-кэш. */
 export async function loadChannelsList(qc: QueryClient = defaultQueryClient): Promise<ChannelBasic[]> {
   const data = await qc.fetchQuery({
     queryKey: channelsQueryKey(),
@@ -108,7 +107,6 @@ export function useRefreshChannelsMutation() {
   });
 }
 
-/** Императивно инвалидировать кэш каналов из любого места. */
 export function invalidateChannels(qc: QueryClient = defaultQueryClient) {
   qc.invalidateQueries({ queryKey: ['channels'] });
 }

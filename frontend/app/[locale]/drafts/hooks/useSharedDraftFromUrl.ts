@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSharedDraftQuery } from '@/store/publications/queries';
 
-/** Подхватывает `?token=` из URL, грузит черновик, чистит query-string. */
 export function useSharedDraftFromUrl() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -104,7 +104,6 @@ export interface UpdateBannedWordsActionRequest {
   mute_duration_minutes: number | null;
 }
 
-/** Обновить action+mute сразу для всех правил (используется при смене глобального действия). */
 export function useBulkUpdateBannedWordsActionMutation() {
   const qc = useQueryClient();
   return useMutation({

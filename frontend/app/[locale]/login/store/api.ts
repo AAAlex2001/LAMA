@@ -1,4 +1,3 @@
-// API клиент для авторизации
 
 import type {
   TelegramWidgetUser,
@@ -77,9 +76,6 @@ async function fetchApi<T>(
   }
 }
 
-/**
- * Авторизация через Telegram Widget
- */
 export async function loginWithTelegram(
   user: TelegramWidgetUser
 ): Promise<AuthResponse> {
@@ -89,9 +85,6 @@ export async function loginWithTelegram(
   });
 }
 
-/**
- * Авторизация через бота по telegram_id
- */
 export async function loginWithBot(
   data: BotLoginRequest
 ): Promise<AuthResponse> {
@@ -101,9 +94,6 @@ export async function loginWithBot(
   });
 }
 
-/**
- * Авторизация по email/password
- */
 export async function loginWithEmail(
   credentials: EmailLoginRequest
 ): Promise<AuthResponse> {
@@ -113,9 +103,6 @@ export async function loginWithEmail(
   });
 }
 
-/**
- * Выход из системы
- */
 export async function logout(token: string): Promise<void> {
   await fetch(ENDPOINTS.logout, {
     method: 'POST',
@@ -126,9 +113,6 @@ export async function logout(token: string): Promise<void> {
   });
 }
 
-/**
- * Получить текущего пользователя
- */
 export async function getCurrentUser(token: string): Promise<AuthResponse['user']> {
   return fetchApi<AuthResponse['user']>(ENDPOINTS.me, {
     method: 'GET',

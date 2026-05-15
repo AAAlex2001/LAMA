@@ -90,7 +90,6 @@ const LinkInvitesModal: React.FC<LinkInvitesModalProps> = ({
   const channels = channelsQuery.data?.items ?? [];
   const channelNameMap = new Map(channels.map((ch) => [ch.id, ch.title]));
 
-  // Грузим invite-links для всех каналов параллельно через TQ
   const targetChannelIds = isOpen
     ? (channelId !== undefined ? [channelId] : channels.map((ch) => ch.id))
     : [];

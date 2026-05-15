@@ -56,7 +56,6 @@ const SortDropdown: FC<SortDropdownProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
-
   const handleToggle = () => {
     setIsOpen((prev) => !prev);
   };

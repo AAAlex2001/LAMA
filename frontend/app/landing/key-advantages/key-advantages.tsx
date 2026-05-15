@@ -23,29 +23,24 @@ export default function KeyAdvantages({ content }: Props) {
   };
 
   const renderText = (text: string) => {
-    // Парсим текст: ```курсив```, ``жирный``, `градиент`
     const parts = text.split(/(```.*?```|``.*?``|`.*?`)/);
     
     return parts.map((part, index) => {
-      // Проверяем на ```курсив```
       if (part.startsWith('```') && part.endsWith('```')) {
         const content = part.slice(3, -3);
         return <span key={index} className={styles.italic}>{content}</span>;
       }
       
-      // Проверяем на ``жирный``
       if (part.startsWith('``') && part.endsWith('``')) {
         const content = part.slice(2, -2);
         return <span key={index} className={styles.bold}>{content}</span>;
       }
       
-      // Проверяем на `градиент`
       if (part.startsWith('`') && part.endsWith('`')) {
         const content = part.slice(1, -1);
         return <span key={index} className={styles.gradient}>{content}</span>;
       }
       
-      // Обычный текст
       return <span key={index}>{part}</span>;
     });
   };

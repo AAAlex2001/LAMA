@@ -24,7 +24,6 @@ export function useInviteLinksQuery(channelId: number | null) {
   });
 }
 
-/** Параллельно подгружает invite-links для нескольких каналов. */
 export function useInviteLinksBatchQuery(channelIds: number[]) {
   return useQueries({
     queries: channelIds.map((channelId) => ({

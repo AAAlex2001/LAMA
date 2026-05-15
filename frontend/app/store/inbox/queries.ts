@@ -3,8 +3,6 @@ import type { QueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/store/api';
 import { queryClient as defaultQueryClient } from '@/store/query-client';
 
-// === Типы ================================================================
-
 export type InboxCategory = 'moderation' | 'system' | 'automation';
 export type EntityType = 'bot' | 'channel' | 'system';
 export type EventStatus = 'new' | 'processed' | 'banned' | 'ignored';
@@ -128,8 +126,6 @@ export function useInboxEventsQuery(filters: InboxEventFilters) {
     staleTime: 30 * 1000,
   });
 }
-
-// === Mutations ===========================================================
 
 export interface BulkActionParams {
   event_ids: number[];

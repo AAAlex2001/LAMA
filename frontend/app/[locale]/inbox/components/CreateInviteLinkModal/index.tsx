@@ -111,7 +111,6 @@ const CreateInviteLinkModal: React.FC<{
     }
   }, [linkId, channelId, dispatch]);
 
-  // Подхватываем загруженную через TQ ссылку и заполняем форму
   useEffect(() => {
     if (inviteLinkQuery.data) {
       dispatch(populateFormFromInviteLink(inviteLinkQuery.data));

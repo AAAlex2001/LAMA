@@ -98,7 +98,6 @@ export function useEditPostLoader(
               try {
                 await dispatch(loadDraftById(sp.id)).unwrap();
               } catch {
-                // ignore individual load errors
               }
             }
             if (cancelled) return;
@@ -106,7 +105,6 @@ export function useEditPostLoader(
             if (cancelled) return;
             setSeriesLoaded(true);
           } catch {
-            // ignore
           }
         } else {
           setExpandedPostId(null);

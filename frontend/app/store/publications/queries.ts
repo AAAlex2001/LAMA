@@ -92,8 +92,6 @@ export function invalidatePublication(id: number, qc: QueryClient = defaultQuery
   qc.invalidateQueries({ queryKey: publicationsKeys.detail(id) });
 }
 
-// === Calendar: week-batch ================================================
-
 interface WeekBatchDay {
   items: Draft[];
   has_more: boolean;
@@ -131,8 +129,6 @@ export function useWeekBatchQuery(params: WeekBatchParams | null) {
     staleTime: 30 * 1000,
   });
 }
-
-// === Calendar: day-counts ================================================
 
 export interface DayCountItem {
   date: string;
@@ -173,8 +169,6 @@ export function useDayCountsQuery(params: DayCountsParams | null) {
   });
 }
 
-// === Calendar: day posts (infinite by single date) =======================
-
 export function useDayPostsInfiniteQuery(dateKey: string | null, pageSize = 20, tz?: string) {
   return useInfiniteQuery({
     queryKey: dateKey ? publicationsKeys.dayPosts(dateKey) : ['publications', 'day', null],
@@ -196,9 +190,6 @@ export function useDayPostsInfiniteQuery(dateKey: string | null, pageSize = 20, 
   });
 }
 
-// === Shared draft (по публичному share-токену) ===========================
-
-/** GET без auth — публичный endpoint, токен в URL. */
 async function fetchSharedDraft(token: string): Promise<Draft> {
   const res = await fetch(`${API_BASE_URL}/publications/shared/${token}`);
   if (!res.ok) throw new Error(res.status === 404 ? 'Ссылка недействительна' : 'Не удалось загрузить черновик');
@@ -252,7 +243,6 @@ export function useSaveSharedDraftMutation() {
         method: 'POST',
         body: JSON.stringify(buildSharedSavePayload(draft)),
       });
-      // consume share token — fire-and-forget, не критично если упадёт
       fetch(`${API_BASE_URL}/publications/shared/${token}/consume`, { method: 'POST' }).catch(() => {});
       return created;
     },

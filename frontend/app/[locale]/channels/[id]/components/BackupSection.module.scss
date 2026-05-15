@@ -79,7 +79,6 @@
   width: 100%;
 }
 
-/* Канал-ретранслятор / Канал для восстановления — в одну строку */
 .channelSelectorRow {
   display: flex;
   flex-direction: row;
@@ -155,7 +154,6 @@
   padding: 8px 0;
 }
 
-/* AI секция */
 .aiSection {
   display: flex;
   flex-direction: column;
@@ -170,7 +168,6 @@
   color: #000000;
 }
 
-/* Типы публикаций + Настройки ретранслятора — горизонтально на десктопе */
 .postTypesRow {
   display: flex;
   flex-direction: column;
@@ -242,7 +239,6 @@
   flex: 1;
 }
 
-/* Архив */
 .archiveContent {
   display: flex;
   flex-direction: column;

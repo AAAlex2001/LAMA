@@ -39,8 +39,6 @@ export const scheduleSeries = createAsyncThunk(
     const state = getState() as RootState;
     const { series, editor, media, inlineButtons, quiz } = state;
 
-    // Перед валидацией затягиваем текущий редактор как snapshot активного поста,
-    // чтобы только что введённые изменения учитывались.
     const currentSnapshot: PostSnapshot = {
       text: editor.text,
       mediaFiles: media.files,
@@ -122,15 +120,6 @@ export const scheduleSeries = createAsyncThunk(
   },
 );
 
-/**
- * Создать одну Publication из snapshot'а серии.
- *
- * ВАЖНО: monetary-поля рекламы (`ad_amount`, `ad_buyer`, `ad_currency`, `ad_note`)
- * сохраняются ТОЛЬКО на первом посте серии (`order === 0`). Так серия из N постов
- * считается как одна рекламная сделка в кошельке, а не N сделок с одинаковым
- * чеком. Флаг `is_ad=true` остаётся на каждом посте — он нужен чтобы все посты
- * подсвечивались иконкой рекламы в календаре.
- */
 async function scheduleSeriesPost(
   snapshot: PostSnapshot,
   order: number,

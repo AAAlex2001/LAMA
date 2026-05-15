@@ -69,7 +69,6 @@ export function useEditPostActions({
           );
           invalidatePublications();
         } catch {
-          // exclusion failed but new post was created
         }
         showSuccess('Изменения сохранены!');
         setTimeout(() => { window.location.href = '/calendar'; }, 1500);

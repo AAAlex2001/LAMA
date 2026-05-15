@@ -24,7 +24,6 @@ export default function ArticleFeedback({ articleSlug, locale }: Props) {
         setFeedback(saved);
       }
     } catch {
-      // localStorage недоступен
     }
   }, [storageKey]);
 
@@ -40,7 +39,6 @@ export default function ArticleFeedback({ articleSlug, locale }: Props) {
         },
       );
     } catch {
-      // ignore
     }
   };
 

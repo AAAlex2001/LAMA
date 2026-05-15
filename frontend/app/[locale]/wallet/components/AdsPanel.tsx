@@ -19,9 +19,7 @@ const ROW_LIMIT = 50;
 interface AdsPanelProps {
   activeTab: string;
   onTabChange: (id: string) => void;
-  /** Валюта, в которой считаются суммы. Уже разрешена в MainView, не undefined. */
   currency: string;
-  /** Управляющий флаг — пока валюта не определилась, запрос не стреляем. */
   enabled?: boolean;
   dateFrom?: string;
   dateTo?: string;
@@ -289,7 +287,6 @@ function currencySymbol(code: string): string {
 }
 
 function formatCompact(n: number): string {
-  // Метрики рекламы обычно 1K–100K, миллион — редкая верхняя граница.
   const abs = Math.abs(n);
   if (abs >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
   if (abs >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
