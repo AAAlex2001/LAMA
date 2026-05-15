@@ -37,6 +37,7 @@ export default function TemplateSubscribe({ title, subtitle, buttonText, buttonL
               <Button
                 href={safeButtonLink || undefined}
                 intent="gradient"
+                size="lg"
                 className={styles.buttonOverride}
               >
                 {safeButtonText}

@@ -5,7 +5,6 @@ interface ArrowRightIconProps {
   height?: number;
   color?: string;
   className?: string;
-  /** "gradient" — синий градиент (под gradient-текст outline-кнопки). */
   variant?: 'solid' | 'gradient';
 }
 
@@ -16,8 +15,6 @@ export default function ArrowRightIcon({
   className,
   variant = 'solid',
 }: ArrowRightIconProps) {
-  // useId() возвращает ":r0:" с двоеточиями — SVG `url(#:r0:)` не резолвится.
-  // Убираем недопустимые символы.
   const rawId = useId();
   const gradientId = `arrow-grad-${rawId.replace(/[^a-zA-Z0-9-]/g, '')}`;
   const stroke = variant === 'gradient' ? `url(#${gradientId})` : color;

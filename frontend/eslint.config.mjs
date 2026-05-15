@@ -4,10 +4,8 @@ import nextPlugin from "@next/eslint-plugin-next";
 import reactHooks from "eslint-plugin-react-hooks";
 
 const eslintConfig = defineConfig([
-  // TypeScript-recommended (auto-detect parser, fine для большинства правил).
   ...tseslint.configs.recommended,
 
-  // Next.js core-web-vitals + React hooks (для предупреждений о deps).
   {
     files: ["**/*.{js,jsx,mjs,cjs,ts,tsx}"],
     plugins: {
@@ -22,9 +20,6 @@ const eslintConfig = defineConfig([
     },
   },
 
-  // Уровень строгости проекта.
-  // Pre-existing legacy-code (<a> tags, <img>, ts-expect-error) — warn, не блокирует.
-  // Действительно опасные паттерны (debugger, var, console.log) — error.
   {
     rules: {
       "no-console": ["warn", { allow: ["warn", "error"] }],

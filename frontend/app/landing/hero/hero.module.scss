@@ -84,11 +84,6 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-
-  // Не трогаем `stroke` у SVG — внутри outline+gradient кнопки она
-  // отрисована с inline `stroke="url(#gradient)"`. CSS-override
-  // ломал gradient (наследовал `color: transparent` из gradient-text).
-  // Hover-цвет переключается в new-button/styles.module.scss.
 }
 
 .heroBtn {
