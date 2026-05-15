@@ -33,31 +33,74 @@ export interface Ad {
 
 interface AdCardProps {
   ad: Ad;
+  onShowPlacements?: (placements: AdPlacement[]) => void;
 }
 
-export default function AdCard({ ad }: AdCardProps) {
+export default function AdCard({ ad, onShowPlacements }: AdCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const placements = ad.placements ?? [];
+  const linkCount = placements.filter((p) => p.postLink).length;
+  const singleLink = placements.find((p) => p.postLink)?.postLink ?? ad.postLink;
+  const hasLink = linkCount > 0 || Boolean(ad.postLink);
+
+  const toggleOpen = () => setIsOpen((prev) => !prev);
+
+  const handleCardKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleOpen();
+    }
+  };
+
+  const handleLinkClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (linkCount > 1) {
+      onShowPlacements?.(placements);
+    } else if (singleLink) {
+      window.open(singleLink, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const handleToggleClick = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    toggleOpen();
+  };
 
   return (
-    <article className={styles.card} aria-expanded={isOpen}>
+    <article
+      className={styles.card}
+      aria-expanded={isOpen}
+      role="button"
+      tabIndex={0}
+      onClick={toggleOpen}
+      onKeyDown={handleCardKeyDown}
+    >
       <header className={styles.header}>
         <div className={styles.titleBlock}>
           <div className={styles.titleRow}>
             <span className={styles.title}>{ad.title}</span>
-            <LinkIcon width={14} height={14} color="#B0B4B8" />
+            {hasLink && (
+              <button
+                type="button"
+                className={styles.linkBtn}
+                onClick={handleLinkClick}
+                aria-label={linkCount > 1 ? 'Открыть список ссылок' : 'Открыть пост'}
+              >
+                <LinkIcon width={14} height={14} color="#B0B4B8" />
+                {linkCount > 1 && <span className={styles.linkBadge}>+{linkCount - 1}</span>}
+              </button>
+            )}
           </div>
           <span className={styles.username}>{ad.username}</span>
         </div>
         <div className={styles.amountBlock}>
-          <div className={styles.amountRow}>
-            <span className={styles.amount}>{ad.amount}</span>
-            <span className={styles.date}>{ad.date}</span>
-          </div>
+          <span className={styles.amount}>{ad.amount}</span>
+          <span className={styles.date}>{ad.date}</span>
         </div>
         <button
           type="button"
           className={styles.toggle}
-          onClick={() => setIsOpen((prev) => !prev)}
+          onClick={handleToggleClick}
           aria-label={isOpen ? 'Свернуть' : 'Развернуть'}
         >
           <ChevronDownIcon

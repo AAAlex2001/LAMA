@@ -2,7 +2,7 @@
 
 import LinkIcon from '@/components/icons/link-icon';
 import AdTypeIcons from './AdTypeIcons';
-import { Ad } from './AdCard';
+import { Ad, AdPlacement } from './AdCard';
 import styles from './AdsTable.module.scss';
 
 interface Column {
@@ -27,9 +27,10 @@ const COLUMNS: Column[] = [
 
 interface AdsTableProps {
   ads: Ad[];
+  onShowPlacements?: (placements: AdPlacement[]) => void;
 }
 
-export default function AdsTable({ ads }: AdsTableProps) {
+export default function AdsTable({ ads, onShowPlacements }: AdsTableProps) {
   return (
     <div className={styles.tableWrap}>
       <div className={styles.headerRow}>
@@ -53,7 +54,7 @@ export default function AdsTable({ ads }: AdsTableProps) {
             <span className={styles.dateText}>{ad.date}</span>
           </div>
           <div className={styles.col_community}>
-            <CommunityCell ad={ad} />
+            <CommunityCell ad={ad} onShowPlacements={onShowPlacements} />
           </div>
           <div className={styles.col_price}>
             <span className={styles.price}>{ad.amount}</span>
@@ -62,13 +63,13 @@ export default function AdsTable({ ads }: AdsTableProps) {
             <span className={styles.buyer}>{ad.buyer || '—'}</span>
           </div>
           <div className={styles.col_post}>
-            <PublicationCell ad={ad} />
+            <PublicationCell ad={ad} onShowPlacements={onShowPlacements} />
           </div>
           <div className={styles.col_type}>
             <AdTypeIcons types={ad.types} />
           </div>
           <div className={styles.col_link}>
-            <LinksCell ad={ad} />
+            <LinksCell ad={ad} onShowPlacements={onShowPlacements} />
           </div>
           <div className={styles.col_comments}>
             <span className={styles.metric}>{ad.metrics.comments}</span>
@@ -88,7 +89,12 @@ export default function AdsTable({ ads }: AdsTableProps) {
   );
 }
 
-function CommunityCell({ ad }: { ad: Ad }) {
+interface CellProps {
+  ad: Ad;
+  onShowPlacements?: (placements: AdPlacement[]) => void;
+}
+
+function CommunityCell({ ad, onShowPlacements }: CellProps) {
   const placements = ad.placements ?? [];
   if (placements.length === 0) {
     return <span className={styles.community}>{ad.title || '—'}</span>;
@@ -100,49 +106,79 @@ function CommunityCell({ ad }: { ad: Ad }) {
       <span className={styles.community} title={placements.map((p) => p.title).join(', ')}>
         {first.title}
       </span>
-      {extraCount > 0 && <span className={styles.communityExtra}>+{extraCount}</span>}
+      {extraCount > 0 && (
+        <button
+          type="button"
+          className={styles.communityExtra}
+          onClick={() => onShowPlacements?.(placements)}
+        >
+          +{extraCount}
+        </button>
+      )}
     </div>
   );
 }
 
-function PublicationCell({ ad }: { ad: Ad }) {
+function PublicationCell({ ad, onShowPlacements }: CellProps) {
   const placements = ad.placements ?? [];
-  if (placements.length === 0) {
-    return <span className={styles.empty}>—</span>;
-  }
+  if (placements.length === 0) return <span className={styles.empty}>—</span>;
+
   const handles = placements
     .map((p) => (p.username ? `@${p.username.replace(/^@/, '')}` : ''))
     .filter(Boolean);
   if (handles.length === 0) return <span className={styles.empty}>—</span>;
+
   const first = handles[0];
   const extraCount = handles.length - 1;
   const link = placements[0].postLink;
-  const text = extraCount > 0 ? `${first} +${extraCount}` : first;
+  const title = handles.join(', ');
+
+  if (extraCount > 0) {
+    return (
+      <button
+        type="button"
+        className={styles.postLink}
+        title={title}
+        onClick={() => onShowPlacements?.(placements)}
+      >
+        {first} +{extraCount}
+      </button>
+    );
+  }
   return link ? (
-    <a
-      href={link}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={styles.postLink}
-      title={handles.join(', ')}
-    >
-      {text}
+    <a href={link} target="_blank" rel="noopener noreferrer" className={styles.postLink} title={title}>
+      {first}
     </a>
   ) : (
-    <span className={styles.postLink} title={handles.join(', ')}>
-      {text}
-    </span>
+    <span className={styles.postLink} title={title}>{first}</span>
   );
 }
 
-function LinksCell({ ad }: { ad: Ad }) {
-  const links = (ad.placements ?? [])
-    .map((p) => p.postLink)
-    .filter((l): l is string => Boolean(l));
-  if (links.length === 0) {
-    return ad.postLink ? (
+function LinksCell({ ad, onShowPlacements }: CellProps) {
+  const placements = ad.placements ?? [];
+  const links = placements.map((p) => p.postLink).filter((l): l is string => Boolean(l));
+  if (links.length === 0 && !ad.postLink) return <span className={styles.empty}>—</span>;
+
+  const extra = Math.max(links.length - 1, 0);
+  if (extra > 0) {
+    return (
+      <button
+        type="button"
+        className={styles.linksCell}
+        onClick={() => onShowPlacements?.(placements)}
+        title={links.join('\n')}
+        aria-label={`Открыть список ссылок (${links.length})`}
+      >
+        <LinkIcon width={14} height={14} color="#B0B4B8" />
+        <span className={styles.linksExtra}>+{extra}</span>
+      </button>
+    );
+  }
+  const single = links[0] || ad.postLink || '';
+  return (
+    <div className={styles.linksCell}>
       <a
-        href={ad.postLink}
+        href={single}
         target="_blank"
         rel="noopener noreferrer"
         aria-label="Открыть пост"
@@ -150,24 +186,6 @@ function LinksCell({ ad }: { ad: Ad }) {
       >
         <LinkIcon width={14} height={14} color="#B0B4B8" />
       </a>
-    ) : (
-      <span className={styles.empty}>—</span>
-    );
-  }
-  return (
-    <div className={styles.linksCell}>
-      {links.map((href, idx) => (
-        <a
-          key={href + idx}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Открыть пост"
-          className={styles.linkIcon}
-        >
-          <LinkIcon width={14} height={14} color="#B0B4B8" />
-        </a>
-      ))}
     </div>
   );
 }

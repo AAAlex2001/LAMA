@@ -60,6 +60,7 @@ export default function CommunitiesPanel({
         />
       ) : (
         <>
+          {/* Desktop таблица (>=1440px). На мобилке скрыта через CSS. */}
           <div className={styles.headerRow}>
             <span className={styles.headTitleCommunity}>Сообщество</span>
             <span className={styles.headCell}>Доходы</span>
@@ -75,6 +76,27 @@ export default function CommunitiesPanel({
               return (
                 <CommunityRow
                   key={`${item.kind}-${item.id}`}
+                  item={item}
+                  currency={currency}
+                  active={isActive}
+                  onClick={
+                    isChannel
+                      ? () => onChannelSelect(isActive ? null : item.id)
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </div>
+
+          {/* Mobile карточки (<1440px). На десктопе скрыты через CSS. */}
+          <div className={styles.cards}>
+            {items.map((item) => {
+              const isChannel = item.kind !== 'bot';
+              const isActive = isChannel && selectedChannelId === item.id;
+              return (
+                <CommunityCard
+                  key={`card-${item.kind}-${item.id}`}
                   item={item}
                   currency={currency}
                   active={isActive}
@@ -121,13 +143,7 @@ function CommunityRow({ item, currency, active, onClick }: CommunityRowProps) {
       }
     >
       <div className={styles.community}>
-        <div className={styles.avatar}>
-          {item.photo_url ? (
-            <img src={item.photo_url} alt="" />
-          ) : (
-            <span className={styles.avatarFallback}>{getInitials(item.title)}</span>
-          )}
-        </div>
+        <CommunityAvatar item={item} />
         <div className={styles.communityText}>
           <span className={styles.communityTitle}>{item.title}</span>
           {handle && <span className={styles.communityHandle}>{handle}</span>}
@@ -137,6 +153,64 @@ function CommunityRow({ item, currency, active, onClick }: CommunityRowProps) {
       <span className={styles.cell}>{formatMoney(item.expense, currency)}</span>
       <span className={styles.cell}>{formatInt(item.published_ads_count)}</span>
       <span className={styles.cell}>{formatInt(item.scheduled_ads_count)}</span>
+    </div>
+  );
+}
+
+function CommunityCard({ item, currency, active, onClick }: CommunityRowProps) {
+  const handle = item.username ? `@${item.username.replace(/^@/, '')}` : '';
+  const clickable = Boolean(onClick);
+  return (
+    <div
+      className={clsx(styles.card, active && styles.cardActive, clickable && styles.cardClickable)}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+    >
+      <div className={styles.cardHead}>
+        <CommunityAvatar item={item} />
+        <div className={styles.communityText}>
+          <span className={styles.communityTitle}>{item.title}</span>
+          {handle && <span className={styles.communityHandle}>{handle}</span>}
+        </div>
+      </div>
+      <div className={styles.cardStats}>
+        <Stat label="Доходы" value={formatMoney(item.income, currency)} />
+        <Stat label="Расходы" value={formatMoney(item.expense, currency)} />
+        <Stat label="Опубл." value={formatInt(item.published_ads_count)} />
+        <Stat label="Заплан." value={formatInt(item.scheduled_ads_count)} />
+      </div>
+    </div>
+  );
+}
+
+function CommunityAvatar({ item }: { item: CommunityStatsItem }) {
+  return (
+    <div className={styles.avatar}>
+      {item.photo_url ? (
+        <img src={item.photo_url} alt="" />
+      ) : (
+        <span className={styles.avatarFallback}>{getInitials(item.title)}</span>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.stat}>
+      <span className={styles.statLabel}>{label}</span>
+      <span className={styles.statValue}>{value}</span>
     </div>
   );
 }

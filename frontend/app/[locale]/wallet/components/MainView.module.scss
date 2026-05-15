@@ -3,17 +3,26 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
-}
-
-.contentRow {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  width: 100%;
 
   @media (min-width: 1440px) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+.desktopLayout {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
     flex-direction: row;
     align-items: stretch;
+    gap: 16px;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 
@@ -22,8 +31,18 @@
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mobileLayout {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 
   @media (min-width: 1440px) {
-    flex: 1 1 0;
+    display: none;
   }
 }

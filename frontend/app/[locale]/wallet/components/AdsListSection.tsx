@@ -1,9 +1,13 @@
 'use client';
 
+import { useRef, useState } from 'react';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
-import AdCard, { Ad } from './AdCard';
+import FilterSortIcon from '@/components/icons/filter-sort-icon';
+import AdCard, { Ad, AdPlacement } from './AdCard';
 import AdsTable from './AdsTable';
 import EmptyContent from './EmptyContent';
+import MobileSortPopup from './MobileSortPopup';
+import PlacementsModal from './PlacementsModal';
 import WalletFilterBar, { WalletFilterDef } from './WalletFilterBar';
 import type { AdRevenueSortKey } from '../store/types';
 import styles from './AdsListSection.module.scss';
@@ -75,6 +79,13 @@ export default function AdsListSection({
   const filterDefs = isExpenses ? EXPENSES_FILTERS : INCOME_FILTERS;
   const emptyTexts = isExpenses ? EXPENSES_EMPTY : INCOME_EMPTY;
 
+  // На мобилке сортировка живёт во всплывающем popup'е (как в инбоксе),
+  // открывается по нажатию на иконку фильтра справа от табов. На десктопе
+  // popup не рисуется — там WalletFilterBar чипами всегда виден.
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const filtersBtnRef = useRef<HTMLButtonElement>(null);
+  const [placementsModal, setPlacementsModal] = useState<AdPlacement[] | null>(null);
+
   const filterValues: Record<string, string | null> = { [sortBy]: sortDir };
 
   const handleFilterChange = (id: string, value: string | null) => {
@@ -86,16 +97,38 @@ export default function AdsListSection({
   return (
     <section className={styles.card}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Рекламных публикаций: {ads.length}</h2>
+        <h2 className={styles.title}>Рекламные публикации: {ads.length}</h2>
         <FilterTabs options={TABS} selectedFilter={activeTab} onFilterChange={onTabChange} />
+        <div className={styles.filtersBtnWrap}>
+          <button
+            ref={filtersBtnRef}
+            type="button"
+            className={styles.filtersBtn}
+            onClick={() => setMobileFiltersOpen((v) => !v)}
+            aria-label="Сортировка"
+            aria-expanded={mobileFiltersOpen}
+          >
+            <FilterSortIcon width={24} height={24} />
+          </button>
+          <MobileSortPopup
+            isOpen={mobileFiltersOpen}
+            onClose={() => setMobileFiltersOpen(false)}
+            triggerRef={filtersBtnRef}
+            filters={filterDefs}
+            values={filterValues}
+            onChange={handleFilterChange}
+          />
+        </div>
       </div>
 
-      <WalletFilterBar
-        periodLabel={periodLabel || 'За весь период'}
-        filters={filterDefs}
-        values={filterValues}
-        onChange={handleFilterChange}
-      />
+      <div className={styles.filterBarDesktop}>
+        <WalletFilterBar
+          periodLabel={periodLabel || 'За весь период'}
+          filters={filterDefs}
+          values={filterValues}
+          onChange={handleFilterChange}
+        />
+      </div>
 
       {ads.length === 0 ? (
         <EmptyContent
@@ -108,11 +141,15 @@ export default function AdsListSection({
         <>
           <div className={styles.list}>
             {ads.map((ad) => (
-              <AdCard key={ad.id} ad={ad} />
+              <AdCard key={ad.id} ad={ad} onShowPlacements={setPlacementsModal} />
             ))}
           </div>
-          <AdsTable ads={ads} />
+          <AdsTable ads={ads} onShowPlacements={setPlacementsModal} />
         </>
+      )}
+
+      {placementsModal && (
+        <PlacementsModal placements={placementsModal} onClose={() => setPlacementsModal(null)} />
       )}
     </section>
   );

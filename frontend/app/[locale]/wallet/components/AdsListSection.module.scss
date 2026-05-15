@@ -6,6 +6,8 @@
   background: #FFFFFF;
   border-radius: 8px;
   padding: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
 
   @media (min-width: 1440px) {
     border-radius: 14px;
@@ -34,11 +36,7 @@
   font-size: 12px;
   line-height: 15px;
   color: #1A1A1A;
-  text-align: center;
-
-  @media (min-width: 1440px) {
-    text-align: left;
-  }
+  text-align: left;
 }
 
 .list {
@@ -49,5 +47,37 @@
 
   @media (min-width: 1440px) {
     display: none;
+  }
+}
+
+.filtersBtnWrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+
+  @media (min-width: 1440px) {
+    display: none;
+  }
+}
+
+.filtersBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.filterBarDesktop {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: block;
+    width: 100%;
   }
 }

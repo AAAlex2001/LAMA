@@ -104,7 +104,6 @@ export default function WalletPageView() {
         <EfficiencyView
           ads={items}
           onAddIncome={() => setModalType('income')}
-          onExportClick={() => setExportOpen(true)}
           periodLabel={periodLabel}
           sortBy={sortBy}
           sortDir={sortDir}

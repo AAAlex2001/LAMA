@@ -1,0 +1,179 @@
+.popup {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 90vw;
+  background: #FFFFFF;
+  border: 1px solid rgba(59, 130, 246, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 28px;
+  padding: 4px 12px;
+  gap: 8px;
+  border: none;
+  border-radius: 25px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.05);
+  }
+}
+
+.itemActive {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.itemText {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.chevron {
+  color: #1E1E1E;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.chevronOpen {
+  color: #1E1E1E;
+  transform: rotate(180deg);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.clearBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  cursor: pointer;
+
+  svg path {
+    transition: fill 0.2s ease, stroke 0.2s ease;
+  }
+
+  &:hover svg path:first-child {
+    fill: #3B82F6;
+    stroke: #3B82F6;
+  }
+
+  &:hover svg path:last-child {
+    stroke: #FFFFFF;
+  }
+}
+
+.submenu {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 4px 8px 8px;
+  gap: 0;
+}
+
+.option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+
+  &:hover .optionText {
+    color: #3B82F6;
+  }
+}
+
+.optionText {
+  flex: 1;
+  min-width: 0;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #000000;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.radio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 100px;
+  background: #FFFFFF;
+  box-shadow:
+    0 2px 5px rgba(103, 110, 118, 0.08),
+    0 0 0 1px rgba(103, 110, 118, 0.16),
+    0 1px 1px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+.radioDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.radioActive {
+  background: #3B82F6;
+  box-shadow: none;
+
+  .radioDot {
+    background: #FFFFFF;
+  }
+}

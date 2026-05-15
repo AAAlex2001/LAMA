@@ -1,7 +1,6 @@
 'use client';
 
 import FilterTabs from '@/components/filter-tabs/filter-tabs';
-import FilterSortIcon from '@/components/icons/filter-sort-icon';
 import { DateRangePicker, DateRange } from '@/components/date-range-picker';
 import { Button } from '@/components/new-button';
 import styles from './WalletHeader.module.scss';
@@ -18,7 +17,6 @@ interface WalletHeaderProps {
   onTabChange: (tab: WalletTopTab) => void;
   range: DateRange | null;
   onRangeChange: (range: DateRange | null) => void;
-  onFiltersClick?: () => void;
   onExportClick?: () => void;
 }
 
@@ -27,11 +25,22 @@ export default function WalletHeader({
   onTabChange,
   range,
   onRangeChange,
-  onFiltersClick,
   onExportClick,
 }: WalletHeaderProps) {
   return (
     <header className={styles.header}>
+      <div className={styles.exportBtnMobile}>
+        <Button
+          variant="fill"
+          intent="gradient"
+          size="lg"
+          style={{ width: '100%' }}
+          onClick={onExportClick}
+        >
+          Экспорт данных
+        </Button>
+      </div>
+
       <div className={styles.topRow}>
         <FilterTabs
           options={TOP_TABS}
@@ -39,25 +48,16 @@ export default function WalletHeader({
           onFilterChange={(id) => onTabChange(id as WalletTopTab)}
           className={styles.topTabs}
         />
-        {activeTab === 'performance' && (
+        <div className={styles.exportBtnDesktopWrap}>
           <Button
             variant="fill"
             intent="gradient"
             size="lg"
-            className={styles.exportBtn}
             onClick={onExportClick}
           >
             Экспорт данных
           </Button>
-        )}
-        <button
-          type="button"
-          className={styles.filtersBtn}
-          onClick={onFiltersClick}
-          aria-label="Фильтры"
-        >
-          <FilterSortIcon width={24} height={24} />
-        </button>
+        </div>
       </div>
       <div className={styles.periodRow}>
         <DateRangePicker value={range} onChange={onRangeChange} />

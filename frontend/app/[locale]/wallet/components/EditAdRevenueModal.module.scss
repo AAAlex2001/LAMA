@@ -1,48 +1,22 @@
 .content {
   display: flex;
   flex-direction: column;
-  width: min(742px, calc(100vw - 32px)) !important;
-  max-width: min(742px, calc(100vw - 32px)) !important;
+  width: 560px !important;
+  max-width: min(560px, calc(100vw - 32px)) !important;
   background: transparent !important;
   border-radius: 0;
   padding: 0 !important;
   box-shadow: none !important;
 }
 
-.wideContent {
+.card {
   display: flex;
   flex-direction: column;
-  width: min(1098px, calc(100vw - 32px)) !important;
-  max-width: min(1098px, calc(100vw - 32px)) !important;
-  background: transparent !important;
-  border-radius: 0;
-  padding: 0 !important;
-  box-shadow: none !important;
-}
-
-.layout {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
   gap: 16px;
   width: 100%;
-
-  @media (max-width: 1080px) {
-    flex-direction: column;
-  }
-}
-
-.formColumn {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  flex: 1 1 auto;
-  min-width: 0;
-  width: 100%;
-  max-width: 100%;
   background: #FFFFFF;
   border-radius: 12px;
-  padding: 16px;
+  padding: 15px 16px;
   box-sizing: border-box;
 }
 
@@ -58,7 +32,7 @@
 .formGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px 10px;
+  gap: 14px 10px;
   width: 100%;
 
   @media (max-width: 720px) {
@@ -92,21 +66,10 @@
   align-items: stretch;
 }
 
-.attachBtn {
-  width: 100%;
-  height: 40px;
-  justify-content: center;
-}
-
 .actions {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
   width: 100%;
-}
-
-.actionBtn {
-  flex: 1 1 0;
-  justify-content: center;
 }

@@ -5,9 +5,13 @@
   gap: 16px;
   width: 100%;
   padding: 16px;
+  box-sizing: border-box;
   font-family: 'Inter', sans-serif;
 
   @media (min-width: 1440px) {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
     padding: 24px;
   }
 }

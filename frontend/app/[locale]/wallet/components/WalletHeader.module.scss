@@ -34,22 +34,17 @@
   min-width: 0;
 }
 
-.filtersBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  flex-shrink: 0;
+.exportBtnMobile {
+  display: flex;
+  width: 100%;
+  order: -1;
 
   @media (min-width: 1440px) {
     display: none;
   }
 }
 
-.exportBtn {
+.exportBtnDesktopWrap {
   display: none;
   flex-shrink: 0;
 

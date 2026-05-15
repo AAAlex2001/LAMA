@@ -47,11 +47,15 @@ export const walletKeys = {
 // AdRevenue: list, stats, mutations
 // ============================================================
 
-export function useAdRevenuesQuery(filters: AdRevenueListFilters = {}) {
+export function useAdRevenuesQuery(
+  filters: AdRevenueListFilters = {},
+  options: { enabled?: boolean } = {},
+) {
   return useQuery<AdRevenueListResponse>({
     queryKey: walletKeys.revenues(filters),
     queryFn: () => fetchAdRevenues(filters),
     staleTime: 30 * 1000,
+    enabled: options.enabled ?? true,
   });
 }
 

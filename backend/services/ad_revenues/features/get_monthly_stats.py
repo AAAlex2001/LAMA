@@ -4,10 +4,11 @@ from datetime import date
 from decimal import Decimal
 from typing import Dict, List, Optional
 
-from sqlalchemy import case, func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.models.ad_revenues import AdRevenue
+from backend.models.channels import ChannelGroup
 from backend.models.publications import Publication, publication_channels
 from backend.schemas.ad_revenues.ad_revenue import MonthlyAdStatItem
 from backend.schemas.ad_revenues.enums import AdRevenueType
@@ -60,7 +61,19 @@ class GetMonthlyAdStats:
         if currency:
             conditions.append(AdRevenue.currency == currency)
         if channel_id is not None:
-            conditions.append(AdRevenue.channel_id == channel_id)
+            # Записи могут быть привязаны либо напрямую через channel_id, либо через
+            # текстовый channel_username (расходы из модалки без выбора канала).
+            # Учитываем оба случая, иначе расходы канала не попадают на график.
+            username = await self.fetch_channel_username(owner_id, channel_id)
+            channel_match = AdRevenue.channel_id == channel_id
+            if username:
+                conditions.append(or_(
+                    channel_match,
+                    AdRevenue.channel_username.ilike(username),
+                    AdRevenue.channel_username.ilike(f"@{username}"),
+                ))
+            else:
+                conditions.append(channel_match)
 
         income_amount = case((AdRevenue.type == AdRevenueType.INCOME.value, AdRevenue.amount), else_=0)
         expense_amount = case((AdRevenue.type == AdRevenueType.EXPENSE.value, AdRevenue.amount), else_=0)
@@ -80,6 +93,17 @@ class GetMonthlyAdStats:
             b = buckets[int(month)]
             b.income += Decimal(income)
             b.expense += Decimal(expense)
+
+    async def fetch_channel_username(self, owner_id: int, channel_id: int) -> Optional[str]:
+        stmt = (
+            select(ChannelGroup.username)
+            .where(ChannelGroup.owner_id == owner_id, ChannelGroup.id == channel_id)
+            .limit(1)
+        )
+        username = (await self.db.execute(stmt)).scalar_one_or_none()
+        if not username:
+            return None
+        return username.lstrip("@").strip() or None
 
     async def aggregate_publication_income(
         self,

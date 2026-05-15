@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Button } from '@/components/new-button';
 import AdsListSection from './AdsListSection';
 import { Ad } from './AdCard';
 import type { AdRevenue, AdRevenueSortKey } from '../store/types';
@@ -10,7 +9,6 @@ import styles from './EfficiencyView.module.scss';
 interface EfficiencyViewProps {
   ads: AdRevenue[];
   onAddIncome?: () => void;
-  onExportClick?: () => void;
   periodLabel?: string;
   sortBy: AdRevenueSortKey;
   sortDir: 'asc' | 'desc';
@@ -22,7 +20,6 @@ interface EfficiencyViewProps {
 export default function EfficiencyView({
   ads,
   onAddIncome,
-  onExportClick,
   periodLabel,
   sortBy,
   sortDir,
@@ -39,17 +36,6 @@ export default function EfficiencyView({
 
   return (
     <div className={styles.view}>
-      <div className={styles.exportSlot}>
-        <Button
-          variant="fill"
-          intent="gradient"
-          size="lg"
-          className={styles.exportBtn}
-          onClick={onExportClick}
-        >
-          Экспорт данных
-        </Button>
-      </div>
       <AdsListSection
         activeTab={adsTab}
         onTabChange={setAdsTab}

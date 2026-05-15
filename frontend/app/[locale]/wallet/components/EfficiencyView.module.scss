@@ -3,6 +3,12 @@
   flex-direction: column;
   gap: 16px;
   width: 100%;
+
+  @media (min-width: 1440px) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
 }
 
 .exportSlot {
