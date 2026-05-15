@@ -3,8 +3,7 @@
 import { FC, useEffect, useRef, useState } from 'react';
 import Toggle from '@/components/toggle/toggle';
 import Checkbox from '@/components/checkbox/checkbox';
-import PlusIcon from '@/components/icons/plus-icon';
-import TrashIcon from '@/components/icons/trash-icon';
+import { PlusIcon, TrashIcon } from '@/components/icons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import {
   useBannedWordsQuery,

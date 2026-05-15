@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Calendar from 'react-calendar';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon } from '@/components/icons';
 import styles from './date-picker.module.scss';
 import 'react-calendar/dist/Calendar.css';
 

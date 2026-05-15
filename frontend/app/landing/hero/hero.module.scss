@@ -80,6 +80,26 @@
   margin-bottom: 80px;
 }
 
+.buttonInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+
+  svg path {
+    stroke: currentColor;
+    transition: stroke 0.2s ease;
+  }
+}
+
+.heroBtn {
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: #FFFFFF;
+    color: #3B82F6;
+  }
+}
+
 .images {
   position: relative;
   width: 100%;

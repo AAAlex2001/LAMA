@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon } from '@/components/icons';
 import AddIconButton from './AddIconButton';
 import styles from './StatCard.module.scss';
 

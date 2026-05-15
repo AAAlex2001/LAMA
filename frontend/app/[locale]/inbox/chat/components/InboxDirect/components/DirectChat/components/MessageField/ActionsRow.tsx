@@ -2,8 +2,7 @@
 
 import { FC } from 'react';
 import { Button } from '@/components/new-button';
-import InlineButtonIcon from '@/components/icons/inline-button-icon';
-import TemplatesIcon from '@/components/icons/templates-icon';
+import { InlineButtonIcon, TemplatesIcon } from '@/components/icons';
 import styles from './styles.module.scss';
 
 interface ActionsRowProps {

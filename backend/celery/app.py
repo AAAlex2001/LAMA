@@ -58,6 +58,7 @@ celery_app.conf.update(
         "backend.celery.tasks.delayed_delete_message": {"queue": "autodelete"},
         "backend.celery.tasks.apply_moderation_action": {"queue": "moderation"},
         "backend.celery.tasks.sync_message_metrics": {"queue": "low"},
+        "backend.celery.tasks.take_channel_subscribers_snapshot": {"queue": "low"},
     },
     beat_schedule={
         "process-scheduled-publications": {

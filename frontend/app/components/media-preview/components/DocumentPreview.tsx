@@ -1,4 +1,4 @@
-import DocumentIcon from '@/components/icons/document-icon';
+import { DocumentIcon } from '@/components/icons';
 import styles from '../media-preview.module.scss';
 
 export default function DocumentPreview() {

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
-from typing import List, Literal, Optional, Set, Tuple
+from typing import Iterable, List, Literal, Optional, Set, Tuple
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +16,11 @@ from backend.models.publications import (
 )
 from backend.schemas.ad_revenues.ad_revenue import AdRevenuePlacement, AdRevenueResponse
 from backend.schemas.ad_revenues.enums import AdRevenueType
+from backend.services.ad_revenues.features.compute_subscribers_metrics import (
+    ComputeSubscribersMetrics,
+    SubscribersAnchor,
+    SubscribersMetrics,
+)
 
 
 SortKey = Literal["date", "price", "type", "comments", "views", "clicks", "reactions"]
@@ -74,11 +79,24 @@ class ListAdRevenues:
         )
 
         merged = revenue_responses + publication_responses
+        await self.enrich_subscribers_metrics(merged)
         merged.sort(key=sort_key(sort_by), reverse=sort_dir == "desc")
 
         total = len(merged)
         paged = merged[offset : offset + limit]
         return paged, total
+
+    async def enrich_subscribers_metrics(self, items: List[AdRevenueResponse]) -> None:
+        anchors_per_item = build_anchors_index(items)
+        if not anchors_per_item:
+            return
+        all_anchors = {anchor for anchors in anchors_per_item.values() for anchor in anchors}
+        metrics_by_anchor = await ComputeSubscribersMetrics(self.db).execute(all_anchors)
+        for item in items:
+            anchors = anchors_per_item.get(item.id)
+            if not anchors:
+                continue
+            apply_metrics_to_item(item, anchors, metrics_by_anchor)
 
     async def fetch_ad_revenue_responses(
         self,
@@ -195,6 +213,78 @@ SORT_GETTERS = {
 
 def sort_key(sort_by: Optional[SortKey]):
     return SORT_GETTERS.get(sort_by, lambda r: (r.revenue_date, r.id))
+
+
+def build_anchors_index(
+    items: List[AdRevenueResponse],
+) -> dict[int, List[SubscribersAnchor]]:
+    """item.id → [SubscribersAnchor(channel_id, anchor_at)] для всех каналов размещения."""
+
+    index: dict[int, List[SubscribersAnchor]] = {}
+    for item in items:
+        anchors = anchors_for_item(item)
+        if anchors:
+            index[item.id] = anchors
+    return index
+
+
+def anchors_for_item(item: AdRevenueResponse) -> List[SubscribersAnchor]:
+    """Каналы (placements + ad_revenue.channel_id) и момент = created_at записи.
+    Baseline-snapshot снимается синхронно в момент CreateAdRevenue, поэтому
+    anchor_at = created_at гарантированно совпадает с первым snapshot'ом канала."""
+
+    anchor_at = item.created_at
+    channel_ids: List[int] = []
+    seen: Set[int] = set()
+    for placement in item.placements:
+        if placement.channel_id and placement.channel_id not in seen:
+            seen.add(placement.channel_id)
+            channel_ids.append(placement.channel_id)
+    if not channel_ids and item.channel_id:
+        channel_ids.append(item.channel_id)
+    return [SubscribersAnchor(channel_id=cid, anchor_at=anchor_at) for cid in channel_ids]
+
+
+def apply_metrics_to_item(
+    item: AdRevenueResponse,
+    anchors: List[SubscribersAnchor],
+    metrics_by_anchor: dict[SubscribersAnchor, SubscribersMetrics],
+) -> None:
+    aggregated = aggregate_metrics([metrics_by_anchor.get(a) for a in anchors])
+    item.subscribers_in_24h = aggregated.in_24h
+    item.subscribers_in_48h = aggregated.in_48h
+    item.subscribers_out_24h = aggregated.out_24h
+    item.subscribers_out_48h = aggregated.out_48h
+    item.retention_rate = aggregated.retention_rate
+
+
+def aggregate_metrics(parts: List[Optional[SubscribersMetrics]]) -> SubscribersMetrics:
+    """Суммирует приток/отток по нескольким каналам, retention усредняется."""
+
+    valid = [p for p in parts if p is not None]
+    if not valid:
+        return SubscribersMetrics()
+    in_24h = sum_optional(m.in_24h for m in valid)
+    in_48h = sum_optional(m.in_48h for m in valid)
+    out_24h = sum_optional(m.out_24h for m in valid)
+    out_48h = sum_optional(m.out_48h for m in valid)
+    retention = mean_optional([m.retention_rate for m in valid if m.retention_rate is not None])
+    return SubscribersMetrics(
+        in_24h=in_24h,
+        in_48h=in_48h,
+        out_24h=out_24h,
+        out_48h=out_48h,
+        retention_rate=retention,
+    )
+
+
+def sum_optional(values: Iterable[Optional[int]]) -> Optional[int]:
+    nums = [v for v in values if v is not None]
+    return sum(nums) if nums else None
+
+
+def mean_optional(values: List[float]) -> Optional[float]:
+    return sum(values) / len(values) if values else None
 
 
 def collect_metrics(publication: Optional[Publication]) -> RevenueMetrics:

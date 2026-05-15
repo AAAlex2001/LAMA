@@ -30,6 +30,11 @@ export interface AdRevenue {
   reactions_count?: number;
   comments_count?: number;
   clicks_count?: number;
+  subscribers_in_24h?: number | null;
+  subscribers_in_48h?: number | null;
+  subscribers_out_24h?: number | null;
+  subscribers_out_48h?: number | null;
+  retention_rate?: number | null;
   placements?: AdRevenuePlacement[];
   publication_status?: string | null;
   created_at: string;
@@ -43,7 +48,12 @@ export type AdRevenueSortKey =
   | 'comments'
   | 'views'
   | 'clicks'
-  | 'reactions';
+  | 'reactions'
+  | 'subscribers_in'
+  | 'subscribers_out'
+  | 'retention'
+  | 'placement'
+  | 'subject';
 
 export interface AdRevenueListResponse {
   items: AdRevenue[];

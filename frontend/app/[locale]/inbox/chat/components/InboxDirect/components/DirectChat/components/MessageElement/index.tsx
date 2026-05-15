@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import styles from './styles.module.scss';
-import EditIcon from '@/components/icons/edit-icon';
-import TrashIcon from '@/components/icons/trash-icon';
-import { ReplyToIcon } from '@/components/icons';
+import { EditIcon, ReplyToIcon, TrashIcon } from '@/components/icons';
 import Avatar from '@/components/avatar';
 import DeleteConfirmationModal from '@/components/modal';
 import { createObjectUrls, revokeObjectUrls, createMediaRuns } from '@/components/post-preview-modal/store';

@@ -1,0 +1,221 @@
+.tableWrap {
+  display: none;
+
+  @media (min-width: 1440px) {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 10px 5px;
+    box-sizing: border-box;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+}
+
+.headerRow,
+.dataRow {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.headerRow {
+  height: 34px;
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  z-index: 2;
+
+  > div {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 5px;
+    background: #FFFFFF;
+  }
+}
+
+.headerLabel {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 17px;
+  color: #383F45;
+}
+
+.dataRow {
+  min-height: 36px;
+
+  > div {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0 5px;
+    border-top: 1px solid #F0F4FA;
+  }
+
+  > div + div {
+    border-left: 1px solid #F0F4FA;
+  }
+}
+
+.col_date          { flex: 0 0 89px; min-width: 0; }
+.col_subject       { flex: 0 0 138px; min-width: 0; }
+.col_price         { flex: 0 0 79px; min-width: 0; }
+.col_seller        { flex: 0 0 117px; min-width: 0; }
+.col_placement     { flex: 0 0 147px; min-width: 0; }
+.col_type {
+  flex: 0 0 105px;
+  min-width: 0;
+  flex-direction: row !important;
+  align-items: center !important;
+}
+.col_link {
+  flex: 0 0 65px;
+  min-width: 0;
+  align-items: center !important;
+}
+.col_subscribersIn  { flex: 1 1 254px; min-width: 254px; }
+.col_subscribersOut { flex: 1 1 189px; min-width: 189px; }
+.col_retention      { flex: 1 1 140px; min-width: 130px; }
+
+.dateText {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+  width: 100%;
+  text-align: left;
+}
+
+.subject {
+  display: block;
+  max-width: 100%;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.price {
+  display: block;
+  max-width: 100%;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller {
+  display: block;
+  max-width: 100%;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placementLink {
+  display: block;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+  text-decoration: underline;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  text-align: left;
+  max-width: 100%;
+}
+
+.empty {
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 17px;
+  color: #CED2D6;
+}
+
+.linksCell {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.linksExtra {
+  font-weight: 500;
+  font-size: 11px;
+  line-height: 14px;
+  color: #3B82F6;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #F0F4FA;
+}
+
+.linkIcon {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.metricBadge {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  height: 24px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.metricLabel {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+}
+
+.metricValue {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #1A1A1A;
+  min-width: 28px;
+}
+
+.metricStrong {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 17px;
+  color: #1A1A1A;
+}

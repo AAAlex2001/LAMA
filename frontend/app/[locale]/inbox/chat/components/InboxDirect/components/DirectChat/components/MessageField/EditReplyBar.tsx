@@ -1,8 +1,7 @@
 'use client';
 
 import { FC } from 'react';
-import { CloseIcon, ReplyToIcon } from '@/components/icons';
-import EditIcon from '@/components/icons/edit-icon';
+import { CloseIcon, EditIcon, ReplyToIcon } from '@/components/icons';
 import styles from './styles.module.scss';
 
 interface EditReplyBarProps {

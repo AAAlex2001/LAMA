@@ -1,7 +1,7 @@
 .panel {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 10px;
   width: 100%;
   background: #FFFFFF;
@@ -16,6 +16,17 @@
   }
 }
 
+.emptyWrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
 .tabsRow {
   display: flex;
   flex-direction: row;
@@ -24,6 +35,7 @@
   padding: 0 7px;
   width: 100%;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .loaderRow {

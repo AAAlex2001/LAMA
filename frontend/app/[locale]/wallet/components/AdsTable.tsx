@@ -1,6 +1,6 @@
 'use client';
 
-import LinkIcon from '@/components/icons/link-icon';
+import { LinkIcon } from '@/components/icons';
 import AdTypeIcons from './AdTypeIcons';
 import { Ad, AdPlacement } from './AdCard';
 import styles from './AdsTable.module.scss';

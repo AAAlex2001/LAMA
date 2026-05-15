@@ -1,8 +1,7 @@
 'use client';
 
 import classNames from 'classnames';
-import TagCloseIcon from '@/components/icons/tag-close-icon';
-import TrashIcon from '@/components/icons/trash-icon';
+import { TagCloseIcon, TrashIcon } from '@/components/icons';
 import { Button } from '@/components/new-button';
 import type { TagColor } from '@/types';
 import TagColorPicker from './TagColorPicker';

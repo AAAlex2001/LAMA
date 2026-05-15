@@ -2,7 +2,7 @@
 
 import { useState, useMemo, type ReactNode, type CSSProperties } from 'react';
 import classNames from 'classnames';
-import UserIcon from '@/components/icons/user-icon';
+import { UserIcon } from '@/components/icons';
 import styles from './avatar.module.scss';
 
 export interface AvatarProps {

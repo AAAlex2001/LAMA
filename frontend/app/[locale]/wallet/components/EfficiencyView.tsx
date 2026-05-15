@@ -3,12 +3,13 @@
 import { useMemo, useState } from 'react';
 import AdsListSection from './AdsListSection';
 import { Ad } from './AdCard';
-import type { AdRevenue, AdRevenueSortKey } from '../store/types';
+import type { AdRevenue, AdRevenueSortKey } from '@/store/wallet';
 import styles from './EfficiencyView.module.scss';
 
 interface EfficiencyViewProps {
   ads: AdRevenue[];
   onAddIncome?: () => void;
+  onAddExpense?: () => void;
   periodLabel?: string;
   sortBy: AdRevenueSortKey;
   sortDir: 'asc' | 'desc';
@@ -20,6 +21,7 @@ interface EfficiencyViewProps {
 export default function EfficiencyView({
   ads,
   onAddIncome,
+  onAddExpense,
   periodLabel,
   sortBy,
   sortDir,
@@ -40,7 +42,8 @@ export default function EfficiencyView({
         activeTab={adsTab}
         onTabChange={setAdsTab}
         ads={filtered}
-        onAddClick={onAddIncome}
+        onAddIncome={onAddIncome}
+        onAddExpense={onAddExpense}
         periodLabel={periodLabel}
         sortBy={sortBy}
         sortDir={sortDir}
@@ -73,15 +76,19 @@ function mapToAd(r: AdRevenue): Ad {
   if (r.publication_status === 'scheduled' || r.publication_status === 'draft') {
     types.push('draft');
   }
+  const amountValue = Number(r.amount) || 0;
+  const subIn24 = r.subscribers_in_24h ?? null;
+  const costPerSubscriber = subIn24 && subIn24 > 0 ? amountValue / subIn24 : null;
   return {
     id: String(r.id),
     title: firstTitle + (placements.length > 1 ? ` +${placements.length - 1}` : ''),
     username: firstUsername ? `@${firstUsername}` : '',
     amount: `${formatAmount(r.amount)} ${currencySymbol(r.currency)}`,
-    amountValue: Number(r.amount) || 0,
+    amountValue,
     date: formatDate(r.revenue_date),
     dateValue: new Date(r.revenue_date).getTime(),
     buyer: r.buyer || '',
+    subject: r.note || '',
     metrics: {
       comments: String(comments),
       views: String(views),
@@ -89,6 +96,14 @@ function mapToAd(r: AdRevenue): Ad {
       reactions: String(reactions),
     },
     metricsValues: { comments, views, clicks, reactions },
+    expenseMetrics: {
+      subscribersIn24h: subIn24,
+      subscribersIn48h: r.subscribers_in_48h ?? null,
+      subscribersOut24h: r.subscribers_out_24h ?? null,
+      subscribersOut48h: r.subscribers_out_48h ?? null,
+      retentionRate: r.retention_rate ?? null,
+      costPerSubscriber,
+    },
     types,
     postLink: r.post_link ?? placements[0]?.postLink ?? undefined,
     placements,

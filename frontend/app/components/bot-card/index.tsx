@@ -2,10 +2,7 @@
 
 import { FC } from 'react';
 import type { Bot } from '@/store/bots';
-import SettingsIcon from '@/components/icons/settings-icon';
-import TrashIcon from '@/components/icons/trash-icon';
-import ChartIcon from '@/components/icons/chart-icon';
-import BanIcon from '@/components/icons/ban-icon';
+import { BanIcon, ChartIcon, SettingsIcon, TrashIcon } from '@/components/icons';
 import s from './styles.module.scss';
 
 function formatMembers(count: number): string {

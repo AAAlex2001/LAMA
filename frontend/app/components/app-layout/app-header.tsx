@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import styles from './app-layout.module.scss';
-import BellIcon from '@/components/icons/bell-icon';
-import BurgerIcon from '@/components/icons/burger-icon';
+import { BellIcon, BurgerIcon } from '@/components/icons';
 import MobileBurgerMenu from './mobile-burger-menu';
 
 const MOBILE_BREAKPOINT_PX = 1440;

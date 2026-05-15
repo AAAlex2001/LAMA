@@ -196,7 +196,9 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
             <div className={styles.loginButtonSmall}>
               <Button
                 href={normalizeLocalizedHref(loginHref, locale)}
-                size="sm"
+                variant="outline"
+                intent="gradient"
+                size="md"
               >
                 {loginText}
               </Button>
@@ -204,7 +206,9 @@ export default function Header({ locale: localeProp, content, toolsItems }: Prop
             <div className={styles.loginButtonMedium}>
               <Button
                 href={normalizeLocalizedHref(loginHref, locale)}
-                size="md"
+                variant="outline"
+                intent="gradient"
+                size="lg"
               >
                 {loginText}
               </Button>

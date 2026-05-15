@@ -189,8 +189,9 @@ export default function Pricing({ locale, content }: Props) {
               </ul>
               <div className={styles.cardButton}>
                 <Button
-                  variant="fill"
-                  intent={index === 1 ? "gradient" : "primary"}
+                  variant={index === 1 ? "fill" : "outline"}
+                  intent="gradient"
+                  size="lg"
                   href={plan.buttonUrl || `/${locale}/maintenance`}
                   style={{ width: '100%' }}
                 >

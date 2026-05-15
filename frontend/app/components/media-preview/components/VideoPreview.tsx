@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { MediaFile } from '../media-preview';
 import Loader from '@/components/loader/loader';
-import PlayIcon from '@/components/icons/play-icon';
+import { PlayIcon } from '@/components/icons';
 import styles from '../media-preview.module.scss';
 
 interface VideoPreviewProps {

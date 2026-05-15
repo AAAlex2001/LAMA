@@ -6,7 +6,7 @@ import { Button } from '@/components/new-button';
 import Input from '@/components/input/input';
 import CurrencySelect from '@/components/currency-select';
 import DateInputPopover from './DateInputPopover';
-import type { AdRevenue, AdRevenueUpdatePayload } from '../store/types';
+import type { AdRevenue, AdRevenueUpdatePayload } from '@/store/wallet';
 import styles from './EditAdRevenueModal.module.scss';
 
 interface EditAdRevenueModalProps {

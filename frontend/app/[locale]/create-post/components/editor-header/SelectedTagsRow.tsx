@@ -1,8 +1,6 @@
 'use client';
 
-import { SettingsIcon } from '@/components/icons';
-import TagCloseIcon from '@/components/icons/tag-close-icon';
-import PlusIcon from '@/components/icons/plus-icon';
+import { PlusIcon, SettingsIcon, TagCloseIcon } from '@/components/icons';
 import type { TagColor } from '@/types';
 import styles from '../../create-post.module.scss';
 

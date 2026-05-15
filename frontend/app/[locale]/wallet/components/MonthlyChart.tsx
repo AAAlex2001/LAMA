@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import Loader from '@/components/loader';
-import type { MonthlyAdStatItem } from '../store/types';
+import type { MonthlyAdStatItem } from '@/store/wallet';
 import styles from './MonthlyChart.module.scss';
 
 const MONTH_LABELS = ['Янв', 'Фев', 'Март', 'Апр', 'Май', 'Июнь', 'Июль', 'Авг', 'Сент', 'Окт', 'Нояб', 'Дек'];

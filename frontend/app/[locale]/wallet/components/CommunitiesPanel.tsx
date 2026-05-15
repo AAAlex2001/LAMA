@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
 import Loader from '@/components/loader';
 import EmptyContent from './EmptyContent';
-import type { CommunityFilter, CommunityStatsItem } from '../store/types';
+import type { CommunityFilter, CommunityStatsItem } from '@/store/wallet';
 import styles from './CommunitiesPanel.module.scss';
 
 const TABS: FilterOption[] = [
@@ -52,12 +52,14 @@ export default function CommunitiesPanel({
           <Loader size={24} color="blue" />
         </div>
       ) : !hasItems ? (
-        <EmptyContent
-          title="Здесь появятся ваши сообщества"
-          description="Добавьте рекламные публикации, чтобы видеть доходы и расходы по каждому каналу"
-          buttonText="Добавить рекламу"
-          onButtonClick={onAddClick}
-        />
+        <div className={styles.emptyWrap}>
+          <EmptyContent
+            title="Здесь появятся ваши сообщества"
+            description="Добавьте рекламные публикации, чтобы видеть доходы и расходы по каждому каналу"
+            buttonText="Добавить рекламу"
+            onButtonClick={onAddClick}
+          />
+        </div>
       ) : (
         <>
           {/* Desktop таблица (>=1440px). На мобилке скрыта через CSS. */}

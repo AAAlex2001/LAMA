@@ -1,7 +1,7 @@
 'use client';
 
 import { FC, useState } from 'react';
-import TrashIcon from '@/components/icons/trash-icon';
+import { TrashIcon } from '@/components/icons';
 import styles from './DeleteButton.module.scss';
 
 interface DeleteButtonProps {

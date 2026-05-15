@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import TrashIcon from '@/components/icons/trash-icon';
+import { TrashIcon } from '@/components/icons';
 import styles from './reply-to-post-info.module.scss';
 
 interface ReplyToPostInfoProps {

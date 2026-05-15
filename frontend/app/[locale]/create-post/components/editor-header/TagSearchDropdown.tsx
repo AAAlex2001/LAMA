@@ -1,6 +1,6 @@
 'use client';
 
-import TrashIcon from '@/components/icons/trash-icon';
+import { TrashIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import type { Tag } from '@/types';
 import tagStyles from '../../tags.module.scss';

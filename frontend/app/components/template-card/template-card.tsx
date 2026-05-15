@@ -23,7 +23,15 @@ export default function TemplateCard({ title, text, buttonText, buttonLink }: Pr
       </div>
 
       <div className={styles.buttonRow}>
-        <Button href={buttonLink} style={{ width: '100%' }} variant="outline" intent="primary">{buttonText}</Button>
+        <Button
+          href={buttonLink}
+          variant="outline"
+          intent="gradient"
+          size="lg"
+          style={{ width: '100%' }}
+        >
+          {buttonText}
+        </Button>
       </div>
     </div>
   );

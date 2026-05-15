@@ -93,6 +93,9 @@ export default function Advantages({ locale, content }: Props) {
                     <div className={styles.ctaButton}>
                       <Button
                         href={card.ctaButtonUrl || `/${locale}/maintenance`}
+                        variant="outline"
+                        intent="gradient"
+                        size="lg"
                         style={{ width: '100%' }}
                       >
                         {card.ctaButtonText || "Начать бесплатно"}
@@ -143,6 +146,9 @@ export default function Advantages({ locale, content }: Props) {
                           <div className={styles.ctaButton}>
                             <Button
                               href={card.ctaButtonUrl || `/${locale}/maintenance`}
+                              variant="outline"
+                              intent="gradient"
+                              size="lg"
                               style={{ width: '100%' }}
                             >
                               {card.ctaButtonText || "Начать бесплатно"}

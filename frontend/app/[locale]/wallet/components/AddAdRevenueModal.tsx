@@ -9,7 +9,7 @@ import AttachedPostCard from './AttachedPostCard';
 import CurrencySelect from '@/components/currency-select';
 import DateInputPopover from './DateInputPopover';
 import type { Draft } from '@/types/post';
-import { AdRevenueCreatePayload, AdRevenueType } from '../store/types';
+import { AdRevenueCreatePayload, AdRevenueType } from '@/store/wallet';
 import styles from './AddAdRevenueModal.module.scss';
 
 interface AddAdRevenueModalProps {

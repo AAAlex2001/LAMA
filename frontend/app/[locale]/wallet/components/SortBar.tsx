@@ -1,6 +1,6 @@
 'use client';
 
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon } from '@/components/icons';
 import styles from './SortBar.module.scss';
 
 interface SortBarProps {

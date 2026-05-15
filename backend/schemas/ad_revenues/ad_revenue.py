@@ -69,6 +69,13 @@ class AdRevenueResponse(AdRevenueBase):
     clicks_count: int = 0
     post_link: Optional[str] = None
 
+    # Метрики ПДП по snapshot подписчиков канала (приток/отток за 24/48ч от публикации)
+    subscribers_in_24h: Optional[int] = None
+    subscribers_in_48h: Optional[int] = None
+    subscribers_out_24h: Optional[int] = None
+    subscribers_out_48h: Optional[int] = None
+    retention_rate: Optional[float] = None
+
     placements: List[AdRevenuePlacement] = Field(default_factory=list)
     publication_status: Optional[str] = None
 

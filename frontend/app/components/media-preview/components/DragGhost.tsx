@@ -1,6 +1,5 @@
 import { MediaFile } from '../media-preview';
-import DocumentIcon from '@/components/icons/document-icon';
-import PlayIcon from '@/components/icons/play-icon';
+import { DocumentIcon, PlayIcon } from '@/components/icons';
 import styles from '../media-preview.module.scss';
 
 interface DragGhostProps {

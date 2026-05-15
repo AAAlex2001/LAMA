@@ -1,7 +1,7 @@
 'use client';
 
 import ModalBase from '@/components/modal-base';
-import LinkIcon from '@/components/icons/link-icon';
+import { LinkIcon } from '@/components/icons';
 import type { AdPlacement } from './AdCard';
 import styles from './PlacementsModal.module.scss';
 

@@ -1,10 +1,10 @@
 'use client';
 
-import PinIcon from '@/components/icons/pin-icon';
 import {
   AutoDeleteIcon,
   CalendarDraftIcon,
   CalendarRepeatIcon,
+  PinIcon,
   WalletAdIcon,
 } from '@/components/icons';
 import styles from './AdTypeIcons.module.scss';

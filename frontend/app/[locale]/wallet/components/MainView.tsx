@@ -13,8 +13,8 @@ import {
   useDeleteAdRevenueMutation,
   useMonthlyAdStatsQuery,
   useUpdateAdRevenueMutation,
-} from '../store/queries';
-import type { AdRevenue, AdRevenueStats, CommunityFilter } from '../store/types';
+} from '@/store/wallet';
+import type { AdRevenue, AdRevenueStats, CommunityFilter } from '@/store/wallet';
 import styles from './MainView.module.scss';
 
 interface MainViewProps {

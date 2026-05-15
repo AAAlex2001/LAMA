@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "./SuccessNotification.module.scss";
-import CloseIcon from "@/components/icons/close-icon";
+import { CloseIcon } from "@/components/icons";
 
 type SuccessNotificationProps = {
   message: string;

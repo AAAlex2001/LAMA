@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ModalBase from '@/components/modal-base';
 import DatePicker from '@/components/date-picker/date-picker';
-import CalendarIcon from '@/components/icons/calendar-icon';
+import { CalendarIcon } from '@/components/icons';
 import styles from './DateInputPopover.module.scss';
 
 interface DateInputPopoverProps {

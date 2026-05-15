@@ -4,19 +4,21 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import styles from './app-layout.module.scss';
-import { CloseIcon } from '@/components/icons';
-import PostIcon from '@/components/icons/post-icon';
-import CalendarIcon from '@/components/icons/calendar-icon';
-import { DraftsIcon } from '@/components/icons';
-import ChannelsIcon from '@/components/icons/channels-icon';
-import BotsIcon from '@/components/icons/bots-icon';
-import InboxIcon from '@/components/icons/inbox-icon';
-import ParserIcon from '@/components/icons/parser-icon';
-import WalletIcon from '@/components/icons/wallet-icon';
-import BrainIcon from '@/components/icons/brain-icon';
-import ExitIcon from '@/components/icons/exit-icon';
-import UserIcon from '@/components/icons/user-icon';
-import BellIcon from '@/components/icons/bell-icon';
+import {
+  BellIcon,
+  BotsIcon,
+  BrainIcon,
+  CalendarIcon,
+  ChannelsIcon,
+  CloseIcon,
+  DraftsIcon,
+  ExitIcon,
+  InboxIcon,
+  ParserIcon,
+  PostIcon,
+  UserIcon,
+  WalletIcon,
+} from '@/components/icons';
 
 interface MobileBurgerMenuProps {
   isOpen: boolean;

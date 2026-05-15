@@ -2,12 +2,11 @@
 
 import { useMemo } from 'react';
 import FilterTabs, { FilterOption } from '@/components/filter-tabs/filter-tabs';
-import LinkIcon from '@/components/icons/link-icon';
-import { CalendarCommentsIcon, CalendarViewsIcon } from '@/components/icons';
+import { CalendarCommentsIcon, CalendarViewsIcon, LinkIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import EmptyContent from './EmptyContent';
-import { useAdRevenuesQuery } from '../store/queries';
-import type { AdRevenue, AdRevenueType } from '../store/types';
+import { useAdRevenuesQuery } from '@/store/wallet';
+import type { AdRevenue, AdRevenueType } from '@/store/wallet';
 import styles from './AdsPanel.module.scss';
 
 const TABS: FilterOption[] = [

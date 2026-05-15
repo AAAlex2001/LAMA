@@ -461,3 +461,21 @@ class InformationalMessage(Base):
     channel = relationship("ChannelGroup", back_populates="info_messages")
 
 
+class ChannelSubscribersSnapshot(Base):
+    __tablename__ = "channel_subscribers_snapshots"
+    __table_args__ = (
+        Index("ix_channel_subs_snap_channel_taken", "channel_id", "taken_at"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    channel_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("channel_groups.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    taken_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    subscribers_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
+    )
+
+
+

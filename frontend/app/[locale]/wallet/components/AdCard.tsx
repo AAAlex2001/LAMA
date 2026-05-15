@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import LinkIcon from '@/components/icons/link-icon';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon, LinkIcon } from '@/components/icons';
 import AdMetricsRow, { AdMetrics } from './AdMetricsRow';
 import AdTypeIcons, { AdType } from './AdTypeIcons';
 import styles from './AdCard.module.scss';
@@ -24,11 +23,22 @@ export interface Ad {
   date: string;
   dateValue: number;
   buyer: string;
+  subject?: string;
   metrics: AdMetrics;
   metricsValues: { comments: number; views: number; clicks: number; reactions: number };
+  expenseMetrics?: ExpenseMetrics;
   types: AdType[];
   postLink?: string;
   placements?: AdPlacement[];
+}
+
+export interface ExpenseMetrics {
+  subscribersIn24h: number | null;
+  subscribersIn48h: number | null;
+  subscribersOut24h: number | null;
+  subscribersOut48h: number | null;
+  retentionRate: number | null;
+  costPerSubscriber: number | null;
 }
 
 interface AdCardProps {

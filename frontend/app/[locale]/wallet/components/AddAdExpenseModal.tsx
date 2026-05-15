@@ -7,12 +7,12 @@ import { Button } from '@/components/new-button';
 import Input from '@/components/input/input';
 import CurrencySelect from '@/components/currency-select';
 import Toggle from '@/components/toggle/toggle';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon } from '@/components/icons';
 import SearchBar from '@/components/search-bar/search-bar';
 import DateInputPopover from './DateInputPopover';
 import { useChannelsQuery } from '@/store/channels';
 import { useBotsQuery } from '@/store/bots';
-import type { AdRevenueCreatePayload } from '../store/types';
+import type { AdRevenueCreatePayload } from '@/store/wallet';
 import styles from './AddAdExpenseModal.module.scss';
 
 interface AddAdExpenseModalProps {

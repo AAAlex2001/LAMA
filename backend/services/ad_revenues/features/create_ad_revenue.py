@@ -6,6 +6,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from backend.models.ad_revenues import AdRevenue
 from backend.models.channels import ChannelGroup
 from backend.schemas.ad_revenues.ad_revenue import AdRevenueCreate
+from backend.services.ad_revenues.features.schedule_ad_revenue_snapshots import (
+    ScheduleAdRevenueSnapshots,
+)
 
 
 class CreateAdRevenue:
@@ -39,6 +42,7 @@ class CreateAdRevenue:
         self.db.add(ad_revenue)
         await self.db.flush()
         await self.db.refresh(ad_revenue)
+        await ScheduleAdRevenueSnapshots(self.db).execute(ad_revenue)
         return ad_revenue
 
     async def resolve_channel_id(self, owner_id: int, username: str) -> Optional[int]:

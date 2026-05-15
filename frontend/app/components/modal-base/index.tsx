@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import classNames from 'classnames';
 import styles from './styles.module.scss';
-import CloseIcon from '../icons/close-icon';
+import { CloseIcon } from '../icons';
 
 interface ModalContextValue {
   isOpen: boolean;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import classnames from 'classnames';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
+import { ChevronDownIcon } from '@/components/icons';
 import styles from './CurrencySelect.module.scss';
 
 const OPTIONS: { value: string; label: string }[] = [

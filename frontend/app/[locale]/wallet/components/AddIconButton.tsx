@@ -1,7 +1,7 @@
 'use client';
 
 import classNames from 'classnames';
-import PlusIcon from '@/components/icons/plus-icon';
+import { PlusIcon } from '@/components/icons';
 import styles from './AddIconButton.module.scss';
 
 interface AddIconButtonProps {

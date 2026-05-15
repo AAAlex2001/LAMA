@@ -4,8 +4,7 @@ import React, { useEffect, useImperativeHandle, forwardRef, useRef } from 'react
 import { Button } from '@/components/new-button';
 import MediaPreview, { type MediaFile } from '@/components/media-preview';
 import InlineButtons, { type ButtonRow, type InlineButton } from '@/components/inline-buttons/inline-buttons';
-import PaperclipIcon from '@/components/icons/paperclip-icon';
-import InlineButtonIcon from '@/components/icons/inline-button-icon';
+import { InlineButtonIcon, PaperclipIcon } from '@/components/icons';
 import classNames from 'classnames';
 import styles from './styles.module.scss';
 import Input from '@/components/input';

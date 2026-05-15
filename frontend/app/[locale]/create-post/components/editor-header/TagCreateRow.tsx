@@ -1,6 +1,6 @@
 'use client';
 
-import PlusIcon from '@/components/icons/plus-icon';
+import { PlusIcon } from '@/components/icons';
 import type { TagColor } from '@/types';
 import TagColorPicker from './TagColorPicker';
 import tagStyles from '../../tags.module.scss';

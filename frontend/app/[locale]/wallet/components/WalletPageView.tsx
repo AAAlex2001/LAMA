@@ -12,9 +12,33 @@ import {
   useAddAdRevenueMutation,
   useAdRevenueStatsQuery,
   useAdRevenuesQuery,
-} from '../store/queries';
-import type { AdRevenueListFilters, AdRevenueSortKey, AdRevenueType } from '../store/types';
+  exportAdRevenues,
+} from '@/store/wallet';
+import type {
+  AdRevenueListFilters,
+  AdRevenueSortKey,
+  AdRevenueType,
+  ExportDataKey,
+} from '@/store/wallet';
+import { useNotifications } from '@/components/notifications/NotificationProvider';
 import styles from './WalletPageView.module.scss';
+
+type DataTypeFlag = keyof ExportDataPayload['dataType'];
+
+const EXPORT_KEY_BY_FLAG: Record<DataTypeFlag, ExportDataKey> = {
+  generalIncome: 'general_income',
+  generalExpense: 'general_expense',
+  adsIncome: 'ads_income',
+  adsExpense: 'ads_expense',
+};
+
+function selectedDataTypes(flags: ExportDataPayload['dataType']): ExportDataKey[] {
+  const keys: ExportDataKey[] = [];
+  for (const flag of Object.keys(EXPORT_KEY_BY_FLAG) as DataTypeFlag[]) {
+    if (flags[flag]) keys.push(EXPORT_KEY_BY_FLAG[flag]);
+  }
+  return keys;
+}
 
 const RU_MONTHS_SHORT = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
 
@@ -76,9 +100,33 @@ export default function WalletPageView() {
 
   const items = revenuesQuery.data?.items ?? [];
   const periodLabel = formatRangeLabel(range) || 'За весь период';
+  const { showError, showSuccess } = useNotifications();
 
-  const handleExport = (payload: ExportDataPayload) => {
-    console.log('export wallet data', { ...payload, range });
+  const handleExport = async (payload: ExportDataPayload) => {
+    const dataTypes = selectedDataTypes(payload.dataType);
+    if (dataTypes.length === 0) return;
+
+    try {
+      const blob = await exportAdRevenues({
+        dataTypes,
+        scope: payload.scope,
+        format: payload.format,
+        dateFrom: range ? toIso(range.start) : undefined,
+        dateTo: range ? toIso(range.end) : undefined,
+        currency: activeCurrency,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ad-revenues-${new Date().toISOString().slice(0, 10)}.${payload.format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess('Файл загружен');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Ошибка экспорта');
+    }
   };
 
   return (
@@ -104,6 +152,7 @@ export default function WalletPageView() {
         <EfficiencyView
           ads={items}
           onAddIncome={() => setModalType('income')}
+          onAddExpense={() => setModalType('expense')}
           periodLabel={periodLabel}
           sortBy={sortBy}
           sortDir={sortDir}

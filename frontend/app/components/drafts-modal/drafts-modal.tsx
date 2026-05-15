@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import styles from './drafts-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
-import TrashIcon from '@/components/icons/trash-icon';
-import EyeIcon from '@/components/icons/eye-icon';
+import { EyeIcon, TrashIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
 import DeleteConfirmationModal from '@/components/modal';

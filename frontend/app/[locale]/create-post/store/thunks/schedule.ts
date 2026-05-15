@@ -11,7 +11,7 @@ import { invalidateTags } from '@/store/tags/queries';
 import { invalidatePublications } from '@/store/publications/queries';
 import { apiRequest } from '@/store/api';
 import { prepareMediaPayload, buildCreatePostRequest, validatePost, validateTelegramMediaRules, validateInlineButtons, validateQuizState } from './utils';
-import { createAdRevenue } from '../../../wallet/store/api';
+import { createAdRevenue } from '@/store/wallet';
 import type { AdToggleValue } from '@/components/ad-toggle-section';
 import type { CreatePostResponse } from '../types';
 

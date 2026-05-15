@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import BrainIcon from '@/components/icons/brain-icon';
+import { BrainIcon } from '@/components/icons';
 import SearchBar from '@/components/search-bar/search-bar';
 import { Button as NewButton } from '@/components/new-button';
 import styles from './KnowledgeNavDropdown.module.scss';
@@ -128,7 +128,8 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           target="_blank"
           rel="noopener noreferrer"
           variant="outline"
-          intent="primary"
+          intent="gradient"
+          size="lg"
           style={{ width: '100%' }}
           className={styles.botBtn}
         >
@@ -140,7 +141,7 @@ export default function KnowledgeNavDropdown({ variant = 'dropdown', headings = 
           rel="noopener noreferrer"
           variant="fill"
           intent="gradient"
-          size="md"
+          size="lg"
           className={styles.fullBtn}
         >
           Предложить идею

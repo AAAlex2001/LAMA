@@ -1,7 +1,9 @@
+import io
 from datetime import date
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.database import get_db
@@ -19,6 +21,7 @@ from backend.schemas.ad_revenues.ad_revenue import (
 from backend.schemas.ad_revenues.enums import AdRevenueType
 from backend.services.ad_revenues.features.create_ad_revenue import CreateAdRevenue
 from backend.services.ad_revenues.features.delete_ad_revenue import DeleteAdRevenue
+from backend.services.ad_revenues.features.export_ad_revenues import ExportAdRevenues
 from backend.services.ad_revenues.features.get_ad_revenue import GetAdRevenue
 from backend.services.ad_revenues.features.get_ad_revenue_stats import GetAdRevenueStats
 from backend.services.ad_revenues.features.get_community_stats import (
@@ -28,6 +31,8 @@ from backend.services.ad_revenues.features.get_community_stats import (
 from backend.services.ad_revenues.features.get_monthly_stats import GetMonthlyAdStats
 from backend.services.ad_revenues.features.list_ad_revenues import ListAdRevenues
 from backend.services.ad_revenues.features.update_ad_revenue import UpdateAdRevenue
+
+VALID_DATA_TYPES = {"general_income", "general_expense", "ads_income", "ads_expense"}
 
 router = APIRouter()
 
@@ -126,6 +131,51 @@ async def stats_ad_revenues(
         channel_id=channel_id,
         bot_id=bot_id,
         currency=currency,
+    )
+
+
+@router.get("/export")
+async def export_ad_revenues(
+    data_types: str = Query(..., description="comma-separated: general_income,general_expense,ads_income,ads_expense"),
+    scope: Literal["filtered", "all"] = Query("filtered"),
+    format: Literal["xlsx", "csv"] = Query("xlsx"),
+    date_from: Optional[date] = Query(None),
+    date_to: Optional[date] = Query(None),
+    channel_id: Optional[int] = Query(None),
+    bot_id: Optional[int] = Query(None),
+    currency: Optional[str] = Query(None),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> StreamingResponse:
+    requested = {t.strip() for t in data_types.split(",") if t.strip()}
+    invalid = requested - VALID_DATA_TYPES
+    if invalid:
+        raise HTTPException(status_code=400, detail=f"Unknown data types: {', '.join(sorted(invalid))}")
+    if not requested:
+        raise HTTPException(status_code=400, detail="At least one data type required")
+
+    blob = await ExportAdRevenues(db).execute(
+        owner_id=current_user.id,
+        data_types=requested,
+        scope=scope,
+        export_format=format,
+        date_from=date_from,
+        date_to=date_to,
+        channel_id=channel_id,
+        bot_id=bot_id,
+        currency=currency,
+    )
+
+    filename = f"ad-revenues-{date.today().isoformat()}.{format}"
+    media_type = (
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        if format == "xlsx"
+        else "text/csv; charset=utf-8"
+    )
+    return StreamingResponse(
+        io.BytesIO(blob),
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

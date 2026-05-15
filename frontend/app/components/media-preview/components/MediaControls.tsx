@@ -1,5 +1,4 @@
-import BlurIcon from '@/components/icons/blur-icon';
-import CloseIcon from '@/components/icons/close-icon';
+import { BlurIcon, CloseIcon } from '@/components/icons';
 import styles from '../media-preview.module.scss';
 
 interface MediaControlsProps {

@@ -409,6 +409,34 @@ async def sync_message_metrics_async() -> str:
     return f"sync_message_metrics:{processed}"
 
 
+@celery_app.task(
+    name="backend.celery.tasks.take_channel_subscribers_snapshot",
+    soft_time_limit=60,
+    time_limit=120,
+    max_retries=2,
+    default_retry_delay=30,
+)
+def take_channel_subscribers_snapshot(channel_id: int) -> str:
+    """Снять snapshot подписчиков ОДНОГО канала прямо сейчас.
+    Ставится в очередь из ScheduleAdRevenueSnapshots с countdown=24h/48h
+    после создания рекламной записи."""
+
+    return run(take_channel_subscribers_snapshot_async(channel_id))
+
+
+async def take_channel_subscribers_snapshot_async(channel_id: int) -> str:
+    from backend.services.ad_revenues.features.take_channel_snapshot import (
+        TakeChannelSnapshot,
+    )
+
+    async with CelerySessionLocal() as db:
+        result = await TakeChannelSnapshot(db).execute(channel_id)
+        await db.commit()
+    if result is None:
+        return f"snapshot_skipped:channel={channel_id}"
+    return f"snapshot_taken:channel={channel_id} count={result.subscribers_count}"
+
+
 @celery_app.task(name="backend.celery.tasks.process_repeating_publications")
 def process_repeating_publications() -> str:
     """Найти повторяющиеся публикации, которые пора переопубликовать, и поставить их в очередь."""

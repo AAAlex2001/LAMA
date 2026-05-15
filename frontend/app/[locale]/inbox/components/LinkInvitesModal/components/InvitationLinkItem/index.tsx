@@ -4,8 +4,7 @@ import React from 'react';
 import classNames from 'classnames';
 import styles from './styles.module.scss';
 import type { InvitationLink } from '../../index';
-import UserIconOutline from '@/components/icons/user-icon-outline';
-import CopyIcon from '@/components/icons/copy-icon';
+import { CopyIcon, UserIconOutline } from '@/components/icons';
 import { useNotifications } from '@/components/notifications/NotificationProvider';
 import { Button } from '@/components/new-button';
 

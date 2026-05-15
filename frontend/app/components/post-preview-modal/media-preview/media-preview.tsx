@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import styles from './media-preview.module.scss';
 import type { MediaPreviewItem } from '../store';
-import PlayIcon from '@/components/icons/play-icon';
+import { PlayIcon } from '@/components/icons';
 import Lightbox from '@/components/media-preview/components/Lightbox';
 import type { MediaFile } from '@/components/media-preview';
 

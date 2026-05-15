@@ -3,9 +3,8 @@
 import { useState } from 'react';
 import styles from './text-templates-modal.module.scss';
 import SearchBar from '@/components/search-bar/search-bar';
-import TrashIcon from '@/components/icons/trash-icon';
 import Input from '@/components/input';
-import { EditNameIcon, CheckIcon, CloseIcon } from '@/components/icons';
+import { CheckIcon, CloseIcon, EditNameIcon, TrashIcon } from '@/components/icons';
 import Loader from '@/components/loader';
 import Checkbox from '@/components/checkbox/checkbox';
 import DeleteConfirmationModal from '@/components/modal';

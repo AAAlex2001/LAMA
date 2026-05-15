@@ -2,7 +2,7 @@
 
 import Modal from '@/components/modal/modal';
 import { Button } from '@/components/new-button';
-import EyeIcon from '@/components/icons/eye-icon';
+import { EyeIcon } from '@/components/icons';
 import styles from './shared-draft-modal.module.scss';
 
 interface SharedDraftModalProps {

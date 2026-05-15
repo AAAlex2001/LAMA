@@ -2,7 +2,7 @@
 
 import styles from './documents-preview.module.scss';
 import type { DocumentPreviewItem } from '../store';
-import DocumentIcon from '@/components/icons/document-icon';
+import { DocumentIcon } from '@/components/icons';
 
 export interface DocumentsPreviewProps {
   items: DocumentPreviewItem[];

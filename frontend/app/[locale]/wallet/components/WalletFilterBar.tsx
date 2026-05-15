@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import clsx from 'clsx';
-import ChevronDownIcon from '@/components/icons/chevron-down-icon';
-import { SortClearIcon } from '@/components/icons';
+import { ChevronDownIcon, SortClearIcon } from '@/components/icons';
 import styles from './WalletFilterBar.module.scss';
 
 export interface WalletFilterOption {
@@ -11,17 +10,20 @@ export interface WalletFilterOption {
   label: string;
 }
 
+export type WalletFilterValue = string | string[] | null;
+
 export interface WalletFilterDef {
   id: string;
   label: string;
   options: WalletFilterOption[];
+  multi?: boolean;
 }
 
 interface WalletFilterBarProps {
   periodLabel: string;
   filters: WalletFilterDef[];
-  values: Record<string, string | null>;
-  onChange: (filterId: string, value: string | null) => void;
+  values: Record<string, WalletFilterValue>;
+  onChange: (filterId: string, value: WalletFilterValue) => void;
 }
 
 export default function WalletFilterBar({ periodLabel, filters, values, onChange }: WalletFilterBarProps) {
@@ -43,10 +45,9 @@ export default function WalletFilterBar({ periodLabel, filters, values, onChange
       <div className={styles.sortGroup}>
         {filters.map((f) => {
           const value = values[f.id] ?? null;
-          const selected = f.options.find((o) => o.value === value);
-          const isActive = !!value;
+          const isActive = isValueActive(value);
           const isOpen = openId === f.id;
-          const buttonText = selected ? `${f.label} · ${selected.label}` : f.label;
+          const buttonText = renderButtonText(f, value);
           return (
             <div key={f.id} className={styles.sortDropdown}>
               <button
@@ -63,7 +64,7 @@ export default function WalletFilterBar({ periodLabel, filters, values, onChange
                     className={styles.sortClear}
                     onClick={(event) => {
                       event.stopPropagation();
-                      onChange(f.id, null);
+                      onChange(f.id, f.multi ? [] : null);
                       setOpenId(null);
                     }}
                   >
@@ -74,8 +75,11 @@ export default function WalletFilterBar({ periodLabel, filters, values, onChange
 
               {isOpen && (
                 <div className={styles.sortMenu} role="listbox">
+                  {f.options.length === 0 && (
+                    <div className={styles.sortEmpty}>Пока нет вариантов</div>
+                  )}
                   {f.options.map((opt) => {
-                    const checked = value === opt.value;
+                    const checked = isOptionChecked(value, opt.value);
                     return (
                       <button
                         key={opt.value}
@@ -84,12 +88,17 @@ export default function WalletFilterBar({ periodLabel, filters, values, onChange
                         role="option"
                         aria-selected={checked}
                         onClick={() => {
-                          onChange(f.id, checked ? null : opt.value);
-                          setOpenId(null);
+                          onChange(f.id, toggleValue(value, opt.value, !!f.multi));
+                          if (!f.multi) setOpenId(null);
                         }}
                       >
-                        <span className={clsx(styles.sortRadio, checked && styles.sortRadioActive)}>
-                          <span className={styles.sortRadioDot} />
+                        <span
+                          className={clsx(
+                            f.multi ? styles.sortCheck : styles.sortRadio,
+                            checked && (f.multi ? styles.sortCheckActive : styles.sortRadioActive),
+                          )}
+                        >
+                          <span className={f.multi ? styles.sortCheckMark : styles.sortRadioDot} />
                         </span>
                         <span className={styles.sortOptionText}>{opt.label}</span>
                       </button>
@@ -103,4 +112,37 @@ export default function WalletFilterBar({ periodLabel, filters, values, onChange
       </div>
     </div>
   );
+}
+
+function isValueActive(value: WalletFilterValue): boolean {
+  if (value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  return Boolean(value);
+}
+
+function isOptionChecked(value: WalletFilterValue, option: string): boolean {
+  if (Array.isArray(value)) return value.includes(option);
+  return value === option;
+}
+
+function toggleValue(value: WalletFilterValue, option: string, multi: boolean): WalletFilterValue {
+  if (!multi) return value === option ? null : option;
+  const arr = Array.isArray(value) ? value : [];
+  return arr.includes(option) ? arr.filter((v) => v !== option) : [...arr, option];
+}
+
+function renderButtonText(f: WalletFilterDef, value: WalletFilterValue): string {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return f.label;
+    if (value.length === 1) {
+      const found = f.options.find((o) => o.value === value[0]);
+      return found ? `${f.label} · ${found.label}` : f.label;
+    }
+    return `${f.label} · ${value.length}`;
+  }
+  if (typeof value === 'string') {
+    const found = f.options.find((o) => o.value === value);
+    return found ? `${f.label} · ${found.label}` : f.label;
+  }
+  return f.label;
 }

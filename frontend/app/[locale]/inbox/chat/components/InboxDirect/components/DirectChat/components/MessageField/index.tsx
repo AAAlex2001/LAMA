@@ -1,7 +1,7 @@
 'use client';
 
 import styles from './styles.module.scss';
-import PaperclipIcon from '@/components/icons/paperclip-icon';
+import { PaperclipIcon } from '@/components/icons';
 import MediaPreview from '@/components/media-preview';
 import { Button } from '@/components/new-button';
 import InlineButtons from '@/components/inline-buttons/inline-buttons';

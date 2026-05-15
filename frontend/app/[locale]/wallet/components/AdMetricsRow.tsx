@@ -1,9 +1,11 @@
 'use client';
 
-import CalendarCommentsIcon from '@/components/icons/calendar-comments-icon';
-import CalendarViewsIcon from '@/components/icons/calendar-views-icon';
-import CalendarReactionsIcon from '@/components/icons/calendar-reactions-icon';
-import ClickIcon from '@/components/icons/click-icon';
+import {
+  CalendarCommentsIcon,
+  CalendarReactionsIcon,
+  CalendarViewsIcon,
+  ClickIcon,
+} from '@/components/icons';
 import styles from './AdMetricsRow.module.scss';
 
 export interface AdMetrics {

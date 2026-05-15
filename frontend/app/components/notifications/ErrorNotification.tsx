@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import styles from "./ErrorNotification.module.scss";
-import CloseIcon from "@/components/icons/close-icon";
+import { CloseIcon } from "@/components/icons";
 
 type ErrorNotificationProps = {
   message: string;

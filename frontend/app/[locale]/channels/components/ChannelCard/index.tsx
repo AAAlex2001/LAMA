@@ -2,15 +2,17 @@
 
 import { FC } from 'react';
 import type { Channel } from '@/types/channel';
-import SettingsIcon from '@/components/icons/settings-icon';
-import TrashIcon from '@/components/icons/trash-icon';
-import MathOperationsIcon from '@/components/icons/math-operations-icon';
-import BackupOutlineIcon from '@/components/icons/backup-outline-icon';
-import WelcomeIcon from '@/components/icons/welcome-icon';
-import QuickCommandsIcon from '@/components/icons/quick-commands-icon';
-import AutoRepliesIcon from '@/components/icons/auto-replies-icon';
-import AntifloodIcon from '@/components/icons/antiflood-icon';
-import AntispamIcon from '@/components/icons/antispam-icon';
+import {
+  AntifloodIcon,
+  AntispamIcon,
+  AutoRepliesIcon,
+  BackupOutlineIcon,
+  MathOperationsIcon,
+  QuickCommandsIcon,
+  SettingsIcon,
+  TrashIcon,
+  WelcomeIcon,
+} from '@/components/icons';
 import styles from './styles.module.scss';
 
 interface ChannelCardProps {

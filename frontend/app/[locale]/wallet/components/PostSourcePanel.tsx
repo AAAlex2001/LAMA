@@ -10,7 +10,7 @@ import Loader from '@/components/loader';
 import { CalendarDocPostIcon, CloseIcon, SearchIcon, WalletAdIcon } from '@/components/icons';
 import type { Draft } from '@/types/post';
 import { getPreviewText, getSourceDate } from '@/[locale]/calendar/utils/calendar-helpers';
-import { useDayBatchQuery, useDayCountsQuery, useDraftsListQuery } from '../store/queries';
+import { useDayBatchQuery, useDayCountsQuery, useDraftsListQuery } from '@/store/wallet';
 import styles from './PostSourcePanel.module.scss';
 
 type Source = 'calendar' | 'drafts';

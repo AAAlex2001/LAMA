@@ -140,6 +140,9 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
         <div className={styles.actions}>
           <Button
             href={normalizeLocalizedHref(registerHref, locale)}
+            variant="outline"
+            intent="gradient"
+            size="lg"
             className={styles.loginButton}
             style={{ width: '100%' }}
             onClick={handleClose}
@@ -149,6 +152,7 @@ export default function MobileMenu({ isOpen, onClose, locale, headerContent, too
           <Button
             href={normalizeLocalizedHref(telegramHref, locale)}
             intent="gradient"
+            size="lg"
             className={styles.telegramButton}
             style={{ width: '100%' }}
             onClick={handleClose}

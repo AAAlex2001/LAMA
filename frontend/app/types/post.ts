@@ -123,6 +123,9 @@ export interface Draft {
   views?: number;
   reactions_count?: number;
   likes_count?: number;
+  comments_count?: number;
+  forwards_count?: number;
+  clicks_count?: number;
   is_bot_message?: boolean;
   bot_username?: string;
   bot_total_chats?: number;

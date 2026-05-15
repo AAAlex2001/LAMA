@@ -4,7 +4,7 @@ import styles from './quiz-form.module.scss';
 import Input from '@/components/input/input';
 import Toggle from '@/components/toggle/toggle';
 import { Button } from '@/components/new-button';
-import CloseIcon from '@/components/icons/close-icon';
+import { CloseIcon } from '@/components/icons';
 
 export type QuizMode = 'poll_single' | 'poll_multi' | 'quiz';
 

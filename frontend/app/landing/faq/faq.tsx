@@ -143,12 +143,16 @@ export default function FAQ({ content, whiteBackground = false }: Props) {
           <Button
             variant="fill"
             intent="gradient"
+            size="lg"
             href={safe.actions.primaryLink || "/knowledge-base"}
             style={{ width: '100%' }}
           >
             {safe.actions.primaryText || "База знаний"}
           </Button>
           <Button
+            variant="outline"
+            intent="gradient"
+            size="lg"
             href={safe.actions.secondaryLink || "/telegram-channel"}
             style={{ width: '100%' }}
           >

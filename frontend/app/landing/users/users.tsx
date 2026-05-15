@@ -169,6 +169,7 @@ export default function Users({ locale, content }: Props) {
           <Button
             variant="fill"
             intent="gradient"
+            size="lg"
             href={safeContent.buttonUrl || `/${locale}/maintenance`}
           >
             {safeContent.buttonText || "Начать бесплатно"}

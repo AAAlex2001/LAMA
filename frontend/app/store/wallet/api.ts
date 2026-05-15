@@ -1,4 +1,4 @@
-import { apiRequest } from '@/store/api';
+import { apiRequest, API_BASE_URL, getAuthToken } from '@/store/api';
 import {
   AdRevenue,
   AdRevenueCreatePayload,
@@ -12,6 +12,49 @@ import {
   MonthlyAdStatsResponse,
 } from './types';
 
+export type ExportDataKey = 'general_income' | 'general_expense' | 'ads_income' | 'ads_expense';
+export type ExportScope = 'filtered' | 'all';
+export type ExportFormat = 'xlsx' | 'csv';
+
+export interface ExportAdRevenuesParams {
+  dataTypes: ExportDataKey[];
+  scope: ExportScope;
+  format: ExportFormat;
+  dateFrom?: string;
+  dateTo?: string;
+  channelId?: number;
+  botId?: number;
+  currency?: string;
+}
+
+export async function exportAdRevenues(params: ExportAdRevenuesParams): Promise<Blob> {
+  const qs = new URLSearchParams({
+    data_types: params.dataTypes.join(','),
+    scope: params.scope,
+    format: params.format,
+  });
+  if (params.scope === 'filtered') {
+    if (params.dateFrom) qs.set('date_from', params.dateFrom);
+    if (params.dateTo) qs.set('date_to', params.dateTo);
+    if (params.channelId !== undefined) qs.set('channel_id', String(params.channelId));
+    if (params.botId !== undefined) qs.set('bot_id', String(params.botId));
+    if (params.currency) qs.set('currency', params.currency);
+  }
+  const token = getAuthToken();
+  const res = await fetch(`${API_BASE_URL}/ad-revenues/export?${qs}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const detail = await res.json().catch(() => ({}));
+    throw new Error(detail?.detail || 'Ошибка экспорта');
+  }
+  return res.blob();
+}
+
+const BACKEND_SORT_KEYS = new Set([
+  'date', 'price', 'type', 'comments', 'views', 'clicks', 'reactions',
+]);
+
 function buildQuery(filters: AdRevenueListFilters): string {
   const params = new URLSearchParams();
   if (filters.type) params.set('type', filters.type);
@@ -21,7 +64,9 @@ function buildQuery(filters: AdRevenueListFilters): string {
   if (filters.date_to) params.set('date_to', filters.date_to);
   if (filters.limit !== undefined) params.set('limit', String(filters.limit));
   if (filters.offset !== undefined) params.set('offset', String(filters.offset));
-  if (filters.sort_by) params.set('sort_by', filters.sort_by);
+  if (filters.sort_by && BACKEND_SORT_KEYS.has(filters.sort_by)) {
+    params.set('sort_by', filters.sort_by);
+  }
   if (filters.sort_dir) params.set('sort_dir', filters.sort_dir);
   if (filters.status) params.set('status', filters.status);
   if (filters.currency) params.set('currency', filters.currency);

@@ -1,5 +1,5 @@
 import { MediaFile } from '../media-preview';
-import CloseIcon from '@/components/icons/close-icon';
+import { CloseIcon } from '@/components/icons';
 import Loader from '@/components/loader/loader';
 import styles from '../media-preview.module.scss';
 

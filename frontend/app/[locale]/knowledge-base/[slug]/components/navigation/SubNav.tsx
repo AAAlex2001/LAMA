@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import BrainIcon from '@/components/icons/brain-icon';
+import { BrainIcon } from '@/components/icons';
 import { useScrollContainer } from '@/components/app-layout/app-layout';
 import { MenuIcon } from '../icons';
 import KnowledgeNavDropdown from '../knowledge-nav-dropdown/KnowledgeNavDropdown';
