@@ -2,7 +2,7 @@ import io
 from datetime import date
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,25 +37,63 @@ VALID_DATA_TYPES = {"general_income", "general_expense", "ads_income", "ads_expe
 router = APIRouter()
 
 
-async def _find_or_404(db: AsyncSession, ad_revenue_id: int, owner_id: int):
+async def find_or_404(db: AsyncSession, ad_revenue_id: int, owner_id: int):
     item = await GetAdRevenue(db).execute(ad_revenue_id, owner_id)
     if not item:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="AdRevenue not found")
     return item
 
 
-@router.get("/", response_model=AdRevenueListResponse)
+@router.get(
+    "/",
+    response_model=AdRevenueListResponse,
+    summary="Список рекламных строк (доходы + расходы)",
+)
 async def list_ad_revenues(
-    type: Optional[AdRevenueType] = Query(None),
-    channel_id: Optional[int] = Query(None),
-    bot_id: Optional[int] = Query(None),
-    date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None),
-    sort_by: Optional[Literal["date", "price", "type", "comments", "views", "clicks", "reactions"]] = Query(None),
-    sort_dir: Literal["asc", "desc"] = Query("desc"),
-    status_filter: Optional[Literal["scheduled", "published"]] = Query(None, alias="status"),
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+    type: Optional[AdRevenueType] = Query(
+        None,
+        description="Фильтр по типу: income — доходы, expense — расходы.",
+    ),
+    channel_id: Optional[int] = Query(
+        None,
+        description="Только строки, привязанные к этому каналу (id из таблицы channel_groups).",
+    ),
+    bot_id: Optional[int] = Query(
+        None,
+        description="Только строки, привязанные к этому боту.",
+    ),
+    date_from: Optional[date] = Query(
+        None,
+        description="Нижняя граница revenue_date (включительно), формат YYYY-MM-DD.",
+    ),
+    date_to: Optional[date] = Query(
+        None,
+        description="Верхняя граница revenue_date (включительно), формат YYYY-MM-DD.",
+    ),
+    sort_by: Optional[Literal["date", "price", "type", "comments", "views", "clicks", "reactions"]] = Query(
+        None,
+        description="Поле сортировки. По умолчанию — date.",
+    ),
+    sort_dir: Literal["asc", "desc"] = Query(
+        "desc",
+        description="Направление сортировки.",
+    ),
+    status_filter: Optional[Literal["scheduled", "published"]] = Query(
+        None,
+        alias="status",
+        description="Фильтр по статусу связанной публикации (для синтетических строк).",
+    ),
+    limit: int = Query(
+        50,
+        ge=1,
+        le=200,
+        description="Размер страницы.",
+    ),
+    offset: int = Query(
+        0,
+        ge=0,
+        description="Сдвиг для пагинации.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AdRevenueListResponse:
@@ -75,11 +113,24 @@ async def list_ad_revenues(
     return AdRevenueListResponse(items=items, total=total)
 
 
-@router.get("/monthly", response_model=MonthlyAdStatsResponse)
+@router.get(
+    "/monthly",
+    response_model=MonthlyAdStatsResponse,
+    summary="Помесячные доходы/расходы за год (для графика)",
+)
 async def monthly_ad_stats(
-    year: Optional[int] = Query(None),
-    currency: Optional[str] = Query(None),
-    channel_id: Optional[int] = Query(None),
+    year: Optional[int] = Query(
+        None,
+        description="Календарный год. Если не задан — берётся текущий год.",
+    ),
+    currency: Optional[str] = Query(
+        None,
+        description="Фильтр по валюте (например, RUB / USD / EUR).",
+    ),
+    channel_id: Optional[int] = Query(
+        None,
+        description="Только данные по выбранному каналу.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> MonthlyAdStatsResponse:
@@ -93,12 +144,28 @@ async def monthly_ad_stats(
     return MonthlyAdStatsResponse(year=resolved_year, months=months)
 
 
-@router.get("/communities", response_model=CommunityStatsResponse)
+@router.get(
+    "/communities",
+    response_model=CommunityStatsResponse,
+    summary="Сводка по каналам/группам/ботам",
+)
 async def community_stats(
-    date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None),
-    currency: Optional[str] = Query(None),
-    kind: Literal["all", "channels", "groups", "bots"] = Query("all"),
+    date_from: Optional[date] = Query(
+        None,
+        description="Нижняя граница периода.",
+    ),
+    date_to: Optional[date] = Query(
+        None,
+        description="Верхняя граница периода.",
+    ),
+    currency: Optional[str] = Query(
+        None,
+        description="Фильтр по валюте.",
+    ),
+    kind: Literal["all", "channels", "groups", "bots"] = Query(
+        "all",
+        description="Какой тип сообществ показывать.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> CommunityStatsResponse:
@@ -114,13 +181,32 @@ async def community_stats(
     return CommunityStatsResponse(items=items)
 
 
-@router.get("/stats", response_model=AdRevenueStats)
+@router.get(
+    "/stats",
+    response_model=AdRevenueStats,
+    summary="Сводная статистика для StatsRow",
+)
 async def stats_ad_revenues(
-    date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None),
-    channel_id: Optional[int] = Query(None),
-    bot_id: Optional[int] = Query(None),
-    currency: Optional[str] = Query(None),
+    date_from: Optional[date] = Query(
+        None,
+        description="Нижняя граница периода.",
+    ),
+    date_to: Optional[date] = Query(
+        None,
+        description="Верхняя граница периода.",
+    ),
+    channel_id: Optional[int] = Query(
+        None,
+        description="Только данные по выбранному каналу.",
+    ),
+    bot_id: Optional[int] = Query(
+        None,
+        description="Только данные по выбранному боту.",
+    ),
+    currency: Optional[str] = Query(
+        None,
+        description="Активная валюта. Если не задана — берётся первая из списка валют пользователя.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AdRevenueStats:
@@ -134,16 +220,46 @@ async def stats_ad_revenues(
     )
 
 
-@router.get("/export")
+@router.get(
+    "/export",
+    summary="Экспорт рекламных записей (xlsx / csv)",
+)
 async def export_ad_revenues(
-    data_types: str = Query(..., description="comma-separated: general_income,general_expense,ads_income,ads_expense"),
-    scope: Literal["filtered", "all"] = Query("filtered"),
-    format: Literal["xlsx", "csv"] = Query("xlsx"),
-    date_from: Optional[date] = Query(None),
-    date_to: Optional[date] = Query(None),
-    channel_id: Optional[int] = Query(None),
-    bot_id: Optional[int] = Query(None),
-    currency: Optional[str] = Query(None),
+    data_types: str = Query(
+        ...,
+        description=(
+            "Список секций через запятую. Допустимые значения: "
+            "general_income, general_expense, ads_income, ads_expense."
+        ),
+    ),
+    scope: Literal["filtered", "all"] = Query(
+        "filtered",
+        description="filtered — применить фильтры из остальных параметров; all — выгрузить всё по пользователю.",
+    ),
+    format: Literal["xlsx", "csv"] = Query(
+        "xlsx",
+        description="Формат выгрузки.",
+    ),
+    date_from: Optional[date] = Query(
+        None,
+        description="Нижняя граница периода (учитывается при scope='filtered').",
+    ),
+    date_to: Optional[date] = Query(
+        None,
+        description="Верхняя граница периода (учитывается при scope='filtered').",
+    ),
+    channel_id: Optional[int] = Query(
+        None,
+        description="Фильтр по каналу (учитывается при scope='filtered').",
+    ),
+    bot_id: Optional[int] = Query(
+        None,
+        description="Фильтр по боту (учитывается при scope='filtered').",
+    ),
+    currency: Optional[str] = Query(
+        None,
+        description="Фильтр по валюте (учитывается при scope='filtered').",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> StreamingResponse:
@@ -179,7 +295,12 @@ async def export_ad_revenues(
     )
 
 
-@router.post("/", response_model=AdRevenueResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=AdRevenueResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Создать запись о доходе или расходе",
+)
 async def create_ad_revenue(
     payload: AdRevenueCreate,
     db: AsyncSession = Depends(get_db),
@@ -189,31 +310,55 @@ async def create_ad_revenue(
     return AdRevenueResponse.model_validate(item)
 
 
-@router.get("/{ad_revenue_id}", response_model=AdRevenueResponse)
+@router.get(
+    "/{ad_revenue_id}",
+    response_model=AdRevenueResponse,
+    summary="Получить одну запись",
+)
 async def get_ad_revenue(
-    ad_revenue_id: int,
+    ad_revenue_id: int = Path(
+        ...,
+        description="ID записи. Положительный — реальная AdRevenue; отрицательный — синтетическая строка из publication.",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AdRevenueResponse:
-    item = await _find_or_404(db, ad_revenue_id, current_user.id)
+    item = await find_or_404(db, ad_revenue_id, current_user.id)
     return AdRevenueResponse.model_validate(item)
 
 
-@router.patch("/{ad_revenue_id}", response_model=AdRevenueResponse)
+@router.patch(
+    "/{ad_revenue_id}",
+    response_model=AdRevenueResponse,
+    summary="Частично обновить запись",
+)
 async def update_ad_revenue(
-    ad_revenue_id: int,
     payload: AdRevenueUpdate,
+    ad_revenue_id: int = Path(
+        ...,
+        description="ID реальной AdRevenue (положительное число).",
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> AdRevenueResponse:
-    item = await _find_or_404(db, ad_revenue_id, current_user.id)
+    item = await find_or_404(db, ad_revenue_id, current_user.id)
     updated = await UpdateAdRevenue(db).execute(item, payload)
     return AdRevenueResponse.model_validate(updated)
 
 
-@router.delete("/{ad_revenue_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{ad_revenue_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Удалить запись или снять флаг is_ad с публикации",
+)
 async def delete_ad_revenue(
-    ad_revenue_id: int,
+    ad_revenue_id: int = Path(
+        ...,
+        description=(
+            "ID записи. Положительный — удаляется AdRevenue (а связанная публикация теряет рекламные поля). "
+            "Отрицательный — у publication c id=|ad_revenue_id| сбрасывается is_ad и поля ad_*."
+        ),
+    ),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> None:

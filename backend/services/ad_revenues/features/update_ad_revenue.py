@@ -5,7 +5,7 @@ from backend.schemas.ad_revenues.ad_revenue import AdRevenueUpdate
 
 
 class UpdateAdRevenue:
-    """Обновить рекламную запись."""
+    """Обновить запись. Меняются только те поля, которые пришли в payload."""
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db

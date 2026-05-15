@@ -12,7 +12,10 @@ from backend.services.ad_revenues.features.schedule_ad_revenue_snapshots import 
 
 
 class CreateAdRevenue:
-    """Создать рекламную запись (доход или расход)."""
+    """Создать одну запись о доходе или расходе.
+
+    Если канал передан только username'ом — найдёт его id по таблице каналов.
+    """
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db

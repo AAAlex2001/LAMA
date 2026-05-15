@@ -7,7 +7,7 @@ from backend.models.ad_revenues import AdRevenue
 
 
 class GetAdRevenue:
-    """Получить рекламную запись по id владельца."""
+    """Найти одну запись по её id. Если записи нет или она чужая — вернёт None."""
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db

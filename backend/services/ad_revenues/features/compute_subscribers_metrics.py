@@ -1,12 +1,9 @@
-"""Расчёт притока/оттока/удержания подписчиков для рекламных размещений.
+"""Считает приток, отток и удержание подписчиков вокруг рекламной публикации.
 
-Для пары `(channel_id, anchor_at)` ищем три точки в snapshot-таблице:
-  baseline   — последний snapshot ДО публикации
-  after_24h  — snapshot около (anchor + 24ч), окно ±2ч
-  after_48h  — snapshot около (anchor + 48ч), окно ±2ч
-
-Положительная разница попадает в `in_*`, отрицательная — в `out_*`. Когда появятся
-поштучные join/leave-события, метрики разделятся точнее без изменения схемы наружу.
+Берёт три замера из таблицы: последний ДО публикации (точка отсчёта),
+один около +24 часов и один около +48 часов (с допуском ±2 часа).
+Разница даёт приток (если выросло) или отток (если упало).
+Удержание — какая доля от 24-часового прироста осталась к 48 часам.
 """
 
 from dataclasses import dataclass, field, replace
@@ -27,7 +24,7 @@ WINDOW_48H = timedelta(hours=48)
 
 @dataclass(frozen=True)
 class SubscribersAnchor:
-    """Точка отсчёта: канал + момент рекламной публикации (в UTC)."""
+    """Один канал плюс время рекламной публикации — точка отсчёта для расчёта."""
 
     channel_id: int
     anchor_at: datetime
@@ -35,7 +32,7 @@ class SubscribersAnchor:
 
 @dataclass(frozen=True)
 class SubscribersMetrics:
-    """Дельты подписчиков около рекламной публикации."""
+    """Сколько людей пришло и ушло за 24 и 48 часов, и процент удержания."""
 
     in_24h: Optional[int] = None
     in_48h: Optional[int] = None
@@ -46,7 +43,7 @@ class SubscribersMetrics:
 
 @dataclass(frozen=True)
 class SubscribersSnapshotPoint:
-    """Запись из snapshot-таблицы, нормализованная к UTC."""
+    """Одна строка замера: когда сняли и сколько было подписчиков."""
 
     taken_at: datetime
     subscribers_count: int
@@ -54,7 +51,7 @@ class SubscribersSnapshotPoint:
 
 @dataclass(frozen=True)
 class ChannelSnapshotSeries:
-    """Все snapshot'ы одного канала в нужном временном диапазоне."""
+    """Все замеры одного канала за нужный период — чтобы искать в них точки."""
 
     channel_id: int
     points: List[SubscribersSnapshotPoint] = field(default_factory=list)
@@ -84,7 +81,10 @@ class ChannelSnapshotSeries:
 
 
 class ComputeSubscribersMetrics:
-    """Считает метрики ПДП для набора SubscribersAnchor батчем (один SQL-запрос на канал)."""
+    """Считает метрики подписчиков сразу для пачки рекламных публикаций.
+
+    На каждый канал делается один запрос в БД, дальше расчёт идёт уже в памяти.
+    """
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
