@@ -11,35 +11,36 @@ from backend.models.base import Base
 
 
 class ContentType(str, enum.Enum):
-    """Тип контента"""
-    TEXT = "text"
-    IMAGE = "image"
-    LINK = "link"
+    """Тип одной записи в LandingContent: TEXT (заголовок/текст), IMAGE (картинка), LINK (URL+title)."""
+
+    TEXT = "text"  # Текстовое поле (заголовок/абзац/кнопка)
+    IMAGE = "image"  # Изображение (url + alt)
+    LINK = "link"  # Ссылка (text + url)
 
 
 class SectionType(str, enum.Enum):
-    """Тип секции лендинга"""
-    HERO = "hero"
-    ADVANTAGES = "advantages"
-    KEY_ADVANTAGES = "key_advantages"
-    FAQ = "faq"
-    PRICING = "pricing"
-    USERS = "users"
-    LAMA = "lama"
-    FOOTER = "footer"
-    HEADER = "header"
-    OTHER = "other"
+    """Тип секции лендинга — соответствует блоку на странице (HERO, FAQ, PRICING и т.д.)."""
+    HERO = "hero"  # Первый экран лендинга
+    ADVANTAGES = "advantages"  # Преимущества (карточки)
+    KEY_ADVANTAGES = "key_advantages"  # Иконные преимущества
+    FAQ = "faq"  # Вопросы/ответы
+    PRICING = "pricing"  # Тарифы
+    USERS = "users"  # Блок со счётчиком пользователей
+    LAMA = "lama"  # Блок про канал/автора
+    FOOTER = "footer"  # Подвал
+    HEADER = "header"  # Шапка
+    OTHER = "other"  # Прочее
 
 
 class Locale(str, enum.Enum):
-    """Поддерживаемые локали"""
-    RU = "RU"
-    SR = "SR"
-    EN = "EN"
+    """Поддерживаемые локали контента: RU, SR (сербский), EN."""
+    RU = "RU"  # Русский
+    SR = "SR"  # Сербский
+    EN = "EN"  # Английский
 
 
 class LandingSection(Base):
-    """Секция лендинга"""
+    """Одна секция лендинга (Hero, FAQ, ...). Контент с локализацией хранится в LandingContent."""
     __tablename__ = "landing_sections"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -56,7 +57,7 @@ class LandingSection(Base):
 
 
 class LandingContent(Base):
-    """Контент лендинга (тексты, изображения, ссылки и т.д.)"""
+    """Одно поле секции (key/value), локализованное. Для коллекций ключи нумерованные (hero_image_landing_1)."""
     __tablename__ = "landing_contents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

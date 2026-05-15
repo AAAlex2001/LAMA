@@ -17,5 +17,7 @@ class SessionResponse(BaseModel):
 
 
 class SessionListResponse(BaseModel):
+    """Список UserSession юзера + total."""
+
     items: list[SessionResponse]
     total: int

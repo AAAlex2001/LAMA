@@ -7,12 +7,16 @@ from backend.schemas.publications.common import InlineKeyboard
 
 
 class EditPublishedRequest(BaseModel):
+    """Запрос на редактирование уже опубликованного сообщения в TG."""
+
     text_content: Optional[str] = Field(None, min_length=1)
     media_urls: Optional[List[str]] = None
     inline_keyboard: Optional[InlineKeyboard] = None
 
 
 class NotificationResponse(BaseModel):
+    """Результат публикации (success/error) для уведомления юзера."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -24,6 +28,8 @@ class NotificationResponse(BaseModel):
 
 
 class TelegramMessageResponse(BaseModel):
+    """Запись о сообщении в Telegram: chat + telegram_message_id."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -34,6 +40,8 @@ class TelegramMessageResponse(BaseModel):
 
 
 class ChannelPublishResult(BaseModel):
+    """Результат отправки публикации в один канал: success/error/message_ids."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     channel: str
@@ -49,6 +57,8 @@ class ChannelPublishResult(BaseModel):
 
 
 class PublishResult(BaseModel):
+    """Агрегированный результат публикации: success_count + список ChannelPublishResult."""
+
     success: bool
     results: List[ChannelPublishResult]
     success_count: int

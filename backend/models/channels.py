@@ -7,48 +7,62 @@ import enum
 
 
 class ChannelType(str, enum.Enum):
-    CHANNEL = "CHANNEL"
-    GROUP = "GROUP"
-    SUPERGROUP = "SUPERGROUP"
+    """Тип чата в Telegram: SUPERGROUP / CHANNEL / FORUM."""
+
+    CHANNEL = "CHANNEL"  # Telegram-канал (broadcast)
+    GROUP = "GROUP"  # Обычная группа
+    SUPERGROUP = "SUPERGROUP"  # Супергруппа
 
 
 class BackupMode(str, enum.Enum):
-    DISABLED = "DISABLED"
-    ENABLED = "ENABLED"
-    INSTANT = "INSTANT"
-    POST_FACTUM = "POST_FACTUM"
+    """Режим бэкапа канала: DISABLED / ENABLED / INSTANT (сразу) / POST_FACTUM (по расписанию)."""
+
+    DISABLED = "DISABLED"  # Бэкап выключен
+    ENABLED = "ENABLED"  # Бэкап включен (вручную)
+    INSTANT = "INSTANT"  # Бэкапить сразу при публикации
+    POST_FACTUM = "POST_FACTUM"  # По расписанию (celery beat)
 
 
 class BackupStatus(str, enum.Enum):
-    ACTIVE = "ACTIVE"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    IN_PROGRESS = "IN_PROGRESS"
+    """Статус задачи бэкапа: ACTIVE / IN_PROGRESS / COMPLETED / FAILED."""
+
+    ACTIVE = "ACTIVE"  # Задача создана, ждёт обработки
+    COMPLETED = "COMPLETED"  # Задача завершена успешно
+    FAILED = "FAILED"  # Задача упала с ошибкой
+    IN_PROGRESS = "IN_PROGRESS"  # Задача выполняется celery
 
 
 class ActionType(str, enum.Enum):
-    KICK = "KICK"
-    MUTE = "MUTE"
-    UNMUTE = "UNMUTE"
-    DELETE = "DELETE"
-    BAN = "BAN"
+    """Модерационное действие: KICK / MUTE / UNMUTE / DELETE / BAN."""
+
+    KICK = "KICK"  # Кикнуть из чата
+    MUTE = "MUTE"  # Заглушить на время
+    UNMUTE = "UNMUTE"  # Снять mute
+    DELETE = "DELETE"  # Удалить сообщение
+    BAN = "BAN"  # Забанить навсегда
 
 
 class LinkFilterMode(str, enum.Enum):
-    DISABLED = "DISABLED"
-    BLOCK_ALL = "BLOCK_ALL"
-    ALLOW_TME_ONLY = "ALLOW_TME_ONLY"
-    WHITELIST = "WHITELIST"
-    BLACKLIST = "BLACKLIST"
+    """Режим фильтра ссылок: DISABLED / BLOCK_ALL / ALLOW_TME_ONLY / WHITELIST / BLACKLIST."""
+
+    DISABLED = "DISABLED"  # Фильтр выключен
+    BLOCK_ALL = "BLOCK_ALL"  # Блокировать все ссылки
+    ALLOW_TME_ONLY = "ALLOW_TME_ONLY"  # Только t.me-ссылки
+    WHITELIST = "WHITELIST"  # По whitelist разрешённых доменов
+    BLACKLIST = "BLACKLIST"  # По blacklist запрещённых доменов
 
 
 class CaptchaFailAction(str, enum.Enum):
-    KICK = "KICK"
-    MUTE = "MUTE"
-    BAN = "BAN"
+    """Что делать при провале капчи: KICK / MUTE / BAN."""
+
+    KICK = "KICK"  # Кикнуть после неудачи
+    MUTE = "MUTE"  # Заглушить на время
+    BAN = "BAN"  # Забанить
 
 
 class ChannelGroup(Base):
+    """Канал или группа в Telegram, привязанная к боту юзера."""
+
     __tablename__ = "channel_groups"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -249,6 +263,8 @@ class ChannelGroup(Base):
 
 
 class BackedUpPost(Base):
+    """Сохранённая копия поста из канала (для backup / restore)."""
+
     __tablename__ = "backed_up_posts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -287,6 +303,8 @@ class BackedUpPost(Base):
 
 
 class PostRetransmission(Base):
+    """Запись о переотправке поста в зеркальный канал (MIRROR backup)."""
+
     __tablename__ = "post_retransmissions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -309,6 +327,8 @@ class PostRetransmission(Base):
 
 
 class BackupJob(Base):
+    """Celery-задача бэкапа канала: статус + прогресс + ошибки."""
+
     __tablename__ = "backup_jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -344,6 +364,8 @@ class BackupJob(Base):
     )
 
 class ChannelModerationRule(Base):
+    """Правило модерации канала: триггер (слово/паттерн) → action."""
+
     __tablename__ = "channel_moderation_rules"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -362,6 +384,8 @@ class ChannelModerationRule(Base):
 
 
 class ChannelAutoDeleteSettings(Base):
+    """Авто-удаление сообщений: TTL и whitelist пользователей/типов."""
+
     __tablename__ = "channel_auto_delete_settings"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -424,6 +448,8 @@ class ChatInviteLink(Base):
 
 
 class ForumTopic(Base):
+    """Тема форума (Telegram Topics) в supergroup-канале."""
+
     __tablename__ = "forum_topics"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -444,6 +470,8 @@ class ForumTopic(Base):
 
 
 class InformationalMessage(Base):
+    """Закреплённое инфо-сообщение канала (rules / welcome / pinned)."""
+
     __tablename__ = "informational_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -462,6 +490,8 @@ class InformationalMessage(Base):
 
 
 class ChannelSubscribersSnapshot(Base):
+    """Снапшот числа подписчиков канала на момент времени (для графиков и ad_revenues)."""
+
     __tablename__ = "channel_subscribers_snapshots"
     __table_args__ = (
         Index("ix_channel_subs_snap_channel_taken", "channel_id", "taken_at"),

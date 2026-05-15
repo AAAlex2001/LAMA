@@ -7,6 +7,8 @@ from backend.models.channels import LinkFilterMode
 
 
 class ChannelGroupBase(BaseModel):
+    """Базовая схема канала: telegram_id + type + title."""
+
     title: str = Field(..., max_length=255)
     username: Optional[str] = Field(None, max_length=255)
     description: Optional[str] = None
@@ -16,6 +18,8 @@ class ChannelGroupBase(BaseModel):
 
 
 class ChannelGroupCreate(BaseModel):
+    """Создание канала (привязка к боту)."""
+
     telegram_id: int
     channel_type: ChannelType
     title: str = Field(..., max_length=255)
@@ -71,6 +75,8 @@ class ChannelPermissionsUpdate(BaseModel):
 
 
 class ChannelGroupResponse(BaseModel):
+    """Канал с полным составом полей + agg-метрики."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int

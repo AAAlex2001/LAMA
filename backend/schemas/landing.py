@@ -1,8 +1,11 @@
-"""
-Схемы для работы с контентом лендинга
-"""
+"""Схемы для PUT-запросов лендинга. Каждая секция (Hero, FAQ, Pricing, ...) — отдельная группа схем."""
 from typing import List, Optional
 from pydantic import BaseModel
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Hero
+# ──────────────────────────────────────────────────────────────────────
 
 
 class HeroImage(BaseModel):
@@ -18,6 +21,11 @@ class HeroContentRequest(BaseModel):
     buttonUrl: str = ""
     images: List[HeroImage]
     templateImages: Optional[List[HeroImage]] = None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Advantages — карточки преимуществ
+# ──────────────────────────────────────────────────────────────────────
 
 
 class AdvantagesCard(BaseModel):
@@ -38,6 +46,11 @@ class AdvantagesContentRequest(BaseModel):
     cards: List[AdvantagesCard]
 
 
+# ──────────────────────────────────────────────────────────────────────
+# Key Advantages — иконные преимущества
+# ──────────────────────────────────────────────────────────────────────
+
+
 class KeyAdvantageItem(BaseModel):
     icon: Optional[str] = None  # SVG как текст или ссылка
     title: str
@@ -47,6 +60,11 @@ class KeyAdvantageItem(BaseModel):
 class KeyAdvantagesContentRequest(BaseModel):
     headline: str
     advantages: List[KeyAdvantageItem]
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Pricing — тарифы
+# ──────────────────────────────────────────────────────────────────────
 
 
 class PricingPlan(BaseModel):
@@ -65,6 +83,11 @@ class PricingContentRequest(BaseModel):
     plans: List[PricingPlan]
 
 
+# ──────────────────────────────────────────────────────────────────────
+# FAQ — вопросы/ответы
+# ──────────────────────────────────────────────────────────────────────
+
+
 class FAQItem(BaseModel):
     question: str
     answer: str
@@ -79,6 +102,11 @@ class FAQContentRequest(BaseModel):
     secondaryButtonLink: Optional[str] = None
     helpText: Optional[str] = None
     botLink: Optional[str] = None
+
+
+# ──────────────────────────────────────────────────────────────────────
+# Users / Lama — статичные блоки со счётчиком и ссылками
+# ──────────────────────────────────────────────────────────────────────
 
 
 class UsersContentRequest(BaseModel):

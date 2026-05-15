@@ -10,6 +10,8 @@ from backend.models.landing import Locale
 
 
 class KBCategory(Base):
+    """Категория базы знаний: slug + title + локализация + порядок."""
+
     __tablename__ = "kb_categories"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -25,6 +27,8 @@ class KBCategory(Base):
 
 
 class KBArticle(Base):
+    """Статья базы знаний: title + sections[] (JSON-блоки) + meta + feedback counters."""
+
     __tablename__ = "kb_articles"
     __table_args__ = (
         UniqueConstraint("slug", "locale", name="uq_kb_articles_slug_locale"),

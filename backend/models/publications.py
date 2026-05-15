@@ -9,35 +9,39 @@ import secrets
 
 
 class PublicationStatus(enum.Enum):
-    DRAFT = "draft"
-    SCHEDULED = "scheduled"
-    PUBLISHED = "published"
-    PARTIAL_SUCCESS = "partial_success"
-    FAILED = "failed"
-    DELETED = "deleted"
+    """Статус публикации: DRAFT / SCHEDULED / PUBLISHED / PARTIAL_SUCCESS / FAILED / DELETED."""
+
+    DRAFT = "draft"  # Черновик (не запланирована)
+    SCHEDULED = "scheduled"  # Запланирована, ждёт scheduled_time
+    PUBLISHED = "published"  # Опубликована во все каналы
+    PARTIAL_SUCCESS = "partial_success"  # Часть каналов получила, часть нет
+    FAILED = "failed"  # Полная неудача публикации
+    DELETED = "deleted"  # Удалена (soft delete)
 
 
 class ContentType(enum.Enum):
-    TEXT = "text"
-    TEXT_WITH_MEDIA = "text_with_media"
-    IMAGE = "image"
-    VIDEO = "video"
-    AUDIO = "audio"
-    DOCUMENT = "document"
-    LINK = "link"
-    POLL = "poll"
-    QUIZ = "quiz"
+    """Тип контента: TEXT / TEXT_WITH_MEDIA / IMAGE / VIDEO / AUDIO / DOCUMENT / LINK / POLL / QUIZ."""
+
+    TEXT = "text"  # Только текст
+    TEXT_WITH_MEDIA = "text_with_media"  # Текст + медиа (одно или альбом)
+    IMAGE = "image"  # Фото
+    VIDEO = "video"  # Видео
+    AUDIO = "audio"  # Аудио
+    DOCUMENT = "document"  # Документ/файл
+    LINK = "link"  # Ссылка с превью
+    POLL = "poll"  # Опрос
+    QUIZ = "quiz"  # Квиз (опрос с правильным ответом)
 
 
 class RepeatInterval(enum.Enum):
-    """Интервал повторения публикации"""
-    NEVER = "never"
-    DAILY = "daily"
-    WEEKLY = "weekly"
-    BIWEEKLY = "biweekly"
-    MONTHLY = "monthly"
-    YEARLY = "yearly"
-    CUSTOM = "custom"
+    """Интервал повторения: NEVER / DAILY / WEEKLY / BIWEEKLY / MONTHLY / YEARLY / CUSTOM."""
+    NEVER = "never"  # Не повторять
+    DAILY = "daily"  # Каждый день
+    WEEKLY = "weekly"  # Каждую неделю
+    BIWEEKLY = "biweekly"  # Раз в 2 недели
+    MONTHLY = "monthly"  # Каждый месяц
+    YEARLY = "yearly"  # Каждый год
+    CUSTOM = "custom"  # Кастомный интервал (repeat_custom_*)
 
 
 publication_tags = Table(
@@ -59,6 +63,8 @@ publication_channels = Table(
 
 
 class Publication(Base):
+    """Публикация (главная сущность): контент + расписание + повторения + каналы + теги."""
+
     __tablename__ = 'publications'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -147,6 +153,8 @@ class Publication(Base):
 
 
 class PublicationSeries(Base):
+    """Серия публикаций: набор постов с автоматической нумерацией и reply-цепочкой."""
+
     __tablename__ = 'publication_series'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -161,6 +169,8 @@ class PublicationSeries(Base):
 
 
 class Tag(Base):
+    """Тег публикации; уникален по (owner_id, name)."""
+
     __tablename__ = 'tags'
     __table_args__ = (
         Index('ix_tags_owner_name', 'owner_id', 'name', unique=True),
@@ -178,6 +188,8 @@ class Tag(Base):
 
 
 class TelegramMessage(Base):
+    """Связка Publication ↔ Channel ↔ telegram_message_id (одна на каждый канал отправки)."""
+
     __tablename__ = 'telegram_messages'
     __table_args__ = (
         Index('ix_telegram_messages_pub_channel', 'publication_id', 'channel_id'),
@@ -202,6 +214,8 @@ class TelegramMessage(Base):
 
 
 class PublicationNotification(Base):
+    """Уведомление о результате публикации (success / error) для UI."""
+
     __tablename__ = 'publication_notifications'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -215,6 +229,8 @@ class PublicationNotification(Base):
 
 
 class TextTemplate(Base):
+    """Шаблон текста публикации для повторного использования."""
+
     __tablename__ = 'text_templates'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -227,6 +243,8 @@ class TextTemplate(Base):
 
 
 class ButtonClick(Base):
+    """Клик пользователя по inline-кнопке публикации; уникальный по (publication_id, button_id, tg_user_id)."""
+
     __tablename__ = 'button_clicks'
     __table_args__ = (
         Index('ix_button_clicks_pub_btn', 'publication_id', 'button_id'),

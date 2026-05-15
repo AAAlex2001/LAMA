@@ -4,10 +4,14 @@ from backend.schemas.auth.users import UserResponse
 
 
 class RefreshTokenRequest(BaseModel):
+    """Запрос обновления токенов с refresh-токеном."""
+
     refresh_token: str
 
 
 class AuthResponse(BaseModel):
+    """Ответ логина: access + refresh + user + registration_completed."""
+
     access_token: str
     refresh_token: str | None = None
     token_type: str = "bearer"

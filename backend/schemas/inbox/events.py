@@ -17,9 +17,13 @@ class InboxEventBase(BaseModel):
     payload: Dict[str, Any] = {}
 
 class InboxEventCreate(InboxEventBase):
+    """Запись нового события в инбокс."""
+
     owner_id: int
 
 class InboxEventResponse(InboxEventBase):
+    """Событие с derived-полями (is_new, trigger_names, reason) из payload."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -67,16 +71,22 @@ class InboxEventResponse(InboxEventBase):
         return self
 
 class InboxListResponse(BaseModel):
+    """Список событий + total + has_more."""
+
     items: List[InboxEventResponse]
     total: int
     has_more: bool = False
 
 class BulkActionRequest(BaseModel):
+    """Массовое действие: список ids + action + опц. apply_to_all=True."""
+
     event_ids: List[int]
     action: BulkActionType
     apply_to_all: bool = False
 
 class SpecificActionRequest(BaseModel):
+    """Точечное действие над одним событием: action_type + опц. payload."""
+
     action_type: str
     payload: Optional[Dict[str, Any]] = None
 

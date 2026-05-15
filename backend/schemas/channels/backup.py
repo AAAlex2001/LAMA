@@ -6,6 +6,8 @@ from backend.schemas.channels.enums import BackupMode, BackupStatus
 
 
 class BackupModeUpdateRequest(BaseModel):
+    """Смена BackupMode канала."""
+
     backup_mode: BackupMode
     backup_target_ids: Optional[List[int]] = None
     backup_post_types: Optional[List[str]] = None
@@ -14,6 +16,8 @@ class BackupModeUpdateRequest(BaseModel):
 
 
 class BackedUpPostResponse(BaseModel):
+    """Сохранённая копия поста с медиа."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -31,6 +35,8 @@ class BackedUpPostResponse(BaseModel):
 
 
 class BackedUpPostListResponse(BaseModel):
+    """Список бэкапов канала + total."""
+
     items: List[BackedUpPostResponse]
     total: int
     page: int
@@ -46,6 +52,8 @@ class BackupJobCreate(BaseModel):
 
 
 class BackupJobResponse(BaseModel):
+    """Статус задачи бэкапа + прогресс."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
@@ -67,6 +75,8 @@ class BackupJobListResponse(BaseModel):
 
 
 class RestoreBackupRequest(BaseModel):
+    """Восстановление выбранных постов из бэкапа в канал."""
+
     source_channel_id: int
     target_channel_id: int
     content_types: Optional[List[str]] = None
@@ -75,12 +85,16 @@ class RestoreBackupRequest(BaseModel):
 
 
 class RestoreBackupResponse(BaseModel):
+    """Результат восстановления: восстановленные + ошибки."""
+
     success: bool
     job_id: int
     message: str
 
 
 class ChannelStatsResponse(BaseModel):
+    """Метрики канала: подписчики + публикации + клики."""
+
     channel_id: int
     total_backed_up_posts: int
     total_retransmissions: int

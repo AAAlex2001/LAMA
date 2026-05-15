@@ -16,6 +16,8 @@ class DirectChatBase(BaseModel):
     is_blocked: bool = False
 
 class DirectChatCreate(DirectChatBase):
+    """Идемпотентное создание DM-чата по (bot_id, tg_chat_id)."""
+
     bot_id: int
     tg_chat_id: int
     tg_user_id: Optional[int] = None
@@ -24,6 +26,8 @@ class DirectChatCreate(DirectChatBase):
     tg_last_name: Optional[str] = None
 
 class DirectChatUpdate(BaseModel):
+    """Частичный апдейт: pin/block/unread/профиль."""
+
     unread_count: Optional[int] = None
     is_pinned: Optional[bool] = None
     is_blocked: Optional[bool] = None
@@ -32,6 +36,8 @@ class DirectChatUpdate(BaseModel):
     tg_last_name: Optional[str] = None
 
 class DirectChatResponse(DirectChatBase):
+    """DM-чат: профиль собеседника + preview + counters."""
+
     id: int
     bot_id: int
     tg_chat_id: int
@@ -52,6 +58,8 @@ class DirectChatResponse(DirectChatBase):
     model_config = {"from_attributes": True}
 
 class DirectChatListResponse(BaseModel):
+    """Список DM-чатов + total + page + page_size."""
+
     items: List[DirectChatResponse]
     total: int
     page: int

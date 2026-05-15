@@ -13,7 +13,7 @@ from backend.models.bots import MessageType
 from backend.models.base import Base
 
 class DirectChat(Base):
-    """Модель чата пользователя с ботом."""
+    """DM-чат подписчика с ботом: профиль собеседника + превью последнего сообщения + unread counter. Уникальный по (bot_id, tg_chat_id)."""
     __tablename__ = "direct_chats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

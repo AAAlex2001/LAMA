@@ -6,6 +6,8 @@ from backend.models.base import Base
 from backend.schemas.inbox.enums import InboxCategory, EntityType, EventType, EventStatus
 
 class InboxEvent(Base):
+    """Событие inbox: join-request / ban / link-join / триггер / автоответ / команда / ошибка."""
+
     __tablename__ = "inbox_events"
     __table_args__ = (
         Index("ix_inbox_events_owner_created", "owner_id", "created_at"),

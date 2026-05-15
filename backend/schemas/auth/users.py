@@ -6,6 +6,8 @@ from backend.models.auth import UserRole
 
 
 class TelegramAccountResponse(BaseModel):
+    """Данные TelegramAccount для UserResponse."""
+
     model_config = ConfigDict(from_attributes=True)
 
     telegram_id: int

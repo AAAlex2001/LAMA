@@ -11,13 +11,14 @@ from backend.models.base import Base
 
 
 class UserRole(str, PyEnum):
-    """Роли пользователей в системе"""
-    USER = "USER"  # Обычный пользователь (покупатель)
-    ADMIN = "ADMIN"  # Администратор (супер-админ)
+    """Роль юзера в системе: USER (обычный) или ADMIN (доступ к /auth/users/*)."""
+
+    USER = "USER"  # Обычный пользователь
+    ADMIN = "ADMIN"  # Администратор (доступ к /auth/users/*)
 
 
 class User(Base):
-    """Пользователь системы"""
+    """Юзер LamaPlanner: может авторизоваться через Telegram, email или одноразовый bot-код. Является owner-ом ботов, каналов, публикаций."""
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -48,7 +49,7 @@ class User(Base):
 
 
 class TelegramAccount(Base):
-    """Telegram-аккаунт пользователя"""
+    """Привязка User-а к Telegram-аккаунту (1:1). Может отсутствовать у email-only юзеров."""
     __tablename__ = "telegram_accounts"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -70,7 +71,7 @@ class TelegramAccount(Base):
 
 
 class UserSession(Base):
-    """Сессия пользователя (JWT токен)"""
+    """Активная сессия с access+refresh-токенами. Серверная инвалидация через is_active=False (logout)."""
     __tablename__ = "user_sessions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -92,7 +93,7 @@ class UserSession(Base):
 
 
 class BotLoginCode(Base):
-    """Временный код для авторизации через бота"""
+    """Одноразовый код для логина через бота. TTL ~5 минут, после redeem is_used=True."""
     __tablename__ = "bot_login_codes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

@@ -2,6 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class TelegramAuthPayload(BaseModel):
+    """Данные от Telegram Login Widget (HMAC-подписанные)."""
+
     id: int = Field(..., description="Telegram user ID")
     first_name: str = Field(..., description="Telegram first name")
     last_name: str | None = Field(None, description="Telegram last name")

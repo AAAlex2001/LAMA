@@ -19,10 +19,14 @@ class InlineButton(BaseModel):
 
 
 class InlineKeyboard(BaseModel):
+    """Inline-клавиатура: rows[] с buttons[]."""
+
     buttons: List[List[InlineButton]]
 
 
 class PollData(BaseModel):
+    """Данные опроса/квиза: question + options + опц. correct_option_id."""
+
     question: str
     options: List[str] = Field(..., min_length=2, max_length=12)
     is_anonymous: bool = True

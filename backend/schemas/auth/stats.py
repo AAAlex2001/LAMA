@@ -2,6 +2,8 @@ from pydantic import BaseModel
 
 
 class UserStatsResponse(BaseModel):
+    """Счётчики юзера: bots/channels/publications/sessions (всего и активных)."""
+
     user_id: int
     total_bots: int
     active_bots: int

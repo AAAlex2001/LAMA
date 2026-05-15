@@ -11,14 +11,15 @@ from backend.models.base import Base
 
 
 class BotStatus(str, enum.Enum):
-    """Статус бота"""
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    ERROR = "ERROR"
+    """Статус бота: ACTIVE (webhook принимает), INACTIVE (отключен), ERROR (сбой)."""
+
+    ACTIVE = "ACTIVE"  # Бот активен, webhook принимает апдейты
+    INACTIVE = "INACTIVE"  # Бот отключён, webhook удалён
+    ERROR = "ERROR"  # Сбой регистрации webhook
 
 
 class TriggerType(str, enum.Enum):
-    """Тип триггера (события)"""
+    """Событие которое запускает триггер бота: join-request, member, captcha, message, command."""
     JOIN_REQUEST_CREATED = "JOIN_REQUEST_CREATED"  # Заявка на вступление создана
     JOIN_REQUEST_APPROVED = "JOIN_REQUEST_APPROVED"  # Заявка одобрена
     JOIN_REQUEST_REJECTED = "JOIN_REQUEST_REJECTED"  # Заявка отклонена
@@ -31,7 +32,7 @@ class TriggerType(str, enum.Enum):
 
 
 class TriggerActionType(str, enum.Enum):
-    """Тип действия триггера"""
+    """Что делает триггер при срабатывании: SEND_MESSAGE/MEDIA, ADD/REMOVE_FROM_GROUP, MUTE/BAN/UNBAN."""
     SEND_MESSAGE = "SEND_MESSAGE"  # Отправить сообщение
     SEND_MEDIA = "SEND_MEDIA"  # Отправить медиа
     ADD_TO_GROUP = "ADD_TO_GROUP"  # Добавить в группу
@@ -42,20 +43,20 @@ class TriggerActionType(str, enum.Enum):
 
 
 class ApprovalMode(str, enum.Enum):
-    """Режим одобрения заявок"""
+    """Режим одобрения заявок на вступление: AUTO (все), MANUAL (вручную), CRITERIA (по условиям подписок)."""
     AUTO = "AUTO"  # Автоматическое одобрение всех
     MANUAL = "MANUAL"  # Ручное одобрение
     CRITERIA = "CRITERIA"  # По критериям (подписка на другие каналы и т.д.)
 
 
 class ApprovalDestination(str, enum.Enum):
-    """Куда отправлять заявки на ручное одобрение"""
+    """Куда отправлять заявки на ручное одобрение: INBOX (LamaPlanner) или TELEGRAM_BOT."""
     INBOX = "INBOX"  # В Инбокс LamaPlanner
     TELEGRAM_BOT = "TELEGRAM_BOT"  # В Telegram-бота
 
 
 class CaptchaMode(str, enum.Enum):
-    """Режим капчи"""
+    """Режим капчи: DISABLED, JOIN_REQUEST (в ЛС при заявке), AFTER_JOIN (в группе после входа), BOTH."""
     DISABLED = "DISABLED"  # Капча отключена
     JOIN_REQUEST = "JOIN_REQUEST"  # Капча при заявке на вступление (в ЛС)
     AFTER_JOIN = "AFTER_JOIN"  # Капча после вступления (в группе)
@@ -63,26 +64,26 @@ class CaptchaMode(str, enum.Enum):
 
 
 class MessageType(str, enum.Enum):
-    """Тип сообщения"""
-    TEXT = "TEXT"
-    PHOTO = "PHOTO"
-    VIDEO = "VIDEO"
-    DOCUMENT = "DOCUMENT"
-    AUDIO = "AUDIO"
-    VOICE = "VOICE"
-    STICKER = "STICKER"
-    ANIMATION = "ANIMATION"
+    """Тип контента в BotMessage: TEXT, PHOTO, VIDEO, DOCUMENT, AUDIO, VOICE, STICKER, ANIMATION."""
+    TEXT = "TEXT"  # Текст
+    PHOTO = "PHOTO"  # Фото
+    VIDEO = "VIDEO"  # Видео
+    DOCUMENT = "DOCUMENT"  # Документ/файл
+    AUDIO = "AUDIO"  # Аудио
+    VOICE = "VOICE"  # Голосовое
+    STICKER = "STICKER"  # Стикер
+    ANIMATION = "ANIMATION"  # GIF / анимация
 
 
 class TriggerChatType(str, enum.Enum):
-    """Тип чата для срабатывания триггера"""
+    """Где работает триггер: PRIVATE (ЛС), GROUP (группы), BOTH."""
     PRIVATE = "PRIVATE"  # Только в ЛС с ботом
     GROUP = "GROUP"  # Только в группах/супергруппах
     BOTH = "BOTH"  # И в ЛС, и в группах
 
 
 class Bot(Base):
-    """Модель бота"""
+    """Telegram-бот юзера: токен + webhook + настройки приветствия/капчи/одобрения. Уникальный по (owner_id, telegram_id)."""
     __tablename__ = "bots"
     __table_args__ = (
         UniqueConstraint('owner_id', 'telegram_id', name='bots_owner_telegram_unique'),
@@ -140,7 +141,7 @@ class Bot(Base):
 
 
 class BotMessage(Base):
-    """Модель сообщения бота"""
+    """DM-сообщение бота: входящее (is_incoming=True) или исходящее. Хранит raw_data из aiogram."""
     __tablename__ = "bot_messages"
     __table_args__ = (
         Index("ix_bot_messages_bot_chat_created", "bot_id", "chat_id", "created_at"),
@@ -220,14 +221,14 @@ class BotMessage(Base):
 
 
 class CommandScope(str, enum.Enum):
-    """Область работы команды"""
+    """Где работает команда бота: PRIVATE (ЛС), GROUPS (группы), ALL (везде)."""
     PRIVATE = "PRIVATE"  # Только в личных сообщениях
     GROUPS = "GROUPS"    # Только в группах/супергруппах
     ALL = "ALL"          # Везде (личные сообщения и группы)
 
 
 class BotCommand(Base):
-    """Модель команды бота (автоответы)"""
+    """Команда бота с текстовым/медиа-ответом. Может быть привязана к каналу (channel_id) или быть общей."""
     __tablename__ = "bot_commands"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -285,7 +286,7 @@ class BotCommandButtonClick(Base):
 
 
 class AutoReply(Base):
-    """Модель автоответа на ключевые слова"""
+    """Автоответ бота: матчит keywords[] → отправляет ответ. С rate-limit per_user/per_group."""
     __tablename__ = "bot_auto_replies"
     __table_args__ = (
         Index("ix_bot_auto_replies_bot_active_channel", "bot_id", "is_active", "channel_id"),
@@ -340,7 +341,7 @@ class AutoReplyLog(Base):
 
 
 class PendingApproval(Base):
-    """Модель для хранения ожидающих одобрения заявок с капчей"""
+    """Заявка на вступление, ждёт ручного одобрения или прохождения капчи."""
     __tablename__ = "pending_approvals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -365,7 +366,7 @@ class PendingApproval(Base):
 
 
 class PendingJoinApproval(Base):
-    """Ожидающие одобрения заявки (для автоодобрения при подписке)"""
+    """Заявка которая будет автоодобрена когда юзер подпишется на все missing_channels."""
     __tablename__ = "pending_join_approvals"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -377,7 +378,7 @@ class PendingJoinApproval(Base):
 
 
 class Trigger(Base):
-    """Модель триггера для автоматизации действий"""
+    """Триггер бота: событие (TriggerType) → действие (TriggerActionType) + опциональная задержка / окно / фильтры."""
     __tablename__ = "bot_triggers"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -422,7 +423,7 @@ class Trigger(Base):
 
 
 class ScheduledTriggerTask(Base):
-    """Отложенные задачи триггеров (для delayed triggers)"""
+    """Отложенный triggers с delay_minutes>0: ждёт execute_at, потом celery его исполняет."""
     __tablename__ = "scheduled_trigger_tasks"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -450,16 +451,16 @@ class ScheduledTriggerTask(Base):
 
 
 class RecurringMessageInterval(str, enum.Enum):
-    """Интервал повторения"""
-    HOURLY = "HOURLY"
-    DAILY = "DAILY"
-    WEEKLY = "WEEKLY"
-    MONTHLY = "MONTHLY"
-    CUSTOM = "CUSTOM"
+    """Интервал повторения для RecurringMessage: HOURLY / DAILY / WEEKLY / MONTHLY / CUSTOM."""
+    HOURLY = "HOURLY"  # Каждый час
+    DAILY = "DAILY"  # Каждый день
+    WEEKLY = "WEEKLY"  # Каждую неделю
+    MONTHLY = "MONTHLY"  # Каждый месяц
+    CUSTOM = "CUSTOM"  # Кастомный интервал из payload
 
 
 class RecurringMessage(Base):
-    """Повторяющиеся сообщения для ботов"""
+    """Регулярная рассылка от бота: интервал + список chat_id + контент. celery-beat-задача."""
     __tablename__ = "recurring_messages"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -496,7 +497,7 @@ class RecurringMessage(Base):
 
 
 class RecurringMessageLog(Base):
-    """Лог отправок повторяющихся сообщений"""
+    """История отправок RecurringMessage: timestamp + статус + сколько чатов получило."""
     __tablename__ = "recurring_message_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)

@@ -8,6 +8,8 @@ from pydantic import BaseModel, ConfigDict
 
 
 class TokenPair(BaseModel):
+    """Пара access+refresh JWT-токенов."""
+
     access_token: str
     refresh_token: str
 
@@ -28,11 +30,15 @@ class MessageBlockDecision(BaseModel):
 
 
 class IncomingMediaInfo(BaseModel):
+    """Информация о входящем медиа: тип + file_id."""
+
     media_type: str
     file_id: Optional[str] = None
 
 
 class DownloadedMedia(BaseModel):
+    """Скачанные байты медиа + MIME-тип."""
+
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     file_bytes: bytes
@@ -40,6 +46,8 @@ class DownloadedMedia(BaseModel):
 
 
 class PaginatedResponse(BaseModel):
+    """Базовый ответ-обёртка с items[] + total + has_more."""
+
     items: List[Any]
     total: int
 

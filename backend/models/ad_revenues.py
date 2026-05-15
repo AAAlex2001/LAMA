@@ -6,6 +6,8 @@ from backend.models.base import Base
 
 
 class AdRevenue(Base):
+    """Запись о рекламном размещении: канал, дата, сумма, валюта + опц. ссылка на пост."""
+
     __tablename__ = "ad_revenues"
     __table_args__ = (
         Index("ix_ad_revenues_owner_date", "owner_id", "revenue_date"),

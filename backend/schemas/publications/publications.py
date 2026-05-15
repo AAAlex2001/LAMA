@@ -16,6 +16,8 @@ from backend.schemas.publications.tags import TagResponse
 
 
 class PublicationBase(BaseModel):
+    """Базовая схема публикации со всеми полями контента/расписания/повторений."""
+
     content_type: ContentType
     text_content: Optional[str] = None
     formatted_content: Optional[dict[str, Any]] = None
@@ -134,10 +136,14 @@ class PublicationBase(BaseModel):
 
 
 class PublicationCreate(PublicationBase):
+    """Создание публикации: все обязательные + опц. поля PublicationBase + owner."""
+
     status: PublicationStatus = PublicationStatus.DRAFT
 
 
 class PublicationUpdate(BaseModel):
+    """Частичный апдейт: все поля Optional."""
+
     content_type: Optional[ContentType] = None
     text_content: Optional[str] = None
     formatted_content: Optional[dict[str, Any]] = None
@@ -301,6 +307,8 @@ class PublicationCompactListResponse(BaseModel):
 
 
 class PublicationResponse(BaseModel):
+    """Публикация с id, статусами, связанными channels[]/tags[]."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
