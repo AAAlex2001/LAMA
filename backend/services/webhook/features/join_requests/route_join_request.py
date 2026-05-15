@@ -1,3 +1,5 @@
+"""Обработка заявок на вступление в канал/группу: проверка подписок, капча, авто-одобрение."""
+
 import logging
 
 from aiogram.types import ChatJoinRequest
@@ -23,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class RouteJoinRequest:
+    """По настройкам бота решает: автоматически одобрить, послать капчу или ждать ручного одобрения."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

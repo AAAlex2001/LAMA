@@ -1,3 +1,5 @@
+"""Проверка приватной (ЛС-) капчи через callback-кнопку."""
+
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +23,8 @@ from backend.services.webhook.features.subscriptions.mark_join_request_accepted 
 
 
 class CheckPrivateCaptcha:
+    """Проверяет ответ на капчу в личке: одобряет join-request если правильно, иначе бросает фейл-событие."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model

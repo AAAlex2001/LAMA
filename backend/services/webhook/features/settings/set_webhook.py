@@ -1,3 +1,5 @@
+"""Регистрация webhook'а бота в Telegram с обработкой DNS-ретраев."""
+
 import asyncio
 import logging
 
@@ -34,6 +36,8 @@ DNS_RETRY_ATTEMPTS = 2
 
 
 class SetWebhook:
+    """Ставит webhook бота на URL приложения; ретрит при временных DNS-ошибках Telegram."""
+
     async def execute(self, token: str) -> str:
         bot = resolve_by_token(token).bot
         webhook_url = self.get_url(token)

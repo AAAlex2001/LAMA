@@ -1,3 +1,10 @@
+"""Главный маршрутизатор: разбирает Update от Telegram и передаёт в нужную фичу.
+
+Запускается celery-таском после `ReceiveTelegramWebhook`. Резолвит бота по
+токену/чату, проверяет что он активный, и направляет апдейт в одну из веток:
+сообщения / callback-кнопки / join-request / chat_member / my_chat_member.
+"""
+
 import logging
 
 from aiogram.types import Message, Update
@@ -36,6 +43,8 @@ logger = logging.getLogger(__name__)
 
 
 class RouteTelegramUpdate:
+    """Маршрутизатор update'ов: открывает сессию БД, резолвит бота, выбирает ветку."""
+
     async def execute(self, update: Update, bot_token: str | None = None) -> None:
         ws_event = None
         try:

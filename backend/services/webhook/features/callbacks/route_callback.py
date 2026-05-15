@@ -1,3 +1,5 @@
+"""Маршрутизатор нажатий inline-кнопок по префиксу `callback_data`."""
+
 from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +26,8 @@ from backend.services.webhook.features.captcha.check_private_captcha import (
 
 
 class RouteCallback:
+    """Разводит callback по префиксу: `group_captcha_`, `captcha_`, `admincall_`, `hidden_text:`, `callback:`, `cmd_hidden:`, `cmd_callback:`."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.private_captcha = CheckPrivateCaptcha(db, bot_model)
         self.group_captcha = CheckGroupCaptcha(db, bot_model)

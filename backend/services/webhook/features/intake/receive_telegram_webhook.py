@@ -1,3 +1,10 @@
+"""Точка входа всех Telegram-update'ов в приложение.
+
+Валидирует секретный токен, парсит update, кладёт его в celery — обработка
+происходит в воркере, чтобы webhook-эндпоинт отвечал Telegram быстро (он ждёт
+ответ < 30 секунд, иначе ретрит).
+"""
+
 import logging
 
 from fastapi import Request
@@ -18,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class ReceiveTelegramWebhook:
+    """Принимает HTTP-запрос от Telegram, валидирует и ставит update в очередь."""
+
     async def execute(
         self,
         request: Request,

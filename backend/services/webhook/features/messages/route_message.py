@@ -1,3 +1,5 @@
+"""Маршрутизация входящего сообщения: сохранить в DM/группу, обновить участников, ответить."""
+
 import logging
 
 from aiogram.types import Message
@@ -23,6 +25,8 @@ logger = logging.getLogger(__name__)
 
 
 class RouteMessage:
+    """Двух-фазный обработчик: сначала `save` (быстро записать + ws-событие), потом `after_save` (триггеры, команды, авто-ответы)."""
+
     def __init__(self, db: AsyncSession, bot_model: BotModel):
         self.db = db
         self.bot_model = bot_model
